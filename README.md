@@ -50,4 +50,4 @@ At present, however, you must checkout osh-js and link it with OpenSensorViewer 
     cd osh-viewer
     npm install
     npm link osh-js
-    npm build 
+    npm run build 
