@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?><!--
+  - Copyright (c) 2022.  Botts Innovative Research, Inc.
+  - All Rights Reserved
+  -
+  - opensensorhub/osh-viewer is licensed under the
+  -
+  - Mozilla Public License 2.0
+  - Permissions of this weak copyleft license are conditioned on making available source code of licensed
+  - files and modifications of those files under the same license (or in certain cases, one of the GNU licenses).
+  - Copyright and license notices must be preserved. Contributors provide an express grant of patent rights.
+  - However, a larger work using the licensed work may be distributed under different terms and without
+  - source code for files added in the larger work.
+  -
+  -->
+
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M7,17L10.2,10.2L17,7L13.8,13.8L7,17M12,11.1A0.9,0.9 0 0,0 11.1,12A0.9,0.9 0 0,0 12,12.9A0.9,0.9 0 0,0 12.9,12A0.9,0.9 0 0,0 12,11.1M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z" /></svg>
