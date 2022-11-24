@@ -30,6 +30,9 @@ import {
 } from "../data/Models";
 import {RootState} from "./Store";
 
+// @ts-ignore
+import MapView from "osh-js/source/core/ui/view/map/MapView";
+
 enableMapSet();
 
 interface IAppState {
@@ -45,6 +48,8 @@ interface IAppState {
     observablesDialogOpen: boolean,
     timeControllerDialogOpen: boolean,
     systemsDialogOpen: boolean,
+
+    mapView: typeof MapView,
 
     masterTime: IMasterTime,
     sensorHubServers: ISensorHubServer[],
@@ -65,6 +70,8 @@ const initialState: IAppState = {
     observablesDialogOpen: false,
     timeControllerDialogOpen: false,
     systemsDialogOpen: false,
+
+    mapView: typeof MapView,
 
     masterTime: new MasterTime(),
     sensorHubServers: [],
@@ -110,6 +117,12 @@ export const Slice = createSlice({
         setSystemsDialogOpen: ((state, action: PayloadAction<boolean>) => {
 
             state.systemsDialogOpen = action.payload;
+        }),
+
+        setMapView: ((state, action: PayloadAction<typeof MapView>) => {
+
+            state.mapView = action.payload;
+            alert("MapView set")
         }),
 
         setUseBuildingModels: ((state, action: PayloadAction<boolean>) => {
@@ -194,6 +207,8 @@ export const {
     setObservablesDialogOpen,
     setSystemsDialogOpen,
     setTimeControllerDialogOpen,
+
+    setMapView,
 
     setUseBuildingModels,
     setShowTrails,
