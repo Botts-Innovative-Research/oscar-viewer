@@ -111,6 +111,11 @@ module.exports = {
                         }
                     ]
             },
+            {
+                test: /\.worker\.js$/,
+                use: { loader: 'worker-loader', options: { filename: 'Worker.[chunkhash].js' } }
+
+            },
         ],
     },
     // pass all js files through Babel
