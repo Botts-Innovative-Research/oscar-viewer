@@ -18,7 +18,13 @@ import {Switch, TableCell, TableRow, Tooltip} from "@mui/material";
 import {useAppDispatch, useAppSelector} from "../../state/Hooks";
 import {IObservable, IPhysicalSystem} from "../../data/Models";
 import ObservableIcon from "./ObservableIcon";
-import {selectPhysicalSystems} from "../../state/Slice";
+import {
+    connectObservable, disconnectObservable,
+    hideObservable,
+    selectConnectedObservables,
+    selectPhysicalSystems,
+    showObservable
+} from "../../state/Slice";
 
 interface ObservableEntryProps {
 
@@ -30,6 +36,7 @@ const ObservableEntry = (props: ObservableEntryProps) => {
     const dispatch = useAppDispatch();
 
     let physicalSystems = useAppSelector(selectPhysicalSystems)
+    let connectedObservables = useAppSelector(selectConnectedObservables);
 
     let system: IPhysicalSystem = null;
 
@@ -62,8 +69,15 @@ const ObservableEntry = (props: ObservableEntryProps) => {
             </TableCell>
             <TableCell>
                 <Switch
+                    checked={connectedObservables.get(props.observable.uuid) ? connectedObservables.get(props.observable.uuid) : false}
                     onChange={() => {
-
+                        if (!connectedObservables.get(props.observable.uuid)) {
+                            dispatch(showObservable(props.observable));
+                            dispatch(connectObservable(props.observable));
+                        } else {
+                            dispatch(hideObservable(props.observable));
+                            dispatch(disconnectObservable(props.observable));
+                        }
                     }}/>
             </TableCell>
         </TableRow>
