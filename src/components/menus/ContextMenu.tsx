@@ -14,18 +14,48 @@
  */
 
 import React from "react";
-import {Menu} from "@mui/material";
+import {Divider, ListItemIcon, ListItemText, Menu, MenuItem, MenuList, Paper} from "@mui/material";
 import {useAppDispatch, useAppSelector} from "../../state/Hooks";
-import {selectContextMenuState, updateContextMenuState} from "../../state/Slice";
+import {
+    selectContextMenuState,
+    setAddServerDialogOpen,
+    setObservablesDialogOpen,
+    setServerManagementDialogOpen,
+    setSettingsDialogOpen,
+    setSystemsDialogOpen,
+    updateContextMenuState
+} from "../../state/Slice";
+import {Hub, Lan, SettingsApplications, Storage, Visibility} from "@mui/icons-material";
 
-interface IMenuProps {
-    children: any
-}
-
-const ContextMenu = (props: IMenuProps) => {
+const ContextMenu = () => {
 
     const dispatch = useAppDispatch();
     let menuState = useAppSelector(selectContextMenuState);
+
+    const openSettings = () => {
+        dispatch(updateContextMenuState({showMenu: false}));
+        dispatch(setSettingsDialogOpen(true));
+    }
+
+    const openServerManagement = () => {
+        dispatch(updateContextMenuState({showMenu: false}));
+        dispatch(setServerManagementDialogOpen(true));
+    }
+
+    const openObservables = () => {
+        dispatch(updateContextMenuState({showMenu: false}));
+        dispatch(setObservablesDialogOpen(true));
+    }
+
+    const openSystems = () => {
+        dispatch(updateContextMenuState({showMenu: false}));
+        dispatch(setSystemsDialogOpen(true));
+    }
+
+    const openAddServer = () => {
+        dispatch(updateContextMenuState({showMenu: false}));
+        dispatch(setAddServerDialogOpen(true));
+    }
 
     return (
         <Menu
@@ -40,7 +70,43 @@ const ContextMenu = (props: IMenuProps) => {
             }
             variant={"menu"}
         >
-            {props.children}
+            <Paper sx={{width: 230}} elevation={0}>
+                <MenuList>
+                    <MenuItem onClick={openObservables}>
+                        <ListItemIcon>
+                            <Visibility color={"primary"} fontSize="medium"/>
+                        </ListItemIcon>
+                        <ListItemText>Observables</ListItemText>
+                    </MenuItem>
+                    <Divider orientation={"horizontal"}/>
+                    <MenuItem onClick={openSystems}>
+                        <ListItemIcon>
+                            <Hub color={"primary"} fontSize="medium"/>
+                        </ListItemIcon>
+                        <ListItemText>Systems</ListItemText>
+                    </MenuItem>
+                    <Divider orientation={"horizontal"}/>
+                    <MenuItem onClick={openAddServer}>
+                        <ListItemIcon>
+                            <Lan color={"primary"} fontSize="medium"/>
+                        </ListItemIcon>
+                        <ListItemText>Add Server</ListItemText>
+                    </MenuItem>
+                    <MenuItem onClick={openServerManagement}>
+                        <ListItemIcon>
+                            <Storage color={"primary"} fontSize="medium"/>
+                        </ListItemIcon>
+                        <ListItemText>Server Management</ListItemText>
+                    </MenuItem>
+                    <Divider orientation={"horizontal"}/>
+                    <MenuItem onClick={openSettings}>
+                        <ListItemIcon>
+                            <SettingsApplications color={"primary"} fontSize="medium"/>
+                        </ListItemIcon>
+                        <ListItemText>Settings</ListItemText>
+                    </MenuItem>
+                </MenuList>
+            </Paper>
         </Menu>
     );
 }

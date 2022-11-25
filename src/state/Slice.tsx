@@ -52,7 +52,6 @@ interface IAppState {
     serverManagementDialogOpen: boolean,
     addServerDialogOpen: boolean,
     observablesDialogOpen: boolean,
-    timeControllerDialogOpen: boolean,
     systemsDialogOpen: boolean,
 
     mapView: MapView,
@@ -81,7 +80,6 @@ const initialState: IAppState = {
     serverManagementDialogOpen: false,
     addServerDialogOpen: false,
     observablesDialogOpen: false,
-    timeControllerDialogOpen: false,
     systemsDialogOpen: false,
 
     mapView: typeof MapView,
@@ -184,11 +182,6 @@ export const Slice = createSlice({
         setObservablesDialogOpen: ((state, action: PayloadAction<boolean>) => {
 
             state.observablesDialogOpen = action.payload;
-        }),
-
-        setTimeControllerDialogOpen: ((state, action: PayloadAction<boolean>) => {
-
-            state.timeControllerDialogOpen = action.payload;
         }),
 
         setSystemsDialogOpen: ((state, action: PayloadAction<boolean>) => {
@@ -626,7 +619,6 @@ export const {
     setAddServerDialogOpen,
     setObservablesDialogOpen,
     setSystemsDialogOpen,
-    setTimeControllerDialogOpen,
 
     setMapView,
 
@@ -663,7 +655,6 @@ export const selectSettingsDialogOpen = (state: RootState) => state.appState.set
 export const selectServerManagementDialogOpen = (state: RootState) => state.appState.serverManagementDialogOpen
 export const selectAddServerDialogOpen = (state: RootState) => state.appState.addServerDialogOpen
 export const selectObservablesDialogOpen = (state: RootState) => state.appState.observablesDialogOpen
-export const selectTimeControllerDialogOpen = (state: RootState) => state.appState.timeControllerDialogOpen
 export const selectSystemsDialogOpen = (state: RootState) => state.appState.systemsDialogOpen
 
 export const selectServers = (state: RootState) => state.appState.sensorHubServers

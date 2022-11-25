@@ -99,6 +99,19 @@ module.exports = {
                     ]
             },
             {
+                test: /\.(mp4)$/,
+                use:
+                    [
+                        {
+                            loader: 'file-loader',
+                            options:
+                                {
+                                    outputPath: 'assets/videos/'
+                                }
+                        }
+                    ]
+            },
+            {
                 test: /\.(svg)$/,
                 use:
                     [

@@ -31,29 +31,10 @@ import {
     selectServerManagementDialogOpen,
     selectSettingsDialogOpen,
     selectSystemsDialogOpen,
-    selectTimeControllerDialogOpen,
-    setAddServerDialogOpen,
-    setAppInitialized,
-    setObservablesDialogOpen,
-    setServerManagementDialogOpen,
-    setSettingsDialogOpen,
-    setSystemsDialogOpen,
-    setTimeControllerDialogOpen,
-    updateContextMenuState
+    setAppInitialized
 } from "../state/Slice";
 import {useAppDispatch, useAppSelector} from "../state/Hooks";
-import {
-    Alert,
-    AlertTitle,
-    CircularProgress,
-    Divider,
-    ListItemIcon,
-    ListItemText,
-    MenuItem,
-    MenuList,
-    Paper
-} from "@mui/material";
-import {Hub, Lan, Schedule, SettingsApplications, Storage, Visibility} from "@mui/icons-material";
+import {Alert, AlertTitle} from "@mui/material";
 import ServerManagement from "./servers/ServerManagement";
 import AddServer from "./servers/AddServer";
 import Observables from "./observables/Observables";
@@ -63,22 +44,25 @@ import {fetchPhysicalSystems} from "../net/SystemRequest";
 import {discoverObservables} from "../discovery/DiscoveryUtils";
 import CenteredPopover from "./decorators/CenteredPopover";
 import Systems from "./systems/Systems";
+import SplashScreen from "./splash/SplashScreen";
+import TimeController from "./time/TimeController";
 
 const App = () => {
     const dispatch = useAppDispatch();
 
     let appInitialized = useAppSelector(selectAppInitialized);
 
+    let [showSplashScreen, setShowSplashScreen] = useState<boolean>(true);
+
     let showSettingsDialog = useAppSelector(selectSettingsDialogOpen);
     let showServerManagementDialog = useAppSelector(selectServerManagementDialogOpen);
     let showObservablesDialog = useAppSelector(selectObservablesDialogOpen);
     let showAddServerDialog = useAppSelector(selectAddServerDialogOpen);
-    let showTimeControllerDialog = useAppSelector(selectTimeControllerDialogOpen);
     let showSystemsDialog = useAppSelector(selectSystemsDialogOpen);
 
-    let [showConfirmation, setShowConfirmation] = useState(false);
-    let [showError, setShowError] = useState(false);
-    let [errorMsg, setErrorMsg] = useState(null);
+    let [showConfirmation, setShowConfirmation] = useState<boolean>(false);
+    let [showError, setShowError] = useState<boolean>(false);
+    let [errorMsg, setErrorMsg] = useState<string>(null);
 
     useEffect(() => {
 
@@ -137,102 +121,27 @@ const App = () => {
         }, 5000)
     }
 
-    const openSettings = () => {
-        dispatch(updateContextMenuState({showMenu: false}));
-        dispatch(setSettingsDialogOpen(true));
-    }
-
-    const openServerManagement = () => {
-        dispatch(updateContextMenuState({showMenu: false}));
-        dispatch(setServerManagementDialogOpen(true));
-    }
-
-    const openObservables = () => {
-        dispatch(updateContextMenuState({showMenu: false}));
-        dispatch(setObservablesDialogOpen(true));
-    }
-
-    const openTimeController = () => {
-        dispatch(updateContextMenuState({showMenu: false}));
-        dispatch(setTimeControllerDialogOpen(true));
-    }
-
-    const openSystems = () => {
-        dispatch(updateContextMenuState({showMenu: false}));
-        dispatch(setSystemsDialogOpen(true));
-    }
-
-    const openAddServer = () => {
-        dispatch(updateContextMenuState({showMenu: false}));
-        dispatch(setAddServerDialogOpen(true));
-    }
 
     return (
         <div>
-            <ContextMenu>
-                <Paper sx={{width: 230}} elevation={0}>
-                    <MenuList>
-                        <MenuItem onClick={openObservables}>
-                            <ListItemIcon>
-                                <Visibility color={"primary"} fontSize="medium"/>
-                            </ListItemIcon>
-                            <ListItemText>Observables</ListItemText>
-                        </MenuItem>
-                        <MenuItem onClick={openTimeController}>
-                            <ListItemIcon>
-                                <Schedule color={"primary"} fontSize="medium"/>
-                            </ListItemIcon>
-                            <ListItemText>Time Controller</ListItemText>
-                        </MenuItem>
-                        <Divider orientation={"horizontal"}/>
-                        <MenuItem onClick={openSystems}>
-                            <ListItemIcon>
-                                <Hub color={"primary"} fontSize="medium"/>
-                            </ListItemIcon>
-                            <ListItemText>Systems</ListItemText>
-                        </MenuItem>
-                        <Divider orientation={"horizontal"}/>
-                        <MenuItem onClick={openAddServer}>
-                            <ListItemIcon>
-                                <Lan color={"primary"} fontSize="medium"/>
-                            </ListItemIcon>
-                            <ListItemText>Add Server</ListItemText>
-                        </MenuItem>
-                        <MenuItem onClick={openServerManagement}>
-                            <ListItemIcon>
-                                <Storage color={"primary"} fontSize="medium"/>
-                            </ListItemIcon>
-                            <ListItemText>Server Management</ListItemText>
-                        </MenuItem>
-                        <Divider orientation={"horizontal"}/>
-                        <MenuItem onClick={openSettings}>
-                            <ListItemIcon>
-                                <SettingsApplications color={"primary"} fontSize="medium"/>
-                            </ListItemIcon>
-                            <ListItemText>Settings</ListItemText>
-                        </MenuItem>
-                    </MenuList>
-                </Paper>
-            </ContextMenu>
+            <ContextMenu/>
 
             {showServerManagementDialog ? <ServerManagement title={"Servers"}/> : null}
             {showSettingsDialog ? <Settings title={"Settings"}/> : null}
             {showAddServerDialog ? <AddServer title={"Configure New Server"}/> : null}
             {showObservablesDialog ? <Observables title={"Observables"}/> : null}
-            {showTimeControllerDialog ? null : null}
             {showSystemsDialog ? <Systems title={"Systems"}/> : null}
 
-            <CesiumMap/>
 
-            {!appInitialized ?
-                <CenteredPopover anchorEl={document.getElementById('root')} >
-                    <Alert severity="info" style={{background: "transparent"}}>
-                        <AlertTitle>Initializing...</AlertTitle>
-                    </Alert>
-                    <CircularProgress size={100} thickness={2} style={{margin: "2em"}}/>
-                </CenteredPopover>
-                : null
+            {!appInitialized && showSplashScreen ?
+                <SplashScreen onEnded={() => setShowSplashScreen(false)}/>
+                :
+                <div>
+                    <CesiumMap/>
+                    <TimeController/>
+                </div>
             }
+
             {showConfirmation ?
                 <CenteredPopover anchorEl={document.getElementById('root')}>
                     <Alert severity="success">
@@ -241,6 +150,7 @@ const App = () => {
                 </CenteredPopover>
                 : null
             }
+
             {showError ?
                 <CenteredPopover anchorEl={document.getElementById('root')}>
                     <Alert severity="warning">
