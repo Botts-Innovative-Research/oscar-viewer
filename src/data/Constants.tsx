@@ -16,8 +16,7 @@
 // Playback States========================================================
 export enum PlaybackState {
     PLAY,
-    PAUSE,
-    STOP
+    PAUSE
 }
 
 // Observable Types ========================================================

@@ -32,7 +32,14 @@ import {
 } from "../data/Models";
 import {RootState} from "./Store";
 
-import {ObservableType, PlaybackState, REALTIME_END, REALTIME_FUTURE_END, REALTIME_START} from "../data/Constants";
+import {
+    DEFAULT_TIME_ID,
+    ObservableType,
+    PlaybackState,
+    REALTIME_END,
+    REALTIME_FUTURE_END,
+    REALTIME_START
+} from "../data/Constants";
 
 // @ts-ignore
 import MapView from "osh-js/source/core/ui/view/map/MapView";
@@ -98,7 +105,7 @@ const initialState: IAppState = {
     }),
 
     dataSynchronizerReplaySpeed: 1,
-    playbackState: PlaybackState.STOP,
+    playbackState: PlaybackState.PAUSE,
 
     connectedObservables: new Map<string, boolean>(),
     dataLayersConnectedState: new Map<ObservableType, boolean>([
@@ -497,15 +504,19 @@ export const Slice = createSlice({
             }
         }),
 
-        updatePlaybackTimePeriod: ((state, action: PayloadAction<number>) => {
+        updatePlaybackTimePeriod: ((state, action: PayloadAction<string>) => {
 
-            let offset = action.payload * 1000;
-
-            state.masterTime.playbackTimePeriod.beginPosition =
-                TimePeriod.offsetTime(state.masterTime.masterTimePeriod.beginPosition, offset);
-            state.masterTime.playbackTimePeriod.isIndeterminateStart = false;
-            state.masterTime.playbackTimePeriod.endPosition = REALTIME_FUTURE_END;
-            state.masterTime.playbackTimePeriod.isIndeterminateEnd = false;
+            state.masterTime = new MasterTime({
+                inPlaybackMode: state.masterTime.inPlaybackMode,
+                masterTimePeriod: state.masterTime.masterTimePeriod,
+                playbackTimePeriod: new TimePeriod({
+                    id: DEFAULT_TIME_ID,
+                    beginPosition: action.payload,
+                    endPosition: REALTIME_FUTURE_END,
+                    isIndeterminateEnd: false,
+                    isIndeterminateStart: false
+                })
+            });
 
             let updateTimeRange = async function (dataSynchronizer: DataSynchronizer, timePeriod: ITimePeriod, speed: number) {
 
@@ -527,45 +538,10 @@ export const Slice = createSlice({
             updateSpeed(state.dataSynchronizer, state.masterTime.playbackTimePeriod, state.dataSynchronizerReplaySpeed).then();
         }),
 
-        startPlayback: ((state) => {
+        startPlayback: ((state, action: PayloadAction<void>) => {
 
             state.playbackState = PlaybackState.PLAY;
             state.dataSynchronizer.connect();
-        }),
-
-        stopPlayback: ((state) => {
-
-            state.playbackState = PlaybackState.STOP;
-
-            let stop = async function (dataSynchronizer: DataSynchronizer, timePeriod: ITimePeriod) {
-
-                let startTime: string = null;
-
-                await dataSynchronizer.getCurrentTime().then(
-                    (value: any) => {
-
-                        // If the reported value is valid
-                        if (value['data'] != -1) {
-
-                            // Update the start time by converting from epoch time to formatted string
-                            startTime = TimePeriod.getFormattedTime(value['data']);
-                        }
-                    },
-                    (reason: any) => {
-                        console.error(JSON.stringify(reason));
-                    },
-                )
-
-                await dataSynchronizer.disconnect();
-
-                if (startTime != null) {
-
-                    await dataSynchronizer.setTimeRange(startTime, timePeriod.endPosition,
-                        dataSynchronizer.getReplaySpeed(), false);
-                }
-            }
-
-            stop(state.dataSynchronizer, state.masterTime.playbackTimePeriod).then();
         }),
 
         pausePlayback: ((state) => {
@@ -639,7 +615,6 @@ export const {
     updatePlaybackTimePeriod,
     updatePlaybackSpeed,
     startPlayback,
-    stopPlayback,
     pausePlayback,
 
 } = Slice.actions;
@@ -662,11 +637,11 @@ export const selectPhysicalSystems = (state: RootState) => state.appState.physic
 export const selectObservables = (state: RootState) => state.appState.observables
 
 export const selectMasterTime = (state: RootState) => state.appState.masterTime
-export const selectDataSynchronizerPlaybackSpeed = (state: RootState) => state.appState.dataSynchronizerReplaySpeed
 export const selectDataSynchronizer = (state: RootState) => state.appState.dataSynchronizer
 export const selectConnectedObservables = (state: RootState) => state.appState.connectedObservables
 export const selectPlaybackState = (state: RootState) => state.appState.playbackState
 export const selectPlaybackMode = (state: RootState) => state.appState.masterTime.inPlaybackMode
+export const selectPlaybackSpeed = (state: RootState) => state.appState.dataSynchronizerReplaySpeed
 
 
 export default Slice.reducer;
