@@ -77,8 +77,8 @@ export async function discoverVideoStreams(server: SensorHubServer, withCredenti
 
                         dataSource = new SweApi(physicalSystem.name + "-image-dataSource", {
                             protocol: Protocols.WS,
-                            endpointUrl: server.address + Service.API,
-                            collection: `/datastreams/${video.dataStreamId}/observations`,
+                            endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
+                            resource: `/datastreams/${video.dataStreamId}/observations`,
                             startTime: REALTIME_START,
                             endTime: REALTIME_FUTURE_END,
                             tls: server.secure,
@@ -89,8 +89,8 @@ export async function discoverVideoStreams(server: SensorHubServer, withCredenti
 
                         dataSource = new SweApi(physicalSystem.name + "-video-dataSource", {
                             protocol: Protocols.WS,
-                            endpointUrl: server.address + Service.API,
-                            collection: `/datastreams/${video.dataStreamId}/observations`,
+                            endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
+                            resource: `/datastreams/${video.dataStreamId}/observations`,
                             startTime: REALTIME_START,
                             endTime: REALTIME_FUTURE_END,
                             tls: server.secure,

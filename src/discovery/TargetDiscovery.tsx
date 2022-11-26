@@ -77,8 +77,8 @@ export async function discoverTargets(server: SensorHubServer, withCredentials: 
 
                     locationDataSource = new SweApi(physicalSystem.name + "-target-dataSource", {
                         protocol: Protocols.WS,
-                        endpointUrl: server.address + Service.API,
-                        collection: `/datastreams/${location.dataStreamId}/observations`,
+                        endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
+                        resource: `/datastreams/${location.dataStreamId}/observations`,
                         startTime: REALTIME_START,
                         endTime: REALTIME_FUTURE_END,
                         tls: server.secure

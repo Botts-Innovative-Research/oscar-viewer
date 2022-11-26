@@ -74,8 +74,8 @@ export async function discoverEllipses(server: SensorHubServer, withCredentials:
 
                     ellipseDataSource = new SweApi(physicalSystem.name + "-ellipse-dataSource", {
                         protocol: Protocols.WS,
-                        endpointUrl: server.address + Service.API,
-                        collection: `/datastreams/${ellipse.dataStreamId}/observations`,
+                        endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
+                        resource: `/datastreams/${ellipse.dataStreamId}/observations`,
                         startTime: REALTIME_START,
                         endTime: REALTIME_FUTURE_END,
                         tls: server.secure

@@ -80,8 +80,8 @@ export async function discoverTracks(server: SensorHubServer, withCredentials: b
 
                     trackDataSource = new SweApi(physicalSystem.name + "-track-dataSource", {
                         protocol: Protocols.WS,
-                        endpointUrl: server.address + Service.API,
-                        collection: `/datastreams/${track.dataStreamId}/observations`,
+                        endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
+                        resource: `/datastreams/${track.dataStreamId}/observations`,
                         startTime: REALTIME_START,
                         endTime: REALTIME_FUTURE_END,
                         tls: server.secure

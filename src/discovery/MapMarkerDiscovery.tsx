@@ -82,8 +82,8 @@ export async function discoverPointMarkers(server: SensorHubServer, withCredenti
 
                     locationDataSource = new SweApi(physicalSystem.name + "-location-dataSource", {
                         protocol: Protocols.WS,
-                        endpointUrl: server.address + Service.API,
-                        collection: `/datastreams/${location.dataStreamId}/observations`,
+                        endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
+                        resource: `/datastreams/${location.dataStreamId}/observations`,
                         startTime: REALTIME_START,
                         endTime: REALTIME_FUTURE_END,
                         tls: server.secure
@@ -114,8 +114,8 @@ export async function discoverPointMarkers(server: SensorHubServer, withCredenti
 
                         orientationDataSource = new SweApi(physicalSystem.name + "-orientation-dataSource", {
                             protocol: Protocols.WS,
-                            endpointUrl: server.address + Service.API,
-                            collection: `/datastreams/${orientation.dataStreamId}/observations`,
+                            endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
+                            resource: `/datastreams/${orientation.dataStreamId}/observations`,
                             startTime: REALTIME_START,
                             endTime: REALTIME_FUTURE_END,
                             tls: server.secure

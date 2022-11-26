@@ -73,8 +73,8 @@ export async function discoverRegionsOfInterest(server: SensorHubServer, withCre
 
                     roiDataSource = new SweApi(physicalSystem.name + "-roi-dataSource", {
                         protocol: Protocols.WS,
-                        endpointUrl: server.address + Service.API,
-                        collection: `/datastreams/${roi.dataStreamId}/observations`,
+                        endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
+                        resource: `/datastreams/${roi.dataStreamId}/observations`,
                         startTime: REALTIME_START,
                         endTime: REALTIME_FUTURE_END,
                         tls: server.secure

@@ -80,8 +80,8 @@ export async function discoverLinesOBearing(server: SensorHubServer, withCredent
 
                     lobDataSource = new SweApi(physicalSystem.name + "-lob-dataSource", {
                         protocol: Protocols.WS,
-                        endpointUrl: server.address + Service.API,
-                        collection: `/datastreams/${lob.dataStreamId}/observations`,
+                        endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
+                        resource: `/datastreams/${lob.dataStreamId}/observations`,
                         startTime: REALTIME_START,
                         endTime: REALTIME_FUTURE_END,
                         tls: server.secure

@@ -88,8 +88,8 @@ export async function discoverTAKHeartbeat(server: SensorHubServer, withCredenti
 
                     locationDataSource = new SweApi(physicalSystem.name + "-takheartbeat-dataSource", {
                         protocol: Protocols.WS,
-                        endpointUrl: server.address + Service.API,
-                        collection: `/datastreams/${location.dataStreamId}/observations`,
+                        endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
+                        resource: `/datastreams/${location.dataStreamId}/observations`,
                         startTime: REALTIME_START,
                         endTime: REALTIME_FUTURE_END,
                         tls: server.secure
