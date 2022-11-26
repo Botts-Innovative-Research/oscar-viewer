@@ -79,7 +79,7 @@ const TimeController = (props: ITimeControllerProps) => {
             animate: false,
             pips: {
                 mode: PipsMode.Positions,
-                values: [5, 25, 50, 75],
+                values: [10, 25, 50, 75, 90],
                 density: 1,
                 format: wNumb({
                     edit: function (value: string) {
@@ -88,7 +88,7 @@ const TimeController = (props: ITimeControllerProps) => {
                     }
                 })
             },
-        }).on('change', updatePlaybackStartTime);
+        }).on('update', updatePlaybackStartTime);
 
     }, []);
 
