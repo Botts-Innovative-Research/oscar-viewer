@@ -117,16 +117,6 @@ const TimeController = (props: ITimeControllerProps) => {
         } else {
 
             document.getElementById('TimeController').removeAttribute('disabled');
-
-            if (masterTime.playbackTimePeriod.isIndeterminateStart) {
-
-                dispatch(updatePlaybackTimePeriod(masterTime.masterTimePeriod.beginPosition));
-
-            } else {
-
-                dispatch(updatePlaybackTimePeriod(masterTime.playbackTimePeriod.beginPosition));
-
-            }
         }
 
     }, [inPlaybackMode]);
@@ -157,6 +147,12 @@ const TimeController = (props: ITimeControllerProps) => {
     }
 
     const start = () => {
+
+        // Ensure all data sources are using playback time period
+        if (inPlaybackMode) {
+
+            dispatch(updatePlaybackTimePeriod(masterTime.playbackTimePeriod.beginPosition));
+        }
 
         // Register a listener with the data synchronizer to get current playback time stamp
         dataSynchronizer.subscribe((message: { type: any; timestamp: any; }) => {

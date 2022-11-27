@@ -330,32 +330,8 @@ export const Slice = createSlice({
 
             } else {
 
-                let startTime = state.masterTime.playbackTimePeriod.beginPosition;
-
                 let addDataSources = async function (
-                    dataSynchronizer: DataSynchronizer, observable: IObservable,
-                    startTime: string, endTime: string, playbackState: PlaybackState) {
-
-                    // DataSynchronizer reports 'true' on isConnected if there are no dataSources
-                    // if (dataSynchronizer.dataSources.length > 0) {
-                    if (playbackState == PlaybackState.PLAY || playbackState == PlaybackState.PAUSE) {
-
-                        // Get the current time as reported by the synchronizer
-                        await dataSynchronizer.getCurrentTime().then(
-                            (value: any) => {
-
-                                // If the reported value is valid
-                                if (value['data'] != -1) {
-
-                                    // Update the start time by converting from epoch time to formatted string
-                                    startTime = TimePeriod.getFormattedTime(value['data']);
-                                }
-                            },
-                            (reason: any) => {
-                                console.error(JSON.stringify(reason));
-                            },
-                        )
-                    }
+                    dataSynchronizer: DataSynchronizer, observable: IObservable, playbackState: PlaybackState) {
 
                     // Build a list of promises
                     let promises = [];
@@ -363,24 +339,20 @@ export const Slice = createSlice({
                     // For each data source in the observable add it to the synchronizer
                     for (let dataSource of observable.dataSources) {
 
-                        promises.push(dataSynchronizer.addDataSource(dataSource));
+                        promises.push(dataSynchronizer.addDataSource(dataSource,playbackState == PlaybackState.PLAY));
                     }
 
                     // Wait for all data sources to be added
                     await Promise.all(promises).then(
                         async () => {
 
-                            // Update the time range, which will update all data sources to same time
-                            await dataSynchronizer.setTimeRange(startTime, endTime,
-                                dataSynchronizer.getReplaySpeed(), playbackState == PlaybackState.PLAY);
                         },
                         (reason) => {
                             console.error(reason)
                         });
                 }
 
-                addDataSources(state.dataSynchronizer, observable,
-                    startTime, state.masterTime.playbackTimePeriod.endPosition, state.playbackState).then();
+                addDataSources(state.dataSynchronizer, observable, state.playbackState).then();
             }
 
             observable.isConnected = true;
@@ -401,32 +373,8 @@ export const Slice = createSlice({
 
             } else {
 
-                let startTime = state.masterTime.playbackTimePeriod.beginPosition;
-
                 let removeDataSources = async function (
-                    dataSynchronizer: DataSynchronizer, observable: IObservable,
-                    startTime: string, endTime: string, playbackState: PlaybackState) {
-
-                    // DataSynchronizer reports 'true' on isConnected if there are no dataSources
-                    // if (dataSynchronizer.dataSources.length > 0) {
-                    if (playbackState == PlaybackState.PLAY || playbackState == PlaybackState.PAUSE) {
-
-                        // Get the current time as reported by the synchronizer
-                        await dataSynchronizer.getCurrentTime().then(
-                            (value: any) => {
-
-                                // If the reported value is valid
-                                if (value['data'] != -1) {
-
-                                    // Update the start time by converting from epoch time to formatted string
-                                    startTime = TimePeriod.getFormattedTime(value['data']);
-                                }
-                            },
-                            (reason: any) => {
-                                console.error(JSON.stringify(reason));
-                            },
-                        )
-                    }
+                    dataSynchronizer: DataSynchronizer, observable: IObservable, playbackState: PlaybackState) {
 
                     await dataSynchronizer.disconnect();
 
@@ -439,16 +387,13 @@ export const Slice = createSlice({
                         await dataSource.setTimeRange(REALTIME_START, REALTIME_FUTURE_END, 1, false);
                     }
 
-                    if (dataSynchronizer.dataSources.length > 0) {
+                    if (playbackState == PlaybackState.PLAY) {
 
-                        // Update the time range, which will update all data sources to same time
-                        await dataSynchronizer.setTimeRange(startTime, endTime,
-                            dataSynchronizer.getReplaySpeed(), playbackState == PlaybackState.PLAY);
+                        await dataSynchronizer.connect();
                     }
                 }
 
-                removeDataSources(state.dataSynchronizer, observable,
-                    startTime, state.masterTime.playbackTimePeriod.endPosition, state.playbackState).then();
+                removeDataSources(state.dataSynchronizer, observable, state.playbackState).then();
             }
 
             observable.isConnected = false;
@@ -530,53 +475,36 @@ export const Slice = createSlice({
 
             state.dataSynchronizerReplaySpeed = action.payload;
 
-            let updateSpeed = async function (dataSynchronizer: DataSynchronizer, timePeriod: ITimePeriod, speed: number) {
+            let updateSpeed = async function (dataSynchronizer: DataSynchronizer, speed: number) {
 
-                await dataSynchronizer.setTimeRange(timePeriod.beginPosition, timePeriod.endPosition, speed, false);
+                await dataSynchronizer.setReplaySpeed(speed);
             }
 
-            updateSpeed(state.dataSynchronizer, state.masterTime.playbackTimePeriod, state.dataSynchronizerReplaySpeed).then();
+            updateSpeed(state.dataSynchronizer, state.dataSynchronizerReplaySpeed).then();
         }),
 
         startPlayback: ((state, action: PayloadAction<void>) => {
 
             state.playbackState = PlaybackState.PLAY;
-            state.dataSynchronizer.connect();
+
+            let start = async function (dataSynchronizer: DataSynchronizer) {
+
+                await dataSynchronizer.connect();
+            }
+
+            start(state.dataSynchronizer).then();
         }),
 
         pausePlayback: ((state) => {
 
             state.playbackState = PlaybackState.PAUSE;
 
-            let pause = async function (dataSynchronizer: DataSynchronizer, timePeriod: ITimePeriod) {
-
-                let startTime: string = null;
-
-                await dataSynchronizer.getCurrentTime().then(
-                    (value: any) => {
-
-                        // If the reported value is valid
-                        if (value['data'] != -1) {
-
-                            // Update the start time by converting from epoch time to formatted string
-                            startTime = TimePeriod.getFormattedTime(value['data']);
-                        }
-                    },
-                    (reason: any) => {
-                        console.error(JSON.stringify(reason));
-                    },
-                )
+            let pause = async function (dataSynchronizer: DataSynchronizer) {
 
                 await dataSynchronizer.disconnect();
-
-                if (startTime != null) {
-
-                    await dataSynchronizer.setTimeRange(startTime, timePeriod.endPosition,
-                        dataSynchronizer.getReplaySpeed(), false);
-                }
             }
 
-            pause(state.dataSynchronizer, state.masterTime.playbackTimePeriod).then();
+            pause(state.dataSynchronizer).then();
         }),
     },
 })
