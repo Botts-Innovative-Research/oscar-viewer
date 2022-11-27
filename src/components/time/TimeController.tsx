@@ -63,7 +63,18 @@ const TimeController = (props: ITimeControllerProps) => {
         let sliderContainer = document.getElementById('TimeController');
 
         let startTime: number = TimePeriod.getEpochTime(masterTime.masterTimePeriod.beginPosition);
+
+        if (masterTime.masterTimePeriod.isIndeterminateStart) {
+
+            startTime = TimePeriod.getEpochTime(new Date().toISOString());
+        }
+
         let endTime: number = TimePeriod.getEpochTime(masterTime.masterTimePeriod.endPosition);
+
+        if (masterTime.masterTimePeriod.isIndeterminateStart) {
+
+            endTime = startTime + 24 * 60 * 60 * 1000;
+        }
 
         noUiSlider.create(sliderContainer, {
             start: startTime,
