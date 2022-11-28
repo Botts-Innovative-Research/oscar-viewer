@@ -382,6 +382,11 @@ export const Slice = createSlice({
                     mode: Mode.REPLAY
                 });
 
+                if (state.dataSynchronizer.dataSources.length === 0 ){
+
+                    state.playbackState = PlaybackState.PAUSE;
+                }
+
                 if (state.playbackState === PlaybackState.PLAY) {
 
                     state.dataSynchronizer.connect();
