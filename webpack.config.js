@@ -1,5 +1,4 @@
 const path = require("path");
-const HtmlPlugin = require("html-webpack-plugin");
 const HtmlTagsPlugin = require("html-webpack-tags-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const {DefinePlugin} = require('webpack');
@@ -7,6 +6,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
     entry: "./src/index.tsx",
+    devtool: 'inline-source-map',
     output: {
         filename: "main.js",
         path: path.resolve(__dirname, "build"),
@@ -17,40 +17,23 @@ module.exports = {
             favicon: path.join(__dirname, "public/images", "opensensorhub.png")
         }),
         new DefinePlugin({
+            BASE_URL: JSON.stringify('/'),
             // Define relative base path in cesium for loading assets
-            BASE_URL: JSON.stringify('/')
+            CESIUM_BASE_URL: JSON.stringify('cesium')
         }),
         new CopyWebpackPlugin({
             patterns: [
-                {
-                    from: "node_modules/cesium/Build/Cesium",
-                    to: "cesium",
-                },
+                {from: "node_modules/cesium/Build/Cesium", to: "cesium"},
+                {from: path.resolve(__dirname, 'src/assets'), to: 'assets'},
+                {from: path.resolve(__dirname, 'src/icons'), to: 'icons'},
             ],
         }),
-        // new HtmlPlugin({
-        //     template: "public/index.html",
-        //     favicon: "public/images/opensensorhub.png"
-        // }),
         new HtmlTagsPlugin({
             append: false,
             tags: ["cesium/Widgets/widgets.css", "cesium/Cesium.js"],
         }),
-        new DefinePlugin({
-            CESIUM_BASE_URL: JSON.stringify('cesium'),
-        }),
-        new CopyWebpackPlugin({
-            patterns: [
-                // {from: path.resolve(__dirname, 'src/public/images'), to: 'images'},
-                // {from: path.resolve(__dirname, 'src/images'), to: 'images'},
-                {from: path.resolve(__dirname, 'src/assets'), to: 'assets'},
-            ]
-        }),
     ],
     devServer: {
-        static: {
-            directory: path.join(__dirname, "build"),
-        },
         port: 3000,
     },
     module: {
@@ -63,71 +46,38 @@ module.exports = {
             },
             {
                 test: /\.css$/,
-                use: [
-                    'style-loader',
-                    'css-loader',
-                ]
-            },
-            // {
-            //     test: /\.(glb|png|jpg|gif|svg|woff(2)?|ttf|eot)$/,
-            //     loader: 'file-loader',
-            //     options: {
-            //         name: '[name].[ext]?[hash]',
-            //         plugins: [CopyWebpackPlugin]
-            //     }
-            // },
-            {
-                test: /\.(png|svg|jpg|gif)$/,
-                loader: 'file-loader',
-                options: {
-                    name: '[name].[ext]',
-                    outputPath: 'media',
-                    plugins: [CopyWebpackPlugin]
-                },
+                use: ['style-loader', 'css-loader',]
             },
             {
                 test: /\.(glb|gltf)$/,
-                use:
-                    [
-                        {
-                            loader: 'file-loader',
-                            options:
-                                {
-                                    outputPath: 'assets/models/'
-                                }
-                        }
-                    ]
+                use: {
+                    loader: 'file-loader',
+                    options: {
+                        name: '[name].[ext]',
+                    }
+                }
             },
             {
                 test: /\.(mp4)$/,
-                use:
-                    [
-                        {
-                            loader: 'file-loader',
-                            options:
-                                {
-                                    outputPath: 'assets/videos/'
-                                }
-                        }
-                    ]
+                use: {
+                    loader: 'file-loader',
+                    options: {
+                        name: '[name].[ext]',
+                    }
+                }
             },
             {
-                test: /\.(svg)$/,
-                use:
-                    [
-                        {
-                            loader: 'file-loader',
-                            options:
-                                {
-                                    outputPath: 'components/icons/'
-                                }
-                        }
-                    ]
+                test: /\.(png|svg|jpg|gif)$/,
+                use: {
+                    loader: 'file-loader',
+                    options: {
+                        name: '[name].[ext]',
+                    }
+                },
             },
             {
                 test: /\.worker\.js$/,
-                use: { loader: 'worker-loader', options: { filename: 'Worker.[chunkhash].js' } }
-
+                use: {loader: 'worker-loader', options: {filename: 'Worker.[chunkhash].js'}}
             },
         ],
     },
