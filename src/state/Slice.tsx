@@ -45,6 +45,10 @@ import {
 import MapView from "osh-js/source/core/ui/view/map/MapView";
 // @ts-ignore
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer"
+// @ts-ignore
+import {Mode} from "osh-js/source/core/datasource/Mode";
+// @ts-ignore
+import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 
 enableMapSet();
 
@@ -103,7 +107,6 @@ const initialState: IAppState = {
         intervalRate: 5,
         dataSources: []
     }),
-
     dataSynchronizerReplaySpeed: 1,
     playbackState: PlaybackState.PAUSE,
 
@@ -330,29 +333,21 @@ export const Slice = createSlice({
 
             } else {
 
-                let addDataSources = async function (
-                    dataSynchronizer: DataSynchronizer, observable: IObservable, playbackState: PlaybackState) {
+                state.dataSynchronizer.disconnect();
 
-                    // Build a list of promises
-                    let promises = [];
+                state.dataSynchronizer = new DataSynchronizer({
+                    startTime: state.masterTime.playbackTimePeriod.beginPosition,
+                    endTime: state.masterTime.playbackTimePeriod.endPosition,
+                    replaySpeed: state.dataSynchronizerReplaySpeed,
+                    intervalRate: 5,
+                    dataSources: [...state.dataSynchronizer.dataSources, ...observable.dataSources],
+                    mode: Mode.REPLAY
+                });
 
-                    // For each data source in the observable add it to the synchronizer
-                    for (let dataSource of observable.dataSources) {
+                if (state.playbackState === PlaybackState.PLAY) {
 
-                        promises.push(dataSynchronizer.addDataSource(dataSource,playbackState == PlaybackState.PLAY));
-                    }
-
-                    // Wait for all data sources to be added
-                    await Promise.all(promises).then(
-                        async () => {
-
-                        },
-                        (reason) => {
-                            console.error(reason)
-                        });
+                    state.dataSynchronizer.connect();
                 }
-
-                addDataSources(state.dataSynchronizer, observable, state.playbackState).then();
             }
 
             observable.isConnected = true;
@@ -373,27 +368,24 @@ export const Slice = createSlice({
 
             } else {
 
-                let removeDataSources = async function (
-                    dataSynchronizer: DataSynchronizer, observable: IObservable, playbackState: PlaybackState) {
+                state.dataSynchronizer.disconnect();
 
-                    await dataSynchronizer.disconnect();
+                let keepDataSources: SweApi[] =
+                    state.dataSynchronizer.dataSources.filter((ds: SweApi) => observable.dataSources.indexOf(ds) < 0);
 
-                    for (let dataSource of observable.dataSources) {
+                state.dataSynchronizer = new DataSynchronizer({
+                    startTime: state.masterTime.playbackTimePeriod.beginPosition,
+                    endTime: state.masterTime.playbackTimePeriod.endPosition,
+                    replaySpeed: state.dataSynchronizerReplaySpeed,
+                    intervalRate: 5,
+                    dataSources: [...keepDataSources],
+                    mode: Mode.REPLAY
+                });
 
-                        dataSynchronizer.dataSources =
-                            dataSynchronizer.dataSources.filter(
-                                (ds: { getId: () => string; }) => ds.getId() !== dataSource.getId())
+                if (state.playbackState === PlaybackState.PLAY) {
 
-                        await dataSource.setTimeRange(REALTIME_START, REALTIME_FUTURE_END, 1, false);
-                    }
-
-                    if (playbackState == PlaybackState.PLAY) {
-
-                        await dataSynchronizer.connect();
-                    }
+                    state.dataSynchronizer.connect();
                 }
-
-                removeDataSources(state.dataSynchronizer, observable, state.playbackState).then();
             }
 
             observable.isConnected = false;
@@ -483,7 +475,7 @@ export const Slice = createSlice({
             updateSpeed(state.dataSynchronizer, state.dataSynchronizerReplaySpeed).then();
         }),
 
-        startPlayback: ((state, action: PayloadAction<void>) => {
+        startPlayback: ((state) => {
 
             state.playbackState = PlaybackState.PLAY;
 

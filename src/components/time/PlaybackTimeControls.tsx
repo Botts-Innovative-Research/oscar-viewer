@@ -26,11 +26,12 @@ import {
 import React from "react";
 import {PlaybackState} from "../../data/Constants";
 import {selectMasterTime, selectPlaybackSpeed, selectPlaybackState} from "../../state/Slice";
-import {IMasterTime} from "../../data/Models";
+import {IMasterTime, TimePeriod} from "../../data/Models";
 import {useAppSelector} from "../../state/Hooks";
 
 interface IPlaybackTimeControlsProps {
 
+    currentTime: number,
     switchToRealtime: () => void,
     updatePlaybackStartTime: (values: string[]) => void,
     slowDown: () => void,
@@ -109,7 +110,7 @@ const PlaybackTimeControls = (props: IPlaybackTimeControlsProps) => {
                         Current Time:
                     </TableCell>
                     <TableCell>
-                        {masterTime.playbackTimePeriod.beginPosition}
+                        {props.currentTime === 0 ? masterTime.masterTimePeriod.beginPosition : TimePeriod.getFormattedTime(props.currentTime)}
                     </TableCell>
                     <TableCell>
                         End Time:

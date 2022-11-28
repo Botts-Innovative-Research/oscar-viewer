@@ -13,7 +13,7 @@
  *
  */
 
-import React, {useEffect} from "react";
+import React, {useEffect, useState} from "react";
 import {
     pausePlayback,
     selectDataSynchronizer,
@@ -26,20 +26,21 @@ import {
     updatePlaybackTimePeriod
 } from "../../state/Slice";
 import {useAppDispatch, useAppSelector} from "../../state/Hooks";
-
 import * as noUiSlider from 'nouislider';
 import {PipsMode} from 'nouislider';
 import 'nouislider/dist/nouislider.min.css';
-// @ts-ignore
-import * as wNumb from 'wnumb';
 import {IMasterTime, TimePeriod} from "../../data/Models";
 import {Box} from "@mui/material";
+import PlaybackTimeControls from "./PlaybackTimeControls";
+import RealTimeControls from "./RealTimeControls";
+// @ts-ignore
+import * as wNumb from 'wnumb';
 // @ts-ignore
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer"
 // @ts-ignore
+import {Mode} from "osh-js/source/core/datasource/Mode";
+// @ts-ignore
 import {EventType} from "osh-js/source/core/event/EventType";
-import PlaybackTimeControls from "./PlaybackTimeControls";
-import RealTimeControls from "./RealTimeControls";
 
 interface ITimeControllerProps {
 
@@ -57,6 +58,8 @@ const TimeController = (props: ITimeControllerProps) => {
     let inPlaybackMode: boolean = useAppSelector(selectPlaybackMode);
     let playbackSpeed: number = useAppSelector(selectPlaybackSpeed);
     let dataSynchronizer: DataSynchronizer = useAppSelector(selectDataSynchronizer);
+
+    let [currentTime, setCurrentTime] = useState<number>(0)
 
     useEffect(() => {
 
@@ -132,6 +135,19 @@ const TimeController = (props: ITimeControllerProps) => {
 
     }, [inPlaybackMode]);
 
+    useEffect(() => {
+
+        dataSynchronizer.subscribe((message: { type: any; timestamp: any; }) => {
+
+            if (message.type === EventType.LAST_TIME) {
+
+                setCurrentTime(message.timestamp);
+            }
+
+        }, [EventType.LAST_TIME])
+
+    }, [dataSynchronizer]);
+
     const updatePlaybackStartTime = (values: string[]) => {
 
         dispatch(updatePlaybackTimePeriod(TimePeriod.getFormattedTime(Number(values[0]))));
@@ -165,16 +181,6 @@ const TimeController = (props: ITimeControllerProps) => {
             dispatch(updatePlaybackTimePeriod(masterTime.playbackTimePeriod.beginPosition));
         }
 
-        // Register a listener with the data synchronizer to get current playback time stamp
-        dataSynchronizer.subscribe((message: { type: any; timestamp: any; }) => {
-
-            if (message.type === EventType.TIME) {
-
-                sliderContainer.noUiSlider.set(TimePeriod.getFormattedTime(message.timestamp))
-            }
-
-        }, [EventType.TIME]);
-
         dispatch(startPlayback());
     }
 
@@ -182,6 +188,11 @@ const TimeController = (props: ITimeControllerProps) => {
 
         dispatch(updatePlaybackTimePeriod(
             TimePeriod.offsetTime(masterTime.playbackTimePeriod.beginPosition, seconds * 1000)));
+    }
+
+    if (sliderContainer) {
+
+        sliderContainer.noUiSlider.set(TimePeriod.getFormattedTime(currentTime));
     }
 
     return (
@@ -195,7 +206,8 @@ const TimeController = (props: ITimeControllerProps) => {
                  }}/>
             <Box style={{height: '4vh', position: 'absolute', bottom: '2vh', margin: '.5em'}}>
                 {inPlaybackMode ?
-                    <PlaybackTimeControls switchToRealtime={togglePlaybackMode}
+                    <PlaybackTimeControls currentTime={currentTime}
+                                          switchToRealtime={togglePlaybackMode}
                                           start={start}
                                           pause={pause}
                                           skip={skip}
