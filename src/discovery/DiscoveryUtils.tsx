@@ -13,42 +13,20 @@
  *
  */
 
-import {IPhysicalSystem, IObservable, SensorHubServer} from "../data/Models";
+import {IObservable, IPhysicalSystem, SensorHubServer} from "../data/Models";
 import {discoverPointMarkers} from "./MapMarkerDiscovery";
 import {discoverVideoStreams} from "./VideoStreamDiscovery";
 import {discoverRegionsOfInterest} from "./RoiDiscovery";
 import {discoverImages} from "./ImageDiscovery";
 import {discoverEllipses} from "./EllipsesDiscovery";
 import {discoverLinesOBearing} from "./LobDiscovery";
-import {discoverTargets} from "./TargetDiscovery";
 import {discoverCharts} from "./ChartDiscovery";
-import {discoverTAKHeartbeat} from "./TAKHeartbeatDiscovery";
-import {discoverTAKPointmarkers} from "./TAKPointmarkerDiscovery";
-import {discoverTracks} from "./TrackDiscovery";
-import {discoverUnifiedTracks} from "./UnifiedTrackDiscovery";
 
 export async function discoverObservables(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
 
     let observables: IObservable[] = [];
 
-
     observables.push(...await discoverPointMarkers(server, withCredentials).then(observables => {
-        return observables
-    }));
-
-    observables.push(...await discoverTracks(server, withCredentials).then(observables => {
-        return observables
-    }));
-
-    observables.push(...await discoverUnifiedTracks(server, withCredentials).then(observables => {
-        return observables
-    }));
-
-    observables.push(...await discoverTAKHeartbeat(server, withCredentials).then(observables => {
-        return observables
-    }));
-
-    observables.push(...await discoverTAKPointmarkers(server, withCredentials).then(observables => {
         return observables
     }));
 
@@ -69,10 +47,6 @@ export async function discoverObservables(server: SensorHubServer, withCredentia
     }));
 
     observables.push(...await discoverLinesOBearing(server, withCredentials).then(observables => {
-        return observables
-    }));
-
-    observables.push(...await discoverTargets(server, withCredentials).then(observables => {
         return observables
     }));
 

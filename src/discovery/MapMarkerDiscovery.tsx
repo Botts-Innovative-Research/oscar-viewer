@@ -36,9 +36,9 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 // @ts-ignore
-import PointMarker from "../icons/pointmarker.png";
+import PointMarker from "../assets/models/pointmarker-orient.glb";
 // @ts-ignore
-import PointMarkerNoOrientation from "../icons/pointmarker-no-orientation.png";
+import PointMarkerNoOrientation from "../assets/models/pointmarker.glb";
 
 export async function discoverPointMarkers(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
 
@@ -156,14 +156,14 @@ export async function discoverPointMarkers(server: SensorHubServer, withCredenti
                         icon: PointMarkerNoOrientation,
                         // iconAnchor: [16, 64],
                         iconSize: [32, 32],
-                        iconColor: colorHash(physicalSystem.name).rgba,
+                        color: colorHash(physicalSystem.name).rgba,
                         name: physicalSystem.systemId,
                         label: physicalSystem.name,
                         labelOffset: [0, 20],
                         labelColor: 'rgba(255,255,255,1.0)',
                         labelOutlineColor: 'rgba(0,0,0,1.0)',
-                        labelBackgroundColor: 'rgba(0,0,0,1.0)',
-                        labelSize: 50,
+                        labelBackgroundColor: 'rgba(236,236,236,0.5)',
+                        labelSize: 25,
                         defaultToTerrainElevation: false,
                         zIndex: 1
                     });
@@ -205,14 +205,14 @@ export async function discoverPointMarkers(server: SensorHubServer, withCredenti
                         icon: PointMarker,
                         // iconAnchor: [16, 64],
                         iconSize: [32, 32],
-                        iconColor: colorHash(physicalSystem.name).rgba,
+                        color: colorHash(physicalSystem.name).rgba,
                         name: physicalSystem.systemId,
                         label: physicalSystem.name,
                         labelOffset: [0, 20],
                         labelColor: 'rgba(255,255,255,1.0)',
                         labelOutlineColor: 'rgba(0,0,0,1.0)',
-                        labelBackgroundColor: 'rgba(0,0,0,1.0)',
-                        labelSize: 50,
+                        labelBackgroundColor: 'rgba(236,236,236,0.5)',
+                        labelSize: 25,
                         defaultToTerrainElevation: false,
                         zIndex: 1
                     });
@@ -242,7 +242,7 @@ export async function discoverPointMarkers(server: SensorHubServer, withCredenti
                         }
                     },
                     color: colorHash(physicalSystem.name, 0.50).rgba,
-                    weight: 10,
+                    weight: 5,
                     opacity: .5,
                     smoothFactor: 1,
                     maxPoints: 200,

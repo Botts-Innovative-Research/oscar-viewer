@@ -162,12 +162,11 @@ export async function discoverEllipses(server: SensorHubServer, withCredentials:
                     name: physicalSystem.systemId,
                     id: physicalSystem.name,
                     label: physicalSystem.name,
-                    labelOffset: [1, 20],
+                    labelOffset: [0, 20],
                     labelColor: 'rgba(255,255,255,1.0)',
                     labelOutlineColor: 'rgba(0,0,0,1.0)',
-                    labelBackgroundColor: 'rgba(0,0,0,1.0)',
-                    labelSize: 50,
-
+                    labelBackgroundColor: 'rgba(236,236,236,0.5)',
+                    labelSize: 25,
                 });
 
                 let observable: IObservable = new Observable({
