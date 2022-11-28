@@ -16,13 +16,7 @@
 import React from "react";
 import {Card, CardContent, CardHeader, Grid, Switch} from "@mui/material";
 import {useAppDispatch, useAppSelector} from "../../state/Hooks";
-import {
-    selectShowTrails,
-    selectUseBuildingModels,
-    setSettingsDialogOpen,
-    setShowTrails,
-    setUseBuildingModels
-} from "../../state/Slice";
+import {selectUseBuildingModels, setSettingsDialogOpen, setUseBuildingModels} from "../../state/Slice";
 import DraggableDialog from "../decorators/DraggableDialog";
 
 interface ISettingsProps {
@@ -35,7 +29,6 @@ const Settings = (props: ISettingsProps) => {
     const dispatch = useAppDispatch();
 
     let showBuildings = useAppSelector(selectUseBuildingModels);
-    let showTrails = useAppSelector(selectShowTrails);
 
     return (
         <DraggableDialog title={props.title} onClose={() => dispatch(setSettingsDialogOpen(false))}>
@@ -44,25 +37,13 @@ const Settings = (props: ISettingsProps) => {
                 <CardContent>
                     <Grid container direction={"row"} spacing={0} alignItems={"center"}>
                         <Grid item xs={9}>
-                            Show/Hide Buildings
+                            Show Buildings
                         </Grid>
                         <Grid item xs={3}>
                             <Switch
                                 checked={showBuildings}
                                 onChange={() => {
                                     dispatch(setUseBuildingModels(!showBuildings))
-                                }}/>
-                        </Grid>
-                    </Grid>
-                    <Grid container direction={"row"} spacing={0} alignItems={"center"}>
-                        <Grid item xs={9}>
-                            Show/Hide Map Marker Trails
-                        </Grid>
-                        <Grid item xs={3}>
-                            <Switch
-                                checked={showTrails}
-                                onChange={() => {
-                                    dispatch(setShowTrails(!showTrails))
                                 }}/>
                         </Grid>
                     </Grid>

@@ -156,15 +156,6 @@ export const Slice = createSlice({
 
             state.settings = new Settings({
                 useBuildingModels: action.payload,
-                showTrails: state.settings.showTrails
-            });
-        }),
-
-        setShowTrails: ((state, action: PayloadAction<boolean>) => {
-
-            state.settings = new Settings({
-                useBuildingModels: state.settings.useBuildingModels,
-                showTrails: action.payload
             });
         }),
 
@@ -511,7 +502,6 @@ export const {
     setAppInitialized,
 
     setUseBuildingModels,
-    setShowTrails,
 
     updateContextMenuState,
 
@@ -547,7 +537,6 @@ export const {
 export const selectAppInitialized = (state: RootState) => state.appState.initialized
 
 export const selectUseBuildingModels = (state: RootState) => state.appState.settings.useBuildingModels
-export const selectShowTrails = (state: RootState) => state.appState.settings.showTrails
 
 export const selectContextMenuState = (state: RootState) => state.appState.contextMenuState
 

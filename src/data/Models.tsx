@@ -35,24 +35,20 @@ import {randomUUID} from "osh-js/source/core/utils/Utils";
 
 export interface ISettings {
     useBuildingModels: boolean,
-    showTrails: boolean,
 }
 
 const SettingsProps: ISettings = {
 
     useBuildingModels: true,
-    showTrails: true,
 }
 
 export class Settings implements ISettings {
 
     useBuildingModels: boolean;
-    showTrails: boolean;
 
     constructor(props: ISettings = SettingsProps) {
 
         this.useBuildingModels = props.useBuildingModels;
-        this.showTrails = props.showTrails;
     }
 }
 
