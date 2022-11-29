@@ -25,7 +25,12 @@ import {
 } from "@mui/icons-material";
 import React from "react";
 import {PlaybackState} from "../../data/Constants";
-import {selectMasterTime, selectPlaybackSpeed, selectPlaybackState} from "../../state/Slice";
+import {
+    selectConnectedObservables,
+    selectMasterTime,
+    selectPlaybackSpeed,
+    selectPlaybackState
+} from "../../state/Slice";
 import {IMasterTime, TimePeriod} from "../../data/Models";
 import {useAppSelector} from "../../state/Hooks";
 
@@ -44,9 +49,20 @@ interface IPlaybackTimeControlsProps {
 
 const PlaybackTimeControls = (props: IPlaybackTimeControlsProps) => {
 
-    let masterTime: IMasterTime = useAppSelector(selectMasterTime);
-    let playbackSpeed: number = useAppSelector(selectPlaybackSpeed);
-    let playbackState: PlaybackState = useAppSelector(selectPlaybackState);
+    let masterTime: IMasterTime = useAppSelector<IMasterTime>(selectMasterTime);
+    let playbackSpeed: number = useAppSelector<number>(selectPlaybackSpeed);
+    let playbackState: PlaybackState = useAppSelector<PlaybackState>(selectPlaybackState);
+    let connectedObservables = useAppSelector<Map<string, boolean>>(selectConnectedObservables);
+
+    let numConnected: number = 0;
+
+    connectedObservables.forEach((connected: boolean) => {
+
+        if (connected) {
+
+            ++numConnected;
+        }
+    })
 
     return (
         <Table style={{alignContent: "center", margin: "0em 1em 0em 1em"}}>
@@ -54,35 +70,40 @@ const PlaybackTimeControls = (props: IPlaybackTimeControlsProps) => {
                 <TableRow>
                     <TableCell>
                         <Tooltip title={"Live"} placement={"top"}>
-                            <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"} onClick={props.switchToRealtime}>
+                            <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"}
+                                        onClick={props.switchToRealtime}>
                                 <Schedule/>
                             </IconButton>
                         </Tooltip>
                     </TableCell>
                     <TableCell>
                         <Tooltip title={"Slow Down"} placement={"top"}>
-                            <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"} onClick={props.slowDown}>
+                            <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"}
+                                        onClick={props.slowDown}>
                                 <RemoveCircleOutline/>
                             </IconButton>
                         </Tooltip>
                         <Chip style={{width: '5em'}} label={playbackSpeed + "x"}/>
                         <Tooltip title={"Speed Up"} placement={"top"}>
-                            <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"} onClick={props.speedUp}>
+                            <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"}
+                                        onClick={props.speedUp}>
                                 <AddCircleOutline/>
                             </IconButton>
                         </Tooltip>
                     </TableCell>
                     <TableCell>
                         <Tooltip title={"Rewind 10s"} placement={"top"}>
-                            <IconButton disabled={playbackState == PlaybackState.PLAY}color={"primary"} onClick={() => {
-                                props.skip(-10);
-                            }}>
+                            <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"}
+                                        onClick={() => {
+                                            props.skip(-10);
+                                        }}>
                                 <FastRewind/>
                             </IconButton>
                         </Tooltip>
                         {playbackState === PlaybackState.PAUSE ?
                             <Tooltip title={"Play"} placement={"top"}>
-                                <IconButton color={"primary"} onClick={props.start}>
+                                <IconButton disabled={numConnected === 0}
+                                            color={"primary"} onClick={props.start}>
                                     <PlayArrow/>
                                 </IconButton>
                             </Tooltip>
@@ -94,9 +115,10 @@ const PlaybackTimeControls = (props: IPlaybackTimeControlsProps) => {
                             </Tooltip>
                         }
                         <Tooltip title={"Forward 10s"} placement={"top"}>
-                            <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"} onClick={() => {
-                                props.skip(10);
-                            }}>
+                            <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"}
+                                        onClick={() => {
+                                            props.skip(10);
+                                        }}>
                                 <FastForward/>
                             </IconButton>
                         </Tooltip>
