@@ -132,6 +132,7 @@ const TimeController = (props: ITimeControllerProps) => {
 
         } else {
 
+            setCurrentTime(TimePeriod.getEpochTime(masterTime.masterTimePeriod.beginPosition));
             document.getElementById('TimeController').removeAttribute('disabled');
         }
 
