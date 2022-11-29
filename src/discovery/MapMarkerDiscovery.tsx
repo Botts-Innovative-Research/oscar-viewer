@@ -197,8 +197,15 @@ export async function discoverPointMarkers(server: SensorHubServer, withCredenti
                             // @ts-ignore
                             dataSourceIds: [orientationDataSource.getId()],
                             handler: function (rec: any) {
-                                return {
-                                    heading: findInObject(rec, 'heading'),
+                                let orientation: any = findInObject(rec, 'heading');
+                                if (orientation !== null) {
+                                    return {
+                                        heading: findInObject(rec, 'heading'),
+                                    }
+                                } else {
+                                    return {
+                                        heading: findInObject(rec, 'yaw'),
+                                    }
                                 }
                             }
                         },
