@@ -25,7 +25,6 @@ import {
     IPhysicalSystem,
     ISensorHubServer,
     ISettings,
-    ITimePeriod,
     MasterTime,
     Settings,
     TimePeriod
@@ -138,7 +137,7 @@ export const Slice = createSlice({
 
                 let promises = [];
 
-                promises.push(dataSynchronizer.setTimeRange(REALTIME_START, REALTIME_END, 1));
+                promises.push(dataSynchronizer.setTimeRange(REALTIME_START, REALTIME_END, 1, false, Mode.REAL_TIME));
 
                 await Promise.all(promises).then(
                     () => {
@@ -373,7 +372,7 @@ export const Slice = createSlice({
                     mode: Mode.REPLAY
                 });
 
-                if (state.dataSynchronizer.dataSources.length === 0 ){
+                if (state.dataSynchronizer.dataSources.length === 0) {
 
                     state.playbackState = PlaybackState.PAUSE;
                 }
@@ -431,13 +430,13 @@ export const Slice = createSlice({
 
                     for (let dataSource of observable.dataSources) {
 
-                        dataSource.setTimeRange(REALTIME_START, REALTIME_FUTURE_END, 1, false);
+                        dataSource.setTimeRange(REALTIME_START, REALTIME_FUTURE_END, 1, false, Mode.REAL_TIME);
                     }
                 });
             }
         }),
 
-        updatePlaybackTimePeriod: ((state, action: PayloadAction<string>) => {
+        updatePlaybackStartTime: ((state, action: PayloadAction<string>) => {
 
             state.masterTime = new MasterTime({
                 inPlaybackMode: state.masterTime.inPlaybackMode,
@@ -451,12 +450,13 @@ export const Slice = createSlice({
                 })
             });
 
-            let updateTimeRange = async function (dataSynchronizer: DataSynchronizer, timePeriod: ITimePeriod, speed: number) {
+            let updateTimeRange = async function (dataSynchronizer: DataSynchronizer, time: IMasterTime, speed: number) {
 
-                await dataSynchronizer.setTimeRange(timePeriod.beginPosition, timePeriod.endPosition, speed, false);
+                await dataSynchronizer.setTimeRange(time.playbackTimePeriod.beginPosition, time.playbackTimePeriod.endPosition,
+                    speed, false, time.inPlaybackMode ? Mode.REPLAY : Mode.REAL_TIME);
             }
 
-            updateTimeRange(state.dataSynchronizer, state.masterTime.playbackTimePeriod, state.dataSynchronizerReplaySpeed).then();
+            updateTimeRange(state.dataSynchronizer, state.masterTime, state.dataSynchronizerReplaySpeed).then();
         }),
 
         updatePlaybackSpeed: ((state, action: PayloadAction<number>) => {
@@ -527,7 +527,7 @@ export const {
     disconnectObservable,
 
     setPlaybackMode,
-    updatePlaybackTimePeriod,
+    updatePlaybackStartTime,
     updatePlaybackSpeed,
     startPlayback,
     pausePlayback,

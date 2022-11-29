@@ -23,7 +23,7 @@ import {
     setPlaybackMode,
     startPlayback,
     updatePlaybackSpeed,
-    updatePlaybackTimePeriod
+    updatePlaybackStartTime,
 } from "../../state/Slice";
 import {useAppDispatch, useAppSelector} from "../../state/Hooks";
 import * as noUiSlider from 'nouislider';
@@ -104,7 +104,7 @@ const TimeController = (props: ITimeControllerProps) => {
                     }
                 })
             },
-        }).on('update', updatePlaybackStartTime);
+        }).on('update', updateStartTime);
 
     }, []);
 
@@ -151,11 +151,11 @@ const TimeController = (props: ITimeControllerProps) => {
 
     }, [dataSynchronizer]);
 
-    const updatePlaybackStartTime = (values: string[]) => {
+    const updateStartTime = (values: string[]) => {
 
         setCurrentTime(Number(values[0]));
         setCurrentStartTime(Number(values[0]));
-        dispatch(updatePlaybackTimePeriod(TimePeriod.getFormattedTime(Number(values[0]))));
+        dispatch(updatePlaybackStartTime(TimePeriod.getFormattedTime(Number(values[0]))));
     }
 
     const slowDown = () => {
@@ -183,7 +183,7 @@ const TimeController = (props: ITimeControllerProps) => {
         // Ensure all data sources are using playback time period
         if (inPlaybackMode) {
 
-            dispatch(updatePlaybackTimePeriod(masterTime.playbackTimePeriod.beginPosition));
+            dispatch(updatePlaybackStartTime(TimePeriod.getFormattedTime(currentTime)));
         }
 
         dispatch(startPlayback());
@@ -191,7 +191,7 @@ const TimeController = (props: ITimeControllerProps) => {
 
     const skip = (seconds: number) => {
 
-        dispatch(updatePlaybackTimePeriod(
+        dispatch(updatePlaybackStartTime(
             TimePeriod.offsetTime(masterTime.playbackTimePeriod.beginPosition, seconds * 1000)));
     }
 
@@ -218,8 +218,7 @@ const TimeController = (props: ITimeControllerProps) => {
                                           pause={pause}
                                           skip={skip}
                                           speedUp={speedUp}
-                                          slowDown={slowDown}
-                                          updatePlaybackStartTime={updatePlaybackStartTime}/>
+                                          slowDown={slowDown}/>
                     : <RealTimeControls switchToPlayback={togglePlaybackMode}/>
                 }
             </Box>

@@ -39,7 +39,6 @@ interface IPlaybackTimeControlsProps {
     startTime: number,
     currentTime: number,
     switchToRealtime: () => void,
-    updatePlaybackStartTime: (values: string[]) => void,
     slowDown: () => void,
     speedUp: () => void,
     pause: () => void,
