@@ -38,8 +38,6 @@ import * as wNumb from 'wnumb';
 // @ts-ignore
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer"
 // @ts-ignore
-import {Mode} from "osh-js/source/core/datasource/Mode";
-// @ts-ignore
 import {EventType} from "osh-js/source/core/event/EventType";
 
 interface ITimeControllerProps {
@@ -93,12 +91,13 @@ const TimeController = (props: ITimeControllerProps) => {
             animate: false,
             pips: {
                 mode: PipsMode.Positions,
-                values: [10, 25, 50, 75, 90],
+                // values: [10, 25, 50, 75, 90],
+                values: [20, 50, 80],
                 density: 1,
                 format: wNumb({
                     edit: function (value: string) {
                         return new Date(parseInt(value)).toISOString().replace(".000Z", "Z")
-                            .split("T")[1].split("Z")[0].split(".")[0];
+                            .replace("T", " T ")
                     }
                 })
             },
