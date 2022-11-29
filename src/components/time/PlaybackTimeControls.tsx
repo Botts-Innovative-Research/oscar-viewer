@@ -53,27 +53,27 @@ const PlaybackTimeControls = (props: IPlaybackTimeControlsProps) => {
                 <TableRow>
                     <TableCell>
                         <Tooltip title={"Live"} placement={"top"}>
-                            <IconButton color={"primary"} onClick={props.switchToRealtime}>
+                            <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"} onClick={props.switchToRealtime}>
                                 <Schedule/>
                             </IconButton>
                         </Tooltip>
                     </TableCell>
                     <TableCell>
                         <Tooltip title={"Slow Down"} placement={"top"}>
-                            <IconButton color={"primary"} onClick={props.slowDown}>
+                            <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"} onClick={props.slowDown}>
                                 <RemoveCircleOutline/>
                             </IconButton>
                         </Tooltip>
                         <Chip style={{width: '5em'}} label={playbackSpeed + "x"}/>
                         <Tooltip title={"Speed Up"} placement={"top"}>
-                            <IconButton color={"primary"} onClick={props.speedUp}>
+                            <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"} onClick={props.speedUp}>
                                 <AddCircleOutline/>
                             </IconButton>
                         </Tooltip>
                     </TableCell>
                     <TableCell>
                         <Tooltip title={"Rewind 10s"} placement={"top"}>
-                            <IconButton color={"primary"} onClick={() => {
+                            <IconButton disabled={playbackState == PlaybackState.PLAY}color={"primary"} onClick={() => {
                                 props.skip(-10);
                             }}>
                                 <FastRewind/>
@@ -93,7 +93,7 @@ const PlaybackTimeControls = (props: IPlaybackTimeControlsProps) => {
                             </Tooltip>
                         }
                         <Tooltip title={"Forward 10s"} placement={"top"}>
-                            <IconButton color={"primary"} onClick={() => {
+                            <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"} onClick={() => {
                                 props.skip(10);
                             }}>
                                 <FastForward/>
