@@ -16,15 +16,19 @@
 import React from "react";
 import {Switch, TableCell, TableRow, Tooltip} from "@mui/material";
 import {useAppDispatch, useAppSelector} from "../../state/Hooks";
-import {IObservable, IPhysicalSystem} from "../../data/Models";
+import {IMasterTime, IObservable, IPhysicalSystem} from "../../data/Models";
 import ObservableIcon from "./ObservableIcon";
 import {
-    connectObservable, disconnectObservable,
+    connectObservable,
+    disconnectObservable,
     hideObservable,
     selectConnectedObservables,
+    selectMasterTime,
     selectPhysicalSystems,
+    selectPlaybackState,
     showObservable
 } from "../../state/Slice";
+import {PlaybackState} from "../../data/Constants";
 
 interface ObservableEntryProps {
 
@@ -35,8 +39,10 @@ const ObservableEntry = (props: ObservableEntryProps) => {
 
     const dispatch = useAppDispatch();
 
-    let physicalSystems = useAppSelector(selectPhysicalSystems)
-    let connectedObservables = useAppSelector(selectConnectedObservables);
+    let physicalSystems: IPhysicalSystem[] = useAppSelector<IPhysicalSystem[]>(selectPhysicalSystems)
+    let connectedObservables: Map<string, boolean> = useAppSelector<Map<string, boolean>>(selectConnectedObservables);
+    let masterTime: IMasterTime = useAppSelector<IMasterTime>(selectMasterTime);
+    let playbackState: PlaybackState = useAppSelector<PlaybackState>(selectPlaybackState);
 
     let system: IPhysicalSystem = null;
 
@@ -69,6 +75,7 @@ const ObservableEntry = (props: ObservableEntryProps) => {
             </TableCell>
             <TableCell>
                 <Switch
+                    disabled={masterTime.inPlaybackMode && playbackState == PlaybackState.PLAY}
                     checked={connectedObservables.get(props.observable.uuid) ? connectedObservables.get(props.observable.uuid) : false}
                     onChange={() => {
                         if (!connectedObservables.get(props.observable.uuid)) {
