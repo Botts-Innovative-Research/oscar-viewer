@@ -31,6 +31,7 @@ import {useAppSelector} from "../../state/Hooks";
 
 interface IPlaybackTimeControlsProps {
 
+    startTime: number,
     currentTime: number,
     switchToRealtime: () => void,
     updatePlaybackStartTime: (values: string[]) => void,
@@ -104,7 +105,7 @@ const PlaybackTimeControls = (props: IPlaybackTimeControlsProps) => {
                         Start Time:
                     </TableCell>
                     <TableCell>
-                        {masterTime.masterTimePeriod.beginPosition}
+                        {!props.startTime ? masterTime.masterTimePeriod.beginPosition : TimePeriod.getFormattedTime(props.startTime)}
                     </TableCell>
                     <TableCell>
                         Current Time:

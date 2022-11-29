@@ -57,6 +57,7 @@ const TimeController = (props: ITimeControllerProps) => {
     let playbackSpeed: number = useAppSelector(selectPlaybackSpeed);
     let dataSynchronizer: DataSynchronizer = useAppSelector(selectDataSynchronizer);
 
+    let [currentStartTime, setCurrentStartTime] = useState<number>(0)
     let [currentTime, setCurrentTime] = useState<number>(0)
 
     useEffect(() => {
@@ -69,6 +70,8 @@ const TimeController = (props: ITimeControllerProps) => {
 
             startTime = TimePeriod.getEpochTime(new Date().toISOString());
         }
+
+        setCurrentStartTime(startTime);
 
         let endTime: number = TimePeriod.getEpochTime(masterTime.masterTimePeriod.endPosition);
 
@@ -149,6 +152,8 @@ const TimeController = (props: ITimeControllerProps) => {
 
     const updatePlaybackStartTime = (values: string[]) => {
 
+        setCurrentTime(Number(values[0]));
+        setCurrentStartTime(Number(values[0]));
         dispatch(updatePlaybackTimePeriod(TimePeriod.getFormattedTime(Number(values[0]))));
     }
 
@@ -205,7 +210,8 @@ const TimeController = (props: ITimeControllerProps) => {
                  }}/>
             <Box style={{height: '4vh', position: 'absolute', bottom: '2vh', margin: '.5em'}}>
                 {inPlaybackMode ?
-                    <PlaybackTimeControls currentTime={currentTime}
+                    <PlaybackTimeControls startTime={currentStartTime}
+                                          currentTime={currentTime}
                                           switchToRealtime={togglePlaybackMode}
                                           start={start}
                                           pause={pause}
