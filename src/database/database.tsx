@@ -50,7 +50,7 @@ interface SensorHubConnectDB extends DBSchema {
 let appDatabase: IDBPDatabase<SensorHubConnectDB> = null;
 
 export const initDb = async function () {
-    appDatabase = await openDB<SensorHubConnectDB>('wt-plugin-sensorhub-connect', 1.0, {
+    appDatabase = await openDB<SensorHubConnectDB>('OpenSensorViewer', 1.0, {
         upgrade(db: IDBPDatabase<SensorHubConnectDB>) {
             const sensorHubServerStore = db.createObjectStore('sensorHubServer', {
                 keyPath: 'uniqueId',
