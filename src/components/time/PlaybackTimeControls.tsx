@@ -36,7 +36,6 @@ import {useAppSelector} from "../../state/Hooks";
 
 interface IPlaybackTimeControlsProps {
 
-    startTime: number,
     currentTime: number,
     switchToRealtime: () => void,
     slowDown: () => void,

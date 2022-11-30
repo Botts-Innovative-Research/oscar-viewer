@@ -27,7 +27,7 @@ import {
 } from "../../state/Slice";
 import {useAppDispatch, useAppSelector} from "../../state/Hooks";
 import * as noUiSlider from 'nouislider';
-import {PipsMode} from 'nouislider';
+import {API, PipsMode} from 'nouislider';
 import 'nouislider/dist/nouislider.min.css';
 import {IMasterTime, TimePeriod} from "../../data/Models";
 import {Box} from "@mui/material";
@@ -46,7 +46,7 @@ interface ITimeControllerProps {
     style?: React.CSSProperties
 }
 
-let sliderContainer: any;
+let sliderApi: API;
 
 const TimeController = (props: ITimeControllerProps) => {
 
@@ -57,7 +57,6 @@ const TimeController = (props: ITimeControllerProps) => {
     let playbackSpeed: number = useAppSelector(selectPlaybackSpeed);
     let dataSynchronizer: DataSynchronizer = useAppSelector(selectDataSynchronizer);
 
-    let [currentStartTime, setCurrentStartTime] = useState<number>(0)
     let [currentTime, setCurrentTime] = useState<number>(0)
 
     useEffect(() => {
@@ -71,8 +70,6 @@ const TimeController = (props: ITimeControllerProps) => {
             startTime = TimePeriod.getEpochTime(new Date().toISOString());
         }
 
-        setCurrentStartTime(startTime);
-
         let endTime: number = TimePeriod.getEpochTime(masterTime.masterTimePeriod.endPosition);
 
         if (masterTime.masterTimePeriod.isIndeterminateStart) {
@@ -80,7 +77,7 @@ const TimeController = (props: ITimeControllerProps) => {
             endTime = startTime + 24 * 60 * 60 * 1000;
         }
 
-        noUiSlider.create(sliderContainer, {
+        sliderApi = noUiSlider.create(sliderContainer, {
             start: startTime,
             range: {
                 min: startTime,
@@ -104,25 +101,11 @@ const TimeController = (props: ITimeControllerProps) => {
                     }
                 })
             },
-        }).on('update', updateStartTime);
+        });
+
+        sliderApi.on('update', updateCurrentTime);
 
     }, []);
-
-    useEffect(() => {
-
-        if (sliderContainer) {
-
-            sliderContainer.noUiSlider.updateOptions(
-                {
-                    start: TimePeriod.getEpochTime(masterTime.masterTimePeriod.beginPosition)
-                },
-                true // Boolean 'fireSetEvent'
-            );
-
-            sliderContainer.noUiSlider.set(TimePeriod.getEpochTime(masterTime.playbackTimePeriod.beginPosition))
-        }
-
-    }, [masterTime]);
 
     useEffect(() => {
 
@@ -131,6 +114,20 @@ const TimeController = (props: ITimeControllerProps) => {
             document.getElementById('TimeController').setAttribute('disabled', 'true');
 
         } else {
+
+            if (sliderApi) {
+
+                sliderApi.updateOptions(
+                    {
+                        start: TimePeriod.getEpochTime(masterTime.masterTimePeriod.beginPosition),
+                        range: {
+                            min: TimePeriod.getEpochTime(masterTime.masterTimePeriod.beginPosition),
+                            max: TimePeriod.getEpochTime(masterTime.masterTimePeriod.endPosition)
+                        }
+                    },
+                    false // Boolean 'fireSetEvent'
+                );
+            }
 
             setCurrentTime(TimePeriod.getEpochTime(masterTime.masterTimePeriod.beginPosition));
             document.getElementById('TimeController').removeAttribute('disabled');
@@ -144,6 +141,16 @@ const TimeController = (props: ITimeControllerProps) => {
 
             if (message.type === EventType.LAST_TIME) {
 
+                if (sliderApi) {
+
+                    sliderApi.updateOptions(
+                        {
+                            start: message.timestamp,
+                        },
+                        false // Boolean 'fireSetEvent'
+                    );
+                }
+
                 setCurrentTime(message.timestamp);
             }
 
@@ -151,11 +158,10 @@ const TimeController = (props: ITimeControllerProps) => {
 
     }, [dataSynchronizer]);
 
-    const updateStartTime = (values: string[]) => {
+    const updateCurrentTime = (values: string[]) => {
 
+        console.log(TimePeriod.getFormattedTime(Number(values[0])));
         setCurrentTime(Number(values[0]));
-        setCurrentStartTime(Number(values[0]));
-        dispatch(updatePlaybackStartTime(TimePeriod.getFormattedTime(Number(values[0]))));
     }
 
     const slowDown = () => {
@@ -195,11 +201,6 @@ const TimeController = (props: ITimeControllerProps) => {
             TimePeriod.offsetTime(masterTime.playbackTimePeriod.beginPosition, seconds * 1000)));
     }
 
-    if (sliderContainer) {
-
-        sliderContainer.noUiSlider.set(TimePeriod.getFormattedTime(currentTime));
-    }
-
     return (
         <Box>
             <Box id="TimeController"
@@ -211,8 +212,7 @@ const TimeController = (props: ITimeControllerProps) => {
                  }}/>
             <Box style={{height: '4vh', position: 'absolute', bottom: '2vh', margin: '.5em'}}>
                 {inPlaybackMode ?
-                    <PlaybackTimeControls startTime={currentStartTime}
-                                          currentTime={currentTime}
+                    <PlaybackTimeControls currentTime={currentTime}
                                           switchToRealtime={togglePlaybackMode}
                                           start={start}
                                           pause={pause}
