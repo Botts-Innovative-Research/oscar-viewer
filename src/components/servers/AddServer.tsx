@@ -30,12 +30,15 @@ import {
 import {useAppDispatch} from "../../state/Hooks";
 import {addObservable, addPhysicalSystem, addSensorHubServer, setAddServerDialogOpen} from "../../state/Slice";
 import {Cancel, Done} from "@mui/icons-material";
-import {DefaultSensorHubServerProps, ISensorHubServer, SensorHubServer} from "../../data/Models";
+import {ISensorHubServer, SensorHubServer} from "../../data/Models";
 import {fetchPhysicalSystems} from "../../net/SystemRequest";
 import {storeSensorHubServer} from "../../database/database";
 import {discoverObservables} from "../../discovery/DiscoveryUtils";
 import DraggableDialog from "../decorators/DraggableDialog";
 import CenteredPopover from "../decorators/CenteredPopover";
+import {DEFAULT_API_ENDPOINT, DEFAULT_SOS_ENDPOINT, DEFAULT_SPS_ENDPOINT} from "../../data/Constants";
+// @ts-ignore
+import {randomUUID} from "osh-js/source/core/utils/Utils";
 
 interface IAddServerProps {
     title: string,
@@ -111,10 +114,15 @@ const AddServer = (props: IAddServerProps) => {
             setAddingServer(true);
 
             let server: ISensorHubServer = new SensorHubServer({
-                ...DefaultSensorHubServerProps,
                 address: serverAddress,
                 name: serverName,
+                uuid: randomUUID(),
+                sosEndpoint: DEFAULT_SOS_ENDPOINT,
+                spsEndpoint: DEFAULT_SPS_ENDPOINT,
+                apiEndpoint: DEFAULT_API_ENDPOINT,
                 authToken: createAuthToken(userName, password),
+                secure: false,
+                systems: [],
             });
 
             fetchPhysicalSystems(server, true).then(async physicalSystems => {
@@ -146,9 +154,15 @@ const AddServer = (props: IAddServerProps) => {
                         dispatch(setAddServerDialogOpen(false));
                     }, 5000);
 
-                }).catch(() => popupError());
+                }).catch((reason) => {
+                    console.error(reason);
+                    popupError()
+                });
 
-            }).catch(() => popupError());
+            }).catch((reason) => {
+                console.error(reason);
+                popupError()
+            });
         }
     }
 

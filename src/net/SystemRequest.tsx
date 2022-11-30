@@ -33,7 +33,7 @@ export async function fetchPhysicalSystems(server: ISensorHubServer, withCredent
             "Content-Type": "application/json",
         });
     }
-    options.mode= "cors";
+    options.mode = "cors";
 
     let response = await fetch(request, options).catch(reason => {
         console.error("Physical systems request failed on :" + server.name);
@@ -61,6 +61,7 @@ export async function fetchPhysicalSystems(server: ISensorHubServer, withCredent
                     systemId: systemId,
                     uuid: randomUUID(),
                     physicalSystemTime: new PhysicalSystemTime(),
+                    server: server,
                     observables: []
                 });
 

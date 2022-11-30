@@ -18,9 +18,9 @@ import {
     DEFAULT_SOS_ENDPOINT,
     DEFAULT_SPS_ENDPOINT,
     DEFAULT_TIME_ID,
+    ObservableType,
     REALTIME_END,
-    REALTIME_START,
-    ObservableType
+    REALTIME_START
 } from "./Constants";
 // @ts-ignore
 import Layer from "osh-js/source/core/ui/layer/Layer";
@@ -84,7 +84,7 @@ export class ContextMenuState implements IContextMenu {
 export interface ISensorHubServer {
     address: string,
     name: string,
-    uniqueId: string,
+    uuid: string,
     sosEndpoint: string,
     spsEndpoint: string,
     apiEndpoint: string,
@@ -93,10 +93,10 @@ export interface ISensorHubServer {
     systems: IPhysicalSystem[]
 }
 
-export const DefaultSensorHubServerProps: ISensorHubServer = {
+const sensorHubServerProps: ISensorHubServer = {
     address: "",
     name: "",
-    uniqueId: null,
+    uuid: null,
     sosEndpoint: DEFAULT_SOS_ENDPOINT,
     spsEndpoint: DEFAULT_SPS_ENDPOINT,
     apiEndpoint: DEFAULT_API_ENDPOINT,
@@ -109,7 +109,7 @@ export class SensorHubServer implements ISensorHubServer {
 
     address: string;
     name: string;
-    uniqueId: string;
+    uuid: string;
     sosEndpoint: string;
     spsEndpoint: string;
     apiEndpoint: string;
@@ -117,10 +117,10 @@ export class SensorHubServer implements ISensorHubServer {
     secure: boolean;
     systems: IPhysicalSystem[];
 
-    constructor(props: ISensorHubServer = DefaultSensorHubServerProps) {
+    constructor(props: ISensorHubServer = sensorHubServerProps) {
         this.address = props.address;
         this.name = props.name;
-        this.uniqueId = props.uniqueId ? props.uniqueId : randomUUID();
+        this.uuid = props.uuid;
         this.sosEndpoint = props.sosEndpoint;
         this.spsEndpoint = props.spsEndpoint;
         this.apiEndpoint = props.apiEndpoint;
@@ -138,15 +138,15 @@ export interface ITimePeriod {
     isIndeterminateStart: boolean,
     isIndeterminateEnd: boolean,
 
-    getTimeString?: ()=> string,
+    getTimeString?: () => string,
 
-    getFormattedTime?: (time: number)=> string,
+    getFormattedTime?: (time: number) => string,
 
-    getUtcFormattedTime?: (epochTime: number)=> string,
+    getUtcFormattedTime?: (epochTime: number) => string,
 
-    getTimeSpanMillis?: ()=> number,
+    getTimeSpanMillis?: () => number,
 
-    getMaxTimeRange?: (timePeriods: TimePeriod[])=> TimePeriod
+    getMaxTimeRange?: (timePeriods: TimePeriod[]) => TimePeriod
 }
 
 const timePeriodProps: ITimePeriod = {
@@ -248,7 +248,7 @@ export interface IMasterTime {
     playbackTimePeriod: ITimePeriod,
     inPlaybackMode: boolean,
 
-    updateMasterTime?: (phenomenonTime: ITimePeriod)=> void
+    updateMasterTime?: (phenomenonTime: ITimePeriod) => void
 }
 
 const masterTimeProps: IMasterTime = {
@@ -283,7 +283,7 @@ export class MasterTime implements IMasterTime {
 export interface IPhysicalSystemTime {
     timePeriod: ITimePeriod,
 
-    updateSystemTime?: (phenomTime: ITimePeriod)=> void
+    updateSystemTime?: (phenomTime: ITimePeriod) => void
 }
 
 const physicalSystemTimeProps: IPhysicalSystemTime = {
@@ -314,6 +314,7 @@ export interface IPhysicalSystem {
     systemId: string,
     uuid: string,
     physicalSystemTime: IPhysicalSystemTime,
+    server: ISensorHubServer,
     observables: IObservable[]
 }
 
@@ -321,8 +322,9 @@ const physicalSystemProps: IPhysicalSystem = {
     name: "",
     serverUid: "",
     systemId: "",
-    uuid: randomUUID(),
+    uuid: null,
     physicalSystemTime: new PhysicalSystemTime(),
+    server: null,
     observables: []
 }
 
@@ -333,6 +335,7 @@ export class PhysicalSystem implements IPhysicalSystem {
     serverUid: string;
     systemId: string;
     uuid: string;
+    server: ISensorHubServer;
     observables: IObservable[];
 
     constructor(props: IPhysicalSystem = physicalSystemProps) {
@@ -341,6 +344,7 @@ export class PhysicalSystem implements IPhysicalSystem {
         this.serverUid = props.serverUid;
         this.systemId = props.systemId;
         this.uuid = props.uuid;
+        this.server = props.server;
         this.observables = props.observables;
     }
 }
@@ -357,13 +361,13 @@ export interface IObservable {
     type: ObservableType,
     isConnected: boolean,
 
-    connect?: ()=> void,
+    connect?: () => void,
 
-    disconnect?: ()=> void
+    disconnect?: () => void
 }
 
 const observableProps: IObservable = {
-    uuid: randomUUID(),
+    uuid: null,
     layers: [],
     dataSources: [],
     name: "",

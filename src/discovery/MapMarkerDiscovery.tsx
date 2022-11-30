@@ -14,17 +14,17 @@
  */
 
 import {
+    IObservable,
     IPhysicalSystem,
     IPhysicalSystemTime,
     ITimePeriod,
-    IObservable,
+    Observable,
     SensorHubServer,
-    TimePeriod,
-    Observable
+    TimePeriod
 } from "../data/Models";
 import {fetchFromObject, findInObject} from "../utils/Utils";
 import {getPhysicalSystem} from "./DiscoveryUtils";
-import {Protocols, REALTIME_FUTURE_END, REALTIME_START, Service, ObservableType} from "../data/Constants";
+import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../data/Constants";
 import {discover} from "../net/DiscoveryRequest";
 import {colorHash} from "../utils/ColorUtils";
 // @ts-ignore
@@ -94,7 +94,7 @@ export async function discoverPointMarkers(server: SensorHubServer, withCredenti
 
                 let orientationData: any = fetchFromObject(result, 'orientation');
 
-                // If orientation data is is available build the data source for it
+                // If orientation data is available build the data source for it
                 if (orientationData != null) {
 
                     for (let orientation of orientationData) {

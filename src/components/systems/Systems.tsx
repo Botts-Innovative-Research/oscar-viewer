@@ -15,7 +15,8 @@
 
 import React from "react";
 import {
-    Alert, Divider,
+    Alert,
+    Divider,
     Paper,
     Table,
     TableBody,
@@ -26,9 +27,10 @@ import {
     TableRow
 } from "@mui/material";
 import {useAppDispatch, useAppSelector} from "../../state/Hooks";
-import {selectServers, setServerManagementDialogOpen, setSystemsDialogOpen} from "../../state/Slice";
+import {selectPhysicalSystems, setSystemsDialogOpen} from "../../state/Slice";
 import DraggableDialog from "../decorators/DraggableDialog";
 import SystemEntry from "./SystemEntry";
+import {IPhysicalSystem} from "../../data/Models";
 
 interface ISystemsProps {
     title: string,
@@ -39,7 +41,7 @@ const Systems = (props: ISystemsProps) => {
 
     const dispatch = useAppDispatch();
 
-    let servers = useAppSelector(selectServers);
+    let systems: Map<string, IPhysicalSystem> = useAppSelector<Map<string, IPhysicalSystem>>(selectPhysicalSystems);
 
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
@@ -61,13 +63,10 @@ const Systems = (props: ISystemsProps) => {
 
     let systemEntries: JSX.Element[] = [];
 
-    for (let server of servers) {
+    systems.forEach((system: IPhysicalSystem) => {
 
-        for (let system of server.systems) {
-
-            systemEntries.push(<SystemEntry key={system.uuid} server={server} system={system}/>);
-        }
-    }
+        systemEntries.push(<SystemEntry key={system.uuid} server={system.server} system={system}/>);
+    })
 
     if (systemEntries.length) {
 

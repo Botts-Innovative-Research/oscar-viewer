@@ -16,7 +16,7 @@
 import React from "react";
 import {Switch, TableCell, TableRow, Tooltip} from "@mui/material";
 import {useAppDispatch, useAppSelector} from "../../state/Hooks";
-import {IMasterTime, IObservable, IPhysicalSystem} from "../../data/Models";
+import {IMasterTime, IObservable} from "../../data/Models";
 import ObservableIcon from "./ObservableIcon";
 import {
     connectObservable,
@@ -24,7 +24,6 @@ import {
     hideObservable,
     selectConnectedObservables,
     selectMasterTime,
-    selectPhysicalSystems,
     selectPlaybackState,
     showObservable
 } from "../../state/Slice";
@@ -39,23 +38,9 @@ const ObservableEntry = (props: ObservableEntryProps) => {
 
     const dispatch = useAppDispatch();
 
-    let physicalSystems: IPhysicalSystem[] = useAppSelector<IPhysicalSystem[]>(selectPhysicalSystems)
     let connectedObservables: Map<string, boolean> = useAppSelector<Map<string, boolean>>(selectConnectedObservables);
     let masterTime: IMasterTime = useAppSelector<IMasterTime>(selectMasterTime);
     let playbackState: PlaybackState = useAppSelector<PlaybackState>(selectPlaybackState);
-
-    let system: IPhysicalSystem = null;
-
-    for (let physicalSystem of physicalSystems) {
-
-        for (let observable of physicalSystem.observables) {
-
-            if (props.observable.uuid === observable.uuid) {
-
-                system = physicalSystem;
-            }
-        }
-    }
 
     return (
         <TableRow
@@ -71,7 +56,7 @@ const ObservableEntry = (props: ObservableEntryProps) => {
             {/*    {props.observable.name}*/}
             {/*</TableCell>*/}
             <TableCell>
-                {system.name}
+                {props.observable.physicalSystem.name}
             </TableCell>
             <TableCell>
                 <Switch

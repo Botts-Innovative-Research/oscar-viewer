@@ -15,7 +15,6 @@
 
 import React from "react";
 import {IconButton, TableCell, TableRow, Tooltip} from "@mui/material";
-import {useAppDispatch} from "../../state/Hooks";
 import {Description} from "@mui/icons-material";
 import {IPhysicalSystem, ISensorHubServer} from "../../data/Models";
 import {describeSystem} from "../../net/DescribeSystemRequest";
@@ -27,8 +26,6 @@ interface SystemEntryProps {
 }
 
 const SystemEntry = (props: SystemEntryProps) => {
-
-    const dispatch = useAppDispatch();
 
     return (
         <TableRow

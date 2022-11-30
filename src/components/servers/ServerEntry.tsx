@@ -29,7 +29,7 @@ const ServerEntry = (props: ServerEntryProps) => {
 
     return (
         <TableRow
-            key={props.server.uniqueId}
+            key={props.server.uuid}
             sx={{'&:last-child td, &:last-child th': {border: 0}}}
         >
             <TableCell component="th" scope="row">

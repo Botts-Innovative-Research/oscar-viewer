@@ -17,7 +17,8 @@ import React, {useState} from "react";
 import {
     Alert,
     Button,
-    DialogActions, Divider,
+    DialogActions,
+    Divider,
     Paper,
     Table,
     TableBody,
@@ -30,8 +31,6 @@ import {
 } from "@mui/material";
 import {useAppDispatch, useAppSelector} from "../../state/Hooks";
 import {
-    removeObservable,
-    removePhysicalSystem,
     removeSensorHubServer,
     selectServers,
     setAddServerDialogOpen,
@@ -53,7 +52,7 @@ const ServerManagement = (props: INodeManagementProps) => {
 
     const dispatch = useAppDispatch();
 
-    let servers = useAppSelector(selectServers);
+    let servers: Map<string, ISensorHubServer> = useAppSelector<Map<string, ISensorHubServer>>(selectServers);
 
     const [confirmationDialog, setConfirmationDialog] = useState<JSX.Element>(null)
 
@@ -92,15 +91,9 @@ const ServerManagement = (props: INodeManagementProps) => {
         );
     }
     const removeServer = (server: ISensorHubServer) => {
-        for (let system of server.systems) {
 
-            for (let observable of system.observables) {
-                dispatch(removeObservable(observable));
-            }
+        deleteSensorHubServer(server.uuid).then();
 
-            dispatch(removePhysicalSystem(system))
-        }
-        deleteSensorHubServer(server.uniqueId).then();
         dispatch(removeSensorHubServer(server));
     }
 
@@ -110,9 +103,11 @@ const ServerManagement = (props: INodeManagementProps) => {
         </Alert>
     );
 
-    let serverEntries: JSX.Element[] = servers.map(server => {
+    let serverEntries: JSX.Element[] = [];
 
-        return <ServerEntry key={server.uniqueId} server={server} deleteAction={confirmRemoveServer}/>
+    servers.forEach((server: ISensorHubServer) => {
+
+        serverEntries.push(<ServerEntry key={server.uuid} server={server} deleteAction={confirmRemoveServer}/>);
     });
 
     if (serverEntries.length) {

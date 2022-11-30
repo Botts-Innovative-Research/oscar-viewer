@@ -67,8 +67,8 @@ interface IAppState {
     mapView: MapView,
 
     masterTime: IMasterTime,
-    sensorHubServers: ISensorHubServer[],
-    physicalSystems: IPhysicalSystem[],
+    sensorHubServers: Map<string, ISensorHubServer>,
+    physicalSystems: Map<string, IPhysicalSystem>,
     observables: Map<string, IObservable>,
 
     dataSynchronizer: DataSynchronizer,
@@ -95,8 +95,8 @@ const initialState: IAppState = {
     mapView: typeof MapView,
 
     masterTime: new MasterTime(),
-    sensorHubServers: [],
-    physicalSystems: [],
+    sensorHubServers: new Map<string, ISensorHubServer>(),
+    physicalSystems: new Map<string, IPhysicalSystem>(),
     observables: new Map<string, IObservable>(),
 
     dataSynchronizer: new DataSynchronizer({
@@ -199,32 +199,51 @@ export const Slice = createSlice({
         addSensorHubServer: ((state, action: PayloadAction<ISensorHubServer>) => {
 
             // @ts-ignore
-            state.sensorHubServers.push(action.payload);
+            state.sensorHubServers.set(action.payload.uuid, action.payload);
         }),
 
         removeSensorHubServer: ((state, action: PayloadAction<ISensorHubServer>) => {
 
-            state.sensorHubServers = state.sensorHubServers.filter(value => {
-                // @ts-ignore
+            action.payload.systems.forEach((system: IPhysicalSystem) => {
 
-                return value !== action.payload
+                system.observables.forEach((observable: IObservable) => {
+
+                    if (observable.isConnected) {
+
+                        observable.disconnect();
+
+                        if ((observable.type !== ObservableType.VIDEO) &&
+                            (observable.type !== ObservableType.CHART)) {
+
+                            for (let layer of observable.layers) {
+
+                                // If the layer data can be cleared
+                                if (layer.clear !== undefined) {
+
+                                    // Clear the layers data
+                                    layer.clear();
+                                }
+
+                                state.mapView.removeAllFromLayer(layer);
+                            }
+                        }
+                    }
+
+                    state.observables.delete(observable.uuid);
+                    state.connectedObservables.delete(observable.uuid);
+                })
+
+                state.physicalSystems.delete(system.uuid);
             });
+
+            state.sensorHubServers.delete(action.payload.uuid);
         }),
 
         // Systems *****************************************************************************************************
         addPhysicalSystem: ((state, action: PayloadAction<IPhysicalSystem>) => {
 
             // @ts-ignore
-            state.physicalSystems.push(action.payload);
-        }),
-
-        removePhysicalSystem: ((state, action: PayloadAction<IPhysicalSystem>) => {
-
-            state.physicalSystems = state.physicalSystems.filter(value => {
-
-                // @ts-ignore
-                return value !== action.payload
-            });
+            state.physicalSystems.set(action.payload.uuid, action.payload);
         }),
 
         // Observables *************************************************************************************************
@@ -233,35 +252,6 @@ export const Slice = createSlice({
             state.observables.set(action.payload.uuid, action.payload);
 
             state.masterTime.updateMasterTime(action.payload.physicalSystem.physicalSystemTime.timePeriod);
-        }),
-
-        removeObservable: ((state, action: PayloadAction<IObservable>) => {
-
-            if (action.payload.isConnected) {
-
-                action.payload.disconnect();
-
-                action.payload.isConnected = false;
-
-                if ((action.payload.type !== ObservableType.VIDEO) &&
-                    (action.payload.type !== ObservableType.CHART)) {
-
-                    for (let layer of action.payload.layers) {
-
-                        // If the layer data can be cleared
-                        if (layer.clear !== undefined) {
-
-                            // Clear the layers data
-                            layer.clear();
-                        }
-
-                        state.mapView.removeAllFromLayer(layer);
-                    }
-                }
-            }
-
-            state.observables.delete(action.payload.uuid);
-            state.connectedObservables.delete(action.payload.uuid);
         }),
 
         showObservable: ((state, action: PayloadAction<IObservable>) => {
@@ -517,10 +507,8 @@ export const {
     removeSensorHubServer,
 
     addPhysicalSystem,
-    removePhysicalSystem,
 
     addObservable,
-    removeObservable,
     showObservable,
     hideObservable,
     connectObservable,

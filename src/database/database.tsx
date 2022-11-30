@@ -15,14 +15,13 @@
 
 import {DBSchema, IDBPDatabase, openDB} from "idb";
 import {ISensorHubServer, SensorHubServer} from "../data/Models";
-import {ObservableType} from "../data/Constants";
 
 interface SensorHubConnectDB extends DBSchema {
     sensorHubServer: {
         value: {
             address: string,
             name: string,
-            uniqueId: string,
+            uuid: string,
             sosEndpoint: string,
             spsEndpoint: string,
             apiEndpoint: string,
@@ -32,18 +31,18 @@ interface SensorHubConnectDB extends DBSchema {
         key: string;
         indexes: { 'by-uuid': string };
     };
-    settings: {
-        value: {
-            uuid: string,
-            name: string,
-            allowPlayback: boolean,
-            hideSystemsWithNoStreams: boolean,
-            visualizationFilter: Map<ObservableType, boolean>,
-            hideDataLayerControls: boolean
-        };
-        key: string;
-        indexes: { 'by-uuid': string };
-    }
+    // settings: {
+    //     value: {
+    //         uuid: string,
+    //         name: string,
+    //         allowPlayback: boolean,
+    //         hideSystemsWithNoStreams: boolean,
+    //         visualizationFilter: Map<ObservableType, boolean>,
+    //         hideDataLayerControls: boolean
+    //     };
+    //     key: string;
+    //     indexes: { 'by-uuid': string };
+    // }
 }
 
 // Create a db instance using idb
@@ -53,7 +52,7 @@ export const initDb = async function () {
     appDatabase = await openDB<SensorHubConnectDB>('OpenSensorViewer', 1.0, {
         upgrade(db: IDBPDatabase<SensorHubConnectDB>) {
             const sensorHubServerStore = db.createObjectStore('sensorHubServer', {
-                keyPath: 'uniqueId',
+                keyPath: 'uuid',
                 autoIncrement: false,
             });
             sensorHubServerStore.createIndex('by-uuid', 'uniqueId');
@@ -142,14 +141,14 @@ export const storeSensorHubServer = async function (sensorHubServer: ISensorHubS
 
     const tx = appDatabase.transaction('sensorHubServer', 'readwrite');
 
-    let existingServer = await tx.store.get(sensorHubServer.uniqueId);
+    let existingServer = await tx.store.get(sensorHubServer.uuid);
 
     if ((existingServer === undefined || existingServer === null)) {
 
         let serverData = {
             address: sensorHubServer.address,
             name: sensorHubServer.name,
-            uniqueId: sensorHubServer.uniqueId,
+            uuid: sensorHubServer.uuid,
             sosEndpoint: sensorHubServer.sosEndpoint,
             spsEndpoint: sensorHubServer.spsEndpoint,
             apiEndpoint: sensorHubServer.apiEndpoint,
@@ -187,7 +186,7 @@ export const readSensorHubServers = async function (): Promise<ISensorHubServer[
         let server: ISensorHubServer = new SensorHubServer({
             address: existingServer.address,
             name: existingServer.name,
-            uniqueId: existingServer.uniqueId,
+            uuid: existingServer.uuid,
             sosEndpoint: existingServer.sosEndpoint,
             spsEndpoint: existingServer.spsEndpoint,
             apiEndpoint: existingServer.apiEndpoint,

@@ -18,7 +18,8 @@ import {useAppDispatch, useAppSelector} from "../../state/Hooks";
 import {selectObservables, setObservablesDialogOpen} from "../../state/Slice";
 import DraggableDialog from "../decorators/DraggableDialog";
 import {
-    Alert, Divider,
+    Alert,
+    Divider,
     Paper,
     Table,
     TableBody,
@@ -29,6 +30,7 @@ import {
     TableRow
 } from "@mui/material";
 import ObservableEntry from "./ObservableEntry";
+import {IObservable} from "../../data/Models";
 
 interface IObservablesProps {
     title: string
@@ -38,7 +40,7 @@ const Observables = (props: IObservablesProps) => {
 
     const dispatch = useAppDispatch();
 
-    let observables = useAppSelector(selectObservables);
+    let observables: Map<string, IObservable> = useAppSelector<Map<string, IObservable>>(selectObservables);
 
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
@@ -60,7 +62,7 @@ const Observables = (props: IObservablesProps) => {
 
     let observableEntries: JSX.Element[] = [];
 
-    observables.forEach(observable => {
+    observables.forEach((observable: IObservable) => {
 
         observableEntries.push(<ObservableEntry key={observable.uuid} observable={observable}/>);
     });
