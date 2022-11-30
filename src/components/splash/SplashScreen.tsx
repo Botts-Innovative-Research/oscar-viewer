@@ -13,8 +13,11 @@
  *
  */
 
-import React from "react";
+import React, {useEffect} from "react";
 import {Dialog} from "@mui/material";
+
+// @ts-ignore
+import Logo from "../../assets/logo/OpenSensorHub-Logo.png"
 
 interface ISplashScreenProps {
 
@@ -23,20 +26,23 @@ interface ISplashScreenProps {
 
 const SplashScreen = (props: ISplashScreenProps) => {
 
+    useEffect(() => {
+
+        setTimeout(() => props.onEnded(), 5000);
+
+    }, []);
+
     return (
         <Dialog open={true} fullScreen={true}>
-            <video id="SplashScreen"
-                   style={{
-                       position: "absolute",
-                       top: 0,
-                       left: 0
-                   }}
-                   height={'100%'}
-                   width={'100%'}
-                   autoPlay={true}
-                   onEnded={props.onEnded}>
-                <source src="../../assets/videos/osh-intro.mp4" type="video/mp4"/>
-            </video>
+            <img src={Logo}
+                 style={{
+                     display: 'block',
+                     marginLeft: 'auto',
+                     marginRight: 'auto',
+                     marginTop: 'auto',
+                     marginBottom: 'auto',
+                     width: '50%'
+                 }} alt={'OpenSensorHub Logo'}/>
         </Dialog>
     );
 }

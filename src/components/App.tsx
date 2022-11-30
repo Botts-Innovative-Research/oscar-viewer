@@ -133,7 +133,7 @@ const App = () => {
             {showSystemsDialog ? <Systems title={"Systems"}/> : null}
 
 
-            {!appInitialized && showSplashScreen ?
+            {showSplashScreen ?
                 <SplashScreen onEnded={() => setShowSplashScreen(false)}/>
                 :
                 <div>
