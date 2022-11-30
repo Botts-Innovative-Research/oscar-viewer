@@ -96,7 +96,7 @@ export interface ISensorHubServer {
 export const DefaultSensorHubServerProps: ISensorHubServer = {
     address: "",
     name: "",
-    uniqueId: randomUUID(),
+    uniqueId: null,
     sosEndpoint: DEFAULT_SOS_ENDPOINT,
     spsEndpoint: DEFAULT_SPS_ENDPOINT,
     apiEndpoint: DEFAULT_API_ENDPOINT,
@@ -120,7 +120,7 @@ export class SensorHubServer implements ISensorHubServer {
     constructor(props: ISensorHubServer = DefaultSensorHubServerProps) {
         this.address = props.address;
         this.name = props.name;
-        this.uniqueId = props.uniqueId;
+        this.uniqueId = props.uniqueId ? props.uniqueId : randomUUID();
         this.sosEndpoint = props.sosEndpoint;
         this.spsEndpoint = props.spsEndpoint;
         this.apiEndpoint = props.apiEndpoint;
