@@ -15,7 +15,7 @@
 
 import {IObservable, SensorHubServer} from "../data/Models";
 
-export async function discoverDataTables(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
+export async function getObservableDataTables(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
 
     let observables: IObservable[] = [];
 

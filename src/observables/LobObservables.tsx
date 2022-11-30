@@ -14,18 +14,18 @@
  */
 
 import {
+    IObservable,
     IPhysicalSystem,
     IPhysicalSystemTime,
     ITimePeriod,
-    IObservable,
+    Observable,
     SensorHubServer,
-    TimePeriod,
-    Observable
+    TimePeriod
 } from "../data/Models";
 import {fetchFromObject, findInObject} from "../utils/Utils";
-import {getPhysicalSystem} from "./DiscoveryUtils";
-import {Protocols, REALTIME_FUTURE_END, REALTIME_START, Service, ObservableType} from "../data/Constants";
-import {discover} from "../net/DiscoveryRequest";
+import {getPhysicalSystem} from "./ObservableUtils";
+import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../data/Constants";
+import {fetchObservables} from "../net/ObservablesRequest";
 import {colorHash} from "../utils/ColorUtils";
 // @ts-ignore
 import PointMarkerLayer from "osh-js/source/core/ui/layer/PointMarkerLayer";
@@ -40,11 +40,11 @@ import DefaultMarker from "../osh_icons/DefaultMarker.png";
 // @ts-ignore
 import LineOfBearingLayer from "../layers/LineOfBearingLayer";
 
-export async function discoverLinesOBearing(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
+export async function getObservableLinesOBearing(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
 
     let observables: IObservable[] = [];
 
-    await discover(server, withCredentials, "line_of_bearing")
+    await fetchObservables(server, withCredentials, "line_of_bearing")
         .then(discoveryData => {
 
             let resultSet: any[] = discoveryData["resultSet"]

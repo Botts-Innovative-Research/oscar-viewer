@@ -14,17 +14,18 @@
  */
 
 import {
+    IObservable,
     IPhysicalSystem,
     IPhysicalSystemTime,
     ITimePeriod,
-    IObservable,
+    Observable,
     SensorHubServer,
-    TimePeriod, Observable
+    TimePeriod
 } from "../data/Models";
-import {discover} from "../net/DiscoveryRequest";
+import {fetchObservables} from "../net/ObservablesRequest";
 import {fetchFromObject, findInObject} from "../utils/Utils";
-import {getPhysicalSystem} from "./DiscoveryUtils";
-import {Protocols, REALTIME_FUTURE_END, REALTIME_START, Service, ObservableType} from "../data/Constants";
+import {getPhysicalSystem} from "./ObservableUtils";
+import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../data/Constants";
 import {colorHash} from "../utils/ColorUtils";
 // @ts-ignore
 import PolygonLayer from "osh-js/source/core/ui/layer/PolygonLayer";
@@ -33,11 +34,11 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 
-export async function discoverRegionsOfInterest(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
+export async function getObservableRegionsOfInterest(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
 
     let observables: IObservable[] = [];
 
-    await discover(server, withCredentials, "region_of_interest")
+    await fetchObservables(server, withCredentials, "region_of_interest")
         .then(discoveryData => {
 
             let resultSet: any[] = discoveryData["resultSet"]

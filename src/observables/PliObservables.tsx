@@ -23,9 +23,9 @@ import {
     TimePeriod
 } from "../data/Models";
 import {fetchFromObject, findInObject} from "../utils/Utils";
-import {getPhysicalSystem} from "./DiscoveryUtils";
+import {getPhysicalSystem} from "./ObservableUtils";
 import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../data/Constants";
-import {discover} from "../net/DiscoveryRequest";
+import {fetchObservables} from "../net/ObservablesRequest";
 import {colorHash} from "../utils/ColorUtils";
 // @ts-ignore
 import PointMarkerLayer from "osh-js/source/core/ui/layer/PointMarkerLayer";
@@ -40,11 +40,11 @@ import PointMarker from "../assets/models/pointmarker-orient.glb";
 // @ts-ignore
 import PointMarkerNoOrientation from "../assets/models/pointmarker.glb";
 
-export async function discoverPointMarkers(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
+export async function getObservablePointMarkers(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
 
     let observables: IObservable[] = [];
 
-    await discover(server, withCredentials, "location,orientation")
+    await fetchObservables(server, withCredentials, "location,orientation")
         .then(discoveryData => {
 
             let resultSet: any[] = discoveryData["resultSet"]

@@ -15,7 +15,7 @@
 
 import {IObservable, SensorHubServer} from "../data/Models";
 
-export async function discoverSpectrograms(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
+export async function getObservableSpectrograms(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
 
     let observables: IObservable[] = [];
 

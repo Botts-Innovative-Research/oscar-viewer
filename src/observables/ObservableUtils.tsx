@@ -14,43 +14,43 @@
  */
 
 import {IObservable, IPhysicalSystem, SensorHubServer} from "../data/Models";
-import {discoverPointMarkers} from "./MapMarkerDiscovery";
-import {discoverVideoStreams} from "./VideoStreamDiscovery";
-import {discoverRegionsOfInterest} from "./RoiDiscovery";
-import {discoverImages} from "./ImageDiscovery";
-import {discoverEllipses} from "./EllipsesDiscovery";
-import {discoverLinesOBearing} from "./LobDiscovery";
-import {discoverCharts} from "./ChartDiscovery";
+import {getObservablePointMarkers} from "./PliObservables";
+import {getObservableVideoStreams} from "./VideoStreamObservables";
+import {getObservableRegionsOfInterest} from "./RoiObservables";
+import {getObservableImages} from "./ImageObservables";
+import {getObservableEllipses} from "./EllipsesObservables";
+import {getObservableLinesOBearing} from "./LobObservables";
+import {getObservableCharts} from "./ChartObservables";
 
-export async function discoverObservables(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
+export async function getObservables(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
 
     let observables: IObservable[] = [];
 
-    observables.push(...await discoverPointMarkers(server, withCredentials).then(observables => {
+    observables.push(...await getObservablePointMarkers(server, withCredentials).then(observables => {
         return observables
     }));
 
-    observables.push(...await discoverRegionsOfInterest(server, withCredentials).then(observables => {
+    observables.push(...await getObservableRegionsOfInterest(server, withCredentials).then(observables => {
         return observables
     }));
 
-    observables.push(...await discoverVideoStreams(server, withCredentials).then(observables => {
+    observables.push(...await getObservableVideoStreams(server, withCredentials).then(observables => {
         return observables
     }));
 
-    observables.push(...await discoverImages(server, withCredentials).then(observables => {
+    observables.push(...await getObservableImages(server, withCredentials).then(observables => {
         return observables
     }));
 
-    observables.push(...await discoverEllipses(server, withCredentials).then(observables => {
+    observables.push(...await getObservableEllipses(server, withCredentials).then(observables => {
         return observables
     }));
 
-    observables.push(...await discoverLinesOBearing(server, withCredentials).then(observables => {
+    observables.push(...await getObservableLinesOBearing(server, withCredentials).then(observables => {
         return observables
     }));
 
-    observables.push(...await discoverCharts(server, withCredentials).then(observables => {
+    observables.push(...await getObservableCharts(server, withCredentials).then(observables => {
         return observables
     }));
 

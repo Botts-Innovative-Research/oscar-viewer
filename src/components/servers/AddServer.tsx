@@ -33,7 +33,7 @@ import {Cancel, Done} from "@mui/icons-material";
 import {ISensorHubServer, SensorHubServer} from "../../data/Models";
 import {fetchPhysicalSystems} from "../../net/SystemRequest";
 import {storeSensorHubServer} from "../../database/database";
-import {discoverObservables} from "../../discovery/DiscoveryUtils";
+import {getObservables} from "../../observables/ObservableUtils";
 import DraggableDialog from "../decorators/DraggableDialog";
 import CenteredPopover from "../decorators/CenteredPopover";
 import {DEFAULT_API_ENDPOINT, DEFAULT_SOS_ENDPOINT, DEFAULT_SPS_ENDPOINT} from "../../data/Constants";
@@ -134,7 +134,7 @@ const AddServer = (props: IAddServerProps) => {
                     dispatch(addPhysicalSystem(system))
                 }
 
-                await discoverObservables(server as SensorHubServer, true).then(observables => {
+                await getObservables(server as SensorHubServer, true).then(observables => {
 
                     for (let observable of observables) {
 

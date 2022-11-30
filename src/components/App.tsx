@@ -41,7 +41,7 @@ import Observables from "./observables/Observables";
 import {initDb, readSensorHubServers} from "../database/database";
 import {ISensorHubServer} from "../data/Models";
 import {fetchPhysicalSystems} from "../net/SystemRequest";
-import {discoverObservables} from "../discovery/DiscoveryUtils";
+import {getObservables} from "../observables/ObservableUtils";
 import CenteredPopover from "./decorators/CenteredPopover";
 import Systems from "./systems/Systems";
 import SplashScreen from "./splash/SplashScreen";
@@ -83,7 +83,7 @@ const App = () => {
                         dispatch(addPhysicalSystem(system))
                     }
 
-                    await discoverObservables(sensorHubServer, true).then(visualizations => {
+                    await getObservables(sensorHubServer, true).then(visualizations => {
 
                         for (let visualization of visualizations) {
 

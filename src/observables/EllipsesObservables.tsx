@@ -14,18 +14,18 @@
  */
 
 import {
+    IObservable,
     IPhysicalSystem,
     IPhysicalSystemTime,
     ITimePeriod,
-    IObservable,
+    Observable,
     SensorHubServer,
-    TimePeriod,
-    Observable
+    TimePeriod
 } from "../data/Models";
 import {fetchFromObject, findInObject} from "../utils/Utils";
-import {getPhysicalSystem} from "./DiscoveryUtils";
-import {Protocols, REALTIME_FUTURE_END, REALTIME_START, Service, ObservableType} from "../data/Constants";
-import {discover} from "../net/DiscoveryRequest";
+import {getPhysicalSystem} from "./ObservableUtils";
+import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../data/Constants";
+import {fetchObservables} from "../net/ObservablesRequest";
 import {colorHash} from "../utils/ColorUtils";
 // @ts-ignore
 import EllipseLayer from "osh-js/source/core/ui/layer/EllipseLayer";
@@ -34,11 +34,11 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 
-export async function discoverEllipses(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
+export async function getObservableEllipses(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
 
     let observables: IObservable[] = [];
 
-    await discover(server, withCredentials, "ellipse")
+    await fetchObservables(server, withCredentials, "ellipse")
         .then(discoveryData => {
 
             let resultSet: any[] = discoveryData["resultSet"]

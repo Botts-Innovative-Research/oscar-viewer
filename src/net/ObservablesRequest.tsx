@@ -14,12 +14,10 @@
  */
 
 // @ts-ignore
-import {
-    SensorHubServer,
-} from "../data/Models";
-import {Protocols, Service} from "../data/Constants";
+import {SensorHubServer,} from "../data/Models";
+import {Service} from "../data/Constants";
 
-export async function discover(server: SensorHubServer, withCredentials: boolean, observableRules: string) {
+export async function fetchObservables(server: SensorHubServer, withCredentials: boolean, observableRules: string) {
 
     const supportingClause: string = "/discover?supporting="
 

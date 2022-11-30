@@ -14,27 +14,28 @@
  */
 
 import {
+    IObservable,
     IPhysicalSystem,
     IPhysicalSystemTime,
     ITimePeriod,
-    IObservable,
+    Observable,
     SensorHubServer,
-    TimePeriod, Observable
+    TimePeriod
 } from "../data/Models";
 import {fetchFromObject} from "../utils/Utils";
-import {getPhysicalSystem} from "./DiscoveryUtils";
-import {discover} from "../net/DiscoveryRequest";
-import {Protocols, REALTIME_FUTURE_END, REALTIME_START, Service, ObservableType} from "../data/Constants";
+import {getPhysicalSystem} from "./ObservableUtils";
+import {fetchObservables} from "../net/ObservablesRequest";
+import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../data/Constants";
 // @ts-ignore
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 
-export async function discoverImages(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
+export async function getObservableVideoStreams(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
 
     let observables: IObservable[] = [];
 
-    await discover(server, withCredentials, "image")
+    await fetchObservables(server, withCredentials, "video")
         .then(discoveryData => {
 
             let resultSet: any[] = discoveryData["resultSet"];
@@ -43,7 +44,7 @@ export async function discoverImages(server: SensorHubServer, withCredentials: b
 
                 let physicalSystem: IPhysicalSystem = null;
                 let physicalSystemTime: IPhysicalSystemTime = null;
-                let imageDataSource: SweApi = null;
+                let dataSource: SweApi = null;
 
                 let systemId = fetchFromObject(result, "systemId");
 
@@ -51,14 +52,18 @@ export async function discoverImages(server: SensorHubServer, withCredentials: b
 
                 physicalSystemTime = physicalSystem.physicalSystemTime;
 
-                let imageData = fetchFromObject(result, 'image');
+                let videoData = fetchFromObject(result, 'video');
 
-                for (let image of imageData) {
+                let encoding: string = "H264";
+
+                for (let video of videoData) {
+
+                    encoding = video['encoding'];
 
                     let timePeriod: ITimePeriod = new TimePeriod({
                         id: randomUUID(),
-                        beginPosition: image.phenomenonTime[0],
-                        endPosition: image.phenomenonTime[1],
+                        beginPosition: video.phenomenonTime[0],
+                        endPosition: video.phenomenonTime[1],
                         isIndeterminateStart: false,
                         isIndeterminateEnd: false
                     });
@@ -68,31 +73,50 @@ export async function discoverImages(server: SensorHubServer, withCredentials: b
                         physicalSystemTime.updateSystemTime(timePeriod);
                     }
 
-                    imageDataSource = new SweApi(physicalSystem.name + "-image-dataSource", {
-                        protocol: Protocols.WS,
-                        endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
-                        resource: `/datastreams/${image.dataStreamId}/observations`,
-                        startTime: REALTIME_START,
-                        endTime: REALTIME_FUTURE_END,
-                        tls: server.secure
-                    });
+                    if (encoding === 'JPEG') {
+
+                        dataSource = new SweApi(physicalSystem.name + "-image-dataSource", {
+                            protocol: Protocols.WS,
+                            endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
+                            resource: `/datastreams/${video.dataStreamId}/observations`,
+                            startTime: REALTIME_START,
+                            endTime: REALTIME_FUTURE_END,
+                            tls: server.secure,
+                            responseFormat: 'application/swe+binary'
+                        });
+
+                    } else {
+
+                        dataSource = new SweApi(physicalSystem.name + "-video-dataSource", {
+                            protocol: Protocols.WS,
+                            endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
+                            resource: `/datastreams/${video.dataStreamId}/observations`,
+                            startTime: REALTIME_START,
+                            endTime: REALTIME_FUTURE_END,
+                            tls: server.secure,
+                            responseFormat: 'application/swe+binary'
+                        });
+                    }
                 }
 
                 let uuid = randomUUID();
 
                 // **************************************************
                 // DEFER VIEW CREATION UNTIL "container" IS CREATED
+                // SEE src/components/popouts/VideoPopout.tsx
                 // **************************************************
 
                 let observable: IObservable = new Observable({
                     uuid: uuid,
                     layers: [],
-                    dataSources: [imageDataSource],
-                    name: "IMAGES",
+                    dataSources: [dataSource],
+                    name: "VIDEO",
                     physicalSystem: physicalSystem,
                     sensorHubServer: server,
                     histogram: [],
-                    type: ObservableType.IMAGE,
+                    type: (encoding === 'H264') ? ObservableType.VIDEO :
+                        (encoding === 'MJPEG') ? ObservableType.PLI :
+                            ObservableType.IMAGE,
                     isConnected: false
                 });
 
