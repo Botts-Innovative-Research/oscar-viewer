@@ -133,14 +133,10 @@ const App = () => {
             {showSystemsDialog ? <Systems title={"Systems"}/> : null}
 
 
-            {showSplashScreen ?
-                <SplashScreen onEnded={() => setShowSplashScreen(false)}/>
-                :
-                <div>
-                    <CesiumMap/>
-                    <TimeController/>
-                </div>
-            }
+            {showSplashScreen ? <SplashScreen onEnded={() => setShowSplashScreen(false)}/> : null}
+
+            <CesiumMap/>
+            <TimeController/>
 
             {showConfirmation ?
                 <CenteredPopover anchorEl={document.getElementById('root')}>
