@@ -68,65 +68,65 @@ const PlaybackTimeControls = (props: IPlaybackTimeControlsProps) => {
             <TableBody>
                 <TableRow>
                     <TableCell>
-                        <Tooltip title={"Live"} placement={"top"}>
-                            <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"}
-                                        onClick={props.switchToRealtime}>
+                        <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"}
+                                    onClick={props.switchToRealtime}>
+                            <Tooltip title={"Live"} placement={"top"}>
                                 <Schedule/>
-                            </IconButton>
-                        </Tooltip>
+                            </Tooltip>
+                        </IconButton>
                     </TableCell>
                     <TableCell>
-                        <Tooltip title={"Slow Down"} placement={"top"}>
-                            <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"}
-                                        onClick={props.slowDown}>
+                        <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"}
+                                    onClick={props.slowDown}>
+                            <Tooltip title={"Slow Down"} placement={"top"}>
                                 <RemoveCircleOutline/>
-                            </IconButton>
-                        </Tooltip>
+                            </Tooltip>
+                        </IconButton>
                         <Chip style={{width: '5em'}} label={playbackSpeed + "x"}/>
-                        <Tooltip title={"Speed Up"} placement={"top"}>
-                            <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"}
-                                        onClick={props.speedUp}>
+                        <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"}
+                                    onClick={props.speedUp}>
+                            <Tooltip title={"Speed Up"} placement={"top"}>
                                 <AddCircleOutline/>
-                            </IconButton>
-                        </Tooltip>
+                            </Tooltip>
+                        </IconButton>
                     </TableCell>
                     <TableCell>
-                        <Tooltip title={"Rewind 10s"} placement={"top"}>
-                            <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"}
-                                        onClick={() => {
-                                            props.skip(-10);
-                                        }}>
+                        <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"}
+                                    onClick={() => {
+                                        props.skip(-10);
+                                    }}>
+                            <Tooltip title={"Rewind 10s"} placement={"top"}>
                                 <FastRewind/>
-                            </IconButton>
-                        </Tooltip>
+                            </Tooltip>
+                        </IconButton>
                         {playbackState === PlaybackState.PAUSE ?
-                            <Tooltip title={"Play"} placement={"top"}>
-                                <IconButton disabled={numConnected === 0}
-                                            color={"primary"} onClick={props.start}>
+                            <IconButton disabled={numConnected === 0}
+                                        color={"primary"} onClick={props.start}>
+                                <Tooltip title={"Play"} placement={"top"}>
                                     <PlayArrow/>
-                                </IconButton>
-                            </Tooltip>
-                            :
-                            <Tooltip title={"Pause"} placement={"top"}>
-                                <IconButton color={"primary"} onClick={props.pause}>
-                                    <Pause/>
-                                </IconButton>
-                            </Tooltip>
-                        }
-                        <Tooltip title={"Forward 10s"} placement={"top"}>
-                            <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"}
-                                        onClick={() => {
-                                            props.skip(10);
-                                        }}>
-                                <FastForward/>
+                                </Tooltip>
                             </IconButton>
-                        </Tooltip>
+                            :
+                            <IconButton color={"primary"} onClick={props.pause}>
+                                <Tooltip title={"Pause"} placement={"top"}>
+                                    <Pause/>
+                                </Tooltip>
+                            </IconButton>
+                        }
+                        <IconButton disabled={playbackState == PlaybackState.PLAY} color={"primary"}
+                                    onClick={() => {
+                                        props.skip(10);
+                                    }}>
+                            <Tooltip title={"Forward 10s"} placement={"top"}>
+                                <FastForward/>
+                            </Tooltip>
+                        </IconButton>
                     </TableCell>
                     <TableCell>
                         Start Time:
                     </TableCell>
                     <TableCell>
-                        {!props.startTime ? masterTime.masterTimePeriod.beginPosition : TimePeriod.getFormattedTime(props.startTime)}
+                        {masterTime.masterTimePeriod.beginPosition}
                     </TableCell>
                     <TableCell>
                         Current Time:

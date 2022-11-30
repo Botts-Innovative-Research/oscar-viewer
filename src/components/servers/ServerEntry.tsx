@@ -39,20 +39,22 @@ const ServerEntry = (props: ServerEntryProps) => {
                 {props.server.address}
             </TableCell>
             <TableCell>
-                <Tooltip title={"Server Capabilities"} placement={"left"}>
-                    <IconButton color={"info"} onClick={()=> {getCapabilities(props.server)}}>
+                <IconButton color={"info"} onClick={() => {
+                    getCapabilities(props.server)
+                }}>
+                    <Tooltip title={"Server Capabilities"} placement={"left"}>
                         <InfoOutlined/>
-                    </IconButton>
-                </Tooltip>
+                    </Tooltip>
+                </IconButton>
             </TableCell>
             <TableCell>
-                <Tooltip title={"Delete Server"} placement={"right"}>
-                    <IconButton color={"error"} onClick={() => {
-                        props.deleteAction(props.server)
-                    }}>
+                <IconButton color={"error"} onClick={() => {
+                    props.deleteAction(props.server)
+                }}>
+                    <Tooltip title={"Delete Server"} placement={"right"}>
                         <DeleteOutline/>
-                    </IconButton>
-                </Tooltip>
+                    </Tooltip>
+                </IconButton>
             </TableCell>
         </TableRow>
     );

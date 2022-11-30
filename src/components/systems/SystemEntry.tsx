@@ -16,10 +16,8 @@
 import React from "react";
 import {IconButton, TableCell, TableRow, Tooltip} from "@mui/material";
 import {useAppDispatch} from "../../state/Hooks";
-import {Description, InfoOutlined} from "@mui/icons-material";
+import {Description} from "@mui/icons-material";
 import {IPhysicalSystem, ISensorHubServer} from "../../data/Models";
-import {removeObservable, removePhysicalSystem, removeSensorHubServer} from "../../state/Slice";
-import {deleteSensorHubServer} from "../../database/database";
 import {describeSystem} from "../../net/DescribeSystemRequest";
 
 interface SystemEntryProps {
@@ -44,11 +42,11 @@ const SystemEntry = (props: SystemEntryProps) => {
                 {props.server.name}
             </TableCell>
             <TableCell>
-                <Tooltip title={"Describe System"} placement={"right"}>
-                    <IconButton color={"info"} onClick={()=>describeSystem(props.server, props.system)}>
+                <IconButton color={"info"} onClick={() => describeSystem(props.server, props.system)}>
+                    <Tooltip title={"Describe System"} placement={"right"}>
                         <Description/>
-                    </IconButton>
-                </Tooltip>
+                    </Tooltip>
+                </IconButton>
             </TableCell>
         </TableRow>
     );

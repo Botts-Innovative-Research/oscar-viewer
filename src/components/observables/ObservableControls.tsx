@@ -39,11 +39,11 @@ const ObservableControls = (props: IObservablesControlsProps) => {
 
         controls.push(
             <Grid key={type} item xs={3}>
-                <Tooltip title={type.toString()}>
-                    <IconButton onClick={() => toggleDataStreamConnection(type)}>
+                <IconButton onClick={() => toggleDataStreamConnection(type)}>
+                    <Tooltip title={type.toString()}>
                         <ObservableIcon type={type} color={'#FF0000'}></ObservableIcon>
-                    </IconButton>
-                </Tooltip>
+                    </Tooltip>
+                </IconButton>
             </Grid>
         );
     }
