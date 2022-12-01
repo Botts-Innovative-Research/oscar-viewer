@@ -38,7 +38,7 @@ import {randomUUID} from "osh-js/source/core/utils/Utils";
 // @ts-ignore
 import DefaultMarker from "../osh_icons/DefaultMarker.png";
 // @ts-ignore
-import LineOfBearingLayer from "../layers/LineOfBearingLayer";
+import LineOfBearingLayer from "../../layers/LineOfBearingLayer";
 
 export async function getObservableLinesOBearing(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
 
