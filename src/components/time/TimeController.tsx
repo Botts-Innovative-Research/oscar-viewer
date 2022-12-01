@@ -160,7 +160,6 @@ const TimeController = (props: ITimeControllerProps) => {
 
     const updateCurrentTime = (values: string[]) => {
 
-        console.log(TimePeriod.getFormattedTime(Number(values[0])));
         setCurrentTime(Number(values[0]));
     }
 
@@ -197,8 +196,21 @@ const TimeController = (props: ITimeControllerProps) => {
 
     const skip = (seconds: number) => {
 
-        dispatch(updatePlaybackStartTime(
-            TimePeriod.offsetTime(masterTime.playbackTimePeriod.beginPosition, seconds * 1000)));
+        let adjustedTime: number = currentTime + seconds * 1000;
+
+        if (sliderApi) {
+
+            sliderApi.updateOptions(
+                {
+                    start: adjustedTime,
+                },
+                false // Boolean 'fireSetEvent'
+            );
+        }
+
+        setCurrentTime(adjustedTime);
+
+        dispatch(updatePlaybackStartTime(TimePeriod.getFormattedTime(adjustedTime)));
     }
 
     return (
