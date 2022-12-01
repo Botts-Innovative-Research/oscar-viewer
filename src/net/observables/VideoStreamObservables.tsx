@@ -21,11 +21,11 @@ import {
     Observable,
     SensorHubServer,
     TimePeriod
-} from "../data/Models";
-import {fetchFromObject} from "../utils/Utils";
+} from "../../data/Models";
+import {fetchFromObject} from "../../utils/Utils";
 import {getPhysicalSystem} from "./ObservableUtils";
-import {fetchObservables} from "../net/ObservablesRequest";
-import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../data/Constants";
+import {fetchObservables} from "../ObservablesRequest";
+import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../../data/Constants";
 // @ts-ignore
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore

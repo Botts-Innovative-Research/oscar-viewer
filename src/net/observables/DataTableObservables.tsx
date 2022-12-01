@@ -13,7 +13,7 @@
  *
  */
 
-import {IObservable, SensorHubServer} from "../data/Models";
+import {IObservable, SensorHubServer} from "../../data/Models";
 
 export async function getObservableDataTables(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
 

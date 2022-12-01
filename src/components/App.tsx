@@ -41,7 +41,7 @@ import Observables from "./observables/Observables";
 import {initDb, readSensorHubServers} from "../database/database";
 import {ISensorHubServer} from "../data/Models";
 import {fetchPhysicalSystems} from "../net/SystemRequest";
-import {getObservables} from "../observables/ObservableUtils";
+import {getObservables} from "../net/observables/ObservableUtils";
 import CenteredPopover from "./decorators/CenteredPopover";
 import Systems from "./systems/Systems";
 import SplashScreen from "./splash/SplashScreen";

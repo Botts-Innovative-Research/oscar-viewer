@@ -33,7 +33,7 @@ import {Cancel, Done} from "@mui/icons-material";
 import {ISensorHubServer, SensorHubServer} from "../../data/Models";
 import {fetchPhysicalSystems} from "../../net/SystemRequest";
 import {storeSensorHubServer} from "../../database/database";
-import {getObservables} from "../../observables/ObservableUtils";
+import {getObservables} from "../../net/observables/ObservableUtils";
 import DraggableDialog from "../decorators/DraggableDialog";
 import CenteredPopover from "../decorators/CenteredPopover";
 import {DEFAULT_API_ENDPOINT, DEFAULT_SOS_ENDPOINT, DEFAULT_SPS_ENDPOINT} from "../../data/Constants";

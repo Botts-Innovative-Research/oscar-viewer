@@ -13,7 +13,7 @@
  *
  */
 
-import {IObservable, IPhysicalSystem, SensorHubServer} from "../data/Models";
+import {IObservable, IPhysicalSystem, SensorHubServer} from "../../data/Models";
 import {getObservablePointMarkers} from "./PliObservables";
 import {getObservableVideoStreams} from "./VideoStreamObservables";
 import {getObservableRegionsOfInterest} from "./RoiObservables";

@@ -21,12 +21,12 @@ import {
     Observable,
     SensorHubServer,
     TimePeriod
-} from "../data/Models";
-import {fetchFromObject, findInObject} from "../utils/Utils";
+} from "../../data/Models";
+import {fetchFromObject, findInObject} from "../../utils/Utils";
 import {getPhysicalSystem} from "./ObservableUtils";
-import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../data/Constants";
-import {fetchObservables} from "../net/ObservablesRequest";
-import {colorHash} from "../utils/ColorUtils";
+import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../../data/Constants";
+import {fetchObservables} from "../ObservablesRequest";
+import {colorHash} from "../../utils/ColorUtils";
 // @ts-ignore
 import PointMarkerLayer from "osh-js/source/core/ui/layer/PointMarkerLayer";
 // @ts-ignore
@@ -36,9 +36,9 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 // @ts-ignore
-import PointMarker from "../assets/models/pointmarker-orient.glb";
+import PointMarker from "../../assets/models/pointmarker-orient.glb";
 // @ts-ignore
-import PointMarkerNoOrientation from "../assets/models/pointmarker.glb";
+import PointMarkerNoOrientation from "../../assets/models/pointmarker.glb";
 
 export async function getObservablePointMarkers(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
 

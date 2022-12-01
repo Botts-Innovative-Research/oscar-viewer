@@ -21,12 +21,12 @@ import {
     Observable,
     SensorHubServer,
     TimePeriod
-} from "../data/Models";
-import {fetchObservables} from "../net/ObservablesRequest";
-import {fetchFromObject, findInObject} from "../utils/Utils";
+} from "../../data/Models";
+import {fetchObservables} from "../ObservablesRequest";
+import {fetchFromObject, findInObject} from "../../utils/Utils";
 import {getPhysicalSystem} from "./ObservableUtils";
-import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../data/Constants";
-import {colorHash} from "../utils/ColorUtils";
+import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../../data/Constants";
+import {colorHash} from "../../utils/ColorUtils";
 // @ts-ignore
 import PolygonLayer from "osh-js/source/core/ui/layer/PolygonLayer";
 // @ts-ignore

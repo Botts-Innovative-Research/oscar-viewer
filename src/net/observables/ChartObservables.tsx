@@ -21,30 +21,32 @@ import {
     Observable,
     SensorHubServer,
     TimePeriod
-} from "../data/Models";
-import {fetchFromObject} from "../utils/Utils";
+} from "../../data/Models";
+import {fetchFromObject, findInObject} from "../../utils/Utils";
 import {getPhysicalSystem} from "./ObservableUtils";
-import {fetchObservables} from "../net/ObservablesRequest";
-import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../data/Constants";
+import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../../data/Constants";
+import {fetchObservables} from "../ObservablesRequest";
+// @ts-ignore
+import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
 // @ts-ignore
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 
-export async function getObservableImages(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
+export async function getObservableCharts(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
 
     let observables: IObservable[] = [];
 
-    await fetchObservables(server, withCredentials, "image")
+    await fetchObservables(server, withCredentials, "alt_chart")
         .then(discoveryData => {
 
-            let resultSet: any[] = discoveryData["resultSet"];
+            let resultSet: any[] = discoveryData["resultSet"]
 
             for (let result of resultSet) {
 
                 let physicalSystem: IPhysicalSystem = null;
-                let physicalSystemTime: IPhysicalSystemTime = null;
-                let imageDataSource: SweApi = null;
+                let physicalSystemTime: IPhysicalSystemTime = null
+                let dataSource: SweApi = null;
 
                 let systemId = fetchFromObject(result, "systemId");
 
@@ -52,14 +54,14 @@ export async function getObservableImages(server: SensorHubServer, withCredentia
 
                 physicalSystemTime = physicalSystem.physicalSystemTime;
 
-                let imageData = fetchFromObject(result, 'image');
+                let chartData = fetchFromObject(result, 'alt_chart');
 
-                for (let image of imageData) {
+                for (let data of chartData) {
 
                     let timePeriod: ITimePeriod = new TimePeriod({
                         id: randomUUID(),
-                        beginPosition: image.phenomenonTime[0],
-                        endPosition: image.phenomenonTime[1],
+                        beginPosition: data.phenomenonTime[0],
+                        endPosition: data.phenomenonTime[1],
                         isIndeterminateStart: false,
                         isIndeterminateEnd: false
                     });
@@ -69,31 +71,47 @@ export async function getObservableImages(server: SensorHubServer, withCredentia
                         physicalSystemTime.updateSystemTime(timePeriod);
                     }
 
-                    imageDataSource = new SweApi(physicalSystem.name + "-image-dataSource", {
+                    dataSource = new SweApi(physicalSystem.name + "-chart-dataSource", {
                         protocol: Protocols.WS,
                         endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
-                        resource: `/datastreams/${image.dataStreamId}/observations`,
+                        resource: `/datastreams/${data.dataStreamId}/observations`,
                         startTime: REALTIME_START,
                         endTime: REALTIME_FUTURE_END,
                         tls: server.secure
                     });
                 }
 
-                let uuid = randomUUID();
-
-                // **************************************************
-                // DEFER VIEW CREATION UNTIL "container" IS CREATED
-                // **************************************************
+                let curveLayer = new CurveLayer({
+                    getValues: {
+                        dataSourceIds: [dataSource.getId()],
+                        handler: (rec: any, timeStamp: any) => {
+                            let time: any = findInObject(rec, 'time | Time');
+                            if (time == null) {
+                                time = timeStamp;
+                            }
+                            let location: any = findInObject(rec, 'location');
+                            let yValues: any = findInObject(location, 'alt | height');
+                            return {
+                                x: time,
+                                y: yValues
+                            };
+                        }
+                    },
+                    lineColor: 'rgba(0,220,204,0.5)',
+                    backgroundColor: 'rgba(0,220,204,0.5)',
+                    fill: true,
+                    name: "ALT | HEIGHT"
+                });
 
                 let observable: IObservable = new Observable({
-                    uuid: uuid,
-                    layers: [],
-                    dataSources: [imageDataSource],
-                    name: "IMAGES",
+                    uuid: randomUUID(),
+                    layers: [curveLayer],
+                    dataSources: [dataSource],
+                    name: "CHART",
                     physicalSystem: physicalSystem,
                     sensorHubServer: server,
                     histogram: [],
-                    type: ObservableType.IMAGE,
+                    type: ObservableType.CHART,
                     isConnected: false
                 });
 
