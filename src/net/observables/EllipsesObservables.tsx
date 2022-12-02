@@ -74,7 +74,7 @@ export async function getObservableEllipses(server: SensorHubServer, withCredent
 
                     ellipseDataSource = new SweApi(physicalSystem.name + "-ellipse-dataSource", {
                         protocol: Protocols.WS,
-                        endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
+                        endpointUrl: server.address.replace(/^(http|https):\/\//i, '') + Service.API,
                         resource: `/datastreams/${ellipse.dataStreamId}/observations`,
                         startTime: REALTIME_START,
                         endTime: REALTIME_FUTURE_END,
@@ -82,108 +82,111 @@ export async function getObservableEllipses(server: SensorHubServer, withCredent
                     });
                 }
 
-                let ellipseLayer: EllipseLayer = new EllipseLayer({
-                    getEllipseID: {
-                        // @ts-ignore
-                        dataSourceIds: [ellipseDataSource.getId()],
-                        handler: function (rec: any) {
-                            return findInObject(rec, 'frequency | uid | mac-address');
-                        }
-                    },
-                    getPosition: {
-                        // @ts-ignore
-                        dataSourceIds: [ellipseDataSource.getId()],
-                        handler: function (rec: any) {
-                            let location: any = findInObject(rec, 'location | cep-coords')
-                            return {
-                                x: findInObject(location, 'lon | x'),
-                                y: findInObject(location, 'lat | y'),
-                                z: findInObject(location, 'alt | z'),
+                if (ellipseDataSource) {
+
+                    let ellipseLayer: EllipseLayer = new EllipseLayer({
+                        getEllipseID: {
+                            // @ts-ignore
+                            dataSourceIds: [ellipseDataSource.getId()],
+                            handler: function (rec: any) {
+                                return findInObject(rec, 'frequency | uid | mac-address');
                             }
-                        }
-                    },
-                    getSemiMajorAxis: {
-                        // @ts-ignore
-                        dataSourceIds: [ellipseDataSource.getId()],
-                        handler: function (rec: any) {
-                            let major: any = findInObject(rec, 'ellipse-axis-0');
-                            if (major == null) {
-                                let ellipse: any = findInObject(rec, 'ellipse | cep-ellipse');
-                                major = findInObject(ellipse, 'major');
+                        },
+                        getPosition: {
+                            // @ts-ignore
+                            dataSourceIds: [ellipseDataSource.getId()],
+                            handler: function (rec: any) {
+                                let location: any = findInObject(rec, 'location | cep-coords')
+                                return {
+                                    x: findInObject(location, 'lon | x'),
+                                    y: findInObject(location, 'lat | y'),
+                                    z: findInObject(location, 'alt | z'),
+                                }
                             }
+                        },
+                        getSemiMajorAxis: {
+                            // @ts-ignore
+                            dataSourceIds: [ellipseDataSource.getId()],
+                            handler: function (rec: any) {
+                                let major: any = findInObject(rec, 'ellipse-axis-0');
+                                if (major == null) {
+                                    let ellipse: any = findInObject(rec, 'ellipse | cep-ellipse');
+                                    major = findInObject(ellipse, 'major');
+                                }
 
-                            return major; // / OL_MAP_METERS_PER_UNIT;
-                        }
-                    },
-                    getSemiMinorAxis: {
-                        // @ts-ignore
-                        dataSourceIds: [ellipseDataSource.getId()],
-                        handler: function (rec: any) {
-                            let minor: any = findInObject(rec, 'ellipse-axis-1');
-                            if (minor == null) {
-                                let ellipse: any = findInObject(rec, 'ellipse | cep-ellipse');
-                                minor = findInObject(ellipse, 'minor');
+                                return major; // / OL_MAP_METERS_PER_UNIT;
                             }
+                        },
+                        getSemiMinorAxis: {
+                            // @ts-ignore
+                            dataSourceIds: [ellipseDataSource.getId()],
+                            handler: function (rec: any) {
+                                let minor: any = findInObject(rec, 'ellipse-axis-1');
+                                if (minor == null) {
+                                    let ellipse: any = findInObject(rec, 'ellipse | cep-ellipse');
+                                    minor = findInObject(ellipse, 'minor');
+                                }
 
-                            // For OpenLayers need to convert meters to map units
-                            return minor; // / OL_MAP_METERS_PER_UNIT;
-                        }
-                    },
-                    getHeight: {
-                        // @ts-ignore
-                        dataSourceIds: [ellipseDataSource.getId()],
-                        handler: function (rec: any) {
-                            return findInObject(rec, 'height | alt');
-                        }
-                    },
-                    getRotation: {
-                        // @ts-ignore
-                        dataSourceIds: [ellipseDataSource.getId()],
-                        handler: function (rec: any) {
-                            let rotation: any = findInObject(rec, 'ellipse-angle');
-                            if (rotation == null) {
-                                let ellipse: any = findInObject(rec, 'ellipse | cep-ellipse');
-                                rotation = findInObject(ellipse, 'angle');
+                                // For OpenLayers need to convert meters to map units
+                                return minor; // / OL_MAP_METERS_PER_UNIT;
                             }
-                            return rotation;
-                        }
-                    },
-                    getColor: {
-                        // @ts-ignore
-                        dataSourceIds: [ellipseDataSource.getId()],
-                        handler: function (rec: any) {
-                            let term: any = findInObject(rec, 'frequency | uid | mac-address');
-                            return colorHash(term, 0.50).rgba;
-                        }
-                    },
-                    color: 'rgba(255,74,22, 0.5)',
-                    semiMinorAxis: 100,
-                    semiMajorAxis: 100,
-                    name: physicalSystem.systemId,
-                    id: physicalSystem.name,
-                    label: physicalSystem.name,
-                    labelOffset: [0, 20],
-                    labelColor: 'rgba(255,255,255,1.0)',
-                    labelOutlineColor: 'rgba(0,0,0,1.0)',
-                    labelBackgroundColor: 'rgba(236,236,236,0.5)',
-                    labelSize: 25,
-                });
+                        },
+                        getHeight: {
+                            // @ts-ignore
+                            dataSourceIds: [ellipseDataSource.getId()],
+                            handler: function (rec: any) {
+                                return findInObject(rec, 'height | alt');
+                            }
+                        },
+                        getRotation: {
+                            // @ts-ignore
+                            dataSourceIds: [ellipseDataSource.getId()],
+                            handler: function (rec: any) {
+                                let rotation: any = findInObject(rec, 'ellipse-angle');
+                                if (rotation == null) {
+                                    let ellipse: any = findInObject(rec, 'ellipse | cep-ellipse');
+                                    rotation = findInObject(ellipse, 'angle');
+                                }
+                                return rotation;
+                            }
+                        },
+                        getColor: {
+                            // @ts-ignore
+                            dataSourceIds: [ellipseDataSource.getId()],
+                            handler: function (rec: any) {
+                                let term: any = findInObject(rec, 'frequency | uid | mac-address');
+                                return colorHash(term, 0.50).rgba;
+                            }
+                        },
+                        color: 'rgba(255,74,22, 0.5)',
+                        semiMinorAxis: 100,
+                        semiMajorAxis: 100,
+                        name: physicalSystem.systemId,
+                        id: physicalSystem.name,
+                        label: physicalSystem.name,
+                        labelOffset: [0, 20],
+                        labelColor: 'rgba(255,255,255,1.0)',
+                        labelOutlineColor: 'rgba(0,0,0,1.0)',
+                        labelBackgroundColor: 'rgba(236,236,236,0.5)',
+                        labelSize: 25,
+                    });
 
-                let observable: IObservable = new Observable({
-                    uuid: randomUUID(),
-                    layers: [ellipseLayer],
-                    dataSources: [ellipseDataSource],
-                    name: "ELLIPSE",
-                    physicalSystem: physicalSystem,
-                    sensorHubServer: server,
-                    histogram: [],
-                    type: ObservableType.SIGINT,
-                    isConnected: false
-                });
+                    let observable: IObservable = new Observable({
+                        uuid: randomUUID(),
+                        layers: [ellipseLayer],
+                        dataSources: [ellipseDataSource],
+                        name: "ELLIPSE",
+                        physicalSystem: physicalSystem,
+                        sensorHubServer: server,
+                        histogram: [],
+                        type: ObservableType.SIGINT,
+                        isConnected: false
+                    });
 
-                physicalSystem.observables.push(observable);
+                    physicalSystem.observables.push(observable);
 
-                observables.push(observable);
+                    observables.push(observable);
+                }
             }
         });
 

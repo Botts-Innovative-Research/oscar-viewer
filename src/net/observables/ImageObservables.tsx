@@ -30,6 +30,8 @@ import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service}
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
 import {randomUUID} from "osh-js/source/core/utils/Utils";
+// @ts-ignore
+import VideoDataLayer from "osh-js/source/core/ui/layer/VideoDataLayer"
 
 export async function getObservableImages(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
 
@@ -71,7 +73,7 @@ export async function getObservableImages(server: SensorHubServer, withCredentia
 
                     imageDataSource = new SweApi(physicalSystem.name + "-image-dataSource", {
                         protocol: Protocols.WS,
-                        endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
+                        endpointUrl: server.address.replace(/^(http|https):\/\//i, '') + Service.API,
                         resource: `/datastreams/${image.dataStreamId}/observations`,
                         startTime: REALTIME_START,
                         endTime: REALTIME_FUTURE_END,
@@ -79,27 +81,38 @@ export async function getObservableImages(server: SensorHubServer, withCredentia
                     });
                 }
 
-                let uuid = randomUUID();
+                if (imageDataSource) {
 
-                // **************************************************
-                // DEFER VIEW CREATION UNTIL "container" IS CREATED
-                // **************************************************
+                    let videoDataLayer = new VideoDataLayer({
+                        dataSourceId: [imageDataSource.getId()],
+                        getFrameData: (rec: any) => {
+                            return rec.img
+                        },
+                        getTimestamp: (rec: any) => {
+                            return rec.timestamp
+                        }
+                    });
 
-                let observable: IObservable = new Observable({
-                    uuid: uuid,
-                    layers: [],
-                    dataSources: [imageDataSource],
-                    name: "IMAGES",
-                    physicalSystem: physicalSystem,
-                    sensorHubServer: server,
-                    histogram: [],
-                    type: ObservableType.IMAGE,
-                    isConnected: false
-                });
+                    // **************************************************
+                    // DEFER VIEW CREATION UNTIL "container" IS CREATED
+                    // **************************************************
 
-                physicalSystem.observables.push(observable);
+                    let observable: IObservable = new Observable({
+                        uuid: randomUUID(),
+                        layers: [videoDataLayer],
+                        dataSources: [imageDataSource],
+                        name: "IMAGES",
+                        physicalSystem: physicalSystem,
+                        sensorHubServer: server,
+                        histogram: [],
+                        type: ObservableType.IMAGE,
+                        isConnected: false
+                    });
 
-                observables.push(observable);
+                    physicalSystem.observables.push(observable);
+
+                    observables.push(observable);
+                }
             }
         });
 

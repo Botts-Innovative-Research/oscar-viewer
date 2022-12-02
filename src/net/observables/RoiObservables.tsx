@@ -74,7 +74,7 @@ export async function getObservableRegionsOfInterest(server: SensorHubServer, wi
 
                     roiDataSource = new SweApi(physicalSystem.name + "-roi-dataSource", {
                         protocol: Protocols.WS,
-                        endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
+                        endpointUrl: server.address.replace(/^(http|https):\/\//i, '') + Service.API,
                         resource: `/datastreams/${roi.dataStreamId}/observations`,
                         startTime: REALTIME_START,
                         endTime: REALTIME_FUTURE_END,
@@ -82,50 +82,53 @@ export async function getObservableRegionsOfInterest(server: SensorHubServer, wi
                     });
                 }
 
-                let polygonLayer: PolygonLayer = new PolygonLayer({
-                    getVertices: {
-                        // @ts-ignore
-                        dataSourceIds: [roiDataSource.getId()],
-                        handler: function (rec: any) {
-                            let ulc: any = findInObject(rec, 'ulc')
-                            let urc: any = findInObject(rec, 'urc')
-                            let llc: any = findInObject(rec, 'llc')
-                            let lrc: any = findInObject(rec, 'lrc')
-                            return [
-                                findInObject(ulc, 'lon | x'),
-                                findInObject(ulc, 'lat | y'),
-                                findInObject(urc, 'lon | x'),
-                                findInObject(urc, 'lat | y'),
-                                findInObject(lrc, 'lon | x'),
-                                findInObject(lrc, 'lat | y'),
-                                findInObject(llc, 'lon | x'),
-                                findInObject(llc, 'lat | y'),
-                            ];
-                        }
-                    },
-                    outlineColor: 'rgb(0,0,0)',
-                    outlineWidth: 1,
-                    color: colorHash(physicalSystem.name, 0.25).rgba,
-                    opacity: 0.25,
-                    clampToGround: true,
-                    zIndex: 0
-                });
+                if (roiDataSource) {
 
-                let observable: IObservable = new Observable({
-                    uuid: randomUUID(),
-                    layers: [polygonLayer],
-                    dataSources: [roiDataSource],
-                    name: "AOI",
-                    physicalSystem: physicalSystem,
-                    sensorHubServer: server,
-                    histogram: [],
-                    type: ObservableType.AOI,
-                    isConnected: false
-                });
+                    let polygonLayer: PolygonLayer = new PolygonLayer({
+                        getVertices: {
+                            // @ts-ignore
+                            dataSourceIds: [roiDataSource.getId()],
+                            handler: function (rec: any) {
+                                let ulc: any = findInObject(rec, 'ulc')
+                                let urc: any = findInObject(rec, 'urc')
+                                let llc: any = findInObject(rec, 'llc')
+                                let lrc: any = findInObject(rec, 'lrc')
+                                return [
+                                    findInObject(ulc, 'lon | x'),
+                                    findInObject(ulc, 'lat | y'),
+                                    findInObject(urc, 'lon | x'),
+                                    findInObject(urc, 'lat | y'),
+                                    findInObject(lrc, 'lon | x'),
+                                    findInObject(lrc, 'lat | y'),
+                                    findInObject(llc, 'lon | x'),
+                                    findInObject(llc, 'lat | y'),
+                                ];
+                            }
+                        },
+                        outlineColor: 'rgb(0,0,0)',
+                        outlineWidth: 1,
+                        color: colorHash(physicalSystem.name, 0.25).rgba,
+                        opacity: 0.25,
+                        clampToGround: true,
+                        zIndex: 0
+                    });
 
-                physicalSystem.observables.push(observable);
+                    let observable: IObservable = new Observable({
+                        uuid: randomUUID(),
+                        layers: [polygonLayer],
+                        dataSources: [roiDataSource],
+                        name: "AOI",
+                        physicalSystem: physicalSystem,
+                        sensorHubServer: server,
+                        histogram: [],
+                        type: ObservableType.AOI,
+                        isConnected: false
+                    });
 
-                observables.push(observable);
+                    physicalSystem.observables.push(observable);
+
+                    observables.push(observable);
+                }
             }
         });
 

@@ -73,7 +73,7 @@ export async function getObservableCharts(server: SensorHubServer, withCredentia
 
                     dataSource = new SweApi(physicalSystem.name + "-chart-dataSource", {
                         protocol: Protocols.WS,
-                        endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
+                        endpointUrl: server.address.replace(/^(http|https):\/\//i, '') + Service.API,
                         resource: `/datastreams/${data.dataStreamId}/observations`,
                         startTime: REALTIME_START,
                         endTime: REALTIME_FUTURE_END,
@@ -81,43 +81,46 @@ export async function getObservableCharts(server: SensorHubServer, withCredentia
                     });
                 }
 
-                let curveLayer = new CurveLayer({
-                    getValues: {
-                        dataSourceIds: [dataSource.getId()],
-                        handler: (rec: any, timeStamp: any) => {
-                            let time: any = findInObject(rec, 'time | Time');
-                            if (time == null) {
-                                time = timeStamp;
+                if (dataSource) {
+
+                    let curveLayer = new CurveLayer({
+                        getValues: {
+                            dataSourceIds: [dataSource.getId()],
+                            handler: (rec: any, timeStamp: any) => {
+                                let time: any = findInObject(rec, 'time | Time');
+                                if (time == null) {
+                                    time = timeStamp;
+                                }
+                                let location: any = findInObject(rec, 'location');
+                                let yValues: any = findInObject(location, 'alt | height');
+                                return {
+                                    x: time,
+                                    y: yValues
+                                };
                             }
-                            let location: any = findInObject(rec, 'location');
-                            let yValues: any = findInObject(location, 'alt | height');
-                            return {
-                                x: time,
-                                y: yValues
-                            };
-                        }
-                    },
-                    lineColor: 'rgba(0,220,204,0.5)',
-                    backgroundColor: 'rgba(0,220,204,0.5)',
-                    fill: true,
-                    name: "ALT | HEIGHT"
-                });
+                        },
+                        lineColor: 'rgba(0,220,204,0.5)',
+                        backgroundColor: 'rgba(0,220,204,0.5)',
+                        fill: true,
+                        name: "ALT | HEIGHT"
+                    });
 
-                let observable: IObservable = new Observable({
-                    uuid: randomUUID(),
-                    layers: [curveLayer],
-                    dataSources: [dataSource],
-                    name: "CHART",
-                    physicalSystem: physicalSystem,
-                    sensorHubServer: server,
-                    histogram: [],
-                    type: ObservableType.CHART,
-                    isConnected: false
-                });
+                    let observable: IObservable = new Observable({
+                        uuid: randomUUID(),
+                        layers: [curveLayer],
+                        dataSources: [dataSource],
+                        name: "CHART",
+                        physicalSystem: physicalSystem,
+                        sensorHubServer: server,
+                        histogram: [],
+                        type: ObservableType.CHART,
+                        isConnected: false
+                    });
 
-                physicalSystem.observables.push(observable);
+                    physicalSystem.observables.push(observable);
 
-                observables.push(observable);
+                    observables.push(observable);
+                }
             }
         });
 

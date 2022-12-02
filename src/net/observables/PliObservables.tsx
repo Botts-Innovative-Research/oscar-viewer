@@ -82,7 +82,7 @@ export async function getObservablePointMarkers(server: SensorHubServer, withCre
 
                     locationDataSource = new SweApi(physicalSystem.name + "-location-dataSource", {
                         protocol: Protocols.WS,
-                        endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
+                        endpointUrl: server.address.replace(/^(http|https):\/\//i, '') + Service.API,
                         resource: `/datastreams/${location.dataStreamId}/observations`,
                         startTime: REALTIME_START,
                         endTime: REALTIME_FUTURE_END,
@@ -114,7 +114,7 @@ export async function getObservablePointMarkers(server: SensorHubServer, withCre
 
                         orientationDataSource = new SweApi(physicalSystem.name + "-orientation-dataSource", {
                             protocol: Protocols.WS,
-                            endpointUrl: server.address.replace(/^http[s]*:\/\//i, '') + Service.API,
+                            endpointUrl: server.address.replace(/^(http|https):\/\//i, '') + Service.API,
                             resource: `/datastreams/${orientation.dataStreamId}/observations`,
                             startTime: REALTIME_START,
                             endTime: REALTIME_FUTURE_END,
@@ -127,11 +127,119 @@ export async function getObservablePointMarkers(server: SensorHubServer, withCre
 
                 let pointMarkerLayer: PointMarkerLayer;
 
-                // If orientation data source is is not available build the point marker layer without orientation
-                if (orientationDataSource == null) {
+                if (orientationDataSource || locationDataSource) {
 
-                    pointMarkerLayer = new PointMarkerLayer({
-                        getMarkerId: {
+                    // If orientation data source is not available build the point marker layer without orientation
+                    if (orientationDataSource == null) {
+
+                        pointMarkerLayer = new PointMarkerLayer({
+                            getMarkerId: {
+                                // @ts-ignore
+                                dataSourceIds: [locationDataSource.getId()],
+                                handler: function (rec: any) {
+                                    let id: string = findInObject(rec, 'id | uid | source');
+                                    if (id == null) {
+                                        id = `${physicalSystem.uuid}`;
+                                    }
+                                    return id;
+                                }
+                            },
+                            getLocation: {
+                                // @ts-ignore
+                                dataSourceIds: [locationDataSource.getId()],
+                                handler: function (rec: any) {
+                                    return {
+                                        x: findInObject(rec, 'lon | x | longitude'),
+                                        y: findInObject(rec, 'lat | y | latitude'),
+                                        z: findInObject(rec, 'alt | z | altitude'),
+                                    }
+                                }
+                            },
+                            icon: PointMarkerNoOrientation,
+                            // iconAnchor: [16, 64],
+                            iconSize: [32, 32],
+                            color: colorHash(physicalSystem.name).rgba,
+                            name: physicalSystem.systemId,
+                            label: physicalSystem.name,
+                            labelOffset: [0, 20],
+                            labelColor: 'rgba(255,255,255,1.0)',
+                            labelOutlineColor: 'rgba(0,0,0,1.0)',
+                            labelBackgroundColor: 'rgba(236,236,236,0.5)',
+                            labelSize: 25,
+                            defaultToTerrainElevation: false,
+                            zIndex: 1
+                        });
+
+                    } else {
+
+                        pointMarkerLayer = new PointMarkerLayer({
+                            getMarkerId: {
+                                // @ts-ignore
+                                dataSourceIds: [locationDataSource.getId()],
+                                handler: function (rec: any) {
+                                    let id: string = findInObject(rec, 'id | uid | source');
+                                    if (id == null) {
+                                        id = `${physicalSystem.uuid}`;
+                                    }
+                                    return id;
+                                }
+                            },
+                            getLocation: {
+                                // @ts-ignore
+                                dataSourceIds: [locationDataSource.getId()],
+                                handler: function (rec: any) {
+                                    return {
+                                        x: findInObject(rec, 'lon | x | longitude'),
+                                        y: findInObject(rec, 'lat | y | latitude'),
+                                        z: findInObject(rec, 'alt | z | altitude'),
+                                    }
+                                }
+                            },
+                            getOrientation: {
+                                // @ts-ignore
+                                dataSourceIds: [orientationDataSource.getId()],
+                                handler: function (rec: any) {
+                                    let orientation: any = findInObject(rec, 'heading');
+                                    if (orientation !== null) {
+                                        return {
+                                            heading: findInObject(rec, 'heading'),
+                                        }
+                                    } else {
+                                        return {
+                                            heading: findInObject(rec, 'yaw'),
+                                        }
+                                    }
+                                }
+                            },
+                            icon: PointMarker,
+                            // iconAnchor: [16, 64],
+                            iconSize: [32, 32],
+                            color: colorHash(physicalSystem.name).rgba,
+                            name: physicalSystem.systemId,
+                            label: physicalSystem.name,
+                            labelOffset: [0, 20],
+                            labelColor: 'rgba(255,255,255,1.0)',
+                            labelOutlineColor: 'rgba(0,0,0,1.0)',
+                            labelBackgroundColor: 'rgba(236,236,236,0.5)',
+                            labelSize: 25,
+                            defaultToTerrainElevation: false,
+                            zIndex: 1
+                        });
+                    }
+
+                    let polylineLayer = new PolylineLayer({
+                        getLocation: {
+                            // @ts-ignore
+                            dataSourceIds: [locationDataSource.getId()],
+                            handler: function (rec: any) {
+                                return {
+                                    x: findInObject(rec, 'lon | x | longitude'),
+                                    y: findInObject(rec, 'lat | y | latitude'),
+                                    z: findInObject(rec, 'alt | z | altitude'),
+                                };
+                            }
+                        },
+                        getPolylineId: {
                             // @ts-ignore
                             dataSourceIds: [locationDataSource.getId()],
                             handler: function (rec: any) {
@@ -142,135 +250,30 @@ export async function getObservablePointMarkers(server: SensorHubServer, withCre
                                 return id;
                             }
                         },
-                        getLocation: {
-                            // @ts-ignore
-                            dataSourceIds: [locationDataSource.getId()],
-                            handler: function (rec: any) {
-                                return {
-                                    x: findInObject(rec, 'lon | x | longitude'),
-                                    y: findInObject(rec, 'lat | y | latitude'),
-                                    z: findInObject(rec, 'alt | z | altitude'),
-                                }
-                            }
-                        },
-                        icon: PointMarkerNoOrientation,
-                        // iconAnchor: [16, 64],
-                        iconSize: [32, 32],
-                        color: colorHash(physicalSystem.name).rgba,
-                        name: physicalSystem.systemId,
-                        label: physicalSystem.name,
-                        labelOffset: [0, 20],
-                        labelColor: 'rgba(255,255,255,1.0)',
-                        labelOutlineColor: 'rgba(0,0,0,1.0)',
-                        labelBackgroundColor: 'rgba(236,236,236,0.5)',
-                        labelSize: 25,
-                        defaultToTerrainElevation: false,
-                        zIndex: 1
+                        color: colorHash(physicalSystem.name, 0.50).rgba,
+                        weight: 5,
+                        opacity: .5,
+                        smoothFactor: 1,
+                        maxPoints: 200,
+                        zIndex: 0
                     });
 
-                } else {
-
-                    pointMarkerLayer = new PointMarkerLayer({
-                        getMarkerId: {
-                            // @ts-ignore
-                            dataSourceIds: [locationDataSource.getId()],
-                            handler: function (rec: any) {
-                                let id: string = findInObject(rec, 'id | uid | source');
-                                if (id == null) {
-                                    id = `${physicalSystem.uuid}`;
-                                }
-                                return id;
-                            }
-                        },
-                        getLocation: {
-                            // @ts-ignore
-                            dataSourceIds: [locationDataSource.getId()],
-                            handler: function (rec: any) {
-                                return {
-                                    x: findInObject(rec, 'lon | x | longitude'),
-                                    y: findInObject(rec, 'lat | y | latitude'),
-                                    z: findInObject(rec, 'alt | z | altitude'),
-                                }
-                            }
-                        },
-                        getOrientation: {
-                            // @ts-ignore
-                            dataSourceIds: [orientationDataSource.getId()],
-                            handler: function (rec: any) {
-                                let orientation: any = findInObject(rec, 'heading');
-                                if (orientation !== null) {
-                                    return {
-                                        heading: findInObject(rec, 'heading'),
-                                    }
-                                } else {
-                                    return {
-                                        heading: findInObject(rec, 'yaw'),
-                                    }
-                                }
-                            }
-                        },
-                        icon: PointMarker,
-                        // iconAnchor: [16, 64],
-                        iconSize: [32, 32],
-                        color: colorHash(physicalSystem.name).rgba,
-                        name: physicalSystem.systemId,
-                        label: physicalSystem.name,
-                        labelOffset: [0, 20],
-                        labelColor: 'rgba(255,255,255,1.0)',
-                        labelOutlineColor: 'rgba(0,0,0,1.0)',
-                        labelBackgroundColor: 'rgba(236,236,236,0.5)',
-                        labelSize: 25,
-                        defaultToTerrainElevation: false,
-                        zIndex: 1
+                    let observable: IObservable = new Observable({
+                        uuid: randomUUID(),
+                        layers: [pointMarkerLayer, polylineLayer],
+                        dataSources: dataSources,
+                        name: "PLI",
+                        physicalSystem: physicalSystem,
+                        sensorHubServer: server,
+                        histogram: [],
+                        type: ObservableType.PLI,
+                        isConnected: false
                     });
+
+                    physicalSystem.observables.push(observable);
+
+                    observables.push(observable);
                 }
-
-                let polylineLayer = new PolylineLayer({
-                    getLocation: {
-                        // @ts-ignore
-                        dataSourceIds: [locationDataSource.getId()],
-                        handler: function (rec: any) {
-                            return {
-                                x: findInObject(rec, 'lon | x | longitude'),
-                                y: findInObject(rec, 'lat | y | latitude'),
-                                z: findInObject(rec, 'alt | z | altitude'),
-                            };
-                        }
-                    },
-                    getPolylineId: {
-                        // @ts-ignore
-                        dataSourceIds: [locationDataSource.getId()],
-                        handler: function (rec: any) {
-                            let id: string = findInObject(rec, 'id | uid | source');
-                            if (id == null) {
-                                id = `${physicalSystem.uuid}`;
-                            }
-                            return id;
-                        }
-                    },
-                    color: colorHash(physicalSystem.name, 0.50).rgba,
-                    weight: 5,
-                    opacity: .5,
-                    smoothFactor: 1,
-                    maxPoints: 200,
-                    zIndex: 0
-                });
-
-                let observable: IObservable = new Observable({
-                    uuid: randomUUID(),
-                    layers: [pointMarkerLayer, polylineLayer],
-                    dataSources: dataSources,
-                    name: "PLI",
-                    physicalSystem: physicalSystem,
-                    sensorHubServer: server,
-                    histogram: [],
-                    type: ObservableType.PLI,
-                    isConnected: false
-                });
-
-                physicalSystem.observables.push(observable);
-
-                observables.push(observable);
             }
         });
 
