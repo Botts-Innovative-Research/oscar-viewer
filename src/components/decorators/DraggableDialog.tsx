@@ -40,10 +40,10 @@ const DraggableDialog = (props: IDraggableDialogProps) => {
                     props.onClose()
                 }}
                 sx={{
-                    position: 'absolute',
+                    position: "absolute",
                     right: 10,
                     top: 10,
-                    color: 'rgba(0, 0, 0, 1)',
+                    color: "rgba(0, 0, 0, 1)",
                 }}
             >
                 <Tooltip title={"Close"}>
@@ -58,13 +58,13 @@ const DraggableDialog = (props: IDraggableDialogProps) => {
                 hideBackdrop
                 disableEnforceFocus
                 aria-labelledby="draggable-dialog-title"
-                style={{pointerEvents: 'none', ...props.style}}
-                PaperProps={{style: {borderStyle:"ridge", pointerEvents: 'auto'}}}>
-            <DialogTitle bgcolor={"lightblue"} style={{borderBottomStyle:"ridge", cursor: 'move'}} id="draggable-dialog-title">
+                style={{pointerEvents: "none", ...props.style}}
+                PaperProps={{style: {borderStyle:"ridge", pointerEvents: "auto"}}}>
+            <DialogTitle bgcolor={"lightblue"} style={{borderBottomStyle:"ridge", cursor: "move", minWidth: "10vw"}} id="draggable-dialog-title">
                 {props.title}
                 {closeIcon}
             </DialogTitle>
-            <DialogContent style={{padding: '.5em'}}>
+            <DialogContent style={{padding: ".5em"}}>
                 {props.children}
             </DialogContent>
             {props.actions ? props.actions : null}

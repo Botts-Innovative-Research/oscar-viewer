@@ -30,6 +30,8 @@ import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service}
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
 import {randomUUID} from "osh-js/source/core/utils/Utils";
+// @ts-ignore
+import VideoDataLayer from "osh-js/source/core/ui/layer/VideoDataLayer"
 
 export async function getObservableVideoStreams(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
 
@@ -99,30 +101,34 @@ export async function getObservableVideoStreams(server: SensorHubServer, withCre
                     }
                 }
 
-                let uuid = randomUUID();
+                if (dataSource) {
 
-                // **************************************************
-                // DEFER VIEW CREATION UNTIL "container" IS CREATED
-                // SEE src/components/popouts/VideoPopout.tsx
-                // **************************************************
+                    let videoDataLayer = new VideoDataLayer({
+                        dataSourceId: [dataSource.getId()],
+                        getFrameData: (rec: any) => {
+                            return rec.img
+                        },
+                        getTimestamp: (rec: any) => {
+                            return rec.timestamp
+                        }
+                    });
 
-                let observable: IObservable = new Observable({
-                    uuid: uuid,
-                    layers: [],
-                    dataSources: [dataSource],
-                    name: "VIDEO",
-                    physicalSystem: physicalSystem,
-                    sensorHubServer: server,
-                    histogram: [],
-                    type: (encoding === 'H264') ? ObservableType.VIDEO :
-                        (encoding === 'MJPEG') ? ObservableType.PLI :
-                            ObservableType.IMAGE,
-                    isConnected: false
-                });
+                    let observable: IObservable = new Observable({
+                        uuid: randomUUID(),
+                        layers: [videoDataLayer],
+                        dataSources: [dataSource],
+                        name: "VIDEO",
+                        physicalSystem: physicalSystem,
+                        sensorHubServer: server,
+                        histogram: [],
+                        type: ObservableType.VIDEO,
+                        isConnected: false
+                    });
 
-                physicalSystem.observables.push(observable);
+                    physicalSystem.observables.push(observable);
 
-                observables.push(observable);
+                    observables.push(observable);
+                }
             }
         });
 

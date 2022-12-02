@@ -27,6 +27,8 @@ import {
     addSensorHubServer,
     selectAddServerDialogOpen,
     selectAppInitialized,
+    selectConnectedObservables,
+    selectObservables,
     selectObservablesDialogOpen,
     selectServerManagementDialogOpen,
     selectSettingsDialogOpen,
@@ -39,13 +41,14 @@ import ServerManagement from "./servers/ServerManagement";
 import AddServer from "./servers/AddServer";
 import Observables from "./observables/Observables";
 import {initDb, readSensorHubServers} from "../database/database";
-import {ISensorHubServer} from "../data/Models";
+import {IObservable, ISensorHubServer} from "../data/Models";
 import {fetchPhysicalSystems} from "../net/SystemRequest";
 import {getObservables} from "../net/observables/ObservableUtils";
 import CenteredPopover from "./decorators/CenteredPopover";
 import Systems from "./systems/Systems";
 import SplashScreen from "./splash/SplashScreen";
 import TimeController from "./time/TimeController";
+import StreamingDialog from "./dialogs/StreamingDialog";
 
 const App = () => {
     const dispatch = useAppDispatch();
@@ -59,6 +62,9 @@ const App = () => {
     let showObservablesDialog = useAppSelector(selectObservablesDialogOpen);
     let showAddServerDialog = useAppSelector(selectAddServerDialogOpen);
     let showSystemsDialog = useAppSelector(selectSystemsDialogOpen);
+
+    let connectedObservables = useAppSelector(selectConnectedObservables);
+    let observables = useAppSelector(selectObservables);
 
     let [showConfirmation, setShowConfirmation] = useState<boolean>(false);
     let [showError, setShowError] = useState<boolean>(false);
@@ -111,6 +117,22 @@ const App = () => {
         }
     }, [])
 
+    let videoDialogs: any[] = [];
+
+    let connectedObservablesArr: IObservable[] = [];
+    connectedObservables.forEach((connected: boolean, id: string) => {
+
+        if (connected) {
+
+            connectedObservablesArr.push(observables.get(id));
+        }
+    })
+
+    connectedObservablesArr.forEach((observable: IObservable) => {
+
+        videoDialogs.push(<StreamingDialog key={observable.uuid} observable={observable}/>);
+    })
+
     const popupError = (msg: string) => {
 
         setErrorMsg(msg);
@@ -120,7 +142,6 @@ const App = () => {
             setShowError(false);
         }, 5000)
     }
-
 
     return (
         <div>
@@ -132,11 +153,12 @@ const App = () => {
             {showObservablesDialog ? <Observables title={"Observables"}/> : null}
             {showSystemsDialog ? <Systems title={"Systems"}/> : null}
 
-
             {showSplashScreen ? <SplashScreen onEnded={() => setShowSplashScreen(false)}/> : null}
 
             <CesiumMap/>
             <TimeController/>
+
+            {videoDialogs.length > 0 ? videoDialogs : null}
 
             {showConfirmation ?
                 <CenteredPopover anchorEl={document.getElementById('root')}>
