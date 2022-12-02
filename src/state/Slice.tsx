@@ -133,6 +133,8 @@ export const Slice = createSlice({
 
             state.initialized = action.payload;
 
+            state.masterTime.inPlaybackMode = true;
+
             let initializeTimeRange = async function (dataSynchronizer: DataSynchronizer) {
 
                 let promises = [];
