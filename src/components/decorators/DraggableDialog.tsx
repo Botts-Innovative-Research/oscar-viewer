@@ -43,7 +43,7 @@ const DraggableDialog = (props: IDraggableDialogProps) => {
                     position: 'absolute',
                     right: 10,
                     top: 10,
-                    color: (theme) => theme.palette.grey[500],
+                    color: 'rgba(0, 0, 0, 1)',
                 }}
             >
                 <Tooltip title={"Close"}>
