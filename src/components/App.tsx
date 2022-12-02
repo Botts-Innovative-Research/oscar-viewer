@@ -49,6 +49,7 @@ import Systems from "./systems/Systems";
 import SplashScreen from "./splash/SplashScreen";
 import TimeController from "./time/TimeController";
 import StreamingDialog from "./dialogs/StreamingDialog";
+import {ObservableType} from "../data/Constants";
 
 const App = () => {
     const dispatch = useAppDispatch();
@@ -124,7 +125,13 @@ const App = () => {
 
         if (connected) {
 
-            connectedObservablesArr.push(observables.get(id));
+            let observable: IObservable = observables.get(id);
+
+            if (observable.type === ObservableType.DRAPING || observable.type === ObservableType.VIDEO ||
+                observable.type === ObservableType.IMAGE) {
+
+                connectedObservablesArr.push(observable);
+            }
         }
     })
 
