@@ -21,10 +21,15 @@ import {getObservableImages} from "./ImageObservables";
 import {getObservableEllipses} from "./EllipsesObservables";
 import {getObservableLinesOBearing} from "./LobObservables";
 import {getObservableCharts} from "./ChartObservables";
+import {getObservableDrapedImagery} from "./DrapedImageryObservable";
 
 export async function getObservables(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
 
     let observables: IObservable[] = [];
+
+    observables.push(...await getObservableDrapedImagery(server, withCredentials).then(observables => {
+        return observables
+    }));
 
     observables.push(...await getObservablePointMarkers(server, withCredentials).then(observables => {
         return observables

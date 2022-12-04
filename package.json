@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "webpack",
-    "start": "webpack serve --mode development",
+    "start": "webpack serve --mode development --stats-children",
     "postinstall": "patch-package"
   },
   "keywords": [],
@@ -48,8 +48,10 @@
     "html-webpack-tags-plugin": "^3.0.2",
     "https-browserify": "^1.0.0",
     "idb": "^7.1.1",
+    "node-polyfill-webpack-plugin": "^2.0.1",
     "nouislider": "^15.6.1",
     "patch-package": "^6.5.0",
+    "path-browserify": "^1.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-draggable": "^4.4.5",

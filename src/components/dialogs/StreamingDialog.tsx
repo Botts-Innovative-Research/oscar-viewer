@@ -28,7 +28,7 @@
  *
  */
 
-import React, {useEffect, useState} from "react";
+import React, {useEffect} from "react";
 import DraggableDialog from "../decorators/DraggableDialog";
 import {IObservable} from "../../data/Models";
 import {ObservableType} from "../../data/Constants";
@@ -41,6 +41,8 @@ import VideoView from "osh-js/source/core/ui/view/video/VideoView"
 import Layer from "osh-js/source/core/ui/layer/Layer"
 // @ts-ignore
 import VideoDataLayer from "osh-js/source/core/ui/layer/VideoDataLayer"
+// @ts-ignore
+import ImageDrapingLayer from "osh-js/source/core/ui/layer/ImageDrapingLayer";
 
 import "../../Styles.css"
 
@@ -54,9 +56,7 @@ const StreamingDialog = (props: IStreamingDialogProps) => {
 
     useEffect(() => {
 
-        console.log("StreamingDialog called " + new Date().toISOString());
-
-        let videoDataLayer: VideoDataLayer = props.observable.layers.filter((layer: Layer) => layer instanceof VideoDataLayer);
+        let videoDataLayer: VideoDataLayer = props.observable.layers.filter((layer: Layer) => layer instanceof VideoDataLayer)[0];
 
         let videoView = new VideoView({
             container: props.observable.uuid,
@@ -65,8 +65,19 @@ const StreamingDialog = (props: IStreamingDialogProps) => {
             framerate: 30,
             showTime: false,
             showStats: false,
-            layers: videoDataLayer
+            layers: [videoDataLayer]
         });
+
+        const updateImageDrapingLayer = async () => {
+
+            let drapingLayer: ImageDrapingLayer = props.observable.layers.filter((layer: Layer) => layer instanceof ImageDrapingLayer)[0];
+            drapingLayer.props.imageSrc = await videoView.getVideoCanvas();
+        }
+
+        if (props.observable.type === ObservableType.DRAPING) {
+
+            updateImageDrapingLayer().then();
+        }
 
         return () => {
             // componentWillUnmount equivalent in functional component.

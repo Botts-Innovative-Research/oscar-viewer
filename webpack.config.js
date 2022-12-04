@@ -1,4 +1,5 @@
 const path = require("path");
+const nodePolyfillWebpackPlugin = require('node-polyfill-webpack-plugin')
 const HtmlTagsPlugin = require("html-webpack-tags-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const {DefinePlugin} = require('webpack');
@@ -31,6 +32,7 @@ module.exports = {
             append: false,
             tags: ["cesium/Widgets/widgets.css", "cesium/Cesium.js"],
         }),
+        new nodePolyfillWebpackPlugin(),
     ],
     devServer: {
         static: {
@@ -97,7 +99,8 @@ module.exports = {
             "buffer": require.resolve("buffer/"),
             "assert": require.resolve("assert/"),
             "util": require.resolve("util/"),
-            "stream": require.resolve("stream-browserify")
+            "stream": require.resolve("stream-browserify"),
+            fs: false
         }
     }
 };

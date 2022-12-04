@@ -125,9 +125,9 @@ export async function getObservablePointMarkers(server: SensorHubServer, withCre
                     }
                 }
 
-                let pointMarkerLayer: PointMarkerLayer;
-
                 if (orientationDataSource || locationDataSource) {
+
+                    let pointMarkerLayer: PointMarkerLayer;
 
                     // If orientation data source is not available build the point marker layer without orientation
                     if (orientationDataSource == null) {

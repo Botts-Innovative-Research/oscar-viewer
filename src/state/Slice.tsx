@@ -48,6 +48,8 @@ import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer"
 import {Mode} from "osh-js/source/core/datasource/Mode";
 // @ts-ignore
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+// @ts-ignore
+import VideoDataLayer from "osh-js/source/core/ui/layer/VideoDataLayer"
 
 enableMapSet();
 
@@ -219,14 +221,17 @@ export const Slice = createSlice({
 
                             for (let layer of observable.layers) {
 
-                                // If the layer data can be cleared
-                                if (layer.clear !== undefined) {
+                                if (!(layer instanceof VideoDataLayer)) {
 
-                                    // Clear the layers data
-                                    layer.clear();
+                                    // If the layer data can be cleared
+                                    if (layer.clear !== undefined) {
+
+                                        // Clear the layers data
+                                        layer.clear();
+                                    }
+
+                                    state.mapView.removeAllFromLayer(layer);
                                 }
-
-                                state.mapView.removeAllFromLayer(layer);
                             }
                         }
                     }
@@ -268,7 +273,10 @@ export const Slice = createSlice({
 
                     for (let layer of observable.layers) {
 
-                        state.mapView.addLayer(layer);
+                        if (!(layer instanceof VideoDataLayer)) {
+
+                            state.mapView.addLayer(layer);
+                        }
                     }
                 }
             }
@@ -286,16 +294,19 @@ export const Slice = createSlice({
 
                     for (let layer of observable.layers) {
 
-                        // If the layer data can be cleared
-                        if (layer.clear !== undefined) {
+                        if (!(layer instanceof VideoDataLayer)) {
 
-                            // Clear the layers data
-                            layer.clear();
+                            // If the layer data can be cleared
+                            if (layer.clear !== undefined) {
+
+                                // Clear the layers data
+                                layer.clear();
+                            }
+
+                            layer.reset();
+
+                            state.mapView.removeAllFromLayer(layer);
                         }
-
-                        layer.reset();
-
-                        state.mapView.removeAllFromLayer(layer);
                     }
                 }
             }
@@ -401,16 +412,19 @@ export const Slice = createSlice({
 
                         for (let layer of observable.layers) {
 
-                            // If the layer data can be cleared
-                            if (layer.clear !== undefined) {
+                            if (!(layer instanceof VideoDataLayer)) {
 
-                                // Clear the layers data
-                                layer.clear();
+                                // If the layer data can be cleared
+                                if (layer.clear !== undefined) {
+
+                                    // Clear the layers data
+                                    layer.clear();
+                                }
+
+                                layer.reset();
+
+                                state.mapView.removeAllFromLayer(layer);
                             }
-
-                            layer.reset();
-
-                            state.mapView.removeAllFromLayer(layer);
                         }
                     }
                 }
