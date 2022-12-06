@@ -115,22 +115,25 @@ const TimeController = (props: ITimeControllerProps) => {
 
         } else {
 
-            if (sliderApi) {
+            if (!masterTime.masterTimePeriod.isIndeterminateStart) {
 
-                sliderApi.updateOptions(
-                    {
-                        start: TimePeriod.getEpochTime(masterTime.masterTimePeriod.beginPosition),
-                        range: {
-                            min: TimePeriod.getEpochTime(masterTime.masterTimePeriod.beginPosition),
-                            max: TimePeriod.getEpochTime(masterTime.masterTimePeriod.endPosition)
-                        }
-                    },
-                    false // Boolean 'fireSetEvent'
-                );
+                if (sliderApi) {
+
+                    sliderApi.updateOptions(
+                        {
+                            start: TimePeriod.getEpochTime(masterTime.masterTimePeriod.beginPosition),
+                            range: {
+                                min: TimePeriod.getEpochTime(masterTime.masterTimePeriod.beginPosition),
+                                max: TimePeriod.getEpochTime(masterTime.masterTimePeriod.endPosition)
+                            }
+                        },
+                        false // Boolean 'fireSetEvent'
+                    );
+                }
+
+                setCurrentTime(TimePeriod.getEpochTime(masterTime.masterTimePeriod.beginPosition));
+                document.getElementById('TimeController').removeAttribute('disabled');
             }
-
-            setCurrentTime(TimePeriod.getEpochTime(masterTime.masterTimePeriod.beginPosition));
-            document.getElementById('TimeController').removeAttribute('disabled');
         }
 
     }, [inPlaybackMode]);
