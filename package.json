@@ -63,6 +63,7 @@
     "url": "^0.11.0",
     "util": "^0.12.5",
     "wnumb": "^1.2.0",
-    "worker-loader": "^3.0.8"
+    "worker-loader": "^3.0.8",
+    "osh-js": "git+https@github.com:opensensorhub/osh-js.git#dev"
   }
 }

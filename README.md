@@ -27,21 +27,11 @@ The following features are currently supported:
 
 ## Building:
 
-Currently, requires osh-js as a linked npm package, in the future osh-js will be added as an npm package dependency. 
-At present, however, you must checkout osh-js and link it with OpenSensorViewer as follows:
-
-    git clone https://github.com/opensensorhub/osh-js.git
-    git checkout dev
-    cd osh-js
-    npm install
-    npm link
-
 ### Development
 
     git clone https://github.com/opensensorhub/osh-viewer.git
     cd osh-viewer
     npm install
-    npm link osh-js
     npm start 
 
 ### Release
@@ -49,5 +39,4 @@ At present, however, you must checkout osh-js and link it with OpenSensorViewer 
     git clone https://github.com/opensensorhub/osh-viewer.git
     cd osh-viewer
     npm install
-    npm link osh-js
     npm run build 
