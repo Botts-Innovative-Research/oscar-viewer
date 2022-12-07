@@ -70,31 +70,34 @@ export async function getObservableDrapedImagery(server: SensorHubServer, withCr
 
                 let locationData = fetchFromObject(result, 'location');
 
-                for (let location of locationData) {
+                if (locationData != null) {
 
-                    let timePeriod: ITimePeriod = new TimePeriod({
-                        id: randomUUID(),
-                        beginPosition: location.phenomenonTime[0],
-                        endPosition: location.phenomenonTime[1],
-                        isIndeterminateStart: false,
-                        isIndeterminateEnd: false
-                    });
+                    for (let location of locationData) {
 
-                    if (timePeriod.beginPosition !== '0') {
+                        let timePeriod: ITimePeriod = new TimePeriod({
+                            id: randomUUID(),
+                            beginPosition: location.phenomenonTime[0],
+                            endPosition: location.phenomenonTime[1],
+                            isIndeterminateStart: false,
+                            isIndeterminateEnd: false
+                        });
 
-                        physicalSystemTime.updateSystemTime(timePeriod);
+                        if (timePeriod.beginPosition !== '0') {
+
+                            physicalSystemTime.updateSystemTime(timePeriod);
+                        }
+
+                        locationDataSource = new SweApi(physicalSystem.name + "-location-dataSource", {
+                            protocol: Protocols.WS,
+                            endpointUrl: server.address.replace(/^(http|https):\/\//i, '') + Service.API,
+                            resource: `/datastreams/${location.dataStreamId}/observations`,
+                            startTime: REALTIME_START,
+                            endTime: REALTIME_FUTURE_END,
+                            tls: server.secure
+                        });
+
+                        dataSources.push(locationDataSource);
                     }
-
-                    locationDataSource = new SweApi(physicalSystem.name + "-location-dataSource", {
-                        protocol: Protocols.WS,
-                        endpointUrl: server.address.replace(/^(http|https):\/\//i, '') + Service.API,
-                        resource: `/datastreams/${location.dataStreamId}/observations`,
-                        startTime: REALTIME_START,
-                        endTime: REALTIME_FUTURE_END,
-                        tls: server.secure
-                    });
-
-                    dataSources.push(locationDataSource);
                 }
 
                 let orientationData: any = fetchFromObject(result, 'orientation');
@@ -165,51 +168,54 @@ export async function getObservableDrapedImagery(server: SensorHubServer, withCr
 
                 let videoData = fetchFromObject(result, 'video');
 
-                let encoding: string = "H264";
+                if (videoData != null) {
 
-                for (let video of videoData) {
+                    let encoding: string = "H264";
 
-                    encoding = video['encoding'];
+                    for (let video of videoData) {
 
-                    let timePeriod: ITimePeriod = new TimePeriod({
-                        id: randomUUID(),
-                        beginPosition: video.phenomenonTime[0],
-                        endPosition: video.phenomenonTime[1],
-                        isIndeterminateStart: false,
-                        isIndeterminateEnd: false
-                    });
+                        encoding = video['encoding'];
 
-                    if (timePeriod.beginPosition !== '0') {
-
-                        physicalSystemTime.updateSystemTime(timePeriod);
-                    }
-
-                    if (encoding === 'JPEG') {
-
-                        videoDataSource = new SweApi(physicalSystem.name + "-image-dataSource", {
-                            protocol: Protocols.WS,
-                            endpointUrl: server.address.replace(/^(http|https):\/\//i, '') + Service.API,
-                            resource: `/datastreams/${video.dataStreamId}/observations`,
-                            startTime: REALTIME_START,
-                            endTime: REALTIME_FUTURE_END,
-                            tls: server.secure,
-                            responseFormat: 'application/swe+binary'
+                        let timePeriod: ITimePeriod = new TimePeriod({
+                            id: randomUUID(),
+                            beginPosition: video.phenomenonTime[0],
+                            endPosition: video.phenomenonTime[1],
+                            isIndeterminateStart: false,
+                            isIndeterminateEnd: false
                         });
 
-                    } else {
+                        if (timePeriod.beginPosition !== '0') {
 
-                        videoDataSource = new SweApi(physicalSystem.name + "-video-dataSource", {
-                            protocol: Protocols.WS,
-                            endpointUrl: server.address.replace(/^(http|https):\/\//i, '') + Service.API,
-                            resource: `/datastreams/${video.dataStreamId}/observations`,
-                            startTime: REALTIME_START,
-                            endTime: REALTIME_FUTURE_END,
-                            tls: server.secure,
-                            responseFormat: 'application/swe+binary'
-                        });
+                            physicalSystemTime.updateSystemTime(timePeriod);
+                        }
+
+                        if (encoding === 'JPEG') {
+
+                            videoDataSource = new SweApi(physicalSystem.name + "-image-dataSource", {
+                                protocol: Protocols.WS,
+                                endpointUrl: server.address.replace(/^(http|https):\/\//i, '') + Service.API,
+                                resource: `/datastreams/${video.dataStreamId}/observations`,
+                                startTime: REALTIME_START,
+                                endTime: REALTIME_FUTURE_END,
+                                tls: server.secure,
+                                responseFormat: 'application/swe+binary'
+                            });
+
+                        } else {
+
+                            videoDataSource = new SweApi(physicalSystem.name + "-video-dataSource", {
+                                protocol: Protocols.WS,
+                                endpointUrl: server.address.replace(/^(http|https):\/\//i, '') + Service.API,
+                                resource: `/datastreams/${video.dataStreamId}/observations`,
+                                startTime: REALTIME_START,
+                                endTime: REALTIME_FUTURE_END,
+                                tls: server.secure,
+                                responseFormat: 'application/swe+binary'
+                            });
+                        }
+
+                        dataSources.push(videoDataSource);
                     }
-
-                    dataSources.push(videoDataSource);
                 }
 
                 if (locationDataSource && orientationDataSource && gimbalOrientationDataSource && videoDataSource) {
