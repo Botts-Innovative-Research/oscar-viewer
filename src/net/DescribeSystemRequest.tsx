@@ -18,7 +18,7 @@ import {Service} from "../data/Constants";
 
 export function describeSystem(server: ISensorHubServer, system: IPhysicalSystem) {
 
-    const systemRequestClause = "/systems/" + system.systemId;
+    const systemRequestClause = `/systems/${system.systemId}`;
 
     window.open(server.address + Service.API + systemRequestClause, null, null);
 }

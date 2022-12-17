@@ -24,11 +24,8 @@ The following features are currently supported:
       - Position, Location, Identification – Map Markers with polyline trails of historical position
         up to a maximum number of reported points (default 200)
       - Video Streams – Presented within dialogs
-      - Image – Static images presented within a dialog, updated when the static image
-        changes as provided by the system
       - Draping – terrain draped imagery, useful in visualizing geo-rectified video streams for
         example from a drone flying overhead
-      - Areas of Interest – Polygon bounding a region
     - Other visualizations can be created but as a minimum the ones above are provided
   - Real Time and Archive/Playback of Data Streams
     - Time Synchronization in Playback Mode

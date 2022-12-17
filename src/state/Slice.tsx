@@ -115,13 +115,7 @@ const initialState: IAppState = {
     dataLayersConnectedState: new Map<ObservableType, boolean>([
         [ObservableType.PLI, false],
         [ObservableType.VIDEO, false],
-        [ObservableType.IMAGE, false],
         [ObservableType.DRAPING, false],
-        [ObservableType.LOB, false],
-        [ObservableType.AOI, false],
-        [ObservableType.CHART, false],
-        [ObservableType.TARGET, false],
-        [ObservableType.SIGINT, false]
     ])
 };
 
@@ -216,8 +210,7 @@ export const Slice = createSlice({
 
                         observable.disconnect();
 
-                        if ((observable.type !== ObservableType.VIDEO) &&
-                            (observable.type !== ObservableType.CHART)) {
+                        if (observable.type !== ObservableType.VIDEO) {
 
                             for (let layer of observable.layers) {
 
@@ -268,8 +261,7 @@ export const Slice = createSlice({
 
             if (observable != undefined) {
 
-                if ((observable.type !== ObservableType.VIDEO) &&
-                    (observable.type !== ObservableType.CHART)) {
+                if (observable.type !== ObservableType.VIDEO) {
 
                     for (let layer of observable.layers) {
 
@@ -289,8 +281,7 @@ export const Slice = createSlice({
 
             if (observable != undefined) {
 
-                if ((observable.type !== ObservableType.VIDEO) &&
-                    (observable.type !== ObservableType.CHART)) {
+                if (observable.type !== ObservableType.VIDEO) {
 
                     for (let layer of observable.layers) {
 
@@ -407,8 +398,7 @@ export const Slice = createSlice({
                     state.connectedObservables.set(observable.uuid, false);
                     observable.isConnected = false;
 
-                    if ((observable.type !== ObservableType.VIDEO) &&
-                        (observable.type !== ObservableType.CHART)) {
+                    if (observable.type !== ObservableType.VIDEO) {
 
                         for (let layer of observable.layers) {
 

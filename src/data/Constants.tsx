@@ -24,13 +24,7 @@ export enum ObservableType {
 
     PLI = 'PLI',
     VIDEO = 'VIDEO',
-    IMAGE = 'IMAGE',
     DRAPING = 'DRAPING',
-    LOB = 'LOB',
-    AOI = "AOI",
-    CHART = 'CHART',
-    TARGET = 'TARGET',
-    SIGINT = 'SIGINT'
 }
 
 export const DEFAULT_TIME_ID: string = "INDETERMINATE | REALTIME";
@@ -67,8 +61,7 @@ export function asMillis(scale: TimeScale): number {
 export enum Service {
     API = "/sensorhub/api",
     SOS = "/sensorhub/sos",
-    SPS = "/sensorhub/sps",
-    DISCOVERY = "/sensorhub/discovery"
+    SPS = "/sensorhub/sps"
 }
 
 export const DEFAULT_SOS_ENDPOINT:Service = Service.SOS;

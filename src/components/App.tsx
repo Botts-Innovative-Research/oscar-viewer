@@ -43,7 +43,7 @@ import Observables from "./observables/Observables";
 import {initDb, readSensorHubServers} from "../database/database";
 import {IObservable, ISensorHubServer} from "../data/Models";
 import {fetchPhysicalSystems} from "../net/SystemRequest";
-import {getObservables} from "../net/observables/ObservableUtils";
+import {getObservables} from "../observables/ObservableUtils";
 import CenteredPopover from "./decorators/CenteredPopover";
 import Systems from "./systems/Systems";
 import SplashScreen from "./splash/SplashScreen";
@@ -127,8 +127,7 @@ const App = () => {
 
             let observable: IObservable = observables.get(id);
 
-            if (observable.type === ObservableType.DRAPING || observable.type === ObservableType.VIDEO ||
-                observable.type === ObservableType.IMAGE) {
+            if (observable.type === ObservableType.DRAPING || observable.type === ObservableType.VIDEO) {
 
                 connectedObservablesArr.push(observable);
             }

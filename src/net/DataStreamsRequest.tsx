@@ -17,11 +17,9 @@
 import {SensorHubServer,} from "../data/Models";
 import {Service} from "../data/Constants";
 
-export async function fetchObservables(server: SensorHubServer, withCredentials: boolean, observableRules: string) {
+export async function fetchDataStreams(server: SensorHubServer, withCredentials: boolean) {
 
-    const supportingClause: string = "/discover?supporting="
-
-    let request: string = server.address + Service.DISCOVERY + supportingClause + observableRules;
+    let request: string = server.address + Service.API + "/datastreams?f=application%2Fjson";
 
     let options: RequestInit = {};
     options.method = "GET";
@@ -35,7 +33,7 @@ export async function fetchObservables(server: SensorHubServer, withCredentials:
     }
 
     let response = await fetch(request, options).catch(reason => {
-        console.error("Discovery request failed on :" + server.name + " for observable rules: " + observableRules);
+        console.error("Data streams request failed on :" + server.name);
         return new Response(JSON.stringify({resultSet: []}));
     });
 
