@@ -84,6 +84,13 @@ const StreamingDialog = (props: IStreamingDialogProps) => {
             // Anything in here is fired on component unmount.
             if (videoView) {
 
+                let element = document.getElementById(videoView.id);
+
+                if(element) {
+
+                    element.remove();
+                }
+
                 videoView.destroy();
             }
         }
