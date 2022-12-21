@@ -216,13 +216,6 @@ export const Slice = createSlice({
 
                                 if (!(layer instanceof VideoDataLayer)) {
 
-                                    // If the layer data can be cleared
-                                    if (layer.clear !== undefined) {
-
-                                        // Clear the layers data
-                                        layer.clear();
-                                    }
-
                                     state.mapView.removeAllFromLayer(layer);
                                 }
                             }
@@ -286,15 +279,6 @@ export const Slice = createSlice({
                     for (let layer of observable.layers) {
 
                         if (!(layer instanceof VideoDataLayer)) {
-
-                            // If the layer data can be cleared
-                            if (layer.clear !== undefined) {
-
-                                // Clear the layers data
-                                layer.clear();
-                            }
-
-                            layer.reset();
 
                             state.mapView.removeAllFromLayer(layer);
                         }
@@ -403,15 +387,6 @@ export const Slice = createSlice({
                         for (let layer of observable.layers) {
 
                             if (!(layer instanceof VideoDataLayer)) {
-
-                                // If the layer data can be cleared
-                                if (layer.clear !== undefined) {
-
-                                    // Clear the layers data
-                                    layer.clear();
-                                }
-
-                                layer.reset();
 
                                 state.mapView.removeAllFromLayer(layer);
                             }
