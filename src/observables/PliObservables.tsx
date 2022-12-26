@@ -142,7 +142,8 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
                 labelBackgroundColor: 'rgba(236,236,236,0.5)',
                 labelSize: 25,
                 defaultToTerrainElevation: false,
-                zIndex: 1
+                zIndex: 1,
+                iconScale: 1
             });
 
         } else {
@@ -182,7 +183,8 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
                 labelBackgroundColor: 'rgba(236,236,236,0.5)',
                 labelSize: 25,
                 defaultToTerrainElevation: false,
-                zIndex: 1
+                zIndex: 1,
+                iconScale: 1
             });
         }
 
