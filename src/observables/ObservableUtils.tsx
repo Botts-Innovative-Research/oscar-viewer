@@ -66,17 +66,20 @@ export async function getObservables(server: SensorHubServer, withCredentials: b
 
                 let phenomenonTime: string[] = findInObject(dataStream, 'phenomenonTime')
 
-                let timePeriod: ITimePeriod = new TimePeriod({
-                    id: randomUUID(),
-                    beginPosition: phenomenonTime[0],
-                    endPosition: phenomenonTime[1],
-                    isIndeterminateStart: false,
-                    isIndeterminateEnd: false
-                });
+                if (phenomenonTime) {
 
-                if (timePeriod.beginPosition !== '0') {
+                    let timePeriod: ITimePeriod = new TimePeriod({
+                        id: randomUUID(),
+                        beginPosition: phenomenonTime[0],
+                        endPosition: phenomenonTime[1],
+                        isIndeterminateStart: false,
+                        isIndeterminateEnd: false
+                    });
 
-                    physicalSystemTime.updateSystemTime(timePeriod);
+                    if (timePeriod.beginPosition !== '0') {
+
+                        physicalSystemTime.updateSystemTime(timePeriod);
+                    }
                 }
 
                 let dataStreamId = findInObject(dataStream, 'id');
@@ -96,19 +99,23 @@ export async function getObservables(server: SensorHubServer, withCredentials: b
                     observableTypeInfo.get(ObservableType.VIDEO).push(info);
                     observableTypeInfo.get(ObservableType.DRAPING).push(info)
                 }
-                if (definition.endsWith('/Location') || definition.endsWith('/PlatformLocation')) {
+                if (definition.endsWith('/Location') ||
+                    definition.endsWith('/PlatformLocation') ||
+                    definition.endsWith('/SensorLocation')) {
 
                     observableTypeInfo.get(ObservableType.PLI).push(info)
                     observableTypeInfo.get(ObservableType.DRAPING).push(info)
                 }
 
-                if (definition.endsWith('/OrientationQuaternion') || definition.endsWith('/PlatformOrientation')) {
+                if (definition.endsWith('/OrientationQuaternion') ||
+                    definition.endsWith('/PlatformOrientation')) {
 
                     observableTypeInfo.get(ObservableType.PLI).push(info)
                     observableTypeInfo.get(ObservableType.DRAPING).push(info)
                 }
 
-                if (definition.endsWith('/GimbalOrientation')) {
+                if (definition.endsWith('/GimbalOrientation') ||
+                    definition.endsWith('/SensorOrientation')) {
 
                     observableTypeInfo.get(ObservableType.DRAPING).push(info)
                 }

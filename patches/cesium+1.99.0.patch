@@ -5,7 +5,7 @@ index 8198e44..11abe56 100644
 @@ -834,6 +834,33 @@ function createTexture2DUpdateFunction(uniformId) {
        return;
      }
- 
+
 +    if (uniformValue instanceof HTMLCanvasElement) {
 +      if (!uniformValue.drawing) {
 +        if (uniformChanged && defined(texture)) {

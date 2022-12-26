@@ -19,21 +19,14 @@ import {IObservableTypeInfo} from "./ObservableUtils";
 import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../data/Constants";
 // @ts-ignore
 import {Cartesian2, Cartesian3, Matrix3} from "cesium";
-import {colorHash} from "../utils/ColorUtils";
 // @ts-ignore
 import ImageDrapingLayer from "osh-js/source/core/ui/layer/ImageDrapingLayer";
 // @ts-ignore
 import VideoDataLayer from "osh-js/source/core/ui/layer/VideoDataLayer"
 // @ts-ignore
-import PointMarkerLayer from "osh-js/source/core/ui/layer/PointMarkerLayer";
-// @ts-ignore
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
 import {randomUUID} from "osh-js/source/core/utils/Utils";
-// @ts-ignore
-import Drone from "../assets/models/drone.glb";
-// @ts-ignore
-import PointMarker from "../assets/models/pointmarker-orient.glb";
 
 export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): IObservable => {
 
@@ -50,7 +43,9 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
 
         let definition = findInObject(info.schema, 'definition');
 
-        return definition.endsWith('/Location') || definition.endsWith('PlatformLocation');
+        return definition.endsWith('/Location') ||
+            definition.endsWith('/PlatformLocation') ||
+            definition.endsWith('/SensorLocation');
     });
 
     // Extract an orientation schema if possible
@@ -58,14 +53,16 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
 
         let definition = findInObject(info.schema, 'definition');
 
-        return definition.endsWith('/OrientationQuaternion') || definition.endsWith('PlatformOrientation');
+        return definition.endsWith('/OrientationQuaternion') ||
+            definition.endsWith('/PlatformOrientation');
     });
 
     let gimbalInfo: IObservableTypeInfo = observableTypeInfo.find(info => {
 
         let definition = findInObject(info.schema, 'definition');
 
-        return definition.endsWith('/GimbalOrientation');
+        return definition.endsWith('/GimbalOrientation') ||
+            definition.endsWith('/SensorOrientation');
     });
 
     let videoInfo: IObservableTypeInfo = observableTypeInfo.find(info => {
@@ -129,60 +126,6 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
 
         dataSources.push(videoDataSource);
 
-        let pointMarkerLayer: PointMarkerLayer = new PointMarkerLayer({
-            getMarkerId: {
-                // @ts-ignore
-                dataSourceIds: [locationDataSource.getId()],
-                handler: function (rec: any) {
-                    let id: string = findInObject(rec, 'id | uid | source');
-                    if (id == null) {
-                        id = `${physicalSystem.uuid}`;
-                    }
-                    return id;
-                }
-            },
-            getLocation: {
-                // @ts-ignore
-                dataSourceIds: [locationDataSource.getId()],
-                handler: function (rec: any) {
-                    return {
-                        x: findInObject(rec, 'lon | x | longitude'),
-                        y: findInObject(rec, 'lat | y | latitude'),
-                        z: findInObject(rec, 'alt | z | altitude'),
-                    }
-                }
-            },
-            getOrientation: {
-                // @ts-ignore
-                dataSourceIds: [orientationDataSource.getId()],
-                handler: function (rec: any) {
-                    let orientation: any = findInObject(rec, 'heading');
-                    if (orientation !== null) {
-                        return {
-                            heading: findInObject(rec, 'heading'),
-                        }
-                    } else {
-                        return {
-                            heading: findInObject(rec, 'yaw'),
-                        }
-                    }
-                }
-            },
-            icon: Drone,
-            // iconAnchor: [16, 64],
-            iconSize: [32, 32],
-            color: colorHash(physicalSystem.name).rgba,
-            name: physicalSystem.systemId,
-            label: physicalSystem.name,
-            labelOffset: [0, 20],
-            labelColor: 'rgba(255,255,255,1.0)',
-            labelOutlineColor: 'rgba(0,0,0,1.0)',
-            labelBackgroundColor: 'rgba(236,236,236,0.5)',
-            labelSize: 25,
-            defaultToTerrainElevation: false,
-            zIndex: 1
-        });
-
         let imageDrapingLayer = new ImageDrapingLayer({
             getPlatformLocation: {
                 dataSourceIds: [locationDataSource.getId()],
@@ -226,20 +169,20 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
             //         };
             //     }
             // },
-            // cameraModel: {
-            //     camProj: new Matrix3(1.893762, 0.0, 0.5,
-            //         0.0, 2.525016, 0.5,
-            //         0.0, 0.0, 1.0),
-            //     camDistR: new Cartesian3(0.0, 0.0, 0.0),
-            //     camDistT: new Cartesian2(0.0, 0.0)
-            // },
             cameraModel: {
-                camProj: new Matrix3(747.963 / 1280., 0.0, 650.66 / 1280.,
-                    0.0, 769.576 / 738., 373.206 / 738.,
+                camProj: new Matrix3(1.893762, 0.0, 0.5,
+                    0.0, 2.525016, 0.5,
                     0.0, 0.0, 1.0),
-                camDistR: new Cartesian3(-2.644e-01, 8.4e-02, 0.0),
-                camDistT: new Cartesian2(-8.688e-04, 6.123e-04)
+                camDistR: new Cartesian3(0.0, 0.0, 0.0),
+                camDistT: new Cartesian2(0.0, 0.0)
             },
+            // cameraModel: {
+            //     camProj: new Matrix3(747.963 / 1280., 0.0, 650.66 / 1280.,
+            //         0.0, 769.576 / 738., 373.206 / 738.,
+            //         0.0, 0.0, 1.0),
+            //     camDistR: new Cartesian3(-2.644e-01, 8.4e-02, 0.0),
+            //     camDistT: new Cartesian2(-8.688e-04, 6.123e-04)
+            // },
         });
 
         let videoDataLayer = new VideoDataLayer({
@@ -254,7 +197,7 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
 
         observable = new Observable({
             uuid: randomUUID(),
-            layers: [pointMarkerLayer, imageDrapingLayer, videoDataLayer],
+            layers: [imageDrapingLayer, videoDataLayer],
             dataSources: dataSources,
             name: "DRAPED",
             physicalSystem: physicalSystem,

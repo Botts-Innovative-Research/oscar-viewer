@@ -44,7 +44,9 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
 
         let definition = findInObject(info.schema, 'definition');
 
-        return definition.endsWith('/Location') || definition.endsWith('PlatformLocation');
+        return definition.endsWith('/Location') ||
+            definition.endsWith('/PlatformLocation') ||
+            definition.endsWith('/SensorLocation');
     });
 
     // Extract an orientation schema if possible
@@ -52,7 +54,7 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
 
         let definition = findInObject(info.schema, 'definition');
 
-        return definition.endsWith('/OrientationQuaternion') || definition.endsWith('PlatformOrientation');
+        return definition.endsWith('/OrientationQuaternion') || definition.endsWith('/PlatformOrientation');
     });
 
     if (locationInfo) {
@@ -132,7 +134,7 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
                 // iconAnchor: [16, 64],
                 iconSize: [32, 32],
                 color: colorHash(physicalSystem.name).rgba,
-                name: physicalSystem.systemId,
+                name: physicalSystem.name,
                 label: physicalSystem.name,
                 labelOffset: [0, 20],
                 labelColor: 'rgba(255,255,255,1.0)',
@@ -140,7 +142,8 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
                 labelBackgroundColor: 'rgba(236,236,236,0.5)',
                 labelSize: 25,
                 defaultToTerrainElevation: false,
-                zIndex: 1
+                zIndex: 1,
+                iconScale: 1
             });
 
         } else {
@@ -172,7 +175,7 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
                 // iconAnchor: [16, 64],
                 iconSize: [32, 32],
                 color: colorHash(physicalSystem.name).rgba,
-                name: physicalSystem.systemId,
+                name: physicalSystem.name,
                 label: physicalSystem.name,
                 labelOffset: [0, 20],
                 labelColor: 'rgba(255,255,255,1.0)',
@@ -180,7 +183,8 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
                 labelBackgroundColor: 'rgba(236,236,236,0.5)',
                 labelSize: 25,
                 defaultToTerrainElevation: false,
-                zIndex: 1
+                zIndex: 1,
+                iconScale: 1
             });
         }
 
