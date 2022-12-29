@@ -72,6 +72,7 @@ const StreamingDialog = (props: IStreamingDialogProps) => {
 
             let drapingLayer: ImageDrapingLayer = props.observable.layers.filter((layer: Layer) => layer instanceof ImageDrapingLayer)[0];
             drapingLayer.propsById[drapingLayer.getId()]['imageSrc'] = await videoView.getVideoCanvas();
+            drapingLayer.properties.imageSrc = drapingLayer.propsById[drapingLayer.getId()]['imageSrc'];
         }
 
         if (props.observable.type === ObservableType.DRAPING) {
