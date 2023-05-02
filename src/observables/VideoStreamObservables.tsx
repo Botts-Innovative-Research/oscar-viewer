@@ -23,6 +23,8 @@ import {randomUUID} from "osh-js/source/core/utils/Utils";
 import VideoDataLayer from "osh-js/source/core/ui/layer/VideoDataLayer"
 import {IObservableTypeInfo} from "./ObservableUtils";
 import {findInObject} from "../utils/Utils";
+// @ts-ignore
+import {Mode} from "osh-js/source/core/datasource/Mode";
 
 export const buildVideoStreams = (observableTypeInfo: IObservableTypeInfo[]): IObservable => {
 
@@ -43,6 +45,7 @@ export const buildVideoStreams = (observableTypeInfo: IObservableTypeInfo[]): IO
             resource: `/datastreams/${videoInfo.dataStreamId}/observations`,
             startTime: REALTIME_START,
             endTime: REALTIME_FUTURE_END,
+            mode: Mode.REPLAY,
             tls: videoInfo.physicalSystem.server.secure,
             responseFormat: 'application/swe+binary'
         });

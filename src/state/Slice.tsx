@@ -106,7 +106,8 @@ const initialState: IAppState = {
         endTime: REALTIME_END,
         replaySpeed: 1,
         intervalRate: 5,
-        dataSources: []
+        dataSources: [],
+        mode: Mode.REPLAY
     }),
     dataSynchronizerReplaySpeed: 1,
     playbackState: PlaybackState.PAUSE,
