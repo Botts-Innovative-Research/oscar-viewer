@@ -27,6 +27,8 @@ import VideoDataLayer from "osh-js/source/core/ui/layer/VideoDataLayer"
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
 import {randomUUID} from "osh-js/source/core/utils/Utils";
+// @ts-ignore
+import {Mode} from "osh-js/source/core/datasource/Mode";
 
 export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): IObservable => {
 
@@ -87,6 +89,7 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
             resource: `/datastreams/${locationInfo.dataStreamId}/observations`,
             startTime: REALTIME_START,
             endTime: REALTIME_FUTURE_END,
+            mode: Mode.REPLAY,
             tls: useTls
         });
 
@@ -98,6 +101,7 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
             resource: `/datastreams/${orientationInfo.dataStreamId}/observations`,
             startTime: REALTIME_START,
             endTime: REALTIME_FUTURE_END,
+            mode: Mode.REPLAY,
             tls: useTls
         });
 
@@ -109,6 +113,7 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
             resource: `/datastreams/${gimbalInfo.dataStreamId}/observations`,
             startTime: REALTIME_START,
             endTime: REALTIME_FUTURE_END,
+            mode: Mode.REPLAY,
             tls: useTls
         });
 
@@ -120,6 +125,7 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
             resource: `/datastreams/${videoInfo.dataStreamId}/observations`,
             startTime: REALTIME_START,
             endTime: REALTIME_FUTURE_END,
+            mode: Mode.REPLAY,
             tls: useTls,
             responseFormat: 'application/swe+binary'
         });

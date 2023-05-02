@@ -30,6 +30,8 @@ import PointMarker from "../assets/models/pointmarker-orient.glb";
 // @ts-ignore
 import PointMarkerNoOrientation from "../assets/models/pointmarker.glb";
 import {IObservableTypeInfo} from "./ObservableUtils";
+// @ts-ignore
+import {Mode} from "osh-js/source/core/datasource/Mode";
 
 export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObservable => {
 
@@ -67,6 +69,7 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
             resource: `/datastreams/${locationInfo.dataStreamId}/observations`,
             startTime: REALTIME_START,
             endTime: REALTIME_FUTURE_END,
+            mode: Mode.REPLAY,
             tls: physicalSystem.server.secure
         });
 
@@ -81,6 +84,7 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
                 resource: `/datastreams/${orientationInfo.dataStreamId}/observations`,
                 startTime: REALTIME_START,
                 endTime: REALTIME_FUTURE_END,
+                mode: Mode.REPLAY,
                 tls: orientationInfo.physicalSystem.server.secure
             });
 
