@@ -24,7 +24,7 @@ import {
     TableContainer,
     TableHead,
     TablePagination,
-    TableRow
+    TableRow,
 } from "@mui/material";
 import {useAppDispatch, useAppSelector} from "../../state/Hooks";
 import {selectPhysicalSystems, setSystemsDialogOpen} from "../../state/Slice";
@@ -65,7 +65,9 @@ const Systems = (props: ISystemsProps) => {
 
     systems.forEach((system: IPhysicalSystem) => {
 
-        systemEntries.push(<SystemEntry key={system.uuid} server={system.server} system={system}/>);
+        if (system.parentSystemUuid == null) {
+            systemEntries.push(<SystemEntry key={system.uuid} server={system.server} system={system}/>);
+        }
     })
 
     if (systemEntries.length) {

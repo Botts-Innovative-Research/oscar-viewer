@@ -62,7 +62,65 @@ export async function fetchPhysicalSystems(server: ISensorHubServer, withCredent
                     uuid: randomUUID(),
                     physicalSystemTime: new PhysicalSystemTime(),
                     server: server,
-                    observables: []
+                    observables: [],
+                    parentSystemUuid: null
+                });
+
+                server.systems.push(physicalSystem);
+
+                physicalSystems.push(physicalSystem);
+            }
+
+            return physicalSystems;
+        });
+}
+
+
+export async function fetchSubsystems(server: ISensorHubServer, withCredentials: boolean, parentSystem: IPhysicalSystem): Promise<IPhysicalSystem[]> {
+
+    let request: string = server.address + Service.API + '/systems/' + parentSystem.systemId + '/members?f=application/json&validTime=../..';
+
+    let options: RequestInit = {};
+    options.method = "GET";
+    if (withCredentials) {
+
+        options.credentials = "include";
+        options.headers = new Headers({
+            "Authorization": "Basic " + server.authToken,
+            "Content-Type": "application/json",
+        });
+    }
+    options.mode = "cors";
+
+    let response = await fetch(request, options).catch(reason => {
+        console.error("Physical systems request failed on :" + server.name);
+        // return new Response(JSON.stringify({ items: []}));
+        throw new Error(reason);
+    });
+
+    return await response.json().then(
+        data => {
+            let physicalSystems: IPhysicalSystem[] = [];
+
+            let systemsData: any[] = fetchFromObject(data, "items");
+
+            for (let system of systemsData) {
+
+                let systemId = fetchFromObject(system, "id");
+
+                let uid = fetchFromObject(system, "properties.uid");
+
+                let name = fetchFromObject(system, "properties.name")
+
+                let physicalSystem: IPhysicalSystem = new PhysicalSystem({
+                    name: name,
+                    serverUid: uid,
+                    systemId: systemId,
+                    uuid: randomUUID(),
+                    physicalSystemTime: new PhysicalSystemTime(),
+                    server: server,
+                    observables: [],
+                    parentSystemUuid: parentSystem.uuid
                 });
 
                 server.systems.push(physicalSystem);

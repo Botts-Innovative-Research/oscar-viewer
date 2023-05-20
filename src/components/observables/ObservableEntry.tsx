@@ -16,14 +16,14 @@
 import React from "react";
 import {Switch, TableCell, TableRow, Tooltip} from "@mui/material";
 import {useAppDispatch, useAppSelector} from "../../state/Hooks";
-import {IMasterTime, IObservable} from "../../data/Models";
+import {IMasterTime, IObservable, IPhysicalSystem} from "../../data/Models";
 import ObservableIcon from "./ObservableIcon";
 import {
     connectObservable,
     disconnectObservable,
     hideObservable,
     selectConnectedObservables,
-    selectMasterTime,
+    selectMasterTime, selectPhysicalSystems,
     selectPlaybackState,
     showObservable
 } from "../../state/Slice";
@@ -41,6 +41,7 @@ const ObservableEntry = (props: ObservableEntryProps) => {
     let connectedObservables: Map<string, boolean> = useAppSelector<Map<string, boolean>>(selectConnectedObservables);
     let masterTime: IMasterTime = useAppSelector<IMasterTime>(selectMasterTime);
     let playbackState: PlaybackState = useAppSelector<PlaybackState>(selectPlaybackState);
+    let physicalSystems: Map<string, IPhysicalSystem> = useAppSelector(selectPhysicalSystems);
 
     return (
         <TableRow
@@ -52,11 +53,15 @@ const ObservableEntry = (props: ObservableEntryProps) => {
                     <ObservableIcon type={props.observable.type}/>
                 </TableCell>
             </Tooltip>
-            {/*<TableCell>*/}
-            {/*    {props.observable.name}*/}
-            {/*</TableCell>*/}
             <TableCell>
-                {props.observable.physicalSystem.name}
+                {props.observable.physicalSystem.parentSystemUuid == null ?
+                    props.observable.name :
+                    props.observable.physicalSystem.name}
+            </TableCell>
+            <TableCell>
+                {props.observable.physicalSystem.parentSystemUuid == null ?
+                    props.observable.physicalSystem.name :
+                    physicalSystems.get(props.observable.physicalSystem.parentSystemUuid).name}
             </TableCell>
             <TableCell>
                 <Switch

@@ -48,7 +48,8 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
 
         return definition.endsWith('/Location') ||
             definition.endsWith('/PlatformLocation') ||
-            definition.endsWith('/SensorLocation');
+            definition.endsWith('/SensorLocation') ||
+            definition.endsWith('/GPS');
     });
 
     // Extract an orientation schema if possible

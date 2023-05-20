@@ -315,7 +315,8 @@ export interface IPhysicalSystem {
     uuid: string,
     physicalSystemTime: IPhysicalSystemTime,
     server: ISensorHubServer,
-    observables: IObservable[]
+    observables: IObservable[],
+    parentSystemUuid: string | null
 }
 
 const physicalSystemProps: IPhysicalSystem = {
@@ -325,7 +326,8 @@ const physicalSystemProps: IPhysicalSystem = {
     uuid: null,
     physicalSystemTime: new PhysicalSystemTime(),
     server: null,
-    observables: []
+    observables: [],
+    parentSystemUuid: null
 }
 
 export class PhysicalSystem implements IPhysicalSystem {
@@ -337,6 +339,7 @@ export class PhysicalSystem implements IPhysicalSystem {
     uuid: string;
     server: ISensorHubServer;
     observables: IObservable[];
+    parentSystemUuid: string;
 
     constructor(props: IPhysicalSystem = physicalSystemProps) {
         this.name = props.name;
@@ -346,6 +349,7 @@ export class PhysicalSystem implements IPhysicalSystem {
         this.uuid = props.uuid;
         this.server = props.server;
         this.observables = props.observables;
+        this.parentSystemUuid = props.parentSystemUuid;
     }
 }
 
