@@ -42,7 +42,7 @@ import AddServer from "./servers/AddServer";
 import Observables from "./observables/Observables";
 import {initDb, readSensorHubServers} from "../database/database";
 import {IObservable, ISensorHubServer} from "../data/Models";
-import {fetchPhysicalSystems, fetchSubsystems} from "../net/SystemRequest";
+import {fetchControls, fetchPhysicalSystems, fetchSubsystems} from "../net/SystemRequest";
 import {getObservables} from "../observables/ObservableUtils";
 import CenteredPopover from "./decorators/CenteredPopover";
 import Systems from "./systems/Systems";
@@ -87,9 +87,11 @@ const App = () => {
 
                     for (let system of physicalSystems) {
 
+                        await fetchControls(sensorHubServer, true, system).then();
+
                         await fetchSubsystems(sensorHubServer, true, system).then(async physicalSystems =>{
 
-                            for(let system of physicalSystems) {
+                            for (let system of physicalSystems) {
 
                                 dispatch(addPhysicalSystem(system))
                             }

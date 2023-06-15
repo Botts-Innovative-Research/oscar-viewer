@@ -307,6 +307,42 @@ export class PhysicalSystemTime implements IPhysicalSystemTime {
     }
 }
 
+// Control ===================================================================
+export interface IControl {
+    description: string,
+    id: string,
+    inputName: string,
+    name: string,
+    systemId: string,
+}
+
+const controlProps: IControl = {
+
+    description: null,
+    id: null,
+    inputName: null,
+    name: null,
+    systemId: null,
+}
+
+export class SystemControl implements IControl {
+
+    description: string;
+    id: string;
+    inputName: string;
+    name: string;
+    systemId: string;
+
+    constructor(props: IControl = controlProps) {
+
+        this.description = props.description;
+        this.id = props.id;
+        this.inputName = props.inputName;
+        this.name = props.name;
+        this.systemId = props.systemId;
+    }
+}
+
 // PhysicalSystem =============================================================
 export interface IPhysicalSystem {
     name: string,
@@ -316,7 +352,8 @@ export interface IPhysicalSystem {
     physicalSystemTime: IPhysicalSystemTime,
     server: ISensorHubServer,
     observables: IObservable[],
-    parentSystemUuid: string | null
+    parentSystemUuid: string | null,
+    systemControls: IControl[]
 }
 
 const physicalSystemProps: IPhysicalSystem = {
@@ -327,7 +364,8 @@ const physicalSystemProps: IPhysicalSystem = {
     physicalSystemTime: new PhysicalSystemTime(),
     server: null,
     observables: [],
-    parentSystemUuid: null
+    parentSystemUuid: null,
+    systemControls: []
 }
 
 export class PhysicalSystem implements IPhysicalSystem {
@@ -340,6 +378,7 @@ export class PhysicalSystem implements IPhysicalSystem {
     server: ISensorHubServer;
     observables: IObservable[];
     parentSystemUuid: string;
+    systemControls: IControl[];
 
     constructor(props: IPhysicalSystem = physicalSystemProps) {
         this.name = props.name;
@@ -350,6 +389,7 @@ export class PhysicalSystem implements IPhysicalSystem {
         this.server = props.server;
         this.observables = props.observables;
         this.parentSystemUuid = props.parentSystemUuid;
+        this.systemControls = props.systemControls;
     }
 }
 

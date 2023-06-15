@@ -13,7 +13,7 @@
  *
  */
 
-import {IPhysicalSystem, ISensorHubServer, PhysicalSystem, PhysicalSystemTime} from "../data/Models";
+import {IPhysicalSystem, ISensorHubServer, PhysicalSystem, PhysicalSystemTime, SystemControl} from "../data/Models";
 import {Service} from "../data/Constants";
 import {fetchFromObject} from "../utils/Utils";
 // @ts-ignore
@@ -37,7 +37,6 @@ export async function fetchPhysicalSystems(server: ISensorHubServer, withCredent
 
     let response = await fetch(request, options).catch(reason => {
         console.error("Physical systems request failed on :" + server.name);
-        // return new Response(JSON.stringify({ items: []}));
         throw new Error(reason);
     });
 
@@ -63,7 +62,8 @@ export async function fetchPhysicalSystems(server: ISensorHubServer, withCredent
                     physicalSystemTime: new PhysicalSystemTime(),
                     server: server,
                     observables: [],
-                    parentSystemUuid: null
+                    parentSystemUuid: null,
+                    systemControls: []
                 });
 
                 server.systems.push(physicalSystem);
@@ -94,7 +94,6 @@ export async function fetchSubsystems(server: ISensorHubServer, withCredentials:
 
     let response = await fetch(request, options).catch(reason => {
         console.error("Physical systems request failed on :" + server.name);
-        // return new Response(JSON.stringify({ items: []}));
         throw new Error(reason);
     });
 
@@ -120,7 +119,8 @@ export async function fetchSubsystems(server: ISensorHubServer, withCredentials:
                     physicalSystemTime: new PhysicalSystemTime(),
                     server: server,
                     observables: [],
-                    parentSystemUuid: parentSystem.uuid
+                    parentSystemUuid: parentSystem.uuid,
+                    systemControls: []
                 });
 
                 server.systems.push(physicalSystem);
@@ -129,5 +129,44 @@ export async function fetchSubsystems(server: ISensorHubServer, withCredentials:
             }
 
             return physicalSystems;
+        });
+}
+
+export async function fetchControls(server: ISensorHubServer, withCredentials: boolean, parentSystem: IPhysicalSystem): Promise<void> {
+
+    let request: string = server.address + Service.API + '/systems/' + parentSystem.systemId + '/controls';
+
+    let options: RequestInit = {};
+    options.method = "GET";
+    if (withCredentials) {
+
+        options.credentials = "include";
+        options.headers = new Headers({
+            "Authorization": "Basic " + server.authToken,
+            "Content-Type": "application/json",
+        });
+    }
+    options.mode = "cors";
+
+    let response = await fetch(request, options).catch(reason => {
+        console.error("Physical systems controls request failed on :" + server.name);
+        throw new Error(reason);
+    });
+
+    return await response.json().then(
+        data => {
+
+            let controlsData: any[] = fetchFromObject(data, "items");
+
+            for (let controlData of controlsData) {
+
+                parentSystem.systemControls.push(new SystemControl({
+                    name: fetchFromObject(controlData, "name"),
+                    description: fetchFromObject(controlData, "description"),
+                    id: fetchFromObject(controlData, "id"),
+                    inputName: fetchFromObject(controlData, "inputName"),
+                    systemId: fetchFromObject(controlData, "system@id")
+                }));
+            }
         });
 }

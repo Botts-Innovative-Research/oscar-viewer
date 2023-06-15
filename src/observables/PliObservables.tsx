@@ -29,6 +29,10 @@ import {randomUUID} from "osh-js/source/core/utils/Utils";
 import PointMarker from "../assets/models/pointmarker-orient.glb";
 // @ts-ignore
 import PointMarkerNoOrientation from "../assets/models/pointmarker.glb";
+// @ts-ignore
+import UGV from "../assets/models/transbot.glb";
+// @ts-ignore
+import DRONE from "../assets/models/drone.glb";
 import {IObservableTypeInfo} from "./ObservableUtils";
 // @ts-ignore
 import {Mode} from "osh-js/source/core/datasource/Mode";
@@ -135,7 +139,8 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
                         }
                     }
                 },
-                icon: PointMarker,
+                icon: physicalSystem.name.includes('UGV') ? UGV :
+                    physicalSystem.name.includes('UAS') ? DRONE : PointMarker,
                 // iconAnchor: [16, 64],
                 iconSize: [32, 32],
                 color: colorHash(physicalSystem.name).rgba,
@@ -176,7 +181,8 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
                         }
                     }
                 },
-                icon: PointMarkerNoOrientation,
+                icon: physicalSystem.name.includes('UGV') ? UGV :
+                    physicalSystem.name.includes('UAS') ? DRONE : PointMarkerNoOrientation,
                 // iconAnchor: [16, 64],
                 iconSize: [32, 32],
                 color: colorHash(physicalSystem.name).rgba,
