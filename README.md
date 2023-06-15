@@ -34,6 +34,12 @@ The following features are currently supported:
 - Integration with CesiumJS as Mapping Engine
 - Minimalist user interface placing emphasis on visualization of observables
 
+## Cesium Ion Token
+
+You will need to sign up for a Cesium Ion account (https://cesium.com/platform/cesium-ion/) and 
+modify <code>src/components/map/CesiumMap.tsx</code> to set the <code>Cesium.Ion.defaultAccessToken</code> with token retrieved
+from Cesium Ion account in order to see the globe/map.
+
 ## Users' Manual
 
 Users' Manual is available in this repository under docs/OSH Viewer.pdf
