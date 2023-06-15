@@ -77,7 +77,7 @@ const Observables = (props: IObservablesProps) => {
                             <TableHead>
                                 <TableRow>
                                     <TableCell>Type</TableCell>
-                                    {/*<TableCell>Name</TableCell>*/}
+                                    <TableCell>Name</TableCell>
                                     <TableCell>System Name</TableCell>
                                     <TableCell>Connect</TableCell>
                                 </TableRow>

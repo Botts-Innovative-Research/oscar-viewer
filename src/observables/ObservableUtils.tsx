@@ -26,7 +26,6 @@ import {findInObject} from "../utils/Utils";
 // @ts-ignore
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {fetchDataStreamSchema} from "../net/DataStreamSchemaRequest";
-import {ObservableType} from "../data/Constants";
 import {buildVideoStreams} from "./VideoStreamObservables";
 import {buildPliMarkers} from "./PliObservables";
 import {buildDrapedImagery} from "./DrapedImageryObservable";
@@ -34,19 +33,15 @@ import {buildDrapedImagery} from "./DrapedImageryObservable";
 export interface IObservableTypeInfo {
     dataStreamId: string,
     physicalSystem: IPhysicalSystem,
-    schema: object
+    schema: object,
+    definition: string
 }
 
 export async function getObservables(server: SensorHubServer, withCredentials: boolean): Promise<IObservable[]> {
 
     let observables: IObservable[] = [];
 
-    let observableTypeInfo: Map<ObservableType, IObservableTypeInfo[]> =
-        new Map<ObservableType, IObservableTypeInfo[]>([
-            [ObservableType.PLI, []],
-            [ObservableType.VIDEO, []],
-            [ObservableType.DRAPING, []],
-        ]);
+    let systemObservablesMap: Map<string, IObservableTypeInfo[]> = new Map<string, IObservableTypeInfo[]>();
 
     let dataStreamsResponse = await fetchDataStreams(server, withCredentials);
 
@@ -86,57 +81,56 @@ export async function getObservables(server: SensorHubServer, withCredentials: b
 
                 let schemaResponse = await fetchDataStreamSchema(server, true, dataStreamId);
 
-                let definition: string = findInObject(schemaResponse, 'definition');
+                let resultSchema = findInObject(schemaResponse, 'resultSchema');
+
+                let definition = findInObject(schemaResponse, 'definition');
 
                 let info: IObservableTypeInfo = {
                     dataStreamId: dataStreamId,
                     physicalSystem: physicalSystem,
-                    schema: findInObject(schemaResponse, 'resultSchema')
+                    schema: resultSchema,
+                    definition: definition
                 }
 
-                if (definition.endsWith('/VideoFrame')) {
+                let key: string = (physicalSystem.parentSystemUuid === null) ? physicalSystem.uuid : physicalSystem.parentSystemUuid;
 
-                    observableTypeInfo.get(ObservableType.VIDEO).push(info);
-                    observableTypeInfo.get(ObservableType.DRAPING).push(info)
-                }
-                if (definition.endsWith('/Location') ||
-                    definition.endsWith('/PlatformLocation') ||
-                    definition.endsWith('/SensorLocation')) {
+                if(systemObservablesMap.has(key)) {
 
-                    observableTypeInfo.get(ObservableType.PLI).push(info)
-                    observableTypeInfo.get(ObservableType.DRAPING).push(info)
-                }
+                    systemObservablesMap.get(key).push(info);
 
-                if (definition.endsWith('/OrientationQuaternion') ||
-                    definition.endsWith('/PlatformOrientation')) {
+                } else {
 
-                    observableTypeInfo.get(ObservableType.PLI).push(info)
-                    observableTypeInfo.get(ObservableType.DRAPING).push(info)
-                }
-
-                if (definition.endsWith('/GimbalOrientation') ||
-                    definition.endsWith('/SensorOrientation')) {
-
-                    observableTypeInfo.get(ObservableType.DRAPING).push(info)
+                    systemObservablesMap.set(key, [info]);
                 }
             }
         }
     }
 
-    if (observableTypeInfo.get(ObservableType.PLI).length > 0) {
+    let observable: IObservable = null;
 
-        observables.push(buildPliMarkers(observableTypeInfo.get(ObservableType.PLI)));
-    }
+    systemObservablesMap.forEach((value:IObservableTypeInfo[], key:string) => {
 
-    if (observableTypeInfo.get(ObservableType.VIDEO).length > 0) {
+        observable = buildPliMarkers(value);
 
-        observables.push(buildVideoStreams(observableTypeInfo.get(ObservableType.VIDEO)));
-    }
+        if (observable != null) {
 
-    if (observableTypeInfo.get(ObservableType.DRAPING).length > 0) {
+            observables.push(observable);
+        }
 
-        observables.push(buildDrapedImagery(observableTypeInfo.get(ObservableType.DRAPING)));
-    }
+        observable = buildVideoStreams(value);
+
+        if (observable != null) {
+
+            observables.push(observable);
+        }
+
+        observable = buildDrapedImagery(value);
+
+        if (observable != null) {
+
+            observables.push(observable);
+        }
+    } );
 
     return observables;
 }

@@ -31,7 +31,7 @@ import {useAppDispatch} from "../../state/Hooks";
 import {addObservable, addPhysicalSystem, addSensorHubServer, setAddServerDialogOpen} from "../../state/Slice";
 import {Cancel, Done} from "@mui/icons-material";
 import {ISensorHubServer, SensorHubServer} from "../../data/Models";
-import {fetchPhysicalSystems} from "../../net/SystemRequest";
+import {fetchControls, fetchPhysicalSystems, fetchSubsystems} from "../../net/SystemRequest";
 import {storeSensorHubServer} from "../../database/database";
 import {getObservables} from "../../observables/ObservableUtils";
 import DraggableDialog from "../decorators/DraggableDialog";
@@ -130,6 +130,16 @@ const AddServer = (props: IAddServerProps) => {
                 dispatch(addSensorHubServer(server));
 
                 for (let system of physicalSystems) {
+
+                    await fetchControls(server, true, system).then();
+
+                    await fetchSubsystems(server, true, system).then(async physicalSystems =>{
+
+                        for(let system of physicalSystems) {
+
+                            dispatch(addPhysicalSystem(system))
+                        }
+                    });
 
                     dispatch(addPhysicalSystem(system))
                 }

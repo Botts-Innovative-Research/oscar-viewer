@@ -15,9 +15,10 @@
 
 import React from "react";
 import {IconButton, TableCell, TableRow, Tooltip} from "@mui/material";
-import {Description} from "@mui/icons-material";
+import {Description, SportsEsports} from "@mui/icons-material";
 import {IPhysicalSystem, ISensorHubServer} from "../../data/Models";
 import {describeSystem} from "../../net/DescribeSystemRequest";
+import {ReactJSXElement} from "@emotion/react/types/jsx-namespace";
 
 interface SystemEntryProps {
 
@@ -26,6 +27,19 @@ interface SystemEntryProps {
 }
 
 const SystemEntry = (props: SystemEntryProps) => {
+
+    let controls : ReactJSXElement[] = [];
+
+    for (let control of props.system.systemControls) {
+
+        controls.push(
+            <IconButton color={"success"} onClick={() => console.log("Control Action")}>
+                <Tooltip title={control.name} placement={"bottom-start"}>
+                    <SportsEsports/>
+                </Tooltip>
+            </IconButton>
+        )
+    }
 
     return (
         <TableRow
@@ -40,10 +54,11 @@ const SystemEntry = (props: SystemEntryProps) => {
             </TableCell>
             <TableCell>
                 <IconButton color={"info"} onClick={() => describeSystem(props.server, props.system)}>
-                    <Tooltip title={"Describe System"} placement={"right"}>
+                    <Tooltip title={"Describe System"} placement={"bottom-start"}>
                         <Description/>
                     </Tooltip>
                 </IconButton>
+                {controls}
             </TableCell>
         </TableRow>
     );

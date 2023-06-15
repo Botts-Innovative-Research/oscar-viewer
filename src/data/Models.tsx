@@ -307,6 +307,42 @@ export class PhysicalSystemTime implements IPhysicalSystemTime {
     }
 }
 
+// Control ===================================================================
+export interface IControl {
+    description: string,
+    id: string,
+    inputName: string,
+    name: string,
+    systemId: string,
+}
+
+const controlProps: IControl = {
+
+    description: null,
+    id: null,
+    inputName: null,
+    name: null,
+    systemId: null,
+}
+
+export class SystemControl implements IControl {
+
+    description: string;
+    id: string;
+    inputName: string;
+    name: string;
+    systemId: string;
+
+    constructor(props: IControl = controlProps) {
+
+        this.description = props.description;
+        this.id = props.id;
+        this.inputName = props.inputName;
+        this.name = props.name;
+        this.systemId = props.systemId;
+    }
+}
+
 // PhysicalSystem =============================================================
 export interface IPhysicalSystem {
     name: string,
@@ -315,7 +351,9 @@ export interface IPhysicalSystem {
     uuid: string,
     physicalSystemTime: IPhysicalSystemTime,
     server: ISensorHubServer,
-    observables: IObservable[]
+    observables: IObservable[],
+    parentSystemUuid: string | null,
+    systemControls: IControl[]
 }
 
 const physicalSystemProps: IPhysicalSystem = {
@@ -325,7 +363,9 @@ const physicalSystemProps: IPhysicalSystem = {
     uuid: null,
     physicalSystemTime: new PhysicalSystemTime(),
     server: null,
-    observables: []
+    observables: [],
+    parentSystemUuid: null,
+    systemControls: []
 }
 
 export class PhysicalSystem implements IPhysicalSystem {
@@ -337,6 +377,8 @@ export class PhysicalSystem implements IPhysicalSystem {
     uuid: string;
     server: ISensorHubServer;
     observables: IObservable[];
+    parentSystemUuid: string;
+    systemControls: IControl[];
 
     constructor(props: IPhysicalSystem = physicalSystemProps) {
         this.name = props.name;
@@ -346,6 +388,8 @@ export class PhysicalSystem implements IPhysicalSystem {
         this.uuid = props.uuid;
         this.server = props.server;
         this.observables = props.observables;
+        this.parentSystemUuid = props.parentSystemUuid;
+        this.systemControls = props.systemControls;
     }
 }
 
