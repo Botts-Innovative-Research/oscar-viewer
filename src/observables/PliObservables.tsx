@@ -30,7 +30,7 @@ import PointMarker from "../assets/models/pointmarker-orient.glb";
 // @ts-ignore
 import PointMarkerNoOrientation from "../assets/models/pointmarker.glb";
 // @ts-ignore
-import UGV from "../assets/models/transbot.glb";
+import UGV from "../assets/models/ugv.glb";
 // @ts-ignore
 import DRONE from "../assets/models/drone.glb";
 import {IObservableTypeInfo} from "./ObservableUtils";
