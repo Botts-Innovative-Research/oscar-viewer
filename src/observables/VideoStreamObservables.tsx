@@ -34,7 +34,14 @@ export const buildVideoStreams = (observableTypeInfo: IObservableTypeInfo[]): IO
 
         let definition = findInObject(info.schema, 'definition');
 
-        return definition.endsWith('/VideoFrame');
+        if (definition != null && definition != undefined) {
+
+            return definition.endsWith('/VideoFrame');
+
+        } else {
+
+            return false;
+        }
     });
 
     if (videoInfo) {

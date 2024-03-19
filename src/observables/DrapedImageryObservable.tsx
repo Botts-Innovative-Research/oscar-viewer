@@ -18,7 +18,11 @@ import {findInObject} from "../utils/Utils";
 import {IObservableTypeInfo} from "./ObservableUtils";
 import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../data/Constants";
 // @ts-ignore
-import {Cartesian2, Cartesian3, Matrix3} from "cesium";
+import {
+    Cartesian2,
+    Cartesian3,
+    Matrix3
+} from "@cesium/engine";
 // @ts-ignore
 import ImageDrapingLayer from "osh-js/source/core/ui/layer/ImageDrapingLayer";
 // @ts-ignore
@@ -45,9 +49,16 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
 
         let definition = findInObject(info.schema, 'definition');
 
-        return definition.endsWith('/Location') ||
-            definition.endsWith('/PlatformLocation') ||
-            definition.endsWith('/SensorLocation');
+        if (definition != null && definition != undefined) {
+
+            return definition.endsWith('/Location') ||
+                definition.endsWith('/PlatformLocation') ||
+                definition.endsWith('/SensorLocation');
+
+        } else {
+
+            return false;
+        }
     });
 
     // Extract an orientation schema if possible
@@ -55,23 +66,44 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
 
         let definition = findInObject(info.schema, 'definition');
 
-        return definition.endsWith('/OrientationQuaternion') ||
-            definition.endsWith('/PlatformOrientation');
+        if (definition != null && definition != undefined) {
+
+            return definition.endsWith('/OrientationQuaternion') ||
+                definition.endsWith('/PlatformOrientation');
+
+        } else {
+
+            return false;
+        }
     });
 
     let gimbalInfo: IObservableTypeInfo = observableTypeInfo.find(info => {
 
         let definition = findInObject(info.schema, 'definition');
 
-        return definition.endsWith('/GimbalOrientation') ||
-            definition.endsWith('/SensorOrientation');
+        if (definition != null && definition != undefined) {
+
+            return definition.endsWith('/GimbalOrientation') ||
+                definition.endsWith('/SensorOrientation');
+
+        } else {
+
+            return false;
+        }
     });
 
     let videoInfo: IObservableTypeInfo = observableTypeInfo.find(info => {
 
         let definition = findInObject(info.schema, 'definition');
 
-        return definition.endsWith('/VideoFrame');
+        if (definition != null && definition != undefined) {
+
+            return definition.endsWith('/VideoFrame');
+
+        } else {
+
+            return false;
+        }
     });
 
     if (locationInfo && orientationInfo && gimbalInfo && videoInfo &&

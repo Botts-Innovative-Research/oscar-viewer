@@ -50,10 +50,17 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
 
         let definition = findInObject(info.schema, 'definition');
 
-        return definition.endsWith('/Location') ||
-            definition.endsWith('/PlatformLocation') ||
-            definition.endsWith('/SensorLocation') ||
-            definition.endsWith('/GPS');
+        if (definition != null && definition != undefined) {
+
+            return definition.endsWith('/Location') ||
+                definition.endsWith('/PlatformLocation') ||
+                definition.endsWith('/SensorLocation') ||
+                definition.endsWith('/GPS');
+
+        } else {
+
+            return false;
+        }
     });
 
     // Extract an orientation schema if possible
@@ -61,7 +68,14 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
 
         let definition = findInObject(info.schema, 'definition');
 
-        return definition.endsWith('/OrientationQuaternion') || definition.endsWith('/PlatformOrientation');
+        if (definition != null && definition != undefined) {
+
+            return definition.endsWith('/OrientationQuaternion') || definition.endsWith('/PlatformOrientation');
+
+        } else {
+
+            return false;
+        }
     });
 
     if (locationInfo) {

@@ -28,7 +28,7 @@ export enum ObservableType {
 }
 
 export const DEFAULT_TIME_ID: string = "INDETERMINATE | REALTIME";
-export const REALTIME_START: string = "now";
+export const REALTIME_START: string = new Date().toISOString();
 export const REALTIME_END: string = "...";
 export const REALTIME_FUTURE_END: string = "2999-12-31T23:59:59.000Z";
 
