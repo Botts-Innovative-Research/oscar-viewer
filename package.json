@@ -1,6 +1,6 @@
 {
   "name": "OpenSensorViewer",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,7 @@
     "start": "webpack serve --mode development --stats-children",
     "postinstall": "patch-package"
   },
-  "keywords": [],
+  "keywords": ["OpenSensorHub", "osh-js", "Cesium"],
   "author": "",
   "license": "ISC",
   "devDependencies": {
@@ -52,7 +52,7 @@
     "idb": "^7.1.1",
     "node-polyfill-webpack-plugin": "^2.0.1",
     "nouislider": "^15.6.1",
-    "osh-js": "git+https@github.com:opensensorhub/osh-js.git#afs_ares",
+    "osh-js": "git+https@github.com:opensensorhub/osh-js.git#mcs_baseline",
     "patch-package": "^6.5.0",
     "path-browserify": "^1.0.1",
     "react": "^18.2.0",
