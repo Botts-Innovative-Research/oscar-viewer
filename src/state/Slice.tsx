@@ -35,9 +35,9 @@ import {
     DEFAULT_TIME_ID,
     ObservableType,
     PlaybackState,
-    REALTIME_END,
-    REALTIME_FUTURE_END,
-    REALTIME_START
+    END_TIME,
+    FUTURE_END_TIME,
+    START_TIME
 } from "../data/Constants";
 
 // @ts-ignore
@@ -102,8 +102,8 @@ const initialState: IAppState = {
     observables: new Map<string, IObservable>(),
 
     dataSynchronizer: new DataSynchronizer({
-        startTime: REALTIME_START,
-        endTime: REALTIME_END,
+        startTime: START_TIME,
+        endTime: END_TIME,
         replaySpeed: 1,
         intervalRate: 5,
         dataSources: [],
@@ -136,7 +136,8 @@ export const Slice = createSlice({
 
                 let promises = [];
 
-                promises.push(dataSynchronizer.setTimeRange(REALTIME_START, REALTIME_END, 1, false, Mode.REAL_TIME));
+                promises.push(dataSynchronizer.setTimeRange(START_TIME, END_TIME, 1, false));
+                promises.push(dataSynchronizer.setMode(Mode.REPLAY));
 
                 await Promise.all(promises).then(
                     () => {
@@ -293,34 +294,32 @@ export const Slice = createSlice({
             // @ts-ignore
             let observable: IObservable = state.observables.get(action.payload.uuid);
 
-            if (state.masterTime.inPlaybackMode === false) {
+            let updateDataSources = async (dataSynchronizer: DataSynchronizer, observable: IObservable) => {
 
-                if (!observable.isConnected) {
+                await dataSynchronizer.disconnect();
 
-                    observable.connect();
+                console.info("Connect -> DS " + dataSynchronizer.getId() + " count: " + dataSynchronizer.getDataSources().length);
+
+                for (let dataSource of observable.dataSources) {
+
+                    await dataSynchronizer.addDataSource(dataSource);
                 }
 
-            } else {
-
-                state.dataSynchronizer.disconnect();
-
-                state.dataSynchronizer = new DataSynchronizer({
-                    startTime: state.masterTime.playbackTimePeriod.beginPosition,
-                    endTime: state.masterTime.playbackTimePeriod.endPosition,
-                    replaySpeed: state.dataSynchronizerReplaySpeed,
-                    intervalRate: 5,
-                    dataSources: [...state.dataSynchronizer.dataSources, ...observable.dataSources],
-                    mode: Mode.REPLAY
-                });
-
-                if (state.playbackState === PlaybackState.PLAY) {
-
-                    state.dataSynchronizer.connect();
-                }
+                console.info("Connect -> DS " + dataSynchronizer.getId() + " count: " + dataSynchronizer.getDataSources().length);
             }
 
+            updateDataSources(state.dataSynchronizer, observable).then()
+
             observable.isConnected = true;
+
             state.connectedObservables.set(observable.uuid, true);
+
+            state.dataSynchronizer.reset();
+
+            if (state.playbackState === PlaybackState.PLAY) {
+
+                state.dataSynchronizer.connect();
+            }
         }),
 
         disconnectObservable: ((state, action: PayloadAction<IObservable>) => {
@@ -328,42 +327,35 @@ export const Slice = createSlice({
             // @ts-ignore
             let observable: IObservable = state.observables.get(action.payload.uuid);
 
-            if (state.masterTime.inPlaybackMode === false) {
+            let updateDataSources = async (dataSynchronizer: DataSynchronizer, observable: IObservable) => {
 
-                if (observable.isConnected) {
+                await dataSynchronizer.disconnect();
 
-                    observable.disconnect();
+                console.info("Disconnect -> DS " + dataSynchronizer.getId() + " count: " + dataSynchronizer.getDataSources().length);
+
+                for (let dataSource of observable.dataSources) {
+
+                    await dataSynchronizer.removeDataSource(dataSource);
                 }
 
-            } else {
-
-                state.dataSynchronizer.disconnect();
-
-                let keepDataSources: SweApi[] =
-                    state.dataSynchronizer.dataSources.filter((ds: SweApi) => observable.dataSources.indexOf(ds) < 0);
-
-                state.dataSynchronizer = new DataSynchronizer({
-                    startTime: state.masterTime.playbackTimePeriod.beginPosition,
-                    endTime: state.masterTime.playbackTimePeriod.endPosition,
-                    replaySpeed: state.dataSynchronizerReplaySpeed,
-                    intervalRate: 5,
-                    dataSources: [...keepDataSources],
-                    mode: Mode.REPLAY
-                });
-
-                if (state.dataSynchronizer.dataSources.length === 0) {
-
-                    state.playbackState = PlaybackState.PAUSE;
-                }
-
-                if (state.playbackState === PlaybackState.PLAY) {
-
-                    state.dataSynchronizer.connect();
-                }
+                console.info("Disconnect -> DS " + dataSynchronizer.getId() + " count: " + dataSynchronizer.getDataSources().length);
             }
 
+            updateDataSources(state.dataSynchronizer, observable).then()
+
             observable.isConnected = false;
+
             state.connectedObservables.set(observable.uuid, false);
+
+            if (state.dataSynchronizer.getDataSources().length === 0) {
+
+                state.playbackState = PlaybackState.PAUSE;
+            }
+
+            if (state.playbackState === PlaybackState.PLAY) {
+
+                state.dataSynchronizer.connect();
+            }
         }),
 
         // RealTime vs. Playback ***************************************************************************************
@@ -396,16 +388,24 @@ export const Slice = createSlice({
                 }
             });
 
-            if (!state.masterTime.inPlaybackMode) {
+            let updatePlaybackMode = async (dataSynchronizer: DataSynchronizer, inPlaybackMode: boolean) => {
 
-                state.observables.forEach(observable => {
+                if (dataSynchronizer.getDataSources().length > 0) {
 
-                    for (let dataSource of observable.dataSources) {
+                   await dataSynchronizer.disconnect();
+                }
 
-                        dataSource.setTimeRange(REALTIME_START, REALTIME_FUTURE_END, 1, false, Mode.REAL_TIME);
-                    }
-                });
+                let mode: Mode = Mode.REAL_TIME;
+
+                if (inPlaybackMode) {
+
+                    mode = Mode.REPLAY;
+                }
+
+                await dataSynchronizer.setMode(mode);
             }
+
+            updatePlaybackMode(state.dataSynchronizer, state.masterTime.inPlaybackMode).then();
         }),
 
         updatePlaybackStartTime: ((state, action: PayloadAction<string>) => {
@@ -416,7 +416,7 @@ export const Slice = createSlice({
                 playbackTimePeriod: new TimePeriod({
                     id: DEFAULT_TIME_ID,
                     beginPosition: action.payload,
-                    endPosition: REALTIME_FUTURE_END,
+                    endPosition: FUTURE_END_TIME,
                     isIndeterminateEnd: false,
                     isIndeterminateStart: false
                 })
@@ -424,8 +424,11 @@ export const Slice = createSlice({
 
             let updateTimeRange = async function (dataSynchronizer: DataSynchronizer, time: IMasterTime, speed: number) {
 
-                await dataSynchronizer.setTimeRange(time.playbackTimePeriod.beginPosition, time.playbackTimePeriod.endPosition,
-                    speed, false, time.inPlaybackMode ? Mode.REPLAY : Mode.REAL_TIME);
+                console.log("New ST = " + time.playbackTimePeriod.beginPosition);
+
+                await dataSynchronizer.setTimeRange(time.playbackTimePeriod.beginPosition, time.playbackTimePeriod.endPosition, speed, false);
+
+                console.log("After Set = " + dataSynchronizer.getStartTimeAsIsoDate());
             }
 
             updateTimeRange(state.dataSynchronizer, state.masterTime, state.dataSynchronizerReplaySpeed).then();

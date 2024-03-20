@@ -16,7 +16,7 @@
 import {IObservable, IPhysicalSystem, ISensorHubServer, Observable} from "../data/Models";
 import {findInObject} from "../utils/Utils";
 import {IObservableTypeInfo} from "./ObservableUtils";
-import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../data/Constants";
+import {ObservableType, Protocols, FUTURE_END_TIME, START_TIME, Service} from "../data/Constants";
 // @ts-ignore
 import {
     Cartesian2,
@@ -119,8 +119,8 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
             protocol: Protocols.WS,
             endpointUrl: endpoint,
             resource: `/datastreams/${locationInfo.dataStreamId}/observations`,
-            startTime: REALTIME_START,
-            endTime: REALTIME_FUTURE_END,
+            startTime: START_TIME,
+            endTime: FUTURE_END_TIME,
             mode: Mode.REPLAY,
             tls: useTls
         });
@@ -131,8 +131,8 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
             protocol: Protocols.WS,
             endpointUrl: endpoint,
             resource: `/datastreams/${orientationInfo.dataStreamId}/observations`,
-            startTime: REALTIME_START,
-            endTime: REALTIME_FUTURE_END,
+            startTime: START_TIME,
+            endTime: FUTURE_END_TIME,
             mode: Mode.REPLAY,
             tls: useTls
         });
@@ -143,8 +143,8 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
             protocol: Protocols.WS,
             endpointUrl: endpoint,
             resource: `/datastreams/${gimbalInfo.dataStreamId}/observations`,
-            startTime: REALTIME_START,
-            endTime: REALTIME_FUTURE_END,
+            startTime: START_TIME,
+            endTime: FUTURE_END_TIME,
             mode: Mode.REPLAY,
             tls: useTls
         });
@@ -155,8 +155,8 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
             protocol: Protocols.WS,
             endpointUrl: endpoint,
             resource: `/datastreams/${videoInfo.dataStreamId}/observations`,
-            startTime: REALTIME_START,
-            endTime: REALTIME_FUTURE_END,
+            startTime: START_TIME,
+            endTime: FUTURE_END_TIME,
             mode: Mode.REPLAY,
             tls: useTls,
             responseFormat: 'application/swe+binary'

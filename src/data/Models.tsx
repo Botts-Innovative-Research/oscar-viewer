@@ -19,15 +19,13 @@ import {
     DEFAULT_SPS_ENDPOINT,
     DEFAULT_TIME_ID,
     ObservableType,
-    REALTIME_END,
-    REALTIME_START
+    END_TIME,
+    START_TIME
 } from "./Constants";
 // @ts-ignore
 import Layer from "osh-js/source/core/ui/layer/Layer";
 // @ts-ignore
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
-// @ts-ignore
-import View from "osh-js/source/core/ui/view/View"
 // @ts-ignore
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 
@@ -151,8 +149,8 @@ export interface ITimePeriod {
 
 const timePeriodProps: ITimePeriod = {
     id: DEFAULT_TIME_ID,
-    beginPosition: REALTIME_START,
-    endPosition: REALTIME_END,
+    beginPosition: START_TIME,
+    endPosition: END_TIME,
     isIndeterminateStart: true,
     isIndeterminateEnd: true
 }

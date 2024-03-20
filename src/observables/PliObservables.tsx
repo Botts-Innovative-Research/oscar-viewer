@@ -15,7 +15,7 @@
 
 import {IObservable, Observable} from "../data/Models";
 import {findInObject} from "../utils/Utils";
-import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../data/Constants";
+import {ObservableType, Protocols, FUTURE_END_TIME, START_TIME, Service} from "../data/Constants";
 import {colorHash} from "../utils/ColorUtils";
 // @ts-ignore
 import PointMarkerLayer from "osh-js/source/core/ui/layer/PointMarkerLayer";
@@ -86,8 +86,8 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
             protocol: Protocols.WS,
             endpointUrl: physicalSystem.server.address.replace(/^(http|https):\/\//i, '') + Service.API,
             resource: `/datastreams/${locationInfo.dataStreamId}/observations`,
-            startTime: REALTIME_START,
-            endTime: REALTIME_FUTURE_END,
+            startTime: START_TIME,
+            endTime: FUTURE_END_TIME,
             mode: Mode.REPLAY,
             tls: physicalSystem.server.secure
         });
@@ -101,8 +101,8 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
                 protocol: Protocols.WS,
                 endpointUrl: orientationInfo.physicalSystem.server.address.replace(/^(http|https):\/\//i, '') + Service.API,
                 resource: `/datastreams/${orientationInfo.dataStreamId}/observations`,
-                startTime: REALTIME_START,
-                endTime: REALTIME_FUTURE_END,
+                startTime: START_TIME,
+                endTime: FUTURE_END_TIME,
                 mode: Mode.REPLAY,
                 tls: orientationInfo.physicalSystem.server.secure
             });

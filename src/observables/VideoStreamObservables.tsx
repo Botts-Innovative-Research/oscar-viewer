@@ -14,7 +14,7 @@
  */
 
 import {IObservable, Observable} from "../data/Models";
-import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../data/Constants";
+import {ObservableType, Protocols, FUTURE_END_TIME, START_TIME, Service} from "../data/Constants";
 // @ts-ignore
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
@@ -50,8 +50,8 @@ export const buildVideoStreams = (observableTypeInfo: IObservableTypeInfo[]): IO
             protocol: Protocols.WS,
             endpointUrl: videoInfo.physicalSystem.server.address.replace(/^(http|https):\/\//i, '') + Service.API,
             resource: `/datastreams/${videoInfo.dataStreamId}/observations`,
-            startTime: REALTIME_START,
-            endTime: REALTIME_FUTURE_END,
+            startTime: START_TIME,
+            endTime: FUTURE_END_TIME,
             mode: Mode.REPLAY,
             tls: videoInfo.physicalSystem.server.secure,
             responseFormat: 'application/swe+binary'
