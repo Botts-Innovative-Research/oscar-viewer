@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022.  Botts Innovative Research, Inc.
+ * Copyright (c) 2022-2024.  Botts Innovative Research, Inc.
  * All Rights Reserved
  *
  * opensensorhub/osh-viewer is licensed under the
@@ -367,9 +367,13 @@ export const Slice = createSlice({
                 inPlaybackMode: action.payload
             });
 
+            let dataSources: SweApi[] = [];
+
             state.observables.forEach(observable => {
 
                 if (observable.isConnected) {
+
+                    dataSources.push(...observable.dataSources);
 
                     observable.disconnect();
                     state.connectedObservables.set(observable.uuid, false);
@@ -387,6 +391,18 @@ export const Slice = createSlice({
                     }
                 }
             });
+
+            let updateDataSources = async (dataSynchronizer: DataSynchronizer, dataSources: SweApi[]) => {
+
+                await dataSynchronizer.disconnect();
+
+                for (let dataSource of dataSources) {
+
+                    await dataSynchronizer.removeDataSource(dataSource);
+                }
+            }
+
+            updateDataSources(state.dataSynchronizer, dataSources).then()
 
             let updatePlaybackMode = async (dataSynchronizer: DataSynchronizer, inPlaybackMode: boolean) => {
 
@@ -425,6 +441,11 @@ export const Slice = createSlice({
             let updateTimeRange = async function (dataSynchronizer: DataSynchronizer, time: IMasterTime, speed: number) {
 
                 console.log("New ST = " + time.playbackTimePeriod.beginPosition);
+
+                for (let dataSource of dataSynchronizer.getDataSources()) {
+
+                    dataSource.setMinTime(time.playbackTimePeriod.beginPosition);
+                }
 
                 await dataSynchronizer.setTimeRange(time.playbackTimePeriod.beginPosition, time.playbackTimePeriod.endPosition, speed, false);
 
