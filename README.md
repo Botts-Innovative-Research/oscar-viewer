@@ -37,7 +37,7 @@ The following features are currently supported:
 ## Cesium Ion Token
 
 You will need to sign up for a Cesium Ion account (https://cesium.com/platform/cesium-ion/) and 
-modify <code>src/components/map/CesiumMap.tsx</code> to set the <code>Cesium.Ion.defaultAccessToken</code> with token retrieved
+modify <code>src/components/map/CesiumMap.tsx</code> to set the <code>Ion.defaultAccessToken</code> with token retrieved
 from Cesium Ion account in order to see the globe/map.
 
 ## Users' Manual
