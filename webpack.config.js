@@ -47,6 +47,9 @@ module.exports = {
         new nodePolyfillWebpackPlugin(),
     ],
     devServer: {
+        client: {
+            overlay: false
+        },
         static: {
             directory: path.join(__dirname, "build"),
         },
