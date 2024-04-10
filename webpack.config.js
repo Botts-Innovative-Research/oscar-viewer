@@ -5,6 +5,12 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const {DefinePlugin} = require('webpack');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 
+const PROCESS_BASE_PATH = process.cwd();
+
+// Cesium deps
+const cesiumSource = 'node_modules/cesium/Build/Cesium';
+const cesiumBaseUrl = "cesiumStatic";
+
 module.exports = {
     entry: "./src/index.tsx",
     output: {
@@ -19,22 +25,31 @@ module.exports = {
         new DefinePlugin({
             BASE_URL: JSON.stringify('/'),
             // Define relative base path in cesium for loading assets
-            CESIUM_BASE_URL: JSON.stringify('cesium')
+            // CESIUM_BASE_URL: JSON.stringify('cesium')
+            CESIUM_BASE_URL: JSON.stringify(cesiumBaseUrl)
         }),
         new CopyWebpackPlugin({
             patterns: [
-                {from: "node_modules/cesium/Build/Cesium", to: "cesium"},
+                // {from: "node_modules/cesium/Build/Cesium", to: "cesium"},
                 {from: path.resolve(__dirname, 'src/assets'), to: 'assets'},
                 {from: path.resolve(__dirname, 'src/icons'), to: 'icons'},
+                { from: path.resolve(__dirname,'images'), to: 'images', noErrorOnMissing: true},
+                { from: path.join(PROCESS_BASE_PATH+'/'+cesiumSource, 'ThirdParty'), to: `${cesiumBaseUrl}/ThirdParty`, force:true },
+                { from: path.join(PROCESS_BASE_PATH+'/'+cesiumSource, 'Workers'), to: `${cesiumBaseUrl}/Workers`, force:true },
+                { from: path.join(PROCESS_BASE_PATH+'/'+cesiumSource, 'Assets'), to: `${cesiumBaseUrl}/Assets`, force:true },
+                { from: path.join(PROCESS_BASE_PATH+'/'+cesiumSource, 'Widgets'), to: `${cesiumBaseUrl}/Widgets`, force:true }
             ],
         }),
-        new HtmlTagsPlugin({
-            append: false,
-            tags: ["cesium/Widgets/widgets.css", "cesium/Cesium.js"],
-        }),
+        // new HtmlTagsPlugin({
+        //     append: false,
+        //     tags: ["cesium/Build/Cesium/Widgets/widgets.css", "cesium/Build/Cesium/Cesium.js"],
+        // }),
         new nodePolyfillWebpackPlugin(),
     ],
     devServer: {
+        client: {
+            overlay: false
+        },
         static: {
             directory: path.join(__dirname, "build"),
         },

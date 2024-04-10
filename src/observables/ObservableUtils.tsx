@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022.  Botts Innovative Research, Inc.
+ * Copyright (c) 2022-2024.  Botts Innovative Research, Inc.
  * All Rights Reserved
  *
  * opensensorhub/osh-viewer is licensed under the

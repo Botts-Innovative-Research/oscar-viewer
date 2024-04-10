@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022.  Botts Innovative Research, Inc.
+ * Copyright (c) 2022-2024.  Botts Innovative Research, Inc.
  * All Rights Reserved
  *
  * opensensorhub/osh-viewer is licensed under the
@@ -15,7 +15,7 @@
 
 import {IObservable, Observable} from "../data/Models";
 import {findInObject} from "../utils/Utils";
-import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../data/Constants";
+import {ObservableType, Protocols, FUTURE_END_TIME, START_TIME, Service} from "../data/Constants";
 import {colorHash} from "../utils/ColorUtils";
 // @ts-ignore
 import PointMarkerLayer from "osh-js/source/core/ui/layer/PointMarkerLayer";
@@ -50,10 +50,17 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
 
         let definition = findInObject(info.schema, 'definition');
 
-        return definition.endsWith('/Location') ||
-            definition.endsWith('/PlatformLocation') ||
-            definition.endsWith('/SensorLocation') ||
-            definition.endsWith('/GPS');
+        if (definition != null && definition != undefined) {
+
+            return definition.endsWith('/Location') ||
+                definition.endsWith('/PlatformLocation') ||
+                definition.endsWith('/SensorLocation') ||
+                definition.endsWith('/GPS');
+
+        } else {
+
+            return false;
+        }
     });
 
     // Extract an orientation schema if possible
@@ -61,7 +68,14 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
 
         let definition = findInObject(info.schema, 'definition');
 
-        return definition.endsWith('/OrientationQuaternion') || definition.endsWith('/PlatformOrientation');
+        if (definition != null && definition != undefined) {
+
+            return definition.endsWith('/OrientationQuaternion') || definition.endsWith('/PlatformOrientation');
+
+        } else {
+
+            return false;
+        }
     });
 
     if (locationInfo) {
@@ -72,8 +86,8 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
             protocol: Protocols.WS,
             endpointUrl: physicalSystem.server.address.replace(/^(http|https):\/\//i, '') + Service.API,
             resource: `/datastreams/${locationInfo.dataStreamId}/observations`,
-            startTime: REALTIME_START,
-            endTime: REALTIME_FUTURE_END,
+            startTime: START_TIME,
+            endTime: FUTURE_END_TIME,
             mode: Mode.REPLAY,
             tls: physicalSystem.server.secure
         });
@@ -87,8 +101,8 @@ export const buildPliMarkers = (observableTypeInfo: IObservableTypeInfo[]): IObs
                 protocol: Protocols.WS,
                 endpointUrl: orientationInfo.physicalSystem.server.address.replace(/^(http|https):\/\//i, '') + Service.API,
                 resource: `/datastreams/${orientationInfo.dataStreamId}/observations`,
-                startTime: REALTIME_START,
-                endTime: REALTIME_FUTURE_END,
+                startTime: START_TIME,
+                endTime: FUTURE_END_TIME,
                 mode: Mode.REPLAY,
                 tls: orientationInfo.physicalSystem.server.secure
             });

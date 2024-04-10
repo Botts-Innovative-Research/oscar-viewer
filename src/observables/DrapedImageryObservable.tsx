@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022.  Botts Innovative Research, Inc.
+ * Copyright (c) 2022-2024.  Botts Innovative Research, Inc.
  * All Rights Reserved
  *
  * opensensorhub/osh-viewer is licensed under the
@@ -16,9 +16,13 @@
 import {IObservable, IPhysicalSystem, ISensorHubServer, Observable} from "../data/Models";
 import {findInObject} from "../utils/Utils";
 import {IObservableTypeInfo} from "./ObservableUtils";
-import {ObservableType, Protocols, REALTIME_FUTURE_END, REALTIME_START, Service} from "../data/Constants";
+import {ObservableType, Protocols, FUTURE_END_TIME, START_TIME, Service} from "../data/Constants";
 // @ts-ignore
-import {Cartesian2, Cartesian3, Matrix3} from "cesium";
+import {
+    Cartesian2,
+    Cartesian3,
+    Matrix3
+} from "@cesium/engine";
 // @ts-ignore
 import ImageDrapingLayer from "osh-js/source/core/ui/layer/ImageDrapingLayer";
 // @ts-ignore
@@ -45,9 +49,16 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
 
         let definition = findInObject(info.schema, 'definition');
 
-        return definition.endsWith('/Location') ||
-            definition.endsWith('/PlatformLocation') ||
-            definition.endsWith('/SensorLocation');
+        if (definition != null && definition != undefined) {
+
+            return definition.endsWith('/Location') ||
+                definition.endsWith('/PlatformLocation') ||
+                definition.endsWith('/SensorLocation');
+
+        } else {
+
+            return false;
+        }
     });
 
     // Extract an orientation schema if possible
@@ -55,23 +66,44 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
 
         let definition = findInObject(info.schema, 'definition');
 
-        return definition.endsWith('/OrientationQuaternion') ||
-            definition.endsWith('/PlatformOrientation');
+        if (definition != null && definition != undefined) {
+
+            return definition.endsWith('/OrientationQuaternion') ||
+                definition.endsWith('/PlatformOrientation');
+
+        } else {
+
+            return false;
+        }
     });
 
     let gimbalInfo: IObservableTypeInfo = observableTypeInfo.find(info => {
 
         let definition = findInObject(info.schema, 'definition');
 
-        return definition.endsWith('/GimbalOrientation') ||
-            definition.endsWith('/SensorOrientation');
+        if (definition != null && definition != undefined) {
+
+            return definition.endsWith('/GimbalOrientation') ||
+                definition.endsWith('/SensorOrientation');
+
+        } else {
+
+            return false;
+        }
     });
 
     let videoInfo: IObservableTypeInfo = observableTypeInfo.find(info => {
 
         let definition = findInObject(info.schema, 'definition');
 
-        return definition.endsWith('/VideoFrame');
+        if (definition != null && definition != undefined) {
+
+            return definition.endsWith('/VideoFrame');
+
+        } else {
+
+            return false;
+        }
     });
 
     if (locationInfo && orientationInfo && gimbalInfo && videoInfo &&
@@ -87,8 +119,8 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
             protocol: Protocols.WS,
             endpointUrl: endpoint,
             resource: `/datastreams/${locationInfo.dataStreamId}/observations`,
-            startTime: REALTIME_START,
-            endTime: REALTIME_FUTURE_END,
+            startTime: START_TIME,
+            endTime: FUTURE_END_TIME,
             mode: Mode.REPLAY,
             tls: useTls
         });
@@ -99,8 +131,8 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
             protocol: Protocols.WS,
             endpointUrl: endpoint,
             resource: `/datastreams/${orientationInfo.dataStreamId}/observations`,
-            startTime: REALTIME_START,
-            endTime: REALTIME_FUTURE_END,
+            startTime: START_TIME,
+            endTime: FUTURE_END_TIME,
             mode: Mode.REPLAY,
             tls: useTls
         });
@@ -111,8 +143,8 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
             protocol: Protocols.WS,
             endpointUrl: endpoint,
             resource: `/datastreams/${gimbalInfo.dataStreamId}/observations`,
-            startTime: REALTIME_START,
-            endTime: REALTIME_FUTURE_END,
+            startTime: START_TIME,
+            endTime: FUTURE_END_TIME,
             mode: Mode.REPLAY,
             tls: useTls
         });
@@ -123,8 +155,8 @@ export const buildDrapedImagery = (observableTypeInfo: IObservableTypeInfo[]): I
             protocol: Protocols.WS,
             endpointUrl: endpoint,
             resource: `/datastreams/${videoInfo.dataStreamId}/observations`,
-            startTime: REALTIME_START,
-            endTime: REALTIME_FUTURE_END,
+            startTime: START_TIME,
+            endTime: FUTURE_END_TIME,
             mode: Mode.REPLAY,
             tls: useTls,
             responseFormat: 'application/swe+binary'
