@@ -1,3 +1,5 @@
+import { Button } from "@mui/material";
+
 export default function Page() {
-  return <p>Hi Next.js</p>
+  return <Button variant="outlined">Hi Next.js</Button>
 }
