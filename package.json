@@ -6,9 +6,15 @@
   "scripts": {
     "build": "webpack",
     "start": "webpack serve --mode development --stats-children",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "dev": "next dev",
+    "lint": "next lint"
   },
-  "keywords": ["OpenSensorHub", "osh-js", "Cesium"],
+  "keywords": [
+    "OpenSensorHub",
+    "osh-js",
+    "Cesium"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
@@ -50,13 +56,14 @@
     "html-webpack-tags-plugin": "^3.0.2",
     "https-browserify": "^1.0.0",
     "idb": "^7.1.1",
+    "next": "^14.2.5",
     "node-polyfill-webpack-plugin": "^2.0.1",
     "nouislider": "^15.6.1",
     "osh-js": "git+https@github.com:opensensorhub/osh-js.git#mcs_baseline",
     "patch-package": "^6.5.0",
     "path-browserify": "^1.0.1",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "react-draggable": "^4.4.5",
     "react-redux": "^8.0.5",
     "stream-browserify": "^3.0.0",
