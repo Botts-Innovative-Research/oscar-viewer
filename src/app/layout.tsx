@@ -1,4 +1,6 @@
+import { CssBaseline } from "@mui/material"
 import Navbar from "./components/Navbar"
+import Providers from "./providers"
 
 export default function RootLayout({
   children,
@@ -8,7 +10,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Navbar>{children}</Navbar>
+        <Providers>
+          <CssBaseline />
+          <Navbar>
+          {children}
+          </Navbar>
+        </Providers>
       </body>
     </html>
   )

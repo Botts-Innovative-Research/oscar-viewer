@@ -99,7 +99,7 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
   }),
 );
 
-export default function MiniDrawer({ children }: { children: React.ReactNode }) {
+export default function Navbar({ children }: { children: React.ReactNode }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null); // Anchor element for notification menu
   const menuOpen = Boolean(anchorEl); // Open state for notification menu
   const [drawerOpen, setDrawerOpen] = useState(false);  // Open state for navigation drawer
@@ -159,7 +159,7 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
-      <AppBar position="fixed" open={drawerOpen}>
+      <AppBar position="fixed" open={drawerOpen} elevation={0} enableColorOnDark>
         <Toolbar>
           <IconButton
             color="inherit"
@@ -219,14 +219,14 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
             <ListItemButton
               sx={{
                 minHeight: 48,
-                justifyContent: open ? 'initial' : 'center',
+                justifyContent: drawerOpen ? 'initial' : 'center',
                 px: 2.5,
               }}
             >
               <ListItemIcon
                 sx={{
                   minWidth: 0,
-                  mr: open ? 3 : 'auto',
+                  mr: drawerOpen ? 3 : 'auto',
                   justifyContent: 'center',
                 }}
               >
@@ -244,20 +244,20 @@ export default function MiniDrawer({ children }: { children: React.ReactNode }) 
             <ListItemButton
               sx={{
                 minHeight: 48,
-                justifyContent: open ? 'initial' : 'center',
+                justifyContent: drawerOpen ? 'initial' : 'center',
                 px: 2.5,
               }}
             >
               <ListItemIcon
                 sx={{
                   minWidth: 0,
-                  mr: open ? 3 : 'auto',
+                  mr: drawerOpen ? 3 : 'auto',
                   justifyContent: 'center',
                 }}
               >
                 {item.icon}
               </ListItemIcon>
-              <ListItemText primary={item.title} sx={{ opacity: open ? 1 : 0 }} />
+              <ListItemText primary={item.title} sx={{ opacity: drawerOpen ? 1 : 0 }} />
             </ListItemButton>
           </ListItem>
           ))}
