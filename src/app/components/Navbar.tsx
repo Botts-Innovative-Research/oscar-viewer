@@ -263,7 +263,7 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
           ))}
         </List>
       </Drawer>
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Box component="main" sx={{ height: "100%", width: "100%", m: 2 }}>
         <DrawerHeader />
         {children}
       </Box>

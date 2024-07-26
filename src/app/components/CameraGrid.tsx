@@ -1,12 +1,11 @@
 "use client";
 
-import { Grid, Pagination, Typography, useTheme } from '@mui/material';
+import { Grid, Pagination, Typography } from '@mui/material';
 import Paper from '@mui/material/Paper';
 import Image from "next/image";
 import { useState } from 'react';
 
 export default function CameraGrid() {
-  const theme = useTheme();
   const maxItems = 6; // Max number of videos per page
   const [page, setPage] = useState(1);  // Page currently selected
   const [startItem, setStartItem] = useState(0);  // Current start of range
@@ -37,7 +36,7 @@ export default function CameraGrid() {
   ]
 
   return (
-    <Paper variant='outlined'>
+    <Paper variant='outlined' sx={{ height: "100%" }}>
       <Grid container padding={2} justifyContent={"start"}>
         {demoImages.slice(startItem, endItem).map((item) => (
           <Grid item key={item.id} xs={2} display={"flex"} direction={"column"} alignItems={"center"}
@@ -47,14 +46,13 @@ export default function CameraGrid() {
                   border: "solid",
                   borderWidth: "2px",
                   borderColor: (item.status == "alarm" ? "error.main" : "secondary.main"),
-                  backgroundColor: (item.status == "alarm" ? "error.light" : "secondary.light"),
-                  color: theme.palette.getContrastText(theme.palette.primary.main),
+                  backgroundColor: (item.status == "alarm" ? "errorHighlight" : "secondaryHighlight"),
                 } : {},
                 padding: "0px",
               },
             }}
           >
-            <Image src={item.src} alt="test image" width={0} height={0} sizes={"100vw"} style={{ width: "100%", height: "100%" }} />
+            <Image src={item.src} alt="test image" width={0} height={0} sizes={"100vw"} style={{ width: "100%", height: "100%", }} />
             <Typography variant="body2">{item.name}</Typography>
           </Grid>
         ))}
