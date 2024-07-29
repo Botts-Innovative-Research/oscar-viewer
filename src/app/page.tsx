@@ -1,6 +1,7 @@
 import { Grid } from "@mui/material";
 import CameraGrid from "./components/CameraGrid";
 import LaneStatus from "./components/LaneStatus";
+import AlarmTable from "./components/AlarmTable";
 
 export default function Page() {
   return (
@@ -15,7 +16,7 @@ export default function Page() {
       </Grid>
       <Grid item container spacing={2} style={{ flexBasis: '66.66%', flexGrow: 0, flexShrink: 0 }}>
         <Grid item xs={8}>
-          <LaneStatus />
+          <AlarmTable />
         </Grid>
         <Grid item xs={4}>
           <CameraGrid />

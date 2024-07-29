@@ -1,4 +1,6 @@
 import { PaletteMode, ThemeOptions } from "@mui/material";
+// When using TypeScript 4.x and above
+import type {} from '@mui/x-data-grid/themeAugmentation';
 
 declare module "@mui/material/styles" {
   interface Palette {
@@ -33,6 +35,12 @@ export const getTheme = (mode: PaletteMode): ThemeOptions => ({
         root: ({ ownerState }) => ({
           borderRadius: "10px",
         }),
+      },
+    },
+    MuiDataGrid: {
+      styleOverrides: {
+        root: {
+        },
       },
     },
   },
