@@ -3,7 +3,6 @@
 import { ThemeProvider, createTheme, useMediaQuery } from "@mui/material";
 import { ReactNode, useMemo } from "react";
 import CssBaseline from '@mui/material/CssBaseline';
-
 import { getTheme } from "@/app/style/theme";
 
 export default function Providers({ children }: { children: ReactNode }) {

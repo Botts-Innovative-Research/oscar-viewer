@@ -1,51 +1,75 @@
 "use client";
 
-import { Box, Stack, Typography, capitalize } from '@mui/material';
+import { Box, Button, IconButton, capitalize } from '@mui/material';
 import Paper from '@mui/material/Paper';
-import { DataGrid, GridColDef, GridToolbar, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarDensitySelector, GridToolbarFilterButton } from '@mui/x-data-grid';
+import { DataGrid, GridCellParams, GridColDef, GridRenderCellParams, gridClasses } from '@mui/x-data-grid';
 import CustomToolbar from './CustomToolbar';
+import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
 
 const columns: GridColDef<(typeof rows)[number]>[] = [
-  { field: 'id', headerName: 'ID', width: 90 },
-  {
-    field: 'firstName',
-    headerName: 'First name',
-    width: 150,
-    editable: true,
+  { 
+    field: 'secondaryInspection',
+    headerName: 'Secondary Inspection',
+    type: 'boolean',
   },
-  {
-    field: 'lastName',
-    headerName: 'Last name',
-    width: 150,
-    editable: true,
-  },
-  {
-    field: 'age',
-    headerName: 'Age',
-    type: 'number',
-    width: 110,
-    editable: true,
-  },
-  {
-    field: 'fullName',
-    headerName: 'Full name',
-    description: 'This column has a value getter and is not sortable.',
-    sortable: false,
-    width: 160,
-    valueGetter: (value, row) => `${row.firstName || ''} ${row.lastName || ''}`,
-  },
+  { 
+    field: 'laneId',
+    headerName: 'Lane ID',
+    type: 'string',
+  }, 
+  { 
+    field: 'occupancyId',
+    headerName: 'Occupancy ID',
+    type: 'string',
+  }, 
+  { 
+    field: 'startTime',
+    headerName: 'Start Time',
+    type: 'string',
+  }, 
+  { 
+    field: 'endTime',
+    headerName: 'End Time',
+    type: 'string',
+  }, 
+  { 
+    field: 'maxGamma',
+    headerName: 'Max Gamma',
+    type: 'string',
+  }, 
+  { 
+    field: 'maxNeutron',
+    headerName: 'Max Neutron',
+    type: 'string',
+  }, 
+  { 
+    field: 'status',
+    headerName: 'Status',
+    type: 'string',
+  }, 
+  { 
+    field: 'details',
+    headerName: '',
+    renderCell: (params: GridRenderCellParams<any, Date>) => (
+      <IconButton
+        aria-label="details"
+      >
+        <MoreVertRoundedIcon fontSize="inherit" />
+      </IconButton>
+    ),
+  }, 
 ];
 
 const rows = [
-  { id: 1, lastName: 'Snow', firstName: 'Jon', age: 14 },
-  { id: 2, lastName: 'Lannister', firstName: 'Cersei', age: 31 },
-  { id: 3, lastName: 'Lannister', firstName: 'Jaime', age: 31 },
-  { id: 4, lastName: 'Stark', firstName: 'Arya', age: 11 },
-  { id: 5, lastName: 'Targaryen', firstName: 'Daenerys', age: null },
-  { id: 6, lastName: 'Melisandre', firstName: null, age: 150 },
-  { id: 7, lastName: 'Clifford', firstName: 'Ferrara', age: 44 },
-  { id: 8, lastName: 'Frances', firstName: 'Rossini', age: 36 },
-  { id: 9, lastName: 'Roxie', firstName: 'Harvey', age: 65 },
+  { id: 1, secondaryInspection: 'false', laneId: 1, occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: '25642 cps', maxNeutron: 'N/A', status: 'Gamma' },
+  { id: 2, secondaryInspection: 'false', laneId: 1, occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: '25642 cps', maxNeutron: 'N/A', status: 'Neutron' },
+  { id: 3, secondaryInspection: 'false', laneId: 1, occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: '25642 cps', maxNeutron: 'N/A', status: 'Gamma & Neutron' },
+  { id: 4, secondaryInspection: 'false', laneId: 1, occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: '25642 cps', maxNeutron: 'N/A', status: 'Gamma' },
+  { id: 5, secondaryInspection: 'false', laneId: 1, occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: '25642 cps', maxNeutron: 'N/A', status: 'Gamma' },
+  { id: 6, secondaryInspection: 'false', laneId: 1, occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: '25642 cps', maxNeutron: 'N/A', status: 'Gamma' },
+  { id: 7, secondaryInspection: 'false', laneId: 1, occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: '25642 cps', maxNeutron: 'N/A', status: 'Gamma' },
+  { id: 8, secondaryInspection: 'false', laneId: 1, occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: '25642 cps', maxNeutron: 'N/A', status: 'Gamma' },
+  { id: 9, secondaryInspection: 'false', laneId: 1, occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: '25642 cps', maxNeutron: 'N/A', status: 'Gamma' },
 ];
 
 export default function AlarmTable() {
@@ -58,14 +82,43 @@ export default function AlarmTable() {
           initialState={{
             pagination: {
               paginationModel: {
-                pageSize: 5,
+                pageSize: 20,
               },
             },
           }}
-          pageSizeOptions={[5]}
-          checkboxSelection
+          pageSizeOptions={[20]}
           disableRowSelectionOnClick
           slots={{ toolbar: CustomToolbar }}
+          autosizeOnMount
+          autosizeOptions={{
+            expand: true,
+            includeOutliers: true,
+            includeHeaders: false,
+          }}
+          getCellClassName={(params: GridCellParams<any, any, string>) => {
+            if (params.value === "Gamma")
+              return "highlightGamma";
+            else if (params.value === "Neutron")
+              return "highlightNeutron";
+            else if (params.value === "Gamma & Neutron")
+              return "highlightGammaNeutron";
+            else
+              return "";
+          }}
+          sx={{
+            [`.${gridClasses.cell}.highlightGamma`]: {
+              backgroundColor: "error.main",
+              color: "error.contrastText",
+            },
+            [`.${gridClasses.cell}.highlightNeutron`]: {
+              backgroundColor: "primary.main",
+              color: "primary.contrastText",
+            },
+            [`.${gridClasses.cell}.highlightGammaNeutron`]: {
+              backgroundColor: "secondary.main",
+              color: "secondary.contrastText",
+            },
+          }}
         />
       </Box>
     </Paper>
