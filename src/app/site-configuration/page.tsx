@@ -1,9 +1,17 @@
-import { Box, TextField, Typography } from "@mui/material";
+import { Button, Checkbox, FormControlLabel, FormGroup, Stack, TextField, Typography } from "@mui/material";
 
 export default function SiteConfiguration() {
   return (
-    <Box>
-      
-    </Box>
+    <Stack spacing={2}>
+      <Typography variant="h4">Site Configuration</Typography>
+      <TextField required id="outlined-basic" label="Friendly Name" variant="outlined" type="string" />
+      <TextField required id="outlined-basic" label="Server Address" variant="outlined" type="string" />
+      <TextField required id="outlined-basic" label="Username" variant="outlined" type="string" />
+      <TextField required id="outlined-basic" label="Password" variant="outlined" type="password" />
+      <FormGroup>
+        <FormControlLabel required control={<Checkbox />} label="Secure?" />
+      </FormGroup>
+      <Button color="success" variant="contained">Submit</Button>
+    </Stack>
   );
 }

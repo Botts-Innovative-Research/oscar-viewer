@@ -43,5 +43,14 @@ export const getTheme = (mode: PaletteMode): ThemeOptions => ({
         },
       },
     },
+    MuiTextField: {
+      styleOverrides: {
+        root: ({ ownerState }) => ({
+          "& .MuiInputBase-root": {
+            borderRadius: "10px",
+          },
+        }),
+      },
+    },
   },
 });
