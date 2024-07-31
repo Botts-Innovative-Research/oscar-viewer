@@ -1,0 +1,9 @@
+html {
+  scroll-behavior: smooth;
+}
+
+/* Remove link styling by default */
+a, a:hover, a:focus, a:active {
+  text-decoration: none;
+  color: inherit;
+}

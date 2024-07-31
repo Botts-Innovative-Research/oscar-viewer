@@ -26,6 +26,7 @@ import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
 import { Menu, MenuItem, Stack } from '@mui/material';
 import { useState } from 'react';
+import Link from 'next/link';
 
 const drawerWidth = 240;
 
@@ -128,15 +129,18 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
   const menuItems = [
     {
       title: "Dashboard",
-      icon: <DashboardRoundedIcon />
+      icon: <DashboardRoundedIcon />,
+      href: "/",
     },
     {
       title: "Events",
-      icon: <WarningRoundedIcon />
+      icon: <WarningRoundedIcon />,
+      href: "/event-log",
     },
     {
       title: "Map",
-      icon: <LocationOnRoundedIcon />
+      icon: <LocationOnRoundedIcon />,
+      href: "/map",
     },
   ]
 
@@ -144,15 +148,18 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
   const settingsItems = [
     {
       title: "Account",
-      icon: <AccountCircleRoundedIcon />
+      icon: <AccountCircleRoundedIcon />,
+      href: "/account",
     },
     {
       title: "Servers",
-      icon: <CloudRoundedIcon />
+      icon: <CloudRoundedIcon />,
+      href: "/servers",
     },
     {
       title: "Site Configuration",
-      icon: <SettingsRoundedIcon />
+      icon: <SettingsRoundedIcon />,
+      href: "/site-configuration",
     },
   ]
 
@@ -215,51 +222,55 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
         <Divider />
         <List>
           {menuItems.map((item) => (
-            <ListItem key={item.title} disablePadding sx={{ display: 'block' }}>
-            <ListItemButton
-              sx={{
-                minHeight: 48,
-                justifyContent: drawerOpen ? 'initial' : 'center',
-                px: 2.5,
-              }}
-            >
-              <ListItemIcon
-                sx={{
-                  minWidth: 0,
-                  mr: drawerOpen ? 3 : 'auto',
-                  justifyContent: 'center',
-                }}
-              >
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText primary={item.title} sx={{ opacity: drawerOpen ? 1 : 0 }} />
-            </ListItemButton>
-          </ListItem>
+            <Link href={item.href} passHref key={item.title}>
+              <ListItem disablePadding sx={{ display: 'block' }}>
+                <ListItemButton
+                  sx={{
+                    minHeight: 48,
+                    justifyContent: drawerOpen ? 'initial' : 'center',
+                    px: 2.5,
+                  }}
+                >
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 0,
+                      mr: drawerOpen ? 3 : 'auto',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText primary={item.title} sx={{ opacity: drawerOpen ? 1 : 0 }} />
+                </ListItemButton>
+              </ListItem>
+            </Link>
           ))}
         </List>
         <Divider />
         <List>
           {settingsItems.map((item) => (
-            <ListItem key={item.title} disablePadding sx={{ display: 'block' }}>
-            <ListItemButton
-              sx={{
-                minHeight: 48,
-                justifyContent: drawerOpen ? 'initial' : 'center',
-                px: 2.5,
-              }}
-            >
-              <ListItemIcon
-                sx={{
-                  minWidth: 0,
-                  mr: drawerOpen ? 3 : 'auto',
-                  justifyContent: 'center',
-                }}
-              >
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText primary={item.title} sx={{ opacity: drawerOpen ? 1 : 0 }} />
-            </ListItemButton>
-          </ListItem>
+            <Link href={item.href} passHref key={item.title}>
+              <ListItem disablePadding sx={{ display: 'block' }}>
+                <ListItemButton
+                  sx={{
+                    minHeight: 48,
+                    justifyContent: drawerOpen ? 'initial' : 'center',
+                    px: 2.5,
+                  }}
+                >
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 0,
+                      mr: drawerOpen ? 3 : 'auto',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText primary={item.title} sx={{ opacity: drawerOpen ? 1 : 0 }} />
+                </ListItemButton>
+              </ListItem>
+            </Link>
           ))}
         </List>
       </Drawer>

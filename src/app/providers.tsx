@@ -4,6 +4,7 @@ import { ThemeProvider, createTheme, useMediaQuery } from "@mui/material";
 import { ReactNode, useMemo } from "react";
 import CssBaseline from '@mui/material/CssBaseline';
 import { getTheme } from "@/app/style/theme";
+import "@/app/style/global.css"
 
 export default function Providers({ children }: { children: ReactNode }) {
 

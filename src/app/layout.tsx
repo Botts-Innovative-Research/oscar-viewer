@@ -13,7 +13,7 @@ export default function RootLayout({
         <Providers>
           <CssBaseline />
           <Navbar>
-          {children}
+            {children}
           </Navbar>
         </Providers>
       </body>
