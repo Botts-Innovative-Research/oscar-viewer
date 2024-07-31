@@ -3,6 +3,7 @@
 import { Stack, Typography, capitalize } from '@mui/material';
 import Paper from '@mui/material/Paper';
 import CircleRoundedIcon from '@mui/icons-material/CircleRounded';
+import { Fragment } from 'react';
 
 export default function LaneStatus() {
   // Lanes for demo lane status list
@@ -28,8 +29,8 @@ export default function LaneStatus() {
         <Typography variant="h6">Lane Status</Typography>
         <Stack spacing={1} sx={{ overflow: "auto", maxHeight: "100%" }}>
           {demoLanes.map((item) => (
-            (item.status !== "none" ? (
-              <Paper variant='outlined' sx={{ padding: 1, backgroundColor: (item.status == "alarm" ? "errorHighlight" : "secondaryHighlight") }}>
+            (item.status != "none" ? (
+              <Paper key={item.id} variant='outlined' sx={{ padding: 1, backgroundColor: (item.status == "alarm" ? "errorHighlight" : "secondaryHighlight") }}>
                 <Stack direction={"row"}>
                   <CircleRoundedIcon color={(item.status == "alarm" ? "error" : "secondary")} sx={{ marginRight: 2 }} />
                   <Typography variant="body1">{item.name} - {capitalize(item.status)}</Typography>

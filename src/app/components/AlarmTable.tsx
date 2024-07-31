@@ -111,8 +111,8 @@ export default function AlarmTable() {
               color: "error.contrastText",
             },
             [`.${gridClasses.cell}.highlightNeutron`]: {
-              backgroundColor: "primary.main",
-              color: "primary.contrastText",
+              backgroundColor: "info.main",
+              color: "info.contrastText",
             },
             [`.${gridClasses.cell}.highlightGammaNeutron`]: {
               backgroundColor: "secondary.main",

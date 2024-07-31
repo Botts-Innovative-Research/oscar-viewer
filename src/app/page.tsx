@@ -2,6 +2,7 @@ import { Grid } from "@mui/material";
 import CameraGrid from "./components/CameraGrid";
 import LaneStatus from "./components/LaneStatus";
 import AlarmTable from "./components/AlarmTable";
+import EventPreview from "./components/EventPreview";
 
 export default function Page() {
   return (
@@ -19,7 +20,7 @@ export default function Page() {
           <AlarmTable />
         </Grid>
         <Grid item xs={4}>
-          <CameraGrid />
+          <EventPreview event={1} />
         </Grid>
       </Grid>
     </Grid>
