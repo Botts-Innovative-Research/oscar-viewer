@@ -9,7 +9,7 @@ export default function SiteConfiguration() {
       <TextField required id="outlined-basic" label="Username" variant="outlined" type="string" />
       <TextField required id="outlined-basic" label="Password" variant="outlined" type="password" />
       <FormGroup>
-        <FormControlLabel required control={<Checkbox />} label="Secure?" />
+        <FormControlLabel control={<Checkbox />} label="HTTPS?" />
       </FormGroup>
       <Button color="success" variant="contained">Submit</Button>
     </Stack>
