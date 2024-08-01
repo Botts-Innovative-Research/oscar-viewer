@@ -1,29 +1,39 @@
 "use client";
 
-import { Box, FormControl, Grid, IconButton, InputLabel, ListSubheader, MenuItem, Pagination, Select, SelectChangeEvent, Stack, Typography } from '@mui/material';
-import Paper from '@mui/material/Paper';
-import Image from "next/image";
+import { FormControl, InputLabel, ListSubheader, MenuItem, Select, SelectChangeEvent } from '@mui/material';
 import { useState } from 'react';
-import OpenInFullRoundedIcon from '@mui/icons-material/OpenInFullRounded';
-import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 
-export default function EventPreview(props: {
-  event: number
-}) {
-  const [adjudicated, setAdjudicated] = useState('');
+const colorCodes = {
+  real: { color: "error.dark" },
+  innocent: { color: "primary.dark" },
+  false: { color: "success.dark" },
+  other: { color: "text.primary" }
+};
+
+export default function AdjudicationSelect() {
+  const [adjudicated, setAdjudicated] = useState(''); // Adjudication selected value
+  const [style, setStyle] = useState(colorCodes.other.color); // Adjudicated button style based on selected value
 
   const handleChange = (event: SelectChangeEvent) => {
     setAdjudicated(event.target.value as string);
+    if (parseInt(event.target.value) < 3)
+      setStyle(colorCodes.real.color);
+    else if (parseInt(event.target.value) < 6)
+      setStyle(colorCodes.innocent.color);
+    else if (parseInt(event.target.value) < 9)
+      setStyle(colorCodes.false.color);
+    else
+      setStyle(colorCodes.other.color);
   };
 
   return (
     <FormControl size="small">
-      <InputLabel id="demo-simple-select-label">Age</InputLabel>
+      <InputLabel id="label" sx={{"&.MuiInputLabel-root":{color: style}}}>Adjudicate</InputLabel>
       <Select
-        labelId="demo-simple-select-label"
-        id="demo-simple-select"
+        variant="outlined"
+        id="label"
+        label="Adjudicate"
         value={adjudicated}
-        label="Adjudicated"
         onChange={handleChange}
         MenuProps={{
           MenuListProps: {
@@ -32,24 +42,40 @@ export default function EventPreview(props: {
             }
           }
         }}
+        sx={{
+          color: style,
+          "& .MuiOutlinedInput-notchedOutline": {
+            borderColor: style,
+          },
+          "&.MuiOutlinedInput-notchedOutline": { border: 1 },
+          "&.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline":
+            {
+              border: 2,
+              borderRadius: "10px"
+            },
+          "&.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline":
+            {
+              border: 2,
+            },
+        }}
       >
         <ListSubheader>Real Alarm</ListSubheader>
-        <MenuItem value={1}>Code 1: Contraband Found</MenuItem>
-        <MenuItem value={2}>Code 2: Other</MenuItem>
+        <MenuItem value={1} sx={colorCodes.real}>Code 1: Contraband Found</MenuItem>
+        <MenuItem value={2} sx={colorCodes.real}>Code 2: Other</MenuItem>
         <ListSubheader>Innocent Alarm</ListSubheader>
-        <MenuItem value={3}>Code 3: Medical Isotope Found</MenuItem>
-        <MenuItem value={4}>Code 4: NORM Found</MenuItem>
-        <MenuItem value={5}>Code 5: Declared Shipment of Radioactive Material</MenuItem>
+        <MenuItem value={3} sx={colorCodes.innocent}>Code 3: Medical Isotope Found</MenuItem>
+        <MenuItem value={4} sx={colorCodes.innocent}>Code 4: NORM Found</MenuItem>
+        <MenuItem value={5} sx={colorCodes.innocent}>Code 5: Declared Shipment of Radioactive Material</MenuItem>
         <ListSubheader>False Alarm</ListSubheader>
-        <MenuItem value={6}>Code 6: Physical Inspection Negative</MenuItem>
-        <MenuItem value={7}>Code 7: RIID/ASP Indicates Background Only</MenuItem>
-        <MenuItem value={8}>Code 8: Other</MenuItem>
+        <MenuItem value={6} sx={colorCodes.false}>Code 6: Physical Inspection Negative</MenuItem>
+        <MenuItem value={7} sx={colorCodes.false}>Code 7: RIID/ASP Indicates Background Only</MenuItem>
+        <MenuItem value={8} sx={colorCodes.false}>Code 8: Other</MenuItem>
         <ListSubheader>Alarm/Tamper/Fault</ListSubheader>
-        <MenuItem value={9}>Code 9: Authorized Test, Maintenence, or Training Activity</MenuItem>
+        <MenuItem value={9} sx={colorCodes.other}>Code 9: Authorized Test, Maintenence, or Training Activity</MenuItem>
         <ListSubheader>Tamper/Fault</ListSubheader>
-        <MenuItem value={10}>Code 10: Unauthorized Activity</MenuItem>
+        <MenuItem value={10} sx={colorCodes.other}>Code 10: Unauthorized Activity</MenuItem>
         <ListSubheader>Other</ListSubheader>
-        <MenuItem value={11}>Code 11: Other</MenuItem>
+        <MenuItem value={11} sx={colorCodes.other}>Code 11: Other</MenuItem>
       </Select>
     </FormControl>
   );

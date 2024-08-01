@@ -52,5 +52,14 @@ export const getTheme = (mode: PaletteMode): ThemeOptions => ({
         }),
       },
     },
+    MuiSelect: {
+      styleOverrides: {
+        root: ({ ownerState }) => ({
+          ...(ownerState.variant === "outlined" && {
+            borderRadius: "10px",
+          }),
+        }),
+      },
+    }
   },
 });
