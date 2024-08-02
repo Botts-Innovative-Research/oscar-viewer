@@ -18,6 +18,7 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 // @ts-ignore
 import {Mode} from "osh-js/source/core/datasource/Mode";
+import {ITimeSynchronizerProps} from "@/lib/data/osh/TimeSynchronizers";
 
 enableMapSet();
 
@@ -25,9 +26,9 @@ interface IOSHSlice {
     nodes: INode[],
     systems: ISystem[],
     dataStreams: IDatastream[],
-    mainDataSynchronizer: DataSynchronizer,
+    mainDataSynchronizer: ITimeSynchronizerProps,
     datasources: SweApi[],
-    otherDataSynchronizers: DataSynchronizer[]
+    otherDataSynchronizers: ITimeSynchronizerProps[]
 }
 
 const initialState: IOSHSlice = {
