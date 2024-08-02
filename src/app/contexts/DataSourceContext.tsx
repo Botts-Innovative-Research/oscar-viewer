@@ -1,9 +1,12 @@
+'use client';
+
 import React, {createContext, MutableRefObject, ReactNode, useContext, useEffect, useRef} from "react";
 // @ts-ignore
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
-import {AppStore} from "@/lib/state/Store";
+import {useSelector} from "react-redux";
+import {Datastream} from "@/lib/data/osh/Datastreams";
 
 interface IDataSourceContext {
     dataSources: Map<string, SweApi>
@@ -14,24 +17,24 @@ interface IDataSourceContext {
 const DataSourceContext = createContext<IDataSourceContext | undefined>(undefined);
 
 
-export default function DataSourceProvider({children, store}: { children: ReactNode, store: AppStore }) {
+export default function DataSourceProvider({children}: { children: ReactNode }) {
+    const dataStreams: Datastream[] = useSelector((state: any) => state.oshState.dataStreams);
+    const mainDataSynchronizer = useSelector((state: any) => state.oshState.mainDataSynchronizer);
     // will need to load from the config file at a later iteration
     const dataSources = new Map<string, SweApi>()
     const masterTimeSyncRef = useRef<DataSynchronizer>()
 
     useEffect(() => {
-        const datastreams = store.getState().oshState.dataStreams
-
-        datastreams.forEach((datastream) => {
+        dataStreams.forEach((datastream) => {
             const sweApi = datastream.generateSweApiObj()
             dataSources.set(datastream.id, sweApi)
         })
 
-    }, [store])
+    }, [dataStreams])
 
     if (!masterTimeSyncRef.current) {
         // get these properties from the store!
-        masterTimeSyncRef.current = new DataSynchronizer({...store.getState().oshState.mainDataSynchronizer});
+        masterTimeSyncRef.current = new DataSynchronizer({...mainDataSynchronizer});
     }
 
 

@@ -15,10 +15,8 @@ import {IDatastream} from "@/app/data/osh/Datastreams";
 // @ts-ignore
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
-import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
-// @ts-ignore
 import {Mode} from "osh-js/source/core/datasource/Mode";
-import {ITimeSynchronizerProps} from "@/lib/data/osh/TimeSynchronizers";
+import {ITimeSynchronizerProps, TimeSynchronizerProps} from "@/lib/data/osh/TimeSynchronizers";
 
 enableMapSet();
 
@@ -35,14 +33,8 @@ const initialState: IOSHSlice = {
     nodes: [],
     systems: [],
     dataStreams: [],
-    mainDataSynchronizer: new DataSynchronizer({
-        startTime: new Date().toISOString(),
-        endTime: "...",
-        replaySpeed: 1,
-        intervalRate: 5,
-        dataSources: [],
-        mode: Mode.REPLAY
-    }),
+    mainDataSynchronizer: new TimeSynchronizerProps(new Date().toISOString(),
+        "...", 1, 5, [], Mode.REAL_TIME),
     datasources: [],
     otherDataSynchronizers: []
 }
@@ -63,10 +55,10 @@ export const Slice = createSlice({
         addDatasource: (state, action: PayloadAction<SweApi>) => {
             state.datasources.push(action.payload);
         },
-        addDataSynchronizer: (state, action: PayloadAction<DataSynchronizer>) => {
+        addDataSynchronizer: (state, action: PayloadAction<ITimeSynchronizerProps>) => {
             state.otherDataSynchronizers.push(action.payload);
         },
-        setMainDataSynchronizer: (state, action: PayloadAction<DataSynchronizer>) => {
+        setMainDataSynchronizer: (state, action: PayloadAction<ITimeSynchronizerProps>) => {
             state.mainDataSynchronizer = action.payload;
         },
     }

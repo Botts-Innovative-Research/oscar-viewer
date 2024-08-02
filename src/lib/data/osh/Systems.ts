@@ -3,6 +3,7 @@
  * All Rights Reserved
  */
 
+// @ts-ignore
 import {INode} from "@/app/data/osh/Node";
 
 export interface ISystem {

@@ -6,6 +6,7 @@
 
 // @ts-ignore
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+// @ts-ignore
 import {ITimePeriod} from "@/app/data/Models";
 
 export interface IDatastream {
