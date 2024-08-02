@@ -6,10 +6,12 @@
 // @ts-ignore
 import {configureStore} from '@reduxjs/toolkit';
 import AppReducer from './Slice';
+import OSHReducer from './OSHSlice';
 
 export const appStore = configureStore({
     reducer: {
         appState: AppReducer,
+        oshState: OSHReducer,
     },
     middleware: (getDefaultMiddleWare) =>
         getDefaultMiddleWare({

@@ -1,6 +1,6 @@
 import {createSlice, PayloadAction} from "@reduxjs/toolkit";
 import {enableMapSet} from "immer";
-import {RootState} from "../Store";
+import {RootState} from "./Store";
 
 enableMapSet();
 
