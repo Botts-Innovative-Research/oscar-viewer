@@ -3,7 +3,6 @@
 import { Stack, Typography, capitalize } from '@mui/material';
 import Paper from '@mui/material/Paper';
 import CircleRoundedIcon from '@mui/icons-material/CircleRounded';
-import { Fragment } from 'react';
 
 export default function LaneStatus() {
   // Lanes for demo lane status list

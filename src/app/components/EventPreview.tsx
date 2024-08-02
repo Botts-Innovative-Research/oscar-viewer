@@ -1,12 +1,12 @@
 "use client";
 
-import { Box, FormControl, Grid, IconButton, InputLabel, ListSubheader, MenuItem, Pagination, Select, SelectChangeEvent, Stack, Typography } from '@mui/material';
+import { Box, IconButton, SelectChangeEvent, Stack, Typography } from '@mui/material';
 import Paper from '@mui/material/Paper';
 import Image from "next/image";
 import { useState } from 'react';
 import OpenInFullRoundedIcon from '@mui/icons-material/OpenInFullRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
-import AdjudicationSelect from './AdjudicationSelect';
+import AdjudicationSelect from './event-actions/AdjudicationSelect';
 
 export default function EventPreview(props: {
   event: number
