@@ -20,7 +20,7 @@ import {ITimeSynchronizerProps, TimeSynchronizerProps} from "@/lib/data/osh/Time
 
 enableMapSet();
 
-interface IOSHSlice {
+export interface IOSHSlice {
     nodes: INode[],
     systems: ISystem[],
     dataStreams: IDatastream[],
