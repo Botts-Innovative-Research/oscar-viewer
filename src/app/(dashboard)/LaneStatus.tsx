@@ -4,8 +4,17 @@ import { Stack, Typography, capitalize } from '@mui/material';
 import Paper from '@mui/material/Paper';
 import CircleRoundedIcon from '@mui/icons-material/CircleRounded';
 import LaneStatusItem from '../components/LaneStatusItem';
+import {Fragment, useEffect, useMemo} from 'react';
+import {useDSContext} from "@/app/contexts/DataSourceContext";
 
 export default function LaneStatus() {
+  const {dataSources, masterTimeSyncRef} = useDSContext();
+
+  useEffect(() => {
+    console.log("LaneStatus dataSources: ", dataSources);
+    console.log("LaneStatus masterTimeSyncRef: ", masterTimeSyncRef);
+  }, [dataSources, masterTimeSyncRef]);
+
   // Lanes for demo lane status list
   const demoLanes = [
     {src: "/FrontGateLeft.png", name: "Front Gate Left", status: "alarm", id: 1},
