@@ -6,10 +6,12 @@ declare module "@mui/material/styles" {
   interface Palette {
     errorHighlight: string;
     secondaryHighlight: string;
+    infoHighlight: string;
   }
   interface PaletteOptions {
     errorHighlight: string;
     secondaryHighlight: string;
+    infoHighlight: string;
   }
 }
 
@@ -18,6 +20,7 @@ export const getTheme = (mode: PaletteMode): ThemeOptions => ({
     mode,
     errorHighlight: "#D32F2F4D",
     secondaryHighlight: "#9C27B04D",
+    infoHighlight: "#2196F34D",
   },
   typography: {},
   components: {

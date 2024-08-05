@@ -1,7 +1,6 @@
 "use client";
 
-import { Box, Button, IconButton, capitalize } from '@mui/material';
-import Paper from '@mui/material/Paper';
+import { Box, IconButton } from '@mui/material';
 import { DataGrid, GridCellParams, GridColDef, GridRenderCellParams, gridClasses } from '@mui/x-data-grid';
 import CustomToolbar from './CustomToolbar';
 import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
@@ -74,53 +73,51 @@ const rows = [
 
 export default function AlarmTable() {
   return (
-    <Paper variant='outlined' sx={{ maxHeight: "100%" }}>
-      <Box sx={{ height: 400, width: '100%' }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          initialState={{
-            pagination: {
-              paginationModel: {
-                pageSize: 20,
-              },
+    <Box sx={{ height: 400, width: '100%' }}>
+      <DataGrid
+        rows={rows}
+        columns={columns}
+        initialState={{
+          pagination: {
+            paginationModel: {
+              pageSize: 20,
             },
-          }}
-          pageSizeOptions={[20]}
-          disableRowSelectionOnClick
-          slots={{ toolbar: CustomToolbar }}
-          autosizeOnMount
-          autosizeOptions={{
-            expand: true,
-            includeOutliers: true,
-            includeHeaders: false,
-          }}
-          getCellClassName={(params: GridCellParams<any, any, string>) => {
-            if (params.value === "Gamma")
-              return "highlightGamma";
-            else if (params.value === "Neutron")
-              return "highlightNeutron";
-            else if (params.value === "Gamma & Neutron")
-              return "highlightGammaNeutron";
-            else
-              return "";
-          }}
-          sx={{
-            [`.${gridClasses.cell}.highlightGamma`]: {
-              backgroundColor: "error.main",
-              color: "error.contrastText",
-            },
-            [`.${gridClasses.cell}.highlightNeutron`]: {
-              backgroundColor: "info.main",
-              color: "info.contrastText",
-            },
-            [`.${gridClasses.cell}.highlightGammaNeutron`]: {
-              backgroundColor: "secondary.main",
-              color: "secondary.contrastText",
-            },
-          }}
-        />
-      </Box>
-    </Paper>
+          },
+        }}
+        pageSizeOptions={[20]}
+        disableRowSelectionOnClick
+        slots={{ toolbar: CustomToolbar }}
+        autosizeOnMount
+        autosizeOptions={{
+          expand: true,
+          includeOutliers: true,
+          includeHeaders: false,
+        }}
+        getCellClassName={(params: GridCellParams<any, any, string>) => {
+          if (params.value === "Gamma")
+            return "highlightGamma";
+          else if (params.value === "Neutron")
+            return "highlightNeutron";
+          else if (params.value === "Gamma & Neutron")
+            return "highlightGammaNeutron";
+          else
+            return "";
+        }}
+        sx={{
+          [`.${gridClasses.cell}.highlightGamma`]: {
+            backgroundColor: "error.main",
+            color: "error.contrastText",
+          },
+          [`.${gridClasses.cell}.highlightNeutron`]: {
+            backgroundColor: "info.main",
+            color: "info.contrastText",
+          },
+          [`.${gridClasses.cell}.highlightGammaNeutron`]: {
+            backgroundColor: "secondary.main",
+            color: "secondary.contrastText",
+          },
+        }}
+      />
+    </Box>
   );
 }

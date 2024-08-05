@@ -32,7 +32,8 @@
   },
   "include": [
     "./src/**/*",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "./types/osh-js.d.tsx"
   ],
   "exclude": [
     "node_modules"

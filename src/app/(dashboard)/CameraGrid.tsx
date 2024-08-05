@@ -36,30 +36,28 @@ export default function CameraGrid() {
   ]
 
   return (
-    <Paper variant='outlined' sx={{ height: "100%" }}>
-      <Grid container padding={2} justifyContent={"start"}>
-        {demoImages.slice(startItem, endItem).map((item) => (
-          <Grid item key={item.id} xs={2} display={"flex"} direction={"column"} alignItems={"center"}
-            sx={{
-              "&.MuiGrid-item": 
-                {...item.status != "none" ? {
-                  border: "solid",
-                  borderWidth: "2px",
-                  borderColor: (item.status == "alarm" ? "error.main" : "secondary.main"),
-                  backgroundColor: (item.status == "alarm" ? "errorHighlight" : "secondaryHighlight"),
-                } : {},
-                padding: "0px",
-              },
-            }}
-          >
-            <Image src={item.src} alt="test image" width={0} height={0} sizes={"100vw"} style={{ width: "100%", height: "100%", }} />
-            <Typography variant="body2">{item.name}</Typography>
-          </Grid>
-        ))}
-        <Grid item xs={12} display={"flex"} justifyContent={"center"}>
-          <Pagination count={Math.ceil(demoImages.length / maxItems)} onChange={handleChange} color="primary" showFirstButton showLastButton />
+    <Grid container padding={2} justifyContent={"start"}>
+      {demoImages.slice(startItem, endItem).map((item) => (
+        <Grid item key={item.id} xs={2} display={"flex"} direction={"column"} alignItems={"center"}
+          sx={{
+            "&.MuiGrid-item": 
+              {...item.status != "none" ? {
+                border: "solid",
+                borderWidth: "2px",
+                borderColor: (item.status == "alarm" ? "error.main" : "secondary.main"),
+                backgroundColor: (item.status == "alarm" ? "errorHighlight" : "secondaryHighlight"),
+              } : {},
+              padding: "0px",
+            },
+          }}
+        >
+          <Image src={item.src} alt="test image" width={0} height={0} sizes={"100vw"} style={{ width: "100%", height: "100%", }} />
+          <Typography variant="body2">{item.name}</Typography>
         </Grid>
+      ))}
+      <Grid item xs={12} display={"flex"} justifyContent={"center"}>
+        <Pagination count={Math.ceil(demoImages.length / maxItems)} onChange={handleChange} color="primary" showFirstButton showLastButton />
       </Grid>
-    </Paper>
+    </Grid>
   );
 }
