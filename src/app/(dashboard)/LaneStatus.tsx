@@ -3,6 +3,7 @@
 import { Stack, Typography, capitalize } from '@mui/material';
 import Paper from '@mui/material/Paper';
 import CircleRoundedIcon from '@mui/icons-material/CircleRounded';
+import LaneStatusItem from '../components/LaneStatusItem';
 
 export default function LaneStatus() {
   // Lanes for demo lane status list
@@ -19,28 +20,17 @@ export default function LaneStatus() {
     {src: "/FerryPOVExit.png", name: "Ferry POV Exit", status: "none", id: 10},
     {src: "/FerryPOVExit.png", name: "Ferry POV Exit", status: "none", id: 11},
     {src: "/FerryPOVExit.png", name: "Ferry POV Exit", status: "none", id: 12},
-    {src: "/FerryPOVExit.png", name: "Ferry POV Exit", status: "none", id: 12},
+    {src: "/FerryPOVExit.png", name: "Ferry POV Exit", status: "none", id: 13},
   ]
 
   return (
-    <Paper variant='outlined' sx={{ maxHeight: "100%" }}>
-      <Stack padding={2} justifyContent={"start"} spacing={1}>
-        <Typography variant="h6">Lane Status</Typography>
-        <Stack spacing={1} sx={{ overflow: "auto", maxHeight: "100%" }}>
-          {demoLanes.map((item) => (
-            (item.status != "none" ? (
-              <Paper key={item.id} variant='outlined' sx={{ padding: 1, backgroundColor: (item.status == "alarm" ? "errorHighlight" : "secondaryHighlight") }}>
-                <Stack direction={"row"}>
-                  <CircleRoundedIcon color={(item.status == "alarm" ? "error" : "secondary")} sx={{ marginRight: 2 }} />
-                  <Typography variant="body1">{item.name} - {capitalize(item.status)}</Typography>
-                </Stack>
-              </Paper>
-            ) : (
-              <></>
-            ))
-          ))}
-        </Stack>
+    <Stack padding={2} justifyContent={"start"} spacing={1}>
+      <Typography variant="h6">Lane Status</Typography>
+      <Stack spacing={1} sx={{ overflow: "auto", maxHeight: "100%" }}>
+        {demoLanes.map((item) => (
+          <LaneStatusItem key={item.id} id={item.id} name={item.name} status={item.status} />
+        ))}
       </Stack>
-    </Paper>
+    </Stack>
   );
 }
