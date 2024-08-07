@@ -1,8 +1,9 @@
 import { Grid, Paper } from "@mui/material";
 import CameraGrid from "./CameraGrid";
 import LaneStatus from "./LaneStatus";
-import AlarmTable from "../components/AlarmTable";
+import AlarmTable from "./AlarmTable";
 import EventPreview from "./EventPreview";
+import EventTable from "../components/EventTable";
 
 export default function Page() {
   return (
@@ -22,7 +23,7 @@ export default function Page() {
       <Grid item container spacing={2} style={{ flexBasis: '66.66%', flexGrow: 0, flexShrink: 0 }}>
         <Grid item xs={8}>
           <Paper variant='outlined' sx={{ height: "100%" }}>
-            <AlarmTable />
+            <EventTable viewSecondary={false} viewMenu={false} />
           </Paper>
         </Grid>
         <Grid item xs={4}>

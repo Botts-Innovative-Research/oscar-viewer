@@ -2,8 +2,9 @@
 
 import { Box, IconButton } from '@mui/material';
 import { DataGrid, GridCellParams, GridColDef, GridRenderCellParams, gridClasses } from '@mui/x-data-grid';
-import CustomToolbar from './CustomToolbar';
+import CustomToolbar from '../components/CustomToolbar';
 import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
+import { EventTableData } from 'types/new-types';
 
 const columns: GridColDef<(typeof rows)[number]>[] = [
   { 
@@ -34,24 +35,29 @@ const columns: GridColDef<(typeof rows)[number]>[] = [
   { 
     field: 'maxGamma',
     headerName: 'Max Gamma',
-    type: 'string',
+    valueFormatter: (value) => {
+      // Append units to number value, or return 'N/A'
+      return typeof value === 'number' ? `${value} cps` : 'N/A';
+    },
   }, 
   { 
     field: 'maxNeutron',
     headerName: 'Max Neutron',
-    type: 'string',
-  }, 
+    valueFormatter: (value) => {
+      // Append units to number value, or return 'N/A'
+      return typeof value === 'number' ? `${value} cps` : 'N/A';
+    },  }, 
   { 
     field: 'status',
     headerName: 'Status',
     type: 'string',
   }, 
   { 
-    field: 'details',
+    field: 'menu',
     headerName: '',
     renderCell: (params: GridRenderCellParams<any, Date>) => (
       <IconButton
-        aria-label="details"
+        aria-label="menu"
       >
         <MoreVertRoundedIcon fontSize="inherit" />
       </IconButton>
@@ -59,19 +65,20 @@ const columns: GridColDef<(typeof rows)[number]>[] = [
   }, 
 ];
 
-const rows = [
-  { id: 1, secondaryInspection: 'false', laneId: 1, occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: '25642 cps', maxNeutron: 'N/A', status: 'Gamma' },
-  { id: 2, secondaryInspection: 'false', laneId: 1, occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: '25642 cps', maxNeutron: 'N/A', status: 'Neutron' },
-  { id: 3, secondaryInspection: 'false', laneId: 1, occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: '25642 cps', maxNeutron: 'N/A', status: 'Gamma & Neutron' },
-  { id: 4, secondaryInspection: 'false', laneId: 1, occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: '25642 cps', maxNeutron: 'N/A', status: 'Gamma' },
-  { id: 5, secondaryInspection: 'false', laneId: 1, occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: '25642 cps', maxNeutron: 'N/A', status: 'Gamma' },
-  { id: 6, secondaryInspection: 'false', laneId: 1, occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: '25642 cps', maxNeutron: 'N/A', status: 'Gamma' },
-  { id: 7, secondaryInspection: 'false', laneId: 1, occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: '25642 cps', maxNeutron: 'N/A', status: 'Gamma' },
-  { id: 8, secondaryInspection: 'false', laneId: 1, occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: '25642 cps', maxNeutron: 'N/A', status: 'Gamma' },
-  { id: 9, secondaryInspection: 'false', laneId: 1, occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: '25642 cps', maxNeutron: 'N/A', status: 'Gamma' },
+const rows: EventTableData[] = [
+  { id: '1', secondaryInspection: false, laneId: '1', occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: 25642, status: 'Gamma' },
+  { id: '2', secondaryInspection: false, laneId: '1', occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxNeutron: 25642, status: 'Neutron' },
+  { id: '3', secondaryInspection: false, laneId: '1', occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: 25642, maxNeutron: 29482, status: 'Gamma & Neutron' },
+  { id: '4', secondaryInspection: false, laneId: '1', occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: 25642, status: 'Gamma' },
 ];
 
-export default function AlarmTable() {
+export default function EventTable(props: {
+  //onSelectedRow: (startTime: string, endTime: string) => void,
+  viewSecondary?: boolean,  // Show 'Secondary Inspection' column
+  viewMenu?: boolean, // Show three-dot menu button
+  viewLane?: boolean, // Show 'View Lane' option in menu
+  data?: EventTableData[],
+}) {
   return (
     <Box sx={{ height: 400, width: '100%' }}>
       <DataGrid
@@ -83,9 +90,14 @@ export default function AlarmTable() {
               pageSize: 20,
             },
           },
+          columns: {
+            columnVisibilityModel: {
+              secondaryInspection: props.viewSecondary,
+              menu: props.viewMenu,
+            }
+          },
         }}
         pageSizeOptions={[20]}
-        disableRowSelectionOnClick
         slots={{ toolbar: CustomToolbar }}
         autosizeOnMount
         autosizeOptions={{
