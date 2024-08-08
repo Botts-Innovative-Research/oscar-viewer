@@ -1,5 +1,6 @@
 "use client";
 
+
 import { Stack, Typography } from '@mui/material';
 
 import LaneStatusItem from '../components/LaneStatusItem';
@@ -9,6 +10,7 @@ import {EventType} from 'osh-js/source/core/event/EventType';
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import {findInObject} from "@/utils/Utils";
+import Link from "next/link";
 
 interface LaneStatusItem{
   id: number;
@@ -18,12 +20,12 @@ interface LaneStatusItem{
 
 const datasource = (name: string, streamId: string, server: string, start: string) => {
   return useMemo(() => new SweApi(name, {
-    protocol: 'wss',
+    protocol: 'ws',
     endpointUrl: server,
     resource: `/datastreams/${streamId}/observations`,
     startTime: start,
     endTime: "2055-01-01T00:00:00.000Z",
-    mode: Mode.REAL_TIME,
+    mode: Mode.REPLAY,
     tls: false,
   }), [streamId]);
 };
@@ -143,7 +145,6 @@ export default function LaneStatus() {
     const handleGamma = (message: any[]) => handleStatusData(gammaDataSource.name, 'alarmState', message);
     const handleNeutron = (message: any[]) => handleStatusData(neutronDataSource.name, 'alarmState', message);
     const handleTamper = (message: any[]) => handleTamperData(tamperDataSource.name, 'tamperStatus', message);
-
     const handleGamma2 = (message: any[]) => handleStatusData(gammaDataSource2.name, 'alarmState', message);
     const handleNeutron2 = (message: any[]) => handleStatusData(neutronDataSource2.name, 'alarmState', message);
     const handleTamper2 = (message: any[]) => handleTamperData(tamperDataSource2.name, 'tamperStatus', message);
@@ -155,6 +156,7 @@ export default function LaneStatus() {
     gammaDataSource2.connect();
     neutronDataSource2.connect();
     tamperDataSource2.connect();
+
 
     gammaDataSource.subscribe(handleGamma, [EventType.DATA]);
     neutronDataSource.subscribe(handleNeutron, [EventType.DATA]);
@@ -176,6 +178,19 @@ export default function LaneStatus() {
   }, [gammaDataSource, gammaDataSource2, neutronDataSource,neutronDataSource2, tamperDataSource,tamperDataSource2, server, start]);
 
 
+  const demoLanes = [
+    {src: "/FrontGateLeft.png", name: "Front Gate Left", status: "Alarm", id: 1},
+    {src: "/FrontGateRight.png", name: "Front Gate Right", status: "Fault", id: 2},
+    {src: "/FerryPOVExit.png", name: "Ferry POV Exit", status: "Tamper", id: 3},
+    {src: "/FerryPOVEntry.png", name: "Ferry POV Entry", status: "Fault - Neutron High", id: 4},
+    {src: "/RearGateLeft.png", name: "Rear Gate Left", status: "Alarm", id: 5},
+    {src: "/RearGateRight.png", name: "Rear Gate Right", status: "Tamper", id: 6},
+    {src: "/FerryPOVExit.png", name: "Ferry POV Exit", status: "none", id: 7},
+    {src: "/FerryPOVExit.png", name: "Ferry POV Exit", status: "none", id: 8},
+    {src: "/FerryPOVExit.png", name: "Ferry POV Exit", status: "Tamper", id: 9},
+    {src: "/FerryPOVExit.png", name: "Ferry POV Exit", status: "none", id: 10},
+  ]
+
   // useEffect(() => {
   //   console.log("LaneStatus dataSources: ", dataSources);
   //   console.log("LaneStatus masterTimeSyncRef: ", masterTimeSyncRef);
@@ -186,13 +201,22 @@ export default function LaneStatus() {
 
 
   return (
-    <Stack padding={2} justifyContent={"start"} spacing={1}>
-      <Typography variant="h6">Lane Status</Typography>
-      <Stack spacing={1} sx={{ overflow: "auto", maxHeight: "100%" }}>
-        {statusBars.map((item) => (
-          <LaneStatusItem key={item.id} id={item.id} name={item.name} status={item.status} />
-        ))}
+      <Stack padding={2} justifyContent={"start"} spacing={1}>
+        <Typography variant="h6">Lane Status</Typography>
+        <Stack spacing={1} sx={{ overflow: "auto", maxHeight: "100%" }}>
+          {demoLanes.map((item) => (
+              <Link href={{
+                pathname: '/lane-view',
+                query: {
+                  id: 'someVal'
+                }
+              }}
+                    passHref
+                    key={item.id}>
+                <LaneStatusItem key={item.id} id={item.id} name={item.name} status={item.status} />
+              </Link>
+          ))}
+        </Stack>
       </Stack>
-    </Stack>
   );
 }

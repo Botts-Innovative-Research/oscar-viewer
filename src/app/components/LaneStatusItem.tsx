@@ -1,37 +1,34 @@
 "use client";
 
-import { Stack, Typography, capitalize } from '@mui/material';
+
 import Paper from '@mui/material/Paper';
 import CircleRoundedIcon from '@mui/icons-material/CircleRounded';
-import {styled} from "@mui/material/styles";
+import {capitalize, Stack, Typography} from '@mui/material';
 
-function updateStatusIconColor(status: string) {
-  switch(status){
-    case 'Alarm':
-      return "error";
-    case 'Fault':
-      return "info";
-    case 'Tamper':
-      return "secondary";
-  }
-}
-function updateStatusBackgroundColor(status: string) {
-  console.log(status);
-  capitalize(status);
-  switch(status){
-    case 'Alarm':
-      return "errorHighlight";
-    case 'Fault':
-      return "infoHighlight";
-    case 'Tamper':
-      return "secondaryHighlight";
-  }
-}
-function navigateLaneView(){
-  //possibly pass in the lanes data, so it knows what to render??????
-  console.log("route to lane view")
-  // implement router logic to lane view page
-}
+
+// function updateStatusIconColor(status: string) {
+//   switch(status){
+//     case 'Alarm':
+//       return "error";
+//     case 'Fault':
+//       return "info";
+//     case 'Tamper':
+//       return "secondary";
+//   }
+// }
+// function updateStatusBackgroundColor(status: string) {
+//   // console.log(status);
+//   // capitalize(status);
+//   switch(status){
+//     case 'Alarm':
+//       return "errorHighlight";
+//     case 'Fault':
+//       return "infoHighlight";
+//     case 'Tamper':
+//       return "secondaryHighlight";
+//   }
+// }
+
 export default function LaneStatusItem(props: {
   id: number;
   name: string;
@@ -41,13 +38,32 @@ export default function LaneStatusItem(props: {
     return (<></>)
   return (
     <Paper key={props.id} variant='outlined' sx={{ cursor: 'pointer', padding: 1,
-      backgroundColor: (updateStatusBackgroundColor(props.status))
+      // backgroundColor: (updateStatusBackgroundColor(props.status))
+      backgroundColor: (
+          props.status == "Alarm"
+              ? "errorHighlight"
+              : props.status == 'Tamper'
+              ? "secondaryHighlight"
+              : props.status.includes('Fault')
+              ? 'infoHighlight'
+              : 'unknown'
+      )
     }}
-           // onClick={{()=> navigateLaneView(parameter)}} //parameter === props.name? so then it would know which lane to open?
-    onClick={navigateLaneView}>
+    >
       <Stack direction={"row"}>
         <CircleRoundedIcon
-            color={updateStatusIconColor(props.status)}
+            color={(
+                props.status === "Alarm"
+              ? "error"
+              : props.status === 'Tamper'
+              ? "secondary"
+              : props.status.includes('Fault')
+              ? 'info'
+              : 'info'
+
+              )
+          // updateStatusIconColor(props.status)
+        }
             sx={{ marginRight: 2 }} />
         <Typography variant="body1">{props.name} - {capitalize(props.status)}</Typography>
       </Stack>
