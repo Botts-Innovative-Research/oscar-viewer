@@ -23,7 +23,7 @@ export default function Page() {
       <Grid item container spacing={2} style={{ flexBasis: '66.66%', flexGrow: 0, flexShrink: 0 }}>
         <Grid item xs={8}>
           <Paper variant='outlined' sx={{ height: "100%" }}>
-            <EventTable viewSecondary={false} viewMenu={false} />
+            <AlarmTable />
           </Paper>
         </Grid>
         <Grid item xs={4}>
