@@ -17,6 +17,8 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {ITimeSynchronizerProps, TimeSynchronizerProps} from "@/lib/data/osh/TimeSynchronizers";
+import {Node} from "@/lib/data/osh/Node";
+import {System} from "../data/osh/Systems";
 
 enableMapSet();
 
@@ -30,8 +32,12 @@ export interface IOSHSlice {
 }
 
 const initialState: IOSHSlice = {
-    nodes: [],
-    systems: [],
+    nodes: [
+        new Node("1", "Windows Test Node", "162.238.96.81", 8781)
+    ],
+    systems: [
+        new System("1", "1", "Windows Test System", null, null)
+    ],
     dataStreams: [],
     mainDataSynchronizer: new TimeSynchronizerProps(new Date().toISOString(),
         "...", 1, 5, [], Mode.REAL_TIME),
