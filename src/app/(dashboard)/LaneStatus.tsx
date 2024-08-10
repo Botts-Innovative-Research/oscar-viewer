@@ -25,7 +25,7 @@ const datasource = (name: string, streamId: string, server: string, start: strin
     resource: `/datastreams/${streamId}/observations`,
     startTime: start,
     endTime: "2055-01-01T00:00:00.000Z",
-    mode: Mode.REPLAY,
+    mode: Mode.REAL_TIME,
     tls: false,
   }), [streamId]);
 };
@@ -34,58 +34,31 @@ function timeout(delay: number) {
   return new Promise( res => setTimeout(res, delay) );
 }
 export default function LaneStatus() {
-  const {dataSources, masterTimeSyncRef} = useDSContext();
+  // const {dataSources, masterTimeSyncRef} = useDSContext();
 
   const [statusBars, setStatus] = useState<LaneStatusItem[]>([]);
   const idVal = React.useRef(1);
 
-  const [host, setHost] = useState("localhost");
-  // const server = `${host}:8282/sensorhub/sos`;
-  const server = `${host}:8282/sensorhub/api`;
+  const [host, setHost] = useState("162.238.96.81");
+  const server = `${host}:8781/sensorhub/api`;
   const start = useMemo(() => new Date((Date.now() - 600000)).toISOString(), []);
   const end = "2055-01-01T00:00:00.000Z";
 
-  const gammaStreamId = 'gcd5sgt3aolbk';
-  const tamperStreamId = 'f6qq7krt5n78e';
-  const neutronStreamId = 'gksl4kv7lb1us';
+  const gammaStreamId = 'jk2ltklu5i4o2';
+  const tamperStreamId = '70rop8vggq3o0';
+  const neutronStreamId = 'pqtvoprvnadm4';
 
-  const gammaStreamId2 = 'ukk100u6sd2ni';
-  const tamperStreamId2 = 'obc17je365mmg';
-  const neutronStreamId2 = '2e2mkq901vst8';
+  const gammaDataSource = datasource('lane1', gammaStreamId, server, start);
+  const neutronDataSource = datasource('lane1', neutronStreamId, server, start);
+  const tamperDataSource = datasource('lane1', tamperStreamId, server, start);
 
-  const gammaDataSource = datasource('lane1-g', gammaStreamId, server, start);
-  const neutronDataSource = datasource('lane1-n', neutronStreamId, server, start);
-  const tamperDataSource = datasource('lane1-t', tamperStreamId, server, start);
+  const gammaStreamId2 = '9fgu8dcfmv6ti';
+  const tamperStreamId2 = 'd06c5lmflph6c';
+  const neutronStreamId2 = 'bv4ejrg5si840';
 
-  const gammaDataSource2 = datasource('g', gammaStreamId2, server, start);
-  const neutronDataSource2 = datasource('n', neutronStreamId2, server, start);
-  const tamperDataSource2 = datasource('t', tamperStreamId2, server, start);
-
-  // let gammaDataSource = new SosGetResult('gamma', {
-  //   endpointUrl: server,
-  //   offeringID: "urn:osh:sensor:rapiscan:rpm001",
-  //   observedProperty: "http://www.opengis.net/def/alarm",
-  //   startTime: start,
-  //   endTime: "2055-01-01T00:00:00.000Z",
-  //   mode: Mode.REAL_TIME
-  // });
-  // let neutronDataSource = new SosGetResult('neutron', {
-  //   endpointUrl: server,
-  //   offeringID: "urn:osh:sensor:rapiscan:rpm001",
-  //   observedProperty: "http://www.opengis.net/def/alarm",
-  //   startTime: start,
-  //   endTime: "2055-01-01T00:00:00.000Z",
-  //   mode: Mode.REAL_TIME
-  // });
-  // let tamperDataSource = new SosGetResult('tamper', {
-  //   endpointUrl: server,
-  //   offeringID: "urn:osh:sensor:rapiscan:rpm001",
-  //   observedProperty: "http://www.opengis.net/def/tamper-status",
-  //   startTime: start,
-  //   endTime: "2055-01-01T00:00:00.000Z",
-  //   mode: Mode.REAL_TIME
-  // });
-
+  const gammaDataSource2 = datasource('lane2', gammaStreamId2, server, start);
+  const neutronDataSource2 = datasource('lane2', neutronStreamId2, server, start);
+  const tamperDataSource2 = datasource('lane2', tamperStreamId2, server, start);
 
   const handleStatusData = async (datasourceName: string, valueKey: string, message: any[]) => {
     // @ts-ignore
@@ -96,7 +69,7 @@ export default function LaneStatus() {
 
     msgVal.forEach((value) => {
       const state = findInObject(value, valueKey);
-      if (state === 'Alarm') {
+      if (state === 'Alarm' || state === 'Fault - Neutron High'|| state === 'Fault - Gamma Low'|| state === 'Fault - Gamma High') {
         const newStatus: LaneStatusItem = {
           id: idVal.current++,
           name: datasourceName,
@@ -106,8 +79,11 @@ export default function LaneStatus() {
         newStatuses.push(newStatus);
       }
     });
-    setStatus(prevStatus => [...newStatuses, ...prevStatus.filter(item => item.name !== datasourceName || (item.status !== 'Alarm') && item.name !== datasourceName)]);
-    // setStatus(prevStatus => [...newStatuses, ...prevStatus.filter(state => state.status !== 'Alarm')]);
+    setStatus(prevStatus => [
+        ...newStatuses,
+      ...prevStatus.filter(item => item.name !== datasourceName ||
+          (item.status !== 'Alarm' && item.status !== 'Fault - Gamma Low' && item.status !== 'Fault - Gamma High' && item.status !== 'Fault - Neutron High')
+      )]);
 
   };
 
@@ -117,28 +93,29 @@ export default function LaneStatus() {
     let tamperStatuses: LaneStatusItem[] = [];
 
     msgVal.forEach((value) => {
-
       const tamperState = findInObject(value, 'tamperStatus');
       console.log(tamperState)
-      // let newStatus: LaneStatus | null = null;
-
       if(tamperState) {
         const newStatus: LaneStatusItem ={
           // id: statusBars.length === 0 ? 1 : statusBars[statusBars.length -1].id + 1,
           id: idVal.current++,
-          name: tamperDataSource.name,
+          name: datasourceName,
           status: 'Tamper'
         };
         tamperStatuses.push(newStatus);
       }
     });
+
     //TODO: if we have multiple streams i need to differentiate the states between each lane so maybe by the id?
     // setStatus(prevStatuses => [...tamperStatuses, ...prevStatuses.filter(state => state.status !== 'Tamper' )]);
     // setStatus(prevStatuses => [...tamperStatuses, ...prevStatuses.filter(state => state.id !== idVal.current-1)]);
+    // item.name !== datasourceName &&
 
-    setStatus(prevStatuses => [...tamperStatuses, ...prevStatuses.filter(item => item.name !== datasourceName)]);
+    setStatus(prevStatuses => [
+      ...tamperStatuses,
+      ...prevStatuses.filter(item => item.name !== datasourceName || item.status !== 'Tamper')
+    ]);
 
-    await timeout(1000);
   };
 
   useEffect(() => {
@@ -153,10 +130,10 @@ export default function LaneStatus() {
     neutronDataSource.connect();
     tamperDataSource.connect();
 
+
     gammaDataSource2.connect();
     neutronDataSource2.connect();
     tamperDataSource2.connect();
-
 
     gammaDataSource.subscribe(handleGamma, [EventType.DATA]);
     neutronDataSource.subscribe(handleNeutron, [EventType.DATA]);
@@ -170,45 +147,24 @@ export default function LaneStatus() {
       gammaDataSource.disconnect();
       neutronDataSource.disconnect();
       tamperDataSource.disconnect();
-
       gammaDataSource2.disconnect();
       neutronDataSource2.disconnect();
       tamperDataSource2.disconnect();
     };
-  }, [gammaDataSource, gammaDataSource2, neutronDataSource,neutronDataSource2, tamperDataSource,tamperDataSource2, server, start]);
 
-
-  const demoLanes = [
-    {src: "/FrontGateLeft.png", name: "Front Gate Left", status: "Alarm", id: 1},
-    {src: "/FrontGateRight.png", name: "Front Gate Right", status: "Fault", id: 2},
-    {src: "/FerryPOVExit.png", name: "Ferry POV Exit", status: "Tamper", id: 3},
-    {src: "/FerryPOVEntry.png", name: "Ferry POV Entry", status: "Fault - Neutron High", id: 4},
-    {src: "/RearGateLeft.png", name: "Rear Gate Left", status: "Alarm", id: 5},
-    {src: "/RearGateRight.png", name: "Rear Gate Right", status: "Tamper", id: 6},
-    {src: "/FerryPOVExit.png", name: "Ferry POV Exit", status: "none", id: 7},
-    {src: "/FerryPOVExit.png", name: "Ferry POV Exit", status: "none", id: 8},
-    {src: "/FerryPOVExit.png", name: "Ferry POV Exit", status: "Tamper", id: 9},
-    {src: "/FerryPOVExit.png", name: "Ferry POV Exit", status: "none", id: 10},
-  ]
-
-  // useEffect(() => {
-  //   console.log("LaneStatus dataSources: ", dataSources);
-  //   console.log("LaneStatus masterTimeSyncRef: ", masterTimeSyncRef);
-  //   dataSources.set(gammaDataSource.getName(), gammaDataSource);
-  //   dataSources.set(neutronDataSource.getName(), neutronDataSource);
-  //   dataSources.set(tamperDataSource.getName(), tamperDataSource);
-  // }, [dataSources, masterTimeSyncRef]);
-
+  }, [gammaDataSource, neutronDataSource, tamperDataSource, server, start]);
 
   return (
       <Stack padding={2} justifyContent={"start"} spacing={1}>
         <Typography variant="h6">Lane Status</Typography>
         <Stack spacing={1} sx={{ overflow: "auto", maxHeight: "100%" }}>
-          {demoLanes.map((item) => (
+          {statusBars.map((item) => (
+              //https://nextjs.org/docs/pages/api-reference/components/link
+              //https://stackoverflow.com/questions/72221255/how-to-pass-data-from-one-page-to-another-page-in-next-js
               <Link href={{
                 pathname: '/lane-view',
                 query: {
-                  id: 'someVal'
+                  id: datasource.name
                 }
               }}
                     passHref

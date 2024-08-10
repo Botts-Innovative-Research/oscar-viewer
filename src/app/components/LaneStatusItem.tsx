@@ -57,10 +57,10 @@ export default function LaneStatusItem(props: {
               ? "error"
               : props.status === 'Tamper'
               ? "secondary"
-              : props.status.includes('Fault')
-              ? 'info'
-              : 'info'
-
+              :
+                        // props.status.includes('Fault')
+              // ? 'info'
+               'info'
               )
           // updateStatusIconColor(props.status)
         }
