@@ -36,8 +36,9 @@
   "include": [
     "./src/**/*",
     ".next/types/**/*.ts",
+    "./types/new-types.d.ts",
     "./types/osh-js.d.tsx"
-  ],
+, "new-types.d.ts"  ],
   "exclude": [
     "node_modules"
   ]

@@ -1,5 +1,5 @@
 import {CssBaseline} from "@mui/material"
-import Navbar from "./components/Navbar"
+import Navbar from "./_components/Navbar"
 import Providers from "./providers"
 import StoreProvider from "@/app/StoreProvider";
 import DataSourceProvider from "@/app/contexts/DataSourceContext";
