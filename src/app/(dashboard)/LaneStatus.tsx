@@ -5,12 +5,12 @@ import { Stack, Typography } from '@mui/material';
 
 import LaneStatusItem from '../components/LaneStatusItem';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {useDSContext} from "@/app/contexts/DataSourceContext";
 import {EventType} from 'osh-js/source/core/event/EventType';
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import {findInObject} from "@/utils/Utils";
 import Link from "next/link";
+
 
 interface LaneStatusItem{
   id: number;
@@ -41,6 +41,7 @@ export default function LaneStatus() {
 
   const [host, setHost] = useState("162.238.96.81");
   const server = `${host}:8781/sensorhub/api`;
+
   const start = useMemo(() => new Date((Date.now() - 600000)).toISOString(), []);
   const end = "2055-01-01T00:00:00.000Z";
 
@@ -60,15 +61,17 @@ export default function LaneStatus() {
   const neutronDataSource2 = datasource('lane2', neutronStreamId2, server, start);
   const tamperDataSource2 = datasource('lane2', tamperStreamId2, server, start);
 
+
   const handleStatusData = async (datasourceName: string, valueKey: string, message: any[]) => {
     // @ts-ignore
     const msgVal: any[] = message.values || [];
     let newStatuses: LaneStatusItem[] = [];
 
-    await timeout(2500);
+    await timeout(3000);
 
     msgVal.forEach((value) => {
       const state = findInObject(value, valueKey);
+      console.log(state)
       if (state === 'Alarm' || state === 'Fault - Neutron High'|| state === 'Fault - Gamma Low'|| state === 'Fault - Gamma High') {
         const newStatus: LaneStatusItem = {
           id: idVal.current++,
@@ -106,11 +109,6 @@ export default function LaneStatus() {
       }
     });
 
-    //TODO: if we have multiple streams i need to differentiate the states between each lane so maybe by the id?
-    // setStatus(prevStatuses => [...tamperStatuses, ...prevStatuses.filter(state => state.status !== 'Tamper' )]);
-    // setStatus(prevStatuses => [...tamperStatuses, ...prevStatuses.filter(state => state.id !== idVal.current-1)]);
-    // item.name !== datasourceName &&
-
     setStatus(prevStatuses => [
       ...tamperStatuses,
       ...prevStatuses.filter(item => item.name !== datasourceName || item.status !== 'Tamper')
@@ -129,7 +127,6 @@ export default function LaneStatus() {
     gammaDataSource.connect();
     neutronDataSource.connect();
     tamperDataSource.connect();
-
 
     gammaDataSource2.connect();
     neutronDataSource2.connect();
@@ -152,7 +149,7 @@ export default function LaneStatus() {
       tamperDataSource2.disconnect();
     };
 
-  }, [gammaDataSource, neutronDataSource, tamperDataSource, server, start]);
+  }, [server, start]);
 
   return (
       <Stack padding={2} justifyContent={"start"} spacing={1}>
@@ -161,10 +158,12 @@ export default function LaneStatus() {
           {statusBars.map((item) => (
               //https://nextjs.org/docs/pages/api-reference/components/link
               //https://stackoverflow.com/questions/72221255/how-to-pass-data-from-one-page-to-another-page-in-next-js
+
               <Link href={{
                 pathname: '/lane-view',
                 query: {
-                  id: datasource.name
+                  //todo update id for page
+                  id: 'id'
                 }
               }}
                     passHref
