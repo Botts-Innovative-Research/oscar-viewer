@@ -1,8 +1,9 @@
 "use client";
 
-import { Stack, Typography, capitalize } from '@mui/material';
+
 import Paper from '@mui/material/Paper';
 import CircleRoundedIcon from '@mui/icons-material/CircleRounded';
+import {capitalize, Stack, Typography} from '@mui/material';
 
 export default function LaneStatusItem(props: {
   id: number;
@@ -12,9 +13,31 @@ export default function LaneStatusItem(props: {
   if (props.status == "none")
     return (<></>)
   return (
-    <Paper key={props.id} variant='outlined' sx={{ padding: 1, backgroundColor: (props.status == "alarm" ? "errorHighlight" : "secondaryHighlight") }}>
+    <Paper key={props.id} variant='outlined' sx={{ cursor: 'pointer', padding: 1,
+      backgroundColor: (
+          props.status == "Alarm"
+              ? "errorHighlight"
+              : props.status == 'Tamper'
+              ? "secondaryHighlight"
+              : props.status.includes('Fault')
+              ? 'infoHighlight'
+              : 'unknown'
+      )
+    }}
+    >
       <Stack direction={"row"}>
-        <CircleRoundedIcon color={(props.status == "alarm" ? "error" : "secondary")} sx={{ marginRight: 2 }} />
+        <CircleRoundedIcon
+            color={(
+                props.status === "Alarm"
+              ? "error"
+              : props.status === 'Tamper'
+              ? "secondary"
+              : props.status.includes('Fault')
+              ? 'info'
+              :'info'
+            )
+        }
+            sx={{ marginRight: 2 }} />
         <Typography variant="body1">{props.name} - {capitalize(props.status)}</Typography>
       </Stack>
     </Paper>
