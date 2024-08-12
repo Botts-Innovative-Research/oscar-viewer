@@ -3,7 +3,6 @@ import CameraGrid from "./CameraGrid";
 import LaneStatus from "./LaneStatus";
 import AlarmTable from "./AlarmTable";
 import EventPreview from "./EventPreview";
-import EventTable from "../components/EventTable";
 
 export default function Page() {
   return (

@@ -10,7 +10,6 @@ const rows: EventTableData[] = [
 ];
 
 export default function AlarmTable() {
-  
   // Callback function to handle the selected row
   const handleSelectedRow = (startTime: string, endTime: string) => {
     console.log(startTime, endTime); // Log the selected row data
