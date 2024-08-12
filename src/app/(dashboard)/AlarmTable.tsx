@@ -1,6 +1,6 @@
 "use client";
 
-import EventTable from '../components/EventTable';
+import EventTable from '../_components/EventTable';
 import { EventTableData } from 'types/new-types';
 
 const rows: EventTableData[] = [

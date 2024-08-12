@@ -3,7 +3,7 @@
 import { Stack, Typography, capitalize } from '@mui/material';
 import Paper from '@mui/material/Paper';
 import CircleRoundedIcon from '@mui/icons-material/CircleRounded';
-import LaneStatusItem from '../components/LaneStatusItem';
+import LaneStatusItem from '../_components/LaneStatusItem';
 import {Fragment, useEffect, useMemo} from 'react';
 import {useDSContext} from "@/app/contexts/DataSourceContext";
 

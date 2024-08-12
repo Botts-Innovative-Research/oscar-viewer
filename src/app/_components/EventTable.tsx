@@ -1,73 +1,15 @@
 "use client";
 
 import { Box, IconButton } from '@mui/material';
-import { DataGrid, GridCellParams, GridColDef, GridRenderCellParams, gridClasses } from '@mui/x-data-grid';
-import CustomToolbar from '../components/CustomToolbar';
+import { DataGrid, GridActionsCellItem, GridCellParams, GridColDef, GridRenderCellParams, gridClasses } from '@mui/x-data-grid';
+import CustomToolbar from './CustomToolbar';
 import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
 import { EventTableData } from 'types/new-types';
 import { useState } from 'react';
 
-// Column definition for EventTable
-const columns: GridColDef<EventTableData>[] = [
-  { 
-    field: 'secondaryInspection',
-    headerName: 'Secondary Inspection',
-    type: 'boolean',
-  },
-  { 
-    field: 'laneId',
-    headerName: 'Lane ID',
-    type: 'string',
-  }, 
-  { 
-    field: 'occupancyId',
-    headerName: 'Occupancy ID',
-    type: 'string',
-  }, 
-  { 
-    field: 'startTime',
-    headerName: 'Start Time',
-    type: 'string',
-  }, 
-  { 
-    field: 'endTime',
-    headerName: 'End Time',
-    type: 'string',
-  }, 
-  { 
-    field: 'maxGamma',
-    headerName: 'Max Gamma',
-    valueFormatter: (value) => {
-      // Append units to number value, or return 'N/A'
-      return typeof value === 'number' ? `${value} cps` : 'N/A';
-    },
-  }, 
-  { 
-    field: 'maxNeutron',
-    headerName: 'Max Neutron',
-    valueFormatter: (value) => {
-      // Append units to number value, or return 'N/A'
-      return typeof value === 'number' ? `${value} cps` : 'N/A';
-    },
-  }, 
-  { 
-    field: 'status',
-    headerName: 'Status',
-    type: 'string',
-  }, 
-  { 
-    field: 'Menu',
-    headerName: '',
-    // Render menu button for row options
-    renderCell: (params: GridRenderCellParams<any, Date>) => (
-      <IconButton
-        aria-label="menu"
-      >
-        <MoreVertRoundedIcon fontSize="inherit" />
-      </IconButton>
-    ),
-  }, 
-];
+import NotesRoundedIcon from '@mui/icons-material/NotesRounded';
+import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
+
 
 export default function EventTable(props: {
   onRowSelect?: (startTime: string, endTime: string) => void,
@@ -79,8 +21,82 @@ export default function EventTable(props: {
   const onRowSelect = props.onRowSelect;
   const viewSecondary = props.viewSecondary || false;
   const viewMenu = props.viewMenu || false;
+  const viewLane = props.viewLane || false;
   const data = props.data;
   const [selectionModel, setSelectionModel] = useState([]); // Currently selected row
+
+  // Column definition for EventTable
+  const columns: GridColDef<EventTableData>[] = [
+    { 
+      field: 'secondaryInspection',
+      headerName: 'Secondary Inspection',
+      type: 'boolean',
+    },
+    { 
+      field: 'laneId',
+      headerName: 'Lane ID',
+      type: 'string',
+    }, 
+    { 
+      field: 'occupancyId',
+      headerName: 'Occupancy ID',
+      type: 'string',
+    }, 
+    { 
+      field: 'startTime',
+      headerName: 'Start Time',
+      type: 'string',
+    }, 
+    { 
+      field: 'endTime',
+      headerName: 'End Time',
+      type: 'string',
+    }, 
+    { 
+      field: 'maxGamma',
+      headerName: 'Max Gamma',
+      valueFormatter: (value) => {
+        // Append units to number value, or return 'N/A'
+        return typeof value === 'number' ? `${value} cps` : 'N/A';
+      },
+    }, 
+    { 
+      field: 'maxNeutron',
+      headerName: 'Max Neutron',
+      valueFormatter: (value) => {
+        // Append units to number value, or return 'N/A'
+        return typeof value === 'number' ? `${value} cps` : 'N/A';
+      },
+    }, 
+    { 
+      field: 'status',
+      headerName: 'Status',
+      type: 'string',
+    }, 
+    { 
+      field: 'Menu',
+      headerName: '',
+      type: 'actions',
+      maxWidth: 50,
+      getActions: (params) => [
+        <GridActionsCellItem
+          icon={<NotesRoundedIcon />}
+          label="Details"
+          onClick={() => console.log(params.id)}
+          showInMenu
+        />,
+        (viewLane ?
+          <GridActionsCellItem
+            icon={<VisibilityRoundedIcon />}
+            label="View Lane"
+            onClick={() => console.log(params.id)}
+            showInMenu
+          />
+          : <></>
+        ),
+      ],
+    }, 
+  ];
 
   // Manage list of columns in toggle menu
   const getColumnList = () => {
@@ -165,6 +181,7 @@ export default function EventTable(props: {
             backgroundColor: "secondary.main",
             color: "secondary.contrastText",
           },
+          border: "none"
         }}
       />
     </Box>
