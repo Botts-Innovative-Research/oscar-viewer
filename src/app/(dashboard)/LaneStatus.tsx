@@ -1,9 +1,7 @@
 "use client";
 
-
 import { Stack, Typography } from '@mui/material';
-
-import LaneStatusItem from '../components/LaneStatusItem';
+import LaneStatusItem from '../_components/LaneStatusItem';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {EventType} from 'osh-js/source/core/event/EventType';
 import {Mode} from "osh-js/source/core/datasource/Mode";
@@ -11,33 +9,11 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import {findInObject} from "@/utils/Utils";
 import Link from "next/link";
 
-
-interface LaneStatusItem{
-  id: number;
-  name: string;
-  status: string;
-}
-
-const datasource = (name: string, streamId: string, server: string, start: string) => {
-  return useMemo(() => new SweApi(name, {
-    protocol: 'ws',
-    endpointUrl: server,
-    resource: `/datastreams/${streamId}/observations`,
-    startTime: start,
-    endTime: "2055-01-01T00:00:00.000Z",
-    mode: Mode.REAL_TIME,
-    tls: false,
-  }), [streamId]);
-};
-
-function timeout(delay: number) {
-  return new Promise( res => setTimeout(res, delay) );
-}
 export default function LaneStatus() {
   // const {dataSources, masterTimeSyncRef} = useDSContext();
 
   const [statusBars, setStatus] = useState<LaneStatusItem[]>([]);
-  const idVal = React.useRef(1);
+  const idVal = useRef(1);
 
   const [host, setHost] = useState("162.238.96.81");
   const server = `${host}:8781/sensorhub/api`;

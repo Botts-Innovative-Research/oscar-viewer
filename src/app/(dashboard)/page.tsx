@@ -1,10 +1,10 @@
 import { Grid, Paper } from "@mui/material";
 import CameraGrid from "./CameraGrid";
 import LaneStatus from "./LaneStatus";
-import AlarmTable from "../components/AlarmTable";
+import AlarmTable from "./AlarmTable";
 import EventPreview from "./EventPreview";
 
-export default function Page() {
+export default function DashboardPage() {
   return (
     <Grid container spacing={2} direction={"column"}>
       <Grid item container spacing={2} style={{ flexBasis: '33.33%', flexGrow: 0, flexShrink: 0 }}>
