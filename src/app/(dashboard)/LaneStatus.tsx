@@ -69,7 +69,7 @@ export default function LaneStatus() {
 
     msgVal.forEach((value) => {
       const state = findInObject(value, valueKey);
-      console.log(state)
+      // console.log(state)
       if (state === 'Alarm' || state === 'Fault - Neutron High'|| state === 'Fault - Gamma Low'|| state === 'Fault - Gamma High') {
         const newStatus: LaneStatusItem = {
           id: idVal.current++,
@@ -82,20 +82,19 @@ export default function LaneStatus() {
     });
     setStatus(prevStatus => [
         ...newStatuses,
-      ...prevStatus.filter(item => item.name !== datasourceName ||
-          (item.status !== 'Alarm' && item.status !== 'Fault - Gamma Low' && item.status !== 'Fault - Gamma High' && item.status !== 'Fault - Neutron High')
+      ...prevStatus.filter(item => item.name !== datasourceName || (item.status !== 'Alarm' && item.status !== 'Fault - Gamma Low' && item.status !== 'Fault - Gamma High' && item.status !== 'Fault - Neutron High')
       )]);
 
   };
 
-  const handleTamperData = async (datasourceName: string, valueKey: string, message: any[]) => {
+  const handleTamperData = async (datasourceName: string, message: any[]) => {
     // @ts-ignore
     const msgVal: any[] = message.values || [];
     let tamperStatuses: LaneStatusItem[] = [];
 
     msgVal.forEach((value) => {
       const tamperState = findInObject(value, 'tamperStatus');
-      console.log(tamperState)
+      // console.log(tamperState)
       if(tamperState) {
         const newStatus: LaneStatusItem ={
           // id: statusBars.length === 0 ? 1 : statusBars[statusBars.length -1].id + 1,
@@ -117,10 +116,10 @@ export default function LaneStatus() {
   useEffect(() => {
     const handleGamma = (message: any[]) => handleStatusData(gammaDataSource.name, 'alarmState', message);
     const handleNeutron = (message: any[]) => handleStatusData(neutronDataSource.name, 'alarmState', message);
-    const handleTamper = (message: any[]) => handleTamperData(tamperDataSource.name, 'tamperStatus', message);
+    const handleTamper = (message: any[]) => handleTamperData(tamperDataSource.name, message);
     const handleGamma2 = (message: any[]) => handleStatusData(gammaDataSource2.name, 'alarmState', message);
     const handleNeutron2 = (message: any[]) => handleStatusData(neutronDataSource2.name, 'alarmState', message);
-    const handleTamper2 = (message: any[]) => handleTamperData(tamperDataSource2.name, 'tamperStatus', message);
+    const handleTamper2 = (message: any[]) => handleTamperData(tamperDataSource2.name, message);
 
     gammaDataSource.connect();
     neutronDataSource.connect();
