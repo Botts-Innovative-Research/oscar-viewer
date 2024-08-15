@@ -9,8 +9,8 @@ import {useSelector} from "react-redux";
 import {Datastream} from "@/lib/data/osh/Datastreams";
 
 interface IDataSourceContext {
-    dataSources: Map<string, SweApi>
-    masterTimeSyncRef: MutableRefObject<DataSynchronizer | undefined>
+    dataSources: Map<string, typeof SweApi>
+    masterTimeSyncRef: MutableRefObject<typeof DataSynchronizer | undefined>
 }
 
 // create context with a default value of undefined (This will differ if there is a file import at page load)
@@ -21,8 +21,8 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     const dataStreams: Datastream[] = useSelector((state: any) => state.oshState.dataStreams);
     const mainDataSynchronizer = useSelector((state: any) => state.oshState.mainDataSynchronizer);
     // will need to load from the config file at a later iteration
-    const dataSources = new Map<string, SweApi>()
-    const masterTimeSyncRef = useRef<DataSynchronizer>()
+    const dataSources = new Map<string, typeof SweApi>()
+    const masterTimeSyncRef = useRef<typeof DataSynchronizer>()
 
     useEffect(() => {
         dataStreams.forEach((datastream) => {

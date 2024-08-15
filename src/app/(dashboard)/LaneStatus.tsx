@@ -69,7 +69,7 @@ export default function LaneStatus() {
 
     msgVal.forEach((value) => {
       const state = findInObject(value, valueKey);
-      // console.log(state)
+
       if (state === 'Alarm' || state === 'Fault - Neutron High'|| state === 'Fault - Gamma Low'|| state === 'Fault - Gamma High') {
         const newStatus: LaneStatusItem = {
           id: idVal.current++,
@@ -94,7 +94,7 @@ export default function LaneStatus() {
 
     msgVal.forEach((value) => {
       const tamperState = findInObject(value, 'tamperStatus');
-      // console.log(tamperState)
+
       if(tamperState) {
         const newStatus: LaneStatusItem ={
           // id: statusBars.length === 0 ? 1 : statusBars[statusBars.length -1].id + 1,

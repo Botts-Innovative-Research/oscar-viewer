@@ -1,10 +1,9 @@
 "use client";
 
-import { Box, IconButton } from '@mui/material';
-import { DataGrid, GridActionsCellItem, GridCellParams, GridColDef, GridRenderCellParams, gridClasses } from '@mui/x-data-grid';
+import { Box } from '@mui/material';
+import { DataGrid, GridActionsCellItem, GridCellParams, GridColDef, gridClasses } from '@mui/x-data-grid';
 import CustomToolbar from './CustomToolbar';
-import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
-import { EventTableData } from 'types/new-types';
+import { EventTableData, SelectedEvent } from 'types/new-types';
 import { useState } from 'react';
 
 import NotesRoundedIcon from '@mui/icons-material/NotesRounded';
@@ -12,7 +11,7 @@ import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 
 
 export default function EventTable(props: {
-  onRowSelect?: (startTime: string, endTime: string) => void,
+  onRowSelect?: (event: SelectedEvent) => void, // Return start/end time to parent
   viewSecondary?: boolean,  // Show 'Secondary Inspection' column, default FALSE
   viewMenu?: boolean, // Show three-dot menu button, default FALSE
   viewLane?: boolean, // Show 'View Lane' option in menu, default FALSE
@@ -113,12 +112,25 @@ export default function EventTable(props: {
   // Handle currently selected row
   const handleRowSelection = (selection: any[]) => {
     const selectedId = selection[0]; // Get the first selected ID
-    setSelectionModel([selectedId]); // Update selection model for single selection
 
-    // Find the selected row's data
-    const selectedRow = data.find((row) => row.id === selectedId);
-    if (selectedRow && onRowSelect) {
-      onRowSelect(selectedRow.startTime.toString(), selectedRow.endTime.toString()); // Call the parent's callback function
+    if (selectionModel[0] === selectedId) {
+      // If the same row is selected, clear the selection
+      setSelectionModel([]);
+      if (onRowSelect) {
+        onRowSelect(null); // Return an empty object when deselected
+      }
+    } else {
+      // Otherwise, set the new selection
+      setSelectionModel([selectedId]);
+
+      // Find the selected row's data
+      const selectedRow = data.find((row) => row.id === selectedId);
+      if (selectedRow && onRowSelect) {
+        onRowSelect({
+          startTime: selectedRow.startTime.toString(),
+          endTime: selectedRow.endTime.toString()
+        }); // Return start and end time to parent function
+      }
     }
   };
   

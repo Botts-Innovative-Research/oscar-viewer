@@ -1,6 +1,8 @@
 "use client";
 
 import EventTable from '../_components/EventTable';
+
+import { EventTableData, SelectedEvent } from 'types/new-types';
 import { EventTableData } from 'types/new-types';
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import {Mode} from "osh-js/source/core/datasource/Mode";
@@ -9,7 +11,9 @@ import {findInObject} from "@/app/utils/Utils";
 import {EventType} from "osh-js/source/core/event/EventType";
 
 
-export default function AlarmTable() {
+export default function AlarmTable(props: {
+  onRowSelect: (event: SelectedEvent) => void;  // Return start/end time to parent
+}){
 
   const [alarmBars, setAlarmBars] = useState<EventTableData[]>([]);
   const [host] = useState("162.238.96.81")
@@ -223,15 +227,15 @@ export default function AlarmTable() {
     }, [server, start, occupancyStart, occupancyEnd]);
 
 
-    // Callback function to handle the selected row
-    const handleSelectedRow = (startTime: string, endTime: string) => {
-      console.log(startTime, endTime); // Log the selected row data
-      //open adjudication and chart view
 
-    };
+  // Callback function to handle the selected row
+  const handleSelectedRow = (event: SelectedEvent) => {
+    //console.log(event); // Log the selected row data
+    props.onRowSelect(event); // Pass to parent component
+  };
 
-    return (
-        <EventTable onRowSelect={handleSelectedRow} data={alarmBars}/>
-    );
+  return (
+    <EventTable onRowSelect={handleSelectedRow} data={rows} />
+  );
 
 }
