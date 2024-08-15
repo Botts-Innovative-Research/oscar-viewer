@@ -2,19 +2,30 @@
 
 import { Box, IconButton, SelectChangeEvent, Stack, TextField, Typography } from '@mui/material';
 import Image from "next/image";
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import OpenInFullRoundedIcon from '@mui/icons-material/OpenInFullRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import AdjudicationSelect from '../_components/AdjudicationSelect';
+import { SelectedEvent } from 'types/new-types';
 
 export default function EventPreview(props: {
-  event?: number
+  event?: SelectedEvent;
 }) {
-  const [selectedEvent, setSelectedEvent] = useState(props.event ? props.event : 0)
+  const [selectedEvent, setSelectedEvent] = useState(
+    props.event && props.event.startTime && props.event.endTime ? props.event : null
+  );
+
+  const handleAdjudication = (value: string) => {
+    console.log(value); // Print adjudication code value
+  }
+
+  useEffect(() => {
+    setSelectedEvent(props.event);  // Update selected event on change
+  }, [props.event])
 
   return (
     <Box>
-      {selectedEvent !== 0 ? (
+      {selectedEvent ? (
         <Stack p={1} display={"flex"}>
           <Stack direction={"row"} justifyContent={"space-between"} spacing={1}>
             <Stack direction={"row"} spacing={1} alignItems={"center"}>
@@ -27,7 +38,7 @@ export default function EventPreview(props: {
               <CloseRoundedIcon fontSize="small" />
             </IconButton>
           </Stack>
-          <AdjudicationSelect />
+          <AdjudicationSelect onSelect={handleAdjudication} />
           <TextField
             id="outlined-multiline-static"
             label="Notes"
