@@ -33,7 +33,7 @@ export default function AdjudicationSelect(props: {
   };
 
   return (
-    <FormControl size="small">
+    <FormControl size="small" fullWidth>
       <InputLabel id="label" sx={{"&.MuiInputLabel-root":{color: style}}}>Adjudicate</InputLabel>
       <Select
         variant="outlined"
@@ -48,6 +48,8 @@ export default function AdjudicationSelect(props: {
             }
           }
         }}
+        autoWidth
+        style={{ minWidth: "8em" }}
         sx={{
           color: style,
           "& .MuiOutlinedInput-notchedOutline": {
