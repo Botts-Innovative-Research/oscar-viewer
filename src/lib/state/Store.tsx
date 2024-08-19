@@ -6,11 +6,13 @@
 import {configureStore} from '@reduxjs/toolkit';
 import AppReducer from './Slice';
 import OSHReducer from './OSHSlice';
+import OSCARClientReducer from './OSCARClientSlice';
 
 export const makeStore = configureStore({
     reducer: {
         appState: AppReducer,
-        oshState: OSHReducer,
+        oscarClientSlice: OSCARClientReducer,
+        oshSlice: OSHReducer,
     },
     middleware: (getDefaultMiddleWare) =>
         getDefaultMiddleWare({

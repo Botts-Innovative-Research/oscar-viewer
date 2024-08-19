@@ -4,7 +4,7 @@
  */
 
 import {Box, Button} from "@mui/material";
-import {OSHSliceWriter} from "@/lib/data/state-management/OSHSliceWriter";
+import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
 import {RootState} from "@/lib/state/Store";
 import {useSelector} from "react-redux";
 import {IOSHSlice} from "@/lib/state/OSHSlice";
@@ -28,7 +28,7 @@ export default function TestStateWriter() {
 
     const handleSaveState = async () => {
         // call OSHSliceWriter.writeSliceToBlob
-        let writer = new OSHSliceWriter("http://192.168.1.158:8782/sensorhub/configs/datastreams/ko62rfqbgs5cs/observations");
+        let writer = new OSHSliceWriterReader("http://192.168.1.158:8782/sensorhub/configs/datastreams/ko62rfqbgs5cs/observations");
         // let blob = writer.writeSliceToBlob(oshSlice);
         let obs = writer.writeSliceToString(oshSlice);
         console.log(obs);
