@@ -10,31 +10,20 @@ import {START_TIME} from "@/lib/data/Constants";
 
 enableMapSet();
 
-interface IOSCARClientState {
+export interface IAppSlice {
     shouldLoadFromConfig: boolean;
-    laneCameraView: {},
-    laneStatus: {},
-    alertsList: {},
-    alertDetails: {},
     moveHighlighterTimestamp: string,
 }
 
-const initialState: IOSCARClientState = {
+const initialState: IAppSlice = {
     shouldLoadFromConfig: false,
-    laneCameraView: {},
-    laneStatus: {},
-    alertsList: {},
-    alertDetails: {},
     moveHighlighterTimestamp: START_TIME
 }
 
 export const Slice = createSlice({
-    name: 'OSCARViewerStateSlice',
+    name: 'AppStateSlice',
     initialState,
     reducers: {
-        setShouldLoadFromConfig: (state, action: PayloadAction<boolean>) => {
-            state.shouldLoadFromConfig = action.payload;
-        },
         // Function to grab the timestamp from the layer to use with the Historical Chart Highlighter.
         setMoveHighlighterTimeStamp: ((state, action: PayloadAction<string>) => { state.moveHighlighterTimestamp = action.payload; }),
     }
