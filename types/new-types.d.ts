@@ -1,5 +1,8 @@
+/**
+ * Interface for Event Table data
+ */
 export interface EventTableData {
-  id: string; // Unique ID for event
+  id: string | number; // Unique ID for event
   secondaryInspection?: boolean;  // Whether or not there has been a secondary inspection performed
   laneId: string; // Lane ID
   occupancyId: string;  // Occupancy ID
@@ -10,4 +13,13 @@ export interface EventTableData {
   status: string; // Alarm status -> enum?
   adjudicatedUser?: string; // User ID that adjudicated event
   adjudicatedCode?: number; // Adjudication code for event
+}
+
+/**
+ * Event type to make request for more details
+ * Requires start and end time of event
+ */
+type SelectedEvent = {
+  startTime: string;
+  endTime: string;
 }
