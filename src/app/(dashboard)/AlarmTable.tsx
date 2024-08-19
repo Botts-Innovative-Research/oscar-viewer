@@ -9,6 +9,12 @@ import {useEffect, useMemo, useRef, useState} from "react";
 import {findInObject} from "@/app/utils/Utils";
 import {EventType} from "osh-js/source/core/event/EventType";
 
+// const rows: EventTableData[] = [
+//   { id: 1, secondaryInspection: false, laneId: '1', occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: 25642, status: 'Gamma' },
+//   { id: 2, secondaryInspection: false, laneId: '1', occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxNeutron: 25642, status: 'Neutron' },
+//   { id: 3, secondaryInspection: false, laneId: '1', occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: 25642, maxNeutron: 25642, status: 'Gamma & Neutron' },
+// ];
+
 export default function AlarmTable(props: {
   onRowSelect: (event: SelectedEvent) => void;  // Return start/end time to parent
 }){
@@ -21,11 +27,7 @@ export default function AlarmTable(props: {
   const start = useMemo(() => new Date((Date.now() - 600000)).toISOString(), []);
   const idVal = useRef(0);
 
-
   const occupancyId = "7icn7emn83tg2";
-  // const occupancyId = "1tbv8s3niveii";
-  // const gammaId = "9fgu8dcfmv6ti";
-  // const neutronId = "bv4ejrg5si840";
 
   const [occupancyStart, setOccupancyStart] =  useState('');
   const [occupancyEnd, setOccupancyEnd] = useState('');
@@ -38,31 +40,35 @@ export default function AlarmTable(props: {
     endTime: "2055-01-01T00:00:00.000Z",
     mode: Mode.REAL_TIME,
     tls: false,
-  }), []);
+  }), [occupancyId]);
 
 
-  const handleOccupancyData = (datasource: string, message: any[]) => {
+
+  // read the table values from the datasources
+  const handleOccupancyData = (datasource: any, message: any[]) => {
 
     // @ts-ignore
     const msgVal: any[] = message.values ||[];
     let newAlarmStatuses: EventTableData[] = [];
 
     msgVal.forEach((value) => {
-      const occupancyCount = findInObject(value, 'occupancyCount'); //number
-      const occupancyStart = findInObject(value, 'startTime'); //string
-      const occupancyEnd = findInObject(value, 'endTime'); //string
-      const gammaAlarm = findInObject(value, 'gammaAlarm'); //boolean
-      const neutronAlarm = findInObject(value, 'neutronAlarm'); //boolean
-      const maxGamma = findInObject(value, 'maxGamma');
-      const maxNeutron = findInObject(value, 'maxNeutron');
-      const statusType = gammaAlarm && neutronAlarm ? 'Gamma & Neutron' : gammaAlarm ? 'Gamma' : neutronAlarm ? 'Neutron' : '';
-      // const laneId = findInObject(value, 'moduleName');
-
+      let lane = 'lane1';
+      let occupancyCount = findInObject(value, 'occupancyCount'); //number
+      let occupancyStart = findInObject(value, 'startTime'); //string
+      let occupancyEnd = findInObject(value, 'endTime'); //string
+      let gammaAlarm = findInObject(value, 'gammaAlarm'); //boolean
+      let neutronAlarm = findInObject(value, 'neutronAlarm'); //boolean
+      let maxGamma = findInObject(value, 'maxGamma');
+      let maxNeutron = findInObject(value, 'maxNeutron');
+      let statusType = gammaAlarm && neutronAlarm ? 'Gamma & Neutron' : gammaAlarm ? 'Gamma' : neutronAlarm ? 'Neutron' : '';
       let adjUser = 'kalyn'; //get user from the account?
-      let adjCode = 0;//get user from the adjudicatedSelect
-      let lane = 'lane1'
+      let adjCode = 0; //get user from the adjudicatedSelect
+      // const occStart = occupancyStart.split('T');
+      // const occEnd = occupancyEnd.split('T');
 
-      console.log(adjCode);
+
+
+      console.log('adj: ' + adjCode);
 
       if(gammaAlarm || neutronAlarm){
         const newAlarmStatus: EventTableData = {
@@ -72,19 +78,26 @@ export default function AlarmTable(props: {
           occupancyId: occupancyCount,
           startTime: occupancyStart,
           endTime: occupancyEnd,
-          maxGamma: gammaAlarm ? maxGamma : 0,
-          maxNeutron: neutronAlarm ? maxNeutron : 0,
+          maxGamma: gammaAlarm ? maxGamma : 'N/A',
+          maxNeutron: neutronAlarm ? maxNeutron : 'N/A',
           status: statusType,
           adjudicatedUser: adjUser, // Update
-          adjudicatedCode: adjCode  // Update,
+          adjudicatedCode:  adjCode // Update,
         };
 
+        //filter item from alarm table by adjudication code, and by the occupancy id
+        let filterByAdjudicatedCode = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
         setAlarmBars(prevState=>[newAlarmStatus, ...prevState.filter(item=>
-          item.occupancyId !== occupancyCount)
+          item.occupancyId !== occupancyCount
+            || filterByAdjudicatedCode.includes(item.adjudicatedCode)
+        )
+
         ]);
       }
     });
   }
+
+
 
   useEffect(() => {
     const handleOccupancy = (message: any[]) => handleOccupancyData(occupancyDatasource, message);
