@@ -10,12 +10,18 @@ const colorCodes = {
   other: { color: "text.primary" }
 };
 
-export default function AdjudicationSelect() {
-  const [adjudicated, setAdjudicated] = useState(''); // Adjudication selected value
+export default function AdjudicationSelect(props: {
+  onSelect: (value: string) => void, // Return selected value
+  defaultValue?: string, // Default selected value
+}) {
+  const [adjudicated, setAdjudicated] = useState(props.defaultValue || ''); // Adjudication selected value
   const [style, setStyle] = useState(colorCodes.other.color); // Adjudicated button style based on selected value
 
   const handleChange = (event: SelectChangeEvent) => {
-    setAdjudicated(event.target.value as string);
+    setAdjudicated(event.target.value); // Set local adjudicated state
+    props.onSelect(event.target.value); // Return selected value to parent component
+
+    // Handle component styling
     if (parseInt(event.target.value) < 3)
       setStyle(colorCodes.real.color);
     else if (parseInt(event.target.value) < 6)
