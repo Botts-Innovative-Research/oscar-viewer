@@ -1,9 +1,10 @@
 "use client";
 
-import { Avatar, Box, Button, Stack, TextField, Typography } from "@mui/material";
+import { Avatar, Box, Button, InputBase, Paper, Stack, TextField, Typography } from "@mui/material";
 import { SelectedEvent } from "types/new-types";
 import AdjudicationSelect from "../_components/AdjudicationSelect";
 import UploadFileRoundedIcon from '@mui/icons-material/UploadFileRounded';
+import InsertDriveFileRoundedIcon from '@mui/icons-material/InsertDriveFileRounded';
 import { useState } from "react";
 
 export default function AddComment(props: {
@@ -33,30 +34,38 @@ export default function AddComment(props: {
         rows={4}
       />
       {uploadedFiles.length > 0 && (
-        <Box
-          sx={{
-            maxHeight: '100px', // Adjust height based on item size
-            overflowY: 'auto',
-            border: '1px solid #ccc',
-            borderRadius: '10px',
-            p: 2,
-          }}
-        >
-          {uploadedFiles.map((file, index) => (
-            <Typography key={index}>{file}</Typography>
-          ))}
-        </Box>
+        <Paper variant='outlined' sx={{ width: "100%" }}>
+          <Stack
+            sx={{
+              maxHeight: '100px', // Adjust height based on item size
+              overflowY: 'auto',
+              p: 2,
+            }}
+          >
+            {uploadedFiles.map((file, index) => (
+              <InsertDriveFileRoundedIcon />
+            ))}
+          </Stack>
+        </Paper>
       )}
       <Stack direction={"row"} spacing={2} justifyContent={"space-between"} alignItems={"center"} width={"100%"}>
-        <Button 
-          variant="outlined" 
-          color="secondary" 
-          startIcon={<UploadFileRoundedIcon />} 
-          sx={{ minWidth: "auto" }}
+        <Box
           onClick={handleFileUpload} // Trigger file upload logic
-        >
-          Upload Files
-        </Button>
+          sx={{
+          display: "flex",
+          alignItems: "center",
+          width: "auto",
+          padding: "8px",
+          borderStyle: "solid",
+          borderWidth: "1px",
+          borderRadius: "10px",
+          borderColor: "secondary.main",
+          color: "secondary.main",
+        }}>
+          <UploadFileRoundedIcon />
+          <Typography variant="body2">{("Upload Files").toUpperCase()}</Typography>
+          <InputBase type="file" inputProps={{multiple: true}}  />
+        </Box>
         <Stack direction={"row"} spacing={2}>
           <AdjudicationSelect onSelect={handleAdjudicationSelect} />
           <Button disableElevation variant={"contained"} color={"success"}>Submit</Button>
