@@ -2,62 +2,147 @@
 
 import { Stack, Typography } from '@mui/material';
 import LaneStatusItem from '../_components/LaneStatusItem';
-import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {EventType} from 'osh-js/source/core/event/EventType';
-import {Mode} from "osh-js/source/core/datasource/Mode";
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
-
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import Link from "next/link";
 import {findInObject} from "@/app/utils/Utils";
+import {Datastream} from "@/lib/data/osh/Datastreams";
+import {useSelector} from "react-redux";
+import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
+import {getDatastreams} from "@/lib/state/OSHSlice";
+import {selectLanes} from "@/lib/state/OSCARClientSlice";
+import {FUTURE_END_TIME, Protocols, START_TIME} from "@/lib/data/Constants";
+import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import {Mode} from "osh-js/source/core/datasource/Mode";
+import {EventType} from 'osh-js/source/core/event/EventType';
 
 interface LaneStatusItem{
   id: number;
-  name: string;
+  laneName: string;
   status: string;
 }
-
-const datasource = (name: string, streamId: string, server: string, start: string) => {
-  return useMemo(() => new SweApi(name, {
-    protocol: 'ws',
-    endpointUrl: server,
-    resource: `/datastreams/${streamId}/observations`,
-    startTime: start,
-    endTime: "2055-01-01T00:00:00.000Z",
-    mode: Mode.REAL_TIME,
-    tls: false,
-  }), [streamId]);
-};
 
 function timeout(delay: number) {
   return new Promise( res => setTimeout(res, delay) );
 }
 export default function LaneStatus() {
-  // const {dataSources, masterTimeSyncRef} = useDSContext();
-
   const [statusBars, setStatus] = useState<LaneStatusItem[]>([]);
   const idVal = useRef(1);
 
-  const [host, setHost] = useState("162.238.96.81");
-  const server = `${host}:8781/sensorhub/api`;
+  const ds : Datastream[] = useSelector((state:any) => Array.from(state.oshSlice.dataStreams));
+  const lanes: LaneMeta[] = useSelector((state:any) => Array.from(state.oscarClientSlice.lanes));
 
-  const start = useMemo(() => new Date((Date.now() - 600000)).toISOString(), []);
-  const end = "2055-01-01T00:00:00.000Z";
+  const filterLanes = useMemo(()=>{
+    let gammaLanes: { [key: string]: Datastream[] }= {};
+    let neutronLanes: { [key: string]: Datastream[] }= {};
+    let tamperLanes: { [key: string]: Datastream[] }= {};
 
-  const gammaStreamId = 'jk2ltklu5i4o2';
-  const tamperStreamId = '70rop8vggq3o0';
-  const neutronStreamId = 'pqtvoprvnadm4';
+    lanes.forEach((lane, index) =>{
+      let filteredStreams = ds.filter((stream) => lane.systemIds.includes(stream.parentSystemId));
 
-  const gammaDataSource = datasource('lane1', gammaStreamId, server, start);
-  const neutronDataSource = datasource('lane1', neutronStreamId, server, start);
-  const tamperDataSource = datasource('lane1', tamperStreamId, server, start);
+      gammaLanes[`lane${index}`] = filteredStreams.filter((type) => type.name.includes('Driver - Gamma Count') || type.name.includes('Driver - Gamma Scan'));
 
-  const gammaStreamId2 = '9fgu8dcfmv6ti';
-  const tamperStreamId2 = 'd06c5lmflph6c';
-  const neutronStreamId2 = 'bv4ejrg5si840';
+      tamperLanes[`lane${index}`] = filteredStreams.filter((type) => type.name.includes('Tamper'));
 
-  const gammaDataSource2 = datasource('lane2', gammaStreamId2, server, start);
-  const neutronDataSource2 = datasource('lane2', neutronStreamId2, server, start);
-  const tamperDataSource2 = datasource('lane2', tamperStreamId2, server, start);
+      neutronLanes[`lane${index}`] = filteredStreams.filter((type) => type.name.includes('Driver - Neutron Count') || type.name.includes('Driver - Neutron Scan'));
+
+    });
+    return{gammaLanes, neutronLanes, tamperLanes};
+  }, [lanes, ds]);
+
+
+  // useEffect(() => {
+  //   console.log('gamma', filterLanes.gammaLanes)
+  // }, [filterLanes]);
+
+  const createDataSource = useCallback(()=>{
+
+    let gammaDataSources: {[key:string]: any[]} ={};
+    let neutronDataSources: {[key:string]: any[]} ={};
+    let tamperDataSources: {[key:string]: any[]} ={};
+
+
+    Object.keys(filterLanes.gammaLanes).forEach((key) => {
+      gammaDataSources[key] = filterLanes.gammaLanes[key].map((stream) => {
+       let source = new SweApi(getName(stream.parentSystemId), {
+          protocol: Protocols.WS,
+          endpointUrl: `162.238.96.81:8781/sensorhub/api`,
+          resource: `/datastreams/${stream.id}/observations`,
+          mode: Mode.REAL_TIME,
+          tls: false,
+          connectorOpts: {
+            username: 'admin',
+            password: 'admin',
+          },
+        });
+        const handleGamma = (message: any[]) => handleStatusData(getName(stream.parentSystemId), 'alarmState', message);
+        source.connect()
+        source.subscribe(handleGamma, [EventType.DATA]);
+      });
+
+    });
+
+    Object.keys(filterLanes.neutronLanes).forEach((key) => {
+      neutronDataSources[key] = filterLanes.neutronLanes[key].map((stream) => {
+        const source = new SweApi(getName(stream.parentSystemId), {
+          protocol: Protocols.WS,
+          endpointUrl: `162.238.96.81:8781/sensorhub/api`,
+          resource: `/datastreams/${stream.id}/observations`,
+          mode: Mode.REAL_TIME,
+          tls: false,
+          connectorOpts: {
+            username: 'admin',
+            password: 'admin',
+          },
+        });
+        const handleNeutron = (message: any[]) => handleStatusData(getName(stream.parentSystemId),'alarmState', message);
+        source.connect();
+        source.subscribe(handleNeutron, [EventType.DATA]);
+      });
+    });
+
+
+    Object.keys(filterLanes.tamperLanes).forEach((key) => {
+      tamperDataSources[key] = filterLanes.tamperLanes[key].map((stream) => {
+        const source = new SweApi(getName(stream.parentSystemId), {
+          protocol: Protocols.WS,
+          endpointUrl: `162.238.96.81:8781/sensorhub/api`,
+          resource: `/datastreams/${stream.id}/observations`,
+          mode: Mode.REAL_TIME,
+          tls: false,
+          connectorOpts: {
+            username: 'admin',
+            password: 'admin',
+          },
+        });
+        const handleTamper = (message: any[]) => handleTamperData(getName(stream.parentSystemId), 'tamperStatus', message);
+        source.connect();
+        source.subscribe(handleTamper, [EventType.DATA]);
+      });
+    });
+
+    // Object.keys(filterLanes.gammaLanes).forEach((key) =>{
+    //   gammaDataSources[key] = filterLanes.gammaLanes[key].map(stream => stream.generateSweApiObj({start: START_TIME, end: FUTURE_END_TIME}));
+    // });
+    // Object.keys(filterLanes.gammaLanes).forEach((key) =>{
+    //   neutronDataSources[key] = filterLanes.neutronLanes[key].map(stream => stream.generateSweApiObj({start: START_TIME, end: FUTURE_END_TIME}));
+    // });
+    // Object.keys(filterLanes.gammaLanes).forEach((key) =>{
+    //   tamperDataSources[key] = filterLanes.tamperLanes[key].map(stream => stream.generateSweApiObj({start: START_TIME, end: FUTURE_END_TIME}));
+    // });
+
+    return {gammaDataSources, neutronDataSources, tamperDataSources};
+  }, [filterLanes]);
+
+
+  useEffect(() => {
+    createDataSource();
+  }, [createDataSource]);
+
+
+  function getName(parentId: string){
+    const lane = lanes.find(lane => lane.systemIds.includes(parentId));
+    return lane ? lane.name : 'unknown';
+  }
 
 
   const handleStatusData = async (datasourceName: string, valueKey: string, message: any[]) => {
@@ -65,41 +150,42 @@ export default function LaneStatus() {
     const msgVal: any[] = message.values || [];
     let newStatuses: LaneStatusItem[] = [];
 
-    await timeout(3000);
+    await timeout(4500);
 
     msgVal.forEach((value) => {
       const state = findInObject(value, valueKey);
-
+      console.log(state)
       if (state === 'Alarm' || state === 'Fault - Neutron High'|| state === 'Fault - Gamma Low'|| state === 'Fault - Gamma High') {
         const newStatus: LaneStatusItem = {
           id: idVal.current++,
-          name: datasourceName,
+          laneName: datasourceName,
           status: state
 
         };
         newStatuses.push(newStatus);
       }
     });
+
     setStatus(prevStatus => [
         ...newStatuses,
-      ...prevStatus.filter(item => item.name !== datasourceName || (item.status !== 'Alarm' && item.status !== 'Fault - Gamma Low' && item.status !== 'Fault - Gamma High' && item.status !== 'Fault - Neutron High')
+      ...prevStatus.filter(item => item.laneName !== datasourceName ||
+          (item.status !== 'Alarm' && item.status !== 'Fault - Gamma Low' && item.status !== 'Fault - Gamma High' && item.status !== 'Fault - Neutron High')
       )]);
-
   };
 
-  const handleTamperData = async (datasourceName: string, message: any[]) => {
+  const handleTamperData = async (datasourceName: string, valueKey: string, message: any[]) => {
     // @ts-ignore
     const msgVal: any[] = message.values || [];
     let tamperStatuses: LaneStatusItem[] = [];
 
     msgVal.forEach((value) => {
-      const tamperState = findInObject(value, 'tamperStatus');
-
+      const tamperState = findInObject(value, valueKey);
+      console.log(tamperState)
       if(tamperState) {
         const newStatus: LaneStatusItem ={
           // id: statusBars.length === 0 ? 1 : statusBars[statusBars.length -1].id + 1,
           id: idVal.current++,
-          name: datasourceName,
+          laneName: datasourceName,
           status: 'Tamper'
         };
         tamperStatuses.push(newStatus);
@@ -108,45 +194,12 @@ export default function LaneStatus() {
 
     setStatus(prevStatuses => [
       ...tamperStatuses,
-      ...prevStatuses.filter(item => item.name !== datasourceName || item.status !== 'Tamper')
+      ...prevStatuses.filter(item => item.laneName !== datasourceName || item.status !== 'Tamper')
     ]);
 
   };
 
-  useEffect(() => {
-    const handleGamma = (message: any[]) => handleStatusData(gammaDataSource.name, 'alarmState', message);
-    const handleNeutron = (message: any[]) => handleStatusData(neutronDataSource.name, 'alarmState', message);
-    const handleTamper = (message: any[]) => handleTamperData(tamperDataSource.name, message);
-    const handleGamma2 = (message: any[]) => handleStatusData(gammaDataSource2.name, 'alarmState', message);
-    const handleNeutron2 = (message: any[]) => handleStatusData(neutronDataSource2.name, 'alarmState', message);
-    const handleTamper2 = (message: any[]) => handleTamperData(tamperDataSource2.name, message);
 
-    gammaDataSource.connect();
-    neutronDataSource.connect();
-    tamperDataSource.connect();
-
-    gammaDataSource2.connect();
-    neutronDataSource2.connect();
-    tamperDataSource2.connect();
-
-    gammaDataSource.subscribe(handleGamma, [EventType.DATA]);
-    neutronDataSource.subscribe(handleNeutron, [EventType.DATA]);
-    tamperDataSource.subscribe(handleTamper, [EventType.DATA]);
-
-    gammaDataSource2.subscribe(handleGamma2, [EventType.DATA]);
-    neutronDataSource2.subscribe(handleNeutron2, [EventType.DATA]);
-    tamperDataSource2.subscribe(handleTamper2, [EventType.DATA]);
-
-    return () => {
-      gammaDataSource.disconnect();
-      neutronDataSource.disconnect();
-      tamperDataSource.disconnect();
-      gammaDataSource2.disconnect();
-      neutronDataSource2.disconnect();
-      tamperDataSource2.disconnect();
-    };
-
-  }, [server, start]);
 
   return (
       <Stack padding={2} justifyContent={"start"} spacing={1}>
@@ -165,7 +218,7 @@ export default function LaneStatus() {
               }}
                     passHref
                     key={item.id}>
-                <LaneStatusItem key={item.id} id={item.id} name={item.name} status={item.status} />
+                <LaneStatusItem key={item.id} id={item.id} name={item.laneName} status={item.status} />
               </Link>
           ))}
         </Stack>
