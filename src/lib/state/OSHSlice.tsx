@@ -27,7 +27,8 @@ export interface IOSHSlice {
     nodes: INode[],
     currentNodeId: number,
     systems: ISystem[],
-    dataStreams: IDatastream[],
+    // dataStreams: IDatastream[],
+    dataStreams: Map<string, IDatastream>,
     mainDataSynchronizer: ITimeSynchronizerProps,
     datasources: SweApi[],
     otherDataSynchronizers: ITimeSynchronizerProps[]
@@ -38,7 +39,7 @@ const initialState: IOSHSlice = {
     nodes: [new Node(1, "Windows Test Node", "192.168.1.158", 8781)],
     currentNodeId: 2,
     systems: [],
-    dataStreams: [],
+    dataStreams: new Map<string, IDatastream>(),
     mainDataSynchronizer: new TimeSynchronizerProps(new Date().toISOString(),
         "...", 1, 5, [], Mode.REAL_TIME),
     datasources: [],
@@ -62,7 +63,7 @@ export const Slice = createSlice({
             state.systems.push(action.payload);
         },
         addDatastream: (state, action: PayloadAction<IDatastream>) => {
-            state.dataStreams.push(action.payload);
+            state.dataStreams.set(action.payload.id, action.payload);
         },
         addDatasource: (state, action: PayloadAction<SweApi>) => {
             state.datasources.push(action.payload);
