@@ -130,10 +130,6 @@ export default function AlarmTable(props: {
     });
   }
 
-
-
-
-
   // Callback function to handle the selected row
   const handleSelectedRow = (event: SelectedEvent) => {
     //console.log(event); // Log the selected row data
