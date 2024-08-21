@@ -3,56 +3,88 @@
 import EventTable from '../_components/EventTable';
 
 import { EventTableData, SelectedEvent } from 'types/new-types';
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
-import {Mode} from "osh-js/source/core/datasource/Mode";
-import {useEffect, useMemo, useRef, useState} from "react";
+
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {findInObject} from "@/app/utils/Utils";
 import {EventType} from "osh-js/source/core/event/EventType";
+import {Datastream} from "@/lib/data/osh/Datastreams";
+import {useSelector} from "react-redux";
+import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
+import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import {Protocols} from "@/lib/data/Constants";
+import {Mode} from "osh-js/source/core/datasource/Mode";
 
-// const rows: EventTableData[] = [
-//   { id: 1, secondaryInspection: false, laneId: '1', occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: 25642, status: 'Gamma' },
-//   { id: 2, secondaryInspection: false, laneId: '1', occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxNeutron: 25642, status: 'Neutron' },
-//   { id: 3, secondaryInspection: false, laneId: '1', occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: 25642, maxNeutron: 25642, status: 'Gamma & Neutron' },
-// ];
 
 export default function AlarmTable(props: {
   onRowSelect: (event: SelectedEvent) => void;  // Return start/end time to parent
 }){
 
   const [alarmBars, setAlarmBars] = useState<EventTableData[]>([]);
-  const [host] = useState("192.168.1.69.")
-  // const [host] = useState("162.238.96.81")
-  const server = `${host}:8282/sensorhub/api`;
-  // const server = `${host}:8781/sensorhub/api`;
-  const start = useMemo(() => new Date((Date.now() - 600000)).toISOString(), []);
   const idVal = useRef(0);
-
-  const occupancyId = "7icn7emn83tg2";
 
   const [occupancyStart, setOccupancyStart] =  useState('');
   const [occupancyEnd, setOccupancyEnd] = useState('');
 
-  const occupancyDatasource = useMemo(() => new SweApi("Occupancy Count", {
-    protocol: 'ws',
-    endpointUrl: server,
-    resource: `/datastreams/${occupancyId}/observations`,
-    startTime: start,
-    endTime: "2055-01-01T00:00:00.000Z",
-    mode: Mode.REAL_TIME,
-    tls: false,
-  }), [occupancyId]);
+  const ds : Datastream[] = useSelector((state:any) => Array.from(state.oshSlice.dataStreams));
+  const lanes: LaneMeta[] = useSelector((state:any) => Array.from(state.oscarClientSlice.lanes));
+
+  const filterLanes = useMemo(()=>{
+    let occupancyLanes: { [key: string]: Datastream[] }= {};
+
+    lanes.forEach((lane, index) =>{
+      let filteredStreams = ds.filter((stream) => lane.systemIds.includes(stream.parentSystemId));
+      occupancyLanes[`lane${index}`] = filteredStreams.filter((type) => type.name.includes('Driver - Occupancy'));
+
+    });
+    return{occupancyLanes};
+  }, [lanes, ds]);
+
+  const createDataSource = useCallback(()=>{
+
+    let occupancyDataSource: {[key:string]: any[]} ={};
+
+    Object.keys(filterLanes.occupancyLanes).forEach((key) => {
+      occupancyDataSource[key] = filterLanes.occupancyLanes[key].map((stream) => {
+        let source = new SweApi(getName(stream.parentSystemId), {
+          protocol: Protocols.WS,
+          endpointUrl: `162.238.96.81:8781/sensorhub/api`,
+          resource: `/datastreams/${stream.id}/observations`,
+          mode: Mode.REAL_TIME,
+          tls: false,
+          connectorOpts: {
+            username: 'admin',
+            password: 'admin',
+          },
+        });
+        const handleOccupancy = (message: any[]) => handleOccupancyData(getName(stream.parentSystemId), message);
+        source.connect()
+        source.subscribe(handleOccupancy, [EventType.DATA]);
+      });
+
+    });
+
+    return {occupancyDataSource};
+  }, [filterLanes]);
 
 
+  useEffect(() => {
+    createDataSource();
+  }, [createDataSource]);
 
-  // read the table values from the datasources
-  const handleOccupancyData = (datasource: any, message: any[]) => {
+
+  function getName(parentId: string){
+    const lane = lanes.find(lane => lane.systemIds.includes(parentId));
+    return lane ? lane.name : 'unknown';
+  }
+
+
+  const handleOccupancyData = (laneName: string, message: any[]) => {
 
     // @ts-ignore
     const msgVal: any[] = message.values ||[];
     let newAlarmStatuses: EventTableData[] = [];
 
     msgVal.forEach((value) => {
-      let lane = 'lane1';
       let occupancyCount = findInObject(value, 'occupancyCount'); //number
       let occupancyStart = findInObject(value, 'startTime'); //string
       let occupancyEnd = findInObject(value, 'endTime'); //string
@@ -66,15 +98,13 @@ export default function AlarmTable(props: {
       // const occStart = occupancyStart.split('T');
       // const occEnd = occupancyEnd.split('T');
 
-
-
       console.log('adj: ' + adjCode);
 
       if(gammaAlarm || neutronAlarm){
         const newAlarmStatus: EventTableData = {
           id: idVal.current++,
           secondaryInspection: false,
-          laneId: lane, // Update
+          laneId: laneName, // Update
           occupancyId: occupancyCount,
           startTime: occupancyStart,
           endTime: occupancyEnd,
@@ -98,17 +128,6 @@ export default function AlarmTable(props: {
   }
 
 
-
-  useEffect(() => {
-    const handleOccupancy = (message: any[]) => handleOccupancyData(occupancyDatasource, message);
-    occupancyDatasource.connect();
-    occupancyDatasource.subscribe(handleOccupancy, [EventType.DATA]);
-
-    return() =>{
-        occupancyDatasource.disconnect();
-    };
-
-    }, [server, start, occupancyStart, occupancyEnd]);
 
 
 
