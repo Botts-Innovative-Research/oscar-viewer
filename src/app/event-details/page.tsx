@@ -7,8 +7,8 @@ import BackButton from "../_components/BackButton";
 import DataRow from "./DataRow";
 import Media from "./Media";
 import MiscTable from "./MiscTable";
+import Comment from "./Comment";
 import AddComment from "./AddComment";
-
 
 /**
  * Expects the following search params:
@@ -52,6 +52,11 @@ export default function EventDetailsPage() {
       <Grid item container spacing={2} sx={{ width: "100%" }}>
         <Paper variant='outlined' sx={{ width: "100%" }}>
           <MiscTable event={selectedEvent} />
+        </Paper>
+      </Grid>
+      <Grid item container spacing={2} sx={{ width: "100%" }}>
+        <Paper variant='outlined' sx={{ width: "100%" }}>
+          <Comment event={selectedEvent} />
         </Paper>
       </Grid>
       <Grid item container spacing={2} sx={{ width: "100%" }}>
