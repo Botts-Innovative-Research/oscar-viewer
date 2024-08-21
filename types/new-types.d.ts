@@ -23,3 +23,12 @@ type SelectedEvent = {
   startTime: string;
   endTime: string;
 }
+
+/**
+ * Interface for Lane Status Item
+ */
+export type LaneStatusType = {
+  id: number;
+  name: string;
+  status: string;
+}

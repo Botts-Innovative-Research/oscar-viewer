@@ -6,15 +6,10 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {EventType} from 'osh-js/source/core/event/EventType';
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import { LaneStatusType } from 'types/new-types';
 
 import Link from "next/link";
 import {findInObject} from "@/app/utils/Utils";
-
-interface LaneStatusItem{
-  id: number;
-  name: string;
-  status: string;
-}
 
 const datasource = (name: string, streamId: string, server: string, start: string) => {
   return useMemo(() => new SweApi(name, {
@@ -34,7 +29,7 @@ function timeout(delay: number) {
 export default function LaneStatus() {
   // const {dataSources, masterTimeSyncRef} = useDSContext();
 
-  const [statusBars, setStatus] = useState<LaneStatusItem[]>([]);
+  const [statusBars, setStatus] = useState<LaneStatusType[]>([]);
   const idVal = useRef(1);
 
   const [host, setHost] = useState("162.238.96.81");
@@ -63,7 +58,7 @@ export default function LaneStatus() {
   const handleStatusData = async (datasourceName: string, valueKey: string, message: any[]) => {
     // @ts-ignore
     const msgVal: any[] = message.values || [];
-    let newStatuses: LaneStatusItem[] = [];
+    let newStatuses: LaneStatusType[] = [];
 
     await timeout(3000);
 
@@ -71,7 +66,7 @@ export default function LaneStatus() {
       const state = findInObject(value, valueKey);
 
       if (state === 'Alarm' || state === 'Fault - Neutron High'|| state === 'Fault - Gamma Low'|| state === 'Fault - Gamma High') {
-        const newStatus: LaneStatusItem = {
+        const newStatus: LaneStatusType = {
           id: idVal.current++,
           name: datasourceName,
           status: state
@@ -90,13 +85,13 @@ export default function LaneStatus() {
   const handleTamperData = async (datasourceName: string, message: any[]) => {
     // @ts-ignore
     const msgVal: any[] = message.values || [];
-    let tamperStatuses: LaneStatusItem[] = [];
+    let tamperStatuses: LaneStatusType[] = [];
 
     msgVal.forEach((value) => {
       const tamperState = findInObject(value, 'tamperStatus');
 
       if(tamperState) {
-        const newStatus: LaneStatusItem ={
+        const newStatus: LaneStatusType ={
           // id: statusBars.length === 0 ? 1 : statusBars[statusBars.length -1].id + 1,
           id: idVal.current++,
           name: datasourceName,

@@ -25,12 +25,6 @@ const testData = {
 export default function EventDetailsPage() {
   const [selectedEvent, setSelectedEvent] = useState<SelectedEvent>({startTime: "XX:XX:XX AM", endTime: "XX:XX:XX AM"});  // Reference types/new-types.d.ts to change type
 
-  // Handle currently selected event in datagrid
-  const handleRowSelect = (event: SelectedEvent) => {
-    //console.log(event); // Log the selected row data
-    setSelectedEvent(event);
-  }
-
   return (
     <Stack spacing={2} direction={"column"}>
       <Grid item spacing={2}>
