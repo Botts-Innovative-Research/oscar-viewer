@@ -1,6 +1,7 @@
 import {createSlice, PayloadAction} from "@reduxjs/toolkit";
 import {enableMapSet} from "immer";
 import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
+import {RootState} from "@/lib/state/Store";
 
 enableMapSet();
 
@@ -71,8 +72,8 @@ export const {
     setADCurrentLane
 } = Slice.actions;
 
-export const selectConfigNodeId = (state: any) => state.OSCARClientState.configNodeId;
-export const selectCurrentUser = (state: any) => state.OSCARClientState.currentUser;
-export const selectLanes = (state: any) => state.OSCARClientState.lanes;
+export const selectConfigNodeId = (state: RootState) => state.oscarClientSlice.configNodeId;
+export const selectCurrentUser = (state: RootState) => state.oscarClientSlice.currentUser;
+export const selectLanes = (state: RootState) => state.oscarClientSlice.lanes;
 
 export default Slice.reducer;

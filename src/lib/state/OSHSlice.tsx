@@ -100,10 +100,10 @@ export const getNodeById = (state: RootState, id: number) => {
     const foundNode = state.oshSlice.nodes.find((node: any) => node.id === id);
     return foundNode;
 }
-export const getSystems = (state: RootState) => state.oshSlice.systems;
-export const getDatastreams = (state: RootState) => state.oshSlice.dataStreams;
-export const getDatasources = (state: RootState) => state.oshSlice.datasources;
-export const getMainDataSynchronizer = (state: RootState) => state.oshSlice.mainDataSynchronizer;
-export const getDatasynchronizers = (state: RootState) => state.oshSlice.otherDataSynchronizers;
+export const selectSystems = (state: RootState) => state.oshSlice.systems;
+export const selectDatastreams = (state: RootState) => state.oshSlice.dataStreams;
+export const selectDatasources = (state: RootState) => state.oshSlice.datasources;
+export const selectMainDataSynchronizer = (state: RootState) => state.oshSlice.mainDataSynchronizer;
+export const selectDatasynchronizers = (state: RootState) => state.oshSlice.otherDataSynchronizers;
 
 export default Slice.reducer;

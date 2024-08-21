@@ -15,13 +15,14 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {useSelector} from "react-redux";
-import {Datastream} from "@/lib/data/osh/Datastreams";
+import {Datastream, IDatastream} from "@/lib/data/osh/Datastreams";
 import {useAppDispatch, useAppStore} from "@/lib/state/Hooks";
 import {INode, Node} from "@/lib/data/osh/Node";
 import {addDatastream, getNodeById, setSystems} from "@/lib/state/OSHSlice";
 import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import {System} from "@/lib/data/osh/Systems";
-import {setLanes} from "@/lib/state/OSCARClientSlice";
+import {selectLanes, setLanes} from "@/lib/state/OSCARClientSlice";
+import {selectDatastreamsOfLaneByName} from "@/lib/state/CustomSelectors";
 
 interface IDataSourceContext {
     dataSources: Map<string, typeof SweApi>
@@ -41,6 +42,8 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     const dispatch = useAppDispatch();
     const nodes = useSelector((state: any) => state.oshSlice.nodes);
     const systems = useSelector((state: any) => state.oshSlice.systems);
+    const nl1Datastreams = useSelector((state: any) => selectDatastreamsOfLaneByName("North Lane 1")(state));
+    const lanes = selectLanes(useAppStore().getState());
 
     // will need to load from the config file at a later iteration
     const dataSources = new Map<string, typeof SweApi>()
@@ -49,7 +52,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     async function InitializeApplication() {
         let cfgEP = configNode.getConfigEndpoint();
         // assume that the local server may have a config file that can be loaded
-        let localConfigResp = await fetch(`${cfgEP}/systems?uid=urn:ornl:client:configs`,{
+        let localConfigResp = await fetch(`${cfgEP}/systems?uid=urn:ornl:client:configs`, {
             headers: {
                 ...configNode.getBasicAuthHeader()
             }
@@ -96,20 +99,18 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
             dispatch(setLanes(lanes));
             dispatch(setSystems(systems));
+            console.log("Statewide systems", systems)
         });
         console.info("Lanes fetched, continuing onward...");
     }
 
     async function datastreamFetch() {
-        console.info("Fetching Datastreams...")
-        console.warn("Systems:", systems);
         await Promise.all(systems.map(async (system: System) => {
-            console.warn("Fetching datastreams for system:", system);
             return await system.fetchDataStreams();
         })).then((datastreams) => {
             const combinedDatastreams = datastreams.flat();
+
             combinedDatastreams.forEach((datastreamJson: any) => {
-                console.log("Datastream retrieved:", datastreamJson);
                 const datastream = new Datastream(datastreamJson.id, datastreamJson.name, datastreamJson["system@id"], [datastreamJson.validTime[0], datastreamJson.validTime[1]]);
                 dispatch(addDatastream(datastream))
             });
@@ -120,7 +121,6 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         async function intializeItAll() {
             await InitializeApplication();
             await laneFetch();
-            // await datastreamFetch();
         }
 
         intializeItAll()
@@ -128,27 +128,12 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
     useMemo(() => {
         datastreamFetch();
-    }, [systems])
-
-    useMemo(() => {
-        console.log("Datastreams as of now:", dataStreams);
-    }, [dataStreams])
-
-    // useEffect(() => {
-    //     for (let node of allNodes) {
-    //         if (node.id !== configNodeId) {
-    //             await node.fetchSystems();
-    //         }
-    //     }
-    // }, []);
+    }, [systems]);
 
     useEffect(() => {
-        dataStreams.forEach((datastream) => {
-            const sweApi = datastream.generateSweApiObj()
-            dataSources.set(datastream.id, sweApi)
-        })
-
-    }, [dataStreams])
+        console.log("Datastreams of North Lane 1:", nl1Datastreams);
+        console.log("All Datastreams:", dataStreams);
+    }, [dataStreams, nl1Datastreams])
 
     if (!masterTimeSyncRef.current) {
         // get these properties from the store!

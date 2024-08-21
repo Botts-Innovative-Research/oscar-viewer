@@ -46,7 +46,7 @@ export class Datastream implements IDatastream {
         return this.id === other.id;
     }
 
-    generateSweApiObj(timeRange: { start: string, end: string } | null): SweApi {
+    generateSweApiObj(timeRange: { start: string, end: string } | null | undefined): SweApi {
 
         if (timeRange) {
             this.phenomenonTime.beginPosition = timeRange.start;
