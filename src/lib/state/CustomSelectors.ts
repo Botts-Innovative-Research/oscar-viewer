@@ -5,7 +5,7 @@
 
 import {createSelector} from "@reduxjs/toolkit";
 import {RootState} from "@/lib/state/Store";
-import {selectLanes} from "@/lib/state/OSCARClientSlice";
+import {selectLaneByName, selectLanes} from "@/lib/state/OSCARClientSlice";
 import {selectDatastreams, selectSystems} from "@/lib/state/OSHSlice";
 import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import {System} from "@/lib/data/osh/Systems";
@@ -65,17 +65,38 @@ export const selectSystemsOfLaneByName = (laneName: string) => createSelector(
     }
 );
 
+// /**
+//  * Selects the datastreams of a lane by the lane's name
+//  * @param laneName
+//  */
+// export const selectDatastreamsOfLaneByName = (laneName: string) => (state: RootState) => {
+//     const lanes = selectLanes(state);
+//     const selectedLane: LaneMeta = lanes.find((lane: { name: string; }) => lane.name === laneName);
+//     if (selectedLane === undefined) {
+//         console.warn("Lane not found");
+//         return [];
+//     }
+//     const dsOfLane = selectDatastreamsOfLane(selectedLane.id)(state);
+//     return dsOfLane;
+// };
+
 /**
  * Selects the datastreams of a lane by the lane's name
- * @param laneName
+ * @param laneName Name of the lane
  */
-export const selectDatastreamsOfLaneByName = (laneName: string) => (state: RootState) => {
-    const lanes = selectLanes(state);
-    const selectedLane: LaneMeta = lanes.find((lane: { name: string; }) => lane.name === laneName);
-    if (selectedLane === undefined) {
-        console.warn("Lane not found");
-        return [];
+export const selectDatastreamsOfLaneByName = (laneName: string) => createSelector(
+    (state: RootState) => selectLaneByName(laneName)(state),
+    (state: RootState) => state,
+    (lane, state) => {
+        // if (lane === undefined) {
+        //     return [];
+        // }
+        // return selectDatastreamsOfLane(lane.id)(state);
+
+        if (!lane) {
+            return [];
+        }
+        const datastreamsOfLane = selectDatastreamsOfLane(lane.id)(state);
+        return datastreamsOfLane.length ? datastreamsOfLane : null;
     }
-    const dsOfLane = selectDatastreamsOfLane(selectedLane.id)(state);
-    return dsOfLane;
-};
+);

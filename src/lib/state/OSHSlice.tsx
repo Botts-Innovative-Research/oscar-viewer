@@ -78,6 +78,9 @@ export const Slice = createSlice({
             console.warn("Setting systems in the OSHSlice");
             console.info(action.payload);
             state.systems = action.payload;
+        },
+        setDatastreams: (state, action: PayloadAction<Map<string, IDatastream>>) => {
+            state.dataStreams = action.payload;
         }
     }
 })
@@ -91,7 +94,8 @@ export const {
     addDatasource,
     addDataSynchronizer,
     setMainDataSynchronizer,
-    setSystems
+    setSystems,
+    setDatastreams
 } = Slice.actions;
 
 export const getNodes = (state: RootState) => state.oshSlice.nodes;
