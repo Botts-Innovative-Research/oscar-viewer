@@ -1,9 +1,7 @@
 "use client";
 
 import EventTable from '../_components/EventTable';
-
 import { EventTableData, SelectedEvent } from 'types/new-types';
-
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {findInObject} from "@/app/utils/Utils";
 import {EventType} from "osh-js/source/core/event/EventType";
@@ -126,10 +124,6 @@ export default function AlarmTable(props: {
       }
     });
   }
-
-
-
-
 
   // Callback function to handle the selected row
   const handleSelectedRow = (event: SelectedEvent) => {
