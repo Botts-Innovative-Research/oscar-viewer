@@ -27,7 +27,8 @@ export interface IOSHSlice {
     nodes: INode[],
     currentNodeId: number,
     systems: ISystem[],
-    dataStreams: IDatastream[],
+    // dataStreams: IDatastream[],
+    dataStreams: Map<string, IDatastream>,
     mainDataSynchronizer: ITimeSynchronizerProps,
     datasources: SweApi[],
     otherDataSynchronizers: ITimeSynchronizerProps[]
@@ -35,10 +36,10 @@ export interface IOSHSlice {
 
 const initialState: IOSHSlice = {
     // nodes: new Map<number, INode>([[1,new Node(1, "Windows Test Node", "162.238.96.81", 8781)]]),
-    nodes: [new Node(1, "Windows Test Node", "162.238.96.81", 8781)],
+    nodes: [new Node(1, "Windows Test Node", "192.168.1.158", 8781)],
     currentNodeId: 2,
     systems: [],
-    dataStreams: [],
+    dataStreams: new Map<string, IDatastream>(),
     mainDataSynchronizer: new TimeSynchronizerProps(new Date().toISOString(),
         "...", 1, 5, [], Mode.REAL_TIME),
     datasources: [],
@@ -62,7 +63,7 @@ export const Slice = createSlice({
             state.systems.push(action.payload);
         },
         addDatastream: (state, action: PayloadAction<IDatastream>) => {
-            state.dataStreams.push(action.payload);
+            state.dataStreams.set(action.payload.id, action.payload);
         },
         addDatasource: (state, action: PayloadAction<SweApi>) => {
             state.datasources.push(action.payload);
@@ -77,6 +78,9 @@ export const Slice = createSlice({
             console.warn("Setting systems in the OSHSlice");
             console.info(action.payload);
             state.systems = action.payload;
+        },
+        setDatastreams: (state, action: PayloadAction<Map<string, IDatastream>>) => {
+            state.dataStreams = action.payload;
         }
     }
 })
@@ -90,7 +94,8 @@ export const {
     addDatasource,
     addDataSynchronizer,
     setMainDataSynchronizer,
-    setSystems
+    setSystems,
+    setDatastreams
 } = Slice.actions;
 
 export const getNodes = (state: RootState) => state.oshSlice.nodes;
@@ -99,10 +104,10 @@ export const getNodeById = (state: RootState, id: number) => {
     const foundNode = state.oshSlice.nodes.find((node: any) => node.id === id);
     return foundNode;
 }
-export const getSystems = (state: RootState) => state.oshSlice.systems;
-export const getDatastreams = (state: RootState) => state.oshSlice.dataStreams;
-export const getDatasources = (state: RootState) => state.oshSlice.datasources;
-export const getMainDataSynchronizer = (state: RootState) => state.oshSlice.mainDataSynchronizer;
-export const getDatasynchronizers = (state: RootState) => state.oshSlice.otherDataSynchronizers;
+export const selectSystems = (state: RootState) => state.oshSlice.systems;
+export const selectDatastreams = (state: RootState) => state.oshSlice.dataStreams;
+export const selectDatasources = (state: RootState) => state.oshSlice.datasources;
+export const selectMainDataSynchronizer = (state: RootState) => state.oshSlice.mainDataSynchronizer;
+export const selectDatasynchronizers = (state: RootState) => state.oshSlice.otherDataSynchronizers;
 
 export default Slice.reducer;
