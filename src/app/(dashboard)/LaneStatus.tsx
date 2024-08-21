@@ -8,7 +8,7 @@ import {findInObject} from "@/app/utils/Utils";
 import {Datastream} from "@/lib/data/osh/Datastreams";
 import {useSelector} from "react-redux";
 import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
-import {getDatastreams} from "@/lib/state/OSHSlice";
+// import {getDatastreams} from "@/lib/state/OSHSlice";
 import {selectLanes} from "@/lib/state/OSCARClientSlice";
 import {FUTURE_END_TIME, Protocols, START_TIME} from "@/lib/data/Constants";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
@@ -28,8 +28,11 @@ export default function LaneStatus() {
   const [statusBars, setStatus] = useState<LaneStatusItem[]>([]);
   const idVal = useRef(1);
 
-  const ds : Datastream[] = useSelector((state:any) => Array.from(state.oshSlice.dataStreams));
-  const lanes: LaneMeta[] = useSelector((state:any) => Array.from(state.oscarClientSlice.lanes));
+  // const ds : Datastream[] = useSelector((state:any) => Array.from(state.oshSlice.dataStreams));
+  // const lanes: LaneMeta[] = useSelector((state:any) => Array.from(state.oscarClientSlice.lanes));
+
+  const ds : Datastream[] = Array.from(useSelector((state: any) => state.oshSlice.dataStreams.values()));
+  const lanes: LaneMeta[] = (useSelector(selectLanes));
 
   const filterLanes = useMemo(()=>{
     let gammaLanes: { [key: string]: Datastream[] }= {};
@@ -150,7 +153,7 @@ export default function LaneStatus() {
     const msgVal: any[] = message.values || [];
     let newStatuses: LaneStatusItem[] = [];
 
-    await timeout(4500);
+    await timeout(5500);
 
     msgVal.forEach((value) => {
       const state = findInObject(value, valueKey);

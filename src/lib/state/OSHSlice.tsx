@@ -36,7 +36,7 @@ export interface IOSHSlice {
 
 const initialState: IOSHSlice = {
     // nodes: new Map<number, INode>([[1,new Node(1, "Windows Test Node", "162.238.96.81", 8781)]]),
-    nodes: [new Node(1, "Windows Test Node", "192.168.1.158", 8781)],
+    nodes: [new Node(1, "Windows Test Node", "162.238.96.81", 8781)],
     currentNodeId: 2,
     systems: [],
     dataStreams: new Map<string, IDatastream>(),

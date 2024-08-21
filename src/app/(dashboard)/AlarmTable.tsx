@@ -11,12 +11,9 @@ import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import {Protocols} from "@/lib/data/Constants";
 import {Mode} from "osh-js/source/core/datasource/Mode";
+import {selectDatastreams} from "@/lib/state/OSHSlice";
+import {selectConfigNodeId, selectCurrentUser, selectLanes} from "@/lib/state/OSCARClientSlice";
 
-const testRows: EventTableData[] = [
-  { id: '1', secondaryInspection: false, laneId: '1', occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: 25642, status: 'Gamma' },
-  { id: '2', secondaryInspection: false, laneId: '1', occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxNeutron: 25642, status: 'Neutron' },
-  { id: '3', secondaryInspection: false, laneId: '1', occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: 25642, maxNeutron: 25642, status: 'Gamma & Neutron' },
-];
 
 export default function AlarmTable(props: {
   onRowSelect: (event: SelectedEvent) => void;  // Return start/end time to parent
@@ -25,25 +22,62 @@ export default function AlarmTable(props: {
   const [alarmBars, setAlarmBars] = useState<EventTableData[]>([]);
   const idVal = useRef(0);
 
-  const [occupancyStart, setOccupancyStart] =  useState('');
-  const [occupancyEnd, setOccupancyEnd] = useState('');
+  const ds : Datastream[] = Array.from(useSelector((state: any) => state.oshSlice.dataStreams.values()));
+  const lanes: LaneMeta[] = (useSelector(selectLanes));
 
-  const ds : Datastream[] = useSelector((state:any) => Array.from(state.oshSlice.dataStreams));
-  const lanes: LaneMeta[] = useSelector((state:any) => Array.from(state.oscarClientSlice.lanes));
+  // const lanes: LaneMeta[] = useSelector((state: any) => state.oscarClientSlice.lanes);
+
+  console.log('lanes', lanes)
+  let start = "2023-01-01T:00:00:00.000Z";
+  const end = "2055-01-01T00:00:00.000Z";
+
 
   const filterLanes = useMemo(()=>{
     let occupancyLanes: { [key: string]: Datastream[] }= {};
 
     lanes.forEach((lane, index) =>{
-      let filteredStreams = ds.filter((stream) => lane.systemIds.includes(stream.parentSystemId));
-      occupancyLanes[`lane${index}`] = filteredStreams.filter((type) => type.name.includes('Driver - Occupancy'));
+
+      // let filteredStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId));
+
+      occupancyLanes[`lanes${index}`] = ds.filter((dss)=> lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Occupancy'));
+      // occupancyLanes[`lane${index}`] = filteredStreams.filter((type) => type.name.includes('Driver - Occupancy'));
 
     });
     return{occupancyLanes};
   }, [lanes, ds]);
 
-  const createDataSource = useCallback(()=>{
+  // console.log('occ', filterLanes.occupancyLanes)
 
+
+  // const getBatchOccupancy = () =>{
+  //   let batchOccupancy: {[key:string]: any[]} ={};
+  //
+  //   Object.keys(filterLanes.occupancyLanes).forEach((key) => {
+  //     batchOccupancy[key] = filterLanes.occupancyLanes[key].map((stream) => {
+  //       let source = new SweApi(getName(stream.parentSystemId), {
+  //         protocol: Protocols.WS,
+  //         endpointUrl: `162.238.96.81:8781/sensorhub/api`,
+  //         resource: `/datastreams/${stream.id}/observations`,
+  //         mode: Mode.BATCH,
+  //         tls: false,
+  //         start: start,
+  //         end: end,
+  //         connectorOpts: {
+  //           username: 'admin',
+  //           password: 'admin',
+  //         },
+  //       });
+  //       const handleOccupancy = (message: any[]) => handleOccupancyData(getName(stream.parentSystemId), message);
+  //       source.connect()
+  //       source.subscribe(handleOccupancy, [EventType.DATA]);
+  //     });
+  //
+  //   });
+  //   return {batchOccupancy};
+  //
+  // };
+
+  const createDataSource = useCallback(()=>{
     let occupancyDataSource: {[key:string]: any[]} ={};
 
     Object.keys(filterLanes.occupancyLanes).forEach((key) => {
@@ -71,8 +105,9 @@ export default function AlarmTable(props: {
 
 
   useEffect(() => {
+    // getBatchOccupancy();
     createDataSource();
-  }, [createDataSource]);
+  }, [createDataSource, filterLanes, ds, lanes]);
 
 
   function getName(parentId: string){
@@ -85,7 +120,7 @@ export default function AlarmTable(props: {
 
     // @ts-ignore
     const msgVal: any[] = message.values ||[];
-    let newAlarmStatuses: EventTableData[] = [];
+
 
     msgVal.forEach((value) => {
       let occupancyCount = findInObject(value, 'occupancyCount'); //number
@@ -96,12 +131,8 @@ export default function AlarmTable(props: {
       let maxGamma = findInObject(value, 'maxGamma');
       let maxNeutron = findInObject(value, 'maxNeutron');
       let statusType = gammaAlarm && neutronAlarm ? 'Gamma & Neutron' : gammaAlarm ? 'Gamma' : neutronAlarm ? 'Neutron' : '';
-      let adjUser = 'kalyn'; //get user from the account?
-      let adjCode = 0; //get user from the adjudicatedSelect
-      // const occStart = occupancyStart.split('T');
-      // const occEnd = occupancyEnd.split('T');
 
-      console.log('adj: ' + adjCode);
+      console.log('maxGamma', maxGamma);
 
       if(gammaAlarm || neutronAlarm){
         const newAlarmStatus: EventTableData = {
@@ -114,8 +145,8 @@ export default function AlarmTable(props: {
           maxGamma: gammaAlarm ? maxGamma : 'N/A',
           maxNeutron: neutronAlarm ? maxNeutron : 'N/A',
           status: statusType,
-          adjudicatedUser: adjUser, // Update
-          adjudicatedCode:  adjCode // Update,
+          adjudicatedUser: 'kalyn', // Update useSelector(selectCurrentUser)
+          adjudicatedCode: 0 // Update,
         };
 
         //filter item from alarm table by adjudication code, and by the occupancy id

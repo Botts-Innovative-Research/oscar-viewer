@@ -76,7 +76,7 @@ export const selectConfigNodeId = (state: RootState) => state.oscarClientSlice.c
 export const selectCurrentUser = (state: RootState) => state.oscarClientSlice.currentUser;
 export const selectLanes = (state: RootState) => state.oscarClientSlice.lanes;
 export const selectLaneByName = (laneName: string) => (state: RootState) => {
-    console.info("Lane Name should be: ", laneName, state.oscarClientSlice.lanes);
+    // console.info("Lane Name should be: ", laneName, state.oscarClientSlice.lanes);
     return state.oscarClientSlice.lanes.find((lane: { name: string }) => lane.name === laneName);
 }
 
