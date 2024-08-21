@@ -5,7 +5,7 @@
 
 // starts with lane, followed by 1 or more digits, ends after digit(s)
 import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
-import {System} from "@/lib/data/osh/Systems";
+import {ISystem, System} from "@/lib/data/osh/Systems";
 
 const LANEREGEX = /^lane\d+$/;
 
@@ -26,7 +26,7 @@ export interface INode {
 
     fetchSystems(): Promise<any>,
 
-    fetchLanes(): Promise<{ systems: System[]; lanes: LaneMeta[] }>,
+    fetchLanes(): Promise<{ systems: ISystem[]; lanes: LaneMeta[] }>,
 }
 
 export class Node implements INode {
@@ -105,9 +105,9 @@ export class Node implements INode {
         }
     }
 
-    async fetchLanes(): Promise<{ systems: System[]; lanes: LaneMeta[] }> {
+    async fetchLanes(): Promise<{ systems: ISystem[]; lanes: LaneMeta[] }> {
         let fetchedLanes: LaneMeta[] = [];
-        let fetchedSystems: System[] = [];
+        let fetchedSystems: ISystem[] = [];
         // first, fetch the systems
         const systems_arr = await this.fetchSystems();
         console.log("Systems:", systems_arr);
@@ -123,10 +123,12 @@ export class Node implements INode {
                 const newLaneName = system.properties.name;
                 // Fetch subsystems
                 const subsystems = await newSystem.fetchSubsystems();
+                fetchedSystems.push(...subsystems);
                 let systemIds = subsystems.map(subsystem => subsystem.id);
                 systemIds.unshift(newSystem.id);
                 // Create a new LaneMeta object
                 let newLaneMeta = new LaneMeta(newLaneName, systemIds);
+                console.info("New Lane Created:", newLaneMeta);
                 fetchedLanes.push(newLaneMeta);
             }
         }

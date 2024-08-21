@@ -3,7 +3,7 @@
 import React, {
     createContext,
     MutableRefObject,
-    ReactNode,
+    ReactNode, useCallback,
     useContext,
     useEffect,
     useMemo,
@@ -15,13 +15,14 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {useSelector} from "react-redux";
-import {Datastream} from "@/lib/data/osh/Datastreams";
+import {Datastream, IDatastream} from "@/lib/data/osh/Datastreams";
 import {useAppDispatch, useAppStore} from "@/lib/state/Hooks";
 import {INode, Node} from "@/lib/data/osh/Node";
-import {addDatastream, getNodeById, setSystems} from "@/lib/state/OSHSlice";
+import {addDatastream, getNodeById, setDatastreams, setSystems} from "@/lib/state/OSHSlice";
 import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import {System} from "@/lib/data/osh/Systems";
-import {setLanes} from "@/lib/state/OSCARClientSlice";
+import {selectLanes, setLanes} from "@/lib/state/OSCARClientSlice";
+import {selectDatastreamsOfLaneByName} from "@/lib/state/CustomSelectors";
 
 interface IDataSourceContext {
     dataSources: Map<string, typeof SweApi>
@@ -41,15 +42,17 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     const dispatch = useAppDispatch();
     const nodes = useSelector((state: any) => state.oshSlice.nodes);
     const systems = useSelector((state: any) => state.oshSlice.systems);
-
-    // will need to load from the config file at a later iteration
-    const dataSources = new Map<string, typeof SweApi>()
+    const nl1Datastreams = useSelector((state: any) => selectDatastreamsOfLaneByName("North Lane 1")(state));
+    const lanes = selectLanes(useAppStore().getState());
+    const [shouldFetchDatastreams, setShouldFetchDatastreams] = useState(false);
+    const [shouldTestLaneByName, setShouldTestLaneByName] = useState(false);
     const masterTimeSyncRef = useRef<typeof DataSynchronizer>()
+    const dataSources = useSelector((state: any) => state.oshSlice.datasources);
 
-    async function InitializeApplication() {
+    const InitializeApplication = useCallback(async () => {
         let cfgEP = configNode.getConfigEndpoint();
         // assume that the local server may have a config file that can be loaded
-        let localConfigResp = await fetch(`${cfgEP}/systems?uid=urn:ornl:client:configs`,{
+        let localConfigResp = await fetch(`${cfgEP}/systems?uid=urn:ornl:client:configs`, {
             headers: {
                 ...configNode.getBasicAuthHeader()
             }
@@ -83,9 +86,9 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             let configObj = JSON.parse(configString);
             // TODO Load into state
         }
-    }
+    }, []);
 
-    async function laneFetch() {
+    const laneFetch = useCallback(async () => {
         console.log("Nodes:", nodes);
         await Promise.all(nodes.map(async (node: INode) => {
             return await node.fetchLanes();
@@ -96,59 +99,67 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
             dispatch(setLanes(lanes));
             dispatch(setSystems(systems));
+            console.log("Statewide systems", systems)
         });
         console.info("Lanes fetched, continuing onward...");
-    }
+    }, [nodes, dispatch]);
 
-    async function datastreamFetch() {
-        console.info("Fetching Datastreams...")
-        console.warn("Systems:", systems);
+    const datastreamFetch = useCallback(async () => {
         await Promise.all(systems.map(async (system: System) => {
-            console.warn("Fetching datastreams for system:", system);
             return await system.fetchDataStreams();
         })).then((datastreams) => {
             const combinedDatastreams = datastreams.flat();
+            let datastreamsMap = new Map<string, Datastream>();
             combinedDatastreams.forEach((datastreamJson: any) => {
-                console.log("Datastream retrieved:", datastreamJson);
                 const datastream = new Datastream(datastreamJson.id, datastreamJson.name, datastreamJson["system@id"], [datastreamJson.validTime[0], datastreamJson.validTime[1]]);
-                dispatch(addDatastream(datastream))
+                datastreamsMap.set(datastream.id, datastream);
+                // dispatch(addDatastream(datastream))
             });
+            dispatch(setDatastreams(datastreamsMap));
         });
-    }
+    }, [systems, dispatch]);
 
     useEffect(() => {
-        async function intializeItAll() {
-            await InitializeApplication();
-            await laneFetch();
-            // await datastreamFetch();
+        InitializeApplication();
+        laneFetch();
+        setShouldFetchDatastreams(true);
+    }, [InitializeApplication, laneFetch]);
+
+    useEffect(() => {
+        if (shouldFetchDatastreams) {
+            datastreamFetch();
+            setShouldTestLaneByName(true);
         }
+    }, [shouldFetchDatastreams, datastreamFetch]);
 
-        intializeItAll()
-    }, []);
+    useEffect(() => {
+        if (shouldTestLaneByName) {
+            console.log("Datastreams of North Lane 1:", nl1Datastreams);
+        }
+    }, [shouldTestLaneByName, nl1Datastreams]);
 
-    useMemo(() => {
-        datastreamFetch();
-    }, [systems])
-
-    useMemo(() => {
-        console.log("Datastreams as of now:", dataStreams);
-    }, [dataStreams])
-
-    // useEffect(() => {
-    //     for (let node of allNodes) {
-    //         if (node.id !== configNodeId) {
-    //             await node.fetchSystems();
-    //         }
+    // useMemo(() => {
+    //     async function intializeItAll() {
+    //         await InitializeApplication();
+    //         await laneFetch();
     //     }
+    //
+    //     intializeItAll();
+    //     setShouldFetchDatastreams(true);
     // }, []);
 
-    useEffect(() => {
-        dataStreams.forEach((datastream) => {
-            const sweApi = datastream.generateSweApiObj()
-            dataSources.set(datastream.id, sweApi)
-        })
+    // useMemo(() => {
+    //     async function dsStuff() {
+    //         await datastreamFetch();
+    //     }
+    //     dsStuff();
+    //     setShouldTestLaneByName(true);
+    // }, [shouldFetchDatastreams]);
 
-    }, [dataStreams])
+    /*useEffect(() => {
+        console.log("Datastreams of North Lane 1:", nl1Datastreams);
+        console.log("All Datastreams:", dataStreams);
+    }, [shouldTestLaneByName])*/
 
     if (!masterTimeSyncRef.current) {
         // get these properties from the store!

@@ -33,58 +33,58 @@ export default function AdjudicationSelect(props: {
   };
 
   return (
-      <FormControl size="small" fullWidth>
-        <InputLabel id="label" sx={{"&.MuiInputLabel-root":{color: style}}}>Adjudicate</InputLabel>
-        <Select
-            variant="outlined"
-            id="label"
-            label="Adjudicate"
-            value={adjudicated}
-            onChange={handleChange}
-            MenuProps={{
-              MenuListProps: {
-                style: {
-                  maxHeight: 300
-                }
-              }
-            }}
-            autoWidth
-            style={{ minWidth: "8em" }}
-            sx={{
-              color: style,
-              "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: style,
-              },
-              "&.MuiOutlinedInput-notchedOutline": { border: 1 },
-              "&.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline":
-                  {
-                    border: 2,
-                    borderRadius: "10px"
-                  },
-              "&.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline":
-                  {
-                    border: 2,
-                  },
-            }}
-        >
-          <ListSubheader>Real Alarm</ListSubheader>
-          <MenuItem value={1} sx={colorCodes.real}>Code 1: Contraband Found</MenuItem>
-          <MenuItem value={2} sx={colorCodes.real}>Code 2: Other</MenuItem>
-          <ListSubheader>Innocent Alarm</ListSubheader>
-          <MenuItem value={3} sx={colorCodes.innocent}>Code 3: Medical Isotope Found</MenuItem>
-          <MenuItem value={4} sx={colorCodes.innocent}>Code 4: NORM Found</MenuItem>
-          <MenuItem value={5} sx={colorCodes.innocent}>Code 5: Declared Shipment of Radioactive Material</MenuItem>
-          <ListSubheader>False Alarm</ListSubheader>
-          <MenuItem value={6} sx={colorCodes.false}>Code 6: Physical Inspection Negative</MenuItem>
-          <MenuItem value={7} sx={colorCodes.false}>Code 7: RIID/ASP Indicates Background Only</MenuItem>
-          <MenuItem value={8} sx={colorCodes.false}>Code 8: Other</MenuItem>
-          <ListSubheader>Alarm/Tamper/Fault</ListSubheader>
-          <MenuItem value={9} sx={colorCodes.other}>Code 9: Authorized Test, Maintenence, or Training Activity</MenuItem>
-          <ListSubheader>Tamper/Fault</ListSubheader>
-          <MenuItem value={10} sx={colorCodes.other}>Code 10: Unauthorized Activity</MenuItem>
-          <ListSubheader>Other</ListSubheader>
-          <MenuItem value={11} sx={colorCodes.other}>Code 11: Other</MenuItem>
-        </Select>
-      </FormControl>
+    <FormControl size="small" fullWidth>
+      <InputLabel id="label" sx={{"&.MuiInputLabel-root":{color: style}}}>Adjudicate</InputLabel>
+      <Select
+        variant="outlined"
+        id="label"
+        label="Adjudicate"
+        value={adjudicated}
+        onChange={handleChange}
+        MenuProps={{
+          MenuListProps: {
+            style: {
+              maxHeight: 300
+            }
+          }
+        }}
+        autoWidth
+        style={{ minWidth: "8em" }}
+        sx={{
+          color: style,
+          "& .MuiOutlinedInput-notchedOutline": {
+            borderColor: style,
+          },
+          "&.MuiOutlinedInput-notchedOutline": { border: 1 },
+          "&.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline":
+            {
+              border: 2,
+              borderRadius: "10px"
+            },
+          "&.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline":
+            {
+              border: 2,
+            },
+        }}
+      >
+        <ListSubheader>Real Alarm</ListSubheader>
+        <MenuItem value={1} sx={colorCodes.real}>Code 1: Contraband Found</MenuItem>
+        <MenuItem value={2} sx={colorCodes.real}>Code 2: Other</MenuItem>
+        <ListSubheader>Innocent Alarm</ListSubheader>
+        <MenuItem value={3} sx={colorCodes.innocent}>Code 3: Medical Isotope Found</MenuItem>
+        <MenuItem value={4} sx={colorCodes.innocent}>Code 4: NORM Found</MenuItem>
+        <MenuItem value={5} sx={colorCodes.innocent}>Code 5: Declared Shipment of Radioactive Material</MenuItem>
+        <ListSubheader>False Alarm</ListSubheader>
+        <MenuItem value={6} sx={colorCodes.false}>Code 6: Physical Inspection Negative</MenuItem>
+        <MenuItem value={7} sx={colorCodes.false}>Code 7: RIID/ASP Indicates Background Only</MenuItem>
+        <MenuItem value={8} sx={colorCodes.false}>Code 8: Other</MenuItem>
+        <ListSubheader>Alarm/Tamper/Fault</ListSubheader>
+        <MenuItem value={9} sx={colorCodes.other}>Code 9: Authorized Test, Maintenence, or Training Activity</MenuItem>
+        <ListSubheader>Tamper/Fault</ListSubheader>
+        <MenuItem value={10} sx={colorCodes.other}>Code 10: Unauthorized Activity</MenuItem>
+        <ListSubheader>Other</ListSubheader>
+        <MenuItem value={11} sx={colorCodes.other}>Code 11: Other</MenuItem>
+      </Select>
+    </FormControl>
   );
 }
