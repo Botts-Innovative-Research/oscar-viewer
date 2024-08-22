@@ -20,6 +20,9 @@ export default function AlarmTable(props: {
 }){
 
   const [occupancyTable, setOccupancyTable] = useState<EventTableData[]>([]);
+  const [batchOccupancyTable, setBatchOccupancyTable] = useState<EventTableData[]>([]);
+
+
   const idVal = useRef(0);
 
   const ds : Datastream[] = Array.from(useSelector((state: any) => state.oshSlice.dataStreams.values()));
@@ -60,7 +63,7 @@ export default function AlarmTable(props: {
             password: 'admin',
           },
         });
-        const handleBatchOccupancy = (message: any[]) => handleOccupancyData(getName(stream.parentSystemId), message);
+        const handleBatchOccupancy = (message: any[]) => handleOccupancyData(getName(stream.parentSystemId), message, "BATCH");
         source.connect()
         source.subscribe(handleBatchOccupancy, [EventType.DATA]);
       });
@@ -85,7 +88,7 @@ export default function AlarmTable(props: {
             password: 'admin',
           },
         });
-        const handleOccupancy = (message: any[]) => handleOccupancyData(getName(stream.parentSystemId), message);
+        const handleOccupancy = (message: any[]) => handleOccupancyData(getName(stream.parentSystemId), message, 'REAL_TIME');
         source.connect()
         source.subscribe(handleOccupancy, [EventType.DATA]);
       });
@@ -109,7 +112,7 @@ export default function AlarmTable(props: {
   }
 
 
-  const handleOccupancyData = (laneName: string, message: any[]) => {
+  const handleOccupancyData = (laneName: string, message: any[], mode: any) => {
 
     // @ts-ignore
     const msgVal: any[] = message.values ||[];
@@ -145,12 +148,19 @@ export default function AlarmTable(props: {
 
         //filter item from alarm table by adjudication code, and by the occupancy id
         let filterByAdjudicatedCode = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-        setOccupancyTable(prevState=>[newAlarmStatus, ...prevState.filter(item=>
+        if(mode === 'BATCH'){
+          setBatchOccupancyTable(prevState=>[newAlarmStatus, ...prevState.filter(item=>
 
-            //removes it if adjudicated || //prevents from stacking!
-            filterByAdjudicatedCode.includes(item.adjudicatedCode) || item.occupancyId !== occupancyCount
-        )
-        ]);
+              //removes it if adjudicated || //prevents from stacking!
+              filterByAdjudicatedCode.includes(item.adjudicatedCode) || item.occupancyId !== occupancyCount
+          )]);
+        } else if( mode === 'REAL_TIME'){
+          setOccupancyTable(prevState=>[newAlarmStatus, ...prevState.filter(item=>
+
+              //removes it if adjudicated || //prevents from stacking!
+              filterByAdjudicatedCode.includes(item.adjudicatedCode) || item.occupancyId !== occupancyCount
+          )]);
+        }
       }
     });
   }
@@ -162,7 +172,7 @@ export default function AlarmTable(props: {
   };
 
    return (
-    <EventTable onRowSelect={handleSelectedRow} data={occupancyTable} />
+    <EventTable onRowSelect={handleSelectedRow} data={occupancyTable.concat(batchOccupancyTable)} />
   );
 
 }
