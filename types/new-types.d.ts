@@ -2,7 +2,7 @@
  * Interface for Event Table data
  */
 export interface EventTableData {
-  id: string | number; // Unique ID for event
+  id: number; // Unique ID for event
   secondaryInspection?: boolean;  // Whether or not there has been a secondary inspection performed
   laneId: string; // Lane ID
   occupancyId: string;  // Occupancy ID

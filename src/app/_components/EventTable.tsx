@@ -26,75 +26,75 @@ export default function EventTable(props: {
 
   // Column definition for EventTable
   const columns: GridColDef<EventTableData>[] = [
-    { 
+    {
       field: 'secondaryInspection',
       headerName: 'Secondary Inspection',
       type: 'boolean',
     },
-    { 
+    {
       field: 'laneId',
       headerName: 'Lane ID',
       type: 'string',
-    }, 
-    { 
+    },
+    {
       field: 'occupancyId',
       headerName: 'Occupancy ID',
       type: 'string',
-    }, 
-    { 
+    },
+    {
       field: 'startTime',
       headerName: 'Start Time',
       type: 'string',
-    }, 
-    { 
+    },
+    {
       field: 'endTime',
       headerName: 'End Time',
       type: 'string',
-    }, 
-    { 
+    },
+    {
       field: 'maxGamma',
-      headerName: 'Max Gamma (CPS)',
+      headerName: 'Max Gamma',
       valueFormatter: (value) => {
         // Append units to number value, or return 'N/A'
-        return typeof value === 'number' ? value : 'N/A';
+        return typeof value === 'number' ? `${value} cps` : 'N/A';
       },
-    }, 
-    { 
+    },
+    {
       field: 'maxNeutron',
-      headerName: 'Max Neutron (CPS)',
+      headerName: 'Max Neutron',
       valueFormatter: (value) => {
         // Append units to number value, or return 'N/A'
-        return typeof value === `number` ? value : 'N/A';
+        return typeof value === 'number' ? `${value} cps` : 'N/A';
       },
-    }, 
-    { 
+    },
+    {
       field: 'status',
       headerName: 'Status',
       type: 'string',
-    }, 
-    { 
+    },
+    {
       field: 'Menu',
       headerName: '',
       type: 'actions',
       maxWidth: 50,
       getActions: (params) => [
         <GridActionsCellItem
-          icon={<NotesRoundedIcon />}
-          label="Details"
-          onClick={() => console.log(params.id)}
-          showInMenu
-        />,
-        (viewLane ?
-          <GridActionsCellItem
-            icon={<VisibilityRoundedIcon />}
-            label="View Lane"
+            icon={<NotesRoundedIcon />}
+            label="Details"
             onClick={() => console.log(params.id)}
             showInMenu
-          />
-          : <></>
+        />,
+        (viewLane ?
+                <GridActionsCellItem
+                    icon={<VisibilityRoundedIcon />}
+                    label="View Lane"
+                    onClick={() => console.log(params.id)}
+                    showInMenu
+                />
+                : <></>
         ),
       ],
-    }, 
+    },
   ];
 
   // Manage list of columns in toggle menu
@@ -105,8 +105,8 @@ export default function EventTable(props: {
     if (!viewMenu) excludeFields.push('Menu');
 
     return columns
-      .filter((column) => !excludeFields.includes(column.field))
-      .map((column) => column.field);
+        .filter((column) => !excludeFields.includes(column.field))
+        .map((column) => column.field);
   }
 
   // Handle currently selected row
@@ -133,69 +133,69 @@ export default function EventTable(props: {
       }
     }
   };
-  
+
   return (
-    <Box sx={{ height: 400, width: '100%' }}>
-      <DataGrid
-        rows={data}
-        columns={columns}
-        onRowSelectionModelChange={handleRowSelection}
-        rowSelectionModel={selectionModel}
-        initialState={{
-          pagination: {
-            paginationModel: {
-              pageSize: 20,
-            },
-          },
-          columns: {
-            // Manage visible columns in table based on component parameters
-            columnVisibilityModel: {
-              secondaryInspection: viewSecondary,
-              Menu: viewMenu,
-            }
-          },
-        }}
-        pageSizeOptions={[20]}
-        slots={{ toolbar: CustomToolbar }}
-        slotProps={{
-          columnsManagement: {
-            getTogglableColumns: getColumnList,
-          }
-        }}
-        autosizeOnMount
-        autosizeOptions={{
-          expand: true,
-          includeOutliers: true,
-          includeHeaders: false,
-        }}
-        getCellClassName={(params: GridCellParams<any, any, string>) => {
-          // Assign className for styling to 'Status' column based on value
-          if (params.value === "Gamma")
-            return "highlightGamma";
-          else if (params.value === "Neutron")
-            return "highlightNeutron";
-          else if (params.value === "Gamma & Neutron")
-            return "highlightGammaNeutron";
-          else
-            return "";
-        }}
-        sx={{
-          // Assign styling to 'Status' column based on className
-          [`.${gridClasses.cell}.highlightGamma`]: {
-            backgroundColor: "error.main",
-            color: "error.contrastText",
-          },
-          [`.${gridClasses.cell}.highlightNeutron`]: {
-            backgroundColor: "info.main",
-            color: "info.contrastText",
-          },
-          [`.${gridClasses.cell}.highlightGammaNeutron`]: {
-            backgroundColor: "secondary.main",
-            color: "secondary.contrastText",
-          },
-          border: "none"
-        }}
-      />
-    </Box>
+      <Box sx={{ height: 400, width: '100%' }}>
+        <DataGrid
+            rows={data}
+            columns={columns}
+            onRowSelectionModelChange={handleRowSelection}
+            rowSelectionModel={selectionModel}
+            initialState={{
+              pagination: {
+                paginationModel: {
+                  pageSize: 20,
+                },
+              },
+              columns: {
+                // Manage visible columns in table based on component parameters
+                columnVisibilityModel: {
+                  secondaryInspection: viewSecondary,
+                  Menu: viewMenu,
+                }
+              },
+            }}
+            pageSizeOptions={[20]}
+            slots={{ toolbar: CustomToolbar }}
+            slotProps={{
+              columnsManagement: {
+                getTogglableColumns: getColumnList,
+              }
+            }}
+            autosizeOnMount
+            autosizeOptions={{
+              expand: true,
+              includeOutliers: true,
+              includeHeaders: false,
+            }}
+            getCellClassName={(params: GridCellParams<any, any, string>) => {
+              // Assign className for styling to 'Status' column based on value
+              if (params.value === "Gamma")
+                return "highlightGamma";
+              else if (params.value === "Neutron")
+                return "highlightNeutron";
+              else if (params.value === "Gamma & Neutron")
+                return "highlightGammaNeutron";
+              else
+                return "";
+            }}
+            sx={{
+              // Assign styling to 'Status' column based on className
+              [`.${gridClasses.cell}.highlightGamma`]: {
+                backgroundColor: "error.main",
+                color: "error.contrastText",
+              },
+              [`.${gridClasses.cell}.highlightNeutron`]: {
+                backgroundColor: "info.main",
+                color: "info.contrastText",
+              },
+              [`.${gridClasses.cell}.highlightGammaNeutron`]: {
+                backgroundColor: "secondary.main",
+                color: "secondary.contrastText",
+              },
+              border: "none"
+            }}
+        />
+      </Box>
   );
 }

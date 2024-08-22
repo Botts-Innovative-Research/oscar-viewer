@@ -23,7 +23,7 @@ export default function AlarmTable(props: {
   const [batchOccupancyTable, setBatchOccupancyTable] = useState<EventTableData[]>([]);
 
 
-  const idVal = useRef(0);
+  const idVal = useRef(1);
 
   const ds : Datastream[] = Array.from(useSelector((state: any) => state.oshSlice.dataStreams.values()));
   const lanes: LaneMeta[] = (useSelector(selectLanes));
@@ -55,6 +55,7 @@ export default function AlarmTable(props: {
         let source = new SweApi(getName(stream.parentSystemId), {
           startTime: "2020-01-01T08:13:25.845Z",
           // endTime: "2024-08-22T17:44:33.994Z",
+
           endTime: endTime,
           tls: false,
           protocol: Protocols.WS,
@@ -130,6 +131,7 @@ export default function AlarmTable(props: {
       let maxNeutron = findInObject(value, 'maxNeutron');
       let statusType = gammaAlarm && neutronAlarm ? 'Gamma & Neutron' : gammaAlarm ? 'Gamma' : neutronAlarm ? 'Neutron' : '';
 
+
       if(gammaAlarm || neutronAlarm){
         const newAlarmStatus: EventTableData = {
           id: idVal.current++,
@@ -144,6 +146,7 @@ export default function AlarmTable(props: {
           adjudicatedUser: 'kalyn', // Update useSelector(selectCurrentUser)
           adjudicatedCode: 0 // Update,
         };
+
 
         //filter item from alarm table by adjudication code, and by the occupancy id
         let filterByAdjudicatedCode = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
