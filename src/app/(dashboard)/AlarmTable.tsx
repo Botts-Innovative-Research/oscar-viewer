@@ -28,6 +28,8 @@ export default function AlarmTable(props: {
   const ds : Datastream[] = Array.from(useSelector((state: any) => state.oshSlice.dataStreams.values()));
   const lanes: LaneMeta[] = (useSelector(selectLanes));
 
+  let endTime = new Date((new Date().getTime() - 1000000)).toISOString()
+
   // const lanes: LaneMeta[] = useSelector((state: any) => state.oscarClientSlice.lanes);
 
   const filterLanes = useMemo(()=>{
@@ -52,7 +54,8 @@ export default function AlarmTable(props: {
       batchOccupancy[key] = filterLanes.occupancyLanes[key].map((stream) => {
         let source = new SweApi(getName(stream.parentSystemId), {
           startTime: "2024-08-19T08:13:25.845Z",
-          endTime: "2024-08-22T11:56:33.994Z",
+          // endTime: "2024-08-22T17:44:33.994Z",
+          endTime: endTime,
           tls: false,
           protocol: Protocols.WS,
           mode: Mode.BATCH,
