@@ -53,13 +53,13 @@ export default function AlarmTable(props: {
     Object.keys(filterLanes.occupancyLanes).forEach((key) => {
       batchOccupancy[key] = filterLanes.occupancyLanes[key].map((stream) => {
         let source = new SweApi(getName(stream.parentSystemId), {
-          startTime: "2024-08-19T08:13:25.845Z",
+          startTime: "2020-01-01T08:13:25.845Z",
           // endTime: "2024-08-22T17:44:33.994Z",
           endTime: endTime,
           tls: false,
           protocol: Protocols.WS,
           mode: Mode.BATCH,
-          endpointUrl: `162.238.96.81:8781/sensorhub/api`,
+          endpointUrl: `162.238.96.81:8781/sensorhub/api`, //update to access ip and port from server
           resource: `/datastreams/${stream.id}/observations`,
           connectorOpts: {
             username: 'admin',
@@ -82,7 +82,7 @@ export default function AlarmTable(props: {
       occupancyDataSource[key] = filterLanes.occupancyLanes[key].map((stream) => {
         let source = new SweApi(getName(stream.parentSystemId), {
           protocol: Protocols.WS,
-          endpointUrl: `162.238.96.81:8781/sensorhub/api`,
+          endpointUrl: `162.238.96.81:8781/sensorhub/api`, //update to access ip and port from server
           resource: `/datastreams/${stream.id}/observations`,
           mode: Mode.REAL_TIME,
           tls: false,
@@ -130,10 +130,6 @@ export default function AlarmTable(props: {
       let maxNeutron = findInObject(value, 'maxNeutron');
       let statusType = gammaAlarm && neutronAlarm ? 'Gamma & Neutron' : gammaAlarm ? 'Gamma' : neutronAlarm ? 'Neutron' : '';
 
-      // const occStart = occupancyStart.split('T');
-      // const occEnd = occupancyEnd.split('T');
-      // console.log(occEnd);
-
       if(gammaAlarm || neutronAlarm){
         const newAlarmStatus: EventTableData = {
           id: idVal.current++,
@@ -142,8 +138,8 @@ export default function AlarmTable(props: {
           occupancyId: occupancyCount,
           startTime: occupancyStart,
           endTime: occupancyEnd,
-          maxGamma: gammaAlarm ? maxGamma : 'N/A',
-          maxNeutron: neutronAlarm ? maxNeutron : 'N/A',
+          maxGamma: maxGamma,
+          maxNeutron: maxNeutron,
           status: statusType,
           adjudicatedUser: 'kalyn', // Update useSelector(selectCurrentUser)
           adjudicatedCode: 0 // Update,

@@ -53,18 +53,18 @@ export default function EventTable(props: {
     }, 
     { 
       field: 'maxGamma',
-      headerName: 'Max Gamma',
+      headerName: 'Max Gamma (CPS)',
       valueFormatter: (value) => {
         // Append units to number value, or return 'N/A'
-        return typeof value === 'number' ? `${value} cps` : 'N/A';
+        return typeof value === 'number' ? value : 'N/A';
       },
     }, 
     { 
       field: 'maxNeutron',
-      headerName: 'Max Neutron',
+      headerName: 'Max Neutron (CPS)',
       valueFormatter: (value) => {
         // Append units to number value, or return 'N/A'
-        return typeof value === 'number' ? `${value} cps` : 'N/A';
+        return typeof value === `number` ? value : 'N/A';
       },
     }, 
     { 
