@@ -19,18 +19,13 @@ export default function AlarmTable(props: {
   onRowSelect: (event: SelectedEvent) => void;  // Return start/end time to parent
 }){
 
-  const [alarmBars, setAlarmBars] = useState<EventTableData[]>([]);
+  const [occupancyTable, setOccupancyTable] = useState<EventTableData[]>([]);
   const idVal = useRef(0);
 
   const ds : Datastream[] = Array.from(useSelector((state: any) => state.oshSlice.dataStreams.values()));
   const lanes: LaneMeta[] = (useSelector(selectLanes));
 
   // const lanes: LaneMeta[] = useSelector((state: any) => state.oscarClientSlice.lanes);
-
-  console.log('lanes', lanes)
-  let start = "2023-01-01T:00:00:00.000Z";
-  const end = "2055-01-01T00:00:00.000Z";
-
 
   const filterLanes = useMemo(()=>{
     let occupancyLanes: { [key: string]: Datastream[] }= {};
@@ -46,36 +41,33 @@ export default function AlarmTable(props: {
     return{occupancyLanes};
   }, [lanes, ds]);
 
-  // console.log('occ', filterLanes.occupancyLanes)
 
+  const getBatchOccupancy = useCallback(() =>{
+    let batchOccupancy: {[key:string]: any[]} ={};
 
-  // const getBatchOccupancy = () =>{
-  //   let batchOccupancy: {[key:string]: any[]} ={};
-  //
-  //   Object.keys(filterLanes.occupancyLanes).forEach((key) => {
-  //     batchOccupancy[key] = filterLanes.occupancyLanes[key].map((stream) => {
-  //       let source = new SweApi(getName(stream.parentSystemId), {
-  //         protocol: Protocols.WS,
-  //         endpointUrl: `162.238.96.81:8781/sensorhub/api`,
-  //         resource: `/datastreams/${stream.id}/observations`,
-  //         mode: Mode.BATCH,
-  //         tls: false,
-  //         start: start,
-  //         end: end,
-  //         connectorOpts: {
-  //           username: 'admin',
-  //           password: 'admin',
-  //         },
-  //       });
-  //       const handleOccupancy = (message: any[]) => handleOccupancyData(getName(stream.parentSystemId), message);
-  //       source.connect()
-  //       source.subscribe(handleOccupancy, [EventType.DATA]);
-  //     });
-  //
-  //   });
-  //   return {batchOccupancy};
-  //
-  // };
+    Object.keys(filterLanes.occupancyLanes).forEach((key) => {
+      batchOccupancy[key] = filterLanes.occupancyLanes[key].map((stream) => {
+        let source = new SweApi(getName(stream.parentSystemId), {
+          startTime: "2024-08-19T08:13:25.845Z",
+          endTime: "2024-08-22T11:56:33.994Z",
+          tls: false,
+          protocol: Protocols.WS,
+          mode: Mode.BATCH,
+          endpointUrl: `162.238.96.81:8781/sensorhub/api`,
+          resource: `/datastreams/${stream.id}/observations`,
+          connectorOpts: {
+            username: 'admin',
+            password: 'admin',
+          },
+        });
+        const handleBatchOccupancy = (message: any[]) => handleOccupancyData(getName(stream.parentSystemId), message);
+        source.connect()
+        source.subscribe(handleBatchOccupancy, [EventType.DATA]);
+      });
+
+    });
+    return {batchOccupancy};
+  },[filterLanes]);
 
   const createDataSource = useCallback(()=>{
     let occupancyDataSource: {[key:string]: any[]} ={};
@@ -105,9 +97,10 @@ export default function AlarmTable(props: {
 
 
   useEffect(() => {
-    // getBatchOccupancy();
+    getBatchOccupancy();
     createDataSource();
-  }, [createDataSource, filterLanes, ds, lanes]);
+
+  }, [getBatchOccupancy, createDataSource]);
 
 
   function getName(parentId: string){
@@ -121,7 +114,6 @@ export default function AlarmTable(props: {
     // @ts-ignore
     const msgVal: any[] = message.values ||[];
 
-
     msgVal.forEach((value) => {
       let occupancyCount = findInObject(value, 'occupancyCount'); //number
       let occupancyStart = findInObject(value, 'startTime'); //string
@@ -132,13 +124,15 @@ export default function AlarmTable(props: {
       let maxNeutron = findInObject(value, 'maxNeutron');
       let statusType = gammaAlarm && neutronAlarm ? 'Gamma & Neutron' : gammaAlarm ? 'Gamma' : neutronAlarm ? 'Neutron' : '';
 
-      console.log('maxGamma', maxGamma);
+      // const occStart = occupancyStart.split('T');
+      // const occEnd = occupancyEnd.split('T');
+      // console.log(occEnd);
 
       if(gammaAlarm || neutronAlarm){
         const newAlarmStatus: EventTableData = {
           id: idVal.current++,
           secondaryInspection: false,
-          laneId: laneName, // Update
+          laneId: laneName,
           occupancyId: occupancyCount,
           startTime: occupancyStart,
           endTime: occupancyEnd,
@@ -151,11 +145,11 @@ export default function AlarmTable(props: {
 
         //filter item from alarm table by adjudication code, and by the occupancy id
         let filterByAdjudicatedCode = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-        setAlarmBars(prevState=>[newAlarmStatus, ...prevState.filter(item=>
-          item.occupancyId !== occupancyCount
-            || filterByAdjudicatedCode.includes(item.adjudicatedCode)
-        )
+        setOccupancyTable(prevState=>[newAlarmStatus, ...prevState.filter(item=>
 
+            //removes it if adjudicated || //prevents from stacking!
+            filterByAdjudicatedCode.includes(item.adjudicatedCode) || item.occupancyId !== occupancyCount
+        )
         ]);
       }
     });
@@ -168,7 +162,7 @@ export default function AlarmTable(props: {
   };
 
    return (
-    <EventTable onRowSelect={handleSelectedRow} data={alarmBars} />
+    <EventTable onRowSelect={handleSelectedRow} data={occupancyTable} />
   );
 
 }
