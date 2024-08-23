@@ -4,15 +4,13 @@
  */
 
 import {useSelector} from "react-redux";
-import {selectNodes, removeNode} from "@/lib/state/OSHSlice";
+import {removeNode, selectNodes} from "@/lib/state/OSHSlice";
 import {RootState} from "@/lib/state/Store";
-import {Box, Button, Card, ListSubheader, Stack} from "@mui/material";
+import {Box, Button, Card} from "@mui/material";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import {INode} from "@/lib/data/osh/Node";
-import {SpaceBarRounded} from "@mui/icons-material";
-import {Span} from "next/dist/server/lib/trace/tracer";
 import {useAppDispatch} from "@/lib/state/Hooks";
 
 interface NodeListProps {
