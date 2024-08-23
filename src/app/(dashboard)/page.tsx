@@ -10,7 +10,7 @@ import { SelectedEvent } from "types/new-types";
 
 export default function DashboardPage() {
   const [selectedEvent, setSelectedEvent] = useState<SelectedEvent>(null);  // Reference types/new-types.d.ts to change type
-
+  
   // Handle currently selected event in datagrid
   const handleRowSelect = (event: SelectedEvent) => {
     //console.log(event); // Log the selected row data
