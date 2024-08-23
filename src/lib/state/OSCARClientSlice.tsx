@@ -89,5 +89,6 @@ export const selectLaneByName = (laneName: string) => (state: RootState) => {
 export const selectLaneById = (laneId: string) => (state: RootState) => {
     return state.oscarClientSlice.lanes.find((lane: { id: string }) => lane.id === laneId);
 }
+export const selectAlertDetails = (state: RootState) => state.oscarClientSlice.alertDetails;
 
 export default Slice.reducer;

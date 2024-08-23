@@ -81,6 +81,14 @@ export const Slice = createSlice({
         },
         setDatastreams: (state, action: PayloadAction<Map<string, IDatastream>>) => {
             state.dataStreams = action.payload;
+        },
+        updateNode: (state, action: PayloadAction<INode>) => {
+            const nodeIndex = state.nodes.findIndex((node: INode) => node.id === action.payload.id);
+            state.nodes[nodeIndex] = action.payload;
+        },
+        removeNode: (state, action: PayloadAction<number>) => {
+            const nodeIndex = state.nodes.findIndex((node: INode) => node.id === action.payload);
+            state.nodes.splice(nodeIndex, 1);
         }
     }
 })
@@ -95,11 +103,13 @@ export const {
     addDataSynchronizer,
     setMainDataSynchronizer,
     setSystems,
-    setDatastreams
+    setDatastreams,
+    updateNode,
+    removeNode
 } = Slice.actions;
 
-export const getNodes = (state: RootState) => state.oshSlice.nodes;
-export const getCurrentNodeId = (state: RootState) => state.oshSlice.currentNodeId;
+export const selectNodes = (state: RootState) => state.oshSlice.nodes;
+export const selectCurrentNodeId = (state: RootState) => state.oshSlice.currentNodeId;
 export const getNodeById = (state: RootState, id: number) => {
     const foundNode = state.oshSlice.nodes.find((node: any) => node.id === id);
     return foundNode;
