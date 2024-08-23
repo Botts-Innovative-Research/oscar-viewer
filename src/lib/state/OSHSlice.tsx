@@ -106,6 +106,15 @@ export const getNodeById = (state: RootState, id: number) => {
 }
 export const selectSystems = (state: RootState) => state.oshSlice.systems;
 export const selectDatastreams = (state: RootState) => state.oshSlice.dataStreams;
+export const selectDatastreamsOfSystem = (systemId: string) => (state: RootState) => {
+    const datastreamsOfSystem = [];
+    for (let [id, ds] of state.oshSlice.dataStreams.entries()) {
+        if (ds.parentSystemId === systemId) {
+            datastreamsOfSystem.push(ds);
+        }
+    }
+    return datastreamsOfSystem;
+}
 export const selectDatasources = (state: RootState) => state.oshSlice.datasources;
 export const selectMainDataSynchronizer = (state: RootState) => state.oshSlice.mainDataSynchronizer;
 export const selectDatasynchronizers = (state: RootState) => state.oshSlice.otherDataSynchronizers;

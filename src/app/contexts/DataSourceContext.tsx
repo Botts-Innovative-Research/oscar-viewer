@@ -34,7 +34,6 @@ const DataSourceContext = createContext<IDataSourceContext | undefined>(undefine
 
 
 export default function DataSourceProvider({children}: { children: ReactNode }) {
-    const dataStreams: Datastream[] = useSelector((state: any) => state.oshSlice.dataStreams);
     const mainDataSynchronizer = useSelector((state: any) => state.oshSlice.mainDataSynchronizer);
     const isInitialized = useSelector((state: any) => state.oshSlice.isInitialized);
     const configNodeId = useSelector((state: any) => state.oscarClientSlice.configNodeId);
@@ -42,10 +41,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     const dispatch = useAppDispatch();
     const nodes = useSelector((state: any) => state.oshSlice.nodes);
     const systems = useSelector((state: any) => state.oshSlice.systems);
-    const nl1Datastreams = useSelector((state: any) => selectDatastreamsOfLaneByName("North Lane 1")(state));
-    const lanes = selectLanes(useAppStore().getState());
     const [shouldFetchDatastreams, setShouldFetchDatastreams] = useState(false);
-    const [shouldTestLaneByName, setShouldTestLaneByName] = useState(false);
     const masterTimeSyncRef = useRef<typeof DataSynchronizer>()
     const dataSources = useSelector((state: any) => state.oshSlice.datasources);
 
@@ -123,20 +119,14 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         InitializeApplication();
         laneFetch();
         setShouldFetchDatastreams(true);
-    }, [InitializeApplication, laneFetch]);
+    }, [InitializeApplication]);
 
     useEffect(() => {
         if (shouldFetchDatastreams) {
             datastreamFetch();
-            setShouldTestLaneByName(true);
         }
-    }, [shouldFetchDatastreams, datastreamFetch]);
+    }, [shouldFetchDatastreams]);
 
-    useEffect(() => {
-        if (shouldTestLaneByName) {
-            console.log("Datastreams of North Lane 1:", nl1Datastreams);
-        }
-    }, [shouldTestLaneByName, nl1Datastreams]);
 
     // useMemo(() => {
     //     async function intializeItAll() {

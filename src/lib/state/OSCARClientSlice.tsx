@@ -9,8 +9,8 @@ export interface IOSCARClientState {
     configNodeId: number,
     currentUser: string,
     quickActions: [],
+    alertDetailIsOpen: boolean,
     alertDetails: {
-        isOpen: boolean,
         currentLane: string,
         startTime: string,
         endTime: string,
@@ -23,8 +23,8 @@ const initialState: IOSCARClientState = {
     configNodeId: 1,
     currentUser: '',
     quickActions: [],
+    alertDetailIsOpen: false,
     alertDetails: {
-        isOpen: false,
         currentLane: '',
         startTime: '',
         endTime: ''
@@ -37,11 +37,17 @@ export const Slice = createSlice({
     name: 'ClientStateSlice',
     initialState,
     reducers: {
+        setConfigNodeId: (state, action: PayloadAction<number>) => {
+            state.configNodeId = action.payload;
+        },
         setCurrentUser: (state, action: PayloadAction<string>) => {
             state.currentUser = action.payload;
         },
         setQuickActions: (state, action: PayloadAction<[]>) => {
             state.quickActions = action.payload;
+        },
+        setAlertDetailIsOpen: (state, action: PayloadAction<boolean>) => {
+            state.alertDetailIsOpen = action.payload;
         },
         setAlertDetails: (state, action: PayloadAction<{
             isOpen: boolean,
@@ -55,21 +61,22 @@ export const Slice = createSlice({
             state.lanes = action.payload;
         },
         toggleAlertDetails: (state) => {
-            state.alertDetails.isOpen = !state.alertDetails.isOpen;
+            state.alertDetailIsOpen = !state.alertDetailIsOpen;
         },
-        setADCurrentLane: (state, action: PayloadAction<string>) => {
+        setAlertDetailsDCurrentLane: (state, action: PayloadAction<string>) => {
             state.alertDetails.currentLane = action.payload;
         }
     }
 })
 
 export const {
+    setConfigNodeId,
     setCurrentUser,
     setQuickActions,
     setAlertDetails,
     setLanes,
     toggleAlertDetails,
-    setADCurrentLane
+    setAlertDetailsDCurrentLane
 } = Slice.actions;
 
 export const selectConfigNodeId = (state: RootState) => state.oscarClientSlice.configNodeId;
@@ -78,6 +85,9 @@ export const selectLanes = (state: RootState) => state.oscarClientSlice.lanes;
 export const selectLaneByName = (laneName: string) => (state: RootState) => {
     console.info("Lane Name should be: ", laneName, state.oscarClientSlice.lanes);
     return state.oscarClientSlice.lanes.find((lane: { name: string }) => lane.name === laneName);
+}
+export const selectLaneById = (laneId: string) => (state: RootState) => {
+    return state.oscarClientSlice.lanes.find((lane: { id: string }) => lane.id === laneId);
 }
 
 export default Slice.reducer;
