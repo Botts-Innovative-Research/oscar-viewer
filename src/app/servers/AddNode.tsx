@@ -43,7 +43,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     ));
 
     useEffect(() => {
-        if (isEditNode) {
+        if (isEditNode && editNode) {
             console.log("Editing node: ", editNode);
             setNewNode(editNode);
         } else {
@@ -88,6 +88,10 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
             dispatch(addNode(newNode));
             modeChangeCallback(false, null);
         }
+    }
+
+    if (!newNode){
+        return <Container><Typography variant="h4" align="center">Loading...</Typography></Container>
     }
 
 

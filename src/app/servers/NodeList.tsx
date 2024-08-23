@@ -35,17 +35,23 @@ export default function NodeList({modeChangeCallback}: NodeListProps) {
     return (
         <Box sx={{width: '100%'}}>
             <p>Nodes:</p>
-            <List>
-                {nodes.map((node: INode) => (
-                    <Card>
-                        <ListItem key={node.id} sx={{m: 0}}>
-                            <ListItemText primary={node.name} secondary={node.address}/>
-                            <Button variant="contained" size={"small"} color="primary" sx={{m: 1}} onClick={() => setEditNode(node)}>Edit</Button>
-                            <Button variant="contained" size={"small"} color="secondary" sx={{m: 1}} onClick={() => deleteNode(node.id)}>Delete</Button>
-                        </ListItem>
-                    </Card>
-                ))}
-            </List>
+            {nodes.length === 0 ? (
+                <p>No Nodes</p>
+            ) : (
+                <List>
+                    {nodes.map((node: INode) => (
+                        <Card key={node.id}>
+                            <ListItem sx={{m: 0}}>
+                                <ListItemText primary={node.name} secondary={node.address}/>
+                                <Button variant="contained" size={"small"} color="primary" sx={{m: 1}}
+                                        onClick={() => setEditNode(node)}>Edit</Button>
+                                <Button variant="contained" size={"small"} color="secondary" sx={{m: 1}}
+                                        onClick={() => deleteNode(node.id)}>Delete</Button>
+                            </ListItem>
+                        </Card>
+                    ))}
+                </List>
+            )}
         </Box>
     )
 }
