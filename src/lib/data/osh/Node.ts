@@ -19,6 +19,7 @@ export interface INode {
     csAPIEndpoint: string,
     csAPIConfigEndpoint: string,
     isSecure: boolean,
+    auth: { username: string, password: string } | null,
 
     getConnectedSystemsEndpoint(): string,
 
