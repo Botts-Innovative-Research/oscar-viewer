@@ -23,9 +23,12 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
     useEffect(() => {
       // Generate SweApi object, layer, and video view and show it below
 
+      console.log(props.lane.name + " : " + props.gammaDatastream.id);
+      console.log(gammaDatasource);
+      console.log(neutronDatasource);
       // const source = props.datastream.generateSweApiObj({start: START_TIME, end: FUTURE_END_TIME});
       if(gammaDatasource == null){
-        const gammaSource = new SweApi(props.gammaDatastream.name, {
+        const gammaSource = new SweApi(props.gammaDatastream.id, {
             protocol: Protocols.WS,
             endpointUrl: `162.238.96.81:8781/sensorhub/api`,
             resource: `/datastreams/${props.gammaDatastream.id}/observations`,
@@ -36,12 +39,13 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
                 password: 'admin',
             }
         });
+        console.log(gammaSource);
         gammaSource.connect();
         setGammaDatasource(gammaSource);
       }
       
       if(neutronDatasource == null){
-        const neutronSource = new SweApi(props.neutronDatastream.name, {
+        const neutronSource = new SweApi(props.neutronDatastream.id, {
             protocol: Protocols.WS,
             endpointUrl: `162.238.96.81:8781/sensorhub/api`,
             resource: `/datastreams/${props.neutronDatastream.id}/observations`,
@@ -61,11 +65,13 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
 
     if(gammaDatasource !== null) {
       gammaDatasource.subscribe((message: any) => {
+        console.log("Message from " + props.lane.name + " : " + message);
         const alarmState = message.values[0].data.alarmState;
         if(alarmState !== "Background" && alarmState !== "Scan") {
-          console.log(alarmState);
+          console.log(alarmState + " from " + props.lane.name);
           setStatus(alarmState);
-          setTimeout(() => setStatus("none"), 10000);
+        } else if(alarmState === "Background") {
+          setStatus("none");
         }
       }, [EventType.DATA]);
     }
@@ -74,12 +80,18 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
       neutronDatasource.subscribe((message: any) => {
           const alarmState = message.values[0].data.alarmState; 
           if(alarmState !== "Background" && alarmState !== "Scan") {
-            console.log(alarmState);
+            console.log(alarmState + " from " + props.lane.name);
             setStatus(alarmState);
-            setTimeout(() => setStatus("none"), 10000);
+          } else if(alarmState === "Background") {
+            setStatus("none");
           }
       }, [EventType.DATA]);
     }
+
+  }, [gammaDatasource, neutronDatasource]); 
+
+  useEffect(() => {
+
 
   }, [gammaDatasource, neutronDatasource]); 
 

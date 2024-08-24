@@ -55,7 +55,8 @@ export default function CameraGrid() {
 
         laneData.push(laneWithVideo);
       });
-      
+
+      console.log(laneData);
       setLanesWithVideo(laneData);
     }
   }, [dss]);
@@ -79,8 +80,8 @@ export default function CameraGrid() {
     {lanesWithVideo != null && (
       <Grid container padding={2} justifyContent={"start"}>
         {lanesWithVideo.slice(startItem, endItem).map((lane) => (
-          <VideoStatusWrapper lane={lane.laneData} gammaDatastream={lane.gammaDatastream} neutronDatastream={lane.neutronDatastream}>
-            <VideoComponent videoDatastreams={lane.videoDatastreams}/>
+          <VideoStatusWrapper key={lane.laneData.id} lane={lane.laneData} gammaDatastream={lane.gammaDatastream} neutronDatastream={lane.neutronDatastream} 
+          children={<VideoComponent videoDatastreams={lane.videoDatastreams}/>}>
           </VideoStatusWrapper>
         ))}
       <Grid item xs={12} display={"flex"} justifyContent={"center"}>
