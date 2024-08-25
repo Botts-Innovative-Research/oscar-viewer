@@ -3,8 +3,8 @@
 import { Box } from '@mui/material';
 import { DataGrid, GridActionsCellItem, GridCellParams, GridColDef, gridClasses } from '@mui/x-data-grid';
 import CustomToolbar from './CustomToolbar';
-import { EventTableData, SelectedEvent } from 'types/new-types';
-import { useState } from 'react';
+import {EventTableData, SelectedEvent} from 'types/new-types';
+import {useState} from 'react';
 
 import NotesRoundedIcon from '@mui/icons-material/NotesRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
@@ -23,6 +23,7 @@ export default function EventTable(props: {
   const viewLane = props.viewLane || false;
   const data = props.data;
   const [selectionModel, setSelectionModel] = useState([]); // Currently selected row
+
 
   // Column definition for EventTable
   const columns: GridColDef<EventTableData>[] = [

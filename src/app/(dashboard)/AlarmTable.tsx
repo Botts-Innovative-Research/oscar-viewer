@@ -1,122 +1,119 @@
 "use client";
 
 import EventTable from '../_components/EventTable';
-import { EventTableData, SelectedEvent } from 'types/new-types';
-import {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {EventTableData, LaneOccupancyData, SelectedEvent} from 'types/new-types';
+import {useEffect, useRef, useState} from "react";
 import {findInObject} from "@/app/utils/Utils";
-import {EventType} from "osh-js/source/core/event/EventType";
-import {Datastream} from "@/lib/data/osh/Datastreams";
-import {useSelector} from "react-redux";
-import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import {Protocols} from "@/lib/data/Constants";
 import {Mode} from "osh-js/source/core/datasource/Mode";
-import {selectDatastreams} from "@/lib/state/OSHSlice";
-import {selectConfigNodeId, selectCurrentUser, selectLanes} from "@/lib/state/OSCARClientSlice";
+import {EventType} from "osh-js/source/core/event/EventType";
 
+interface AlarmTableProps {
+  onRowSelect: (event:SelectedEvent)=> void;
+  laneOccupancyData?: LaneOccupancyData[];
+}
 
-export default function AlarmTable(props: {
-  onRowSelect: (event: SelectedEvent) => void;  // Return start/end time to parent
-}){
-
+export default function AlarmTable(props: AlarmTableProps)
+{
   const [occupancyTable, setOccupancyTable] = useState<EventTableData[]>([]);
   const [batchOccupancyTable, setBatchOccupancyTable] = useState<EventTableData[]>([]);
-
-
   const idVal = useRef(1);
 
-  const ds : Datastream[] = Array.from(useSelector((state: any) => state.oshSlice.dataStreams.values()));
-  const lanes: LaneMeta[] = (useSelector(selectLanes));
+  const [occupancyBatchDataSources, setBatchOccupancyDataSources] = useState(null);
+  const [occupancyDataSources, setOccupancyDataSources] = useState(null);
 
-  let endTime = new Date((new Date().getTime() - 1000000)).toISOString()
+  let server = `162.238.96.81:8781`;
+  // let endTime = new Date((new Date().getTime() - 1000000)).toISOString();
+  let endTime = "2024-08-23T08:13:25.845Z";
+  let startTime = "2020-01-01T08:13:25.845Z";
 
-  // const lanes: LaneMeta[] = useSelector((state: any) => state.oscarClientSlice.lanes);
-
-  const filterLanes = useMemo(()=>{
-    let occupancyLanes: { [key: string]: Datastream[] }= {};
-
-    lanes.forEach((lane, index) =>{
-
-      // let filteredStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId));
-
-      occupancyLanes[`lanes${index}`] = ds.filter((dss)=> lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Occupancy'));
-      // occupancyLanes[`lane${index}`] = filteredStreams.filter((type) => type.name.includes('Driver - Occupancy'));
-
-    });
-    return{occupancyLanes};
-  }, [lanes, ds]);
-
-
-  const getBatchOccupancy = useCallback(() =>{
-    let batchOccupancy: {[key:string]: any[]} ={};
-
-    Object.keys(filterLanes.occupancyLanes).forEach((key) => {
-      batchOccupancy[key] = filterLanes.occupancyLanes[key].map((stream) => {
-        let source = new SweApi(getName(stream.parentSystemId), {
-          startTime: "2020-01-01T08:13:25.845Z",
-          // endTime: "2024-08-22T17:44:33.994Z",
-
+  useEffect(() => {
+    if (props.laneOccupancyData && props.laneOccupancyData.length > 0) {
+      if (occupancyBatchDataSources === null) {
+        const newBatchSource = props.laneOccupancyData.map((data) => {
+          const batchSource = new SweApi(data.laneData.name, {
+          startTime: startTime,
           endTime: endTime,
           tls: false,
           protocol: Protocols.WS,
           mode: Mode.BATCH,
-          endpointUrl: `162.238.96.81:8781/sensorhub/api`, //update to access ip and port from server
-          resource: `/datastreams/${stream.id}/observations`,
+          endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
+          resource: `/datastreams/${data.occupancyStreams[0].id}/observations`,
           connectorOpts: {
             username: 'admin',
             password: 'admin',
           },
         });
-        const handleBatchOccupancy = (message: any[]) => handleOccupancyData(getName(stream.parentSystemId), message, "BATCH");
-        source.connect()
-        source.subscribe(handleBatchOccupancy, [EventType.DATA]);
-      });
-
-    });
-    return {batchOccupancy};
-  },[filterLanes]);
-
-  const createDataSource = useCallback(()=>{
-    let occupancyDataSource: {[key:string]: any[]} ={};
-
-    Object.keys(filterLanes.occupancyLanes).forEach((key) => {
-      occupancyDataSource[key] = filterLanes.occupancyLanes[key].map((stream) => {
-        let source = new SweApi(getName(stream.parentSystemId), {
-          protocol: Protocols.WS,
-          endpointUrl: `162.238.96.81:8781/sensorhub/api`, //update to access ip and port from server
-          resource: `/datastreams/${stream.id}/observations`,
-          mode: Mode.REAL_TIME,
-          tls: false,
-          connectorOpts: {
-            username: 'admin',
-            password: 'admin',
-          },
+          batchSource.connect();
+          return batchSource;
         });
-        const handleOccupancy = (message: any[]) => handleOccupancyData(getName(stream.parentSystemId), message, 'REAL_TIME');
-        source.connect()
-        source.subscribe(handleOccupancy, [EventType.DATA]);
-      });
+        setBatchOccupancyDataSources(newBatchSource);
+      }
 
-    });
+      if (occupancyDataSources === null) {
+        const newOccSource = props.laneOccupancyData.map((data) => {
+          const source = new SweApi(data.laneData.name, {
+            tls: false,
+            protocol: Protocols.WS,
+            mode: Mode.REAL_TIME,
+            endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
+            resource: `/datastreams/${data.occupancyStreams[0].id}/observations`,
+            connectorOpts: {
+              username: 'admin',
+              password: 'admin',
+            },
+          });
+          source.connect();
+          return source;
+        });
+        setOccupancyDataSources(newOccSource);
+      }
 
-    return {occupancyDataSource};
-  }, [filterLanes]);
-
+    }
+  }, [props.laneOccupancyData]);
 
   useEffect(() => {
-    getBatchOccupancy();
-    createDataSource();
+    if (occupancyBatchDataSources !== null){
+      const batchSubscriptions = occupancyBatchDataSources.map((datasource :any) =>{
+        datasource.subscribe((message: any) => handleOccupancyData(datasource.name, message, 'BATCH'), [EventType.DATA]);
+      });
+    }
+  }, [occupancyBatchDataSources]);
 
-  }, [getBatchOccupancy, createDataSource]);
+  // useEffect(() => {
+  //   if (props.laneOccupancyData && props.laneOccupancyData.length > 0) {
+  //     if (occupancyDataSources === null) {
+  //       const newOccSource = props.laneOccupancyData.map((data) => {
+  //         const source = new SweApi(data.laneData.name, {
+  //           tls: false,
+  //           protocol: Protocols.WS,
+  //           mode: Mode.REAL_TIME,
+  //           endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
+  //           resource: `/datastreams/${data.occupancyStreams[0].id}/observations`,
+  //           connectorOpts: {
+  //             username: 'admin',
+  //             password: 'admin',
+  //           },
+  //         });
+  //         source.connect();
+  //         return source;
+  //       });
+  //       setOccupancyDataSources(newOccSource);
+  //     }
+  //   }
+  // }, [props.laneOccupancyData]);
+
+  useEffect(() => {
+    if (occupancyDataSources !== null){
+      const occupancySubscriptions = occupancyDataSources.map((datasource: any) =>{
+        datasource.subscribe((message: any) => handleOccupancyData(datasource.name, message, 'REAL_TIME'), [EventType.DATA]);
+      });
+    }
+  }, [occupancyDataSources]);
 
 
-  function getName(parentId: string){
-    const lane = lanes.find(lane => lane.systemIds.includes(parentId));
-    return lane ? lane.name : 'unknown';
-  }
-
-
-  const handleOccupancyData = (laneName: string, message: any[], mode: any) => {
+  const handleOccupancyData = (laneName: string, message: any, mode: any) => {
 
     // @ts-ignore
     const msgVal: any[] = message.values ||[];
@@ -130,7 +127,6 @@ export default function AlarmTable(props: {
       let maxGamma = findInObject(value, 'maxGamma');
       let maxNeutron = findInObject(value, 'maxNeutron');
       let statusType = gammaAlarm && neutronAlarm ? 'Gamma & Neutron' : gammaAlarm ? 'Gamma' : neutronAlarm ? 'Neutron' : '';
-
 
       if(gammaAlarm || neutronAlarm){
         const newAlarmStatus: EventTableData = {
@@ -150,18 +146,12 @@ export default function AlarmTable(props: {
 
         //filter item from alarm table by adjudication code, and by the occupancy id
         let filterByAdjudicatedCode = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+
         if(mode === 'BATCH'){
-          setBatchOccupancyTable(prevState=>[newAlarmStatus, ...prevState.filter(item=>
-
-              //removes it if adjudicated || //prevents from stacking!
-              filterByAdjudicatedCode.includes(item.adjudicatedCode) || item.occupancyId !== occupancyCount
-          )]);
-        } else if( mode === 'REAL_TIME'){
-          setOccupancyTable(prevState=>[newAlarmStatus, ...prevState.filter(item=>
-
-              //removes it if adjudicated || //prevents from stacking!
-              filterByAdjudicatedCode.includes(item.adjudicatedCode) || item.occupancyId !== occupancyCount
-          )]);
+          setBatchOccupancyTable(prevState=>[newAlarmStatus, ...prevState.filter(item=> filterByAdjudicatedCode.includes(item.adjudicatedCode) || item.occupancyId !== occupancyCount)]);
+        }
+        else if( mode === 'REAL_TIME'){
+          setOccupancyTable(prevState=>[newAlarmStatus, ...prevState.filter(item=> filterByAdjudicatedCode.includes(item.adjudicatedCode) || item.occupancyId !== occupancyCount)]);
         }
       }
     });
@@ -174,7 +164,8 @@ export default function AlarmTable(props: {
   };
 
    return (
-    <EventTable onRowSelect={handleSelectedRow} data={occupancyTable.concat(batchOccupancyTable)} />
+    // <EventTable onRowSelect={handleSelectedRow} data={[...occupancyTable, ...batchOccupancyTable]}/>
+    <EventTable onRowSelect={handleSelectedRow} data={occupancyTable.concat(batchOccupancyTable)}/>
   );
 
 }

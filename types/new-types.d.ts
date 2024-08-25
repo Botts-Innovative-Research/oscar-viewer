@@ -1,3 +1,6 @@
+import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
+import {Datastream} from "@/lib/data/osh/Datastreams";
+
 /**
  * Interface for Event Table data
  */
@@ -22,4 +25,16 @@ export interface EventTableData {
 type SelectedEvent = {
   startTime: string;
   endTime: string;
+}
+
+export interface LaneOccupancyData {
+  laneData: LaneMeta,
+  occupancyStreams: Datastream[]
+}
+
+export interface LaneStatusData{
+  laneData: LaneMeta,
+  gammaDataStream: Datastream[],
+  neutronDataStream: Datastream[],
+  tamperDataStream: Datastream[]
 }
