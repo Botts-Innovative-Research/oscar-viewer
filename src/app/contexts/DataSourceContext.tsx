@@ -9,7 +9,7 @@ import {useSelector} from "react-redux";
 import {Datastream} from "@/lib/data/osh/Datastreams";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {INode, Node} from "@/lib/data/osh/Node";
-import {changeConfigNode, selectConfigNode, setDatastreams, setSystems} from "@/lib/state/OSHSlice";
+import {changeConfigNode, setDatastreams, setSystems} from "@/lib/state/OSHSlice";
 import {System} from "@/lib/data/osh/Systems";
 import {setLanes} from "@/lib/state/OSCARClientSlice";
 
@@ -25,20 +25,18 @@ const DataSourceContext = createContext<IDataSourceContext | undefined>(undefine
 export default function DataSourceProvider({children}: { children: ReactNode }) {
     const mainDataSynchronizer = useSelector((state: any) => state.oshSlice.mainDataSynchronizer);
     const isInitialized = useSelector((state: any) => state.oshSlice.isInitialized);
-    // const configNodeId = useSelector((state: any) => state.oscarClientSlice.configNodeId);
     const configNode: Node = useSelector((state: any) => state.oshSlice.configNode);
     const dispatch = useAppDispatch();
     const nodes = useSelector((state: any) => state.oshSlice.nodes);
     const systems = useSelector((state: any) => state.oshSlice.systems);
-    const [shouldFetchDatastreams, setShouldFetchDatastreams] = useState(false);
     const masterTimeSyncRef = useRef<typeof DataSynchronizer>()
     const dataSources = useSelector((state: any) => state.oshSlice.datasources);
 
     const InitializeApplication = useCallback(async () => {
-        if(!configNode){
+        if (!configNode) {
             // if no default node, then just grab the first node in the list and try to use that
-            if(nodes.length > 0) {
-                if(nodes[0].isDefaultNode) {
+            if (nodes.length > 0) {
+                if (nodes[0].isDefaultNode) {
                     dispatch(changeConfigNode(nodes[0]));
                     return; // force a rerender...
                 }
@@ -102,6 +100,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }, [nodes, dispatch]);
 
     const datastreamFetch = useCallback(async () => {
+        console.warn("Fetching datastreams of systems...", systems);
         await Promise.all(systems.map(async (system: System) => {
             return await system.fetchDataStreams();
         })).then((datastreams) => {
@@ -119,14 +118,11 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     useEffect(() => {
         InitializeApplication();
         laneFetch();
-        setShouldFetchDatastreams(true);
     }, [InitializeApplication]);
 
     useEffect(() => {
-        if (shouldFetchDatastreams) {
-            datastreamFetch();
-        }
-    }, [shouldFetchDatastreams]);
+        datastreamFetch();
+    }, [systems]);
 
     if (!masterTimeSyncRef.current) {
         masterTimeSyncRef.current = new DataSynchronizer({...mainDataSynchronizer});
