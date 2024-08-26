@@ -62,7 +62,6 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
   }, []);
 
   useEffect(() => {
-
     if(gammaDatasource !== null) {
       gammaDatasource.subscribe((message: any) => {
         console.log("Message from " + props.lane.name + " : " + message);
@@ -75,7 +74,9 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
         }
       }, [EventType.DATA]);
     }
+  }, [gammaDatasource]); 
 
+  useEffect(() => {
     if(neutronDatasource !== null) {
       neutronDatasource.subscribe((message: any) => {
           const alarmState = message.values[0].data.alarmState; 
@@ -87,13 +88,7 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
           }
       }, [EventType.DATA]);
     }
-
-  }, [gammaDatasource, neutronDatasource]); 
-
-  useEffect(() => {
-
-
-  }, [gammaDatasource, neutronDatasource]); 
+  }, [neutronDatasource]); 
 
     return (
         <Grid item xs={2} display={"flex"} direction={"column"} alignItems={"center"}
