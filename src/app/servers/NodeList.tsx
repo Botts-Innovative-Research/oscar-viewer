@@ -25,9 +25,13 @@ export default function NodeList({modeChangeCallback}: NodeListProps) {
         modeChangeCallback(true, editNode);
     }
 
-    const deleteNode = (nodeID: number) => {
+    const deleteNode = (nodeID: string) => {
         dispatch(removeNode(nodeID));
         modeChangeCallback(false, null);
+    }
+
+    const getBGColor = (isDefault: boolean) => {
+        return isDefault ? "gray" : "primary";
     }
 
     return (
@@ -38,7 +42,7 @@ export default function NodeList({modeChangeCallback}: NodeListProps) {
             ) : (
                 <List>
                     {nodes.map((node: INode) => (
-                        <Card key={node.id}>
+                        <Card key={node.id} sx={{backgroundColor: getBGColor(node.isDefaultNode)}}>
                             <ListItem sx={{m: 0}}>
                                 <ListItemText primary={node.name} secondary={node.address}/>
                                 <Button variant="contained" size={"small"} color="primary" sx={{m: 1}}

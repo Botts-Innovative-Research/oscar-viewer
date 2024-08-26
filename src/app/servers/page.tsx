@@ -8,7 +8,7 @@ import NodeList from "@/app/servers/NodeList";
 import {INode} from "@/lib/data/osh/Node";
 
 export default function Servers() {
-    const [isEditNode, setIsEditNode] = React.useState(true);
+    const [isEditNode, setIsEditNode] = React.useState(false);
     const [selectedNode, setSelectedNode] = React.useState(null);
 
     const handleModeChange = (editMode: boolean, editNode: INode) =>{

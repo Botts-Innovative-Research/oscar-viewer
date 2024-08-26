@@ -6,7 +6,6 @@ import {RootState} from "@/lib/state/Store";
 enableMapSet();
 
 export interface IOSCARClientState {
-    configNodeId: number,
     currentUser: string,
     quickActions: [],
     alertDetailIsOpen: boolean,
@@ -16,11 +15,11 @@ export interface IOSCARClientState {
         endTime: string,
     },
     // This should move to a separate slice
-    lanes: LaneMeta[]
+    lanes: LaneMeta[],
+    alertTimeoutSeconds: number
 }
 
 const initialState: IOSCARClientState = {
-    configNodeId: 1,
     currentUser: '',
     quickActions: [],
     alertDetailIsOpen: false,
@@ -29,7 +28,8 @@ const initialState: IOSCARClientState = {
         startTime: '',
         endTime: ''
     },
-    lanes: []
+    lanes: [],
+    alertTimeoutSeconds: 10
 }
 
 
@@ -37,9 +37,6 @@ export const Slice = createSlice({
     name: 'ClientStateSlice',
     initialState,
     reducers: {
-        setConfigNodeId: (state, action: PayloadAction<number>) => {
-            state.configNodeId = action.payload;
-        },
         setCurrentUser: (state, action: PayloadAction<string>) => {
             state.currentUser = action.payload;
         },
@@ -65,21 +62,23 @@ export const Slice = createSlice({
         },
         setAlertDetailsDCurrentLane: (state, action: PayloadAction<string>) => {
             state.alertDetails.currentLane = action.payload;
+        },
+        setAlertTimeoutSeconds: (state, action: PayloadAction<number>) => {
+            state.alertTimeoutSeconds = action.payload;
         }
     }
 })
 
 export const {
-    setConfigNodeId,
     setCurrentUser,
     setQuickActions,
     setAlertDetails,
     setLanes,
     toggleAlertDetails,
-    setAlertDetailsDCurrentLane
+    setAlertDetailsDCurrentLane,
+    setAlertTimeoutSeconds
 } = Slice.actions;
 
-export const selectConfigNodeId = (state: RootState) => state.oscarClientSlice.configNodeId;
 export const selectCurrentUser = (state: RootState) => state.oscarClientSlice.currentUser;
 export const selectLanes = (state: RootState) => state.oscarClientSlice.lanes;
 export const selectLaneByName = (laneName: string) => (state: RootState) => {

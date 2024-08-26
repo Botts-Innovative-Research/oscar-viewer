@@ -18,9 +18,9 @@ import {
 } from "@mui/material";
 import React, {useEffect, useState} from "react";
 import {RootState} from "@/lib/state/Store";
-import {addNode, selectNodes, updateNode} from "@/lib/state/OSHSlice";
+import {addNode, selectCurrentNodeId, selectNodes, updateNode} from "@/lib/state/OSHSlice";
 import {useSelector} from "react-redux";
-import {INode, Node} from "@/lib/data/osh/Node";
+import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
 import {useAppDispatch} from "@/lib/state/Hooks";
 
 export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
@@ -30,18 +30,19 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 }) {
     const dispatch = useAppDispatch();
     const justNodes: INode[] = useSelector((state: RootState) => selectNodes(state));
-    const [newNode, setNewNode] = useState<INode>(new Node(
-        0,
-        "New Node",
-        "http://localhost",
-        0,
-        "/sensorhub",
-        "/sos",
-        "/api",
-        "/configs",
-        {username: "", password: ""},
-        false
-    ));
+    const newNodeOpts: NodeOptions = {
+        name: "New Node",
+        address: "http://localhost",
+        port: 0,
+        oshPathRoot: "/sensorhub",
+        sosEndpoint: "/sos",
+        csAPIEndpoint: "/api",
+        csAPIConfigEndpoint: "/configs",
+        auth: {username: "", password: ""},
+        isSecure: false,
+        isDefaultNode: false
+    };
+    const [newNode, setNewNode] = useState<INode>(new Node(newNodeOpts));
 
     useEffect(() => {
         if (isEditNode && editNode) {
@@ -49,18 +50,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
             setNewNode(editNode);
         } else {
             console.log("Adding new node");
-            setNewNode(new Node(
-                justNodes.length + 1,
-                "New Node",
-                "http://localhost",
-                0,
-                "/sensorhub",
-                "/sos",
-                "/api",
-                "/configs",
-                {username: "", password: ""},
-                false
-            ));
+            setNewNode(new Node(newNodeOpts));
         }
     }, [isEditNode, editNode]);
 
@@ -91,7 +81,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         }
     }
 
-    if (!newNode){
+    if (!newNode) {
         return <Container><Typography variant="h4" align="center">Loading...</Typography></Container>
     }
 
@@ -102,7 +92,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                         sx={{margin: 2}}>{isEditNode ? "Edit Node" : "Add a New Server"}</Typography>
             <Box component="form" sx={{margin: 2}}>
                 <Stack spacing={4}>
-                    <TextField label="ID" name="id" value={newNode.id} onChange={handleChange} disabled={isEditNode}/>
+                    {isEditNode ? <Typography variant={"h6"}>Editing Node: {editNode.id}</Typography> : null}
                     <TextField label="Name" name="name" value={newNode.name} onChange={handleChange}/>
                     <TextField label="Address" name="address" value={newNode.address} onChange={handleChange}/>
                     <TextField label="Port" name="port" value={newNode.port} onChange={handleChange}/>

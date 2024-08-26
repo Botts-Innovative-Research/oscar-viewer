@@ -3,7 +3,7 @@
  * All Rights Reserved
  */
 
-import {createSlice, PayloadAction} from "@reduxjs/toolkit";
+import {createSelector, createSlice, PayloadAction} from "@reduxjs/toolkit";
 import {enableMapSet} from "immer";
 // @ts-ignore
 import {RootState} from "../Store";
@@ -17,15 +17,15 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {ITimeSynchronizerProps, TimeSynchronizerProps} from "@/lib/data/osh/TimeSynchronizers";
-import {Node} from "@/lib/data/osh/Node";
-import {System} from "../data/osh/Systems";
+import {Node, NodeOptions} from "@/lib/data/osh/Node";
 
 enableMapSet();
 
 export interface IOSHSlice {
     // nodes: Map<number,INode>,
     nodes: INode[],
-    currentNodeId: number,
+    // currentNodeId: string,
+    configNode: INode,
     systems: ISystem[],
     // dataStreams: IDatastream[],
     dataStreams: Map<string, IDatastream>,
@@ -34,11 +34,26 @@ export interface IOSHSlice {
     otherDataSynchronizers: ITimeSynchronizerProps[]
 }
 
+const initialNodeOpts: NodeOptions = {
+    name: "Windows Test Node",
+    address: "192.168.1.158",
+    port: 8781,
+    oshPathRoot: "/sensorhub",
+    sosEndpoint: "/sos",
+    csAPIEndpoint: "/api",
+    csAPIConfigEndpoint: "/configs",
+    auth: {username: "admin", password: "admin"},
+    isSecure: false,
+    isDefaultNode: true
+}
+
+const initialNode = new Node(initialNodeOpts);
+
 const initialState: IOSHSlice = {
     // nodes: new Map<number, INode>([[1,new Node(1, "Windows Test Node", "162.238.96.81", 8781)]]),
-    // nodes: [new Node(1, "Windows Test Node", "192.168.1.69", 8282)],
-    nodes: [new Node(1, "Windows Test Node", "162.238.96.81", 8781)],
-    currentNodeId: 2,
+    nodes: [new Node(initialNodeOpts)],
+    // currentNodeId: initialNode.id,
+    configNode: null,
     systems: [],
     dataStreams: new Map<string, IDatastream>(),
     mainDataSynchronizer: new TimeSynchronizerProps(new Date().toISOString(),
@@ -52,13 +67,7 @@ export const Slice = createSlice({
     initialState,
     reducers: {
         addNode: (state, action: PayloadAction<INode>) => {
-            // action.payload.id = state.currentNodeId;
-            // incrementCurrentNodeId();
-            // state.nodes.set(action.payload.id,action.payload);
             state.nodes.push(action.payload);
-        },
-        incrementCurrentNodeId: (state) => {
-            state.currentNodeId++;
         },
         addSystem: (state, action: PayloadAction<ISystem>) => {
             state.systems.push(action.payload);
@@ -87,17 +96,24 @@ export const Slice = createSlice({
             const nodeIndex = state.nodes.findIndex((node: INode) => node.id === action.payload.id);
             state.nodes[nodeIndex] = action.payload;
         },
-        removeNode: (state, action: PayloadAction<number>) => {
+        removeNode: (state, action: PayloadAction<string>) => {
+            const rmvNode = state.nodes.find((node: INode) => node.id === action.payload);
+            if(rmvNode.isDefaultNode) {
+                console.error("Cannot remove the default node");
+                return;
+            }
             const nodeIndex = state.nodes.findIndex((node: INode) => node.id === action.payload);
             state.nodes.splice(nodeIndex, 1);
+        },
+        changeConfigNode: (state, action: PayloadAction<INode>) => {
+            state.configNode = action.payload;
         }
-    }
+    },
 })
 
 
 export const {
     addNode,
-    incrementCurrentNodeId,
     addSystem,
     addDatastream,
     addDatasource,
@@ -106,7 +122,8 @@ export const {
     setSystems,
     setDatastreams,
     updateNode,
-    removeNode
+    removeNode,
+    changeConfigNode
 } = Slice.actions;
 
 export const selectNodes = (state: RootState) => state.oshSlice.nodes;
@@ -115,6 +132,7 @@ export const getNodeById = (state: RootState, id: number) => {
     const foundNode = state.oshSlice.nodes.find((node: any) => node.id === id);
     return foundNode;
 }
+export const selectConfigNode = (state: RootState) => state.oshSlice.configNode;
 export const selectSystems = (state: RootState) => state.oshSlice.systems;
 export const selectDatastreams = (state: RootState) => state.oshSlice.dataStreams;
 export const selectDatastreamsOfSystem = (systemId: string) => (state: RootState) => {
