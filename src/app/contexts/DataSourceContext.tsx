@@ -37,7 +37,7 @@ const DataSourceContext = createContext<IDataSourceContext | undefined>(undefine
 
 
 export default function DataSourceProvider({children}: { children: ReactNode }) {
-    const dataStreams: Datastream[] = useSelector((state: any) => state.oshSlice.dataStreams);
+    const dataStreams: Datastream[] = Array.from(useSelector((state: RootState) => state.oshSlice.dataStreams.values()));
     const mainDataSynchronizer = useSelector((state: any) => state.oshSlice.mainDataSynchronizer);
     const isInitialized = useSelector((state: any) => state.oshSlice.isInitialized);
     const configNodeId = useSelector((state: any) => state.oscarClientSlice.configNodeId);
@@ -123,7 +123,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }, [systems, dispatch]);
 
     const connectLanes = useCallback(() => {
-        if(lanes.length > 0) {
+        if(lanes.length > 0 && dataStreams.length > 0) {
             let liveLanes: Map<string, LiveLane> = new Map<string, LiveLane>();
             
             lanes.forEach((lane) => {
@@ -158,12 +158,13 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
                 const liveLaneData: LiveLane = new LiveLane(lane);
                 liveLaneData.connectGammaScan(gammaSource);
                 liveLaneData.connectNeutronScan(neutronSource);
+                console.info("Live lane: ", JSON.stringify(liveLaneData));
                 liveLanes.set(liveLaneData.lane.id, liveLaneData);
             });
 
             dispatch(setLiveLaneData(liveLanes));
         }
-    }, [lanes]);
+    }, [lanes, dispatch, dataStreams]);
 
     useEffect(() => {
         InitializeApplication();

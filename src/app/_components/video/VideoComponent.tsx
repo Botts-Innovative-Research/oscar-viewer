@@ -18,7 +18,7 @@ export default function VideoComponent(props: OSHVideoProps) {
     const [videoView, setVideoView] = useState(null);
     const [videoDataSource, setVideoDataSource] = useState(null);
 
-    console.error("Rendering video with videostream : " + props.videoDatastreams[0].name);
+    // console.error("Rendering video with videostream : " + props.videoDatastreams[0].name);
 
     useEffect(() => {
         // Generate SweApi object, layer, and video view and show it below
