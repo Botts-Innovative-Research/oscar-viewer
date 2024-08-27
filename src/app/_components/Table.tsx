@@ -1,0 +1,207 @@
+"use client";
+
+import {EventTableData, LaneOccupancyData, LaneStatusData, SelectedEvent} from "../../../types/new-types";
+import {useEffect, useRef, useState} from "react";
+import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import {Protocols} from "@/lib/data/Constants";
+import {Mode} from "osh-js/source/core/datasource/Mode";
+import {EventType} from "osh-js/source/core/event/EventType";
+import {findInObject} from "@/app/utils/Utils";
+import EventLogPage from "@/app/event-log/page";
+import {Datastream} from "@/lib/data/osh/Datastreams";
+import {useSelector} from "react-redux";
+import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
+import {selectLanes} from "@/lib/state/OSCARClientSlice";
+import EventTable from "./EventTable";
+
+interface TableProps{
+    onRowSelect: (event:SelectedEvent)=> void;
+    isEventLog?: boolean;
+    isAlarmTable?: boolean;
+    laneStatusData?: LaneStatusData[]
+}
+
+export default function Table (props:TableProps){
+
+    const [occupancyTable, setOccupancyTable] = useState<EventTableData[]>([]);
+    const [batchOccupancyTable, setBatchOccupancyTable] = useState<EventTableData[]>([]);
+    const idVal = useRef(1);
+
+    const [occupancyBatchDataSources, setBatchOccupancyDataSources] = useState(null);
+    const [occupancyDataSources, setOccupancyDataSources] = useState(null);
+
+    let server = `162.238.96.81:8781`;
+    let endTime = new Date((new Date().getTime() - 1000000)).toISOString();
+    // let endTime = "2024-08-23T08:13:25.845Z";
+    let startTime = "2020-01-01T08:13:25.845Z";
+    //filter item from alarm table by adjudication code
+    let filterByAdjudicatedCode = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+
+    const ds : Datastream[] = Array.from(useSelector((state: any) => state.oshSlice.dataStreams.values()));
+    const lanes: LaneMeta[] = useSelector(selectLanes);
+
+    const [laneStatus, setLaneStatus] = useState<LaneStatusData[]| null>(null);
+    const [laneOccupancy, setLaneOccupancy] = useState<LaneOccupancyData[]>(null);
+
+    useEffect(() => {
+        if (laneStatus === null && ds.length > 0) {
+            let statuses: LaneStatusData[] = [];
+            let laneOcc: LaneOccupancyData[] = [];
+
+            lanes.map((lane) => {
+                // let filteredStreams = ds.filter((stream) => lane.systemIds.includes(stream.parentSystemId));
+                const gammaStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Gamma Count'));
+                const neutronStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Neutron Count'));
+                const tamperStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Tamper'));
+                const occStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Occupancy'));
+
+                const occ: LaneOccupancyData = {
+                    laneData: lane,
+                    occupancyStreams: occStreams
+                };
+
+                const stat: LaneStatusData = {
+                    laneData: lane,
+                    gammaDataStream: gammaStreams,
+                    neutronDataStream: neutronStreams,
+                    tamperDataStream: tamperStreams
+                };
+                statuses.push(stat);
+                laneOcc.push(occ);
+            });
+            setLaneStatus(statuses);
+            setLaneOccupancy(laneOcc);
+        }
+    }, [ds, lanes]);
+
+
+    useEffect(() => {
+        if (laneOccupancy && laneOccupancy.length > 0) {
+            if (occupancyBatchDataSources === null) {
+                const newBatchSource = laneOccupancy.map((data) => {
+                    const batchSource = new SweApi(data.laneData.name, {
+                        startTime: startTime,
+                        endTime: endTime,
+                        tls: false,
+                        protocol: Protocols.WS,
+                        mode: Mode.BATCH,
+                        endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
+                        resource: `/datastreams/${data.occupancyStreams[0].id}/observations`,
+                        connectorOpts: {
+                            username: 'admin',
+                            password: 'admin',
+                        },
+                    });
+                    batchSource.connect();
+                    return batchSource;
+                });
+                setBatchOccupancyDataSources(newBatchSource);
+            }
+
+            if (occupancyDataSources === null) {
+                const newOccSource = laneOccupancy.map((data) => {
+                    const source = new SweApi(data.laneData.name, {
+                        tls: false,
+                        protocol: Protocols.WS,
+                        mode: Mode.REAL_TIME,
+                        endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
+                        resource: `/datastreams/${data.occupancyStreams[0].id}/observations`,
+                        connectorOpts: {
+                            username: 'admin',
+                            password: 'admin',
+                        },
+                    });
+                    source.connect();
+                    return source;
+                });
+                setOccupancyDataSources(newOccSource);
+            }
+
+        }
+    }, [laneOccupancy]);
+
+    console.log('lane occ data', occupancyDataSources)
+    useEffect(() => {
+        if (occupancyBatchDataSources !== null){
+            const batchSubscriptions = occupancyBatchDataSources.map((datasource :any) =>{
+                datasource.subscribe((message: any) => handleOccupancyData(datasource.name, message, 'BATCH'), [EventType.DATA]);
+            });
+        }
+    }, [occupancyBatchDataSources]);
+
+    useEffect(() => {
+        if (occupancyDataSources !== null){
+            const occupancySubscriptions = occupancyDataSources.map((datasource: any) =>{
+                datasource.subscribe((message: any) => handleOccupancyData(datasource.name, message, 'REAL_TIME'), [EventType.DATA]);
+            });
+        }
+    }, [occupancyDataSources]);
+
+
+    const handleOccupancyData = (laneName: string, message: any, mode: any) => {
+        console.log('message', JSON.stringify(message));
+
+        // @ts-ignore
+        const msgVal: any[] = message.values ||[];
+
+        msgVal.forEach((value) => {
+            let occupancyCount = findInObject(value, 'occupancyCount'); //number
+            let occupancyStart = findInObject(value, 'startTime'); //string
+            let occupancyEnd = findInObject(value, 'endTime'); //string
+            let gammaAlarm = findInObject(value, 'gammaAlarm'); //boolean
+            let neutronAlarm = findInObject(value, 'neutronAlarm'); //boolean
+            let maxGamma = findInObject(value, 'maxGamma');
+            let maxNeutron = findInObject(value, 'maxNeutron');
+            // let adjCode = findInObject(value, 'adjudicationCode');
+            let statusType = gammaAlarm && neutronAlarm ? 'Gamma & Neutron' : gammaAlarm ? 'Gamma' : neutronAlarm ? 'Neutron' : '';
+
+            if(gammaAlarm || neutronAlarm){
+                const newAlarmStatus: EventTableData = {
+                    id: idVal.current++,
+                    secondaryInspection: false,
+                    laneId: laneName,
+                    occupancyId: occupancyCount,
+                    startTime: occupancyStart,
+                    endTime: occupancyEnd,
+                    maxGamma: maxGamma,
+                    maxNeutron: maxNeutron,
+                    status: statusType,
+                    adjudicatedUser: 'kalyn', // Update useSelector(selectCurrentUser)
+                    adjudicatedCode: 0 // Update,
+                };
+
+                if(mode === 'BATCH'){
+                    console.log('batch')
+                    setBatchOccupancyTable(prevState=>[newAlarmStatus, ...prevState.filter(item=>
+                       item.occupancyId !== occupancyCount)]);
+                }
+                else if( mode === 'REAL_TIME'){
+                    setOccupancyTable(prevState=>[newAlarmStatus, ...prevState.filter(item=>
+                         item.occupancyId !== occupancyCount)]);
+                }
+            }
+        });
+
+    }
+
+
+    const handleSelectedRow = (event: SelectedEvent) => {
+        // console.log(event); // Log the selected row data
+        props.onRowSelect(event); // Pass to parent component
+    };
+
+
+    return(
+        <div>
+            {props.isAlarmTable && (<EventTable
+                data={(occupancyTable.concat(batchOccupancyTable)).filter(item => !filterByAdjudicatedCode.includes(item.adjudicatedCode))}
+                onRowSelect={handleSelectedRow}
+            />
+            )}
+            {props.isEventLog && (<EventTable
+                data={occupancyTable.concat(batchOccupancyTable)}
+            />)}
+
+        </div>
+    )
+}

@@ -3,8 +3,8 @@
 import { Box } from '@mui/material';
 import { DataGrid, GridActionsCellItem, GridCellParams, GridColDef, gridClasses } from '@mui/x-data-grid';
 import CustomToolbar from './CustomToolbar';
-import {EventTableData, SelectedEvent} from 'types/new-types';
-import {useState} from 'react';
+import { EventTableData, SelectedEvent } from 'types/new-types';
+import { useState } from 'react';
 
 import NotesRoundedIcon from '@mui/icons-material/NotesRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
@@ -54,18 +54,18 @@ export default function EventTable(props: {
     },
     {
       field: 'maxGamma',
-      headerName: 'Max Gamma',
+      headerName: 'Max Gamma (cps)',
       valueFormatter: (value) => {
         // Append units to number value, or return 'N/A'
-        return typeof value === 'number' ? `${value} cps` : 'N/A';
+        return typeof value === 'number' ? value : 'N/A';
       },
     },
     {
       field: 'maxNeutron',
-      headerName: 'Max Neutron',
+      headerName: 'Max Neutron (cps)',
       valueFormatter: (value) => {
         // Append units to number value, or return 'N/A'
-        return typeof value === 'number' ? `${value} cps` : 'N/A';
+        return typeof value === 'number' ? value : 'N/A';
       },
     },
     {

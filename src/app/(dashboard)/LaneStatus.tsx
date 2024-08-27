@@ -97,7 +97,6 @@ export default function LaneStatus(props: LaneStatusProps) {
     }
   }, [props.laneStatusData]);
 
-  // console.log('gamma', gammaDatasource);
   useEffect(() => {
     if (gammaDatasource !== null) {
       const gammaSubscriptions = gammaDatasource.map((gamma: any) =>{
@@ -115,7 +114,6 @@ export default function LaneStatus(props: LaneStatusProps) {
     }
   }, [tamperDatasource]);
 
-  //subscribe
   useEffect(() => {
     if (neutronDatasource !== null) {
       const neutronSubscriptions = neutronDatasource.map((neutron: any) => {
@@ -160,7 +158,6 @@ export default function LaneStatus(props: LaneStatusProps) {
 
     msgVal.forEach((value) => {
       const tamperState = findInObject(value, valueKey);
-      // console.log(tamperState)
       if(tamperState) {
         const newStatus: LaneStatusItem ={
           // id: statusBars.length === 0 ? 1 : statusBars[statusBars.length -1].id + 1,
@@ -191,7 +188,8 @@ export default function LaneStatus(props: LaneStatusProps) {
                 pathname: '/lane-view',
                 query: {
                   //todo update id for page
-                  id: 'id'
+                  id: 'id',
+                  //pass the lane name?
                 }
               }}
                     passHref
