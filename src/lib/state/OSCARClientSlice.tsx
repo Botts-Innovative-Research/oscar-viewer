@@ -1,6 +1,6 @@
 import {createSlice, PayloadAction} from "@reduxjs/toolkit";
 import {enableMapSet} from "immer";
-import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
+import {LaneMeta, LiveLane} from "@/lib/data/oscar/LaneCollection";
 import {RootState} from "@/lib/state/Store";
 
 enableMapSet();
@@ -16,7 +16,8 @@ export interface IOSCARClientState {
         endTime: string,
     },
     // This should move to a separate slice
-    lanes: LaneMeta[]
+    lanes: LaneMeta[],
+    liveLaneData: Map<string, LiveLane>
 }
 
 const initialState: IOSCARClientState = {
@@ -29,7 +30,8 @@ const initialState: IOSCARClientState = {
         startTime: '',
         endTime: ''
     },
-    lanes: []
+    lanes: [],
+    liveLaneData: new Map(),
 }
 
 
@@ -59,6 +61,9 @@ export const Slice = createSlice({
         },
         setADCurrentLane: (state, action: PayloadAction<string>) => {
             state.alertDetails.currentLane = action.payload;
+        },
+        setLiveLaneData: (state, action: PayloadAction<Map<string, LiveLane> >) => {
+            state.liveLaneData = action.payload;
         }
     }
 })
@@ -69,7 +74,8 @@ export const {
     setAlertDetails,
     setLanes,
     toggleAlertDetails,
-    setADCurrentLane
+    setADCurrentLane,
+    setLiveLaneData
 } = Slice.actions;
 
 export const selectConfigNodeId = (state: RootState) => state.oscarClientSlice.configNodeId;
@@ -79,5 +85,6 @@ export const selectLaneByName = (laneName: string) => (state: RootState) => {
     console.info("Lane Name should be: ", laneName, state.oscarClientSlice.lanes);
     return state.oscarClientSlice.lanes.find((lane: { name: string }) => lane.name === laneName);
 }
+export const selectLiveLaneData = (state: RootState) => state.oscarClientSlice.liveLaneData;
 
 export default Slice.reducer;

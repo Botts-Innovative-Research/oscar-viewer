@@ -19,10 +19,13 @@ import {Datastream, IDatastream} from "@/lib/data/osh/Datastreams";
 import {useAppDispatch, useAppStore} from "@/lib/state/Hooks";
 import {INode, Node} from "@/lib/data/osh/Node";
 import {addDatastream, getNodeById, setDatastreams, setSystems} from "@/lib/state/OSHSlice";
-import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
+import {LaneMeta, LiveLane} from "@/lib/data/oscar/LaneCollection";
 import {System} from "@/lib/data/osh/Systems";
-import {selectLanes, setLanes} from "@/lib/state/OSCARClientSlice";
+import {selectLanes, setLanes, setLiveLaneData} from "@/lib/state/OSCARClientSlice";
 import {selectDatastreamsOfLaneByName} from "@/lib/state/CustomSelectors";
+import { RootState } from "@/lib/state/Store";
+import { Protocols } from "@/lib/data/Constants";
+import {Mode} from 'osh-js/source/core/datasource/Mode';
 
 interface IDataSourceContext {
     dataSources: Map<string, typeof SweApi>
@@ -119,6 +122,49 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         });
     }, [systems, dispatch]);
 
+    const connectLanes = useCallback(() => {
+        if(lanes.length > 0) {
+            let liveLanes: Map<string, LiveLane> = new Map<string, LiveLane>();
+            
+            lanes.forEach((lane) => {
+                const gammaDataStream = dataStreams.filter((ds) => (lane.systemIds.includes(ds.parentSystemId) && ds.name.includes("Gamma") && ds.name.includes("Count")))[0];
+                const neutronDataStream = dataStreams.filter((ds)=>(lane.systemIds.includes(ds.parentSystemId) && ds.name.includes("Neutron") && ds.name.includes("Count")))[0];
+                
+                // testing with custom sweapi objs
+                const gammaSource = new SweApi(gammaDataStream.id, {
+                    protocol: Protocols.WS,
+                    endpointUrl: `162.238.96.81:8781/sensorhub/api`,
+                    resource: `/datastreams/${gammaDataStream.id}/observations`,
+                    mode: Mode.REAL_TIME,
+                    tls: false,
+                    connectorOpts: {
+                        username: 'admin',
+                        password: 'admin',
+                    }
+                });
+
+                const neutronSource = new SweApi(neutronDataStream.id, {
+                    protocol: Protocols.WS,
+                    endpointUrl: `162.238.96.81:8781/sensorhub/api`,
+                    resource: `/datastreams/${neutronDataStream.id}/observations`,
+                    mode: Mode.REAL_TIME,
+                    tls: false,
+                    connectorOpts: {
+                        username: 'admin',
+                        password: 'admin',
+                    }
+                });
+
+                const liveLaneData: LiveLane = new LiveLane(lane);
+                liveLaneData.connectGammaScan(gammaSource);
+                liveLaneData.connectNeutronScan(neutronSource);
+                liveLanes.set(liveLaneData.lane.id, liveLaneData);
+            });
+
+            dispatch(setLiveLaneData(liveLanes));
+        }
+    }, [lanes]);
+
     useEffect(() => {
         InitializeApplication();
         laneFetch();
@@ -128,6 +174,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     useEffect(() => {
         if (shouldFetchDatastreams) {
             datastreamFetch();
+            connectLanes();
             setShouldTestLaneByName(true);
         }
     }, [shouldFetchDatastreams, datastreamFetch]);
@@ -137,6 +184,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             console.log("Datastreams of North Lane 1:", nl1Datastreams);
         }
     }, [shouldTestLaneByName, nl1Datastreams]);
+
 
     // useMemo(() => {
     //     async function intializeItAll() {

@@ -64,7 +64,7 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
   useEffect(() => {
     if(gammaDatasource !== null) {
       gammaDatasource.subscribe((message: any) => {
-        console.log("Message from " + props.lane.name + " : " + message);
+        console.log("Gamma message: " + JSON.stringify(message));
         const alarmState = message.values[0].data.alarmState;
         if(alarmState !== "Background" && alarmState !== "Scan") {
           console.log(alarmState + " from " + props.lane.name);
@@ -79,6 +79,7 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
   useEffect(() => {
     if(neutronDatasource !== null) {
       neutronDatasource.subscribe((message: any) => {
+        console.log("Neutron message: " + JSON.stringify(message));
           const alarmState = message.values[0].data.alarmState; 
           if(alarmState !== "Background" && alarmState !== "Scan") {
             console.log(alarmState + " from " + props.lane.name);
