@@ -9,12 +9,18 @@ import {useSelector} from "react-redux";
 import {Datastream} from "@/lib/data/osh/Datastreams";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {INode, Node} from "@/lib/data/osh/Node";
-import {changeConfigNode, setDatastreams, setSystems} from "@/lib/state/OSHSlice";
+import {
+    changeConfigNode,
+    selectDataSourceByOutputType, selectDatastreamByOutputType,
+    setDatasources,
+    setDatastreams,
+    setSystems
+} from "@/lib/state/OSHSlice";
 import {System} from "@/lib/data/osh/Systems";
 import {setLanes} from "@/lib/state/OSCARClientSlice";
+import {RootState} from "@/lib/state/Store";
 
 interface IDataSourceContext {
-    dataSources: Map<string, typeof SweApi>
     masterTimeSyncRef: MutableRefObject<typeof DataSynchronizer | undefined>
 }
 
@@ -23,14 +29,17 @@ const DataSourceContext = createContext<IDataSourceContext | undefined>(undefine
 
 
 export default function DataSourceProvider({children}: { children: ReactNode }) {
-    const mainDataSynchronizer = useSelector((state: any) => state.oshSlice.mainDataSynchronizer);
-    const isInitialized = useSelector((state: any) => state.oshSlice.isInitialized);
-    const configNode: Node = useSelector((state: any) => state.oshSlice.configNode);
+    const mainDataSynchronizer = useSelector((state: RootState) => state.oshSlice.mainDataSynchronizer);
+    // const isInitialized = useSelector((state: RootState) => state.oshSlice.isInitialized);
+    const configNode: Node = useSelector((state: RootState) => state.oshSlice.configNode);
     const dispatch = useAppDispatch();
-    const nodes = useSelector((state: any) => state.oshSlice.nodes);
-    const systems = useSelector((state: any) => state.oshSlice.systems);
-    const masterTimeSyncRef = useRef<typeof DataSynchronizer>()
-    const dataSources = useSelector((state: any) => state.oshSlice.datasources);
+    const nodes = useSelector((state: RootState) => state.oshSlice.nodes);
+    const systems = useSelector((state: RootState) => state.oshSlice.systems);
+    const masterTimeSyncRef = useRef<typeof DataSynchronizer>();
+    const datastreams = useSelector((state: RootState) => state.oshSlice.dataStreams);
+    const dataSources = useSelector((state: RootState) => state.oshSlice.datasources);
+    const selectGammaCountDS = selectDatastreamByOutputType(['Driver - Gamma Count']);
+    const gammaCountDS = useSelector((state: RootState) => selectGammaCountDS(state));
 
     const InitializeApplication = useCallback(async () => {
         if (!configNode) {
@@ -115,6 +124,21 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         });
     }, [systems, dispatch]);
 
+    const createAllDataSources = useCallback(() => {
+        let dsArr = [];
+        const datastreamArr: Datastream[] = Array.from(datastreams.values());
+        console.warn("Creating all data sources...", datastreamArr);
+        for (let datastream of datastreamArr) {
+            let datasource = datastream.generateSweApiObj({
+                start: datastream.phenomenonTime.beginPosition,
+                end: 'latest'
+            });
+            dsArr.push(datasource);
+            console.log("DS Array:", dsArr);
+        }
+        dispatch(setDatasources(dsArr));
+    }, [datastreams, dispatch]);
+
     useEffect(() => {
         InitializeApplication();
         laneFetch();
@@ -124,13 +148,25 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         datastreamFetch();
     }, [systems]);
 
+    useEffect(() => {
+        if (datastreams.size > 0) {
+            createAllDataSources();
+        }
+    }, [datastreams]);
+
+    useEffect(() => {
+        console.log("DataStreams:", datastreams);
+        console.log("Data sources:", dataSources);
+        console.log("Gamma Count DS:", gammaCountDS);
+    }, [dataSources]);
+
     if (!masterTimeSyncRef.current) {
         masterTimeSyncRef.current = new DataSynchronizer({...mainDataSynchronizer});
     }
 
 
     return (
-        <DataSourceContext.Provider value={{dataSources, masterTimeSyncRef}}>
+        <DataSourceContext.Provider value={{masterTimeSyncRef}}>
             {children}
         </DataSourceContext.Provider>
     );

@@ -87,10 +87,3 @@ export class Datastream implements IDatastream {
         return resultJson.resultSchema.label === propName;
     }
 }
-
-
-export class DatastreamSet<IDatastream> extends Set<IDatastream>{
-    // add(datastream: IDatastream): IDatastream {
-    //     if()
-    // }
-}

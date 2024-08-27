@@ -92,13 +92,16 @@ export const Slice = createSlice({
         setDatastreams: (state, action: PayloadAction<Map<string, IDatastream>>) => {
             state.dataStreams = action.payload;
         },
+        setDatasources: (state, action: PayloadAction<SweApi[]>) => {
+            state.datasources = action.payload;
+        },
         updateNode: (state, action: PayloadAction<INode>) => {
             const nodeIndex = state.nodes.findIndex((node: INode) => node.id === action.payload.id);
             state.nodes[nodeIndex] = action.payload;
         },
         removeNode: (state, action: PayloadAction<string>) => {
             const rmvNode = state.nodes.find((node: INode) => node.id === action.payload);
-            if(rmvNode.isDefaultNode) {
+            if (rmvNode.isDefaultNode) {
                 console.error("Cannot remove the default node");
                 return;
             }
@@ -121,6 +124,7 @@ export const {
     setMainDataSynchronizer,
     setSystems,
     setDatastreams,
+    setDatasources,
     updateNode,
     removeNode,
     changeConfigNode
@@ -135,6 +139,9 @@ export const getNodeById = (state: RootState, id: number) => {
 export const selectConfigNode = (state: RootState) => state.oshSlice.configNode;
 export const selectSystems = (state: RootState) => state.oshSlice.systems;
 export const selectDatastreams = (state: RootState) => state.oshSlice.dataStreams;
+export const selectDatastreamById = (datastreamId: string) => (state: RootState) => {
+    return state.oshSlice.dataStreams.get(datastreamId);
+}
 export const selectDatastreamsOfSystem = (systemId: string) => (state: RootState) => {
     const datastreamsOfSystem = [];
     for (let [id, ds] of state.oshSlice.dataStreams.entries()) {
@@ -147,5 +154,31 @@ export const selectDatastreamsOfSystem = (systemId: string) => (state: RootState
 export const selectDatasources = (state: RootState) => state.oshSlice.datasources;
 export const selectMainDataSynchronizer = (state: RootState) => state.oshSlice.mainDataSynchronizer;
 export const selectDatasynchronizers = (state: RootState) => state.oshSlice.otherDataSynchronizers;
+/**
+ * Selects datastreams by filter types (ex: ['Driver - Gamma Count'] or ['Driver - Neutron Count', 'Driver - Tamper'])
+ * @param filter
+ * @returns a map of <filterEntry,IDatastream>
+ */
+export const selectDatastreamByOutputType = (filter: string[]) => createSelector(
+    [selectDatastreams],
+    (datastreams) => {
+        let dsArray = Array.from(datastreams.values());
+        let filterMap = new Map<string, IDatastream>();
+        filter.forEach((f: string) => {
+            const filteredData = dsArray.filter((ds: IDatastream) => ds.name.includes(f));
+            filterMap.set(f, filteredData);
+        });
+        return filterMap;
+    });
+export const selectDataSourceByDatastreamId = (datastreamId: string) => createSelector(
+    [selectDatastreamById(datastreamId), selectDatasources],
+    (datastream, datasources) => {
+        return datasources.find((ds: SweApi) => ds.id === datastream.datasourceId);
+    });
+export const selectDataSourceByOutputType = (outputType: string) => createSelector(
+    [selectDatasources],
+    (datasources) => {
+        return datasources.find((ds: SweApi) => ds.outputType === outputType);
+    });
 
 export default Slice.reducer;
