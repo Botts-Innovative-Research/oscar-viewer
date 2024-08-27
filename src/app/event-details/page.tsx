@@ -9,12 +9,15 @@ import Media from "./Media";
 import MiscTable from "./MiscTable";
 import Comment from "./Comment";
 import AddComment from "./AddComment";
+import {useSelector} from "react-redux";
+import {RootState} from "@/lib/state/Store";
+import {selectAlertDetails} from "@/lib/state/OSCARClientSlice";
 
 /**
  * Expects the following search params:
  * startTime: string;
  * endTime: string;
- * 
+ *
  * Need to implement an error page to handle invalid/no search params
  */
 
@@ -24,6 +27,7 @@ const testData = {
 
 export default function EventDetailsPage() {
   const [selectedEvent, setSelectedEvent] = useState<SelectedEvent>({startTime: "XX:XX:XX AM", endTime: "XX:XX:XX AM"});  // Reference types/new-types.d.ts to change type
+  const alertDetails = useSelector((state: RootState) => selectAlertDetails(state));
 
   return (
     <Stack spacing={2} direction={"column"}>

@@ -11,38 +11,53 @@ import {ITimePeriod} from "@/app/data/Models";
 
 export interface IDatastream {
     id: string,
-    uid: string,
+    // uid: string,
     name: string,
     parentSystemId: string | null,
     endpointUrl: string,
     phenomenonTime: ITimePeriod,
     tls: boolean,
     playbackMode: string
+
+    equals(other: Datastream): boolean;
+    checkIfInObsProperties(propName: string): Promise<boolean>;
 }
 
 export class Datastream implements IDatastream {
     id: string;
-    uid: string;
+    // uid: string;
     name: string;
-    parentSystemId: string | null;
+    parentSystemId: string;
     endpointUrl: string;
-    phenomenonTime: ITimePeriod;
+    phenomenonTime: ITimePeriod | null;
     tls: boolean = false;
     playbackMode: string;
 
-    constructor(id: string, uid: string, name: string, parentSystemId: string | null, endpointUrl: string, phenomenonTime: ITimePeriod, tls: boolean = false, playbackMode: string = 'real_time') {
+    constructor(id: string, name: string, parentSystemId: string, phenomenonTime: ITimePeriod | null, tls: boolean = false, playbackMode: string = 'real_time') {
         this.id = id;
-        this.uid = uid;
         this.name = name;
         this.parentSystemId = parentSystemId;
-        this.endpointUrl = endpointUrl;
         this.phenomenonTime = phenomenonTime;
         this.tls = tls;
         this.playbackMode = playbackMode;
     }
 
-    generateSweApiObj(): SweApi {
-        let sweApi = new SweApi(`${this.id}-datastream`,{
+    equals(other: Datastream): boolean {
+        return this.id === other.id;
+    }
+
+    generateSweApiObj(timeRange: { start: string, end: string } | null | undefined): SweApi {
+
+        if (timeRange) {
+            this.phenomenonTime.beginPosition = timeRange.start;
+            this.phenomenonTime.endPosition = timeRange.end;
+        }
+
+        if (this.phenomenonTime.beginPosition === null || this.phenomenonTime.endPosition === null) {
+            throw new Error('Phenomenon Time is not set, cannont create SWE API object');
+        }
+
+        let sweApi = new SweApi(`${this.id}-datastream`, {
             protocol: this.getProtocol(),
             endpointUrl: this.endpointUrl,
             resource: `datastreams/${this.id}/observations`,
@@ -60,4 +75,22 @@ export class Datastream implements IDatastream {
     getProtocol(): string {
         return this.tls ? 'wss' : 'ws';
     }
+
+    async checkIfInObsProperties(propName: string): Promise<boolean> {
+        let resp = await fetch(this.endpointUrl + `/datastreams/${this.id}/schema?f=application/json&obsFormat=application/om+json`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/om+json'
+            }
+        });
+        const resultJson = await resp.json();
+        return resultJson.resultSchema.label === propName;
+    }
+}
+
+
+export class DatastreamSet<IDatastream> extends Set<IDatastream>{
+    // add(datastream: IDatastream): IDatastream {
+    //     if()
+    // }
 }

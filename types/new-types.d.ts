@@ -1,8 +1,11 @@
+import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
+import {Datastream} from "@/lib/data/osh/Datastreams";
+
 /**
  * Interface for Event Table data
  */
 export interface EventTableData {
-  id: string | number; // Unique ID for event
+  id: number; // Unique ID for event
   secondaryInspection?: boolean;  // Whether or not there has been a secondary inspection performed
   laneId: string; // Lane ID
   occupancyId: string;  // Occupancy ID
@@ -24,11 +27,19 @@ type SelectedEvent = {
   endTime: string;
 }
 
-/**
- * Interface for Lane Status Item
- */
 export type LaneStatusType = {
   id: number;
   name: string;
   status: string;
+
+export interface LaneOccupancyData {
+  laneData: LaneMeta,
+  occupancyStreams: Datastream[]
+}
+
+export interface LaneStatusData{
+  laneData: LaneMeta,
+  gammaDataStream: Datastream[],
+  neutronDataStream: Datastream[],
+  tamperDataStream: Datastream[]
 }
