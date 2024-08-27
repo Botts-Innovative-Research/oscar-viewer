@@ -63,6 +63,19 @@ export const getTheme = (mode: PaletteMode): ThemeOptions => ({
           }),
         }),
       },
-    }
+    },
+    MuiInputBase: {
+      styleOverrides: {
+        root: ({ ownerState }) => ({
+          ...(ownerState.type === "file" && {
+            color: "transparent",
+            position: "absolute",
+            "& ::file-selector-button": {
+              display: 'none',
+            },
+          }),
+        }),
+      },
+    },
   },
 });
