@@ -17,8 +17,9 @@ import {
     setSystems
 } from "@/lib/state/OSHSlice";
 import {System} from "@/lib/data/osh/Systems";
-import {setLanes} from "@/lib/state/OSCARClientSlice";
+import {selectDatastreamsOfLaneByTypes, selectLaneByName, setLanes} from "@/lib/state/OSCARClientSlice";
 import {RootState} from "@/lib/state/Store";
+import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
 
 interface IDataSourceContext {
     masterTimeSyncRef: MutableRefObject<typeof DataSynchronizer | undefined>
@@ -40,6 +41,14 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     const dataSources = useSelector((state: RootState) => state.oshSlice.datasources);
     const selectGammaCountDS = selectDatastreamByOutputType(['Driver - Gamma Count']);
     const gammaCountDS = useSelector((state: RootState) => selectGammaCountDS(state));
+
+    const northLaneSelector = selectLaneByName('North Lane 1');
+    const northLane: LaneMeta = useSelector((state: RootState) => northLaneSelector(state));
+
+    // const selectNorthLaneGammaCountDS = selectDatastreamsOfLaneByTypes(northLane.id,['Driver - Gamma Count']);
+    const selectNorthLaneGammaCountDS = northLane?.id ? selectDatastreamsOfLaneByTypes(northLane.id, ['Driver - Gamma Count']) : (): any[] => [];
+    // const NorthLaneGammaCountDS = useSelector((state: RootState) => selectNorthLaneGammaCountDS(state));
+    const NorthLaneGammaCountDS = useSelector((state: RootState) => selectNorthLaneGammaCountDS(state) ?? []);
 
     const InitializeApplication = useCallback(async () => {
         if (!configNode) {
@@ -158,6 +167,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         console.log("DataStreams:", datastreams);
         console.log("Data sources:", dataSources);
         console.log("Gamma Count DS:", gammaCountDS);
+        console.warn("North Lane Gamma Count DS:", NorthLaneGammaCountDS);
     }, [dataSources]);
 
     if (!masterTimeSyncRef.current) {

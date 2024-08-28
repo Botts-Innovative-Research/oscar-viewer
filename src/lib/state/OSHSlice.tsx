@@ -180,5 +180,24 @@ export const selectDataSourceByOutputType = (outputType: string) => createSelect
     (datasources) => {
         return datasources.find((ds: SweApi) => ds.outputType === outputType);
     });
+/**
+ * Selects datastreams by a singular parent system id
+ * @param systemId
+ */
+export const selectDatastreamsByParentSystemId = (systemId: string) => createSelector(
+    [selectDatastreams],
+    (datastreams) => {
+        return Array.from(datastreams.values()).filter((ds: IDatastream) => ds.parentSystemId === systemId);
+    });
+/**
+ * Selects datastreams by an array of parent system ids, making no distinction among each system
+ * @param systemIds
+ */
+export const selectDatastreamsBySystemIds = (systemIds: string[]) => createSelector(
+    [selectDatastreams],
+    (datastreams) => {
+        return Array.from(datastreams.values()).filter((ds: IDatastream) => systemIds.includes(ds.parentSystemId));
+    });
+
 
 export default Slice.reducer;
