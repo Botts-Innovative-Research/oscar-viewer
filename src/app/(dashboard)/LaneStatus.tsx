@@ -100,7 +100,6 @@ export default function LaneStatus(props: LaneStatusProps) {
   useEffect(() => {
     if (gammaDatasource !== null) {
       const gammaSubscriptions = gammaDatasource.map((gamma: any) =>{
-        console.log('gamma', gamma)
         gamma.subscribe((message: any[]) => handleStatusData(gamma.name, 'alarmState', message), [EventType.DATA]);
       });
     }

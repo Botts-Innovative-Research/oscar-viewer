@@ -19,10 +19,9 @@ export default function DashboardPage() {
 
   const ds : Datastream[] = Array.from(useSelector((state: any) => state.oshSlice.dataStreams.values()));
   const lanes: LaneMeta[] = useSelector(selectLanes);
-  //
+
   const [laneStatus, setLaneStatus] = useState<LaneStatusData[]| null>(null);
   // const [laneOccupancy, setLaneOccupancy] = useState<LaneOccupancyData[]>(null);
-  //
 
 
   useEffect(() => {
@@ -31,7 +30,7 @@ export default function DashboardPage() {
         // let laneOcc: LaneOccupancyData[] = [];
 
         lanes.map((lane) => {
-          // let filteredStreams = ds.filter((stream) => lane.systemIds.includes(stream.parentSystemId));
+
           const gammaStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Gamma Count'));
           const neutronStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Neutron Count'));
           const tamperStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Tamper'));
@@ -86,11 +85,7 @@ export default function DashboardPage() {
       <Grid item container spacing={2} style={{ flexBasis: '66.66%', flexGrow: 0, flexShrink: 0 }}>
         <Grid item xs={8}>
           <Paper variant='outlined' sx={{ height: "100%" }}>
-            {/*<AlarmTable*/}
-            {/*    onRowSelect={handleRowSelect}*/}
-            {/*    // laneOccupancyData={laneOccupancy}*/}
-            {/* data={tableData}/>*/}
-            <Table onRowSelect={handleRowSelect} isAlarmTable  />
+            <Table onRowSelect={handleRowSelect} isAlarmTable />
             
           </Paper>
         </Grid>
