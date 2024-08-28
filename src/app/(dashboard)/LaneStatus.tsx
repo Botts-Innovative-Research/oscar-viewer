@@ -1,19 +1,16 @@
 "use client";
 
-import { Stack, Typography } from '@mui/material';
+import {Stack, Typography} from '@mui/material';
 import LaneStatusItem from '../_components/LaneStatusItem';
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {EventType} from 'osh-js/source/core/event/EventType';
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
-import { LaneStatusType } from 'types/new-types';
+import {LaneStatusType} from 'types/new-types';
 import Link from "next/link";
 import {findInObject} from "@/app/utils/Utils";
 import {Protocols} from "@/lib/data/Constants";
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
-import {Mode} from "osh-js/source/core/datasource/Mode";
 import {LaneStatusData} from "../../../types/new-types";
-import {EventType} from "osh-js/source/core/event/EventType";
 
 interface LaneStatusItem{
   id: number;
