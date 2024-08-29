@@ -7,100 +7,23 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
 import {Mode} from 'osh-js/source/core/datasource/Mode';
 import { PropsWithChildren, useEffect, useState } from "react";
 import {EventType} from 'osh-js/source/core/event/EventType';
-import { useSelector } from "react-redux";
-import { selectLiveLaneData } from "@/lib/state/OSCARClientSlice";
 
 interface VideoStatusWrapperProps {
     lane: LaneMeta
-    gammaDatastream: Datastream
-    neutronDatastream: Datastream
+    status: string
 }
 
 export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusWrapperProps>) {
-    // TODO: Update status for videostream border
-    const [status, setStatus] = useState<string>("none");
-    const [gammaDatasource, setGammaDatasource] = useState(null);
-    const [neutronDatasource, setNeutronDatasource] = useState(null);
-    const liveLanes = useSelector(selectLiveLaneData);
-
-    useEffect(() => {
-      // Generate SweApi object, layer, and video view and show it below
-
-      console.log(JSON.stringify(liveLanes.values));
-      // const source = props.datastream.generateSweApiObj({start: START_TIME, end: FUTURE_END_TIME});
-      // if(gammaDatasource == null){
-      //   const gammaSource = new SweApi(props.gammaDatastream.id, {
-      //       protocol: Protocols.WS,
-      //       endpointUrl: `162.238.96.81:8781/sensorhub/api`,
-      //       resource: `/datastreams/${props.gammaDatastream.id}/observations`,
-      //       mode: Mode.REAL_TIME,
-      //       tls: false,
-      //       connectorOpts: {
-      //           username: 'admin',
-      //           password: 'admin',
-      //       }
-      //   });
-      //   console.log(gammaSource);
-      //   gammaSource.connect();
-      //   setGammaDatasource(gammaSource);
-      // }
-      
-      // if(neutronDatasource == null){
-      //   const neutronSource = new SweApi(props.neutronDatastream.id, {
-      //       protocol: Protocols.WS,
-      //       endpointUrl: `162.238.96.81:8781/sensorhub/api`,
-      //       resource: `/datastreams/${props.neutronDatastream.id}/observations`,
-      //       mode: Mode.REAL_TIME,
-      //       tls: false,
-      //       connectorOpts: {
-      //           username: 'admin',
-      //           password: 'admin',
-      //       }
-      //   });
-      //   neutronSource.connect();
-      //   setNeutronDatasource(neutronSource);
-      // }
-  }, [liveLanes]);
-
-  useEffect(() => {
-  //   if(gammaDatasource !== null) {
-  //     gammaDatasource.subscribe((message: any) => {
-  //       console.log("Gamma message: " + JSON.stringify(message));
-  //       const alarmState = message.values[0].data.alarmState;
-  //       if(alarmState !== "Background" && alarmState !== "Scan") {
-  //         console.log(alarmState + " from " + props.lane.name);
-  //         setStatus(alarmState);
-  //       } else if(alarmState === "Background") {
-  //         setStatus("none");
-  //       }
-  //     }, [EventType.DATA]);
-  //   }
-  // }, [gammaDatasource]); 
-
-  // useEffect(() => {
-  //   if(neutronDatasource !== null) {
-  //     neutronDatasource.subscribe((message: any) => {
-  //       console.log("Neutron message: " + JSON.stringify(message));
-  //         const alarmState = message.values[0].data.alarmState; 
-  //         if(alarmState !== "Background" && alarmState !== "Scan") {
-  //           console.log(alarmState + " from " + props.lane.name);
-  //           setStatus(alarmState);
-  //         } else if(alarmState === "Background") {
-  //           setStatus("none");
-  //         }
-  //     }, [EventType.DATA]);
-  //   }
-  }, []); 
 
     return (
         <Grid item xs={2} display={"flex"} direction={"column"} alignItems={"center"}
           sx={{
             "&.MuiGrid-item": 
-              {...status != "none" ? {
+              {...props.status != "none" ? {
                 border: "solid",
                 borderWidth: "2px",
-                borderColor: (status == "Alarm" ? "error.main" : "secondary.main"),
-                backgroundColor: (status == "Alarm" ? "errorHighlight" : "secondaryHighlight"),
+                borderColor: (props.status == "Alarm" ? "error.main" : "secondary.main"),
+                backgroundColor: (props.status == "Alarm" ? "errorHighlight" : "secondaryHighlight"),
               } : {},
               padding: "0px",
             },

@@ -6,7 +6,7 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 
 const testData: EventTableData = {
-  id: '1',
+  id: 1,
   secondaryInspection: false,
   laneId: '1', occupancyId: '1',
   startTime: 'XX:XX:XX AM',
