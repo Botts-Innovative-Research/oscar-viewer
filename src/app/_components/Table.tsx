@@ -164,16 +164,18 @@ export default function Table({onRowSelect, isEventLog, isAlarmTable}: TableProp
                 maxNeutron: maxNeutron,
                 status: statusType,
                 adjudicatedUser: 'kalyn', // Update useSelector(selectCurrentUser)
-                adjudicatedCode: 6 // Update,
+                adjudicatedCode: 0 // Update,
             };
 
             //set alarm table
             if(gammaAlarm || neutronAlarm){
                 if(mode === Mode.BATCH){
-                    setBatchOccupancyTable(prevState=>[newAlarmStatus, ...prevState]);
+                    setBatchOccupancyTable(prevState=>[newAlarmStatus, ...prevState.filter(item =>
+                        item.occupancyId !== occupancyCount)]);
                 }
                 else if(mode === Mode.REAL_TIME){
-                    setOccupancyTable(prevState=>[newAlarmStatus, ...prevState.filter(item=> item.laneId !== laneName || item.occupancyId !== occupancyCount)]);
+                    setOccupancyTable(prevState=>[newAlarmStatus, ...prevState.filter(item=>
+                        item.laneId !== laneName || item.occupancyId !== occupancyCount)]);
                 }
             }
             //for event log post even if there is not an alarm
