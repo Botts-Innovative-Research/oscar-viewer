@@ -7,7 +7,7 @@ import VideoDataLayer from 'osh-js/source/core/ui/layer/VideoDataLayer';
 import Box from "@mui/material/Box/Box";
 import {Mode} from 'osh-js/source/core/datasource/Mode';
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
-import { Protocols } from "@/lib/data/Constants";
+import { FUTURE_END_TIME, Protocols, START_TIME } from "@/lib/data/Constants";
 
 interface OSHVideoProps {
     videoDatastreams: Datastream[]
@@ -23,12 +23,12 @@ export default function VideoComponent(props: OSHVideoProps) {
     useEffect(() => {
         // Generate SweApi object, layer, and video view and show it below
 
-        // const source = props.datastream.generateSweApiObj({start: START_TIME, end: FUTURE_END_TIME});
+        // const source = props.videoDatastreams[0].generateSweApiObj(null);
         const source = new SweApi(props.videoDatastreams[0].name, {
             protocol: Protocols.WS,
             endpointUrl: `162.238.96.81:8781/sensorhub/api`,
             resource: `/datastreams/${props.videoDatastreams[0].id}/observations`,
-            mode: Mode.REAL_TIME,
+            mode: "realTime",
             tls: false,
             responseFormat: 'application/swe+binary',
             connectorOpts: {

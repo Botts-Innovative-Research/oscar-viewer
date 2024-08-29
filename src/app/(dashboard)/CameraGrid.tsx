@@ -12,6 +12,11 @@ import { selectLanes } from '@/lib/state/OSCARClientSlice';
 import { RootState } from '@/lib/state/Store';
 import VideoComponent from '../_components/video/VideoComponent';
 import VideoStatusWrapper from '../_components/video/VideoStatusWrapper';
+import {EventType} from 'osh-js/source/core/event/EventType';
+import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
+import { Protocols } from "@/lib/data/Constants";
+import {Mode} from 'osh-js/source/core/datasource/Mode';
+
 
 interface LaneWithVideo {
   laneData: LaneMeta,
@@ -35,6 +40,7 @@ export default function CameraGrid() {
 
   const lanes: LaneMeta[] = useSelector(selectLanes);
   const [lanesWithVideo, setLanesWithVideo] = useState<LaneWithVideo[] | null>(null);
+  const [laneStatuses, setLaneStatuses] = useState<Map<LaneMeta, string>>(new Map<LaneMeta, string>());
 
   useEffect(() => {
     if(lanesWithVideo == null || lanesWithVideo.length == 0 && dss.length > 0) {
@@ -45,13 +51,41 @@ export default function CameraGrid() {
         const videoDatastreams = dss.filter((ds) => (lane.systemIds.includes(ds.parentSystemId) && ds.name.includes("Video") && ds.name.includes("Lane")));
         const gammaDatastreams = dss.filter((ds) => (lane.systemIds.includes(ds.parentSystemId) && ds.name.includes("Gamma") && ds.name.includes("Count")));
         const neutronDatastreams = dss.filter((ds)=>(lane.systemIds.includes(ds.parentSystemId) && ds.name.includes("Neutron") && ds.name.includes("Count")));
-        
+
         const laneWithVideo: LaneWithVideo = {
           laneData: lane,
           videoDatastreams: videoDatastreams,
           gammaDatastream: gammaDatastreams[0],
           neutronDatastream: neutronDatastreams[0]
         };
+
+        if(laneWithVideo.gammaDatastream.datasource == null) {
+          laneWithVideo.gammaDatastream.datasource = new SweApi(laneWithVideo.gammaDatastream.id, {
+            protocol: Protocols.WS,
+            endpointUrl: `162.238.96.81:8781/sensorhub/api`,
+            resource: `/datastreams/${laneWithVideo.gammaDatastream.id}/observations`,
+            mode: Mode.REAL_TIME,
+            tls: false,
+            connectorOpts: {
+                username: 'admin',
+                password: 'admin',
+            }
+          });
+        }
+
+        if(laneWithVideo.neutronDatastream.datasource == null) {
+          laneWithVideo.neutronDatastream.datasource = new SweApi(laneWithVideo.neutronDatastream.id, {
+            protocol: Protocols.WS,
+            endpointUrl: `162.238.96.81:8781/sensorhub/api`,
+            resource: `/datastreams/${laneWithVideo.neutronDatastream.id}/observations`,
+            mode: Mode.REAL_TIME,
+            tls: false,
+            connectorOpts: {
+                username: 'admin',
+                password: 'admin',
+            }
+          });
+        }
 
         laneData.push(laneWithVideo);
       });
@@ -60,6 +94,39 @@ export default function CameraGrid() {
       setLanesWithVideo(laneData);
     }
   }, [dss]);
+
+  async function connectAndSubscribe(lane: LaneWithVideo, sweApi: typeof SweApi) {
+    if(!await sweApi.isConnected()) {
+      await sweApi.connect();
+    }
+
+    await sweApi.subscribe((message: any) => {
+      console.log("message received: ", JSON.stringify(message));
+      const alarmState = message.values[0].data.alarmState;
+      if(alarmState !== "Background" && alarmState !== "Scan") {
+        laneStatuses.set(lane.laneData, alarmState);
+        // TODO: Pull timeout from config
+        setTimeout(() => laneStatuses.set(lane.laneData, "none"), 15000);
+      }
+    }, [EventType.DATA]);
+  }
+
+  useEffect(() => {
+    async function connectStreams() {
+      if(lanesWithVideo && lanesWithVideo.length > 0) {
+        lanesWithVideo.forEach(async (lane) => {
+
+          connectAndSubscribe(lane, lane.gammaDatastream.getSweApi());
+          connectAndSubscribe(lane, lane.neutronDatastream.getSweApi());
+  
+        });
+      }
+    }
+
+    connectStreams();
+  }, [lanesWithVideo]);
+
+  // TODO: Create swe api objects and pass to children
 
   // DELETE ABOVE ON PRODUCTION
 
@@ -80,7 +147,7 @@ export default function CameraGrid() {
     {lanesWithVideo != null && (
       <Grid container padding={2} justifyContent={"start"}>
         {lanesWithVideo.slice(startItem, endItem).map((lane) => (
-          <VideoStatusWrapper key={lane.laneData.id} lane={lane.laneData} gammaDatastream={lane.gammaDatastream} neutronDatastream={lane.neutronDatastream} 
+          <VideoStatusWrapper key={lane.laneData.id} lane={lane.laneData} status={laneStatuses.get(lane.laneData) ?? "none"} 
           children={<VideoComponent videoDatastreams={lane.videoDatastreams}/>}>
           </VideoStatusWrapper>
         ))}
