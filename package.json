@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "webpack",
-    "start": "webpack serve --mode development --stats-children",
+    "build": "next build",
+    "start": "next start",
     "postinstall": "patch-package",
     "dev": "next dev",
     "lint": "next lint"
