@@ -36,7 +36,8 @@ export interface IOSHSlice {
 
 const initialNodeOpts: NodeOptions = {
     name: "Windows Test Node",
-    address: "192.168.1.158",
+    address: "162.238.96.81",
+    // address: "192.168.1.158",
     port: 8781,
     oshPathRoot: "/sensorhub",
     sosEndpoint: "/sos",

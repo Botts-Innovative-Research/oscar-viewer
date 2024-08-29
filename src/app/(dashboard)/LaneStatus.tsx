@@ -1,16 +1,15 @@
 "use client";
 
-import {Stack, Typography} from '@mui/material';
+import { Stack, Typography } from '@mui/material';
 import LaneStatusItem from '../_components/LaneStatusItem';
 import React, {useEffect, useRef, useState} from 'react';
-import {EventType} from 'osh-js/source/core/event/EventType';
-import {Mode} from "osh-js/source/core/datasource/Mode";
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
-import {LaneStatusType} from 'types/new-types';
 import Link from "next/link";
 import {findInObject} from "@/app/utils/Utils";
 import {Protocols} from "@/lib/data/Constants";
+import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import {Mode} from "osh-js/source/core/datasource/Mode";
 import {LaneStatusData} from "../../../types/new-types";
+import {EventType} from "osh-js/source/core/event/EventType";
 
 interface LaneStatusItem{
   id: number;
@@ -25,7 +24,6 @@ interface LaneStatusProps{
 function timeout(delay: number) {
   return new Promise( res => setTimeout(res, delay) );
 }
-
 export default function LaneStatus(props: LaneStatusProps) {
   const [statusBars, setStatus] = useState<LaneStatusItem[]>([]);
   const idVal = useRef(1);
@@ -40,62 +38,62 @@ export default function LaneStatus(props: LaneStatusProps) {
   useEffect(() => {
 
     if (props.laneStatusData && props.laneStatusData.length > 0) {
-        if(gammaDatasource === null){
-          const newGammaSource = props.laneStatusData.map((data) => {
-            const gammaSource = new SweApi(data.laneData.name, {
-              tls: false,
-              protocol: Protocols.WS,
-              mode: Mode.REAL_TIME,
-              endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
-              resource: `/datastreams/${data.gammaDataStream[0].id}/observations`,
-              connectorOpts: {
-                username: 'admin',
-                password: 'admin',
-              },
-            });
-            gammaSource.connect();
-            return gammaSource;
+      if(gammaDatasource === null){
+        const newGammaSource = props.laneStatusData.map((data) => {
+          const gammaSource = new SweApi(data.laneData.name, {
+            tls: false,
+            protocol: Protocols.WS,
+            mode: Mode.REAL_TIME,
+            endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
+            resource: `/datastreams/${data.gammaDataStream[0].id}/observations`,
+            connectorOpts: {
+              username: 'admin',
+              password: 'admin',
+            },
           });
-          setGammaDatasource(newGammaSource);
-        }
+          gammaSource.connect();
+          return gammaSource;
+        });
+        setGammaDatasource(newGammaSource);
+      }
 
-        if(neutronDatasource === null){
-          const newNeutronSource =  props.laneStatusData.map((data) => {
-            const neutronSource = new SweApi(data.laneData.name, {
-              tls: false,
-              protocol: Protocols.WS,
-              mode: Mode.REAL_TIME,
-              endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
-              resource: `/datastreams/${data.gammaDataStream[0].id}/observations`,
-              connectorOpts: {
-                username: 'admin',
-                password: 'admin',
-              },
-            });
-            neutronSource.connect();
-            return neutronSource;
+      if(neutronDatasource === null){
+        const newNeutronSource =  props.laneStatusData.map((data) => {
+          const neutronSource = new SweApi(data.laneData.name, {
+            tls: false,
+            protocol: Protocols.WS,
+            mode: Mode.REAL_TIME,
+            endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
+            resource: `/datastreams/${data.gammaDataStream[0].id}/observations`,
+            connectorOpts: {
+              username: 'admin',
+              password: 'admin',
+            },
           });
-          setNeutronDatasource(newNeutronSource);
-        }
+          neutronSource.connect();
+          return neutronSource;
+        });
+        setNeutronDatasource(newNeutronSource);
+      }
 
-        if(tamperDatasource === null){
-          const newTamperSource = props.laneStatusData.map((data) => {
-            const tamperSource = new SweApi(data.laneData.name, {
-              tls: false,
-              protocol: Protocols.WS,
-              mode: Mode.REAL_TIME,
-              endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
-              resource: `/datastreams/${data.tamperDataStream[0].id}/observations`,
-              connectorOpts: {
-                username: 'admin',
-                password: 'admin',
-              },
-            });
-            tamperSource.connect();
-            return tamperSource;
+      if(tamperDatasource === null){
+        const newTamperSource = props.laneStatusData.map((data) => {
+          const tamperSource = new SweApi(data.laneData.name, {
+            tls: false,
+            protocol: Protocols.WS,
+            mode: Mode.REAL_TIME,
+            endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
+            resource: `/datastreams/${data.tamperDataStream[0].id}/observations`,
+            connectorOpts: {
+              username: 'admin',
+              password: 'admin',
+            },
           });
-          setTamperDatasource(newTamperSource);
-        }
+          tamperSource.connect();
+          return tamperSource;
+        });
+        setTamperDatasource(newTamperSource);
+      }
     }
   }, [props.laneStatusData]);
 
@@ -127,7 +125,7 @@ export default function LaneStatus(props: LaneStatusProps) {
   const handleStatusData = async (datasourceName: string, valueKey: string, message: any[]) => {
     // @ts-ignore
     const msgVal: any[] = message.values || [];
-    let newStatuses: LaneStatusType[] = [];
+    let newStatuses: LaneStatusItem[] = [];
 
     await timeout(5500);
 
@@ -135,7 +133,7 @@ export default function LaneStatus(props: LaneStatusProps) {
       const state = findInObject(value, valueKey);
       // console.log(state)
       if (state === 'Alarm' || state === 'Fault - Neutron High'|| state === 'Fault - Gamma Low'|| state === 'Fault - Gamma High') {
-        const newStatus: LaneStatusType = {
+        const newStatus: LaneStatusItem = {
           id: idVal.current++,
           laneName: datasourceName,
           status: state
@@ -146,7 +144,7 @@ export default function LaneStatus(props: LaneStatusProps) {
     });
 
     setStatus(prevStatus => [
-        ...newStatuses,
+      ...newStatuses,
       ...prevStatus.filter(item => item.laneName !== datasourceName ||
           (item.status !== 'Alarm' && item.status !== 'Fault - Gamma Low' && item.status !== 'Fault - Gamma High' && item.status !== 'Fault - Neutron High')
       )]);
@@ -155,12 +153,12 @@ export default function LaneStatus(props: LaneStatusProps) {
   const handleTamperData = async (datasourceName: string, valueKey: string, message: any[]) => {
     // @ts-ignore
     const msgVal: any[] = message.values || [];
-    let tamperStatuses: LaneStatusType[] = [];
+    let tamperStatuses: LaneStatusItem[] = [];
 
     msgVal.forEach((value) => {
       const tamperState = findInObject(value, valueKey);
       if(tamperState) {
-        const newStatus: LaneStatusType ={
+        const newStatus: LaneStatusItem ={
           // id: statusBars.length === 0 ? 1 : statusBars[statusBars.length -1].id + 1,
           id: idVal.current++,
           laneName: datasourceName,

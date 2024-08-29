@@ -197,22 +197,22 @@ export default function EventTable(props: {
             }}
             getCellClassName={(params: GridCellParams<any, any, string>) => {
               // Assign className for styling to 'Status' column based on value
-                if (params.value === "Gamma")
-                  return "highlightGamma";
-                else if (params.value === "Neutron")
-                  return "highlightNeutron";
-                else if (params.value === "Gamma & Neutron")
-                  return "highlightGammaNeutron";
-                else if (params.formattedValue === 'Code 1: Contraband Found'|| params.formattedValue === 'Code 2: Other' || params.formattedValue === 'Code 3: Medical Isotope Found')
-                  return "highlightReal";
-                else if (params.formattedValue === 'Code 4: Norm Found'|| params.formattedValue === 'Code 5: Declared Shipment of Radioactive Material' || params.formattedValue === 'Code 6: Physical Inspection Negative')
-                  return "highlightInnocent";
-                else if (params.formattedValue === 'Code 7: RIID/ASP Indicates Background Only'|| params.formattedValue === 'Code 8: Other' || params.formattedValue === 'Code 9: Authorized Test, Maintenance, or Training Activity')
-                  return "highlightFalse";
-                else if (params.formattedValue === 'Code 10: Unauthorized Activity' || params.formattedValue === 'Code 11: Other')
-                  return "highlightOther";
-                else
-                  return '';
+              if (params.value === "Gamma")
+                return "highlightGamma";
+              else if (params.value === "Neutron")
+                return "highlightNeutron";
+              else if (params.value === "Gamma & Neutron")
+                return "highlightGammaNeutron";
+              else if (params.formattedValue === 'Code 1: Contraband Found'|| params.formattedValue === 'Code 2: Other' || params.formattedValue === 'Code 3: Medical Isotope Found')
+                return "highlightReal";
+              else if (params.formattedValue === 'Code 4: Norm Found'|| params.formattedValue === 'Code 5: Declared Shipment of Radioactive Material' || params.formattedValue === 'Code 6: Physical Inspection Negative')
+                return "highlightInnocent";
+              else if (params.formattedValue === 'Code 7: RIID/ASP Indicates Background Only'|| params.formattedValue === 'Code 8: Other' || params.formattedValue === 'Code 9: Authorized Test, Maintenance, or Training Activity')
+                return "highlightFalse";
+              else if (params.formattedValue === 'Code 10: Unauthorized Activity' || params.formattedValue === 'Code 11: Other')
+                return "highlightOther";
+              else
+                return '';
 
 
             }}

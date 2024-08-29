@@ -25,30 +25,30 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (laneStatus === null && ds.length > 0) {
-        let statuses: LaneStatusData[] = [];
-        let laneOcc: LaneOccupancyData[] = [];
+      let statuses: LaneStatusData[] = [];
+      let laneOcc: LaneOccupancyData[] = [];
 
-        lanes.map((lane) => {
+      lanes.map((lane) => {
 
-          const gammaStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Gamma Count'));
-          const neutronStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Neutron Count'));
-          const tamperStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Tamper'));
-          const occStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Occupancy'));
+        const gammaStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Gamma Count'));
+        const neutronStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Neutron Count'));
+        const tamperStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Tamper'));
+        const occStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Occupancy'));
 
-          const occ: LaneOccupancyData = {
-            laneData: lane,
-            occupancyStreams: occStreams
-          };
+        const occ: LaneOccupancyData = {
+          laneData: lane,
+          occupancyStreams: occStreams
+        };
 
-          const stat: LaneStatusData = {
-            laneData: lane,
-            gammaDataStream: gammaStreams,
-            neutronDataStream: neutronStreams,
-            tamperDataStream: tamperStreams
-          };
-          statuses.push(stat);
-          laneOcc.push(occ);
-        });
+        const stat: LaneStatusData = {
+          laneData: lane,
+          gammaDataStream: gammaStreams,
+          neutronDataStream: neutronStreams,
+          tamperDataStream: tamperStreams
+        };
+        statuses.push(stat);
+        laneOcc.push(occ);
+      });
       setLaneStatus(statuses);
       setLaneOccupancy(laneOcc);
     }
@@ -64,31 +64,31 @@ export default function DashboardPage() {
 
 
   return (
-    <Grid container spacing={2} direction={"column"}>
-      <Grid item container spacing={2} style={{ flexBasis: '33.33%', flexGrow: 0, flexShrink: 0 }}>
-        <Grid item xs={8}>
-          <Paper variant='outlined' sx={{ height: "100%" }}>
-            <CameraGrid />
-          </Paper>
+      <Grid container spacing={2} direction={"column"}>
+        <Grid item container spacing={2} style={{ flexBasis: '33.33%', flexGrow: 0, flexShrink: 0 }}>
+          <Grid item xs={8}>
+            <Paper variant='outlined' sx={{ height: "100%" }}>
+              <CameraGrid />
+            </Paper>
+          </Grid>
+          <Grid item xs={4}>
+            <Paper variant='outlined' sx={{ height: "100%" }}>
+              <LaneStatus laneStatusData={laneStatus}/>
+            </Paper>
+          </Grid>
         </Grid>
-        <Grid item xs={4}>
-          <Paper variant='outlined' sx={{ height: "100%" }}>
-            <LaneStatus laneStatusData={laneStatus}/>
-          </Paper>
+        <Grid item container spacing={2} style={{ flexBasis: '66.66%', flexGrow: 0, flexShrink: 0 }}>
+          <Grid item xs={8}>
+            <Paper variant='outlined' sx={{ height: "100%" }}>
+              <Table isAlarmTable onRowSelect={handleRowSelect} />
+            </Paper>
+          </Grid>
+          <Grid item xs={4}>
+            <Paper variant='outlined' sx={{ height: "100%" }}>
+              <EventPreview event={selectedEvent} />
+            </Paper>
+          </Grid>
         </Grid>
       </Grid>
-      <Grid item container spacing={2} style={{ flexBasis: '66.66%', flexGrow: 0, flexShrink: 0 }}>
-        <Grid item xs={8}>
-          <Paper variant='outlined' sx={{ height: "100%" }}>
-            <Table isAlarmTable onRowSelect={handleRowSelect} />
-          </Paper>
-        </Grid>
-        <Grid item xs={4}>
-          <Paper variant='outlined' sx={{ height: "100%" }}>
-            <EventPreview event={selectedEvent} />
-          </Paper>
-        </Grid>
-      </Grid>
-    </Grid>
   );
 }
