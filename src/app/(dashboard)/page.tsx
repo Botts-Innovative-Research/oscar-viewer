@@ -3,16 +3,15 @@
 import { Grid, Paper } from "@mui/material";
 import CameraGrid from "./CameraGrid";
 import LaneStatus from "./LaneStatus";
-import AlarmTable from "./AlarmTable";
+
 import EventPreview from "./EventPreview";
 import {useEffect, useState} from "react";
-import {LaneOccupancyData, LaneStatusData, SelectedEvent} from "types/new-types";
-import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
+import {EventTableData, LaneOccupancyData, LaneStatusData, SelectedEvent} from "types/new-types";
+import Table from "@/app/_components/Table";
 import {Datastream} from "@/lib/data/osh/Datastreams";
+import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import {useSelector} from "react-redux";
 import {selectLanes} from "@/lib/state/OSCARClientSlice";
-
-
 
 export default function DashboardPage() {
   const [selectedEvent, setSelectedEvent] = useState<SelectedEvent>(null);  // Reference types/new-types.d.ts to change type
@@ -30,7 +29,7 @@ export default function DashboardPage() {
         let laneOcc: LaneOccupancyData[] = [];
 
         lanes.map((lane) => {
-          // let filteredStreams = ds.filter((stream) => lane.systemIds.includes(stream.parentSystemId));
+
           const gammaStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Gamma Count'));
           const neutronStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Neutron Count'));
           const tamperStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Tamper'));
@@ -55,8 +54,6 @@ export default function DashboardPage() {
     }
   }, [ds, lanes]);
 
-  console.log('lane stat', laneStatus)
-  console.log('occ', laneOccupancy);
 
 
   // Handle currently selected event in datagrid
@@ -83,10 +80,7 @@ export default function DashboardPage() {
       <Grid item container spacing={2} style={{ flexBasis: '66.66%', flexGrow: 0, flexShrink: 0 }}>
         <Grid item xs={8}>
           <Paper variant='outlined' sx={{ height: "100%" }}>
-            <AlarmTable
-                onRowSelect={handleRowSelect}
-             laneOccupancyData={laneOccupancy}
-            />
+            <Table isAlarmTable onRowSelect={handleRowSelect} />
           </Paper>
         </Grid>
         <Grid item xs={4}>
