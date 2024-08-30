@@ -38,62 +38,62 @@ export default function LaneStatus(props: LaneStatusProps) {
   useEffect(() => {
 
     if (props.laneStatusData && props.laneStatusData.length > 0) {
-        if(gammaDatasource === null){
-          const newGammaSource = props.laneStatusData.map((data) => {
-            const gammaSource = new SweApi(data.laneData.name, {
-              tls: false,
-              protocol: Protocols.WS,
-              mode: Mode.REAL_TIME,
-              endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
-              resource: `/datastreams/${data.gammaDataStream[0].id}/observations`,
-              connectorOpts: {
-                username: 'admin',
-                password: 'admin',
-              },
-            });
-            gammaSource.connect();
-            return gammaSource;
+      if(gammaDatasource === null){
+        const newGammaSource = props.laneStatusData.map((data) => {
+          const gammaSource = new SweApi(data.laneData.name, {
+            tls: false,
+            protocol: Protocols.WS,
+            mode: Mode.REAL_TIME,
+            endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
+            resource: `/datastreams/${data.gammaDataStream[0].id}/observations`,
+            connectorOpts: {
+              username: 'admin',
+              password: 'admin',
+            },
           });
-          setGammaDatasource(newGammaSource);
-        }
+          gammaSource.connect();
+          return gammaSource;
+        });
+        setGammaDatasource(newGammaSource);
+      }
 
-        if(neutronDatasource === null){
-          const newNeutronSource =  props.laneStatusData.map((data) => {
-            const neutronSource = new SweApi(data.laneData.name, {
-              tls: false,
-              protocol: Protocols.WS,
-              mode: Mode.REAL_TIME,
-              endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
-              resource: `/datastreams/${data.gammaDataStream[0].id}/observations`,
-              connectorOpts: {
-                username: 'admin',
-                password: 'admin',
-              },
-            });
-            neutronSource.connect();
-            return neutronSource;
+      if(neutronDatasource === null){
+        const newNeutronSource =  props.laneStatusData.map((data) => {
+          const neutronSource = new SweApi(data.laneData.name, {
+            tls: false,
+            protocol: Protocols.WS,
+            mode: Mode.REAL_TIME,
+            endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
+            resource: `/datastreams/${data.gammaDataStream[0].id}/observations`,
+            connectorOpts: {
+              username: 'admin',
+              password: 'admin',
+            },
           });
-          setNeutronDatasource(newNeutronSource);
-        }
+          neutronSource.connect();
+          return neutronSource;
+        });
+        setNeutronDatasource(newNeutronSource);
+      }
 
-        if(tamperDatasource === null){
-          const newTamperSource = props.laneStatusData.map((data) => {
-            const tamperSource = new SweApi(data.laneData.name, {
-              tls: false,
-              protocol: Protocols.WS,
-              mode: Mode.REAL_TIME,
-              endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
-              resource: `/datastreams/${data.tamperDataStream[0].id}/observations`,
-              connectorOpts: {
-                username: 'admin',
-                password: 'admin',
-              },
-            });
-            tamperSource.connect();
-            return tamperSource;
+      if(tamperDatasource === null){
+        const newTamperSource = props.laneStatusData.map((data) => {
+          const tamperSource = new SweApi(data.laneData.name, {
+            tls: false,
+            protocol: Protocols.WS,
+            mode: Mode.REAL_TIME,
+            endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
+            resource: `/datastreams/${data.tamperDataStream[0].id}/observations`,
+            connectorOpts: {
+              username: 'admin',
+              password: 'admin',
+            },
           });
-          setTamperDatasource(newTamperSource);
-        }
+          tamperSource.connect();
+          return tamperSource;
+        });
+        setTamperDatasource(newTamperSource);
+      }
     }
   }, [props.laneStatusData]);
 
@@ -144,7 +144,7 @@ export default function LaneStatus(props: LaneStatusProps) {
     });
 
     setStatus(prevStatus => [
-        ...newStatuses,
+      ...newStatuses,
       ...prevStatus.filter(item => item.laneName !== datasourceName ||
           (item.status !== 'Alarm' && item.status !== 'Fault - Gamma Low' && item.status !== 'Fault - Gamma High' && item.status !== 'Fault - Neutron High')
       )]);

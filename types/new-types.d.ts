@@ -32,6 +32,7 @@ export type LaneStatusType = {
     name: string;
     status: string;
 }
+
 export interface LaneOccupancyData {
   laneData: LaneMeta,
   occupancyStreams: Datastream[]
