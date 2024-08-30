@@ -91,6 +91,7 @@ export default function Table({onRowSelect, isEventLog, isAlarmTable}: TableProp
                             password: 'admin',
                         },
                         prefetchBatchSize: 1000000,
+                        prefetchBatchDuration: 5000,
                     });
                     batchSource.connect();
                     return batchSource;
@@ -164,7 +165,7 @@ export default function Table({onRowSelect, isEventLog, isAlarmTable}: TableProp
                 maxNeutron: maxNeutron,
                 status: statusType,
                 adjudicatedUser: 'kalyn', // Update useSelector(selectCurrentUser)
-                adjudicatedCode: 0 // Update,
+                adjudicatedCode: 0  // Update,
             };
 
             //set alarm table
