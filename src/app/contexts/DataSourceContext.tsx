@@ -143,7 +143,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
                 end: 'latest'
             });
             dsArr.push(datasource);
-            console.log("DS Array:", dsArr);
+            // console.log("DS Array:", dsArr);
         }
         dispatch(setDatasources(dsArr));
     }, [datastreams, dispatch]);

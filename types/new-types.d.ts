@@ -31,6 +31,7 @@ export type LaneStatusType = {
   id: number;
   name: string;
   status: string;
+}
 
 export interface LaneOccupancyData {
   laneData: LaneMeta,
@@ -41,5 +42,5 @@ export interface LaneStatusData{
   laneData: LaneMeta,
   gammaDataStream: Datastream[],
   neutronDataStream: Datastream[],
-  tamperDataStream: Datastream[]
+  tamperDataStream: Datastream[],
 }

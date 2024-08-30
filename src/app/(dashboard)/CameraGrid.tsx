@@ -40,7 +40,8 @@ export default function CameraGrid() {
 
   const lanes: LaneMeta[] = useSelector(selectLanes);
   const [lanesWithVideo, setLanesWithVideo] = useState<LaneWithVideo[] | null>(null);
-  const [laneStatuses, setLaneStatuses] = useState<Map<LaneMeta, string>>(new Map<LaneMeta, string>());
+  const [laneStatuses, ] = useState<Map<string, string>>(new Map<string, string>());
+  const [datastreamsInitialized, setDatastreamsInitialized] = useState(false);
 
   useEffect(() => {
     if(lanesWithVideo == null || lanesWithVideo.length == 0 && dss.length > 0) {
@@ -59,71 +60,82 @@ export default function CameraGrid() {
           neutronDatastream: neutronDatastreams[0]
         };
 
-        if(laneWithVideo.gammaDatastream.datasource == null) {
-          laneWithVideo.gammaDatastream.datasource = new SweApi(laneWithVideo.gammaDatastream.id, {
-            protocol: Protocols.WS,
-            endpointUrl: `162.238.96.81:8781/sensorhub/api`,
-            resource: `/datastreams/${laneWithVideo.gammaDatastream.id}/observations`,
-            mode: Mode.REAL_TIME,
-            tls: false,
-            connectorOpts: {
-                username: 'admin',
-                password: 'admin',
-            }
-          });
-        }
-
-        if(laneWithVideo.neutronDatastream.datasource == null) {
-          laneWithVideo.neutronDatastream.datasource = new SweApi(laneWithVideo.neutronDatastream.id, {
-            protocol: Protocols.WS,
-            endpointUrl: `162.238.96.81:8781/sensorhub/api`,
-            resource: `/datastreams/${laneWithVideo.neutronDatastream.id}/observations`,
-            mode: Mode.REAL_TIME,
-            tls: false,
-            connectorOpts: {
-                username: 'admin',
-                password: 'admin',
-            }
-          });
-        }
+        console.log("After init: ", laneWithVideo.gammaDatastream.datasource);
 
         laneData.push(laneWithVideo);
       });
 
       console.log(laneData);
       setLanesWithVideo(laneData);
+      setDatastreamsInitialized(true);
     }
   }, [dss]);
 
   async function connectAndSubscribe(lane: LaneWithVideo, sweApi: typeof SweApi) {
-    if(!await sweApi.isConnected()) {
-      await sweApi.connect();
+    if(lane.gammaDatastream.datasource == null || lane.gammaDatastream.datasource.endpointUrl == undefined) {
+      lane.gammaDatastream.datasource = new SweApi(lane.gammaDatastream.id, {
+        protocol: Protocols.WS,
+        endpointUrl: `162.238.96.81:8781/sensorhub/api`,
+        resource: `/datastreams/${lane.gammaDatastream.id}/observations`,
+        mode: Mode.REAL_TIME,
+        tls: false,
+        connectorOpts: {
+            username: 'admin',
+            password: 'admin',
+        }
+      });
     }
 
-    await sweApi.subscribe((message: any) => {
-      console.log("message received: ", JSON.stringify(message));
+    if(lane.neutronDatastream.datasource == null || lane.neutronDatastream.datasource.endpointUrl == undefined) {
+      lane.neutronDatastream.datasource = new SweApi(lane.neutronDatastream.id, {
+        protocol: Protocols.WS,
+        endpointUrl: `162.238.96.81:8781/sensorhub/api`,
+        resource: `/datastreams/${lane.neutronDatastream.id}/observations`,
+        mode: Mode.REAL_TIME,
+        tls: false,
+        connectorOpts: {
+            username: 'admin',
+            password: 'admin',
+        }
+      });
+    }
+
+    console.log(await sweApi.isConnected());
+    if(!await sweApi.isConnected()) {
+      console.log("connecting sweapi");
+      console.log(sweApi);
+      sweApi.connect();
+    }
+
+    console.log("subscribing sweapi")
+    sweApi.subscribe((message: any) => {
       const alarmState = message.values[0].data.alarmState;
+      console.log(`State received from ${lane.laneData.name}: ${alarmState}`);
       if(alarmState !== "Background" && alarmState !== "Scan") {
-        laneStatuses.set(lane.laneData, alarmState);
+        laneStatuses.set(lane.laneData.id, alarmState);
         // TODO: Pull timeout from config
-        setTimeout(() => laneStatuses.set(lane.laneData, "none"), 15000);
+        setTimeout(() => laneStatuses.set(lane.laneData.id, "none"), 15000);
       }
     }, [EventType.DATA]);
   }
 
   useEffect(() => {
+    console.log("DS Init? ", datastreamsInitialized);
     async function connectStreams() {
       if(lanesWithVideo && lanesWithVideo.length > 0) {
         lanesWithVideo.forEach(async (lane) => {
+          console.log("Lane ds : ", lane.gammaDatastream.datasource);
 
-          connectAndSubscribe(lane, lane.gammaDatastream.getSweApi());
-          connectAndSubscribe(lane, lane.neutronDatastream.getSweApi());
+            await connectAndSubscribe(lane, lane.gammaDatastream.datasource);
+            await connectAndSubscribe(lane, lane.neutronDatastream.datasource);
   
         });
       }
     }
 
-    connectStreams();
+    if(datastreamsInitialized) {
+      connectStreams();
+    }
   }, [lanesWithVideo]);
 
   // TODO: Create swe api objects and pass to children
@@ -147,7 +159,7 @@ export default function CameraGrid() {
     {lanesWithVideo != null && (
       <Grid container padding={2} justifyContent={"start"}>
         {lanesWithVideo.slice(startItem, endItem).map((lane) => (
-          <VideoStatusWrapper key={lane.laneData.id} lane={lane.laneData} status={laneStatuses.get(lane.laneData) ?? "none"} 
+          <VideoStatusWrapper key={lane.laneData.id} lane={lane.laneData} status={laneStatuses.get(lane.laneData.id)} 
           children={<VideoComponent videoDatastreams={lane.videoDatastreams}/>}>
           </VideoStatusWrapper>
         ))}
