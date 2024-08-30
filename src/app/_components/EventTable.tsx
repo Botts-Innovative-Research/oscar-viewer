@@ -94,7 +94,6 @@ export default function EventTable(props: {
           11: 'Code 11: Other'
         };
         return typeof value === 'number' ? adjCode[value] : 'None';
-
       }
     },
     {

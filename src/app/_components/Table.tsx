@@ -172,7 +172,7 @@ export default function Table({onRowSelect, isEventLog, isAlarmTable}: TableProp
             if(gammaAlarm || neutronAlarm){
                 if(mode === Mode.BATCH){
                     setBatchOccupancyTable(prevState=>[newAlarmStatus, ...prevState.filter(item =>
-                        item.occupancyId !== occupancyCount)]);
+                        item.occupancyId !== occupancyCount || item.laneId !== laneName)]);
                 }
                 else if(mode === Mode.REAL_TIME){
                     setOccupancyTable(prevState=>[newAlarmStatus, ...prevState.filter(item=>
@@ -180,8 +180,8 @@ export default function Table({onRowSelect, isEventLog, isAlarmTable}: TableProp
                 }
             }
             //for event log post even if there is not an alarm
-            // setEventLog(prevState => [newAlarmStatus,...prevState.filter(item => item.occupancyId !== occupancyCount)]);
-            setEventLog(prevState => [newAlarmStatus, ...prevState]);
+            // setEventLog(prevState => [newAlarmStatus,...prevState]); //causes repeats of same occupancy
+            setEventLog(prevState => [newAlarmStatus, ...prevState.filter(item => item.occupancyId !== occupancyCount)]);
 
         });
 
