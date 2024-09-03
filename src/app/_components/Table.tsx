@@ -137,7 +137,6 @@ export default function Table({onRowSelect, isEventLog, isAlarmTable}: TableProp
         }
     }, [occupancyDataSources]);
 
-
     const handleOccupancyData = (laneName: string, message: any, mode: any) => {
 
         // @ts-ignore
@@ -182,27 +181,22 @@ export default function Table({onRowSelect, isEventLog, isAlarmTable}: TableProp
             //for event log post even if there is not an alarm
             // setEventLog(prevState => [newAlarmStatus,...prevState]); //causes repeats of same occupancy
             setEventLog(prevState => [newAlarmStatus, ...prevState.filter(item => item.occupancyId !== occupancyCount)]);
-
         });
-
-
     }
-
 
     const handleSelectedRow = (event: SelectedEvent) => {
         // console.log(event); // Log the selected row data
         onRowSelect(event); // Pass to parent component
     };
 
-
     return(
         <div>
             { isAlarmTable &&
-                (<EventTable data={((occupancyTable.concat(batchOccupancyTable)).filter(item => !filterByAdjudicatedCode.includes(item.adjudicatedCode))).sort((a,b) =>new Date(b.startTime).getTime()- new Date(a.startTime).getTime())} onRowSelect={handleSelectedRow}/>)
+                (<EventTable data={((occupancyTable.concat(batchOccupancyTable)).filter(item => !filterByAdjudicatedCode.includes(item.adjudicatedCode))).sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())} onRowSelect={handleSelectedRow}/>)
             }
 
             { isEventLog &&
-                (<EventTable viewMenu viewLane viewSecondary viewAdjudicated data={eventLog.sort((a,b) =>new Date(b.startTime).getTime()- new Date(a.startTime).getTime())}/>)
+                (<EventTable viewMenu viewLane viewSecondary viewAdjudicated data={eventLog.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())}/>)
             }
         </div>
 

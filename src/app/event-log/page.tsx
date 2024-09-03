@@ -2,7 +2,6 @@
 import { Box, Paper, Typography } from "@mui/material";
 import Table from "@/app/_components/Table";
 
-
 export default function EventLogPage() {
     return (
         <Box>
