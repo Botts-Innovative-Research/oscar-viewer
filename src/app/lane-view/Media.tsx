@@ -4,7 +4,7 @@ import { Typography } from "@mui/material";
 import { EventTableData, SelectedEvent } from "types/new-types";
 
 const testData: EventTableData = {
-  id: '1',
+  id: 1,
   secondaryInspection: false,
   laneId: '1', occupancyId: '1',
   startTime: 'XX:XX:XX AM',

@@ -1,6 +1,6 @@
 "use client";
 
-import {EventTableData, LaneOccupancyData, LaneStatusData, SelectedEvent} from "../../../types/new-types";
+import {EventTableData, LaneOccupancyData, LaneStatusData, SelectedEvent} from "../../../../types/new-types";
 import {useEffect, useRef, useState} from "react";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import {Protocols} from "@/lib/data/Constants";
@@ -16,12 +16,12 @@ import {selectLanes} from "@/lib/state/OSCARClientSlice";
 
 interface TableProps{
     onRowSelect: (event:SelectedEvent)=> void;
-    isEventLog?: boolean;
-    isAlarmTable?: boolean;
+    tableMode: "eventlog" | "alarmtable";
 }
 
-export default function Table({onRowSelect, isEventLog, isAlarmTable}: TableProps){
+export default function Table({onRowSelect, tableMode}: TableProps){
 
+    const [data, setData] = useState<EventTableData[]>([]); // Data to be displayed, depending on tableMode
     const [eventLog, setEventLog] = useState<EventTableData[]>([]);
     const [occupancyTable, setOccupancyTable] = useState<EventTableData[]>([]);
     const [batchOccupancyTable, setBatchOccupancyTable] = useState<EventTableData[]>([]);
@@ -42,6 +42,21 @@ export default function Table({onRowSelect, isEventLog, isAlarmTable}: TableProp
     const [laneStatus, setLaneStatus] = useState<LaneStatusData[]| null>(null);
     const [laneOccupancy, setLaneOccupancy] = useState<LaneOccupancyData[]>(null);
 
+    // Toggle data to be displayed based on tableMode
+    useEffect(() => {
+        if (tableMode == "alarmtable") {
+            setData(
+                ((occupancyTable.concat(batchOccupancyTable)).filter(item =>
+                    !filterByAdjudicatedCode.includes(item.adjudicatedCode)))
+                .sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+            );
+        }
+        else if (tableMode == "eventlog") {
+            setData(
+                eventLog.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+            );
+        }
+    }, [tableMode, data])
 
     useEffect(() => {
         if (laneStatus === null && ds.length > 0) {
@@ -189,16 +204,18 @@ export default function Table({onRowSelect, isEventLog, isAlarmTable}: TableProp
         onRowSelect(event); // Pass to parent component
     };
 
-    return(
-        <div>
-            { isAlarmTable &&
-                (<EventTable data={((occupancyTable.concat(batchOccupancyTable)).filter(item => !filterByAdjudicatedCode.includes(item.adjudicatedCode))).sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())} onRowSelect={handleSelectedRow}/>)
-            }
-
-            { isEventLog &&
-                (<EventTable viewMenu viewLane viewSecondary viewAdjudicated data={eventLog.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())}/>)
-            }
-        </div>
-
-    )
+    /** Handle return value based on tableMode */
+    if (tableMode == "alarmtable") {
+        return (
+            <EventTable data={data} onRowSelect={handleSelectedRow}/>
+        )
+    }
+    else if (tableMode == "eventlog") {
+        return (
+            <EventTable viewMenu viewLane viewSecondary viewAdjudicated data={data}/>
+        )
+    }
+    else {
+        return (<></>)
+    }
 }

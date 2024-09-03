@@ -2,7 +2,7 @@
 
 import { Box } from '@mui/material';
 import { DataGrid, GridActionsCellItem, GridCellParams, GridColDef, gridClasses } from '@mui/x-data-grid';
-import CustomToolbar from './CustomToolbar';
+import CustomToolbar from '../CustomToolbar';
 import { EventTableData, SelectedEvent } from 'types/new-types';
 import { useState } from 'react';
 
