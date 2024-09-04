@@ -20,123 +20,137 @@ import {Mode} from 'osh-js/source/core/datasource/Mode';
 
 interface LaneWithVideo {
   laneData: LaneMeta,
-  videoDatastreams: Datastream[],
-  gammaDatastream: Datastream,
-  neutronDatastream: Datastream
+  videoSources: typeof SweApi[],
+  status: string,
 }
 
-/*
-List of livestreams
-Click video to go somewhere
-Highlight video and push to front given state
-Push new occupancies to beginning of non-alarming states
-Check with salwa nextconfig
-
+/* TODO
 If lane has multiple videostreams, just use one or 
 implement ability to switch between videostreams
 */
 export default function CameraGrid() {
   const dss: Datastream[] = Array.from(useSelector((state: RootState) => state.oshSlice.dataStreams.values()));
-
   const lanes: LaneMeta[] = useSelector(selectLanes);
-  const [lanesWithVideo, setLanesWithVideo] = useState<LaneWithVideo[] | null>(null);
-  const [laneStatuses, ] = useState<Map<string, string>>(new Map<string, string>());
-  const [datastreamsInitialized, setDatastreamsInitialized] = useState(false);
+  const [videoList, setVideoList] = useState<LaneWithVideo[] | null>(null);
+  let allDatasources = [];
 
+
+  // Create and connect videostreams
   useEffect(() => {
-    if(lanesWithVideo == null || lanesWithVideo.length == 0 && dss.length > 0) {
-      let laneData: LaneWithVideo[] = []
+    if(videoList == null || videoList.length == 0 && dss.length > 0) {
+      let videos: LaneWithVideo[] = []
 
       lanes.map((lane) => {
         console.log(lane)
         const videoDatastreams = dss.filter((ds) => (lane.systemIds.includes(ds.parentSystemId) && ds.name.includes("Video") && ds.name.includes("Lane")));
-        const gammaDatastreams = dss.filter((ds) => (lane.systemIds.includes(ds.parentSystemId) && ds.name.includes("Gamma") && ds.name.includes("Count")));
-        const neutronDatastreams = dss.filter((ds)=>(lane.systemIds.includes(ds.parentSystemId) && ds.name.includes("Neutron") && ds.name.includes("Count")));
+
+        let sources: typeof SweApi[] = [];
+        videoDatastreams.forEach((stream) => {
+          const source = new SweApi(stream.id, {
+            protocol: Protocols.WS,
+            endpointUrl: `162.238.96.81:8781/sensorhub/api`,
+            resource: `/datastreams/${stream.id}/observations`,
+            mode: Mode.REAL_TIME,
+            tls: false,
+            responseFormat: 'application/swe+binary',
+            connectorOpts: {
+                username: 'admin',
+                password: 'admin',
+            }
+          });
+          source.connect();
+          sources.push(source);
+        });
 
         const laneWithVideo: LaneWithVideo = {
           laneData: lane,
-          videoDatastreams: videoDatastreams,
-          gammaDatastream: gammaDatastreams[0],
-          neutronDatastream: neutronDatastreams[0]
+          videoSources: sources,
+          status: 'none',
         };
 
-        console.log("After init: ", laneWithVideo.gammaDatastream.datasource);
-
-        laneData.push(laneWithVideo);
+        videos.push(laneWithVideo);
       });
 
-      console.log(laneData);
-      setLanesWithVideo(laneData);
-      setDatastreamsInitialized(true);
+      console.log(videos);
+      setVideoList(videos);
     }
   }, [dss]);
 
-  async function connectAndSubscribe(lane: LaneWithVideo, sweApi: typeof SweApi) {
-    if(lane.gammaDatastream.datasource == null || lane.gammaDatastream.datasource.endpointUrl == undefined) {
-      lane.gammaDatastream.datasource = new SweApi(lane.gammaDatastream.id, {
-        protocol: Protocols.WS,
-        endpointUrl: `162.238.96.81:8781/sensorhub/api`,
-        resource: `/datastreams/${lane.gammaDatastream.id}/observations`,
-        mode: Mode.REAL_TIME,
-        tls: false,
-        connectorOpts: {
-            username: 'admin',
-            password: 'admin',
-        }
-      });
-    }
-
-    if(lane.neutronDatastream.datasource == null || lane.neutronDatastream.datasource.endpointUrl == undefined) {
-      lane.neutronDatastream.datasource = new SweApi(lane.neutronDatastream.id, {
-        protocol: Protocols.WS,
-        endpointUrl: `162.238.96.81:8781/sensorhub/api`,
-        resource: `/datastreams/${lane.neutronDatastream.id}/observations`,
-        mode: Mode.REAL_TIME,
-        tls: false,
-        connectorOpts: {
-            username: 'admin',
-            password: 'admin',
-        }
-      });
-    }
-
-    console.log(await sweApi.isConnected());
-    if(!await sweApi.isConnected()) {
-      console.log("connecting sweapi");
-      console.log(sweApi);
-      sweApi.connect();
-    }
-
-    console.log("subscribing sweapi")
-    sweApi.subscribe((message: any) => {
-      const alarmState = message.values[0].data.alarmState;
-      console.log(`State received from ${lane.laneData.name}: ${alarmState}`);
-      if(alarmState !== "Background" && alarmState !== "Scan") {
-        laneStatuses.set(lane.laneData.id, alarmState);
-        // TODO: Pull timeout from config
-        setTimeout(() => laneStatuses.set(lane.laneData.id, "none"), 15000);
-      }
-    }, [EventType.DATA]);
-  }
-
+  // Create and connect alarm statuses
   useEffect(() => {
-    console.log("DS Init? ", datastreamsInitialized);
-    async function connectStreams() {
-      if(lanesWithVideo && lanesWithVideo.length > 0) {
-        lanesWithVideo.forEach(async (lane) => {
-          console.log("Lane ds : ", lane.gammaDatastream.datasource);
+    if(videoList && videoList.length > 0 && dss.length > 0) {
+      lanes.map((lane) => {
+        const gammaDatastream = dss.filter((ds) => (lane.systemIds.includes(ds.parentSystemId) && ds.name.includes("Gamma") && ds.name.includes("Count")))[0];
+        const neutronDatastream = dss.filter((ds)=>(lane.systemIds.includes(ds.parentSystemId) && ds.name.includes("Neutron") && ds.name.includes("Count")))[0];
 
-            await connectAndSubscribe(lane, lane.gammaDatastream.datasource);
-            await connectAndSubscribe(lane, lane.neutronDatastream.datasource);
-  
+        // Connect datasources
+        const gammaSource = new SweApi(gammaDatastream.id, {
+          protocol: Protocols.WS,
+          endpointUrl: `162.238.96.81:8781/sensorhub/api`,
+          resource: `/datastreams/${gammaDatastream.id}/observations`,
+          mode: Mode.REAL_TIME,
+          tls: false,
+          connectorOpts: {
+              username: 'admin',
+              password: 'admin',
+          }
         });
-      }
-    }
+        gammaSource.connect();
+        allDatasources.push(gammaSource);
 
-    if(datastreamsInitialized) {
-      connectStreams();
+        const neutronSource = new SweApi(neutronDatastream.id, {
+          protocol: Protocols.WS,
+          endpointUrl: `162.238.96.81:8781/sensorhub/api`,
+          resource: `/datastreams/${neutronDatastream.id}/observations`,
+          mode: Mode.REAL_TIME,
+          tls: false,
+          connectorOpts: {
+              username: 'admin',
+              password: 'admin',
+          }
+        });
+        neutronSource.connect();
+        allDatasources.push(neutronSource);
+
+        // Subscribe datasources
+        gammaSource.subscribe((message: any) => {
+          const alarmState = message.values[0].data.alarmState;
+          console.log(`Gamma state received from ${lane.name}: ${alarmState}`);
+          if(alarmState != "Background" && alarmState != "Scan") {
+            updateVideoList(lane.id, alarmState);
+          }
+        }, [EventType.DATA]);
+
+        neutronSource.subscribe((message: any) => {
+          const alarmState = message.values[0].data.alarmState;
+          console.log(`Neutron state received from ${lane.name}: ${alarmState}`);
+          if(alarmState != "Background" && alarmState != "Scan") {
+            updateVideoList(lane.id, alarmState);
+          }
+        }, [EventType.DATA]);
+
+      });
     }
-  }, [lanesWithVideo]);
+  }, [videoList]);
+
+  const updateVideoList = (id: string, newStatus: string) => {
+    setVideoList((prevList) => {
+      const updatedList = prevList.map((videoData) => 
+        videoData.laneData.id === id ? {...videoData, status: newStatus } : videoData
+      );
+
+      const updatedVideo = updatedList.find((videoData) => videoData.laneData.id === id);
+
+      if(newStatus !== 'Background' && newStatus !== 'Scan') {
+        // Get timeout from config
+        setTimeout(() => updateVideoList(id, "none"), 10000);
+        const filteredVideos = updatedList.filter((videoData) => videoData.laneData.id !== id);
+        return [updatedVideo, ...filteredVideos];
+      }
+
+      return updatedList;
+    })
+  };
 
   // TODO: Create swe api objects and pass to children
 
@@ -156,15 +170,15 @@ export default function CameraGrid() {
 
   return (
     <>
-    {lanesWithVideo != null && (
+    {videoList != null && (
       <Grid container padding={2} justifyContent={"start"}>
-        {lanesWithVideo.slice(startItem, endItem).map((lane) => (
-          <VideoStatusWrapper key={lane.laneData.id} lane={lane.laneData} status={laneStatuses.get(lane.laneData.id)} 
-          children={<VideoComponent videoDatastreams={lane.videoDatastreams}/>}>
+        {videoList.slice(startItem, endItem).map((lane) => (
+          <VideoStatusWrapper key={lane.laneData.id} lane={lane.laneData} status={lane.status} 
+          children={<VideoComponent id={lane.laneData.id} videoSources={lane.videoSources}/>}>
           </VideoStatusWrapper>
         ))}
       <Grid item xs={12} display={"flex"} justifyContent={"center"}>
-        <Pagination count={Math.ceil(lanesWithVideo.length / maxItems)} onChange={handleChange} color="primary" showFirstButton showLastButton />
+        <Pagination count={Math.ceil(videoList.length / maxItems)} onChange={handleChange} color="primary" showFirstButton showLastButton />
       </Grid>
     </Grid>)}
     </>
