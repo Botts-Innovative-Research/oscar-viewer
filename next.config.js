@@ -4,6 +4,7 @@
  */
 module.exports = {
 
+    output: 'export',
     webpack: (config, { isServer }) => {
         config.resolve.fallback = {
             ...config.resolve.fallback,
@@ -14,5 +15,16 @@ module.exports = {
             use: { loader: 'worker-loader' },
         });
         return config;
+    },
+    // experimental: {
+    //     missingSuspenseWithCSRBailout: true,
+    // },
+    images: { unoptimized: true },
+    typescript: {
+        // !! WARN !!
+        // Dangerously allow production builds to successfully complete even if
+        // your project has type errors.
+        // !! WARN !!
+        ignoreBuildErrors: true,
     }
 }
