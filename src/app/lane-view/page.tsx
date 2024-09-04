@@ -1,7 +1,7 @@
 "use client";
 
 import { Grid, Paper, Stack, Typography } from "@mui/material";
-import { useState, Suspense } from "react";
+import { useState } from "react";
 import { EventTableData, SelectedEvent } from "types/new-types";
 import BackButton from "../_components/BackButton";
 import { useSearchParams } from 'next/navigation'
@@ -27,7 +27,6 @@ export default function LaneViewPage() {
   const [selectedEvent, setSelectedEvent] = useState<SelectedEvent>({startTime: "XX:XX:XX AM", endTime: "XX:XX:XX AM"});  // Reference types/new-types.d.ts to change type
 
   return (
-      <Suspense>
     <Stack spacing={2} direction={"column"}>
       <Grid item spacing={2}>
         <BackButton />
@@ -51,6 +50,5 @@ export default function LaneViewPage() {
         </Paper>
       </Grid>
     </Stack>
-      </Suspense>
   );
 }

@@ -1,10 +1,11 @@
 "use client";
 
 import { ThemeProvider, createTheme, useMediaQuery } from "@mui/material";
-import { ReactNode, useMemo } from "react";
+import { ReactNode, Suspense, useMemo } from "react";
 import CssBaseline from '@mui/material/CssBaseline';
 import { getTheme } from "@/app/style/theme";
 import "@/app/style/global.css"
+import SuspenseLoad from "./_components/SuspenseLoad";
 
 export default function Providers({ children }: { children: ReactNode }) {
 
@@ -18,9 +19,12 @@ export default function Providers({ children }: { children: ReactNode }) {
   );
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      {children}
-    </ThemeProvider>
+    <Suspense fallback={<SuspenseLoad />}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        {children}
+      </ThemeProvider>
+    </Suspense>
+    
   );
 }

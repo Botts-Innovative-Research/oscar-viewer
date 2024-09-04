@@ -16,9 +16,9 @@ module.exports = {
         });
         return config;
     },
-    experimental: {
-        missingSuspenseWithCSRBailout: false,
-    },
+    // experimental: {
+    //     missingSuspenseWithCSRBailout: true,
+    // },
     typescript: {
         // !! WARN !!
         // Dangerously allow production builds to successfully complete even if
