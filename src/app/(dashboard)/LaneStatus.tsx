@@ -127,7 +127,7 @@ export default function LaneStatus(props: LaneStatusProps) {
     const msgVal: any[] = message.values || [];
     let newStatuses: LaneStatusItem[] = [];
 
-    await timeout(5500);
+    await timeout(10000);
 
     msgVal.forEach((value) => {
       const state = findInObject(value, valueKey);

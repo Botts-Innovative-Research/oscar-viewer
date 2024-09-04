@@ -98,6 +98,8 @@ export const selectLaneById = (laneId: string) => (state: RootState) => {
 };
 export const selectAlertDetails = (state: RootState) => state.oscarClientSlice.alertDetails;
 
+
+
 // Compound Selectors
 export const selectSystemIdsOfLane = (laneId: string) => createSelector(
     [selectLaneById(laneId)],
