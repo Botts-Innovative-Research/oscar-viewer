@@ -1,6 +1,6 @@
 "use client"
 import { Box, Paper, Typography } from "@mui/material";
-import Table from "@/app/_components/Table";
+import Table from "@/app/_components/event-table/Table";
 
 
 export default function EventLogPage() {
