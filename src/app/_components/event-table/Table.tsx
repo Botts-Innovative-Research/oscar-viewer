@@ -53,10 +53,13 @@ export default function Table({onRowSelect, tableMode}: TableProps){
         }
         else if (tableMode == "eventlog") {
             setData(
-                eventLog.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+                [...eventLog].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
             );
         }
-    }, [tableMode, data])
+        else {
+            setData([]);
+        }
+    }, [tableMode, data, eventLog])
 
     useEffect(() => {
         if (laneStatus === null && ds.length > 0) {
