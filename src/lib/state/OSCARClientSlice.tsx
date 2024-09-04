@@ -124,7 +124,6 @@ export const selectDatastreamsOfLane = (laneId: string) => createSelector(
             }
         }
         return datastreamsArr;
-
     });
 export const selectDatastreamsOfLaneByTypes = (laneId: string, types: string[]) => createSelector(
     [selectDatastreamsOfLane(laneId), selectDatastreamByOutputType(types)],

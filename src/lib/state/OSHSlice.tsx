@@ -31,7 +31,8 @@ export interface IOSHSlice {
     dataStreams: Map<string, IDatastream>,
     mainDataSynchronizer: ITimeSynchronizerProps,
     datasources: SweApi[],
-    otherDataSynchronizers: ITimeSynchronizerProps[]
+    otherDataSynchronizers: ITimeSynchronizerProps[],
+    datasourcesToDatastreams: Map<string, string>
 }
 
 const initialNodeOpts: NodeOptions = {
@@ -60,7 +61,8 @@ const initialState: IOSHSlice = {
     mainDataSynchronizer: new TimeSynchronizerProps(new Date().toISOString(),
         "...", 1, 5, [], Mode.REAL_TIME),
     datasources: [],
-    otherDataSynchronizers: []
+    otherDataSynchronizers: [],
+    datasourcesToDatastreams: new Map<string, string>()
 }
 
 export const Slice = createSlice({
@@ -78,6 +80,18 @@ export const Slice = createSlice({
         },
         addDatasource: (state, action: PayloadAction<SweApi>) => {
             state.datasources.push(action.payload);
+        },
+        addDatasourceToDatastream: (state, action: PayloadAction<{ datastreamId: string, datasourceId: SweApi }>) => {
+            if (state.datasources.includes(action.payload.datasourceId) && state.dataStreams.has(action.payload.datastreamId)) {
+                state.datasourcesToDatastreams.set(action.payload.datastreamId, action.payload.datasourceId.id);
+            } else {
+                if (!state.datasources.some(ds => ds["id"] === action.payload.datasourceId.id)) {
+                    console.error("Datasource not found in the state");
+                }
+                if (!state.dataStreams.has(action.payload.datastreamId)) {
+                    console.error("Datastream not found in the state");
+                }
+            }
         },
         addDataSynchronizer: (state, action: PayloadAction<ITimeSynchronizerProps>) => {
             state.otherDataSynchronizers.push(action.payload);
@@ -121,6 +135,7 @@ export const {
     addSystem,
     addDatastream,
     addDatasource,
+    addDatasourceToDatastream,
     addDataSynchronizer,
     setMainDataSynchronizer,
     setSystems,
@@ -199,7 +214,6 @@ export const selectDatastreamsBySystemIds = (systemIds: string[]) => createSelec
     (datastreams) => {
         return Array.from(datastreams.values()).filter((ds: IDatastream) => systemIds.includes(ds.parentSystemId));
     });
-
 
 
 export default Slice.reducer;

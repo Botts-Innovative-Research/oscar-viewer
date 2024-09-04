@@ -1,6 +1,6 @@
 'use client';
 
-import React, {createContext, MutableRefObject, ReactNode, useCallback, useEffect, useRef, useState} from "react";
+import React, {createContext, MutableRefObject, ReactNode, useCallback, useEffect, useRef} from "react";
 // @ts-ignore
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
@@ -10,16 +10,15 @@ import {Datastream} from "@/lib/data/osh/Datastreams";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {INode, Node} from "@/lib/data/osh/Node";
 import {
+    addDatasourceToDatastream,
     changeConfigNode,
-    selectDataSourceByOutputType, selectDatastreamByOutputType,
     setDatasources,
     setDatastreams,
     setSystems
 } from "@/lib/state/OSHSlice";
 import {System} from "@/lib/data/osh/Systems";
-import {selectDatastreamsOfLaneByTypes, selectLaneByName, setLanes} from "@/lib/state/OSCARClientSlice";
+import {setLanes} from "@/lib/state/OSCARClientSlice";
 import {RootState} from "@/lib/state/Store";
-import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
 
 interface IDataSourceContext {
     masterTimeSyncRef: MutableRefObject<typeof DataSynchronizer | undefined>
@@ -39,16 +38,16 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     const masterTimeSyncRef = useRef<typeof DataSynchronizer>();
     const datastreams = useSelector((state: RootState) => state.oshSlice.dataStreams);
     const dataSources = useSelector((state: RootState) => state.oshSlice.datasources);
-    const selectGammaCountDS = selectDatastreamByOutputType(['Driver - Gamma Count']);
-    const gammaCountDS = useSelector((state: RootState) => selectGammaCountDS(state));
+    /*  const selectGammaCountDS = selectDatastreamByOutputType(['Driver - Gamma Count']);
+      const gammaCountDS = useSelector((state: RootState) => selectGammaCountDS(state));*/
 
-    const northLaneSelector = selectLaneByName('North Lane 1');
+    /*const northLaneSelector = selectLaneByName('North Lane 1');
     const northLane: LaneMeta = useSelector((state: RootState) => northLaneSelector(state));
 
     // const selectNorthLaneGammaCountDS = selectDatastreamsOfLaneByTypes(northLane.id,['Driver - Gamma Count']);
     const selectNorthLaneGammaCountDS = northLane?.id ? selectDatastreamsOfLaneByTypes(northLane.id, ['Driver - Gamma Count']) : (): any[] => [];
     // const NorthLaneGammaCountDS = useSelector((state: RootState) => selectNorthLaneGammaCountDS(state));
-    const NorthLaneGammaCountDS = useSelector((state: RootState) => selectNorthLaneGammaCountDS(state) ?? []);
+    const NorthLaneGammaCountDS = useSelector((state: RootState) => selectNorthLaneGammaCountDS(state) ?? []);*/
 
     const InitializeApplication = useCallback(async () => {
         if (!configNode) {
@@ -127,7 +126,6 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             combinedDatastreams.forEach((datastreamJson: any) => {
                 const datastream = new Datastream(datastreamJson.id, datastreamJson.name, datastreamJson["system@id"], [datastreamJson.validTime[0], datastreamJson.validTime[1]]);
                 datastreamsMap.set(datastream.id, datastream);
-                // dispatch(addDatastream(datastream))
             });
             dispatch(setDatastreams(datastreamsMap));
         });
@@ -143,7 +141,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
                 end: 'latest'
             });
             dsArr.push(datasource);
-            // console.log("DS Array:", dsArr);
+            dispatch(addDatasourceToDatastream({datastreamId: datastream.id, datasourceId: datasource.id}));
         }
         dispatch(setDatasources(dsArr));
     }, [datastreams, dispatch]);
@@ -166,8 +164,8 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     useEffect(() => {
         console.log("DataStreams:", datastreams);
         console.log("Data sources:", dataSources);
-        console.log("Gamma Count DS:", gammaCountDS);
-        console.warn("North Lane Gamma Count DS:", NorthLaneGammaCountDS);
+        /* console.log("Gamma Count DS:", gammaCountDS);
+         console.warn("North Lane Gamma Count DS:", NorthLaneGammaCountDS);*/
     }, [dataSources]);
 
     if (!masterTimeSyncRef.current) {
