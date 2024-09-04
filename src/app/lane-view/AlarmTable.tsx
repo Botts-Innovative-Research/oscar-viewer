@@ -1,5 +1,5 @@
 import { Box, Paper, Typography } from "@mui/material";
-import EventTable from "../_components/EventTable";
+import EventTable from "../_components/event-table/EventTable";
 import { EventTableData } from "types/new-types";
 
 const testData: EventTableData[] = [

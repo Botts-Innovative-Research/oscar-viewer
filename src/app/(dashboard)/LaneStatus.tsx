@@ -64,7 +64,7 @@ export default function LaneStatus(props: LaneStatusProps) {
             protocol: Protocols.WS,
             mode: Mode.REAL_TIME,
             endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
-            resource: `/datastreams/${data.gammaDataStream[0].id}/observations`,
+            resource: `/datastreams/${data.neutronDataStream[0].id}/observations`,
             connectorOpts: {
               username: 'admin',
               password: 'admin',

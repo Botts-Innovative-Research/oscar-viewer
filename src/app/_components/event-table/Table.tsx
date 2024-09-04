@@ -1,6 +1,6 @@
 "use client";
 
-import {EventTableData, LaneOccupancyData, LaneStatusData, SelectedEvent} from "../../../types/new-types";
+import {EventTableData, LaneOccupancyData, LaneStatusData, SelectedEvent} from "../../../../types/new-types";
 import {useEffect, useRef, useState} from "react";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import {Protocols} from "@/lib/data/Constants";
