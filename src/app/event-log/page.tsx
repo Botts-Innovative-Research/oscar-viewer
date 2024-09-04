@@ -1,7 +1,6 @@
 "use client"
 import { Box, Paper, Typography } from "@mui/material";
-import Table from "@/app/_components/event-table/Table";
-
+import Table from "../_components/event-table/Table";
 
 export default function EventLogPage() {
     return (
@@ -9,7 +8,7 @@ export default function EventLogPage() {
             <Typography variant="h4">Event Log</Typography>
             <br />
             <Paper variant='outlined' sx={{ height: "100%" }}>
-                <Table isEventLog onRowSelect= {() =>{}} />
+                <Table tableMode={"eventlog"} onRowSelect= {() =>{}} />
             </Paper>
         </Box>
     );

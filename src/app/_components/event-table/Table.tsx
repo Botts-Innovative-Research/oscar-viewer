@@ -16,12 +16,12 @@ import {selectLanes} from "@/lib/state/OSCARClientSlice";
 
 interface TableProps{
     onRowSelect: (event:SelectedEvent)=> void;
-    isEventLog?: boolean;
-    isAlarmTable?: boolean;
+    tableMode: "eventlog" | "alarmtable";
 }
 
-export default function Table({onRowSelect, isEventLog, isAlarmTable}: TableProps){
+export default function Table({onRowSelect, tableMode}: TableProps){
 
+    const [data, setData] = useState<EventTableData[]>([]); // Data to be displayed, depending on tableMode
     const [eventLog, setEventLog] = useState<EventTableData[]>([]);
     const [occupancyTable, setOccupancyTable] = useState<EventTableData[]>([]);
     const [batchOccupancyTable, setBatchOccupancyTable] = useState<EventTableData[]>([]);
@@ -42,6 +42,24 @@ export default function Table({onRowSelect, isEventLog, isAlarmTable}: TableProp
     const [laneStatus, setLaneStatus] = useState<LaneStatusData[]| null>(null);
     const [laneOccupancy, setLaneOccupancy] = useState<LaneOccupancyData[]>(null);
 
+    // Toggle data to be displayed based on tableMode
+    useEffect(() => {
+        if (tableMode == "alarmtable") {
+            setData(
+                ((occupancyTable.concat(batchOccupancyTable)).filter(item =>
+                    !filterByAdjudicatedCode.includes(item.adjudicatedCode)))
+                .sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+            );
+        }
+        else if (tableMode == "eventlog") {
+            setData(
+                [...eventLog].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+            );
+        }
+        else {
+            setData([]);
+        }
+    }, [tableMode, data, eventLog])
 
     useEffect(() => {
         if (laneStatus === null && ds.length > 0) {
@@ -91,6 +109,7 @@ export default function Table({onRowSelect, isEventLog, isAlarmTable}: TableProp
                             password: 'admin',
                         },
                         prefetchBatchSize: 1000000,
+                        prefetchBatchDuration: 5000,
                     });
                     batchSource.connect();
                     return batchSource;
@@ -136,7 +155,6 @@ export default function Table({onRowSelect, isEventLog, isAlarmTable}: TableProp
         }
     }, [occupancyDataSources]);
 
-
     const handleOccupancyData = (laneName: string, message: any, mode: any) => {
 
         // @ts-ignore
@@ -164,14 +182,14 @@ export default function Table({onRowSelect, isEventLog, isAlarmTable}: TableProp
                 maxNeutron: maxNeutron,
                 status: statusType,
                 adjudicatedUser: 'kalyn', // Update useSelector(selectCurrentUser)
-                adjudicatedCode: 0 // Update,
+                adjudicatedCode: 0  // Update,
             };
 
             //set alarm table
             if(gammaAlarm || neutronAlarm){
                 if(mode === Mode.BATCH){
                     setBatchOccupancyTable(prevState=>[newAlarmStatus, ...prevState.filter(item =>
-                        item.occupancyId !== occupancyCount)]);
+                        item.occupancyId !== occupancyCount || item.laneId !== laneName)]);
                 }
                 else if(mode === Mode.REAL_TIME){
                     setOccupancyTable(prevState=>[newAlarmStatus, ...prevState.filter(item=>
@@ -179,31 +197,28 @@ export default function Table({onRowSelect, isEventLog, isAlarmTable}: TableProp
                 }
             }
             //for event log post even if there is not an alarm
-            // setEventLog(prevState => [newAlarmStatus,...prevState.filter(item => item.occupancyId !== occupancyCount)]);
-            setEventLog(prevState => [newAlarmStatus, ...prevState]);
-
+            // setEventLog(prevState => [newAlarmStatus,...prevState]); //causes repeats of same occupancy
+            setEventLog(prevState => [newAlarmStatus, ...prevState.filter(item => item.occupancyId !== occupancyCount)]);
         });
-
-
     }
-
 
     const handleSelectedRow = (event: SelectedEvent) => {
         // console.log(event); // Log the selected row data
         onRowSelect(event); // Pass to parent component
     };
 
-
-    return(
-        <div>
-            { isAlarmTable &&
-                (<EventTable data={((occupancyTable.concat(batchOccupancyTable)).filter(item => !filterByAdjudicatedCode.includes(item.adjudicatedCode))).sort((a,b) =>new Date(b.startTime).getTime()- new Date(a.startTime).getTime())} onRowSelect={handleSelectedRow}/>)
-            }
-
-            { isEventLog &&
-                (<EventTable viewMenu viewLane viewSecondary viewAdjudicated data={eventLog.sort((a,b) =>new Date(b.startTime).getTime()- new Date(a.startTime).getTime())}/>)
-            }
-        </div>
-
-    )
+    /** Handle return value based on tableMode */
+    if (tableMode == "alarmtable") {
+        return (
+            <EventTable data={data} onRowSelect={handleSelectedRow}/>
+        )
+    }
+    else if (tableMode == "eventlog") {
+        return (
+            <EventTable viewMenu viewLane viewSecondary viewAdjudicated data={data}/>
+        )
+    }
+    else {
+        return (<></>)
+    }
 }

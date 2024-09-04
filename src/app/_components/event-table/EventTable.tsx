@@ -3,7 +3,7 @@
 import { Box } from '@mui/material';
 import { DataGrid, GridActionsCellItem, GridCellParams, GridColDef, gridClasses } from '@mui/x-data-grid';
 import CustomToolbar from '../CustomToolbar';
-import { EventTableData, SelectedEvent } from '../../../../types/new-types';
+import { EventTableData, SelectedEvent } from 'types/new-types';
 import { useState } from 'react';
 
 import NotesRoundedIcon from '@mui/icons-material/NotesRounded';
@@ -94,7 +94,6 @@ export default function EventTable(props: {
           11: 'Code 11: Other'
         };
         return typeof value === 'number' ? adjCode[value] : 'None';
-
       }
     },
     {

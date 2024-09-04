@@ -17,8 +17,7 @@ import AlarmTable from "./AlarmTable";
  */
 
 const testData: EventTableData = {
-    //@ts-ignore
-  id: '1', secondaryInspection: false, laneId: '1', occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: 25642, status: 'Gamma',
+  id: 1, secondaryInspection: false, laneId: '1', occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: 25642, status: 'Gamma',
 }
 
 export default function LaneViewPage() {
