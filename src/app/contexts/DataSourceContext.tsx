@@ -10,8 +10,8 @@ import {Datastream} from "@/lib/data/osh/Datastreams";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {INode, Node} from "@/lib/data/osh/Node";
 import {
-    addDatasourceToDatastream,
-    changeConfigNode,
+    addDatasourceToDatastreamEntry,
+    changeConfigNode, createDatasourceOfDatastream,
     setDatasources,
     setDatastreams,
     setSystems
@@ -136,14 +136,15 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         const datastreamArr: Datastream[] = Array.from(datastreams.values());
         console.warn("Creating all data sources...", datastreamArr);
         for (let datastream of datastreamArr) {
-            let datasource = datastream.generateSweApiObj({
-                start: datastream.phenomenonTime.beginPosition,
-                end: 'latest'
-            });
-            dsArr.push(datasource);
-            dispatch(addDatasourceToDatastream({datastreamId: datastream.id, datasourceId: datasource.id}));
+            // let datasource = datastream.generateSweApiObj({
+            //     start: datastream.phenomenonTime.beginPosition,
+            //     end: 'latest'
+            // });
+            // dsArr.push(datasource);
+            // dispatch(addDatasourceToDatastream({datastreamId: datastream.id, datasourceId: datasource.id}));
+            dispatch(createDatasourceOfDatastream({datastreamId: datastream.id}));
         }
-        dispatch(setDatasources(dsArr));
+        // dispatch(setDatasources(dsArr));
     }, [datastreams, dispatch]);
 
     useEffect(() => {

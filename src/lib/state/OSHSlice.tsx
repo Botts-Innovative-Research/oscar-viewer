@@ -81,17 +81,9 @@ export const Slice = createSlice({
         addDatasource: (state, action: PayloadAction<SweApi>) => {
             state.datasources.push(action.payload);
         },
-        addDatasourceToDatastream: (state, action: PayloadAction<{ datastreamId: string, datasourceId: SweApi }>) => {
-            if (state.datasources.includes(action.payload.datasourceId) && state.dataStreams.has(action.payload.datastreamId)) {
-                state.datasourcesToDatastreams.set(action.payload.datastreamId, action.payload.datasourceId.id);
-            } else {
-                if (!state.datasources.some(ds => ds["id"] === action.payload.datasourceId.id)) {
-                    console.error("Datasource not found in the state");
-                }
-                if (!state.dataStreams.has(action.payload.datastreamId)) {
-                    console.error("Datastream not found in the state");
-                }
-            }
+        addDatasourceToDatastreamEntry: (state, action: PayloadAction<{ datastreamId: string, datasourceName: string }>) => {
+            console.info("Adding datasource to datastream", action.payload);
+            state.datasourcesToDatastreams.set(action.payload.datasourceName, action.payload.datastreamId);
         },
         addDataSynchronizer: (state, action: PayloadAction<ITimeSynchronizerProps>) => {
             state.otherDataSynchronizers.push(action.payload);
@@ -125,6 +117,20 @@ export const Slice = createSlice({
         },
         changeConfigNode: (state, action: PayloadAction<INode>) => {
             state.configNode = action.payload;
+        },
+        createDatasourceOfDatastream: (state, action: PayloadAction<{ datastreamId: string }>) => {
+            const datastream = state.dataStreams.get(action.payload.datastreamId);
+            const datasource = datastream.generateSweApiObj({start: datastream.phenomenonTime.beginPosition, end: 'latest'});
+            if(!state.datasources.some(ds => ds.name === datasource.name)) {
+                state.datasources.push(datasource);
+                state.datasourcesToDatastreams.set(datasource.name, datastream.id);
+            }
+        },
+        removeDatasource: (state, action: PayloadAction<string>) => {
+            const rmvDs = state.datasources.find((ds: SweApi) => ds.name === action.payload);
+            const dsIndex = state.datasources.findIndex((ds: SweApi) => ds.name === action.payload);
+            state.datasources.splice(dsIndex, 1);
+            state.datasourcesToDatastreams.delete(rmvDs.name);
         }
     },
 })
@@ -135,7 +141,7 @@ export const {
     addSystem,
     addDatastream,
     addDatasource,
-    addDatasourceToDatastream,
+    addDatasourceToDatastreamEntry,
     addDataSynchronizer,
     setMainDataSynchronizer,
     setSystems,
@@ -143,7 +149,9 @@ export const {
     setDatasources,
     updateNode,
     removeNode,
-    changeConfigNode
+    changeConfigNode,
+    createDatasourceOfDatastream,
+    removeDatasource
 } = Slice.actions;
 
 export const selectNodes = (state: RootState) => state.oshSlice.nodes;
