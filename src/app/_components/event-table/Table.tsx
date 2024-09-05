@@ -59,7 +59,7 @@ export default function Table({onRowSelect, tableMode}: TableProps){
         else {
             setData([]);
         }
-    }, [tableMode, data, eventLog])
+    }, [data, eventLog])
 
     useEffect(() => {
         if (laneStatus === null && ds.length > 0) {

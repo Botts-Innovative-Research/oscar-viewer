@@ -30,6 +30,7 @@ implement ability to switch between videostreams
 */
 export default function CameraGrid() {
   const dss: Datastream[] = Array.from(useSelector((state: RootState) => state.oshSlice.dataStreams.values()));
+  // dss[0].addDatasourceID
   const lanes: LaneMeta[] = useSelector(selectLanes);
   const [videoList, setVideoList] = useState<LaneWithVideo[] | null>(null);
   let allDatasources = [];
@@ -84,36 +85,41 @@ export default function CameraGrid() {
         const neutronDatastream = dss.filter((ds)=>(lane.systemIds.includes(ds.parentSystemId) && ds.name.includes("Neutron") && ds.name.includes("Count")))[0];
 
         // Connect datasources
-        const gammaSource = new SweApi(gammaDatastream.id, {
-          protocol: Protocols.WS,
-          endpointUrl: `162.238.96.81:8781/sensorhub/api`,
-          resource: `/datastreams/${gammaDatastream.id}/observations`,
-          mode: Mode.REAL_TIME,
-          tls: false,
-          connectorOpts: {
-              username: 'admin',
-              password: 'admin',
-          }
-        });
-        gammaSource.connect();
-        allDatasources.push(gammaSource);
+        console.log(`SweApi from state:`)
+        console.log(gammaDatastream.getSweApi())
+        
+        // const gammaSource = new SweApi(gammaDatastream.id, {
+        //   protocol: Protocols.WS,
+        //   endpointUrl: `162.238.96.81:8781/sensorhub/api`,
+        //   resource: `/datastreams/${gammaDatastream.id}/observations`,
+        //   mode: Mode.REAL_TIME,
+        //   tls: false,
+        //   connectorOpts: {
+        //       username: 'admin',
+        //       password: 'admin',
+        //   }
+        // });
+        gammaDatastream.getSweApi().connect();
+        // console.log(`SweApi created locally:`)
+        // console.log(gammaSource)
+        // allDatasources.push(gammaSource);
 
-        const neutronSource = new SweApi(neutronDatastream.id, {
-          protocol: Protocols.WS,
-          endpointUrl: `162.238.96.81:8781/sensorhub/api`,
-          resource: `/datastreams/${neutronDatastream.id}/observations`,
-          mode: Mode.REAL_TIME,
-          tls: false,
-          connectorOpts: {
-              username: 'admin',
-              password: 'admin',
-          }
-        });
-        neutronSource.connect();
-        allDatasources.push(neutronSource);
+        // const neutronSource = new SweApi(neutronDatastream.id, {
+        //   protocol: Protocols.WS,
+        //   endpointUrl: `162.238.96.81:8781/sensorhub/api`,
+        //   resource: `/datastreams/${neutronDatastream.id}/observations`,
+        //   mode: Mode.REAL_TIME,
+        //   tls: false,
+        //   connectorOpts: {
+        //       username: 'admin',
+        //       password: 'admin',
+        //   }
+        // });
+        neutronDatastream.getSweApi().connect();
+        // allDatasources.push(neutronSource);
 
         // Subscribe datasources
-        gammaSource.subscribe((message: any) => {
+        gammaDatastream.getSweApi().subscribe((message: any) => {
           const alarmState = message.values[0].data.alarmState;
           console.log(`Gamma state received from ${lane.name}: ${alarmState}`);
           if(alarmState != "Background" && alarmState != "Scan") {
@@ -121,7 +127,7 @@ export default function CameraGrid() {
           }
         }, [EventType.DATA]);
 
-        neutronSource.subscribe((message: any) => {
+        neutronDatastream.getSweApi().subscribe((message: any) => {
           const alarmState = message.values[0].data.alarmState;
           console.log(`Neutron state received from ${lane.name}: ${alarmState}`);
           if(alarmState != "Background" && alarmState != "Scan") {

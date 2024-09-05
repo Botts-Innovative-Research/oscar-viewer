@@ -21,7 +21,7 @@ export default function EventPreview(props: {
 
   useEffect(() => {
     setSelectedEvent(props.event);  // Update selected event on change
-  }, [props.event])
+  }, [])
 
   return (
     <Box>

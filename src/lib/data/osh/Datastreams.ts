@@ -34,14 +34,19 @@ export class Datastream implements IDatastream {
     tls: boolean = false;
     playbackMode: string;
     datasource: SweApi | null = null;
+    connectorOpts: { username:string, password:string };
 
-    constructor(id: string, name: string, parentSystemId: string, phenomenonTime: ITimePeriod | null, tls: boolean = false, playbackMode: string = 'real_time') {
+    constructor(id: string, name: string, parentSystemId: string, phenomenonTime: ITimePeriod | null, tls: boolean = false, playbackMode: string = 'realTime') {
         this.id = id;
         this.name = name;
         this.parentSystemId = parentSystemId;
         this.phenomenonTime = phenomenonTime;
         this.tls = tls;
         this.playbackMode = playbackMode;
+
+        // Get from node
+        this.endpointUrl = "162.238.96.81:8781/sensorhub/api"
+        this.connectorOpts = { username: 'admin', password: 'password' }
     }
 
     equals(other: Datastream): boolean {
@@ -62,6 +67,7 @@ export class Datastream implements IDatastream {
         let sweApi = new SweApi(`${this.id}-datastream`, {
             protocol: this.getProtocol(),
             endpointUrl: this.endpointUrl,
+            connectorOpts: this.connectorOpts,
             resource: `datastreams/${this.id}/observations`,
             startTime: this.phenomenonTime.beginPosition,
             endTime: this.phenomenonTime.endPosition,

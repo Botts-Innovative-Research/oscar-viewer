@@ -95,7 +95,7 @@ export default function LaneStatus(props: LaneStatusProps) {
         setTamperDatasource(newTamperSource);
       }
     }
-  }, [props.laneStatusData]);
+  }, []);
 
   useEffect(() => {
     if (gammaDatasource !== null) {
