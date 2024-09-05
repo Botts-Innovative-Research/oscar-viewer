@@ -8,7 +8,7 @@ export default function EventLogPage() {
             <Typography variant="h4">Event Log</Typography>
             <br />
             <Paper variant='outlined' sx={{ height: "100%" }}>
-                <Table tableMode={"eventlog"} onRowSelect= {() =>{}} />
+                <Table isEventLog onRowSelect= {() =>{}} />
             </Paper>
         </Box>
     );
