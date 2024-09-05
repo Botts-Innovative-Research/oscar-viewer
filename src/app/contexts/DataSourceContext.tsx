@@ -132,19 +132,11 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }, [systems, dispatch]);
 
     const createAllDataSources = useCallback(() => {
-        let dsArr = [];
         const datastreamArr: Datastream[] = Array.from(datastreams.values());
         console.warn("Creating all data sources...", datastreamArr);
         for (let datastream of datastreamArr) {
-            // let datasource = datastream.generateSweApiObj({
-            //     start: datastream.phenomenonTime.beginPosition,
-            //     end: 'latest'
-            // });
-            // dsArr.push(datasource);
-            // dispatch(addDatasourceToDatastream({datastreamId: datastream.id, datasourceId: datasource.id}));
             dispatch(createDatasourceOfDatastream({datastreamId: datastream.id}));
         }
-        // dispatch(setDatasources(dsArr));
     }, [datastreams, dispatch]);
 
     useEffect(() => {

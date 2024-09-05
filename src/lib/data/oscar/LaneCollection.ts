@@ -30,17 +30,6 @@ export class LaneMeta implements ILaneMeta {
         this.systemIds = systemIds;
         this.hasEML = hasEML;
     }
-
-    // getDataStreamsOfType(type: string): Datastream[] {
-    //     let datastreams: Datastream[] = [];
-    //
-    //     for (let ds of this.oshSlice.dataStreams) {
-    //         if (ds.checkIfInObsProperties(type)) {
-    //             datastreams.push(ds);
-    //         }
-    //     }
-    //     return datastreams;
-    // }
 }
 
 export class LiveLane {
