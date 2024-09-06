@@ -8,18 +8,33 @@ import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
 import {findInObject} from "@/app/utils/Utils";
 import EventTable from "./EventTable";
-import {Datastream} from "@/lib/data/osh/Datastreams";
+import {Datastream, IDatastream} from "@/lib/data/osh/Datastreams";
 import {useSelector} from "react-redux";
 import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import {selectLanes} from "@/lib/state/OSCARClientSlice";
+import {getDatasourcesOfLane, getDatastreamsOfLanes} from "@/lib/data/oscar/Utilities";
+import {useAppDispatch} from "@/lib/state/Hooks";
 
 
-interface TableProps{
-    onRowSelect: (event:SelectedEvent)=> void;
+interface TableProps {
+    onRowSelect: (event: SelectedEvent) => void;
     tableMode: "eventlog" | "alarmtable";
 }
 
-export default function Table({onRowSelect, tableMode}: TableProps){
+interface DSPair {
+    datastream: IDatastream;
+    datasource: SweApi;
+}
+
+interface DatasourceGroup {
+    laneName: string;
+    gammaCountDS: DSPair;
+    neutronCountDS: DSPair;
+    tamperDS: DSPair;
+    occupancyDS: DSPair;
+}
+
+export default function Table({onRowSelect, tableMode}: TableProps) {
 
     const [data, setData] = useState<EventTableData[]>([]); // Data to be displayed, depending on tableMode
     const [eventLog, setEventLog] = useState<EventTableData[]>([]);
@@ -36,11 +51,39 @@ export default function Table({onRowSelect, tableMode}: TableProps){
 
     let filterByAdjudicatedCode = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
-    const ds : Datastream[] = Array.from(useSelector((state: any) => state.oshSlice.dataStreams.values()));
+    const ds: Datastream[] = Array.from(useSelector((state: any) => state.oshSlice.dataStreams.values()));
     const lanes: LaneMeta[] = useSelector(selectLanes);
 
-    const [laneStatus, setLaneStatus] = useState<LaneStatusData[]| null>(null);
+    const [laneStatus, setLaneStatus] = useState<LaneStatusData[] | null>(null);
     const [laneOccupancy, setLaneOccupancy] = useState<LaneOccupancyData[]>(null);
+
+
+    // Test new stuff
+    const dispatch = useAppDispatch();
+    const dsToDStreams = useSelector((state: any) => state.oshSlice.datasourcesToDatastreams);
+    const datastreams = useSelector((state: any) => state.oshSlice.dataStreams);
+    const datasources = useSelector((state: any) => state.oshSlice.datasources);
+    const [lanesToStreams, setLanesToStreams] = useState<Map<string, IDatastream[]>>(new Map<string, IDatastream[]>());
+    const [lanesToSources, setLanesToSources] = useState<Map<string, SweApi[]>>(new Map<string, SweApi[]>());
+
+
+    useEffect(() => {
+        console.log("Datasources to Datastream Map", dsToDStreams);
+        console.log("Datasources and datastreams", datasources, datastreams);
+        if (dsToDStreams.size !== 0) {
+            const results: Map<string, IDatastream[]> = getDatastreamsOfLanes(lanes, datastreams);
+            setLanesToStreams(results);
+            console.log("Lane results!!!", results);
+        }
+    }, [dsToDStreams, datasources, datastreams]);
+
+    useEffect(() => {
+        if(lanesToStreams.size !== 0) {
+            const results = getDatasourcesOfLane(lanesToStreams, datasources, dsToDStreams);
+            setLanesToSources(results);
+            console.info("Lane results for sources!!!", results);
+        }
+    }, [lanesToStreams]);
 
     // Toggle data to be displayed based on tableMode
     useEffect(() => {
@@ -48,15 +91,13 @@ export default function Table({onRowSelect, tableMode}: TableProps){
             setData(
                 ((occupancyTable.concat(batchOccupancyTable)).filter(item =>
                     !filterByAdjudicatedCode.includes(item.adjudicatedCode)))
-                .sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+                    .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
             );
-        }
-        else if (tableMode == "eventlog") {
+        } else if (tableMode == "eventlog") {
             setData(
                 [...eventLog].sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
             );
-        }
-        else {
+        } else {
             setData([]);
         }
     }, [tableMode, data, eventLog])
@@ -140,16 +181,16 @@ export default function Table({onRowSelect, tableMode}: TableProps){
     }, [laneOccupancy]);
 
     useEffect(() => {
-        if (occupancyBatchDataSources){
-            const batchSubscriptions = occupancyBatchDataSources.map((datasource :any) =>{
+        if (occupancyBatchDataSources) {
+            const batchSubscriptions = occupancyBatchDataSources.map((datasource: any) => {
                 datasource.subscribe((message: any) => handleOccupancyData(datasource.name, message, 'batch'), [EventType.DATA]);
             });
         }
     }, [occupancyBatchDataSources]);
 
     useEffect(() => {
-        if (occupancyDataSources){
-            const occupancySubscriptions = occupancyDataSources.map((datasource: any) =>{
+        if (occupancyDataSources) {
+            const occupancySubscriptions = occupancyDataSources.map((datasource: any) => {
                 datasource.subscribe((message: any) => handleOccupancyData(datasource.name, message, 'realTime'), [EventType.DATA]);
             });
         }
@@ -158,7 +199,7 @@ export default function Table({onRowSelect, tableMode}: TableProps){
     const handleOccupancyData = (laneName: string, message: any, mode: any) => {
 
         // @ts-ignore
-        const msgVal: any[] = message.values ||[];
+        const msgVal: any[] = message.values || [];
 
         msgVal.forEach((value) => {
             let occupancyCount = findInObject(value, 'occupancyCount'); //number
@@ -186,13 +227,12 @@ export default function Table({onRowSelect, tableMode}: TableProps){
             };
 
             //set alarm table
-            if(gammaAlarm || neutronAlarm){
-                if(mode === Mode.BATCH){
-                    setBatchOccupancyTable(prevState=>[newAlarmStatus, ...prevState.filter(item =>
+            if (gammaAlarm || neutronAlarm) {
+                if (mode === Mode.BATCH) {
+                    setBatchOccupancyTable(prevState => [newAlarmStatus, ...prevState.filter(item =>
                         item.occupancyId !== occupancyCount || item.laneId !== laneName)]);
-                }
-                else if(mode === Mode.REAL_TIME){
-                    setOccupancyTable(prevState=>[newAlarmStatus, ...prevState.filter(item=>
+                } else if (mode === Mode.REAL_TIME) {
+                    setOccupancyTable(prevState => [newAlarmStatus, ...prevState.filter(item =>
                         item.laneId !== laneName || item.occupancyId !== occupancyCount)]);
                 }
             }
@@ -212,13 +252,11 @@ export default function Table({onRowSelect, tableMode}: TableProps){
         return (
             <EventTable data={data} onRowSelect={handleSelectedRow}/>
         )
-    }
-    else if (tableMode == "eventlog") {
+    } else if (tableMode == "eventlog") {
         return (
             <EventTable viewMenu viewLane viewSecondary viewAdjudicated data={data}/>
         )
-    }
-    else {
+    } else {
         return (<></>)
     }
 }
