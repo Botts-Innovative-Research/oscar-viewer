@@ -146,14 +146,14 @@ export class Node implements INode {
         const systems_arr = await this.fetchSystems();
         console.log("Systems:", systems_arr);
         for (let system of systems_arr) {
-            console.log("System:", system);
+            // console.log("System:", system);
             const newSystem = new System(system.id ,system.properties.uid, system.properties.name, this, null);
-            console.log("New System:", newSystem);
+            // console.log("New System:", newSystem);
             fetchedSystems.push(newSystem);
             const uidSplit = system.properties.uid.split(":");
             // Test for lane signature in uid
             if (LANEREGEX.test(uidSplit[uidSplit.length - 1])) {
-                console.info("Found System matching lane signature");
+                // console.info("Found System matching lane signature");
                 const newLaneName = system.properties.name;
                 // Fetch subsystems
                 const subsystems = await newSystem.fetchSubsystems();
@@ -162,7 +162,7 @@ export class Node implements INode {
                 systemIds.unshift(newSystem.id);
                 // Create a new LaneMeta object
                 let newLaneMeta = new LaneMeta(newLaneName, systemIds);
-                console.info("New Lane Created:", newLaneMeta);
+                // console.info("New Lane Created:", newLaneMeta);
                 fetchedLanes.push(newLaneMeta);
             }
         }

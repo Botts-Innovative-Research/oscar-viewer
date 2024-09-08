@@ -143,7 +143,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
                 end: 'latest'
             });
             dsArr.push(datasource);
-            console.log("DS Array:", dsArr);
+            // console.log("DS Array:", dsArr);
         }
         dispatch(setDatasources(dsArr));
     }, [datastreams, dispatch]);
@@ -164,10 +164,10 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }, [datastreams]);
 
     useEffect(() => {
-        console.log("DataStreams:", datastreams);
-        console.log("Data sources:", dataSources);
-        console.log("Gamma Count DS:", gammaCountDS);
-        console.warn("North Lane Gamma Count DS:", NorthLaneGammaCountDS);
+        // console.log("DataStreams:", datastreams);
+        // console.log("Data sources:", dataSources);
+        // console.log("Gamma Count DS:", gammaCountDS);
+        // console.warn("North Lane Gamma Count DS:", NorthLaneGammaCountDS);
     }, [dataSources]);
 
     if (!masterTimeSyncRef.current) {

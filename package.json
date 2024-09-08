@@ -58,6 +58,7 @@
     "html-webpack-tags-plugin": "^3.0.2",
     "https-browserify": "^1.0.0",
     "idb": "^7.1.1",
+    "leaflet": "^1.9.4",
     "next": "^14.2.5",
     "node-polyfill-webpack-plugin": "^2.0.1",
     "nouislider": "^15.6.1",

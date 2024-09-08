@@ -1,15 +1,18 @@
 "use client";
 
 import { Box, IconButton, SelectChangeEvent, Stack, TextField, Typography } from '@mui/material';
-import Image from "next/image";
 import { useEffect, useState } from 'react';
 import OpenInFullRoundedIcon from '@mui/icons-material/OpenInFullRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import AdjudicationSelect from '../_components/AdjudicationSelect';
 import { SelectedEvent } from 'types/new-types';
 
+import MapComponent from '../_components/map/MapComponent';
+
+
 export default function EventPreview(props: {
   event?: SelectedEvent;
+
 }) {
   const [selectedEvent, setSelectedEvent] = useState(
     props.event && props.event.startTime && props.event.endTime ? props.event : null
@@ -47,7 +50,8 @@ export default function EventPreview(props: {
           />
         </Stack>
       ) : (
-        <Image src={"/SiteMap.png"} alt="Site Map" width={0} height={0} sizes={"100vw"} style={{ width: "100%", height: "100%", padding: 10 }} />
+          <MapComponent onSelectedMarker={()=>{}}/>
+        // <Image src={"/SiteMap.png"} alt="Site Map" width={0} height={0} sizes={"100vw"} style={{ width: "100%", height: "100%", padding: 10 }} />
       )}
     </Box>
   );
