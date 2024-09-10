@@ -15,7 +15,7 @@ import {selectLanes} from "@/lib/state/OSCARClientSlice";
 import {getDatasourcesOfLane, getDatastreamsOfLanes} from "@/lib/data/oscar/Utilities";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import {AdjudicationData, EventTableData} from "@/lib/data/oscar/TableHelpers";
+import {AdjudicationData, EventTableData, EventTableDataCollection} from "@/lib/data/oscar/TableHelpers";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 
@@ -66,9 +66,9 @@ export default function Table({onRowSelect, tableMode}: TableProps) {
     // Test global integrations
     const {laneMapRef} = useContext(DataSourceContext);
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
-    const tableDataRef = useRef<IEventTableData[]>([]);
-    const batchOccupancyTableDataRef = useRef<IEventTableData[]>([]);
-    const occupancyTableDataRef = useRef<IEventTableData[]>([]);
+    const tableDataRef = useRef<EventTableDataCollection>(new EventTableDataCollection());
+    const batchOccupancyTableDataRef = useRef<EventTableData[]>([]);
+    const occupancyTableDataRef = useRef<EventTableData[]>([]);
 
     const datasourceSetup = useCallback(async () => {
         console.log("Table: laneMapRef updated", laneMapRef?.current);
@@ -182,7 +182,6 @@ export default function Table({onRowSelect, tableMode}: TableProps) {
         }
     }
 
-
     const addSubscriptionCallbacks = useCallback(() => {
         for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
             const msgLaneName = laneName;
@@ -201,13 +200,15 @@ export default function Table({onRowSelect, tableMode}: TableProps) {
 
     useEffect(() => {
         if (tableMode === "alarmtable") {
-            tableDataRef.current = occupancyTableDataRef.current;
+            let tableData = new EventTableDataCollection()
+            tableData.setData(occupancyTableDataRef.current);
+            tableDataRef.current = tableData
         } else if (tableMode === "eventlog") {
             // tableDataRef.current = eventLog;
         } else {
-            tableDataRef.current = [];
+            tableDataRef.current = new EventTableDataCollection();
         }
-    }, [tableMode, data]);
+    }, [tableMode, data, eventLog]);
 
 
 // }, [tableMode, data, eventLog]);

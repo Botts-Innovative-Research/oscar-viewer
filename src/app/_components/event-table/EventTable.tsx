@@ -9,6 +9,7 @@ import { useState } from 'react';
 import NotesRoundedIcon from '@mui/icons-material/NotesRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import {colorCodes} from "@/app/_components/AdjudicationSelect";
+import {EventTableDataCollection} from "@/lib/data/oscar/TableHelpers";
 
 
 export default function EventTable(props: {
@@ -17,7 +18,7 @@ export default function EventTable(props: {
   viewMenu?: boolean, // Show three-dot menu button, default FALSE
   viewLane?: boolean, // Show 'View Lane' option in menu, default FALSE
   viewAdjudicated?: boolean, //shows Adjudicated status in the event log , not shown in the alarm table
-  data: IEventTableData[],  // Table data
+  data: EventTableDataCollection,  // Table data
 }) {
   const onRowSelect = props.onRowSelect;
   const viewAdjudicated = props.viewAdjudicated || false;
@@ -149,7 +150,7 @@ export default function EventTable(props: {
       setSelectionModel([selectedId]);
 
       // Find the selected row's data
-      const selectedRow = data.find((row) => row.id === selectedId);
+      const selectedRow = data.data.find((row) => row.id === selectedId);
       if (selectedRow && onRowSelect) {
         onRowSelect({
           startTime: selectedRow.startTime.toString(),
@@ -162,7 +163,7 @@ export default function EventTable(props: {
   return (
       <Box sx={{ height: 400, width: '100%' }}>
         <DataGrid
-            rows={data}
+            rows={data.data}
             columns={columns}
             onRowSelectionModelChange={handleRowSelection}
             rowSelectionModel={selectionModel}

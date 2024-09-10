@@ -61,6 +61,82 @@ export class EventTableData implements IEventTableData {
         this.secondaryInspection = true;
         this.adjudicatedData.addSecondary(aDataSecondary)
     }
+
+    // comparators
+    getStartTimeNum(): number {
+        return new Date(this.startTime).getTime();
+    }
+
+    getEndTimeNum(): number {
+        return new Date(this.endTime).getTime();
+    }
+}
+
+export class EventTableDataCollection {
+    data: EventTableData[];
+    sortedBy: string = "unsorted";
+
+    constructor() {
+        this.data = [];
+    }
+
+    setData(data: EventTableData[]) {
+        this.data = data;
+    }
+
+    addData(data: EventTableData) {
+        this.data.push(data);
+    }
+
+    sortByStartTime(order: string) {
+        if(order === "ascending"){
+            this.data.sort((a, b) => {
+                return a.getStartTimeNum() - b.getStartTimeNum();
+            });
+        }else if(order === "descending"){
+            this.data.sort((a, b) => {
+                return b.getStartTimeNum() - a.getStartTimeNum();
+            });
+        }else{
+            console.log("Invalid ordering provided");
+        }
+    }
+
+    sortByEndTime(order: string) {
+        if(order === "ascending"){
+            this.data.sort((a, b) => {
+                return a.getEndTimeNum() - b.getEndTimeNum();
+            });
+        }else if(order === "descending"){
+            this.data.sort((a, b) => {
+                return b.getEndTimeNum() - a.getEndTimeNum();
+            });
+        }else{
+            console.log("Invalid ordering provided");
+        }
+    }
+
+    sortByLaneId(order: string) {
+        if(order === "ascending"){
+            this.data.sort((a, b) => {
+                return a.laneId.localeCompare(b.laneId);
+            });
+        }else if(order === "descending"){
+            this.data.sort((a, b) => {
+                return b.laneId.localeCompare(a.laneId);
+            });
+        }else{
+            console.log("Invalid ordering provided");
+        }
+    }
+
+    getExcludingAdjudicated() {
+        return this.data.filter((data) => data.adjudicatedData === null);
+    }
+
+    getFilteredByAdjudicatedCode(code: number) {
+        return this.data.filter((data) => data.adjudicatedData.code === code);
+    }
 }
 
 export class AdjudicationData {
