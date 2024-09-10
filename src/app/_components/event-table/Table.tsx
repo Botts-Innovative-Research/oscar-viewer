@@ -16,6 +16,8 @@ import {getDatasourcesOfLane, getDatastreamsOfLanes} from "@/lib/data/oscar/Util
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {AdjudicationData, EventTableData} from "@/lib/data/oscar/TableHelpers";
+import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
+import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 
 
 interface TableProps {
@@ -25,7 +27,7 @@ interface TableProps {
 
 interface DSPair {
     datastream: IDatastream;
-    datasource: SweApi;
+    datasource: typeof SweApi;
 }
 
 interface DatasourceGroup {
@@ -50,7 +52,7 @@ export default function Table({onRowSelect, tableMode}: TableProps) {
     let server = `162.238.96.81:8781`;
     let endTime = new Date((new Date().getTime() - 1000000)).toISOString();
     let startTime = "2020-01-01T08:13:25.845Z";
-    let rtEndYear = new Date().setFullYear(new Date().getFullYear()+1);
+    let rtEndYear = new Date().setFullYear(new Date().getFullYear() + 1);
     let rtEndTime = new Date(rtEndYear).toISOString();
 
     let filterByAdjudicatedCode = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
@@ -68,7 +70,7 @@ export default function Table({onRowSelect, tableMode}: TableProps) {
     const batchOccupancyTableDataRef = useRef<IEventTableData[]>([]);
     const occupancyTableDataRef = useRef<IEventTableData[]>([]);
 
-    useEffect(() => {
+    const datasourceSetup = useCallback(async () => {
         console.log("Table: laneMapRef updated", laneMapRef?.current);
 
         let laneDSMap = new Map<string, LaneDSColl>();
@@ -83,8 +85,10 @@ export default function Table({onRowSelect, tableMode}: TableProps) {
                 let rtDS = lane.datasourcesRealtime[idx];
                 let laneDSColl = laneDSMap.get(laneid);
 
-                batchDS.properties.startTime = startTime;
-                batchDS.properties.endTime = endTime;
+                console.log(`TEST Datasource @ idx ${idx}, batchDS ${batchDS.properties.id} with Datastream`, ds);
+
+                batchDS.properties.startTime = ds.properties.validTime[0];
+                batchDS.properties.endTime = "now";
 
                 rtDS.properties.startTime = "now"
                 rtDS.properties.endTime = rtEndTime;
@@ -96,26 +100,28 @@ export default function Table({onRowSelect, tableMode}: TableProps) {
                     console.log(`Occupancy found ${ds} with index of: ${idx} found in lane ${laneid}`);
                     console.log(`Occupancy datasources for lane ${laneid}:`, batchDS, rtDS);
 
-                    laneDSColl.addDS('occBatch', batchDS);
+                    await fetchObservations(laneid, ds, ds.properties.validTime[0], "now");
+
+                    // laneDSColl.addDS('occBatch', batchDS);
                     laneDSColl.addDS('occRT', rtDS);
                 }
                 if (ds.properties.name.includes('Driver - Gamma Count')) {
                     console.log(`Gamma found: ${ds} with index of: ${idx} found in lane ${laneid}`);
-                    laneDSColl.addDS('gammaBatch', batchDS);
+                    // laneDSColl.addDS('gammaBatch', batchDS);
                     laneDSColl.addDS('gammaRT', rtDS);
                 }
 
                 if (ds.properties.name.includes('Driver - Neutron Count')) {
                     console.log("Neutron found:", ds);
                     console.log(`Neutron found: ${ds} with index of: ${idx} found in lane ${laneid}`);
-                    laneDSColl.addDS('neutronBatch', batchDS);
+                    // laneDSColl.addDS('neutronBatch', batchDS);
                     laneDSColl.addDS('neutronRT', rtDS);
                 }
 
                 if (ds.properties.name.includes('Driver - Tamper')) {
                     console.log("Tamper found:", ds);
                     console.log(`Tamper found: ${ds} with index of: ${idx} found in lane ${laneid}`);
-                    laneDSColl.addDS('tamperBatch', batchDS);
+                    // laneDSColl.addDS('tamperBatch', batchDS);
                     laneDSColl.addDS('tamperRT', rtDS);
                 }
             }
@@ -125,8 +131,32 @@ export default function Table({onRowSelect, tableMode}: TableProps) {
     }, [laneMapRef.current]);
 
     useEffect(() => {
+        datasourceSetup();
+    }, [laneMapRef.current]);
+
+    useEffect(() => {
         console.log("Table: laneMapRef on Mount", laneMapRef?.current);
     }, []);
+
+    async function fetchObservations(laneName: string, ds: typeof DataStream, timeStart: string, timeEnd: string) {
+        let allResults: any[] = [];
+        let allEvents: EventTableData[] = [];
+
+        let initialRes = await ds.searchObservations(new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`}), 25000);
+        while (initialRes.hasNext()) {
+            let obsRes = await initialRes.nextPage();
+            allResults.push(...obsRes);
+            obsRes.map((obs: any) => {
+                let newEvent = new EventTableData(idVal.current++, laneName, obs.result, new AdjudicationData('kalyn', 0));
+                allEvents.push(newEvent);
+            });
+        }
+        console.log("Observation Result:", allResults);
+        console.log("All Events:", allEvents);
+        occupancyTableDataRef.current = [...allEvents, ...occupancyTableDataRef.current];
+        setData(occupancyTableDataRef.current);
+        console.log("Table Data:", occupancyTableDataRef.current);
+    }
 
     function BatchMsgHandler(laneName: string, message: any) {
         console.log("Batch message received:", laneName, message);
@@ -140,14 +170,15 @@ export default function Table({onRowSelect, tableMode}: TableProps) {
         // newEventA.adjudicatedCode = 0;
 
         console.log("Adding message received ->", laneName, message);
-        if(message.values) {
-            for(let value of message.values) {
+        if (message.values) {
+            for (let value of message.values) {
                 let newEvent = new EventTableData(idVal.current++, laneName, value.data, new AdjudicationData('kalyn', 0));
 
                 console.log("Adding Occ Table Data:", newEvent);
                 occupancyTableDataRef.current = [newEvent, ...occupancyTableDataRef.current];
-                setData(occupancyTableDataRef.current);
+                console.log("Table Data:", tableDataRef.current);
             }
+            setData(occupancyTableDataRef.current);
         }
     }
 
@@ -155,7 +186,7 @@ export default function Table({onRowSelect, tableMode}: TableProps) {
     const addSubscriptionCallbacks = useCallback(() => {
         for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
             const msgLaneName = laneName;
-            laneDSColl.addSubscribeHandlerToAllBatchDS((message:any)=>BatchMsgHandler(msgLaneName, message));
+            laneDSColl.addSubscribeHandlerToAllBatchDS((message: any) => BatchMsgHandler(msgLaneName, message));
             // laneDSColl.addSubscribeHandlerToAllRTDS((message: any) => RTMsgHandler(msgLaneName, message));
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('occRT', (message: any) => RTMsgHandler(msgLaneName, message));
             console.log(`Adding subscription handlers to ${laneName}:`, laneDSColl);
@@ -169,14 +200,16 @@ export default function Table({onRowSelect, tableMode}: TableProps) {
     }, [dataSourcesByLane]);
 
     useEffect(() => {
-        if(tableMode === "alarmtable") {
+        if (tableMode === "alarmtable") {
             tableDataRef.current = occupancyTableDataRef.current;
-        }else if(tableMode === "eventlog") {
+        } else if (tableMode === "eventlog") {
             // tableDataRef.current = eventLog;
-        }else {
+        } else {
             tableDataRef.current = [];
         }
     }, [tableMode, data]);
+
+
 // }, [tableMode, data, eventLog]);
 
     // Toggle data to be displayed based on tableMode

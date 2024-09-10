@@ -34,7 +34,7 @@ export class EventTableData implements IEventTableData {
             }
         }
 
-        this.occupancyId = msgValue.occupancyId;
+        this.occupancyId = msgValue.occupancyCount;
         this.startTime = msgValue.startTime;
         this.endTime = msgValue.endTime;
         this.maxGamma = msgValue.maxGamma ? msgValue.maxGamma : null;
@@ -59,7 +59,7 @@ export class EventTableData implements IEventTableData {
 
     addSecondaryInspection(aDataSecondary: AdjudicationData) {
         this.secondaryInspection = true;
-        this.adjudicatedData.addSecondary()
+        this.adjudicatedData.addSecondary(aDataSecondary)
     }
 }
 

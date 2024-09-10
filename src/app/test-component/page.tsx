@@ -11,26 +11,10 @@ import {RootState} from "@/lib/state/Store";
 import {useEffect, useRef} from "react";
 import VideoView from "osh-js/source/core/ui/view/video/VideoView";
 import VideoDataLayer from "osh-js/source/core/ui/layer/VideoDataLayer";
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
-import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 
 export default function TestComponent() {
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
-    const videoViewRef = useRef<VideoView>();
-
-    function sweapiFromDSObj(dsObj: DataStream) {
-        return new SweApi(dsObj.id, {
-            protocol: dsObj.networkProperties.streamProtocol,
-            endpointUrl: dsObj.networkProperties.endpointUrl,
-            resource: `/datastreams/${dsObj.properties.id}/observations`,
-            tls: dsObj.networkProperties.tls,
-            responseFormat: dsObj.properties.outputName === "video" ? 'application/swe+binary' : 'application/swe+json',
-            connectorOpts: {
-                username: "admin",
-                password: "admin"
-            }
-        });
-    }
+    const videoViewRef = useRef<typeof VideoView>();
 
     useEffect(() => {
         if (laneMap.size > 0 && !videoViewRef.current) {
@@ -38,7 +22,6 @@ export default function TestComponent() {
             let aDS = laneMap.get("lane1").datastreams[36];
             console.log("TEST datasource: ", aDS);
 
-            // let ds = sweapiFromDSObj(aDS);
             let ds = laneMap.get("lane1").datasourcesRealtime[36];
 
             videoViewRef.current = new VideoView({

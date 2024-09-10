@@ -75,8 +75,8 @@ export class LiveLane {
 }
 
 export class LaneMapEntry {
-    systems: System[];
-    datastreams: DataStream[];
+    systems: typeof System[];
+    datastreams: typeof DataStream[];
     datasources: any[];
     datasourcesBatch: any[];
     datasourcesRealtime: any[];
@@ -151,14 +151,14 @@ export class LaneMapEntry {
 }
 
 export class LaneDSColl {
-    occRT: SweApi[];
-    occBatch: SweApi[];
-    gammaRT: SweApi[];
-    gammaBatch: SweApi[];
-    neutronRT: SweApi[];
-    neutronBatch: SweApi[];
-    tamperRT: SweApi[];
-    tamperBatch: SweApi[];
+    occRT: typeof SweApi[];
+    occBatch: typeof SweApi[];
+    gammaRT: typeof SweApi[];
+    gammaBatch: typeof SweApi[];
+    neutronRT: typeof SweApi[];
+    neutronBatch: typeof SweApi[];
+    tamperRT: typeof SweApi[];
+    tamperBatch: typeof SweApi[];
 
     constructor() {
         this.occRT = [];
@@ -171,11 +171,12 @@ export class LaneDSColl {
         this.tamperBatch = [];
     }
 
-    getDSArray(propName: string): SweApi[] {
+    getDSArray(propName: string): typeof SweApi[] {
+        // @ts-ignore
         return this[propName];
     }
 
-    addDS(propName: string, ds: SweApi) {
+    addDS(propName: string, ds: typeof SweApi) {
         let dsArr = this.getDSArray(propName);
         if (dsArr.some((d) => d.name == ds.name)) {
             return;
@@ -214,8 +215,9 @@ export class LaneDSColl {
         }
     }
 
+    [key: string]: typeof SweApi[] | Function;
     addSubscribeHandlerToALLDSMatchingName(dsCollName: string, handler: Function){
-        for (let ds of this[dsCollName]) {
+        for (let ds of this[dsCollName] as typeof SweApi[]) {
             ds.subscribe(handler, [EventType.DATA]);
         }
     }
