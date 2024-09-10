@@ -4,7 +4,7 @@ import {Datastream} from "@/lib/data/osh/Datastreams";
 /**
  * Interface for Event Table data
  */
-export interface EventTableData {
+export interface IEventTableData {
   id: number; // Unique ID for event
   secondaryInspection?: boolean;  // Whether or not there has been a secondary inspection performed
   laneId: string; // Lane ID

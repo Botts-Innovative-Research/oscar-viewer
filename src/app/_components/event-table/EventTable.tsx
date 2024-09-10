@@ -3,7 +3,7 @@
 import { Box } from '@mui/material';
 import { DataGrid, GridActionsCellItem, GridCellParams, GridColDef, gridClasses } from '@mui/x-data-grid';
 import CustomToolbar from '../CustomToolbar';
-import { EventTableData, SelectedEvent } from 'types/new-types';
+import { IEventTableData, SelectedEvent } from 'types/new-types';
 import { useState } from 'react';
 
 import NotesRoundedIcon from '@mui/icons-material/NotesRounded';
@@ -17,7 +17,7 @@ export default function EventTable(props: {
   viewMenu?: boolean, // Show three-dot menu button, default FALSE
   viewLane?: boolean, // Show 'View Lane' option in menu, default FALSE
   viewAdjudicated?: boolean, //shows Adjudicated status in the event log , not shown in the alarm table
-  data: EventTableData[],  // Table data
+  data: IEventTableData[],  // Table data
 }) {
   const onRowSelect = props.onRowSelect;
   const viewAdjudicated = props.viewAdjudicated || false;
@@ -29,7 +29,7 @@ export default function EventTable(props: {
 
 
   // Column definition for EventTable
-  const columns: GridColDef<EventTableData>[] = [
+  const columns: GridColDef<IEventTableData>[] = [
     {
       field: 'secondaryInspection',
       headerName: 'Secondary Inspection',

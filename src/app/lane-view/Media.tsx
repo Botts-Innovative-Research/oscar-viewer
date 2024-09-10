@@ -1,9 +1,9 @@
 "use client";
 
 import { Typography } from "@mui/material";
-import { EventTableData, SelectedEvent } from "types/new-types";
+import { IEventTableData, SelectedEvent } from "types/new-types";
 
-const testData: EventTableData = {
+const testData: IEventTableData = {
   id: 1,
   secondaryInspection: false,
   laneId: '1', occupancyId: '1',
@@ -19,7 +19,7 @@ const testData: EventTableData = {
 export default function Media(props: {
   event: SelectedEvent;
 }) {
-  
+
   return (
     <Typography>Insert content here</Typography>
   );

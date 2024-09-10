@@ -6,7 +6,7 @@ import LaneStatus from "./LaneStatus";
 
 import EventPreview from "./EventPreview";
 import {useEffect, useState} from "react";
-import {EventTableData, LaneOccupancyData, LaneStatusData, SelectedEvent} from "types/new-types";
+import {IEventTableData, LaneOccupancyData, LaneStatusData, SelectedEvent} from "types/new-types";
 import Table from "../_components/event-table/Table";
 import {Datastream} from "@/lib/data/osh/Datastreams";
 import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
