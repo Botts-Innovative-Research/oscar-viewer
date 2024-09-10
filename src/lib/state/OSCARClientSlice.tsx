@@ -116,7 +116,7 @@ export const selectSystemsOfLane = (laneId: string) => createSelector(
 export const selectDatastreamsOfLane = (laneId: string) => createSelector(
     [selectSystemsOfLane(laneId), selectDatastreams],
     (systems, datastreams) => {
-        console.log("Found these systems:", systems);
+        // console.log("Found these systems:", systems);
         let datastreamsArr: IDatastream[] = [];
         for(let ds of datastreams.values()) {
             if (systems.find((system: { id: any; }) => system.id === ds.parentSystemId)) {

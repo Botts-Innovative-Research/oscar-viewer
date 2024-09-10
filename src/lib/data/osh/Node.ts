@@ -166,7 +166,7 @@ export class Node implements INode {
                 fetchedLanes.push(newLaneMeta);
             }
         }
-        console.log("LaneFetched these objects:", fetchedLanes, fetchedSystems);
+        // console.log("LaneFetched these objects:", fetchedLanes, fetchedSystems);
         return {lanes: fetchedLanes, systems: fetchedSystems};
     }
 

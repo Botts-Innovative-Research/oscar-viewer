@@ -47,4 +47,6 @@ export interface LaneStatusData{
 
 export interface SiteMapData{
   laneData: LaneMeta,
+  locationDataStream: Datastream[]
 }
+

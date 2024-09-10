@@ -34,7 +34,7 @@ export class System implements ISystem {
     }
 
     async fetchDataStreams() {
-        console.log(`fetching data streams for system: ${this.id}`);
+        // console.log(`fetching data streams for system: ${this.id}`);
         // fetch data streams from the server with CSAPI
         const response = await fetch(`${this.parentNode.getConnectedSystemsEndpoint()}/systems/${this.id}/datastreams`);
 

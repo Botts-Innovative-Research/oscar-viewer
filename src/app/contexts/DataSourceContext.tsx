@@ -102,23 +102,23 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }, [dispatch, configNode]);
 
     const laneFetch = useCallback(async () => {
-        console.log("Nodes:", nodes);
+        // console.log("Nodes:", nodes);
         await Promise.all(nodes.map(async (node: INode) => {
             return await node.fetchLanes();
         })).then((fetched) => {
-            console.log("Fetched:", fetched);
+            // console.log("Fetched:", fetched);
             let lanes = fetched.flatMap((item: any) => item.lanes);
             let systems = fetched.flatMap((item: any) => item.systems);
 
             dispatch(setLanes(lanes));
             dispatch(setSystems(systems));
-            console.log("Statewide systems", systems)
+            // console.log("Statewide systems", systems)
         });
-        console.info("Lanes fetched, continuing onward...");
+        // console.info("Lanes fetched, continuing onward...");
     }, [nodes, dispatch]);
 
     const datastreamFetch = useCallback(async () => {
-        console.warn("Fetching datastreams of systems...", systems);
+        // console.warn("Fetching datastreams of systems...", systems);
         await Promise.all(systems.map(async (system: System) => {
             return await system.fetchDataStreams();
         })).then((datastreams) => {
@@ -136,7 +136,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     const createAllDataSources = useCallback(() => {
         let dsArr = [];
         const datastreamArr: Datastream[] = Array.from(datastreams.values());
-        console.warn("Creating all data sources...", datastreamArr);
+        // console.warn("Creating all data sources...", datastreamArr);
         for (let datastream of datastreamArr) {
             let datasource = datastream.generateSweApiObj({
                 start: datastream.phenomenonTime.beginPosition,
