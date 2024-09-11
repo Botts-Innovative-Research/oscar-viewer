@@ -17,6 +17,10 @@ import {Mode} from "osh-js/source/core/datasource/Mode";
 
 import {MapView} from "osh-js/source/core/ui/view/map/MapView"
 import "./Map.css";
+import {EventType} from "osh-js/source/core/event/EventType";
+import {SiteMapData} from "../../../../types/new-types";
+
+
 
 export default function MapComponent() {
 
@@ -29,8 +33,6 @@ export default function MapComponent() {
     let startTime = "2020-01-01T08:13:25.845Z";
 
     const [status, setStatus] = useState(null);
-    const [gammaDatasource, setGammaDatasource] = useState(null);
-    const [neutronDatasource, setNeutronDatasource] = useState(null);
 
     /****************ds and lanes *******************/
     const lanes: LaneMeta[] = useSelector(selectLanes);
@@ -38,32 +40,148 @@ export default function MapComponent() {
 
     // console.log(lanes.map((lane) => ds.filter((dss) => dss.name.includes(`${lane.name} - Sensor Location`))));
 
-    useEffect (()=>{
-        let locationstreams: any[] =[];
-        let gammaDatastreams: any[] =[];
-        let neutronDatastreams: any[] =[];
+    let gammaDatastreams: any[] =[];
+    let neutronDatastreams: any[] =[];
+    let videoDatastreams: any[] =[];
 
-        let gpsDatasources: any[] = [];
-        let pointMarkers: any[] = [];
+    let gammaDatasources: any[] = [];
+    let neutronDatasources: any[] = [];
+    /****************************gamma & neutron *************************/
+    useEffect(() => {
+        if(ds.length > 0) {
+            lanes.map((lane) => {
+                const videoStreams = ds.filter((dss) => (lane.systemIds.includes(dss.parentSystemId) && dss.name.includes("Video") && dss.name.includes("Lane")));
+                const gammaStreams = ds.filter((dss) => (lane.systemIds.includes(dss.parentSystemId) && dss.name.includes("Gamma") && dss.name.includes("Count")));
+                const neutronStreams = ds.filter((dss)=>(lane.systemIds.includes(dss.parentSystemId) && dss.name.includes("Neutron") && dss.name.includes("Count")));
 
-        if(ds.length > 0){
-
-            // let locationstreams =  lanes.map((lane) => ds.filter((dss) => dss.name.includes(`${lane.name} - Sensor Location`)));
-            // console.log('streams', locationstreams)
-
-            lanes.map((lane) =>{
-                let streams = ds.filter((dss) => dss.name.includes(`${lane.name} - Sensor Location`));
-                const gammaStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Gamma Count'));
-                const neutronStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Neutron Count'));
-
-                locationstreams.push(streams);
                 gammaDatastreams.push(gammaStreams);
                 neutronDatastreams.push(neutronStreams);
+                videoDatastreams.push(videoStreams);
             });
 
-            if(locationstreams.length > 0){
-                locationstreams.map((stream) =>{
-                    let newDatasource =  new SweApi(stream[0].name.split('-')[0], {
+            if (gammaDatastreams.length > 0) {
+                console.log('streams', gammaDatastreams);
+                gammaDatastreams.map((stream) => {
+                    let newDatasource = new SweApi(stream.name, {
+                        tls: false,
+                        protocol: Protocols.WS,
+                        mode: Mode.REAL_TIME,
+                        endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
+                        resource: `/datastreams/${stream[0].id}/observations`,
+                        connectorOpts: {
+                            username: 'admin',
+                            password: 'admin',
+                        },
+                    });
+                    newDatasource.connect();
+                    gammaDatasources.push(newDatasource);
+                });
+            }
+            if (neutronDatastreams.length > 0) {
+                console.log('streams', neutronDatastreams);
+                neutronDatastreams.map((stream) => {
+                    let newDatasource = new SweApi(stream[0].name, {
+                        tls: false,
+                        protocol: Protocols.WS,
+                        mode: Mode.REAL_TIME,
+                        endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
+                        resource: `/datastreams/${stream[0].id}/observations`,
+                        connectorOpts: {
+                            username: 'admin',
+                            password: 'admin',
+                        },
+                    });
+                    newDatasource.connect();
+                    neutronDatasources.push(newDatasource);
+                });
+            }
+            console.log('gamma sources', gammaDatasources);
+            console.log('neutron sources', neutronDatasources);
+
+        }
+
+        // if(gammaDatasources !== null) {
+        //     gammaDatasources.forEach((ds) => {
+        //         ds.subscribe((message: any) => {
+        //             const alarmState = message.values[0].data.alarmState;
+        //             console.log('state', alarmState);
+        //             setStatus(alarmState);
+        //         }, [EventType.DATA]);
+        //     });
+        // }
+        //
+        // if(neutronDatasources !== null) {
+        //     neutronDatasources.forEach((ds) => {
+        //         ds.subscribe((message: any) => {
+        //             const alarmState = message.values[0].data.alarmState;
+        //             setStatus(alarmState);
+        //         }, [EventType.DATA]);
+        //     });
+        // }
+    }, [ds, lanes]);
+
+
+    /****************hover*********************/
+    const currentMarkerEle = document.getElementById("current-marker");
+    function updateInfos(markerId: any, position: any, positionPixels: any) {
+        // if(currentMarkerEle){
+        //     currentMarkerEle.innerHTML = 'Current selected marker: <strong>' + markerId + '</strong>, ' + 'pos= ' + position + ', ' + 'pixel= ' + positionPixels
+        // }
+        currentMarkerEle.innerHTML = '<strong>' + markerId + '</strong>'
+    }
+
+    /****************pop up********************/
+
+    //on left click -> show popup! rather than using the description method
+
+    // // function showPopup(latlng: any, laneName: string, status: string){
+    // function showPopup(latlng: any, content:any, markerId: any) {
+    //     // function showPopup(latlng: any, content: any){
+    //     //     console.log('status:', status);
+    //     //     console.log('lane name', laneName);
+    //     //     return new L.Popup()
+    //     //         .setLatLng(latlng)
+    //     //         .setContent(content);
+    //     // .setContent(getContent(laneName, status));
+    //     // .openOn(view);
+    //     const padding = 10;
+    //     popup.setAttribute("style", "left:" + (latlng.x + padding) + ";top:" + (latlng.y + padding) + "; display:block !important; width:100px; height:50px");
+    //     popup.innerText = content;
+    //
+    // }
+
+    // function showPopup(x: any, y: any, content: any) {
+    //     const popupEle = document.getElementById("popup");
+    //     const padding = 10;
+    //     popupEle.setAttribute("style", "left:" + (x + padding) + ";top:" + (y + padding) + "; display:block !important; width:100px; height:50px");
+    //     popupEle.innerText = content;
+    // }
+
+    /***********const layer*********************/
+    const commonMarker = {
+        getLocation: (rec: any) =>({x: rec.location.lon, y: rec.location.lat, z: rec.location.alt}),
+        markerId: () => this.getId(),
+        icon: '/point.png',
+        zoomLevel: 12,
+        iconAnchor: [16, 0],
+        iconSize: [16, 16],
+        labelColor: '#f1f5f4',
+        labelOffset: [-5,-15]
+    }
+
+    /********************* map view and location ds************************/
+    useEffect (()=>{
+        let locationStreams: any[] =[];
+        let gpsDataSources: any[] = [];
+        let pointMarkers: any[] = [];
+        if(ds.length > 0) {
+            lanes.map((lane) => {
+                let streams = ds.filter((dss) => dss.name.includes(`${lane.name} - Sensor Location`));
+                locationStreams.push(streams);
+            });
+            if (locationStreams.length > 0) {
+                locationStreams.map((stream) => {
+                    let newDatasource = new SweApi(stream[0].name.split('-')[0], {
                         startTime: startTime,
                         endTime: endTime,
                         tls: false,
@@ -76,138 +194,37 @@ export default function MapComponent() {
                             password: 'admin',
                         },
                     })
-                    gpsDatasources.push(newDatasource);
+                    gpsDataSources.push(newDatasource);
                 });
             }
-
-            // if(gammaDatastreams.length > 0){
-            //     console.log('streams', gammaDatastreams);
-            //     gammaDatastreams.map((stream) =>{
-            //         console.log('stream name', stream[0].name);
-            //         let newDatasource =  new SweApi(stream[0].name, {
-            //             tls: false,
-            //             protocol: Protocols.WS,
-            //             mode: Mode.REAL_TIME,
-            //             endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
-            //             resource: `/datastreams/${stream[0].id}/observations`,
-            //             connectorOpts: {
-            //                 username: 'admin',
-            //                 password: 'admin',
-            //             },
-            //         });
-            //         newDatasource.connect();
-            //         setGammaDatasource(newDatasource);
-            //     });
-            // }
-            // if(neutronDatastreams.length > 0){
-            //     console.log('streams', neutronDatastreams);
-            //     neutronDatastreams.map((stream) =>{
-            //         console.log('stream name', stream[0].name);
-            //         let newDatasource =  new SweApi(stream[0].name, {
-            //             tls: false,
-            //             protocol: Protocols.WS,
-            //             mode: Mode.REAL_TIME,
-            //             endpointUrl: `${server}/sensorhub/api`, //update to access ip and port from server
-            //             resource: `/datastreams/${stream[0].id}/observations`,
-            //             connectorOpts: {
-            //                 username: 'admin',
-            //                 password: 'admin',
-            //             },
-            //         });
-            //         newDatasource.connect();
-            //         setNeutronDatasource(newDatasource);
-            //     });
-            // }
-            // console.log('gps sources', gpsDatasources);
-            // console.log('gamma sources', gammaDatasource);
-            // console.log('neutron sources', neutronDatasource);
         }
 
-        // if(gammaDatasource !== null) {
-        //     gammaDatasource.subscribe((message: any) => {
-        //         const alarmState = message.values[0].data.alarmState;
-        //         setStatus(alarmState);
-        //     }, [EventType.DATA]);
-        // }
-        //
-        // if(neutronDatasource !== null) {
-        //     neutronDatasource.subscribe((message: any) => {
-        //         const alarmState = message.values[0].data.alarmState;
-        //         setStatus(alarmState);
-        //     }, [EventType.DATA]);
-        // }
-
-
-        /****************hover*********************/
-
-
-        /****************pop up********************/
-
-        //on left click -> show popup! rather than using the description method
-
-        // // function showPopup(latlng: any, laneName: string, status: string){
-        // function showPopup(latlng: any, content:any, markerId: any) {
-        //     // function showPopup(latlng: any, content: any){
-        //     //     console.log('status:', status);
-        //     //     console.log('lane name', laneName);
-        //     //     return new L.Popup()
-        //     //         .setLatLng(latlng)
-        //     //         .setContent(content);
-        //     // .setContent(getContent(laneName, status));
-        //     // .openOn(view);
-        //     const padding = 10;
-        //     popup.setAttribute("style", "left:" + (latlng.x + padding) + ";top:" + (latlng.y + padding) + "; display:block !important; width:100px; height:50px");
-        //     popup.innerText = content;
-        //
-        // }
-
-            console.log('elements', document.getElementById('leafletmap'))
-
-        const currentMarkerEle = document.getElementById("current-marker");
-        console.log('current marker', currentMarkerEle);
-
-        function updateInfos(markerId: any, position: any, positionPixels: any) {
-
-            if(currentMarkerEle){
-                currentMarkerEle.innerHTML = 'Current selected marker: <strong>' + markerId + '</strong>, ' + 'pos= ' + position + ', ' + 'pixel= ' + positionPixels
-            }
-        }
-
-        function showPopup(x: any, y: any, content: any) {
-            const popupEle = document.getElementById("popup");
-            const padding = 10;
-            popupEle.setAttribute("style", "left:" + (x + padding) + ";top:" + (y + padding) + "; display:block !important; width:100px; height:50px");
-            popupEle.innerText = content;
-        }
         /*****************layers***********************/
         //create a point marker for each system location
-        if(gpsDatasources.length > 0){
-            gpsDatasources.forEach((gps) =>{
+        if(gpsDataSources.length > 0) {
+            gpsDataSources.forEach((gps) => {
                 let newPointMarker = new PointMarkerLayer({
+                    ...commonMarker,
                     dataSourceId: gps.getId(),
-                    markerId: () => this.getId(),
-                    description: getContent(gps.name, status), //currently using the description as a work around for the pop up until i figure out how to get the onleft lcick to work
-                    getLocation: (rec: any) =>({x: rec.location.lon, y: rec.location.lat, z: rec.location.alt}),
+                    description: getContent(gps.name, status), //currently using the description as a workaround for the pop up until i figure out how to get the onLeftClick to work
+                    onHover: (markerId: string, markerObject: Object, layer: any, event: Object)=>{
+                        console.log('hover!!');
+                        let selectedMarker = document.getElementById('current-marker');
+                        selectedMarker.innerHTML = gps.name;
+                    },
 
-                    icon: '/point.png',
-                    zoomLevel: 12,
-                    iconAnchor: [16, 0],
-                    iconSize: [16, 16],
                     // label: gps.getName(), // need to get the onHover to work for now it is gunna duplicate the lane name text in the popup
-                    labelColor: '#f1f5f4',
-                    labelOffset: [-5,-15],
+
                     // onLeftClick: (markerId: any, markerObject: any, event: any) => updateInfos(markerId, event.latlng, event.containerPoint),
                     // onRightClick: (markerId: any, billboard: any, event: any) => {
                     //     const rect = document.getElementById('leafletMap').getBoundingClientRect();
                     //     console.log('rect', rect)
                     //     showPopup(event.containerPoint.x + rect.left, event.containerPoint.y + rect.top + 15, getContent(gps.name, 'alarm') + markerId);
                     // },
-                    // onHover: (markerId: string, markerObject: any, event: any) => {
-                    //     console.log('current marker', markerId);
-                    //     updateInfos(markerId, event.latlng, event.containerPoint);
-                    // }
 
-                    // onHover: (markerId: any, markerObject: any, event: any) => {updateInfos(markerId, event.latlng, event.containerPoint)},
+                    // onHover: (markerId: string, markerObject: any, event: any) => {
+                    //     updateInfos(markerId, event.latlng, event.containerPoint)
+                    // },
                     // onLeftClick: (markerId: any, markerObject: any, event: any) => {
                     //     const rect = document.getElementById('mapcontainer')
                     //     showPopup({lat: event.containerPoint.x , lon: event.containerPoint.y}, getContent(gps.name, 'alarm'), 0);
@@ -215,10 +232,8 @@ export default function MapComponent() {
                 });
                 pointMarkers.push(newPointMarker);
             });
-            console.log('pointmarkers', pointMarkers);
-
             /*********************VIEW****************************/
-            if(!mapContainerRef.current){
+            if (!mapContainerRef.current) {
                 mapContainerRef.current = new LeafletView({
                     container: "mapcontainer",
                     // container: mapContainerRef.current.id,
@@ -227,22 +242,15 @@ export default function MapComponent() {
                     showTime: true,
                     showStats: true
                 });
-
-
-                gpsDatasources.map((gps) => gps.connect());
+                gpsDataSources.map((gps) => gps.connect());
             }
-
-
-        }
-
-        return () =>{
-            if(mapContainerRef.current){
-                mapContainerRef.current.destroy();
-                mapContainerRef.current = undefined;
+            return () => {
+                if (mapContainerRef.current) {
+                    mapContainerRef.current.destroy();
+                    mapContainerRef.current = undefined;
+                }
             }
         }
-
-
 
     },[ds, lanes]);
 
@@ -254,40 +262,69 @@ export default function MapComponent() {
         // if(lanesWithVideo !== null){
         //     videoStream = lanesWithVideo[1].videoDatastreams;
         // }
-        // let videocomponent = <VideoComponent videoDatastreams={videoStream}/>
+        let videocomponent =  `<VideoComponent videoDatastreams={videoDatastreams[0]}/>`
         // let videoview = "<video> <source src=" + videocomponent + "</video>"
 
         // let videoview = "<source src=\"https://www.w3schools.com/html/mov_bbb.mp4\" type=\"video/mp4\" style='overflow: hidden'>"
 
-        // // create main div
-        // const div = document.createElement("div");
-        // div.className = 'point-popup';
-        // // div.innerHTML = '<h2>'+ laneName +'</h2> <br/> <h2>Status:'+ status +'</h2><video autoplay>'+ videoview +'</video>';
+        // create main div
+        const div = document.createElement("div");
+        div.className = 'point-popup';
+
+        const laneNameEle = document.createElement("h3");
+        laneNameEle.className = 'popup-text-lane';
+        laneNameEle.textContent = laneName;
+
+        const statusEle = document.createElement("h3");
+        statusEle.className = 'popup-text-status';
+        statusEle.textContent = `Status: ${status}`;
+
+        const video = document.createElement("video");
+        const source = document.createElement("source");
+
+        source.src = 'https://www.w3schools.com/html/mov_bbb.mp4';
+        // source.src = videocomponent;
+
+        source.type = 'video/mp4';
+        video.appendChild(source);
+
+        // div.innerHTML = '<h2>'+ laneName +'</h2> <br/> <h2>Status:'+ status +'</h2><video autoplay>'+  +'</video>';
         // div.innerHTML = '<h3 class="popup-text-lane">' + laneName + '</h3><h3 class="popup-text-status">Status: ' + status + '</h3><video>' + videoview + '</video>';
-        //
-        //
-        // //create button
-        // const button = document.createElement("button");
-        // button.innerHTML = "LANE VIEW";
-        // button.className = 'popup-button';
+
+        //create button
+        const button = document.createElement("button");
+        button.className = 'popup-button';
+        button.textContent = "LANE VIEW";
         // button.onclick = function () {
-        //     window.location.href = '/lane-view'
+        //     window.location.href = '/lane-view';
         // };
-        //
-        //
-        // div.appendChild(button);
+        button.addEventListener('click', () =>{
+            console.log('clicked')
+            window.location.href= '/lane-view';});
+
+        div.appendChild(laneNameEle);
+        div.appendChild(statusEle);
+        div.appendChild(video);
+        div.appendChild(button);
 
         //TODO: replace video with lane video
         //TODO: replace status with lane status
 
-        return (
-            "<div class='point-popup'>" +
-            "<h3 class='popup-text-lane'>" + laneName + "</h3>" +
-            "<h3 class='popup-text-status'>Status: "+ status +"</h3>" +
-            "<video autoplay> <source src='https://www.w3schools.com/html/mov_bbb.mp4' type='video/mp4'/></video>" +
-            "<button class='popup-button'>LANE VIEW</button>" +
-            "</div>"
-        );
+        return div.outerHTML;
+            // "<div class='point-popup'>" +
+            //     "<h3 class='popup-text-lane'>" + laneName + "</h3>" +
+            //     "<h3 class='popup-text-status'>Status: "+ status +"</h3>" +
+            //     "<video><source " + <VideoComponent videoDatastreams={videoDatastreams[0]}/> + "></video>" +
+            //     // "<div class='video-container'>" + videocomponent + "</div>" +
+            //     // "<video <source src=" +
+            //
+            // // + " type='video/h264' /></video>" +
+            //
+            // // <VideoComponent videoDatastreams={videoDatastreams[0]}/>
+            //     // "<video autoplay> <source src='https://www.w3schools.com/html/mov_bbb.mp4' type='video/mp4'/></video>" +
+            //     "<button class='popup-button' onclick='function()=>{window.location.href=`/lane-view`}'>LANE VIEW</button>" +
+            // "</div>"
+        // );
     }
 
     return (
@@ -298,9 +335,6 @@ export default function MapComponent() {
         </div>
     );
 }
-
-
-
 
 /***********create markers function */
 // function createMarkers(latlng: any, laneName: string){

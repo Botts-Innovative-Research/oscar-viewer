@@ -28,3 +28,8 @@
     text-align: center;
     font-weight: normal;
 }
+.video-container{
+    margin: auto;
+    height: inherit;
+    width: auto;
+}
