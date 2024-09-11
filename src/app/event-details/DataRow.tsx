@@ -1,11 +1,11 @@
 "use client";
 
-import { EventTableData, SelectedEvent } from "types/new-types";
+import { IEventTableData, SelectedEvent } from "types/new-types";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 
-const testData: EventTableData = {
+const testData: IEventTableData = {
   id: 1,
   secondaryInspection: false,
   laneId: '1', occupancyId: '1',
@@ -21,7 +21,7 @@ const testData: EventTableData = {
 export default function DataRow(props: {
   event: SelectedEvent;
 }) {
-  
+
   return (
     <TableContainer>
       <Table sx={{ minWidth: 650 }} aria-label="simple table">
