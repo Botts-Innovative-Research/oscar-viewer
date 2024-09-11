@@ -80,7 +80,7 @@ export default function DashboardPage() {
         <Grid item container spacing={2} style={{ flexBasis: '66.66%', flexGrow: 0, flexShrink: 0 }}>
           <Grid item xs={8}>
             <Paper variant='outlined' sx={{ height: "100%" }}>
-              <Table isAlarmTable onRowSelect={handleRowSelect}  />
+              <Table tableMode={"alarmtable"} onRowSelect={handleRowSelect}  />
             </Paper>
           </Grid>
           <Grid item xs={4}>
