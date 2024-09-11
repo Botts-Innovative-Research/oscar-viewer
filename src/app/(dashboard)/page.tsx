@@ -6,13 +6,12 @@ import LaneStatus from "./LaneStatus";
 
 import EventPreview from "./EventPreview";
 import {useEffect, useState} from "react";
-import {EventTableData, LaneOccupancyData, LaneStatusData, SelectedEvent} from "types/new-types";
+import {IEventTableData, LaneOccupancyData, LaneStatusData, SelectedEvent} from "types/new-types";
 import Table from "../_components/event-table/Table";
 import {Datastream} from "@/lib/data/osh/Datastreams";
 import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import {useSelector} from "react-redux";
 import {selectLanes} from "@/lib/state/OSCARClientSlice";
-
 
 export default function DashboardPage() {
   const [selectedEvent, setSelectedEvent] = useState<SelectedEvent>(null);  // Reference types/new-types.d.ts to change type
@@ -35,7 +34,6 @@ export default function DashboardPage() {
         const neutronStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Neutron Count'));
         const tamperStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Tamper'));
         const occStreams = ds.filter((dss) => lane.systemIds.includes(dss.parentSystemId) && dss.name.includes('Driver - Occupancy'));
-
 
         const occ: LaneOccupancyData = {
           laneData: lane,
