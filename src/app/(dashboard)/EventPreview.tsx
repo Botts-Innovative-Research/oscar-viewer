@@ -56,10 +56,10 @@ export default function EventPreview(props: {
         </Stack>
       ) : (
           // <div style={{padding: 10, width: "25vw", height: '25vw' }}>
-          //   <MapComponent/>
+            <MapComponent/>
           // </div>
 
-        <Image src={"/SiteMap.png"} alt="Site Map" width={0} height={0} sizes={"100vw"} style={{ width: "100%", height: "100%", padding: 10 }} />
+        // <Image src={"/SiteMap.png"} alt="Site Map" width={0} height={0} sizes={"100vw"} style={{ width: "100%", height: "100%", padding: 10 }} />
       )}
     </Box>
   );
