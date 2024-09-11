@@ -79,13 +79,13 @@ export default function Table({onRowSelect, tableMode}: TableProps) {
             laneDSMap.set(laneid, new LaneDSColl());
             for (let ds of lane.datastreams) {
 
-                console.log("Test ds:", ds);
+                // console.log("Test ds:", ds);
                 let idx: number = lane.datastreams.indexOf(ds);
                 let batchDS = lane.datasourcesBatch[idx];
                 let rtDS = lane.datasourcesRealtime[idx];
                 let laneDSColl = laneDSMap.get(laneid);
 
-                console.log(`TEST Datasource @ idx ${idx}, batchDS ${batchDS.properties.id} with Datastream`, ds);
+                // console.log(`TEST Datasource @ idx ${idx}, batchDS ${batchDS.properties.id} with Datastream`, ds);
 
                 batchDS.properties.startTime = ds.properties.validTime[0];
                 batchDS.properties.endTime = "now";
@@ -95,10 +95,10 @@ export default function Table({onRowSelect, tableMode}: TableProps) {
                 rtDS.properties.endTime = "2025-01-01T08:13:25.845Z"
 
                 if (ds.properties.name.includes('Driver - Occupancy')) {
-                    console.log("Occupancy found:", ds);
+                    // console.log("Occupancy found:", ds);
                     // get index of the datastream
-                    console.log(`Occupancy found ${ds} with index of: ${idx} found in lane ${laneid}`);
-                    console.log(`Occupancy datasources for lane ${laneid}:`, batchDS, rtDS);
+                    // console.log(`Occupancy found ${ds} with index of: ${idx} found in lane ${laneid}`);
+                    // console.log(`Occupancy datasources for lane ${laneid}:`, batchDS, rtDS);
 
                     await fetchObservations(laneid, ds, ds.properties.validTime[0], "now");
 
@@ -106,21 +106,21 @@ export default function Table({onRowSelect, tableMode}: TableProps) {
                     laneDSColl.addDS('occRT', rtDS);
                 }
                 if (ds.properties.name.includes('Driver - Gamma Count')) {
-                    console.log(`Gamma found: ${ds} with index of: ${idx} found in lane ${laneid}`);
+                    // console.log(`Gamma found: ${ds} with index of: ${idx} found in lane ${laneid}`);
                     // laneDSColl.addDS('gammaBatch', batchDS);
                     laneDSColl.addDS('gammaRT', rtDS);
                 }
 
                 if (ds.properties.name.includes('Driver - Neutron Count')) {
                     console.log("Neutron found:", ds);
-                    console.log(`Neutron found: ${ds} with index of: ${idx} found in lane ${laneid}`);
+                    // console.log(`Neutron found: ${ds} with index of: ${idx} found in lane ${laneid}`);
                     // laneDSColl.addDS('neutronBatch', batchDS);
                     laneDSColl.addDS('neutronRT', rtDS);
                 }
 
                 if (ds.properties.name.includes('Driver - Tamper')) {
                     console.log("Tamper found:", ds);
-                    console.log(`Tamper found: ${ds} with index of: ${idx} found in lane ${laneid}`);
+                    // console.log(`Tamper found: ${ds} with index of: ${idx} found in lane ${laneid}`);
                     // laneDSColl.addDS('tamperBatch', batchDS);
                     laneDSColl.addDS('tamperRT', rtDS);
                 }
@@ -147,8 +147,10 @@ export default function Table({onRowSelect, tableMode}: TableProps) {
             let obsRes = await initialRes.nextPage();
             allResults.push(...obsRes);
             obsRes.map((obs: any) => {
-                let newEvent = new EventTableData(idVal.current++, laneName, obs.result, new AdjudicationData('kalyn', 0));
-                allEvents.push(newEvent);
+                if(obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
+                    let newEvent = new EventTableData(idVal.current++, laneName, obs.result, new AdjudicationData('kalyn', 0));
+                    newEvent ? allEvents.push(newEvent) : null;
+                }
             });
         }
         console.log("Observation Result:", allResults);
@@ -172,11 +174,13 @@ export default function Table({onRowSelect, tableMode}: TableProps) {
         console.log("Adding message received ->", laneName, message);
         if (message.values) {
             for (let value of message.values) {
-                let newEvent = new EventTableData(idVal.current++, laneName, value.data, new AdjudicationData('kalyn', 0));
+                if(value.data.gammaAlarm === true || value.data.neutronAlarm === true) {
+                    let newEvent = new EventTableData(idVal.current++, laneName, value.data, new AdjudicationData('kalyn', 0));
 
-                console.log("Adding Occ Table Data:", newEvent);
-                occupancyTableDataRef.current = [newEvent, ...occupancyTableDataRef.current];
-                console.log("Table Data:", tableDataRef.current);
+                    console.log("Adding Occ Table Data:", newEvent);
+                    occupancyTableDataRef.current = [newEvent, ...occupancyTableDataRef.current];
+                    console.log("Table Data:", tableDataRef.current);
+                }
             }
             setData(occupancyTableDataRef.current);
         }
