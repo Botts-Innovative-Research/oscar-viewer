@@ -96,5 +96,9 @@ export class Datastream implements IDatastream {
         }
         return this.datasource;
     }
+
+    addDatasourceID(id: string) {
+        this.datasourceIDs.push(id);
+    }
 }
 

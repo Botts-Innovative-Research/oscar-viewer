@@ -2,7 +2,7 @@
 
 import { Grid, Paper, Stack, Typography } from "@mui/material";
 import { useState } from "react";
-import { EventTableData, SelectedEvent } from "types/new-types";
+import { IEventTableData, SelectedEvent } from "types/new-types";
 import BackButton from "../_components/BackButton";
 import { useSearchParams } from 'next/navigation'
 import LaneStatus from "./LaneStatus";
@@ -12,11 +12,11 @@ import AlarmTable from "./AlarmTable";
 /**
  * Expects the following search params:
  * id: string
- * 
+ *
  * Need to implement an error page to handle invalid/no search params
  */
 
-const testData: EventTableData = {
+const testData: IEventTableData = {
   id: 1, secondaryInspection: false, laneId: '1', occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: 25642, status: 'Gamma',
 }
 

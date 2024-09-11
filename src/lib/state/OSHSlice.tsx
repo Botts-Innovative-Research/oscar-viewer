@@ -31,13 +31,14 @@ export interface IOSHSlice {
     dataStreams: Map<string, IDatastream>,
     mainDataSynchronizer: ITimeSynchronizerProps,
     datasources: SweApi[],
-    otherDataSynchronizers: ITimeSynchronizerProps[]
+    otherDataSynchronizers: ITimeSynchronizerProps[],
+    datasourcesToDatastreams: Map<string, string>
 }
 
 const initialNodeOpts: NodeOptions = {
     name: "Windows Test Node",
-    address: "162.238.96.81",
-    // address: "192.168.1.158",
+    // address: "162.238.96.81",
+    address: "192.168.1.158",
     port: 8781,
     oshPathRoot: "/sensorhub",
     sosEndpoint: "/sos",
@@ -60,7 +61,8 @@ const initialState: IOSHSlice = {
     mainDataSynchronizer: new TimeSynchronizerProps(new Date().toISOString(),
         "...", 1, 5, [], Mode.REAL_TIME),
     datasources: [],
-    otherDataSynchronizers: []
+    otherDataSynchronizers: [],
+    datasourcesToDatastreams: new Map<string, string>()
 }
 
 export const Slice = createSlice({
@@ -78,6 +80,10 @@ export const Slice = createSlice({
         },
         addDatasource: (state, action: PayloadAction<SweApi>) => {
             state.datasources.push(action.payload);
+        },
+        addDatasourceToDatastreamEntry: (state, action: PayloadAction<{ datastreamId: string, datasourceName: string }>) => {
+            console.info("Adding datasource to datastream", action.payload);
+            state.datasourcesToDatastreams.set(action.payload.datasourceName, action.payload.datastreamId);
         },
         addDataSynchronizer: (state, action: PayloadAction<ITimeSynchronizerProps>) => {
             state.otherDataSynchronizers.push(action.payload);
@@ -111,6 +117,20 @@ export const Slice = createSlice({
         },
         changeConfigNode: (state, action: PayloadAction<INode>) => {
             state.configNode = action.payload;
+        },
+        createDatasourceOfDatastream: (state, action: PayloadAction<{ datastreamId: string }>) => {
+            const datastream = state.dataStreams.get(action.payload.datastreamId);
+            const datasource = datastream.generateSweApiObj({start: datastream.phenomenonTime.beginPosition, end: 'latest'});
+            if(!state.datasources.some(ds => ds.name === datasource.name)) {
+                state.datasources.push(datasource);
+                state.datasourcesToDatastreams.set(datasource.name, datastream.id);
+            }
+        },
+        removeDatasource: (state, action: PayloadAction<string>) => {
+            const rmvDs = state.datasources.find((ds: SweApi) => ds.name === action.payload);
+            const dsIndex = state.datasources.findIndex((ds: SweApi) => ds.name === action.payload);
+            state.datasources.splice(dsIndex, 1);
+            state.datasourcesToDatastreams.delete(rmvDs.name);
         }
     },
 })
@@ -121,6 +141,7 @@ export const {
     addSystem,
     addDatastream,
     addDatasource,
+    addDatasourceToDatastreamEntry,
     addDataSynchronizer,
     setMainDataSynchronizer,
     setSystems,
@@ -128,7 +149,9 @@ export const {
     setDatasources,
     updateNode,
     removeNode,
-    changeConfigNode
+    changeConfigNode,
+    createDatasourceOfDatastream,
+    removeDatasource
 } = Slice.actions;
 
 export const selectNodes = (state: RootState) => state.oshSlice.nodes;
@@ -199,7 +222,6 @@ export const selectDatastreamsBySystemIds = (systemIds: string[]) => createSelec
     (datastreams) => {
         return Array.from(datastreams.values()).filter((ds: IDatastream) => systemIds.includes(ds.parentSystemId));
     });
-
 
 
 export default Slice.reducer;

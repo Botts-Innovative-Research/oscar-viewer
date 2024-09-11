@@ -1,6 +1,6 @@
 'use client';
 
-import React, {createContext, MutableRefObject, ReactNode, useCallback, useEffect, useRef, useState} from "react";
+import React, {createContext, MutableRefObject, ReactNode, useCallback, useEffect, useRef} from "react";
 // @ts-ignore
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
@@ -10,23 +10,26 @@ import {Datastream} from "@/lib/data/osh/Datastreams";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {INode, Node} from "@/lib/data/osh/Node";
 import {
-    changeConfigNode,
-    selectDataSourceByOutputType, selectDatastreamByOutputType,
+    addDatasourceToDatastreamEntry,
+    changeConfigNode, createDatasourceOfDatastream,
     setDatasources,
     setDatastreams,
     setSystems
 } from "@/lib/state/OSHSlice";
 import {System} from "@/lib/data/osh/Systems";
-import {selectDatastreamsOfLaneByTypes, selectLaneByName, setLanes} from "@/lib/state/OSCARClientSlice";
+import {selectLaneMap, setLaneMap, setLanes} from "@/lib/state/OSCARClientSlice";
 import {RootState} from "@/lib/state/Store";
-import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
+import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 
 interface IDataSourceContext {
     masterTimeSyncRef: MutableRefObject<typeof DataSynchronizer | undefined>
+    laneMapRef: MutableRefObject<Map<string, LaneMapEntry>> | undefined
 }
 
 // create context with a default value of undefined (This will differ if there is a file import at page load)
 const DataSourceContext = createContext<IDataSourceContext | undefined>(undefined);
+
+export {DataSourceContext};
 
 
 export default function DataSourceProvider({children}: { children: ReactNode }) {
@@ -39,16 +42,16 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     const masterTimeSyncRef = useRef<typeof DataSynchronizer>();
     const datastreams = useSelector((state: RootState) => state.oshSlice.dataStreams);
     const dataSources = useSelector((state: RootState) => state.oshSlice.datasources);
-    const selectGammaCountDS = selectDatastreamByOutputType(['Driver - Gamma Count']);
-    const gammaCountDS = useSelector((state: RootState) => selectGammaCountDS(state));
+    /*  const selectGammaCountDS = selectDatastreamByOutputType(['Driver - Gamma Count']);
+      const gammaCountDS = useSelector((state: RootState) => selectGammaCountDS(state));*/
 
-    const northLaneSelector = selectLaneByName('North Lane 1');
+    /*const northLaneSelector = selectLaneByName('North Lane 1');
     const northLane: LaneMeta = useSelector((state: RootState) => northLaneSelector(state));
 
     // const selectNorthLaneGammaCountDS = selectDatastreamsOfLaneByTypes(northLane.id,['Driver - Gamma Count']);
     const selectNorthLaneGammaCountDS = northLane?.id ? selectDatastreamsOfLaneByTypes(northLane.id, ['Driver - Gamma Count']) : (): any[] => [];
     // const NorthLaneGammaCountDS = useSelector((state: RootState) => selectNorthLaneGammaCountDS(state));
-    const NorthLaneGammaCountDS = useSelector((state: RootState) => selectNorthLaneGammaCountDS(state) ?? []);
+    const NorthLaneGammaCountDS = useSelector((state: RootState) => selectNorthLaneGammaCountDS(state) ?? []);*/
 
     const InitializeApplication = useCallback(async () => {
         if (!configNode) {
@@ -100,25 +103,72 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             // TODO Load into state
         }
     }, [dispatch, configNode]);
+    const minSystemFetchInterval = 30000;
+    const [lastSystemFetch, setLastSystemFetch] = React.useState<number>(0);
+    const laneMap = useSelector((state: RootState) => selectLaneMap(state));
+    const laneMapRef = useRef<Map<string, LaneMapEntry>>(new Map<string, LaneMapEntry>());
+
+    function checkSystemFetchInterval() {
+        console.log("Checking system fetch interval for TK Fetch...");
+        return Date.now() - lastSystemFetch >= minSystemFetchInterval;
+    }
+
+    const testSysFetch = useCallback(async () => {
+        await Promise.all(nodes.map(async (node: INode) => {
+            let laneMap = await node.fetchLaneSystemsAndSubsystems();
+            await node.fetchDatastreamsTK(laneMap);
+            for(let mapEntry of laneMap.values()){
+                mapEntry.addDefaultSWEAPIs();
+            }
+            console.log("LaneMap with DS:", laneMap);
+            dispatch(setLaneMap(laneMap));
+            laneMapRef.current = laneMap;
+            console.log("LaneMapRef for Table:", laneMapRef);
+        }));
+    }, [nodes]);
+
+    useEffect(() => {
+        if(laneMap.size > 0) {
+            console.log("LaneMap After Update:", laneMap);
+            if(laneMap.has("lane1")) {
+                let ds: LaneMapEntry = laneMap.get("lane1")
+                console.log("LaneMap test for prop datastream:", ds.hasOwnProperty("datastreams"));
+                console.log("LaneMap test systems:", ds.systems);
+                console.log("LaneMap test DS:", ds.datastreams[0]);
+                let test = ds.datastreams[0].stream();
+                console.log("LaneMap test DS stream:", test);
+
+
+            }
+        }
+    }, [laneMap]);
+
+    useEffect(() => {
+        if(checkSystemFetchInterval()) {
+            testSysFetch();
+            setLastSystemFetch(Date.now());
+        }
+    }, []);
+
 
     const laneFetch = useCallback(async () => {
-        // console.log("Nodes:", nodes);
+        console.log("Nodes:", nodes);
         await Promise.all(nodes.map(async (node: INode) => {
             return await node.fetchLanes();
         })).then((fetched) => {
-            // console.log("Fetched:", fetched);
+            console.log("Fetched:", fetched);
             let lanes = fetched.flatMap((item: any) => item.lanes);
             let systems = fetched.flatMap((item: any) => item.systems);
 
             dispatch(setLanes(lanes));
             dispatch(setSystems(systems));
-            // console.log("Statewide systems", systems)
+            console.log("Statewide systems", systems)
         });
-        // console.info("Lanes fetched, continuing onward...");
+        console.info("Lanes fetched, continuing onward...");
     }, [nodes, dispatch]);
 
     const datastreamFetch = useCallback(async () => {
-        // console.warn("Fetching datastreams of systems...", systems);
+        console.warn("Fetching datastreams of systems...", systems);
         await Promise.all(systems.map(async (system: System) => {
             return await system.fetchDataStreams();
         })).then((datastreams) => {
@@ -127,34 +177,26 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             combinedDatastreams.forEach((datastreamJson: any) => {
                 const datastream = new Datastream(datastreamJson.id, datastreamJson.name, datastreamJson["system@id"], [datastreamJson.validTime[0], datastreamJson.validTime[1]]);
                 datastreamsMap.set(datastream.id, datastream);
-                // dispatch(addDatastream(datastream))
             });
             dispatch(setDatastreams(datastreamsMap));
         });
     }, [systems, dispatch]);
 
     const createAllDataSources = useCallback(() => {
-        let dsArr = [];
         const datastreamArr: Datastream[] = Array.from(datastreams.values());
-        // console.warn("Creating all data sources...", datastreamArr);
+        console.warn("Creating all data sources...", datastreamArr);
         for (let datastream of datastreamArr) {
-            let datasource = datastream.generateSweApiObj({
-                start: datastream.phenomenonTime.beginPosition,
-                end: 'latest'
-            });
-            dsArr.push(datasource);
-            // console.log("DS Array:", dsArr);
+            dispatch(createDatasourceOfDatastream({datastreamId: datastream.id}));
         }
-        dispatch(setDatasources(dsArr));
     }, [datastreams, dispatch]);
 
     useEffect(() => {
         InitializeApplication();
-        laneFetch();
+        // laneFetch();
     }, [InitializeApplication]);
 
     useEffect(() => {
-        datastreamFetch();
+        // datastreamFetch();
     }, [systems]);
 
     useEffect(() => {
@@ -164,10 +206,10 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }, [datastreams]);
 
     useEffect(() => {
-        // console.log("DataStreams:", datastreams);
-        // console.log("Data sources:", dataSources);
-        // console.log("Gamma Count DS:", gammaCountDS);
-        // console.warn("North Lane Gamma Count DS:", NorthLaneGammaCountDS);
+        console.log("DataStreams:", datastreams);
+        console.log("Data sources:", dataSources);
+        /* console.log("Gamma Count DS:", gammaCountDS);
+         console.warn("North Lane Gamma Count DS:", NorthLaneGammaCountDS);*/
     }, [dataSources]);
 
     if (!masterTimeSyncRef.current) {
@@ -176,11 +218,10 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
 
     return (
-        <DataSourceContext.Provider value={{masterTimeSyncRef}}>
+        <DataSourceContext.Provider value={{masterTimeSyncRef: useRef(), laneMapRef}}>
             {children}
         </DataSourceContext.Provider>
     );
 
 };
-
 
