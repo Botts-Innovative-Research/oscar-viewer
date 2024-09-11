@@ -2,7 +2,7 @@
 
 import { Box } from '@mui/material';
 import { DataGrid, GridActionsCellItem, GridCellParams, GridColDef, gridClasses } from '@mui/x-data-grid';
-
+import CustomToolbar from '../CustomToolbar';
 import { IEventTableData, SelectedEvent } from 'types/new-types';
 import { useState } from 'react';
 
@@ -10,7 +10,6 @@ import NotesRoundedIcon from '@mui/icons-material/NotesRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import {colorCodes} from "@/app/_components/AdjudicationSelect";
 import {EventTableDataCollection} from "@/lib/data/oscar/TableHelpers";
-import CustomToolbar from "@/app/_components/CustomToolbar";
 
 
 export default function EventTable(props: {
