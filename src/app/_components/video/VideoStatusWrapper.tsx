@@ -9,7 +9,7 @@ import { PropsWithChildren, useEffect, useState } from "react";
 import {EventType} from 'osh-js/source/core/event/EventType';
 
 interface VideoStatusWrapperProps {
-    lane: LaneMeta
+    laneName: string
     status: string
 }
 
@@ -30,7 +30,7 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
           }}
         >
           {props.children}
-          <Typography variant="body2">{props.lane.name}</Typography>
+          <Typography variant="body2">{props.laneName}</Typography>
         </Grid>
     )
 }
