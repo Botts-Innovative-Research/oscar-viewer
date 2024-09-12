@@ -6,6 +6,7 @@
 import {IEventTableData} from "../../../../types/new-types";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {warn} from "next/dist/build/output/log";
+import System from "osh-js/source/core/sweapi/system/System.js";
 
 export class EventTableData implements IEventTableData {
     id: number;
@@ -20,21 +21,11 @@ export class EventTableData implements IEventTableData {
     adjudicatedUser?: string;
     adjudicatedCode?: number;
     adjudicatedData?: AdjudicationData;
+    systemIdx?: string;
 
     constructor(id: number, laneId: string, msgValue: any, adjudicatedData: AdjudicationData | null = null) {
         this.id = id;
         this.laneId = laneId
-
-        if (msgValue) {
-            console.log("Adding msgValue: ", msgValue)
-        } else {
-            try {
-                throw new Error("No msgValue provided");
-            } catch (e) {
-                console.log(e);
-            }
-        }
-
         this.occupancyId = msgValue.occupancyCount;
         this.startTime = msgValue.startTime;
         this.endTime = msgValue.endTime;
@@ -74,6 +65,10 @@ export class EventTableData implements IEventTableData {
 
     getEndTimeNum(): number {
         return new Date(this.endTime).getTime();
+    }
+
+    setSystemIdx(systemIdx: string) {
+        this.systemIdx = systemIdx;
     }
 }
 

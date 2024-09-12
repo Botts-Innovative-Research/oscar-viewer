@@ -149,6 +149,11 @@ export class LaneMapEntry {
             this.datasourcesBatch.push(dsBatch);
         }
     }
+
+    lookupSystemIdFromDataStreamId(dsId: string) {
+        let stream = this.datastreams.find((ds) => ds.id === dsId);
+        return this.systems.find((sys) => sys.properties.id === stream.properties["system@id"]).properties.id;
+    }
 }
 
 export class LaneDSColl {
@@ -186,7 +191,7 @@ export class LaneDSColl {
         }
     }
 
-    addSubscribeHandlerToAllBatchDS(handler: Function){
+    addSubscribeHandlerToAllBatchDS(handler: Function) {
         for (let ds of this.occBatch) {
             ds.subscribe(handler, [EventType.DATA]);
         }
@@ -201,7 +206,7 @@ export class LaneDSColl {
         }
     }
 
-    addSubscribeHandlerToAllRTDS(handler: Function){
+    addSubscribeHandlerToAllRTDS(handler: Function) {
         for (let ds of this.occRT) {
             ds.subscribe(handler, [EventType.DATA]);
         }
@@ -217,13 +222,14 @@ export class LaneDSColl {
     }
 
     [key: string]: typeof SweApi[] | Function;
-    addSubscribeHandlerToALLDSMatchingName(dsCollName: string, handler: Function){
+
+    addSubscribeHandlerToALLDSMatchingName(dsCollName: string, handler: Function) {
         for (let ds of this[dsCollName] as typeof SweApi[]) {
             ds.subscribe(handler, [EventType.DATA]);
         }
     }
 
-    connectAllDS(){
+    connectAllDS() {
         for (let ds of this.occRT) {
             ds.connect();
         }

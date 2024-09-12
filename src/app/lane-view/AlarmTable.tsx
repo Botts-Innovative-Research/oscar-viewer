@@ -8,6 +8,6 @@ const testData: IEventTableData[] = [
 
 export default function AlarmTablePage() {
   return (
-    <EventTable data={testData} viewSecondary viewMenu />
+    <EventTable eventTable={testData} viewSecondary viewMenu />
   );
 }
