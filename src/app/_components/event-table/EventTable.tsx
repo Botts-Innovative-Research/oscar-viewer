@@ -4,18 +4,23 @@ import {Box} from '@mui/material';
 import {DataGrid, GridActionsCellItem, GridCellParams, GridColDef, gridClasses} from '@mui/x-data-grid';
 
 import {IEventTableData, SelectedEvent} from 'types/new-types';
-import {useContext, useState} from 'react';
+import {useContext, useEffect, useState} from 'react';
 
 import NotesRoundedIcon from '@mui/icons-material/NotesRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
-import {colorCodes} from "@/app/_components/AdjudicationSelect";
+import {colorCodes} from "@/app/_components/event-preview/AdjudicationSelect";
 import {EventTableData, EventTableDataCollection} from "@/lib/data/oscar/TableHelpers";
 import CustomToolbar from "@/app/_components/CustomToolbar";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {selectEventPreview, setEventPreview} from "@/lib/state/OSCARClientSlice";
+import {
+    selectEventPreview,
+    selectShouldForceAlarmTableDeselect,
+    setEventPreview,
+    toggleShouldForceAlarmTableDeselect
+} from "@/lib/state/OSCARClientSlice";
 
 
 export default function EventTable(props: {
@@ -37,7 +42,7 @@ export default function EventTable(props: {
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
     const eventPreview = useSelector(selectEventPreview);
     const dispatch = useAppDispatch();
-
+    const shouldForceAlarmTableDeselect = useSelector(selectShouldForceAlarmTableDeselect);
 
     // Column definition for EventTable
     const columns: GridColDef<IEventTableData>[] = [
@@ -188,6 +193,14 @@ export default function EventTable(props: {
             }));
         }
     }
+
+    useEffect(()=>{
+        if(shouldForceAlarmTableDeselect){
+            console.log("Setting selection model to []")
+            setSelectionModel([])
+            dispatch(toggleShouldForceAlarmTableDeselect())
+        }
+    },[shouldForceAlarmTableDeselect])
 
     return (
         <Box sx={{height: 400, width: '100%'}}>

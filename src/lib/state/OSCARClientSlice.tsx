@@ -24,7 +24,8 @@ export interface IOSCARClientState {
     // This should move to a separate slice
     lanes: LaneMeta[],
     alertTimeoutSeconds: number,
-    laneMap: Map<string, LaneMapEntry>
+    laneMap: Map<string, LaneMapEntry>,
+    shouldForceAlarmTableDeselect: boolean,
 }
 
 const initialState: IOSCARClientState = {
@@ -36,7 +37,8 @@ const initialState: IOSCARClientState = {
     },
     lanes: [],
     alertTimeoutSeconds: 10,
-    laneMap: new Map<string, LaneMapEntry>()
+    laneMap: new Map<string, LaneMapEntry>(),
+    shouldForceAlarmTableDeselect: false,
 }
 
 
@@ -71,6 +73,13 @@ export const Slice = createSlice({
         },
         setLaneMap: (state, action: PayloadAction<Map<string, LaneMapEntry>>) => {
             state.laneMap = action.payload;
+        },
+        setShouldForceAlarmTableDeselect: (state, action: PayloadAction<boolean>) => {
+            console.log(`Setting shouldForceAlarmTableDeselect to ${action.payload}`);
+            state.shouldForceAlarmTableDeselect = action.payload;
+        },
+        toggleShouldForceAlarmTableDeselect: (state) => {
+            state.shouldForceAlarmTableDeselect = !state.shouldForceAlarmTableDeselect;
         }
     }
 })
@@ -83,7 +92,9 @@ export const {
     toggleEventPreviewOpen,
     setEventPreviewData,
     setAlertTimeoutSeconds,
-    setLaneMap
+    setLaneMap,
+    setShouldForceAlarmTableDeselect,
+    toggleShouldForceAlarmTableDeselect
 } = Slice.actions;
 
 export const selectCurrentUser = (state: RootState) => state.oscarClientSlice.currentUser;
@@ -97,7 +108,7 @@ export const selectLaneById = (laneId: string) => (state: RootState) => {
 };
 export const selectEventPreview = (state: RootState) => state.oscarClientSlice.eventPreview;
 export const selectLaneMap = (state: RootState) => state.oscarClientSlice.laneMap;
-
+export const selectShouldForceAlarmTableDeselect = (state: RootState) => state.oscarClientSlice.shouldForceAlarmTableDeselect;
 
 
 // Compound Selectors
@@ -118,7 +129,7 @@ export const selectDatastreamsOfLane = (laneId: string) => createSelector(
     (systems, datastreams) => {
         // console.log("Found these systems:", systems);
         let datastreamsArr: IDatastream[] = [];
-        for(let ds of datastreams.values()) {
+        for (let ds of datastreams.values()) {
             if (systems.find((system: { id: any; }) => system.id === ds.parentSystemId)) {
                 datastreamsArr.push(ds);
             }
@@ -130,9 +141,9 @@ export const selectDatastreamsOfLaneByTypes = (laneId: string, types: string[]) 
     (datastreamsLane, datastreamsType) => {
         let dsMap: Map<string, IDatastream[]> = new Map();
         for (let type of types) {
-            let datastreams:IDatastream[] = datastreamsType.get(type);
+            let datastreams: IDatastream[] = datastreamsType.get(type);
             let dsSubArr: IDatastream[] = [];
-            for(let ds of datastreams) {
+            for (let ds of datastreams) {
                 if (datastreamsLane.includes(ds)) {
                     dsSubArr.push(ds);
                 }

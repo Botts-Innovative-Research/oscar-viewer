@@ -4,7 +4,7 @@ import { Grid, Paper } from "@mui/material";
 import CameraGrid from "./CameraGrid";
 import LaneStatus from "./LaneStatus";
 
-import EventPreview from "./EventPreview";
+import QuickView from "./QuickView";
 import {useEffect, useState} from "react";
 import {IEventTableData, LaneOccupancyData, LaneStatusData, SelectedEvent} from "types/new-types";
 import Table from "../_components/event-table/Table";
@@ -76,7 +76,7 @@ export default function DashboardPage() {
           </Grid>
           <Grid item xs={4}>
             <Paper variant='outlined' sx={{ height: "100%" }}>
-              <EventPreview />
+              <QuickView />
             </Paper>
           </Grid>
         </Grid>
