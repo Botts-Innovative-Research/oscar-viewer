@@ -170,7 +170,7 @@ export class Node implements INode {
             // console.log("TK System:", system);
             if (system.properties.properties?.uid.includes("lane")) {
                 // console.log("TK Found lane system:", system);
-                //let laneName = system.properties.properties.uid.split(":").pop();
+                // let laneName = system.properties.properties.uid.split(":").pop();
                 let laneName = system.properties.properties.name;
 
                 if (laneMap.has(laneName)) {
@@ -196,6 +196,7 @@ export class Node implements INode {
     async fetchSystemsTK() {
         let systemsApi = new Systems({
             endpointUrl: "162.238.96.81:8781/sensorhub/api",
+            // endpointUrl: "192.168.1.158:8781/sensorhub/api",
             tls: false,
         });
 

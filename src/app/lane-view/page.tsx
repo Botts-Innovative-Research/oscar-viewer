@@ -28,7 +28,7 @@ export default function LaneViewPage() {
   return (
     <Stack spacing={2} direction={"column"}>
       <Grid item spacing={2}>
-        <BackButton />
+        {/*<BackButton />*/}
       </Grid>
       <Grid item spacing={2}>
         <Typography variant="h5">Lane View</Typography>

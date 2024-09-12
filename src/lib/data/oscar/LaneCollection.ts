@@ -39,42 +39,6 @@ export class LaneMeta implements ILaneMeta {
     }
 }
 
-export class LiveLane {
-    lane: LaneMeta;
-    latestGammaScanMessage: GammaScanData | null = null;
-    latestNeutronScanMessage: NeutronScanData | null = null;
-
-    constructor(lane: LaneMeta) {
-        this.lane = lane;
-    }
-
-    connectNeutronScan(datasource: typeof SweApi) {
-        datasource.connect();
-        datasource.subscribe((message: SweApiMessage) => {
-            const neutronScanData = message.values[0].data as NeutronScanData;
-            this.latestNeutronScanMessage = neutronScanData;
-            console.info("Updated neutron message: " + neutronScanData);
-        });
-    }
-
-    connectGammaScan(datasource: typeof SweApi) {
-        datasource.connect();
-        datasource.subscribe((message: SweApiMessage) => {
-            const gammaScanData = message.values[0].data as GammaScanData;
-            this.latestGammaScanMessage = gammaScanData;
-            console.info("Updated gamma message: " + gammaScanData);
-        });
-    }
-
-    getLatestGammaScan() {
-        return this.latestGammaScanMessage;
-    }
-
-    getLatestNeutronScan() {
-        return this.latestNeutronScanMessage;
-    }
-}
-
 export class LaneMapEntry {
     systems: typeof System[];
     datastreams: typeof DataStream[];
@@ -118,7 +82,8 @@ export class LaneMapEntry {
 
     addDefaultSWEAPIs() {
         for (let dsObj of this.datastreams) {
-            let dsRT = new SweApi(`rtds-${dsObj.properties.id}`, {
+
+            let dsRT = new SweApi(`rtds - ${dsObj.properties.name}`, {
                 protocol: dsObj.networkProperties.streamProtocol,
                 endpointUrl: dsObj.networkProperties.endpointUrl,
                 resource: `/datastreams/${dsObj.properties.id}/observations`,
@@ -131,7 +96,7 @@ export class LaneMapEntry {
                 }
             });
 
-            let dsBatch = new SweApi(`batchds-${dsObj.properties.id}`, {
+            let dsBatch = new SweApi(`batchds - ${dsObj.properties.name}`, {
                 protocol: dsObj.networkProperties.streamProtocol,
                 endpointUrl: dsObj.networkProperties.endpointUrl,
                 resource: `/datastreams/${dsObj.properties.id}/observations`,
@@ -141,7 +106,9 @@ export class LaneMapEntry {
                 connectorOpts: {
                     username: this.parentNode.auth.username,
                     password: this.parentNode.auth.password
-                }
+                },
+                startTime: "2020-01-01T08:13:25.845Z",
+                endTime: new Date((new Date().getTime() - 1000000)).toISOString()
             });
 
             // this.datasources.push([dsRT, dsBatch]);
@@ -165,6 +132,8 @@ export class LaneDSColl {
     neutronBatch: typeof SweApi[];
     tamperRT: typeof SweApi[];
     tamperBatch: typeof SweApi[];
+    locRT: typeof SweApi[];
+    locBatch: typeof SweApi[];
 
     constructor() {
         this.occRT = [];
@@ -175,6 +144,8 @@ export class LaneDSColl {
         this.neutronBatch = [];
         this.tamperRT = [];
         this.tamperBatch = [];
+        this.locBatch =[];
+        this.locRT =[];
     }
 
     getDSArray(propName: string): typeof SweApi[] {
@@ -204,6 +175,9 @@ export class LaneDSColl {
         for (let ds of this.tamperBatch) {
             ds.subscribe(handler, [EventType.DATA]);
         }
+        for( let ds of this.locBatch){
+            ds.subscribe(handler, [EventType.DATA]);
+        }
     }
 
     addSubscribeHandlerToAllRTDS(handler: Function) {
@@ -217,6 +191,9 @@ export class LaneDSColl {
             ds.subscribe(handler, [EventType.DATA]);
         }
         for (let ds of this.tamperRT) {
+            ds.subscribe(handler, [EventType.DATA]);
+        }
+        for (let ds of this.locRT){
             ds.subscribe(handler, [EventType.DATA]);
         }
     }
@@ -252,6 +229,12 @@ export class LaneDSColl {
             ds.connect();
         }
         for (let ds of this.tamperBatch) {
+            ds.connect();
+        }
+        for (let ds of this.locRT){
+            ds.connect();
+        }
+        for (let ds of this.locBatch){
             ds.connect();
         }
     }

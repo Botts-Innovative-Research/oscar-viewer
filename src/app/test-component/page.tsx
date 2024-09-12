@@ -18,9 +18,9 @@ export default function TestComponent() {
 
     useEffect(() => {
         if (laneMap.size > 0 && !videoViewRef.current) {
-            console.log("TEST lanemap: ", laneMap);
+            // console.log("TEST lanemap: ", laneMap);
             let aDS = laneMap.get("lane1").datastreams[36];
-            console.log("TEST datasource: ", aDS);
+            // console.log("TEST datasource: ", aDS);
 
             let ds = laneMap.get("lane1").datasourcesRealtime[36];
 
