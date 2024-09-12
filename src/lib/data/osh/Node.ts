@@ -4,13 +4,13 @@
  */
 
 // starts with lane, followed by 1 or more digits, ends after digit(s)
-import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
+import {LaneMapEntry, LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import {ISystem, System} from "@/lib/data/osh/Systems";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
+import Systems from "osh-js/source/core/sweapi/system/Systems.js";
+import SystemFilter from "osh-js/source/core/sweapi/system/SystemFilter.js";
 
 const LANEREGEX = /^lane\d+$/;
-
-let NODEID = 1;
 
 export interface INode {
     id: string,
@@ -32,6 +32,12 @@ export interface INode {
     fetchSystems(): Promise<any>,
 
     fetchLanes(): Promise<{ systems: ISystem[]; lanes: LaneMeta[] }>,
+
+    fetchSystemsTK(): void,
+
+    fetchLaneSystemsAndSubsystems(): Promise<Map<string, LaneMapEntry>>,
+
+    fetchDatastreamsTK(laneMap: Map<string, LaneMapEntry>): void,
 }
 
 export interface NodeOptions {
@@ -74,31 +80,15 @@ export class Node implements INode {
         this.isDefaultNode = options.isDefaultNode || false;
     }
 
-    // constructor(name: string, address: string, port: number = 8282, oshPathRoot: string = '/sensorhub', sosEndpoint: string = '/sos', csAPIEndpoint: string = '/api', csAPIConfigEndpoint: string = '/configs', auth: {
-    //     username: string,
-    //     password: string
-    // } | null = {username: "admin", password: "admin"}, isSecure: boolean = false, isDefaultNode: boolean = false) {
-    //     this.id = "node-" + randomUUID();
-    //     this.name = name;
-    //     this.address = address;
-    //     this.port = port;
-    //     this.oshPathRoot = oshPathRoot;
-    //     this.sosEndpoint = sosEndpoint;
-    //     this.csAPIEndpoint = csAPIEndpoint;
-    //     this.csAPIConfigEndpoint = csAPIConfigEndpoint;
-    //     this.auth = auth;
-    //     this.isSecure = isSecure;
-    //     this.isDefaultNode = isDefaultNode;
-    // }
-
     getConnectedSystemsEndpoint() {
         let protocol = this.isSecure ? 'https' : 'http';
-        return `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
+        // return `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
+        return `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
     }
 
     getConfigEndpoint() {
-        let protocol = this.isSecure ? 'https' : 'http';
-        return `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIConfigEndpoint}`;
+        // let protocol = this.isSecure ? 'https' : 'http';
+        return `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIConfigEndpoint}`;
     }
 
     getBasicAuthHeader() {
@@ -147,7 +137,7 @@ export class Node implements INode {
         console.log("Systems:", systems_arr);
         for (let system of systems_arr) {
             console.log("System:", system);
-            const newSystem = new System(system.id ,system.properties.uid, system.properties.name, this, null);
+            const newSystem = new System(system.id, system.properties.uid, system.properties.name, this, null);
             console.log("New System:", newSystem);
             fetchedSystems.push(newSystem);
             const uidSplit = system.properties.uid.split(":");
@@ -168,6 +158,83 @@ export class Node implements INode {
         }
         console.log("LaneFetched these objects:", fetchedLanes, fetchedSystems);
         return {lanes: fetchedLanes, systems: fetchedSystems};
+    }
+
+    async fetchLaneSystemsAndSubsystems(): Promise<Map<string, LaneMapEntry>> {
+        let systems = await this.fetchSystemsTK();
+        let laneMap = new Map<string, LaneMapEntry>();
+        console.log("TK Systems retrieved:", systems);
+
+        // filter into lanes
+        for (let system of systems) {
+            // console.log("TK System:", system);
+            if (system.properties.properties?.uid.includes("lane")) {
+                // console.log("TK Found lane system:", system);
+                let laneName = system.properties.properties.uid.split(":").pop();
+
+                if (laneMap.has(laneName)) {
+                    laneMap.get(laneName).systems.push(system);
+                } else {
+                    laneMap.set(laneName, new LaneMapEntry(this));
+                    // console.log("TK LaneMap:", laneMap, laneName);
+                    let entry = laneMap.get(laneName);
+                    entry.addSystem(system);
+                }
+
+                let subsystems = await system.searchMembers();
+                while (subsystems.hasNext()) {
+                    let subsystemResults = await subsystems.nextPage();
+                    laneMap.get(laneName).addSystems(subsystemResults);
+                }
+            }
+        }
+
+        return laneMap;
+    }
+
+    async fetchSystemsTK() {
+        let systemsApi = new Systems({
+            endpointUrl: "192.168.1.158:8781/sensorhub/api",
+            tls: false,
+        });
+
+        let searchedSystems = await systemsApi.searchSystems(new SystemFilter(), 100);
+        let availableSystems = [];
+
+        while (searchedSystems.hasNext()) {
+            let systems = await searchedSystems.nextPage();
+            availableSystems.push(...systems);
+        }
+
+        if (availableSystems.length > 0) {
+            // console.log("Systems from TK:", availableSystems);
+            return availableSystems;
+        } else {
+            throw new Error("No systems found, check endpoint properties");
+        }
+    }
+
+    async fetchDatastreamsTK(laneMap: Map<string, LaneMapEntry>) {
+        for (const [laneName, laneEntry] of laneMap) {
+            for (let system of laneEntry.systems) {
+                // console.log("TK DSSystem:", system);
+                try {
+                    const datastreams = await system.searchDataStreams(undefined, 100);
+                    while (datastreams.hasNext()) {
+                        const datastreamResults = await datastreams.nextPage();
+                        // console.log("TK DatastreamResults:", datastreamResults);
+                        laneEntry.addDatastreams(datastreamResults);
+                    }
+                    // console.log("TK Datastreams:", laneEntry.datastreams);
+                } catch (error) {
+                    console.error(`Error fetching datastreams for system ${system.id}:`, error);
+                }
+            }
+        }
+    }
+
+    fetchDatasourcesTK() {
+
     }
 
 }

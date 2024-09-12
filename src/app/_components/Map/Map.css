@@ -1,0 +1,35 @@
+
+
+.point-popup{
+  justify-content: center;
+  display : flex;
+  flex-direction: column;
+  text-align: center;
+  padding: 0px;
+}
+
+.popup-button{
+    background: transparent;
+    width: 35%;
+    margin-top: 10px;
+    align-self: center;
+    border-width: 1px;
+    border-color: #2397F3;
+    color: #2397F3;
+}
+
+.popup-text-lane{
+    text-align: center;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.popup-text-status{
+    text-align: center;
+    font-weight: normal;
+}
+.video-container{
+    margin: auto;
+    height: inherit;
+    width: auto;
+}

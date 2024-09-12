@@ -17,15 +17,19 @@ import {
     setSystems
 } from "@/lib/state/OSHSlice";
 import {System} from "@/lib/data/osh/Systems";
-import {setLanes} from "@/lib/state/OSCARClientSlice";
+import {selectLaneMap, setLaneMap, setLanes} from "@/lib/state/OSCARClientSlice";
 import {RootState} from "@/lib/state/Store";
+import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 
 interface IDataSourceContext {
     masterTimeSyncRef: MutableRefObject<typeof DataSynchronizer | undefined>
+    laneMapRef: MutableRefObject<Map<string, LaneMapEntry>> | undefined
 }
 
 // create context with a default value of undefined (This will differ if there is a file import at page load)
 const DataSourceContext = createContext<IDataSourceContext | undefined>(undefined);
+
+export {DataSourceContext};
 
 
 export default function DataSourceProvider({children}: { children: ReactNode }) {
@@ -99,6 +103,53 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             // TODO Load into state
         }
     }, [dispatch, configNode]);
+    const minSystemFetchInterval = 30000;
+    const [lastSystemFetch, setLastSystemFetch] = React.useState<number>(0);
+    const laneMap = useSelector((state: RootState) => selectLaneMap(state));
+    const laneMapRef = useRef<Map<string, LaneMapEntry>>(new Map<string, LaneMapEntry>());
+
+    function checkSystemFetchInterval() {
+        console.log("Checking system fetch interval for TK Fetch...");
+        return Date.now() - lastSystemFetch >= minSystemFetchInterval;
+    }
+
+    const testSysFetch = useCallback(async () => {
+        await Promise.all(nodes.map(async (node: INode) => {
+            let laneMap = await node.fetchLaneSystemsAndSubsystems();
+            await node.fetchDatastreamsTK(laneMap);
+            for(let mapEntry of laneMap.values()){
+                mapEntry.addDefaultSWEAPIs();
+            }
+            console.log("LaneMap with DS:", laneMap);
+            dispatch(setLaneMap(laneMap));
+            laneMapRef.current = laneMap;
+            console.log("LaneMapRef for Table:", laneMapRef);
+        }));
+    }, [nodes]);
+
+    useEffect(() => {
+        if(laneMap.size > 0) {
+            console.log("LaneMap After Update:", laneMap);
+            if(laneMap.has("lane1")) {
+                let ds: LaneMapEntry = laneMap.get("lane1")
+                console.log("LaneMap test for prop datastream:", ds.hasOwnProperty("datastreams"));
+                console.log("LaneMap test systems:", ds.systems);
+                console.log("LaneMap test DS:", ds.datastreams[0]);
+                let test = ds.datastreams[0].stream();
+                console.log("LaneMap test DS stream:", test);
+
+
+            }
+        }
+    }, [laneMap]);
+
+    useEffect(() => {
+        if(checkSystemFetchInterval()) {
+            testSysFetch();
+            setLastSystemFetch(Date.now());
+        }
+    }, []);
+
 
     const laneFetch = useCallback(async () => {
         console.log("Nodes:", nodes);
@@ -141,11 +192,11 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
     useEffect(() => {
         InitializeApplication();
-        laneFetch();
+        // laneFetch();
     }, [InitializeApplication]);
 
     useEffect(() => {
-        datastreamFetch();
+        // datastreamFetch();
     }, [systems]);
 
     useEffect(() => {
@@ -167,11 +218,10 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
 
     return (
-        <DataSourceContext.Provider value={{masterTimeSyncRef}}>
+        <DataSourceContext.Provider value={{masterTimeSyncRef: useRef(), laneMapRef}}>
             {children}
         </DataSourceContext.Provider>
     );
 
 };
-
 

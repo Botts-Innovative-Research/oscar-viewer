@@ -1,6 +1,6 @@
 import {createSelector, createSlice, PayloadAction} from "@reduxjs/toolkit";
 import {enableMapSet} from "immer";
-import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
+import {LaneMapEntry, LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import {RootState} from "@/lib/state/Store";
 import {
     selectDatastreamByOutputType,
@@ -10,34 +10,33 @@ import {
 } from "@/lib/state/OSHSlice";
 import {IDatastream} from "@/lib/data/osh/Datastreams";
 import {useSelector} from "react-redux";
+import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 
 enableMapSet();
 
 export interface IOSCARClientState {
     currentUser: string,
     quickActions: [],
-    alertDetailIsOpen: boolean,
-    alertDetails: {
-        currentLane: string,
-        startTime: string,
-        endTime: string,
+    eventPreview: {
+        isOpen: boolean,
+        eventData: EventTableData | null,
     },
     // This should move to a separate slice
     lanes: LaneMeta[],
-    alertTimeoutSeconds: number
+    alertTimeoutSeconds: number,
+    laneMap: Map<string, LaneMapEntry>
 }
 
 const initialState: IOSCARClientState = {
     currentUser: '',
     quickActions: [],
-    alertDetailIsOpen: false,
-    alertDetails: {
-        currentLane: '',
-        startTime: '',
-        endTime: ''
+    eventPreview: {
+        isOpen: false,
+        eventData: null,
     },
     lanes: [],
-    alertTimeoutSeconds: 10
+    alertTimeoutSeconds: 10,
+    laneMap: new Map<string, LaneMapEntry>()
 }
 
 
@@ -51,28 +50,27 @@ export const Slice = createSlice({
         setQuickActions: (state, action: PayloadAction<[]>) => {
             state.quickActions = action.payload;
         },
-        setAlertDetailIsOpen: (state, action: PayloadAction<boolean>) => {
-            state.alertDetailIsOpen = action.payload;
-        },
-        setAlertDetails: (state, action: PayloadAction<{
+        setEventPreview: (state, action: PayloadAction<{
             isOpen: boolean,
-            currentLane: string,
-            startTime: string,
-            endTime: string
+            eventData: EventTableData | null,
         }>) => {
-            state.alertDetails = action.payload;
+            console.log("Setting alert details: ", action.payload);
+            state.eventPreview = action.payload;
         },
         setLanes: (state, action: PayloadAction<LaneMeta[]>) => {
             state.lanes = action.payload;
         },
-        toggleAlertDetails: (state) => {
-            state.alertDetailIsOpen = !state.alertDetailIsOpen;
+        toggleEventPreviewOpen: (state) => {
+            state.eventPreview.isOpen = !state.eventPreview.isOpen;
         },
-        setAlertDetailsDCurrentLane: (state, action: PayloadAction<string>) => {
-            state.alertDetails.currentLane = action.payload;
+        setEventPreviewData: (state, action: PayloadAction<EventTableData>) => {
+            state.eventPreview.eventData = action.payload;
         },
         setAlertTimeoutSeconds: (state, action: PayloadAction<number>) => {
             state.alertTimeoutSeconds = action.payload;
+        },
+        setLaneMap: (state, action: PayloadAction<Map<string, LaneMapEntry>>) => {
+            state.laneMap = action.payload;
         }
     }
 })
@@ -80,23 +78,25 @@ export const Slice = createSlice({
 export const {
     setCurrentUser,
     setQuickActions,
-    setAlertDetails,
+    setEventPreview,
     setLanes,
-    toggleAlertDetails,
-    setAlertDetailsDCurrentLane,
-    setAlertTimeoutSeconds
+    toggleEventPreviewOpen,
+    setEventPreviewData,
+    setAlertTimeoutSeconds,
+    setLaneMap
 } = Slice.actions;
 
 export const selectCurrentUser = (state: RootState) => state.oscarClientSlice.currentUser;
 export const selectLanes = (state: RootState) => state.oscarClientSlice.lanes;
 export const selectLaneByName = (laneName: string) => (state: RootState) => {
-    console.info("Lane Name should be: ", laneName, state.oscarClientSlice.lanes);
+    // console.info("Lane Name should be: ", laneName, state.oscarClientSlice.lanes);
     return state.oscarClientSlice.lanes.find((lane: { name: string }) => lane.name === laneName);
 };
 export const selectLaneById = (laneId: string) => (state: RootState) => {
     return state.oscarClientSlice.lanes.find((lane: { id: string }) => lane.id === laneId);
 };
-export const selectAlertDetails = (state: RootState) => state.oscarClientSlice.alertDetails;
+export const selectEventPreview = (state: RootState) => state.oscarClientSlice.eventPreview;
+export const selectLaneMap = (state: RootState) => state.oscarClientSlice.laneMap;
 
 
 
@@ -116,7 +116,7 @@ export const selectSystemsOfLane = (laneId: string) => createSelector(
 export const selectDatastreamsOfLane = (laneId: string) => createSelector(
     [selectSystemsOfLane(laneId), selectDatastreams],
     (systems, datastreams) => {
-        console.log("Found these systems:", systems);
+        // console.log("Found these systems:", systems);
         let datastreamsArr: IDatastream[] = [];
         for(let ds of datastreams.values()) {
             if (systems.find((system: { id: any; }) => system.id === ds.parentSystemId)) {

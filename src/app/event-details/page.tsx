@@ -11,7 +11,7 @@ import Comment from "./Comment";
 import AddComment from "./AddComment";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
-import {selectAlertDetails} from "@/lib/state/OSCARClientSlice";
+import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
 
 /**
  * Expects the following search params:
@@ -27,7 +27,7 @@ const testData = {
 
 export default function EventDetailsPage() {
   const [selectedEvent, setSelectedEvent] = useState<SelectedEvent>({startTime: "XX:XX:XX AM", endTime: "XX:XX:XX AM"});  // Reference types/new-types.d.ts to change type
-  const alertDetails = useSelector((state: RootState) => selectAlertDetails(state));
+  const alertDetails = useSelector((state: RootState) => selectEventPreview(state));
 
   return (
     <Stack spacing={2} direction={"column"}>
