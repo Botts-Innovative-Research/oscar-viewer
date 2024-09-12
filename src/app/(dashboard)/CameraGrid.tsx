@@ -48,11 +48,14 @@ export default function CameraGrid() {
       laneMap.forEach((value, key) =>{
         if(laneMap.has(key)){
             let ds: LaneMapEntry = laneMap.get(key);
-            const videoSources = ds.datasourcesBatch.filter((item) => item.name.includes('Video') && item.name.includes('Lane'));
+            const videoSources = ds.datasourcesRealtime.filter((item) => item.name.includes('Video') && item.name.includes('Lane'));
             console.log(videoSources);
             const laneWithVideo: LaneWithVideo = {
-              laneName: videoSources[0].name,
+              // Get lane name
+              laneName: key,
+              // All video sources for the lane
               videoSources: videoSources,
+              // Current status of lane
               status: 'none',
             };
 
@@ -86,10 +89,6 @@ export default function CameraGrid() {
           laneDSColl.addDS('neutronRT', rtDS);
         }
 
-        // if (ds.properties.name.includes('Video')) {
-        //   laneDSColl.addDS('videoRT', rtDS);
-        // }
-
         if (ds.properties.name.includes('Driver - Tamper')) {
           laneDSColl.addDS('tamperRT', rtDS);
         }
@@ -104,9 +103,24 @@ export default function CameraGrid() {
 
   const addSubscriptionCallbacks = useCallback(() => {
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
-      laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {updateVideoList(laneName, message)});
-      laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {updateVideoList(laneName, message)});
-      laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {updateVideoList(laneName, message)});
+      laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
+          const alarmState = message.values[0].data.alarmState;
+          if(alarmState != "Background" && alarmState != "Scan") {
+            updateVideoList(laneName, alarmState);
+          }
+        });
+      laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
+        const alarmState = message.values[0].data.alarmState;
+        if(alarmState != "Background" && alarmState != "Scan") {
+          updateVideoList(laneName, alarmState);
+        }
+      });
+      laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
+        const alarmState = message.values[0].data.alarmState;
+        if(alarmState != "Background" && alarmState != "Scan") {
+          updateVideoList(laneName, alarmState);
+        }
+      });
 
       laneDSColl.connectAllDS();
     }
@@ -114,7 +128,9 @@ export default function CameraGrid() {
 
 
   useEffect(() => {
-    addSubscriptionCallbacks();
+    if(videoList !== null && videoList.length > 0) {
+      addSubscriptionCallbacks();
+    }
   }, [dataSourcesByLane]);
 
   const updateVideoList = (laneName: string, newStatus: string) => {
@@ -135,6 +151,36 @@ export default function CameraGrid() {
       return updatedList;
     })
   };
+
+  useEffect(() => {
+
+    async function checkConnections() {
+      if(videoList != null && videoList.length > 0) {
+        // Connect to currently shown videostreams
+        videoList.slice(startItem, endItem).forEach(async (video) => {
+          const isConnected = await video.videoSources[0].isConnected();
+          if(!isConnected) {
+            video.videoSources[0].connect();
+          }
+        });
+
+        // Disconnect other videostreams
+        videoList.forEach(async (video, index) => {
+          if(video) {
+            if(index < startItem || index >= endItem) {
+              const isConnected = await video.videoSources[0].isConnected();
+              if(isConnected) {
+                video.videoSources[0].disconnect();
+              }
+            }
+          }
+        });
+      }
+    }
+
+    checkConnections();
+
+  }, [videoList]);
 
   // TODO: Create swe api objects and pass to children
 
