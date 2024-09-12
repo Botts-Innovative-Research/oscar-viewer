@@ -45,11 +45,4 @@ export interface LaneStatusData{
   tamperDataStream: Datastream[]
 }
 
-export interface SiteMapData{
-  laneData: LaneMeta,
-  locationDataStream: Datastream[],
-  gammaDataStream: Datastream[],
-  neutronDataStream: Datastream[],
-  videoDataStream: Datastream[]
-}
 

@@ -5,6 +5,8 @@
 
 import {IEventTableData} from "../../../../types/new-types";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
+import {warn} from "next/dist/build/output/log";
+import System from "osh-js/source/core/sweapi/system/System.js";
 
 export class EventTableData implements IEventTableData {
     id: number;
@@ -19,32 +21,26 @@ export class EventTableData implements IEventTableData {
     adjudicatedUser?: string;
     adjudicatedCode?: number;
     adjudicatedData?: AdjudicationData;
+    systemIdx?: string;
 
     constructor(id: number, laneId: string, msgValue: any, adjudicatedData: AdjudicationData | null = null) {
         this.id = id;
         this.laneId = laneId
-
-        if (msgValue) {
-            console.log("Adding msgValue: ", msgValue)
-        } else {
-            try {
-                throw new Error("No msgValue provided");
-            } catch (e) {
-                console.log(e);
-            }
-        }
-
         this.occupancyId = msgValue.occupancyCount;
         this.startTime = msgValue.startTime;
         this.endTime = msgValue.endTime;
-        this.maxGamma = msgValue.maxGamma ? msgValue.maxGamma : null;
-        this.maxNeutron = msgValue.maxNeutron ? msgValue.maxNeutron : null;
-        if (this.maxGamma && this.maxNeutron) {
+        this.maxGamma = msgValue.maxGamma > -1 ? msgValue.maxGamma : null;
+        this.maxNeutron = msgValue.maxNeutron > -1 ? msgValue.maxNeutron : null;
+        if (msgValue.gammaAlarm && msgValue.neutronAlarm) {
             this.status = "Gamma & Neutron";
-        } else if (this.maxGamma) {
+        } else if (msgValue.gammaAlarm) {
             this.status = "Gamma";
-        } else if (this.maxNeutron) {
+        } else if (msgValue.neutronAlarm) {
             this.status = "Neutron";
+        }
+        else{
+            console.warn("No alarm detected for event: ", msgValue);
+            return null;
         }
         this.adjudicatedUser = adjudicatedData ? adjudicatedData.user : null;
         this.adjudicatedCode = adjudicatedData ? adjudicatedData.code : null;
@@ -69,6 +65,10 @@ export class EventTableData implements IEventTableData {
 
     getEndTimeNum(): number {
         return new Date(this.endTime).getTime();
+    }
+
+    setSystemIdx(systemIdx: string) {
+        this.systemIdx = systemIdx;
     }
 }
 
@@ -161,5 +161,9 @@ export class AdjudicationData {
 
     removeSecondary(aData: AdjudicationData) {
         this.secondary.delete(aData.id);
+    }
+
+    sendAdjudicationToServer() {
+
     }
 }

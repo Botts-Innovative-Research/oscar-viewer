@@ -6,8 +6,7 @@ import "../style/cameragrid.css";
 import { Datastream } from '@/lib/data/osh/Datastreams';
 import { useSelector } from 'react-redux';
 import { LaneMeta } from '@/lib/data/oscar/LaneCollection';
-import CameraGridVideo from '../_components/video/VideoComponent';
-import { selectDatastreams } from '@/lib/state/OSHSlice';
+
 import { selectLanes } from '@/lib/state/OSCARClientSlice';
 import { RootState } from '@/lib/state/Store';
 import VideoComponent from '../_components/video/VideoComponent';

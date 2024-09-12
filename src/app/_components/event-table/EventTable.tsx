@@ -1,33 +1,42 @@
 "use client";
 
-import { Box } from '@mui/material';
-import { DataGrid, GridActionsCellItem, GridCellParams, GridColDef, gridClasses } from '@mui/x-data-grid';
+import {Box} from '@mui/material';
+import {DataGrid, GridActionsCellItem, GridCellParams, GridColDef, gridClasses} from '@mui/x-data-grid';
 
-import { IEventTableData, SelectedEvent } from 'types/new-types';
-import { useState } from 'react';
+import {IEventTableData, SelectedEvent} from 'types/new-types';
+import {useContext, useState} from 'react';
 
 import NotesRoundedIcon from '@mui/icons-material/NotesRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import {colorCodes} from "@/app/_components/AdjudicationSelect";
-import {EventTableDataCollection} from "@/lib/data/oscar/TableHelpers";
+import {EventTableData, EventTableDataCollection} from "@/lib/data/oscar/TableHelpers";
 import CustomToolbar from "@/app/_components/CustomToolbar";
+import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import {useSelector} from "react-redux";
+import {RootState} from "@/lib/state/Store";
+import {useAppDispatch} from "@/lib/state/Hooks";
+import {selectEventPreview, setEventPreview} from "@/lib/state/OSCARClientSlice";
 
 
 export default function EventTable(props: {
-  onRowSelect?: (event: SelectedEvent) => void, // Return start/end time to parent
+  // onRowSelect?: (event: SelectedEvent) => void, // Return start/end time to parent
   viewSecondary?: boolean,  // Show 'Secondary Inspection' column, default FALSE
   viewMenu?: boolean, // Show three-dot menu button, default FALSE
   viewLane?: boolean, // Show 'View Lane' option in menu, default FALSE
   viewAdjudicated?: boolean, //shows Adjudicated status in the event log , not shown in the alarm table
-  data: EventTableDataCollection,  // Table data
+  eventTable: EventTableDataCollection,  // Table data
 }) {
-  const onRowSelect = props.onRowSelect;
+  // const onRowSelect = props.onRowSelect;
   const viewAdjudicated = props.viewAdjudicated || false;
   const viewSecondary = props.viewSecondary || false;
   const viewMenu = props.viewMenu || false;
   const viewLane = props.viewLane || false;
-  const data = props.data;
+  const eventTable = props.eventTable;
   const [selectionModel, setSelectionModel] = useState([]); // Currently selected row
+  const [currentEvent, setCurrentEvent] = useState<EventTableData | null>(null);
+  const laneMapRef = useContext(DataSourceContext).laneMapRef;
+  const eventPreview = useSelector(selectEventPreview);
+  const dispatch = useAppDispatch();
 
 
   // Column definition for EventTable
@@ -105,14 +114,14 @@ export default function EventTable(props: {
       maxWidth: 50,
       getActions: (params) => [
         <GridActionsCellItem
-            icon={<NotesRoundedIcon />}
+            icon={<NotesRoundedIcon/>}
             label="Details"
             onClick={() => console.log(params.id)}
             showInMenu
         />,
         (viewLane ?
                 <GridActionsCellItem
-                    icon={<VisibilityRoundedIcon />}
+                    icon={<VisibilityRoundedIcon/>}
                     label="View Lane"
                     onClick={() => console.log(params.id)}
                     showInMenu
@@ -129,7 +138,7 @@ export default function EventTable(props: {
     // Exclude fields based on component parameters
     if (!viewSecondary) excludeFields.push('secondaryInspection');
     if (!viewMenu) excludeFields.push('Menu');
-    if(!viewAdjudicated) excludeFields.push('adjudicatedCode');
+    if (!viewAdjudicated) excludeFields.push('adjudicatedCode');
 
     return columns
         .filter((column) => !excludeFields.includes(column.field))
@@ -138,6 +147,9 @@ export default function EventTable(props: {
 
   // Handle currently selected row
   const handleRowSelection = (selection: any[]) => {
+
+    console.log("Selection: ", selection);
+
     const selectedId = selection[0]; // Get the first selected ID
 
     if (selectionModel[0] === selectedId) {
@@ -150,21 +162,37 @@ export default function EventTable(props: {
       // Otherwise, set the new selection
       setSelectionModel([selectedId]);
 
-      // Find the selected row's data
-      const selectedRow = data.data.find((row) => row.id === selectedId);
+      // Find the selected row's eventTable
+      const selectedRow = eventTable.data.find((row) => row.id === selectedId);
       if (selectedRow && onRowSelect) {
-        onRowSelect({
-          startTime: selectedRow.startTime.toString(),
-          endTime: selectedRow.endTime.toString()
-        }); // Return start and end time to parent function
+        onRowSelect(selectedRow); // Return start and end time to parent function
       }
     }
   };
 
+  function onRowSelect(event: EventTableData) {
+    if (event) {
+      console.log("Row selected: ", event);
+      console.log("LaneMapRef: ", laneMapRef.current);
+      const currentSystem = laneMapRef.current.get(event.laneId).systems.find((system) => system.properties.id === event.systemIdx)
+      console.log("Current System: ", currentSystem);
+
+      dispatch(setEventPreview({
+        isOpen: true,
+        eventData: event,
+      }));
+    } else {
+      dispatch(setEventPreview({
+        isOpen: false,
+        eventData: null,
+      }));
+    }
+  }
+
   return (
-      <Box sx={{ height: 400, width: '100%' }}>
+      <Box sx={{height: 400, width: '100%'}}>
         <DataGrid
-            rows={data.data}
+            rows={eventTable.data}
             columns={columns}
             onRowSelectionModelChange={handleRowSelection}
             rowSelectionModel={selectionModel}
@@ -184,7 +212,7 @@ export default function EventTable(props: {
               },
             }}
             pageSizeOptions={[20]}
-            slots={{ toolbar: CustomToolbar }}
+            slots={{toolbar: CustomToolbar}}
             slotProps={{
               columnsManagement: {
                 getTogglableColumns: getColumnList,
@@ -204,11 +232,11 @@ export default function EventTable(props: {
                 return "highlightNeutron";
               else if (params.value === "Gamma & Neutron")
                 return "highlightGammaNeutron";
-              else if (params.formattedValue === 'Code 1: Contraband Found'|| params.formattedValue === 'Code 2: Other' || params.formattedValue === 'Code 3: Medical Isotope Found')
+              else if (params.formattedValue === 'Code 1: Contraband Found' || params.formattedValue === 'Code 2: Other' || params.formattedValue === 'Code 3: Medical Isotope Found')
                 return "highlightReal";
-              else if (params.formattedValue === 'Code 4: Norm Found'|| params.formattedValue === 'Code 5: Declared Shipment of Radioactive Material' || params.formattedValue === 'Code 6: Physical Inspection Negative')
+              else if (params.formattedValue === 'Code 4: Norm Found' || params.formattedValue === 'Code 5: Declared Shipment of Radioactive Material' || params.formattedValue === 'Code 6: Physical Inspection Negative')
                 return "highlightInnocent";
-              else if (params.formattedValue === 'Code 7: RIID/ASP Indicates Background Only'|| params.formattedValue === 'Code 8: Other' || params.formattedValue === 'Code 9: Authorized Test, Maintenance, or Training Activity')
+              else if (params.formattedValue === 'Code 7: RIID/ASP Indicates Background Only' || params.formattedValue === 'Code 8: Other' || params.formattedValue === 'Code 9: Authorized Test, Maintenance, or Training Activity')
                 return "highlightFalse";
               else if (params.formattedValue === 'Code 10: Unauthorized Activity' || params.formattedValue === 'Code 11: Other')
                 return "highlightOther";

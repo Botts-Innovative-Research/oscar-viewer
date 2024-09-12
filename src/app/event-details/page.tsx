@@ -11,7 +11,7 @@ import Comment from "./Comment";
 import AddComment from "./AddComment";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
-import {selectAlertDetails} from "@/lib/state/OSCARClientSlice";
+import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
 
 /**
  * Expects the following search params:
@@ -22,46 +22,46 @@ import {selectAlertDetails} from "@/lib/state/OSCARClientSlice";
  */
 
 const testData = {
-  id: '1', secondaryInspection: false, laneId: '1', occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: 25642, status: 'Gamma',
+    id: '1', secondaryInspection: false, laneId: '1', occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: 25642, status: 'Gamma',
 }
 
 export default function EventDetailsPage() {
-  const [selectedEvent, setSelectedEvent] = useState<SelectedEvent>({startTime: "XX:XX:XX AM", endTime: "XX:XX:XX AM"});  // Reference types/new-types.d.ts to change type
-  const alertDetails = useSelector((state: RootState) => selectAlertDetails(state));
+    const [selectedEvent, setSelectedEvent] = useState<SelectedEvent>({startTime: "XX:XX:XX AM", endTime: "XX:XX:XX AM"});  // Reference types/new-types.d.ts to change type
+    const alertDetails = useSelector((state: RootState) => selectEventPreview(state));
 
-  return (
-    <Stack spacing={2} direction={"column"}>
-      <Grid item spacing={2}>
-        <BackButton />
-      </Grid>
-      <Grid item spacing={2}>
-        <Typography variant="h5">Event Details</Typography>
-      </Grid>
-      <Grid item container spacing={2} sx={{ width: "100%" }}>
-        <Paper variant='outlined' sx={{ width: "100%" }}>
-          <DataRow event={selectedEvent} />
-        </Paper>
-      </Grid>
-      <Grid item container spacing={2} sx={{ width: "100%" }}>
-        <Paper variant='outlined' sx={{ width: "100%" }}>
-          <Media event={selectedEvent} />
-        </Paper>
-      </Grid>
-      <Grid item container spacing={2} sx={{ width: "100%" }}>
-        <Paper variant='outlined' sx={{ width: "100%" }}>
-          <MiscTable event={selectedEvent} />
-        </Paper>
-      </Grid>
-      <Grid item container spacing={2} sx={{ width: "100%" }}>
-        <Paper variant='outlined' sx={{ width: "100%" }}>
-          <Comment event={selectedEvent} />
-        </Paper>
-      </Grid>
-      <Grid item container spacing={2} sx={{ width: "100%" }}>
-        <Paper variant='outlined' sx={{ width: "100%" }}>
-          <AddComment event={selectedEvent} />
-        </Paper>
-      </Grid>
-    </Stack>
-  );
+    return (
+        <Stack spacing={2} direction={"column"}>
+            <Grid item spacing={2}>
+                <BackButton />
+            </Grid>
+            <Grid item spacing={2}>
+                <Typography variant="h5">Event Details</Typography>
+            </Grid>
+            <Grid item container spacing={2} sx={{ width: "100%" }}>
+                <Paper variant='outlined' sx={{ width: "100%" }}>
+                    <DataRow event={selectedEvent} />
+                </Paper>
+            </Grid>
+            <Grid item container spacing={2} sx={{ width: "100%" }}>
+                <Paper variant='outlined' sx={{ width: "100%" }}>
+                    <Media event={selectedEvent} />
+                </Paper>
+            </Grid>
+            <Grid item container spacing={2} sx={{ width: "100%" }}>
+                <Paper variant='outlined' sx={{ width: "100%" }}>
+                    <MiscTable event={selectedEvent} />
+                </Paper>
+            </Grid>
+            <Grid item container spacing={2} sx={{ width: "100%" }}>
+                <Paper variant='outlined' sx={{ width: "100%" }}>
+                    <Comment event={selectedEvent} />
+                </Paper>
+            </Grid>
+            <Grid item container spacing={2} sx={{ width: "100%" }}>
+                <Paper variant='outlined' sx={{ width: "100%" }}>
+                    <AddComment event={selectedEvent} />
+                </Paper>
+            </Grid>
+        </Stack>
+    );
 }

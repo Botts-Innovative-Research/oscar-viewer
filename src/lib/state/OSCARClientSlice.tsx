@@ -10,17 +10,16 @@ import {
 } from "@/lib/state/OSHSlice";
 import {IDatastream} from "@/lib/data/osh/Datastreams";
 import {useSelector} from "react-redux";
+import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 
 enableMapSet();
 
 export interface IOSCARClientState {
     currentUser: string,
     quickActions: [],
-    alertDetailIsOpen: boolean,
-    alertDetails: {
-        currentLane: string,
-        startTime: string,
-        endTime: string,
+    eventPreview: {
+        isOpen: boolean,
+        eventData: EventTableData | null,
     },
     // This should move to a separate slice
     lanes: LaneMeta[],
@@ -31,11 +30,9 @@ export interface IOSCARClientState {
 const initialState: IOSCARClientState = {
     currentUser: '',
     quickActions: [],
-    alertDetailIsOpen: false,
-    alertDetails: {
-        currentLane: '',
-        startTime: '',
-        endTime: ''
+    eventPreview: {
+        isOpen: false,
+        eventData: null,
     },
     lanes: [],
     alertTimeoutSeconds: 10,
@@ -53,25 +50,21 @@ export const Slice = createSlice({
         setQuickActions: (state, action: PayloadAction<[]>) => {
             state.quickActions = action.payload;
         },
-        setAlertDetailIsOpen: (state, action: PayloadAction<boolean>) => {
-            state.alertDetailIsOpen = action.payload;
-        },
-        setAlertDetails: (state, action: PayloadAction<{
+        setEventPreview: (state, action: PayloadAction<{
             isOpen: boolean,
-            currentLane: string,
-            startTime: string,
-            endTime: string
+            eventData: EventTableData | null,
         }>) => {
-            state.alertDetails = action.payload;
+            console.log("Setting alert details: ", action.payload);
+            state.eventPreview = action.payload;
         },
         setLanes: (state, action: PayloadAction<LaneMeta[]>) => {
             state.lanes = action.payload;
         },
-        toggleAlertDetails: (state) => {
-            state.alertDetailIsOpen = !state.alertDetailIsOpen;
+        toggleEventPreviewOpen: (state) => {
+            state.eventPreview.isOpen = !state.eventPreview.isOpen;
         },
-        setAlertDetailsDCurrentLane: (state, action: PayloadAction<string>) => {
-            state.alertDetails.currentLane = action.payload;
+        setEventPreviewData: (state, action: PayloadAction<EventTableData>) => {
+            state.eventPreview.eventData = action.payload;
         },
         setAlertTimeoutSeconds: (state, action: PayloadAction<number>) => {
             state.alertTimeoutSeconds = action.payload;
@@ -85,10 +78,10 @@ export const Slice = createSlice({
 export const {
     setCurrentUser,
     setQuickActions,
-    setAlertDetails,
+    setEventPreview,
     setLanes,
-    toggleAlertDetails,
-    setAlertDetailsDCurrentLane,
+    toggleEventPreviewOpen,
+    setEventPreviewData,
     setAlertTimeoutSeconds,
     setLaneMap
 } = Slice.actions;
@@ -102,7 +95,7 @@ export const selectLaneByName = (laneName: string) => (state: RootState) => {
 export const selectLaneById = (laneId: string) => (state: RootState) => {
     return state.oscarClientSlice.lanes.find((lane: { id: string }) => lane.id === laneId);
 };
-export const selectAlertDetails = (state: RootState) => state.oscarClientSlice.alertDetails;
+export const selectEventPreview = (state: RootState) => state.oscarClientSlice.eventPreview;
 export const selectLaneMap = (state: RootState) => state.oscarClientSlice.laneMap;
 
 
