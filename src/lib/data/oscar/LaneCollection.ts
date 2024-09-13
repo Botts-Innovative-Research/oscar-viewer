@@ -13,6 +13,7 @@ import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import {INode} from "@/lib/data/osh/Node";
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
+import {IDatastream} from "@/lib/data/osh/Datastreams";
 
 class ILaneMeta {
     id: string;
@@ -150,9 +151,132 @@ export class LaneMapEntry {
         }
     }
 
+    createReplaySweApiFromDataStream(datastream: typeof DataStream, startTime, endTime) {
+        return new SweApi(`rtds-${datastream.properties.id}`, {
+            protocol: datastream.networkProperties.streamProtocol,
+            endpointUrl: datastream.networkProperties.endpointUrl,
+            resource: `/datastreams/${datastream.properties.id}/observations`,
+            tls: datastream.networkProperties.tls,
+            responseFormat: datastream.properties.outputName === "video" ? 'application/swe+binary' : 'application/swe+json',
+            mode: Mode.REPLAY,
+            connectorOpts: {
+                username: this.parentNode.auth.username,
+                password: this.parentNode.auth.password
+            },
+            startTime: startTime,
+            endTime: endTime
+        });
+    }
+
     lookupSystemIdFromDataStreamId(dsId: string) {
         let stream = this.datastreams.find((ds) => ds.id === dsId);
         return this.systems.find((sys) => sys.properties.id === stream.properties["system@id"]).properties.id;
+    }
+
+    createLaneDSCollection() {
+
+        let laneDSColl = new LaneDSColl();
+        for (let ds of this.datastreams) {
+
+            let idx: number = this.datastreams.indexOf(ds);
+            let rtDS = this.datasourcesRealtime[idx];
+
+
+            if (ds.properties.name.includes('Driver - Occupancy')) {
+                laneDSColl.addDS('occBatch', batchDS);
+                laneDSColl.addDS('occRT', rtDS);
+            }
+            if (ds.properties.name.includes('Driver - Gamma Count')) {
+                laneDSColl.addDS('gammaBatch', rtDS);
+                laneDSColl.addDS('gammaRT', rtDS);
+            }
+
+            if (ds.properties.name.includes('Driver - Neutron Count')) {
+                laneDSColl.addDS('neutronBatch', rtDS);
+                laneDSColl.addDS('neutronRT', rtDS);
+            }
+
+            if (ds.properties.name.includes('Driver - Tamper')) {
+                laneDSColl.addDS('tamperBatch', rtDS);
+                laneDSColl.addDS('tamperRT', rtDS);
+            }
+
+            if (ds.properties.name.includes('Video')) {
+                laneDSColl.addDS('videoBatch', rtDS);
+                laneDSColl.addDS('videoRT', rtDS);
+            }
+        }
+    }
+
+    /**
+     * Retrieves datastreams within the specified time range and categorizes them by event detail types.
+     *
+     * @param {number} startTime - The start time of the range for datastreams.
+     * @param {number} endTime - The end time of the range for datastreams.
+     * @return {Map<string, typeof SweApi[]>} A map categorizing the replayed datastreams by their event detail types.
+     */
+    getDatastreamsForEventDetail(startTime, endTime): Map<string, typeof SweApi[]> {
+
+        let dsMap: Map<string, typeof SweApi[]> = new Map();
+        dsMap.set('occ', []);
+        dsMap.set('gamma', []);
+        dsMap.set('neutron', []);
+        dsMap.set('tamper', []);
+        dsMap.set('video', []);
+
+        for (let ds of this.datastreams) {
+
+            let idx: number = this.datastreams.indexOf(ds);
+            let rtDS = this.createReplaySweApiFromDataStream(ds, startTime, endTime);
+
+            // move some of this into another function to remove code redundancy
+            if (ds.properties.name.includes('Driver - Occupancy')) {
+                let occArray = dsMap.get('occ')!;
+                const index = occArray.findIndex(dsItem => dsItem.properties.name === rtDS.properties.name);
+                if (index !== -1) {
+                    occArray[index] = rtDS;
+                } else {
+                    occArray.push(rtDS);
+                }
+            }
+            if (ds.properties.name.includes('Driver - Gamma Count')) {
+                let gammaArray = dsMap.get('gamma')!;
+                const index = gammaArray.findIndex(dsItem => dsItem.properties.name === rtDS.properties.name);
+                if (index !== -1) {
+                    gammaArray[index] = rtDS;
+                } else {
+                    gammaArray.push(rtDS);
+                }
+            }
+            if (ds.properties.name.includes('Driver - Neutron Count')) {
+                let neutronArray = dsMap.get('neutron')!;
+                const index = neutronArray.findIndex(dsItem => dsItem.properties.name === rtDS.properties.name);
+                if (index !== -1) {
+                    neutronArray[index] = rtDS;
+                } else {
+                    neutronArray.push(rtDS);
+                }
+            }
+            if (ds.properties.name.includes('Driver - Tamper')) {
+                let tamperArray = dsMap.get('tamper')!;
+                const index = tamperArray.findIndex(dsItem => dsItem.properties.name === rtDS.properties.name);
+                if (index !== -1) {
+                    tamperArray[index] = rtDS;
+                } else {
+                    tamperArray.push(rtDS);
+                }
+            }
+            if (ds.properties.name.includes('Video')) {
+                let videoArray = dsMap.get('video')!;
+                const index = videoArray.findIndex(dsItem => dsItem.properties.name === rtDS.properties.name);
+                if (index !== -1) {
+                    videoArray[index] = rtDS;
+                } else {
+                    videoArray.push(rtDS);
+                }
+            }
+        }
+        return dsMap;
     }
 }
 

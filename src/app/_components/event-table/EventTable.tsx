@@ -196,7 +196,6 @@ export default function EventTable(props: {
 
     useEffect(()=>{
         if(shouldForceAlarmTableDeselect){
-            console.log("Setting selection model to []")
             setSelectionModel([])
             dispatch(toggleShouldForceAlarmTableDeselect())
         }

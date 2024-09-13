@@ -34,7 +34,6 @@ export {DataSourceContext};
 
 export default function DataSourceProvider({children}: { children: ReactNode }) {
     const mainDataSynchronizer = useSelector((state: RootState) => state.oshSlice.mainDataSynchronizer);
-    // const isInitialized = useSelector((state: RootState) => state.oshSlice.isInitialized);
     const configNode: Node = useSelector((state: RootState) => state.oshSlice.configNode);
     const dispatch = useAppDispatch();
     const nodes = useSelector((state: RootState) => state.oshSlice.nodes);
@@ -42,16 +41,6 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     const masterTimeSyncRef = useRef<typeof DataSynchronizer>();
     const datastreams = useSelector((state: RootState) => state.oshSlice.dataStreams);
     const dataSources = useSelector((state: RootState) => state.oshSlice.datasources);
-    /*  const selectGammaCountDS = selectDatastreamByOutputType(['Driver - Gamma Count']);
-      const gammaCountDS = useSelector((state: RootState) => selectGammaCountDS(state));*/
-
-    /*const northLaneSelector = selectLaneByName('North Lane 1');
-    const northLane: LaneMeta = useSelector((state: RootState) => northLaneSelector(state));
-
-    // const selectNorthLaneGammaCountDS = selectDatastreamsOfLaneByTypes(northLane.id,['Driver - Gamma Count']);
-    const selectNorthLaneGammaCountDS = northLane?.id ? selectDatastreamsOfLaneByTypes(northLane.id, ['Driver - Gamma Count']) : (): any[] => [];
-    // const NorthLaneGammaCountDS = useSelector((state: RootState) => selectNorthLaneGammaCountDS(state));
-    const NorthLaneGammaCountDS = useSelector((state: RootState) => selectNorthLaneGammaCountDS(state) ?? []);*/
 
     const InitializeApplication = useCallback(async () => {
         if (!configNode) {
