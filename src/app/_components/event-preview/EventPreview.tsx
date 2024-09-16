@@ -16,6 +16,7 @@ import {useRouter} from "next/navigation";
 import ChartIntercept from "@/app/_components/event-preview/ChartIntercept";
 import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import TestChartHighlighter from "@/app/_components/event-preview/TestChartHighlighter";
 
 export function EventPreview() {
     const dispatch = useAppDispatch();
@@ -62,6 +63,7 @@ export function EventPreview() {
                     <CloseRoundedIcon fontSize="small"/>
                 </IconButton>
             </Stack>
+            {/*<TestChartHighlighter OccDataSourceId="2knpubn9829hs" ThreshDataSourceId="a8boe7t1lr0o8"/>*/}
             <ChartIntercept/>
             <LaneVideoPlayback/>
             <AdjudicationSelect onSelect={handleAdjudication}/>

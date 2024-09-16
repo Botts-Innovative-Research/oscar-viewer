@@ -223,6 +223,7 @@ export class LaneMapEntry {
         dsMap.set('neutron', []);
         dsMap.set('tamper', []);
         dsMap.set('video', []);
+        dsMap.set('gammaTrshld', []);
 
         for (let ds of this.datastreams) {
 
@@ -273,6 +274,15 @@ export class LaneMapEntry {
                     videoArray[index] = rtDS;
                 } else {
                     videoArray.push(rtDS);
+                }
+            }
+            if (ds.properties.name.includes('Driver - Gamma Threshold')) {
+                let gammaTrshldArray = dsMap.get('gammaTrshld')!;
+                const index = gammaTrshldArray.findIndex(dsItem => dsItem.properties.name === rtDS.properties.name);
+                if (index !== -1) {
+                    gammaTrshldArray[index] = rtDS;
+                } else {
+                    gammaTrshldArray.push(rtDS);
                 }
             }
         }
