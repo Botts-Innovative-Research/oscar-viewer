@@ -10,7 +10,8 @@ import {SelectedEvent} from 'types/new-types';
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
 import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
-import MapComponent from "@/app/_components/map/MapComponent";
+import MapComponent from '../_components/maps/MapComponent';
+
 
 
 export default function EventPreview(props: { event?: SelectedEvent; }) {
@@ -57,7 +58,7 @@ export default function EventPreview(props: { event?: SelectedEvent; }) {
             </Stack>
         ) : (
             <Box  style={{ width: "100%", height: "100%", padding: 10, overflow: 'hidden'}}>
-              <MapComponent/>
+              <MapComponent />
             </Box>
             // <Image src={"/SiteMap.png"} alt="Site Map" width={0} height={0} sizes={"100vw"} style={{ width: "100%", height: "100%", padding: 10 }} />
         )}

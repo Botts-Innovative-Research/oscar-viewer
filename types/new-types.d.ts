@@ -1,5 +1,6 @@
 import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import {Datastream} from "@/lib/data/osh/Datastreams";
+import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 
 /**
  * Interface for Event Table data
@@ -33,16 +34,15 @@ export type LaneStatusType = {
     status: string;
 }
 
-export interface LaneOccupancyData {
-  laneData: LaneMeta,
-  occupancyStreams: Datastream[]
+
+export interface LaneWithVideo {
+  laneName: string,
+  videoSources: typeof SweApi[],
+  status: string,
 }
 
-export interface LaneStatusData{
-  laneData: LaneMeta,
-  gammaDataStream: Datastream[],
-  neutronDataStream: Datastream[],
-  tamperDataStream: Datastream[]
+export interface LaneWithLocation{
+  laneName: string,
+  locationSources: typeof SweApi[],
+  status: string
 }
-
-

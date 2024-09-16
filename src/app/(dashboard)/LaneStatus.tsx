@@ -28,15 +28,7 @@ export default function LaneStatus() {
   const idVal = useRef(1);
 
   const {laneMapRef} = useContext(DataSourceContext);
-  const laneMap = useSelector((state: RootState) => selectLaneMap(state));
-
-  // let gammaDs: typeof SweApi[] = [];
-  // let tamperDs: typeof SweApi[] = [];
-  // let neutronDs: typeof SweApi[] = [];
-
   const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
-
-
   const datasourceSetup = useCallback(async () => {
 
     let laneDSMap = new Map<string, LaneDSColl>();
@@ -57,11 +49,6 @@ export default function LaneStatus() {
           laneDSColl.addDS('neutronRT', rtDS);
         }
 
-
-        if (ds.properties.name.includes('Video')) {
-          laneDSColl.addDS('videoRT', rtDS);
-        }
-
         if (ds.properties.name.includes('Driver - Tamper')) {
           laneDSColl.addDS('tamperRT', rtDS);
         }
@@ -77,7 +64,7 @@ export default function LaneStatus() {
   const addSubscriptionCallbacks = useCallback(() => {
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
       const msgLaneName = laneName;
-      laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {handleStatusData(laneName, message)});
+      laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => handleStatusData(msgLaneName, message));
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => handleStatusData(msgLaneName, message));
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => handleTamperData(msgLaneName, message));
 
