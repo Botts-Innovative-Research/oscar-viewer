@@ -151,7 +151,7 @@ export class LaneMapEntry {
         }
     }
 
-    createReplaySweApiFromDataStream(datastream: typeof DataStream, startTime, endTime) {
+    createReplaySweApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
         return new SweApi(`rtds-${datastream.properties.id}`, {
             protocol: datastream.networkProperties.streamProtocol,
             endpointUrl: datastream.networkProperties.endpointUrl,
@@ -173,40 +173,40 @@ export class LaneMapEntry {
         return this.systems.find((sys) => sys.properties.id === stream.properties["system@id"]).properties.id;
     }
 
-    createLaneDSCollection() {
+    /* createLaneDSCollection() {
 
-        let laneDSColl = new LaneDSColl();
-        for (let ds of this.datastreams) {
+         let laneDSColl = new LaneDSColl();
+         for (let ds of this.datastreams) {
 
-            let idx: number = this.datastreams.indexOf(ds);
-            let rtDS = this.datasourcesRealtime[idx];
+             let idx: number = this.datastreams.indexOf(ds);
+             let rtDS = this.datasourcesRealtime[idx];
 
 
-            if (ds.properties.name.includes('Driver - Occupancy')) {
-                laneDSColl.addDS('occBatch', batchDS);
-                laneDSColl.addDS('occRT', rtDS);
-            }
-            if (ds.properties.name.includes('Driver - Gamma Count')) {
-                laneDSColl.addDS('gammaBatch', rtDS);
-                laneDSColl.addDS('gammaRT', rtDS);
-            }
+             if (ds.properties.name.includes('Driver - Occupancy')) {
+                 laneDSColl.addDS('occBatch', batchDS);
+                 laneDSColl.addDS('occRT', rtDS);
+             }
+             if (ds.properties.name.includes('Driver - Gamma Count')) {
+                 laneDSColl.addDS('gammaBatch', rtDS);
+                 laneDSColl.addDS('gammaRT', rtDS);
+             }
 
-            if (ds.properties.name.includes('Driver - Neutron Count')) {
-                laneDSColl.addDS('neutronBatch', rtDS);
-                laneDSColl.addDS('neutronRT', rtDS);
-            }
+             if (ds.properties.name.includes('Driver - Neutron Count')) {
+                 laneDSColl.addDS('neutronBatch', rtDS);
+                 laneDSColl.addDS('neutronRT', rtDS);
+             }
 
-            if (ds.properties.name.includes('Driver - Tamper')) {
-                laneDSColl.addDS('tamperBatch', rtDS);
-                laneDSColl.addDS('tamperRT', rtDS);
-            }
+             if (ds.properties.name.includes('Driver - Tamper')) {
+                 laneDSColl.addDS('tamperBatch', rtDS);
+                 laneDSColl.addDS('tamperRT', rtDS);
+             }
 
-            if (ds.properties.name.includes('Video')) {
-                laneDSColl.addDS('videoBatch', rtDS);
-                laneDSColl.addDS('videoRT', rtDS);
-            }
-        }
-    }
+             if (ds.properties.name.includes('Video')) {
+                 laneDSColl.addDS('videoBatch', rtDS);
+                 laneDSColl.addDS('videoRT', rtDS);
+             }
+         }
+     }*/
 
     /**
      * Retrieves datastreams within the specified time range and categorizes them by event detail types.
@@ -215,7 +215,7 @@ export class LaneMapEntry {
      * @param {number} endTime - The end time of the range for datastreams.
      * @return {Map<string, typeof SweApi[]>} A map categorizing the replayed datastreams by their event detail types.
      */
-    getDatastreamsForEventDetail(startTime, endTime): Map<string, typeof SweApi[]> {
+    getDatastreamsForEventDetail(startTime: string, endTime: string): Map<string, typeof SweApi[]> {
 
         let dsMap: Map<string, typeof SweApi[]> = new Map();
         dsMap.set('occ', []);

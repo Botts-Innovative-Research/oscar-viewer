@@ -139,67 +139,10 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         }
     }, []);
 
-
-    const laneFetch = useCallback(async () => {
-        console.log("Nodes:", nodes);
-        await Promise.all(nodes.map(async (node: INode) => {
-            return await node.fetchLanes();
-        })).then((fetched) => {
-            console.log("Fetched:", fetched);
-            let lanes = fetched.flatMap((item: any) => item.lanes);
-            let systems = fetched.flatMap((item: any) => item.systems);
-
-            dispatch(setLanes(lanes));
-            dispatch(setSystems(systems));
-            console.log("Statewide systems", systems)
-        });
-        console.info("Lanes fetched, continuing onward...");
-    }, [nodes, dispatch]);
-
-    const datastreamFetch = useCallback(async () => {
-        console.warn("Fetching datastreams of systems...", systems);
-        await Promise.all(systems.map(async (system: System) => {
-            return await system.fetchDataStreams();
-        })).then((datastreams) => {
-            const combinedDatastreams = datastreams.flat();
-            let datastreamsMap = new Map<string, Datastream>();
-            combinedDatastreams.forEach((datastreamJson: any) => {
-                const datastream = new Datastream(datastreamJson.id, datastreamJson.name, datastreamJson["system@id"], [datastreamJson.validTime[0], datastreamJson.validTime[1]]);
-                datastreamsMap.set(datastream.id, datastream);
-            });
-            dispatch(setDatastreams(datastreamsMap));
-        });
-    }, [systems, dispatch]);
-
-    const createAllDataSources = useCallback(() => {
-        const datastreamArr: Datastream[] = Array.from(datastreams.values());
-        console.warn("Creating all data sources...", datastreamArr);
-        for (let datastream of datastreamArr) {
-            dispatch(createDatasourceOfDatastream({datastreamId: datastream.id}));
-        }
-    }, [datastreams, dispatch]);
-
     useEffect(() => {
         InitializeApplication();
-        // laneFetch();
     }, [InitializeApplication]);
 
-    useEffect(() => {
-        // datastreamFetch();
-    }, [systems]);
-
-    useEffect(() => {
-        if (datastreams.size > 0) {
-            createAllDataSources();
-        }
-    }, [datastreams]);
-
-    useEffect(() => {
-        console.log("DataStreams:", datastreams);
-        console.log("Data sources:", dataSources);
-        /* console.log("Gamma Count DS:", gammaCountDS);
-         console.warn("North Lane Gamma Count DS:", NorthLaneGammaCountDS);*/
-    }, [dataSources]);
 
     if (!masterTimeSyncRef.current) {
         masterTimeSyncRef.current = new DataSynchronizer({...mainDataSynchronizer});
