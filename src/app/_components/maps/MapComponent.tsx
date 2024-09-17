@@ -9,12 +9,10 @@ import {RootState} from "@/lib/state/Store";
 import Box from "@mui/material/Box";
 import './Map.css';
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import { LaneWithLocation, LaneWithVideo } from "types/new-types";
+import { LaneWithLocation } from "types/new-types";
 import {selectLaneMap} from "@/lib/state/OSCARClientSlice";
 import "leaflet/dist/leaflet.css"
-import L, {Popup} from "leaflet";
-import VideoView from "osh-js/source/core/ui/view/video/VideoView";
-import VideoDataLayer from "osh-js/source/core/ui/layer/VideoDataLayer";
+
 
 export default function MapComponent(){
 
@@ -29,6 +27,12 @@ export default function MapComponent(){
 
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
 
+    const statusColors  = {
+        Alarm: 'rgb(234, 60, 60)',
+        Fault: 'rgb(2, 136, 209)',
+        default: 'rgb(46, 125, 50)'
+    };
+
     /******************location & video datasource********************/
     useEffect(() =>{
         if(locationList == null || locationList.length === 0 && laneMap.size > 0) {
@@ -37,12 +41,12 @@ export default function MapComponent(){
                 if (laneMap.has(key)) {
                     let ds: LaneMapEntry = laneMap.get(key);
                     const locationSources = ds.datasourcesBatch.filter((item) => item.name.includes('Sensor Location') && item.name.includes('Lane'));
-                    const videoSources = ds.datasourcesRealtime.filter((item) => item.name.includes('Video') && item.name.includes('Lane'));
+                    // const videoSources = ds.datasourcesRealtime.filter((item) => item.name.includes('Video') && item.name.includes('Lane'));
 
                     const laneWithLocation: LaneWithLocation = {
                         laneName: key,
                         locationSources: locationSources,
-                        videoSources: videoSources,
+                        // videoSources: videoSources,
                         status: 'None',
                     };
 
@@ -89,48 +93,40 @@ export default function MapComponent(){
 
     useEffect(() => {
         if(locationList !== null) {
-            let popup: Popup | null = null;
-
             locationList.forEach((location) => {
                 location.locationSources.map((loc) => {
+                    location.status = 'Background'
 
                     let newPointMarker = new PointMarkerLayer({
                         dataSourceId: loc.id,
                         getLocation: (rec: any) => ({x: rec.location.lon, y: rec.location.lat, z: rec.location.alt}),
-                        label: location.laneName,
+                        label: `<div class='popup-text-lane'>`+ location.laneName+ `</div>`,
                         markerId: () => this.getId(),
                         icon: '/circle.svg',
+                        getIconColor:{
+                            dataSourceIds: [loc.getId()],
+                            handler: function (rec: any) {
+                                let color = statusColors.default;
+
+                                if (location.status === 'Alarm') {
+                                    color = statusColors.Alarm;
+                                } else if (location.status.includes('Fault')){
+                                    color = statusColors.Fault;
+                                }
+                                console.log(color)
+                                return color;
+                            }
+                        },
+                        // iconColor: getIconColor(location.status),
                         iconAnchor: [16, 16],
                         labelOffset: [-5, -15],
                         iconSize: [16, 16],
-
-                        onLeftClick: (markerId: any, markerObject: any, layer: any, event: any) =>{
-                            popup = L.popup({offset: [0, -16]})
-                                .setLatLng(event.latlng)
-                                .setContent(getContent(location.laneName, location.status))
-                                .openOn(markerObject._map);
-
-                            let videoView = new VideoView({
-                                container: "popup-data-layer",
-                                layers: [
-                                    new VideoDataLayer({
-                                        dataSourceId: loc.videoSources[0].id,
-                                        getFrameData: (rec: any) => rec.videoFrame,
-                                        getTimestamp: (rec: any) => rec.timestamp
-                                    })
-                                ]
-                            });
-                            popup.on("remove", function() {
-                                popup= null;
-                                videoView.destroy();
-                            });
-                        }
+                        description: getContent(location.status),
                     });
                     pointMarkers.push(newPointMarker);
                 });
 
             });
-
 
             if (!mapViewRef.current) {
                 mapViewRef.current = new LeafletView({
@@ -142,7 +138,6 @@ export default function MapComponent(){
 
             locationList.map((location) => {
                 location.locationSources.map((src) => src.connect());
-                location.videoSources.map((src) => src.connect());
             });
         }
 
@@ -188,7 +183,6 @@ export default function MapComponent(){
         addSubscriptionCallbacks();
     }, [dataSourcesByLane]);
 
-
     const updateLocationList = (laneName: string, newStatus: string) => {
         setLocationList((prevState) => {
             const updatedList = prevState.map((data) => data.laneName === laneName ? {...data, status: newStatus} : data);
@@ -196,28 +190,41 @@ export default function MapComponent(){
         })
     };
 
-
     /***************content in popup************/
+    // method used to display information about the event
+    function getContent(status: any) {
+        console.log('status', status);
+        let color = statusColors.default;
 
-    // method used to display information about the event reported by the Styler: onLeftClick & onHover
+        if (status === 'Alarm') {
+            color = statusColors.Alarm;
+        } else if (status.includes('Fault')){
+            color = statusColors.Fault;
+        }
 
-    function getContent(laneName: string, status: string) {
-        //connect to video???
-
-        console.log('status', status)
         return (
-            `<div id='popup-data-layer' class='point-popup'>
-                <hr />
-                <h3 class='popup-text'>Status: ${status}</h3>
-                <div id="popup-data-layer"> </div>
+            `<div id='popup-data-layer' class='point-popup'><hr/>
+                <h3 class='popup-text-status'>Status: ${status}</h3>
+<!--                <h3 class='popup-text-status' style="color: ${color}">Status: ${status}</h3>-->
                 <button onClick='location.href="./lane-view"' class="popup-button" type="button">VIEW LANE</button>
             </div>`
         );
     }
+
+    function getIconColor(status: any){
+        let color = statusColors.default;
+        if (status === 'Alarm') {
+            color = statusColors.Alarm;
+        } else if (status.includes('Fault')){
+            color = statusColors.Fault;
+        }
+        return color;
+    }
+
     return (
         <Box
             id="mapcontainer"
-            style={{width: '100vw', height: '80vh'}}>
+            style={{width: '100%', height: '900px'}}>
         </Box>
     );
 }

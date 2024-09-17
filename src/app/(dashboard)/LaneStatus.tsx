@@ -14,23 +14,21 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 
 interface LaneStatusItem{
   id: number;
-  laneName: string;
-  status: string;
+  name: string;
+  isOnline: boolean;
+  isAlarm: boolean;
+  isTamper: boolean;
+  isFault: boolean;
 }
 
 
-function timeout(delay: number) {
-  return new Promise( res => setTimeout(res, delay) );
-}
 // export default function LaneStatus(props: LaneStatusProps) {
 export default function LaneStatus() {
-  const [statusBars, setStatus] = useState<LaneStatusItem[]>([]);
   const idVal = useRef(1);
+  const [statusList, setStatusList] = useState<LaneStatusItem[]>([]);
 
   const {laneMapRef} = useContext(DataSourceContext);
   const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
-
-  let alarmStatus = ['Alarm', 'Fault - Neutron High', 'Fault - Gamma Low', 'Fault - Gamma High', 'Online', 'Tamper'];
 
   const datasourceSetup = useCallback(async () => {
 
@@ -56,20 +54,50 @@ export default function LaneStatus() {
           laneDSColl.addDS('tamperRT', rtDS);
         }
       }
+      const newLaneData = {
+        id: idVal.current++,
+        name: laneid,
+        isOnline: true,
+        isAlarm: false,
+        isTamper: false,
+        isFault: false
+      }
+      setStatusList(prevState => [newLaneData, ...prevState.filter(item => item.name !== laneid)])
+
+
       setDataSourcesByLane(laneDSMap);
     }
   }, [laneMapRef.current]);
 
   useEffect(() => {
     datasourceSetup();
+
   }, [laneMapRef.current]);
+
+
 
   const addSubscriptionCallbacks = useCallback(() => {
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
-      const msgLaneName = laneName;
-      laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => handleStatusData(msgLaneName, message));
-      laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => handleStatusData(msgLaneName, message));
-      laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => handleTamperData(msgLaneName, message));
+      laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
+        const state = message.values[0].data.alarmState;
+        // if(state != "Background" && state != "Scan") {
+          updateStatus(laneName, state);
+        // }
+      });
+      laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
+        const state = message.values[0].data.alarmState;
+        // if(state != "Background" && state != "Scan") {
+          updateStatus(laneName, state);
+        // }
+      });
+      laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
+        const state = message.values[0].data.tamperStatus;
+        if(state) {
+          updateStatus(laneName, 'Tamper');
+        }else{
+          updateStatus(laneName, 'TamperOff')
+        }
+      });
 
       laneDSColl.connectAllDS();
     }
@@ -79,102 +107,67 @@ export default function LaneStatus() {
     addSubscriptionCallbacks();
   }, [dataSourcesByLane]);
 
+  function updateStatus(laneName: string, newState: string){
+    setStatusList((prevState) => {
+      const existingLane = prevState.find((laneData) => laneData.name === laneName);
 
-  // handle the message data
-  const handleStatusData = async (datasourceName: string, message: any[]) => {
-    // @ts-ignore
-    const msgVal: any[] = message.values || [];
-    let newStatuses: LaneStatusItem[] = [];
-
-
-    msgVal.forEach((value) => {
-      let state = findInObject(value, 'alarmState');
-      console.log(state)
-      if(state === 'Background' || state === 'Scan'){
-        state = 'Online';
+      if(existingLane){
+        return prevState.map((laneData) =>{
+          if(laneData.name === laneName){
+            if(newState === 'Tamper'){
+              return {...laneData, isTamper: true, isOnline: true}
+            } else if (newState === 'Alarm'){
+              return {...laneData, isAlarm: true, isOnline: true, isFault: false}
+            }else if(newState.includes('Fault')){
+              return {...laneData, isFault: true, isOnline: true, isAlarm: false}
+            }else if(newState === 'TamperOff'){
+              return {...laneData, isTamper: false, isOnline: true}
+            }else if(newState === 'Background' || newState === 'Scan'){
+              return {...laneData, isAlarm: false, isOnline: true, isFault: false}
+            }
+          }
+          return laneData;
+        });
       }
-
-
-      if(alarmStatus.includes(state)){
-        const existingStatus = statusBars.find(item => item.laneName === datasourceName);
-        // if(!existingStatus || existingStatus.status !== 'Tamper'){
-        if(!existingStatus){
-          const newStatus: LaneStatusItem = {
-            id: idVal.current++,
-            laneName: datasourceName,
-            status: state
-          };
-          newStatuses.push(newStatus);
-        }
-      }
-
-      // if (state === 'Alarm' || state === 'Fault - Neutron High'|| state === 'Fault - Gamma Low'|| state === 'Fault - Gamma High') {
-      //   const newStatus: LaneStatusItem = {
-      //     id: idVal.current++,
-      //     laneName: datasourceName,
-      //     status: state
-      //   }
-      //   newStatuses.push(newStatus);
-      //
-      // }
-    });
-
-    await timeout(5000);
-    setStatus(prevStatus => [
-      ...newStatuses,
-      ...prevStatus.filter(item => item.laneName !== datasourceName || item.status === 'Tamper'
-      // ...prevStatus.filter(item => item.laneName !== datasourceName || item.status === 'Online'
-      // ...prevStatus.filter(item => {item.laneName !== datasourceName || !alarmStatus.includes(item.status)}
-          // (item.status !== 'Alarm' && item.status !== 'Fault - Gamma Low' && item.status !== 'Fault - Gamma High' && item.status !== 'Fault - Neutron High')
-      )]);
-  };
-
-  const handleTamperData = async (datasourceName: string, message: any[]) => {
-    // @ts-ignore
-    const msgVal: any[] = message.values || [];
-    let tamperStatuses: LaneStatusItem[] = [];
-
-    msgVal.forEach((value) => {
-      const tamperState = findInObject(value, 'tamperStatus');
-      if(tamperState) {
-        const newStatus: LaneStatusItem ={
+      else{
+        const newLaneData = {
           id: idVal.current++,
-          laneName: datasourceName,
-          status: 'Tamper'
-        };
-        tamperStatuses.push(newStatus);
+          name: laneName,
+          isOnline: true,
+          isAlarm: newState === 'Alarm',
+          isTamper: newState === 'Tamper',
+          isFault: newState.includes('Fault')
+        }
+        return [newLaneData, ...prevState];
       }
-    });
-
-    setStatus(prevStatuses => [
-      ...tamperStatuses,
-      ...prevStatuses.filter(item => item.laneName !== datasourceName || item.status !== 'Tamper')
-    ]);
-
+    })
   };
+
+  useEffect(() => {
+    console.log("statusList updated", statusList);
+  }, [statusList]);
 
   return (
       <Stack padding={2} justifyContent={"start"} spacing={1}>
         <Typography variant="h6">Lane Status</Typography>
-        <Stack spacing={1} sx={{ overflow: "auto", maxHeight: "100%" }}>
-          {statusBars.map((item) => (
-              //https://nextjs.org/docs/pages/api-reference/components/link
-              //https://stackoverflow.com/questions/72221255/how-to-pass-data-from-one-page-to-another-page-in-next-js
-
-              <Link href={{
-                pathname: '/lane-view',
-                query: {
-                  //todo update id for page
-                  id: 'id',
-                  //pass the lane name?
-                }
-              }}
-                    passHref
-                    key={item.id}>
-                <LaneStatusItem key={item.id} id={item.id} name={item.laneName} status={item.status} />
-              </Link>
-          ))}
-        </Stack>
+        <>
+          {statusList!= null &&(
+              <Stack spacing={1} sx={{ overflow: "auto", maxHeight: "100%" }}>
+                {statusList.map((item) => (
+                    <Link href={{
+                      pathname: '/lane-view',
+                      query: {
+                        //todo update id for page
+                        id: 'id',
+                      }
+                    }}
+                          passHref
+                          key={item.id}>
+                      <LaneStatusItem key={item.id} id={item.id} name={item.name} isOnline={item.isOnline} isAlarm={item.isAlarm} isFault={item.isFault} isTamper={item.isTamper} />
+                    </Link>
+                ))}
+              </Stack>)}
+          </>
       </Stack>
   );
 }
