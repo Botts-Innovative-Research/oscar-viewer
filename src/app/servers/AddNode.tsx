@@ -28,6 +28,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     modeChangeCallback?: (editMode: boolean, editNode: INode) => void
     editNode?: INode
 }) {
+    const nodes = useSelector((state: RootState) => state.oshSlice.nodes);
     const dispatch = useAppDispatch();
     const justNodes: INode[] = useSelector((state: RootState) => selectNodes(state));
     const newNodeOpts: NodeOptions = {
@@ -50,7 +51,8 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
             setNewNode(editNode);
         } else {
             console.log("Adding new node");
-            setNewNode(new Node(newNodeOpts));
+            const node = new Node(newNodeOpts);
+            setNewNode(node);
         }
     }, [isEditNode, editNode]);
 
@@ -74,12 +76,18 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         e.preventDefault();
         if (isEditNode) {
             dispatch(updateNode(newNode));
+            
             modeChangeCallback(false, null);
         } else {
             dispatch(addNode(newNode));
             modeChangeCallback(false, null);
         }
     }
+
+    useEffect(() => {
+        console.info("CURRENT NODES!!!")
+        console.info(nodes);
+    }, [nodes]);
 
     if (!newNode) {
         return <Container><Typography variant="h4" align="center">Loading...</Typography></Container>

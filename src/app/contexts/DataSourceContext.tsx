@@ -20,6 +20,7 @@ import {System} from "@/lib/data/osh/Systems";
 import {selectLaneMap, setLaneMap, setLanes} from "@/lib/state/OSCARClientSlice";
 import {RootState} from "@/lib/state/Store";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import assert from "assert";
 
 interface IDataSourceContext {
     masterTimeSyncRef: MutableRefObject<typeof DataSynchronizer | undefined>
@@ -114,6 +115,8 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }
 
     const testSysFetch = useCallback(async () => {
+        console.log("Received new nodes, updating state\nNodes:");
+        console.log(nodes);
         await Promise.all(nodes.map(async (node: INode) => {
             let laneMap = await node.fetchLaneSystemsAndSubsystems();
             await node.fetchDatastreamsTK(laneMap);
@@ -144,11 +147,11 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }, [laneMap]);
 
     useEffect(() => {
-        if(checkSystemFetchInterval()) {
+        // if(checkSystemFetchInterval()) {
             testSysFetch();
             setLastSystemFetch(Date.now());
-        }
-    }, []);
+        // }
+    }, [nodes]);
 
 
     const laneFetch = useCallback(async () => {
