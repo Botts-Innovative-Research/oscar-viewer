@@ -25,7 +25,7 @@
 }
 
 .popup-text{
-    text-align: center;
+    text-align: left;
     font-weight: normal;
     font-size: 13px;
 }
@@ -33,7 +33,7 @@
 
 .popup-text-lane{
     text-align: center;
-    font-weight: bold;
+    font-weight: normal;
     font-size: 18px;
 }
 

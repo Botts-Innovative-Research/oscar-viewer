@@ -44,5 +44,6 @@ export interface LaneWithVideo {
 export interface LaneWithLocation{
   laneName: string,
   locationSources: typeof SweApi[],
+  videoSources: typeof SweApi[],
   status: string
 }

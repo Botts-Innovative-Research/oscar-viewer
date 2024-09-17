@@ -6,6 +6,6 @@
 	.st0{fill-rule:evenodd;clip-rule:evenodd;fill:#FFFFFF;}
 </style>
 <g>
-	<circle class="st0" cx="93" cy="93" r="89"/>
+	<circle cx="93" cy="93" r="89" fill="green" />
 </g>
 </svg>

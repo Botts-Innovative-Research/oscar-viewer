@@ -3,16 +3,27 @@
 import {Box, Paper, Typography} from "@mui/material";
 
 import MapComponent from "@/app/_components/maps/MapComponent";
+import dynamic from "next/dynamic";
+import {useMemo} from "react";
 
 
 export default function MapViewPage() {
+
+    const Map = useMemo(() => dynamic(
+        () => import('@/app/_components/maps/MapComponent'),
+        {
+            loading: () => <p> loading </p>,
+            ssr: false
+        }
+    ),[])
+
     return (
         <Box>
             <Typography variant="h4" sx={{padding: 2 }}>Map</Typography>
             <br />
             <Paper variant='outlined' sx={{height: "800", width: "450"}}>
                 <div style={{height: '100%', width: '100%'}}>
-                    <MapComponent/>
+                    <Map/>
                 </div>
             </Paper>
         </Box>

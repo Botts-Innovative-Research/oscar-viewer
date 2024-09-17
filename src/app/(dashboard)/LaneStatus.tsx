@@ -29,6 +29,9 @@ export default function LaneStatus() {
 
   const {laneMapRef} = useContext(DataSourceContext);
   const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
+
+  let alarmStatus = ['Alarm', 'Fault - Neutron High', 'Fault - Gamma Low', 'Fault - Gamma High', 'Online', 'Tamper'];
+
   const datasourceSetup = useCallback(async () => {
 
     let laneDSMap = new Map<string, LaneDSColl>();
@@ -72,36 +75,57 @@ export default function LaneStatus() {
     }
   }, [dataSourcesByLane]);
 
-
   useEffect(() => {
     addSubscriptionCallbacks();
   }, [dataSourcesByLane]);
 
+
+  // handle the message data
   const handleStatusData = async (datasourceName: string, message: any[]) => {
     // @ts-ignore
     const msgVal: any[] = message.values || [];
     let newStatuses: LaneStatusItem[] = [];
 
-    await timeout(10000);
 
     msgVal.forEach((value) => {
-      const state = findInObject(value, 'alarmState');
-      // console.log(state)
-      if (state === 'Alarm' || state === 'Fault - Neutron High'|| state === 'Fault - Gamma Low'|| state === 'Fault - Gamma High') {
-        const newStatus: LaneStatusItem = {
-          id: idVal.current++,
-          laneName: datasourceName,
-          status: state
-
-        };
-        newStatuses.push(newStatus);
+      let state = findInObject(value, 'alarmState');
+      console.log(state)
+      if(state === 'Background' || state === 'Scan'){
+        state = 'Online';
       }
+
+
+      if(alarmStatus.includes(state)){
+        const existingStatus = statusBars.find(item => item.laneName === datasourceName);
+        // if(!existingStatus || existingStatus.status !== 'Tamper'){
+        if(!existingStatus){
+          const newStatus: LaneStatusItem = {
+            id: idVal.current++,
+            laneName: datasourceName,
+            status: state
+          };
+          newStatuses.push(newStatus);
+        }
+      }
+
+      // if (state === 'Alarm' || state === 'Fault - Neutron High'|| state === 'Fault - Gamma Low'|| state === 'Fault - Gamma High') {
+      //   const newStatus: LaneStatusItem = {
+      //     id: idVal.current++,
+      //     laneName: datasourceName,
+      //     status: state
+      //   }
+      //   newStatuses.push(newStatus);
+      //
+      // }
     });
 
+    await timeout(5000);
     setStatus(prevStatus => [
       ...newStatuses,
-      ...prevStatus.filter(item => item.laneName !== datasourceName ||
-          (item.status !== 'Alarm' && item.status !== 'Fault - Gamma Low' && item.status !== 'Fault - Gamma High' && item.status !== 'Fault - Neutron High')
+      ...prevStatus.filter(item => item.laneName !== datasourceName || item.status === 'Tamper'
+      // ...prevStatus.filter(item => item.laneName !== datasourceName || item.status === 'Online'
+      // ...prevStatus.filter(item => {item.laneName !== datasourceName || !alarmStatus.includes(item.status)}
+          // (item.status !== 'Alarm' && item.status !== 'Fault - Gamma Low' && item.status !== 'Fault - Gamma High' && item.status !== 'Fault - Neutron High')
       )]);
   };
 
@@ -114,7 +138,6 @@ export default function LaneStatus() {
       const tamperState = findInObject(value, 'tamperStatus');
       if(tamperState) {
         const newStatus: LaneStatusItem ={
-          // id: statusBars.length === 0 ? 1 : statusBars[statusBars.length -1].id + 1,
           id: idVal.current++,
           laneName: datasourceName,
           status: 'Tamper'
