@@ -4,72 +4,56 @@
  */
 'use client';
 
-import {useAppDispatch} from "@/lib/state/Hooks";
-import {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
-import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import {useCallback, useEffect, useRef, useState} from "react";
 import {Typography} from "@mui/material";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
-import {current} from "@reduxjs/toolkit";
-import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView.js";
 import CurveLayer from 'osh-js/source/core/ui/layer/CurveLayer.js';
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
-import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
-import {Mode} from "osh-js/source/core/datasource/Mode";
 import annotationPlugin from 'chartjs-plugin-annotation';
 import {Chart, registerables} from 'chart.js';
 
 Chart.register(...registerables, annotationPlugin);
 
-export default function ChartIntercept() {
-    const dispatch = useAppDispatch();
-    const laneMapRef = useContext(DataSourceContext).laneMapRef;
+export class ChartInterceptProps {
+    gammaDatasources: typeof SweApi[];
+    neutronDatasources: typeof SweApi[];
+    occDatasources: typeof SweApi[];
+    thresholdDatasources: typeof SweApi[];
+    setChartReady: Function;
+}
+
+export default function ChartIntercept(props: ChartInterceptProps) {
     const eventPreview = useSelector((state: RootState) => selectEventPreview(state));
+    const [chartsReady, setChartsReady] = useState<boolean>(false);
+    const [viewReady, setViewReady] = useState<boolean>(false);
     const [isReadyToRender, setIsReadyToRender] = useState<boolean>(false);
 
     // chart specifics
     const timeVert = useState<Date>;
     const horizontalThreshold = useState<number>(0);
-    // const chartViewEl
     const chartViewRef = useRef<typeof ChartJsView | null>(null);
-    const [localDataSync, setLocalDataSync] = useState<typeof DataSynchronizer>();
-    const dsMap = useRef<Map<string, typeof SweApi[]>>(new Map<string, any[]>());
-    const [gammaDatasources, setGammaDS] = useState<typeof SweApi[]>([]);
-    const [neutronDatasources, setNeutronDS] = useState<typeof SweApi[]>([]);
-    const occDatasources = useState<typeof SweApi[]>([]);
-    const [thresholdDatasources, setThresholdDS] = useState<typeof SweApi[]>([]);
-    const [localDSMap, setLocalDSMap] = useState<Map<string, typeof SweApi[]>>(new Map<string, typeof SweApi[]>());
     const [thresholdCurve, setThresholdCurve] = useState<typeof CurveLayer>();
     const [gammaCurve, setGammaCurve] = useState<typeof CurveLayer>();
     const [neutronCurve, setNeutronCurve] = useState<typeof CurveLayer>();
     const [occupancyCurve, setOccupancyCurve] = useState<typeof CurveLayer>();
 
-    const collectDatasources = useCallback(() => {
-        let currentLane = eventPreview.eventData.laneId;
-        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-        if (currLaneEntry) {
-            let datasources = currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
-            setLocalDSMap(datasources);
-        }
-        setGammaDS(localDSMap.get("gamma"));
-        setNeutronDS(localDSMap.get("neutron"));
-        setThresholdDS(localDSMap.get("gammaTrshld"));
-    }, [eventPreview, laneMapRef]);
 
     const createCurveLayers = useCallback(() => {
-        console.log("LocalDSMap", localDSMap);
-        if (thresholdDatasources) {
+        // console.log("LocalDSMap", localDSMap);
+        if (props.thresholdDatasources.length > 0) {
+            console.log("Threshold DS", props.thresholdDatasources);
             const tCurve = new CurveLayer({
-                dataSourceIds: thresholdDatasources.map((ds) => ds.id),
+                dataSourceIds: props.thresholdDatasources.map((ds) => ds.id),
                 getValues: (rec: any, timestamp: any) => ({x: timestamp, y: rec.threshold}),
                 name: "Gamma Threshold"
             });
             setThresholdCurve(tCurve);
 
             const timeCurve = new CurveLayer({
-                dataSourceIds: thresholdDatasources.map((ds) => ds.id),
+                dataSourceIds: props.thresholdDatasources.map((ds) => ds.id),
                 getValues: () => {
                     return {x: 0}
                 },
@@ -77,75 +61,46 @@ export default function ChartIntercept() {
             });
         }
 
-        if (gammaDatasources) {
+        if (props.gammaDatasources.length > 0) {
+            console.log("Gamma DS", props.gammaDatasources);
             const gCurve = new CurveLayer({
-                dataSourceIds: gammaDatasources.map((ds) => ds.id),
+                dataSourceIds: props.gammaDatasources.map((ds) => ds.id),
                 getValues: (rec: any, timestamp: any) => {
-                    console.log(rec.gammaGrossCount1)
+                    // console.log(rec.gammaGrossCount1)
                     return {x: timestamp, y: rec.gammaGrossCount1}
                 },
-                name: "Gamma Count"
+                name: "Gamma Count",
+                lineColor: "red",
+                backgroundColor: "red"
             });
             setGammaCurve(gCurve);
         }
 
-        if (neutronDatasources) {
+        if (props.neutronDatasources.length > 0) {
+            console.log("Neutron DS", props.neutronDatasources);
             const nCurve = new CurveLayer({
-                dataSourceIds: neutronDatasources.map((ds) => ds.id),
-                // dataSourceIds: localDSMap.get("neutron")?.map((ds) => ds.id),
+                dataSourceIds: props.neutronDatasources.map((ds) => ds.id),
                 getValues: (rec: any, timestamp: any) => {
-                    console.log(rec.neutronGrossCount1);
+                    // console.log(rec.neutronGrossCount1);
                     return {x: timestamp, y: rec.neutronGrossCount1}
                 },
-                name: 'Neutron Count'
+                name: 'Neutron Count',
+                lineColor: "blue",
+                backgroundColor: "blue"
             });
             setNeutronCurve(nCurve);
         }
-    }, [localDSMap]);
 
-    const addAllDSToSync = useCallback(() => {
-        let allDS = [
-            ...(gammaDatasources || []),
-            ...(neutronDatasources || []),
-            ...(thresholdDatasources || [])
-        ];
-        if (allDS.length > 0) {
-            let newSync = new DataSynchronizer({
-                dataSources: allDS,
-                replaySpeed: 1.0,
-                startTime: eventPreview.eventData.startTime,
-                endTime: "Now",
-            });
-            setLocalDataSync(newSync);
-        }
-    }, [localDSMap, eventPreview]);
-
-    useEffect(() => {
-        collectDatasources();
-    }, [eventPreview, laneMapRef]);
-
-    useEffect(() => {
-        if (localDSMap.size > 0) {
-            addAllDSToSync();
-        }
-    }, [localDSMap, eventPreview]);
-
-    useEffect(() => {
-        if (localDSMap.size > 0) {
-            createCurveLayers();
-        }
-    }, [localDSMap]);
+        setChartsReady(true);
+    }, [props]);
 
     const resetView = useCallback(() => {
         if (!eventPreview.isOpen && chartViewRef.current) {
             chartViewRef.current.destroy();
             chartViewRef.current = null;
             setIsReadyToRender(false);
-            localDSMap.clear();
-            localDataSync?.disconnect();
-            setLocalDataSync(undefined);
         }
-    }, [eventPreview, localDSMap, localDataSync]);
+    }, [eventPreview]);
 
     useEffect(() => {
         resetView();
@@ -153,6 +108,7 @@ export default function ChartIntercept() {
 
     const checkForMountableAndCreateChart = useCallback(() => {
         if (!chartViewRef.current && !isReadyToRender && thresholdCurve && gammaCurve && neutronCurve) {
+            console.log("Curves:", thresholdCurve, gammaCurve, neutronCurve);
             const container = document.getElementById("chart-view-event-detail");
             if (container) {
                 let chartView = new ChartJsView({
@@ -161,29 +117,58 @@ export default function ChartIntercept() {
                     css: "chart-view-event-detail",
                 });
                 chartViewRef.current = chartView;
-                setIsReadyToRender(true);
+
+                setViewReady(true);
             }
         }
     }, [thresholdCurve, gammaCurve, neutronCurve, isReadyToRender]);
+
+    const checkReadyToRender = useCallback(() => {
+        if (chartsReady && viewReady) {
+            setIsReadyToRender(true);
+        } else {
+            setIsReadyToRender(false);
+        }
+    }, [chartsReady, viewReady]);
 
     useEffect(() => {
         checkForMountableAndCreateChart();
     }, [checkForMountableAndCreateChart]);
 
     useEffect(() => {
-        if (localDataSync && isReadyToRender) {
-            localDataSync.connect().then((r: any) => {
-                console.log("DataSync Connected", r);
-            });
+        if (checkForProvidedDataSources()) {
+            createCurveLayers();
         }
-    }, [isReadyToRender, localDataSync]);
+    }, [props]);
 
-    return (
-        <div>
-            <Typography variant="h4" gutterBottom>
-                [Chart Goes Here]
-                <div id="chart-view-event-detail"></div>
-            </Typography>
-        </div>
-    );
+    useEffect(() => {
+        checkReadyToRender();
+    }, [chartsReady, viewReady]);
+
+    useEffect(() => {
+        if (isReadyToRender) {
+            console.log("Chart is ready to render");
+            props.setChartReady(true);
+        }
+    }, [isReadyToRender]);
+
+    const checkForProvidedDataSources = useCallback(() => {
+        console.log("[CI] Checking for provided data sources...");
+        if (!props.gammaDatasources || !props.neutronDatasources || !props.thresholdDatasources) {
+            console.warn("No DataSources provided for ChartIntercept");
+            return false;
+        } else {
+            return true;
+        }
+    }, [props.gammaDatasources, props.neutronDatasources, props.thresholdDatasources]);
+
+    if (!checkForProvidedDataSources()) {
+        return (
+            <Typography variant="h6">No DataSources provided for ChartIntercept</Typography>
+        );
+    } else {
+        return (
+            <div id="chart-view-event-detail"></div>
+        );
+    }
 }
