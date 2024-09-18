@@ -17,7 +17,7 @@ import "leaflet/dist/leaflet.css"
 export default function MapComponent(){
 
     const mapViewRef = useRef< typeof LeafletView | null>(null);
-    let pointMarkers: any[] = [];
+    let pointMarkersRef= useRef<any[]>([]);
 
     const [locationList, setLocationList] = useState<LaneWithLocation[] | null>(null);
 
@@ -46,7 +46,6 @@ export default function MapComponent(){
                     const laneWithLocation: LaneWithLocation = {
                         laneName: key,
                         locationSources: locationSources,
-                        // videoSources: videoSources,
                         status: 'None',
                     };
 
@@ -92,52 +91,50 @@ export default function MapComponent(){
 
 
     useEffect(() => {
-        if(locationList !== null) {
+
+
+        if(locationList && locationList.length > 0){
             locationList.forEach((location) => {
-                location.locationSources.map((loc) => {
-                    location.status = 'Background'
+                location.locationSources.forEach((loc) => {
+                    let existingMarker = pointMarkersRef.current.find(marker => marker.dataSourceId === loc.id);
+                    if (!existingMarker) {
+                        let newPointMarker = new PointMarkerLayer({
+                            dataSourceId: loc.id,
+                            getLocation: (rec: any) => ({x: rec.location.lon, y: rec.location.lat, z: rec.location.alt}),
+                            label: `<div class='popup-text-lane'>` + location.laneName + `</div>`,
+                            markerId: () => this.getId(),
+                            icon: '/circle.svg',
+                            getIconColor: {
+                                dataSourceIds: [loc.getId()],
+                                handler: function (rec: any) {
+                                    let color = statusColors.default;
 
-                    let newPointMarker = new PointMarkerLayer({
-                        dataSourceId: loc.id,
-                        getLocation: (rec: any) => ({x: rec.location.lon, y: rec.location.lat, z: rec.location.alt}),
-                        label: `<div class='popup-text-lane'>`+ location.laneName+ `</div>`,
-                        markerId: () => this.getId(),
-                        icon: '/circle.svg',
-                        getIconColor:{
-                            dataSourceIds: [loc.getId()],
-                            handler: function (rec: any) {
-                                let color = statusColors.default;
-
-                                if (location.status === 'Alarm') {
-                                    color = statusColors.Alarm;
-                                } else if (location.status.includes('Fault')){
-                                    color = statusColors.Fault;
+                                    if (location.status === 'Alarm') {
+                                        color = statusColors.Alarm;
+                                    } else if (location.status.includes('Fault')) {
+                                        color = statusColors.Fault;
+                                    }
+                                    console.log(color)
+                                    return color;
                                 }
-                                console.log(color)
-                                return color;
-                            }
-                        },
-                        // iconColor: getIconColor(location.status),
-                        iconAnchor: [16, 16],
-                        labelOffset: [-5, -15],
-                        iconSize: [16, 16],
-                        description: getContent(location.status),
-                    });
-                    pointMarkers.push(newPointMarker);
+                            },
+                            // iconColor: getIconColor(location.status),
+                            iconAnchor: [16, 16],
+                            labelOffset: [-5, -15],
+                            iconSize: [16, 16],
+                            description: getContent(location.status),
+                        });
+                        pointMarkersRef.current.push(newPointMarker);
+                    }
                 });
-
-            });
-
-            if (!mapViewRef.current) {
-                mapViewRef.current = new LeafletView({
-                    container: "mapcontainer",
-                    layers: pointMarkers,
-                    autoZoomOnFirstMarker: true,
-                });
-            }
-
-            locationList.map((location) => {
                 location.locationSources.map((src) => src.connect());
+            });
+        }
+        if (!mapViewRef.current) {
+            mapViewRef.current = new LeafletView({
+                container: "mapcontainer",
+                layers: pointMarkersRef.current,
+                autoZoomOnFirstMarker: true,
             });
         }
 
@@ -155,23 +152,16 @@ export default function MapComponent(){
 
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) =>{
                 let alarmstate = message.values[0].data.alarmState;
-                // updateLocationList(msgLaneName, alarmstate);
-
-                locationList.filter((list) => (list.status !== alarmstate && list.laneName === msgLaneName) ? updateLocationList(msgLaneName, alarmstate) : locationList)
+                updateLocationList(msgLaneName, alarmstate);
             });
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) =>{
                 let alarmstate = message.values[0].data.alarmState;
-                // updateLocationList(msgLaneName, alarmstate);
-                locationList.filter((list) => (list.status !== alarmstate && list.laneName === msgLaneName) ? updateLocationList(msgLaneName, alarmstate) : locationList)
-
+                updateLocationList(msgLaneName, alarmstate);
             });
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
-                let tamperState = message.values[0].data.tamperState;
-
+                let tamperState = message.values[0].data.tamperStatus;
                 if(tamperState){
                     updateLocationList(msgLaneName, 'Tamper');
-                }else{
-                    updateLocationList(msgLaneName, 'None');
                 }
             });
 
@@ -180,14 +170,19 @@ export default function MapComponent(){
     }, [dataSourcesByLane]);
 
     useEffect(() => {
-        addSubscriptionCallbacks();
+        if(locationList !== null && locationList.length > 0){
+            addSubscriptionCallbacks();
+        }
     }, [dataSourcesByLane]);
 
     const updateLocationList = (laneName: string, newStatus: string) => {
         setLocationList((prevState) => {
-            const updatedList = prevState.map((data) => data.laneName === laneName ? {...data, status: newStatus} : data);
+            const updatedList = prevState.map((data) =>
+                data.laneName === laneName ? {...data, status: newStatus} : data
+            );
+
             return updatedList;
-        })
+        });
     };
 
     /***************content in popup************/
@@ -201,11 +196,10 @@ export default function MapComponent(){
         } else if (status.includes('Fault')){
             color = statusColors.Fault;
         }
-
+//  <h3 class='popup-text-status' style="color: ${color}">Status: ${status}</h3>
         return (
             `<div id='popup-data-layer' class='point-popup'><hr/>
                 <h3 class='popup-text-status'>Status: ${status}</h3>
-<!--                <h3 class='popup-text-status' style="color: ${color}">Status: ${status}</h3>-->
                 <button onClick='location.href="./lane-view"' class="popup-button" type="button">VIEW LANE</button>
             </div>`
         );

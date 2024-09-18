@@ -2,10 +2,7 @@
 
 
 import Paper from '@mui/material/Paper';
-import CircleRoundedIcon from '@mui/icons-material/CircleRounded';
 import {capitalize, Stack, Tooltip, Typography} from '@mui/material';
-import OnlineIcon from '@mui/icons-material/Wifi';  // Online icon
-import OfflineIcon from '@mui/icons-material/WifiOff';  // Offline icon
 import AlarmIcon from '@mui/icons-material/Warning';  // Alarm icon
 import TamperIcon from '@mui/icons-material/ReportProblem';  // Tamper icon
 import FaultIcon from '@mui/icons-material/Error';  // Fault icon
