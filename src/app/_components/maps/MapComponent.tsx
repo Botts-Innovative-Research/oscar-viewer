@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
@@ -81,7 +82,7 @@ export default function MapComponent(){
                     laneDSColl.addDS('tamperRT', rtDS);
                 }
             }
-            // setDataSourcesByLane(laneDSMap);
+            setDataSourcesByLane(laneDSMap);
         }
     }, [laneMapRef.current]);
 
@@ -104,21 +105,23 @@ export default function MapComponent(){
                             label: `<div class='popup-text-lane'>` + location.laneName + `</div>`,
                             markerId: () => this.getId(),
                             icon: '/circle.svg',
-                            getIconColor: {
+                            iconColor: 'rgba(0,0,0,1.0)',
+                            getIcon: {
                                 dataSourceIds: [loc.getId()],
                                 handler: function (rec: any) {
-                                    let color = statusColors.default;
 
                                     if (location.status === 'Alarm') {
-                                        color = statusColors.Alarm;
+                                        return  '/alarm.svg';
                                     } else if (location.status.includes('Fault')) {
-                                        color = statusColors.Fault;
+                                        return  '/fault.svg';
+                                    } else{
+                                        return '/default.svg'
                                     }
-                                    console.log(color)
-                                    return color;
                                 }
                             },
-                            // iconColor: getIconColor(location.status),
+                            labelColor: 'rgba(255,255,255,1.0)',
+                            labelOutlineColor: 'rgba(0,0,0,1.0)',
+                            labelSize: 20,
                             iconAnchor: [16, 16],
                             labelOffset: [-5, -15],
                             iconSize: [16, 16],

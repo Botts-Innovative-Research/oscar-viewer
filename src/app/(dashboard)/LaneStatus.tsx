@@ -57,13 +57,12 @@ export default function LaneStatus() {
       const newLaneData = {
         id: idVal.current++,
         name: laneid,
-        isOnline: true,
+        isOnline: false,
         isAlarm: false,
         isTamper: false,
         isFault: false
       }
       setStatusList(prevState => [newLaneData, ...prevState.filter(item => item.name !== laneid)])
-
 
       setDataSourcesByLane(laneDSMap);
     }
@@ -80,15 +79,18 @@ export default function LaneStatus() {
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
         const state = message.values[0].data.alarmState;
-        // if(state != "Background" && state != "Scan") {
+        // updateStatus(laneName, state);
+        if(state !== 'Scan' && state !== 'Background'){
           updateStatus(laneName, state);
-        // }
+        }
+
       });
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
         const state = message.values[0].data.alarmState;
-        // if(state != "Background" && state != "Scan") {
+        if(state !== 'Scan' && state !== 'Background'){
           updateStatus(laneName, state);
-        // }
+        }
+        // updateStatus(laneName, state);
       });
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
         const state = message.values[0].data.tamperStatus;
@@ -108,26 +110,51 @@ export default function LaneStatus() {
   }, [dataSourcesByLane]);
 
   function updateStatus(laneName: string, newState: string){
+
     setStatusList((prevState) => {
       const existingLane = prevState.find((laneData) => laneData.name === laneName);
 
-      if(existingLane){
-        return prevState.map((laneData) =>{
-          if(laneData.name === laneName){
-            if(newState === 'Tamper'){
+      if(existingLane) {
+        console.log('lane name', laneName, 'status', newState)
+        const updatedList = prevState.map((laneData) => {
+          if (laneData.name === laneName) {
+
+            if (newState === 'Tamper') {
+
               return {...laneData, isTamper: true, isOnline: true}
-            } else if (newState === 'Alarm'){
+
+            } else if (newState === 'Alarm') {
+
               return {...laneData, isAlarm: true, isOnline: true, isFault: false}
-            }else if(newState.includes('Fault')){
+
+            } else if (newState.includes('Fault')) {
+
               return {...laneData, isFault: true, isOnline: true, isAlarm: false}
-            }else if(newState === 'TamperOff'){
+
+            } else if (newState === 'TamperOff') {
+
               return {...laneData, isTamper: false, isOnline: true}
-            }else if(newState === 'Background' || newState === 'Scan'){
+
+            } else if(newState === 'Clear'){
+
               return {...laneData, isAlarm: false, isOnline: true, isFault: false}
+
+            } else if(newState === 'None'){
+
+              return {...laneData, isAlarm: false, isOnline: false, isFault: false, isTamper: false}
+
             }
           }
           return laneData;
         });
+
+        const updatedLane = updatedList.find((data) => data.name === laneName);
+
+        if (newState !== 'Background' && newState !== 'Scan') {
+          setTimeout(() => updateStatus(laneName, 'Clear'), 10000);
+          const filteredStatuses = updatedList.filter((list) => list.name !== laneName);
+          return [updatedLane, ...filteredStatuses]
+        }
       }
       else{
         const newLaneData = {
@@ -140,12 +167,9 @@ export default function LaneStatus() {
         }
         return [newLaneData, ...prevState];
       }
-    })
-  };
 
-  useEffect(() => {
-    console.log("statusList updated", statusList);
-  }, [statusList]);
+    });
+  };
 
   return (
       <Stack padding={2} justifyContent={"start"} spacing={1}>
@@ -167,7 +191,7 @@ export default function LaneStatus() {
                     </Link>
                 ))}
               </Stack>)}
-          </>
+        </>
       </Stack>
   );
 }
