@@ -117,17 +117,23 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     const testSysFetch = useCallback(async () => {
         console.log("Received new nodes, updating state\nNodes:");
         console.log(nodes);
+        let lanes:  Map<string, LaneMapEntry> = new Map();
         await Promise.all(nodes.map(async (node: INode) => {
+            console.log("Fetching lanes from node ", node);
             let laneMap = await node.fetchLaneSystemsAndSubsystems();
             await node.fetchDatastreamsTK(laneMap);
             for(let mapEntry of laneMap.values()){
                 mapEntry.addDefaultSWEAPIs();
             }
-            console.log("LaneMap with DS:", laneMap);
-            dispatch(setLaneMap(laneMap));
-            laneMapRef.current = laneMap;
-            console.log("LaneMapRef for Table:", laneMapRef);
+            
+            laneMap.forEach((value, key) => {
+                lanes.set(key, value);
+            });
         }));
+
+        dispatch(setLaneMap(lanes));
+        laneMapRef.current = lanes;
+        console.log("LaneMapRef for Table:", laneMapRef);
     }, [nodes]);
 
     useEffect(() => {

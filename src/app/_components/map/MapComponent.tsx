@@ -56,6 +56,9 @@ export default function MapComponent(){
             console.log(locationDs);
             if(locationDs.length > 0){
                 locationDs.map((loc) => {
+                    if(!loc[0]) {
+                        return;
+                    }
                     const newPointMarker = new PointMarkerLayer({
                         markerId: () => this.getId(),
                         getLocation: (rec: any) =>({x: rec.location.lon, y: rec.location.lat, z: rec.location.alt}),
@@ -121,7 +124,11 @@ export default function MapComponent(){
                             autoZoomOnFirstMarker: true,
                         });
                     }
-                    locationDs.map((ds) => ds[0].connect());
+                    locationDs.map((ds) => {
+                        if(ds[0]) {
+                            ds[0].connect()
+                        }
+                    });
                 }
         }
 

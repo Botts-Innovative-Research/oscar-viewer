@@ -33,7 +33,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     const justNodes: INode[] = useSelector((state: RootState) => selectNodes(state));
     const newNodeOpts: NodeOptions = {
         name: "New Node",
-        address: "http://localhost",
+        address: "localhost",
         port: 0,
         oshPathRoot: "/sensorhub",
         sosEndpoint: "/sos",
@@ -52,6 +52,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         } else {
             console.log("Adding new node");
             const node = new Node(newNodeOpts);
+            console.log(node)
             setNewNode(node);
         }
     }, [isEditNode, editNode]);
@@ -59,13 +60,15 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value, checked} = e.target;
 
-        let tNode = {...newNode};
+        let tNode = new Node(newNode);
         if (name === "username") {
             tNode.auth.username = value;
         } else if (name === "password") {
             tNode.auth.password = value;
         } else if (name === "isSecure") {
             tNode.isSecure = checked;
+        } else if (name === "port") {
+            tNode.port = Number.parseInt(value);
         } else {
             (tNode as any)[name] = value;
         }
@@ -76,7 +79,6 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         e.preventDefault();
         if (isEditNode) {
             dispatch(updateNode(newNode));
-            
             modeChangeCallback(false, null);
         } else {
             dispatch(addNode(newNode));
@@ -126,7 +128,6 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                             onClick={() => modeChangeCallback(false, null)}>Cancel</Button>
                 </Stack>
             </Box>
-
         </Card>
     )
 }

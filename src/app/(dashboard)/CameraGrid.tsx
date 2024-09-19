@@ -45,21 +45,22 @@ export default function CameraGrid() {
     if(videoList == null || videoList.length == 0 && laneMap.size > 0) {
       let videos: LaneWithVideo[] = []
 
-      laneMap.forEach((value, key) =>{
-        if(laneMap.has(key)){
+      laneMap.forEach((value, key) => {
+        if(laneMap.has(key)) {
             let ds: LaneMapEntry = laneMap.get(key);
             const videoSources = ds.datasourcesRealtime.filter((item) => item.name.includes('Video') && item.name.includes('Lane'));
-            console.log(videoSources);
-            const laneWithVideo: LaneWithVideo = {
-              // Get lane name
-              laneName: key,
-              // All video sources for the lane
-              videoSources: videoSources,
-              // Current status of lane
-              status: 'none',
-            };
-
-            videos.push(laneWithVideo);
+            if(videoSources.length > 0) {
+              const laneWithVideo: LaneWithVideo = {
+                // Get lane name
+                laneName: key,
+                // All video sources for the lane
+                videoSources: videoSources,
+                // Current status of lane
+                status: 'none',
+              };
+  
+              videos.push(laneWithVideo);
+            }
         }
       })
 
@@ -166,12 +167,10 @@ export default function CameraGrid() {
 
         // Disconnect other videostreams
         videoList.forEach(async (video, index) => {
-          if(video) {
-            if(index < startItem || index >= endItem) {
-              const isConnected = await video.videoSources[0].isConnected();
-              if(isConnected) {
-                video.videoSources[0].disconnect();
-              }
+          if(index < startItem || index >= endItem && video && video.videoSources[0]) {
+            const isConnected = await video.videoSources[0].isConnected();
+            if(isConnected) {
+              video.videoSources[0].disconnect();
             }
           }
         });

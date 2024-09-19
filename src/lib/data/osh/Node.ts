@@ -195,9 +195,10 @@ export class Node implements INode {
 
     async fetchSystemsTK() {
         let systemsApi = new Systems({
-            endpointUrl: "162.238.96.81:8781/sensorhub/api",
+            endpointUrl: `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`,
             // endpointUrl: "192.168.1.158:8781/sensorhub/api",
-            tls: false,
+            tls: this.isSecure,
+            connectorOpts: this.auth
         });
 
         let searchedSystems = await systemsApi.searchSystems(new SystemFilter(), 100);
