@@ -31,6 +31,8 @@ export function EventPreview() {
     const [dataSourceCheckDepth, setDataSourceCheckDepth] = useState<number>(0);
     const [dataSyncReady, setDataSyncReady] = useState<boolean>(false);
     const [datasourcesReady, setDatasourcesReady] = useState<boolean>(false);
+    const syncRef = useRef<typeof DataSynchronizer>();
+    const [dataSyncCreated, setDataSyncCreated] = useState<boolean>(false);
 
 
     // Chart Specifics
@@ -39,6 +41,11 @@ export function EventPreview() {
     const [occDatasources, setOccDS] = useState<typeof SweApi[]>([]);
     const [thresholdDatasources, setThresholdDS] = useState<typeof SweApi[]>([]);
     const [chartReady, setChartReady] = useState<boolean>(false);
+
+    // Video Specifics
+    const [videoReady, setVideoReady] = useState<boolean>(false);
+    const [videoDatasources, setVideoDatasources] = useState<typeof SweApi[]>([]);
+    const [activeVideoIDX, setActiveVideoIDX] = useState<number>(0);
 
     const handleAdjudication = (value: string) => {
         console.log("Adjudication Value: ", value);
@@ -67,24 +74,40 @@ export function EventPreview() {
     }, [eventPreview]);
 
     const addDataSynchronizerDataSources = useCallback(() => {
+
+        // TODO: maintain a list of the current datasources that should be in the Synchronizer and totally replace
+        // the list of datasources in the Synchronizer with the new list, but beware if this stops the synchro from
+        // keeping current time
         let allDS = [
             ...(gammaDatasources || []),
             ...(neutronDatasources || []),
-            ...(thresholdDatasources || [])
+            ...(thresholdDatasources || []),
         ];
 
-        console.log("Adding DataSources to DataSync", allDS);
-
-        if (allDS.length > 0) {
-            let newSync = new DataSynchronizer({
-                dataSources: allDS,
-                replaySpeed: 1.0,
-                startTime: eventPreview.eventData.startTime,
-                endTime: "Now",
-            });
-            setDataSync(newSync);
+        if(videoDatasources[activeVideoIDX]) {
+            allDS.push(videoDatasources[activeVideoIDX]);
+        }else{
+            console.log("No Video DataSources to add to DataSync", videoDatasources, activeVideoIDX);
         }
-    }, [localDSMap, eventPreview]);
+
+        console.log("Adding DataSources to DataSync", allDS);
+        if(dataSyncCreated) {
+            for (let ds of allDS) {
+                syncRef.current.addDataSource(ds);
+            }
+        }
+
+        // if (allDS.length > 0) {
+            // let newSync = new DataSynchronizer({
+            //     dataSources: allDS,
+            //     replaySpeed: 1.0,
+            //     startTime: eventPreview.eventData.startTime,
+            //     endTime: "Now",
+            // });
+            // setDataSync(newSync);
+
+        // }
+    }, [localDSMap, eventPreview, activeVideoIDX, syncRef, dataSyncCreated]);
 
     const collectDatasources = useCallback(() => {
         let currentLane = eventPreview.eventData.laneId;
@@ -104,21 +127,38 @@ export function EventPreview() {
         setGammaDS(tempDSMap.get("gamma"));
         setNeutronDS(tempDSMap.get("neutron"));
         setThresholdDS(tempDSMap.get("gammaTrshld"));
+        setVideoDatasources(tempDSMap.get("video"));
 
     }, [eventPreview, laneMapRef]);
+
+    useEffect(() => {
+        if(!syncRef.current && !dataSyncCreated){
+            syncRef.current = new DataSynchronizer({
+                dataSources: [],
+                replaySpeed: 1.0,
+                startTime: eventPreview.eventData.startTime,
+                endTime: "Now",
+            });
+            setDataSync(syncRef.current);
+
+            if(syncRef.current){
+                setDataSyncCreated(true);
+            }
+        }
+    }, [syncRef, dataSyncCreated]);
 
     useEffect(() => {
         collectDatasources();
     }, [eventPreview, laneMapRef]);
 
     useEffect(() => {
-        if (localDSMap.size > 0) {
+        if (localDSMap.size > 0 && dataSyncCreated) {
             addDataSynchronizerDataSources();
         }
-    }, [localDSMap, eventPreview]);
+    }, [localDSMap, eventPreview, dataSyncCreated]);
 
     useEffect(() => {
-        if (chartReady) {
+        if (chartReady && videoReady) {
             console.log("Chart Ready, Starting DataSync");
             dataSync.connect();
             console.log("DataSync Connected", dataSync);
@@ -143,7 +183,9 @@ export function EventPreview() {
             <ChartIntercept gammaDatasources={gammaDatasources} neutronDatasources={neutronDatasources}
                             thresholdDatasources={thresholdDatasources} occDatasources={occDatasources}
                             setChartReady={setChartReady}/>
-            <LaneVideoPlayback/>
+            <LaneVideoPlayback videoDatasources={videoDatasources} setVideoReady={setVideoReady}
+                               dataSynchronizer={dataSync}
+                               addDataSource={setActiveVideoIDX}/>
             <AdjudicationSelect onSelect={handleAdjudication}/>
             <TextField
                 id="outlined-multiline-static"
