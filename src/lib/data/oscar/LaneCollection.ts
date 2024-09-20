@@ -168,45 +168,28 @@ export class LaneMapEntry {
         });
     }
 
+    createBatchSweApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
+        return new SweApi(`batchds-${datastream.properties.id}`, {
+            protocol: datastream.networkProperties.streamProtocol,
+            endpointUrl: datastream.networkProperties.endpointUrl,
+            resource: `/datastreams/${datastream.properties.id}/observations`,
+            tls: datastream.networkProperties.tls,
+            responseFormat: datastream.properties.outputName === "video" ? 'application/swe+binary' : 'application/swe+json',
+            mode: Mode.BATCH,
+            connectorOpts: {
+                username: this.parentNode.auth.username,
+                password: this.parentNode.auth.password
+            },
+            startTime: startTime,
+            endTime: endTime
+        });
+    }
+
     lookupSystemIdFromDataStreamId(dsId: string) {
         let stream = this.datastreams.find((ds) => ds.id === dsId);
         return this.systems.find((sys) => sys.properties.id === stream.properties["system@id"]).properties.id;
     }
 
-    /* createLaneDSCollection() {
-
-         let laneDSColl = new LaneDSColl();
-         for (let ds of this.datastreams) {
-
-             let idx: number = this.datastreams.indexOf(ds);
-             let rtDS = this.datasourcesRealtime[idx];
-
-
-             if (ds.properties.name.includes('Driver - Occupancy')) {
-                 laneDSColl.addDS('occBatch', batchDS);
-                 laneDSColl.addDS('occRT', rtDS);
-             }
-             if (ds.properties.name.includes('Driver - Gamma Count')) {
-                 laneDSColl.addDS('gammaBatch', rtDS);
-                 laneDSColl.addDS('gammaRT', rtDS);
-             }
-
-             if (ds.properties.name.includes('Driver - Neutron Count')) {
-                 laneDSColl.addDS('neutronBatch', rtDS);
-                 laneDSColl.addDS('neutronRT', rtDS);
-             }
-
-             if (ds.properties.name.includes('Driver - Tamper')) {
-                 laneDSColl.addDS('tamperBatch', rtDS);
-                 laneDSColl.addDS('tamperRT', rtDS);
-             }
-
-             if (ds.properties.name.includes('Video')) {
-                 laneDSColl.addDS('videoBatch', rtDS);
-                 laneDSColl.addDS('videoRT', rtDS);
-             }
-         }
-     }*/
 
     /**
      * Retrieves datastreams within the specified time range and categorizes them by event detail types.
@@ -228,61 +211,62 @@ export class LaneMapEntry {
         for (let ds of this.datastreams) {
 
             let idx: number = this.datastreams.indexOf(ds);
-            let rtDS = this.createReplaySweApiFromDataStream(ds, startTime, endTime);
+            let datasourceReplay = this.createReplaySweApiFromDataStream(ds, startTime, endTime);
+            let datasourceBatch = this.createBatchSweApiFromDataStream(ds, startTime, endTime);
 
             // move some of this into another function to remove code redundancy
             if (ds.properties.name.includes('Driver - Occupancy')) {
                 let occArray = dsMap.get('occ')!;
-                const index = occArray.findIndex(dsItem => dsItem.properties.name === rtDS.properties.name);
+                const index = occArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
                 if (index !== -1) {
-                    occArray[index] = rtDS;
+                    occArray[index] = datasourceBatch;
                 } else {
-                    occArray.push(rtDS);
+                    occArray.push(datasourceBatch);
                 }
             }
             if (ds.properties.name.includes('Driver - Gamma Count')) {
                 let gammaArray = dsMap.get('gamma')!;
-                const index = gammaArray.findIndex(dsItem => dsItem.properties.name === rtDS.properties.name);
+                const index = gammaArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
                 if (index !== -1) {
-                    gammaArray[index] = rtDS;
+                    gammaArray[index] = datasourceBatch;
                 } else {
-                    gammaArray.push(rtDS);
+                    gammaArray.push(datasourceBatch);
                 }
             }
             if (ds.properties.name.includes('Driver - Neutron Count')) {
                 let neutronArray = dsMap.get('neutron')!;
-                const index = neutronArray.findIndex(dsItem => dsItem.properties.name === rtDS.properties.name);
+                const index = neutronArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
                 if (index !== -1) {
-                    neutronArray[index] = rtDS;
+                    neutronArray[index] = datasourceBatch;
                 } else {
-                    neutronArray.push(rtDS);
+                    neutronArray.push(datasourceBatch);
                 }
             }
             if (ds.properties.name.includes('Driver - Tamper')) {
                 let tamperArray = dsMap.get('tamper')!;
-                const index = tamperArray.findIndex(dsItem => dsItem.properties.name === rtDS.properties.name);
+                const index = tamperArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
                 if (index !== -1) {
-                    tamperArray[index] = rtDS;
+                    tamperArray[index] = datasourceBatch;
                 } else {
-                    tamperArray.push(rtDS);
+                    tamperArray.push(datasourceBatch);
                 }
             }
             if (ds.properties.name.includes('Video')) {
                 let videoArray = dsMap.get('video')!;
-                const index = videoArray.findIndex(dsItem => dsItem.properties.name === rtDS.properties.name);
+                const index = videoArray.findIndex(dsItem => dsItem.properties.name === datasourceReplay.properties.name);
                 if (index !== -1) {
-                    videoArray[index] = rtDS;
+                    videoArray[index] = datasourceReplay;
                 } else {
-                    videoArray.push(rtDS);
+                    videoArray.push(datasourceReplay);
                 }
             }
             if (ds.properties.name.includes('Driver - Gamma Threshold')) {
                 let gammaTrshldArray = dsMap.get('gammaTrshld')!;
-                const index = gammaTrshldArray.findIndex(dsItem => dsItem.properties.name === rtDS.properties.name);
+                const index = gammaTrshldArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
                 if (index !== -1) {
-                    gammaTrshldArray[index] = rtDS;
+                    gammaTrshldArray[index] = datasourceBatch;
                 } else {
-                    gammaTrshldArray.push(rtDS);
+                    gammaTrshldArray.push(datasourceBatch);
                 }
             }
         }
