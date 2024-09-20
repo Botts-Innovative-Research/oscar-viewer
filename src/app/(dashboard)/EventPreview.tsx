@@ -57,12 +57,9 @@ export default function EventPreview(props: { event?: SelectedEvent; }) {
               />
             </Stack>
         ) : (
-            <>
-            </>
-            // <Box  style={{ width: "100%", height: "100%", padding: 10, overflow: 'hidden'}}>
-            //   <MapComponent />
-            // </Box>
-            // <Image src={"/SiteMap.png"} alt="Site Map" width={0} height={0} sizes={"100vw"} style={{ width: "100%", height: "100%", padding: 10 }} />
+            <div style={{width: "100%", height: "50vh", overflow: 'hidden', padding: 10}}>
+              <MapComponent/>
+            </div>
         )}
       </Box>
   );

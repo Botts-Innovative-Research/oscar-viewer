@@ -1,6 +1,7 @@
 import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import {Datastream} from "@/lib/data/osh/Datastreams";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import PointMarkerLayer from "osh-js/source/core/ui/layer/PointMarkerLayer";
 
 /**
  * Interface for Event Table data
@@ -44,6 +45,5 @@ export interface LaneWithVideo {
 export interface LaneWithLocation{
   laneName: string,
   locationSources: typeof SweApi[],
-  // videoSources: typeof SweApi[],
   status: string
 }

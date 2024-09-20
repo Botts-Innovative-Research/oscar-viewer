@@ -13,26 +13,21 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import { LaneWithLocation } from "types/new-types";
 import {selectLaneMap} from "@/lib/state/OSCARClientSlice";
 import "leaflet/dist/leaflet.css"
+import {point} from "leaflet";
 
 
 export default function MapComponent(){
 
-    const mapViewRef = useRef< typeof LeafletView | null>(null);
-    let pointMarkersRef= useRef<any[]>([]);
-
+    const leafletViewRef = useRef< typeof LeafletView | null>(null);
     const [locationList, setLocationList] = useState<LaneWithLocation[] | null>(null);
+    const mapcontainer: string = "mapcontainer";
+
+    let pointMarkersRef: any[] = []
 
     /****global datasource references***/
     const {laneMapRef} = useContext(DataSourceContext);
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
-
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
-
-    const statusColors  = {
-        Alarm: 'rgb(234, 60, 60)',
-        Fault: 'rgb(2, 136, 209)',
-        default: 'rgb(46, 125, 50)'
-    };
 
     /******************location & video datasource********************/
     useEffect(() =>{
@@ -42,8 +37,6 @@ export default function MapComponent(){
                 if (laneMap.has(key)) {
                     let ds: LaneMapEntry = laneMap.get(key);
                     const locationSources = ds.datasourcesBatch.filter((item) => item.name.includes('Sensor Location') && item.name.includes('Lane'));
-                    // const videoSources = ds.datasourcesRealtime.filter((item) => item.name.includes('Video') && item.name.includes('Lane'));
-
                     const laneWithLocation: LaneWithLocation = {
                         laneName: key,
                         locationSources: locationSources,
@@ -82,72 +75,71 @@ export default function MapComponent(){
                     laneDSColl.addDS('tamperRT', rtDS);
                 }
             }
-            setDataSourcesByLane(laneDSMap);
+            // setDataSourcesByLane(laneDSMap);
         }
-    }, [laneMapRef.current]);
+    }, []);
 
     useEffect(() => {
         datasourceSetup();
     }, [laneMapRef.current]);
 
-
     useEffect(() => {
-
-
         if(locationList && locationList.length > 0){
             locationList.forEach((location) => {
                 location.locationSources.forEach((loc) => {
-                    let existingMarker = pointMarkersRef.current.find(marker => marker.dataSourceId === loc.id);
-                    if (!existingMarker) {
-                        let newPointMarker = new PointMarkerLayer({
-                            dataSourceId: loc.id,
-                            getLocation: (rec: any) => ({x: rec.location.lon, y: rec.location.lat, z: rec.location.alt}),
-                            label: `<div class='popup-text-lane'>` + location.laneName + `</div>`,
-                            markerId: () => this.getId(),
-                            icon: '/circle.svg',
-                            iconColor: 'rgba(0,0,0,1.0)',
-                            getIcon: {
-                                dataSourceIds: [loc.getId()],
-                                handler: function (rec: any) {
-
-                                    if (location.status === 'Alarm') {
-                                        return  '/alarm.svg';
-                                    } else if (location.status.includes('Fault')) {
-                                        return  '/fault.svg';
-                                    } else{
-                                        return '/default.svg'
-                                    }
+                    let newPointMarker = new PointMarkerLayer({
+                        dataSourceId: loc.id,
+                        getLocation: (rec: any) => ({x: rec.location.lon, y: rec.location.lat, z: rec.location.alt}),
+                        label: `<div class='popup-text-lane'>` + location.laneName + `</div>`,
+                        markerId: () => this.getId(),
+                        icon: '/circle.svg',
+                        iconColor: 'rgba(0,0,0,1.0)',
+                        getIcon: {
+                            dataSourceIds: [loc.getId()],
+                            handler: function (rec: any) {
+                                if (location.status === 'Alarm') {
+                                    return  '/alarm.svg';
+                                } else if (location.status.includes('Fault')) {
+                                    return  '/fault.svg';
+                                } else{
+                                    return '/default.svg'
                                 }
-                            },
-                            labelColor: 'rgba(255,255,255,1.0)',
-                            labelOutlineColor: 'rgba(0,0,0,1.0)',
-                            labelSize: 20,
-                            iconAnchor: [16, 16],
-                            labelOffset: [-5, -15],
-                            iconSize: [16, 16],
-                            description: getContent(location.status),
-                        });
-                        pointMarkersRef.current.push(newPointMarker);
-                    }
+                            }
+                        },
+                        labelColor: 'rgba(255,255,255,1.0)',
+                        labelOutlineColor: 'rgba(0,0,0,1.0)',
+                        labelSize: 20,
+                        iconAnchor: [16, 16],
+                        labelOffset: [-5, -15],
+                        iconSize: [16, 16],
+                        description: getContent(location.status),
+                    });
+
+                    pointMarkersRef.push(newPointMarker);
                 });
                 location.locationSources.map((src) => src.connect());
             });
         }
-        if (!mapViewRef.current) {
-            mapViewRef.current = new LeafletView({
-                container: "mapcontainer",
-                layers: pointMarkersRef.current,
-                autoZoomOnFirstMarker: true,
+
+
+        if(!leafletViewRef.current){
+            let view  = new LeafletView({
+                container: mapcontainer,
+                layers: pointMarkersRef,
             });
+            leafletViewRef.current = view;
         }
 
+
         return () => {
-            if (mapViewRef.current) {
-                mapViewRef.current.destroy();
-                mapViewRef.current = null;
+            if (leafletViewRef.current) {
+                leafletViewRef.current.destroy();
+                leafletViewRef.current = null;
             }
         }
+
     }, [locationList]);
+
 
     const addSubscriptionCallbacks = useCallback(() => {
         for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
@@ -189,17 +181,7 @@ export default function MapComponent(){
     };
 
     /***************content in popup************/
-    // method used to display information about the event
     function getContent(status: any) {
-        console.log('status', status);
-        let color = statusColors.default;
-
-        if (status === 'Alarm') {
-            color = statusColors.Alarm;
-        } else if (status.includes('Fault')){
-            color = statusColors.Fault;
-        }
-//  <h3 class='popup-text-status' style="color: ${color}">Status: ${status}</h3>
         return (
             `<div id='popup-data-layer' class='point-popup'><hr/>
                 <h3 class='popup-text-status'>Status: ${status}</h3>
@@ -208,20 +190,7 @@ export default function MapComponent(){
         );
     }
 
-    function getIconColor(status: any){
-        let color = statusColors.default;
-        if (status === 'Alarm') {
-            color = statusColors.Alarm;
-        } else if (status.includes('Fault')){
-            color = statusColors.Fault;
-        }
-        return color;
-    }
-
     return (
-        <Box
-            id="mapcontainer"
-            style={{width: '100%', height: '900px'}}>
-        </Box>
+        <Box id="mapcontainer" style={{width: '100%', height: '900px'}}></Box>
     );
 }
