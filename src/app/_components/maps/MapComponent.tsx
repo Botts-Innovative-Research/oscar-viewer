@@ -22,7 +22,9 @@ export default function MapComponent(){
     const [locationList, setLocationList] = useState<LaneWithLocation[] | null>(null);
     const mapcontainer: string = "mapcontainer";
 
-    let pointMarkersRef: any[] = []
+    const [isInit, setIsInt]= useState(false);
+
+    let pointMarkerRef = useRef<typeof PointMarkerLayer[]> ([]);
 
     /****global datasource references***/
     const {laneMapRef} = useContext(DataSourceContext);
@@ -75,7 +77,7 @@ export default function MapComponent(){
                     laneDSColl.addDS('tamperRT', rtDS);
                 }
             }
-            // setDataSourcesByLane(laneDSMap);
+            setDataSourcesByLane(laneDSMap);
         }
     }, []);
 
@@ -84,10 +86,27 @@ export default function MapComponent(){
     }, [laneMapRef.current]);
 
     useEffect(() => {
-        if(locationList && locationList.length > 0){
+
+        if(!leafletViewRef.current && !isInit){
+            let view  = new LeafletView({
+                container: mapcontainer,
+                layers: [],
+
+                // autoZoomOnFirstMarker: true
+            });
+            leafletViewRef.current = view;
+            setIsInt(true);
+        }
+
+    }, [isInit]);
+
+
+     useEffect(() => {
+        if(locationList && locationList.length > 0 && isInit){
             locationList.forEach((location) => {
                 location.locationSources.forEach((loc) => {
                     let newPointMarker = new PointMarkerLayer({
+                        name: location.laneName,
                         dataSourceId: loc.id,
                         getLocation: (rec: any) => ({x: rec.location.lon, y: rec.location.lat, z: rec.location.alt}),
                         label: `<div class='popup-text-lane'>` + location.laneName + `</div>`,
@@ -113,32 +132,18 @@ export default function MapComponent(){
                         labelOffset: [-5, -15],
                         iconSize: [16, 16],
                         description: getContent(location.status),
+                        zIndex: 0,
+                        orientation: {heading: 0},
                     });
 
-                    pointMarkersRef.push(newPointMarker);
+                    // pointMarkerRef.current.push(newPointMarker);
+                    leafletViewRef.current?.addLayer(newPointMarker);
                 });
                 location.locationSources.map((src) => src.connect());
             });
         }
 
-
-        if(!leafletViewRef.current){
-            let view  = new LeafletView({
-                container: mapcontainer,
-                layers: pointMarkersRef,
-            });
-            leafletViewRef.current = view;
-        }
-
-
-        return () => {
-            if (leafletViewRef.current) {
-                leafletViewRef.current.destroy();
-                leafletViewRef.current = null;
-            }
-        }
-
-    }, [locationList]);
+    }, [locationList, isInit]);
 
 
     const addSubscriptionCallbacks = useCallback(() => {
