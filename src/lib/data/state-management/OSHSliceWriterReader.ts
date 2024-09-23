@@ -71,6 +71,6 @@ export class OSHSliceWriterReader {
         let cfgObservation = cfgObsJson.items[0];
         // get the config object file data
         let configString = cfgObservation.result.filedata;
-        let configObj = JSON.parse(configString);
+        // let configObj = JSON.parse(configString);
     }
 }
