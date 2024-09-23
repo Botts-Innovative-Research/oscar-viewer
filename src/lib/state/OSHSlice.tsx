@@ -30,7 +30,7 @@ export interface IOSHSlice {
     // dataStreams: IDatastream[],
     dataStreams: Map<string, IDatastream>,
     mainDataSynchronizer: ITimeSynchronizerProps,
-    datasources: SweApi[],
+    datasources: typeof SweApi[],
     otherDataSynchronizers: ITimeSynchronizerProps[],
     datasourcesToDatastreams: Map<string, string>
 }
