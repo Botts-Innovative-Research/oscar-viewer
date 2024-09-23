@@ -4,12 +4,7 @@ import { Stack, Typography } from '@mui/material';
 import LaneStatusItem from '../_components/LaneStatusItem';
 import React, {useCallback, useContext, useEffect, useRef, useState} from 'react';
 import Link from "next/link";
-import {findInObject} from "@/app/utils/Utils";
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
-import {useSelector} from "react-redux";
-import {RootState} from "@/lib/state/Store";
-import {selectLaneMap} from "@/lib/state/OSCARClientSlice";
-import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 
 interface LaneStatusItem{
@@ -30,6 +25,7 @@ export default function LaneStatus() {
   const {laneMapRef} = useContext(DataSourceContext);
   const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
 
+  let timersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   const datasourceSetup = useCallback(async () => {
 
@@ -60,10 +56,10 @@ export default function LaneStatus() {
       newStatusList.push({
         id: idVal.current++,
         name: laneid,
-        isOnline: true,
+        isOnline: false,
         isAlarm: false,
         isTamper: false,
-        isFault: false
+        isFault: false,
       });
       // setStatusList(prevState => [newLaneData, ...prevState.filter(item => item.name !== laneid)])
       setStatusList(prevState => [...newStatusList, ...prevState.filter(item => !newStatusList.some(newItem => newItem.name === item.name))]);
@@ -81,27 +77,30 @@ export default function LaneStatus() {
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
         // reset timer
+        restartTimer(laneName);
         const state = message.values[0].data.alarmState;
 
-        if(state !== 'Scan' && state !== 'Background'){
+        if (state !== 'Scan' && state !== 'Background') {
           updateStatus(laneName, state);
         }
 
       });
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
         // reset timer
+        restartTimer(laneName);
         const state = message.values[0].data.alarmState;
 
-        if(state !== 'Scan' && state !== 'Background'){
+        if (state !== 'Scan' && state !== 'Background') {
           updateStatus(laneName, state);
         }
       });
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
         // reset timer
+        restartTimer(laneName);
         const state = message.values[0].data.tamperStatus;
-        if(state) {
+        if (state) {
           updateStatus(laneName, 'Tamper');
-        }else{
+        } else {
           updateStatus(laneName, 'TamperOff')
         }
       });
@@ -114,28 +113,31 @@ export default function LaneStatus() {
     addSubscriptionCallbacks();
   }, [dataSourcesByLane]);
 
-  function updateStatus(laneName: string, newState: string | null, isOnline: boolean = false){
+  function updateStatus(laneName: string, newState: string) {
 
     setStatusList((prevState) => {
       const existingLane = prevState.find((laneData) => laneData.name === laneName);
 
-      if(existingLane) {
-        console.log('lane name', laneName, 'status', newState)
+      if (existingLane) {
         const updatedList = prevState.map((laneData) => {
           if (laneData.name === laneName) {
-
             if (newState === 'Tamper') {
               return {...laneData, isTamper: true, isOnline: true}
+
             } else if (newState === 'Alarm') {
-              return  {...laneData, isAlarm: true, isFault: false,isOnline: true}
+              return {...laneData, isAlarm: true, isFault: false, isOnline: true}
+
             } else if (newState === 'Fault - Neutron High' || newState === 'Fault - Gamma High' || newState === 'Fault - Gamma Low') {
-              return  {...laneData, isFault: true, isAlarm: false, isOnline: true}
+              return {...laneData, isFault: true, isAlarm: false, isOnline: true}
+
             } else if (newState === 'TamperOff') {
-              return  {...laneData, isTamper: false, isOnline: true}
-            } else if(newState === 'Clear'){
-              return  {...laneData, isAlarm: false, isFault: false, isOnline: true}
-            } else if(newState === 'None'){
-              return  {...laneData, isAlarm: false, isOnline: false, isFault: false, isTamper: false}
+              return {...laneData, isTamper: false, isOnline: true, timer: 15}
+
+            } else if (newState === 'Clear') {
+              return {...laneData, isAlarm: false, isFault: false, isOnline: true}
+
+            } else if (newState === 'None') {
+              return {...laneData, isAlarm: false, isOnline: false, isFault: false, isTamper: false}
             }
           }
           return laneData;
@@ -148,8 +150,8 @@ export default function LaneStatus() {
           const filteredStatuses = updatedList.filter((list) => list.name !== laneName);
           return [updatedLane, ...filteredStatuses]
         }
-      }
-      else{
+
+      } else {
         const newLaneData = {
           id: idVal.current++,
           name: laneName,
@@ -162,6 +164,34 @@ export default function LaneStatus() {
       }
     });
   };
+
+  /**Restart timer when msg comes in**/
+  const restartTimer = useCallback((laneName: string) => {
+    if(timersRef.current.has(laneName)){
+      clearTimeout(timersRef.current.get(laneName));
+    }
+
+    const newTimer = setTimeout(() =>{
+      console.log('timer status')
+      updateStatus(laneName, 'Clear');
+    }, 15000);
+
+    timersRef.current.set(laneName, newTimer);
+  },[]);
+
+
+  // const updateTimer = useCallback((laneName: string) => {
+  //   if(timersRef.current.has(laneName)){
+  //     clearTimeout(timersRef.current.get(laneName));
+  //   }
+  //
+  //   const newTimer = setTimeout(() =>{
+  //     updateStatus(laneName, 'Offline');
+  //   }, 1500);
+  //
+  //   timersRef.current.set(laneName, newTimer);
+  // },[]);
+
 
   return (
       <Stack padding={2} justifyContent={"start"} spacing={1}>
