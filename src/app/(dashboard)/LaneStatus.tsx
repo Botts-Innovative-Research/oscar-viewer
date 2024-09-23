@@ -17,7 +17,6 @@ interface LaneStatusItem{
 }
 
 
-// export default function LaneStatus(props: LaneStatusProps) {
 export default function LaneStatus() {
   const idVal = useRef(1);
   const [statusList, setStatusList] = useState<LaneStatusItem[]>([]);
@@ -61,7 +60,6 @@ export default function LaneStatus() {
         isTamper: false,
         isFault: false,
       });
-      // setStatusList(prevState => [newLaneData, ...prevState.filter(item => item.name !== laneid)])
       setStatusList(prevState => [...newStatusList, ...prevState.filter(item => !newStatusList.some(newItem => newItem.name === item.name))]);
 
       setDataSourcesByLane(laneDSMap);
@@ -78,8 +76,8 @@ export default function LaneStatus() {
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
         // reset timer
         restartTimer(laneName);
-        const state = message.values[0].data.alarmState;
 
+        const state = message.values[0].data.alarmState;
         if (state !== 'Scan' && state !== 'Background') {
           updateStatus(laneName, state);
         }
@@ -88,8 +86,8 @@ export default function LaneStatus() {
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
         // reset timer
         restartTimer(laneName);
-        const state = message.values[0].data.alarmState;
 
+        const state = message.values[0].data.alarmState;
         if (state !== 'Scan' && state !== 'Background') {
           updateStatus(laneName, state);
         }
@@ -97,6 +95,7 @@ export default function LaneStatus() {
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
         // reset timer
         restartTimer(laneName);
+
         const state = message.values[0].data.tamperStatus;
         if (state) {
           updateStatus(laneName, 'Tamper');
@@ -133,7 +132,7 @@ export default function LaneStatus() {
             } else if (newState === 'TamperOff') {
               return {...laneData, isTamper: false, isOnline: true, timer: 15}
 
-            } else if (newState === 'Clear') {
+            } else if (newState === 'Clear'|| newState === 'Online') {
               return {...laneData, isAlarm: false, isFault: false, isOnline: true}
 
             } else if (newState === 'None') {
@@ -172,25 +171,15 @@ export default function LaneStatus() {
     }
 
     const newTimer = setTimeout(() =>{
-      console.log('timer status')
-      updateStatus(laneName, 'Clear');
-    }, 15000);
+      updateStatus(laneName, 'Online');
+    }, 1500);
 
     timersRef.current.set(laneName, newTimer);
   },[]);
 
+  useEffect(() =>{
 
-  // const updateTimer = useCallback((laneName: string) => {
-  //   if(timersRef.current.has(laneName)){
-  //     clearTimeout(timersRef.current.get(laneName));
-  //   }
-  //
-  //   const newTimer = setTimeout(() =>{
-  //     updateStatus(laneName, 'Offline');
-  //   }, 1500);
-  //
-  //   timersRef.current.set(laneName, newTimer);
-  // },[]);
+  },[]);
 
 
   return (
