@@ -28,11 +28,12 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     modeChangeCallback?: (editMode: boolean, editNode: INode) => void
     editNode?: INode
 }) {
+    const nodes = useSelector((state: RootState) => state.oshSlice.nodes);
     const dispatch = useAppDispatch();
     const justNodes: INode[] = useSelector((state: RootState) => selectNodes(state));
     const newNodeOpts: NodeOptions = {
         name: "New Node",
-        address: "http://localhost",
+        address: "localhost",
         port: 0,
         oshPathRoot: "/sensorhub",
         sosEndpoint: "/sos",
@@ -50,20 +51,24 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
             setNewNode(editNode);
         } else {
             console.log("Adding new node");
-            setNewNode(new Node(newNodeOpts));
+            const node = new Node(newNodeOpts);
+            console.log(node)
+            setNewNode(node);
         }
     }, [isEditNode, editNode]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value, checked} = e.target;
 
-        let tNode = {...newNode};
+        let tNode = new Node(newNode);
         if (name === "username") {
             tNode.auth.username = value;
         } else if (name === "password") {
             tNode.auth.password = value;
         } else if (name === "isSecure") {
             tNode.isSecure = checked;
+        } else if (name === "port") {
+            tNode.port = Number.parseInt(value);
         } else {
             (tNode as any)[name] = value;
         }
@@ -80,6 +85,11 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
             modeChangeCallback(false, null);
         }
     }
+
+    useEffect(() => {
+        console.info("CURRENT NODES!!!")
+        console.info(nodes);
+    }, [nodes]);
 
     if (!newNode) {
         return <Container><Typography variant="h4" align="center">Loading...</Typography></Container>
@@ -118,7 +128,6 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                             onClick={() => modeChangeCallback(false, null)}>Cancel</Button>
                 </Stack>
             </Box>
-
         </Card>
     )
 }

@@ -120,7 +120,7 @@ export const Slice = createSlice({
         },
         createDatasourceOfDatastream: (state, action: PayloadAction<{ datastreamId: string }>) => {
             const datastream = state.dataStreams.get(action.payload.datastreamId);
-            const datasource = datastream.generateSweApiObj({start: datastream.phenomenonTime.beginPosition, end: 'latest'});
+            const datasource = datastream.generateSweApiObj({start: 'now', end: 'latest'});
             if(!state.datasources.some(ds => ds.name === datasource.name)) {
                 state.datasources.push(datasource);
                 state.datasourcesToDatastreams.set(datasource.name, datastream.id);

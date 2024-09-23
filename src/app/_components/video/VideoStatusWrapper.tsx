@@ -5,7 +5,7 @@ import Grid from "@mui/material/Grid/Grid";
 import { PropsWithChildren, useEffect, useState } from "react";
 
 interface VideoStatusWrapperProps {
-    lane: LaneMeta
+    laneName: string
     status: string
 }
 
@@ -26,7 +26,7 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
           }}
         >
           {props.children}
-          <Typography variant="body2">{props.lane.name}</Typography>
+          <Typography variant="body2">{props.laneName}</Typography>
         </Grid>
     )
 }
