@@ -25,7 +25,7 @@ export class ChartInterceptProps {
     setChartReady: Function;
 }
 
-export default function ChartIntercept(props: ChartInterceptProps) {
+export default function ChartTimeHighlight(props: ChartInterceptProps) {
     const eventPreview = useSelector((state: RootState) => selectEventPreview(state));
     const [chartsReady, setChartsReady] = useState<boolean>(false);
     const [viewReady, setViewReady] = useState<boolean>(false);
@@ -34,7 +34,8 @@ export default function ChartIntercept(props: ChartInterceptProps) {
     // chart specifics
     const timeVert = useState<Date>;
     const horizontalThreshold = useState<number>(0);
-    const chartViewRef = useRef<typeof ChartJsView | null>(null);
+    const gammaChartViewRef = useRef<typeof ChartJsView | null>(null);
+    const neutronChartViewRef = useRef<typeof ChartJsView | null>(null);
     const [thresholdCurve, setThresholdCurve] = useState<typeof CurveLayer>();
     const [gammaCurve, setGammaCurve] = useState<typeof CurveLayer>();
     const [neutronCurve, setNeutronCurve] = useState<typeof CurveLayer>();
@@ -95,32 +96,50 @@ export default function ChartIntercept(props: ChartInterceptProps) {
     }, [props]);
 
     const resetView = useCallback(() => {
-        if (!eventPreview.isOpen && chartViewRef.current) {
-            chartViewRef.current.destroy();
-            chartViewRef.current = null;
+        if (!eventPreview.isOpen) {
+            gammaChartViewRef.current.destroy();
+            neutronChartViewRef.current.destroy();
+            gammaChartViewRef.current = null;
+            neutronChartViewRef.current = null;
             setIsReadyToRender(false);
         }
+
     }, [eventPreview]);
 
     useEffect(() => {
         resetView();
     }, [resetView]);
 
-    const checkForMountableAndCreateChart = useCallback(() => {
-        if (!chartViewRef.current && !isReadyToRender && thresholdCurve && gammaCurve && neutronCurve) {
-            console.log("Curves:", thresholdCurve, gammaCurve, neutronCurve);
-            const container = document.getElementById("chart-view-event-detail");
+    const checkForMountableAndCreateCharts = useCallback(() => {
+        if (!gammaChartViewRef.current && !isReadyToRender && thresholdCurve && gammaCurve) {
+            console.log("Creating Gamma Chart:", thresholdCurve, gammaCurve);
+
+            const container = document.getElementById("chart-view-event-detail-gamma");
             if (container) {
-                let chartView = new ChartJsView({
-                    container: "chart-view-event-detail",
-                    layers: [thresholdCurve, gammaCurve, neutronCurve],
+                gammaChartViewRef.current = new ChartJsView({
+                    container: "chart-view-event-detail-gamma",
+                    layers: [thresholdCurve, gammaCurve],
                     css: "chart-view-event-detail",
                 });
-                chartViewRef.current = chartView;
-
                 setViewReady(true);
             }
         }
+
+        if (!neutronChartViewRef.current && !isReadyToRender && neutronCurve) {
+            console.log("Creating Neutron Chart:", neutronCurve);
+
+            const containerN = document.getElementById("chart-view-event-detail-neutron");
+            if (containerN) {
+                neutronChartViewRef.current = new ChartJsView({
+                    container: "chart-view-event-detail-neutron",
+                    layers: [neutronCurve],
+                    css: "chart-view-event-detail",
+                });
+                setViewReady(true);
+            }
+        }
+
+
     }, [thresholdCurve, gammaCurve, neutronCurve, isReadyToRender]);
 
     const checkReadyToRender = useCallback(() => {
@@ -132,8 +151,8 @@ export default function ChartIntercept(props: ChartInterceptProps) {
     }, [chartsReady, viewReady]);
 
     useEffect(() => {
-        checkForMountableAndCreateChart();
-    }, [checkForMountableAndCreateChart]);
+        checkForMountableAndCreateCharts();
+    }, [checkForMountableAndCreateCharts]);
 
     useEffect(() => {
         if (checkForProvidedDataSources()) {
@@ -155,7 +174,7 @@ export default function ChartIntercept(props: ChartInterceptProps) {
     const checkForProvidedDataSources = useCallback(() => {
         console.log("[CI] Checking for provided data sources...");
         if (!props.gammaDatasources || !props.neutronDatasources || !props.thresholdDatasources) {
-            console.warn("No DataSources provided for ChartIntercept");
+            console.warn("No DataSources provided for ChartTimeHighlight");
             return false;
         } else {
             return true;
@@ -166,9 +185,28 @@ export default function ChartIntercept(props: ChartInterceptProps) {
         return (
             <Typography variant="h6">No DataSources provided for ChartIntercept</Typography>
         );
-    } else {
+    } else if (eventPreview.eventData.status === "Gamma") {
         return (
-            <div id="chart-view-event-detail"></div>
+            <div>
+                <Typography variant="h6">Gamma Readings</Typography>
+                <div id="chart-view-event-detail-gamma"></div>
+            </div>
+        );
+    } else if (eventPreview.eventData.status === "Neutron") {
+        return (
+            <div>
+                <Typography variant="h6">Neutron Readings</Typography>
+                <div id="chart-view-event-detail-neutron"></div>
+            </div>
+        );
+    } else if (eventPreview.eventData.status === "Gamma & Neutron") {
+        return (
+            <div>
+                <Typography variant="h6">Gamma Readings</Typography>
+                <div id="chart-view-event-detail-gamma"></div>
+                <Typography variant="h6">Neutron Readings</Typography>
+                <div id="chart-view-event-detail-neutron"></div>
+            </div>
         );
     }
 }

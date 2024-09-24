@@ -13,7 +13,7 @@ import {useSelector} from "react-redux";
 import {selectEventPreview, setEventPreview, setShouldForceAlarmTableDeselect} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/navigation";
-import ChartIntercept from "@/app/_components/event-preview/ChartIntercept";
+import ChartTimeHighlight from "@/app/_components/event-preview/ChartTimeHighlight";
 import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
@@ -157,9 +157,9 @@ export function EventPreview() {
                     <CloseRoundedIcon fontSize="small"/>
                 </IconButton>
             </Stack>
-            <ChartIntercept gammaDatasources={gammaDatasources} neutronDatasources={neutronDatasources}
-                            thresholdDatasources={thresholdDatasources} occDatasources={occDatasources}
-                            setChartReady={setChartReady}/>
+            <ChartTimeHighlight gammaDatasources={gammaDatasources} neutronDatasources={neutronDatasources}
+                                thresholdDatasources={thresholdDatasources} occDatasources={occDatasources}
+                                setChartReady={setChartReady}/>
             <LaneVideoPlayback videoDatasources={videoDatasources} setVideoReady={setVideoReady}
                                dataSynchronizer={syncRef.current}
                                addDataSource={setActiveVideoIDX}/>
