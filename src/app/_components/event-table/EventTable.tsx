@@ -8,7 +8,6 @@ import {useContext, useState} from 'react';
 
 import NotesRoundedIcon from '@mui/icons-material/NotesRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
-import {colorCodes} from "@/app/_components/AdjudicationSelect";
 import {EventTableData, EventTableDataCollection} from "@/lib/data/oscar/TableHelpers";
 import CustomToolbar from "@/app/_components/CustomToolbar";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";

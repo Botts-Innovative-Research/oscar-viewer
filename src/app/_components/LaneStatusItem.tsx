@@ -22,8 +22,10 @@ export default function LaneStatusItem(props: {
 }) {
 
     return (
-        <Paper key={props.id} variant='outlined' sx={{ cursor: 'pointer', padding: 1,   backgroundColor: (props.isAlarm ? "errorHighlight" : props.isTamper ? "secondaryHighlight" : (props.isTamper && props.isAlarm) ? "secondaryHighlight" : "unknown" ) }}
-
+        <Paper key={props.id} variant='outlined'
+               sx={{ cursor: 'pointer',
+                   padding: 1,
+                   backgroundColor: (props.isAlarm ? "errorHighlight" : props.isTamper ? "secondaryHighlight" : (props.isTamper && props.isAlarm) ? "secondaryHighlight" : "unknown" ) }}
         >
             <Stack direction={"row"} spacing={1}>
 

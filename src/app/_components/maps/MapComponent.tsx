@@ -54,6 +54,7 @@ export default function MapComponent(){
         // @ts-ignore
         let laneDSMap = new Map<string, LaneDSColl>();
 
+
         for (let [laneid, lane] of laneMapRef.current.entries()) {
             laneDSMap.set(laneid, new LaneDSColl());
             for (let ds of lane.datastreams) {
@@ -74,9 +75,10 @@ export default function MapComponent(){
                     laneDSColl.addDS('tamperRT', rtDS);
                 }
             }
+            console.log(laneDSMap);
             setDataSourcesByLane(laneDSMap);
         }
-    }, []);
+    }, [laneMapRef.current]);
 
     useEffect(() => {
         datasourceSetup();
@@ -128,7 +130,7 @@ export default function MapComponent(){
                         iconAnchor: [16, 16],
                         labelOffset: [-5, -15],
                         iconSize: [16, 16],
-                        description: getContent(location.status),
+                        description: getContent(location.status, location.laneName),
                         zIndex: 0,
                         orientation: {heading: 0},
                     });
@@ -182,11 +184,11 @@ export default function MapComponent(){
     };
 
     /***************content in popup************/
-    function getContent(status: any) {
+    function getContent(status: any, laneName: string) {
         return (
             `<div id='popup-data-layer' class='point-popup'><hr/>
                 <h3 class='popup-text-status'>Status: ${status}</h3>
-                <button onClick='location.href="./lane-view"' class="popup-button" type="button">VIEW LANE</button>
+                <button onClick='location.href="./lane-view", query:{name: laneName}' class="popup-button" type="button">VIEW LANE</button>
             </div>`
         );
     }

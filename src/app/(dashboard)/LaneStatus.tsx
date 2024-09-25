@@ -1,6 +1,6 @@
 "use client";
 
-import { Stack, Typography } from '@mui/material';
+import {Box, List, Stack, Typography } from '@mui/material';
 import LaneStatusItem from '../_components/LaneStatusItem';
 import React, {useCallback, useContext, useEffect, useRef, useState} from 'react';
 import Link from "next/link";
@@ -177,31 +177,41 @@ export default function LaneStatus() {
     timersRef.current.set(laneName, newTimer);
   },[]);
 
-  useEffect(() =>{
-
-  },[]);
-
 
   return (
       <Stack padding={2} justifyContent={"start"} spacing={1}>
         <Typography variant="h6">Lane Status</Typography>
         <>
-          {statusList!= null &&(
-              <Stack spacing={1} sx={{ overflow: "auto", maxHeight: "100%" }}>
-                {statusList.map((item) => (
-                    <Link href={{
-                      pathname: '/lane-view',
-                      query: {
-                        //todo update id for page
-                        id: 'id',
-                      }
-                    }}
-                          passHref
-                          key={item.id}>
-                      <LaneStatusItem key={item.id} id={item.id} name={item.name} isOnline={item.isOnline} isAlarm={item.isAlarm} isFault={item.isFault} isTamper={item.isTamper} />
-                    </Link>
-                ))}
-              </Stack>)}
+          <Box sx={{overflowY: "auto", maxHeight: 120}}>
+            {statusList != null &&(
+                  <Stack spacing={1} sx={{ overflow: "auto", maxHeight: "100%" }}>
+                    {statusList.map((item) => (
+                        <Link href={{
+                          pathname: '/lane-view',
+                          query: {
+                            id: item.id,
+                            name: item.name,
+                          }
+                        }}
+                              passHref
+                              key={item.id}
+                        >
+
+                          <LaneStatusItem
+                              key={item.id}
+                              id={item.id}
+                              name={item.name}
+                              isOnline={item.isOnline}
+                              isAlarm={item.isAlarm}
+                              isFault={item.isFault}
+                              isTamper={item.isTamper}
+                          />
+
+                        </Link>
+                    ))}
+                  </Stack>
+            )}
+          </Box>
         </>
       </Stack>
   );
