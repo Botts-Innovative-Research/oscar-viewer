@@ -4,13 +4,22 @@ import { Grid, Paper } from "@mui/material";
 import CameraGrid from "./CameraGrid";
 import LaneStatus from "./LaneStatus";
 import QuickView from "./QuickView";
-import {useState} from "react";
+import {useMemo, useState} from "react";
 import {SelectedEvent} from "types/new-types";
 import Table from "../_components/event-table/Table";
+import dynamic from "next/dynamic";
 
 export default function DashboardPage() {
   const [selectedEvent, setSelectedEvent] = useState<SelectedEvent>(null);  // Reference types/new-types.d.ts to change type
 
+
+  const QuickView = useMemo(() => dynamic(
+      () => import('@/app/(dashboard)/QuickView'),
+      {
+        loading: () => <p> loading... </p>,
+        ssr: false
+      }
+  ),[])
 
   return (
       <Grid container spacing={2} direction={"column"}>
