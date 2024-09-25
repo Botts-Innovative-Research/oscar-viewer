@@ -3,9 +3,7 @@ import {enableMapSet} from "immer";
 import {LaneMapEntry, LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import {RootState} from "@/lib/state/Store";
 import {
-    selectDatastreamByOutputType,
     selectDatastreams,
-    selectDatastreamsOfSystem,
     selectSystems
 } from "@/lib/state/OSHSlice";
 import {IDatastream} from "@/lib/data/osh/Datastreams";
@@ -136,21 +134,6 @@ export const selectDatastreamsOfLane = (laneId: string) => createSelector(
         }
         return datastreamsArr;
     });
-export const selectDatastreamsOfLaneByTypes = (laneId: string, types: string[]) => createSelector(
-    [selectDatastreamsOfLane(laneId), selectDatastreamByOutputType(types)],
-    (datastreamsLane, datastreamsType) => {
-        let dsMap: Map<string, IDatastream[]> = new Map();
-        for (let type of types) {
-            let datastreams: IDatastream[] = datastreamsType.get(type);
-            let dsSubArr: IDatastream[] = [];
-            for (let ds of datastreams) {
-                if (datastreamsLane.includes(ds)) {
-                    dsSubArr.push(ds);
-                }
-            }
-            dsMap.set(type, dsSubArr);
-        }
-        return dsMap;
-    });
+
 
 export default Slice.reducer;

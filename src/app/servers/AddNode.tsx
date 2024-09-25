@@ -17,9 +17,7 @@ import {
     Typography
 } from "@mui/material";
 import React, {useEffect, useState} from "react";
-import {RootState} from "@/lib/state/Store";
-import {addNode, selectCurrentNodeId, selectNodes, updateNode} from "@/lib/state/OSHSlice";
-import {useSelector} from "react-redux";
+import {addNode, updateNode} from "@/lib/state/OSHSlice";
 import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
 import {useAppDispatch} from "@/lib/state/Hooks";
 
@@ -28,9 +26,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     modeChangeCallback?: (editMode: boolean, editNode: INode) => void
     editNode?: INode
 }) {
-    const nodes = useSelector((state: RootState) => state.oshSlice.nodes);
     const dispatch = useAppDispatch();
-    const justNodes: INode[] = useSelector((state: RootState) => selectNodes(state));
     const newNodeOpts: NodeOptions = {
         name: "New Node",
         address: "localhost",
@@ -85,11 +81,6 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
             modeChangeCallback(false, null);
         }
     }
-
-    useEffect(() => {
-        console.info("CURRENT NODES!!!")
-        console.info(nodes);
-    }, [nodes]);
 
     if (!newNode) {
         return <Container><Typography variant="h4" align="center">Loading...</Typography></Container>

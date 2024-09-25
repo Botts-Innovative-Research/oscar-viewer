@@ -13,7 +13,7 @@ import {ISystem} from "../data/osh/Systems";
 // @ts-ignore
 import {IDatastream} from "@/app/data/osh/Datastreams";
 // @ts-ignore
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource.js";
 // @ts-ignore
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {ITimeSynchronizerProps, TimeSynchronizerProps} from "@/lib/data/osh/TimeSynchronizers";
@@ -70,7 +70,13 @@ export const Slice = createSlice({
     initialState,
     reducers: {
         addNode: (state, action: PayloadAction<INode>) => {
-            state.nodes.push(action.payload);
+            const nodeIndex = state.nodes.findIndex((node: INode) => node.name === action.payload.name);
+            console.log("Adding node: ", nodeIndex);
+            if (nodeIndex === -1) {
+                state.nodes.push(action.payload);
+            } else{
+                console.error("Node with same name already exists in the OSHSlice");
+            }
         },
         addSystem: (state, action: PayloadAction<ISystem>) => {
             state.systems.push(action.payload);
@@ -78,10 +84,13 @@ export const Slice = createSlice({
         addDatastream: (state, action: PayloadAction<IDatastream>) => {
             state.dataStreams.set(action.payload.id, action.payload);
         },
-        addDatasource: (state, action: PayloadAction<SweApi>) => {
+        addDatasource: (state, action: PayloadAction<typeof SweApi>) => {
             state.datasources.push(action.payload);
         },
-        addDatasourceToDatastreamEntry: (state, action: PayloadAction<{ datastreamId: string, datasourceName: string }>) => {
+        addDatasourceToDatastreamEntry: (state, action: PayloadAction<{
+            datastreamId: string,
+            datasourceName: string
+        }>) => {
             console.info("Adding datasource to datastream", action.payload);
             state.datasourcesToDatastreams.set(action.payload.datasourceName, action.payload.datastreamId);
         },
@@ -99,12 +108,12 @@ export const Slice = createSlice({
         setDatastreams: (state, action: PayloadAction<Map<string, IDatastream>>) => {
             state.dataStreams = action.payload;
         },
-        setDatasources: (state, action: PayloadAction<SweApi[]>) => {
+        setDatasources: (state, action: PayloadAction<typeof SweApi[]>) => {
             state.datasources = action.payload;
         },
         updateNode: (state, action: PayloadAction<INode>) => {
-            const nodeIndex = state.nodes.findIndex((node: INode) => node.id === action.payload.id);
-            state.nodes[nodeIndex] = action.payload;
+            const nodeIndex = state.nodes.findIndex((node: INode) => node.name === action.payload.name);
+            state.nodes[nodeIndex] = action.payload as Node;
         },
         removeNode: (state, action: PayloadAction<string>) => {
             const rmvNode = state.nodes.find((node: INode) => node.id === action.payload);
@@ -121,14 +130,14 @@ export const Slice = createSlice({
         createDatasourceOfDatastream: (state, action: PayloadAction<{ datastreamId: string }>) => {
             const datastream = state.dataStreams.get(action.payload.datastreamId);
             const datasource = datastream.generateSweApiObj({start: 'now', end: 'latest'});
-            if(!state.datasources.some(ds => ds.name === datasource.name)) {
+            if (!state.datasources.some(ds => ds.name === datasource.name)) {
                 state.datasources.push(datasource);
                 state.datasourcesToDatastreams.set(datasource.name, datastream.id);
             }
         },
         removeDatasource: (state, action: PayloadAction<string>) => {
-            const rmvDs = state.datasources.find((ds: SweApi) => ds.name === action.payload);
-            const dsIndex = state.datasources.findIndex((ds: SweApi) => ds.name === action.payload);
+            const rmvDs = state.datasources.find((ds: typeof SweApi) => ds.name === action.payload);
+            const dsIndex = state.datasources.findIndex((ds: typeof SweApi) => ds.name === action.payload);
             state.datasources.splice(dsIndex, 1);
             state.datasourcesToDatastreams.delete(rmvDs.name);
         }
@@ -160,68 +169,15 @@ export const getNodeById = (state: RootState, id: number) => {
     const foundNode = state.oshSlice.nodes.find((node: any) => node.id === id);
     return foundNode;
 }
-export const selectConfigNode = (state: RootState) => state.oshSlice.configNode;
 export const selectSystems = (state: RootState) => state.oshSlice.systems;
 export const selectDatastreams = (state: RootState) => state.oshSlice.dataStreams;
 export const selectDatastreamById = (datastreamId: string) => (state: RootState) => {
     return state.oshSlice.dataStreams.get(datastreamId);
 }
-export const selectDatastreamsOfSystem = (systemId: string) => (state: RootState) => {
-    const datastreamsOfSystem = [];
-    for (let [id, ds] of state.oshSlice.dataStreams.entries()) {
-        if (ds.parentSystemId === systemId) {
-            datastreamsOfSystem.push(ds);
-        }
-    }
-    return datastreamsOfSystem;
-}
+export const selectDefaultNode = (state: RootState) => state.oshSlice.nodes.find((node: INode) => node.isDefaultNode);
 export const selectDatasources = (state: RootState) => state.oshSlice.datasources;
 export const selectMainDataSynchronizer = (state: RootState) => state.oshSlice.mainDataSynchronizer;
 export const selectDatasynchronizers = (state: RootState) => state.oshSlice.otherDataSynchronizers;
-/**
- * Selects datastreams by filter types (ex: ['Driver - Gamma Count'] or ['Driver - Neutron Count', 'Driver - Tamper'])
- * @param filter
- * @returns a map of <filterEntry,IDatastream>
- */
-export const selectDatastreamByOutputType = (filter: string[]) => createSelector(
-    [selectDatastreams],
-    (datastreams) => {
-        let dsArray = Array.from(datastreams.values());
-        let filterMap = new Map<string, IDatastream>();
-        filter.forEach((f: string) => {
-            const filteredData = dsArray.filter((ds: IDatastream) => ds.name.includes(f));
-            filterMap.set(f, filteredData);
-        });
-        return filterMap;
-    });
-export const selectDataSourceByDatastreamId = (datastreamId: string) => createSelector(
-    [selectDatastreamById(datastreamId), selectDatasources],
-    (datastream, datasources) => {
-        return datasources.find((ds: SweApi) => ds.id === datastream.datasourceId);
-    });
-export const selectDataSourceByOutputType = (outputType: string) => createSelector(
-    [selectDatasources],
-    (datasources) => {
-        return datasources.find((ds: SweApi) => ds.outputType === outputType);
-    });
-/**
- * Selects datastreams by a singular parent system id
- * @param systemId
- */
-export const selectDatastreamsByParentSystemId = (systemId: string) => createSelector(
-    [selectDatastreams],
-    (datastreams) => {
-        return Array.from(datastreams.values()).filter((ds: IDatastream) => ds.parentSystemId === systemId);
-    });
-/**
- * Selects datastreams by an array of parent system ids, making no distinction among each system
- * @param systemIds
- */
-export const selectDatastreamsBySystemIds = (systemIds: string[]) => createSelector(
-    [selectDatastreams],
-    (datastreams) => {
-        return Array.from(datastreams.values()).filter((ds: IDatastream) => systemIds.includes(ds.parentSystemId));
-    });
 
 
 export default Slice.reducer;
