@@ -54,9 +54,7 @@ const initialNodeOpts: NodeOptions = {
 const initialNode = new Node(initialNodeOpts);
 
 const initialState: IOSHSlice = {
-    // nodes: new Map<number, INode>([[1,new Node(1, "Windows Test Node", "162.238.96.81", 8781)]]),
     nodes: [new Node(initialNodeOpts)],
-    // currentNodeId: initialNode.id,
     configNode: null,
     systems: [],
     dataStreams: new Map<string, IDatastream>(),
