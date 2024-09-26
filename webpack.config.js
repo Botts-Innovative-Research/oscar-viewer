@@ -12,11 +12,13 @@ const cesiumSource = 'node_modules/cesium/Build/Cesium';
 const cesiumBaseUrl = "cesiumStatic";
 
 module.exports = {
+    mode: "production",
     entry: "./src/index.tsx",
     output: {
         filename: "main.js",
         path: path.resolve(__dirname, "build"),
     },
+    devtool: "source-map",
     plugins: [
         new HtmlWebpackPlugin({
             template: path.join(__dirname, "public", "index.html"),

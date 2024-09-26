@@ -8,7 +8,8 @@
     "start": "next start",
     "postinstall": "patch-package",
     "dev": "next dev",
-    "lint": "next lint"
+    "lint": "next lint",
+    "start-exported": "npx serve@latest out"
   },
   "keywords": [
     "OpenSensorHub",
