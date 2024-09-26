@@ -54,6 +54,7 @@ export default function MapComponent(){
         // @ts-ignore
         let laneDSMap = new Map<string, LaneDSColl>();
 
+
         for (let [laneid, lane] of laneMapRef.current.entries()) {
             laneDSMap.set(laneid, new LaneDSColl());
             for (let ds of lane.datastreams) {
@@ -76,71 +77,7 @@ export default function MapComponent(){
             }
             setDataSourcesByLane(laneDSMap);
         }
-    }, []);
-
-    useEffect(() => {
-        datasourceSetup();
     }, [laneMapRef.current]);
-
-    useEffect(() => {
-
-        if(!leafletViewRef.current && !isInit){
-            let view  = new LeafletView({
-                container: mapcontainer,
-                layers: [],
-
-                // autoZoomOnFirstMarker: true
-            });
-            leafletViewRef.current = view;
-            setIsInt(true);
-        }
-
-    }, [isInit]);
-
-
-     useEffect(() => {
-        if(locationList && locationList.length > 0 && isInit){
-            locationList.forEach((location) => {
-                location.locationSources.forEach((loc) => {
-                    let newPointMarker = new PointMarkerLayer({
-                        name: location.laneName,
-                        dataSourceId: loc.id,
-                        getLocation: (rec: any) => ({x: rec.location.lon, y: rec.location.lat, z: rec.location.alt}),
-                        label: `<div class='popup-text-lane'>` + location.laneName + `</div>`,
-                        markerId: () => this.getId(),
-                        icon: '/circle.svg',
-                        iconColor: 'rgba(0,0,0,1.0)',
-                        getIcon: {
-                            dataSourceIds: [loc.getId()],
-                            handler: function (rec: any) {
-                                if (location.status === 'Alarm') {
-                                    return  '/alarm.svg';
-                                } else if (location.status.includes('Fault')) {
-                                    return  '/fault.svg';
-                                } else{
-                                    return '/default.svg'
-                                }
-                            }
-                        },
-                        labelColor: 'rgba(255,255,255,1.0)',
-                        labelOutlineColor: 'rgba(0,0,0,1.0)',
-                        labelSize: 20,
-                        iconAnchor: [16, 16],
-                        labelOffset: [-5, -15],
-                        iconSize: [16, 16],
-                        description: getContent(location.status),
-                        zIndex: 0,
-                        orientation: {heading: 0},
-                    });
-
-                    leafletViewRef.current?.addLayer(newPointMarker);
-                });
-                location.locationSources.map((src) => src.connect());
-            });
-        }
-
-    }, [locationList, isInit]);
-
 
     const addSubscriptionCallbacks = useCallback(() => {
         for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
@@ -171,6 +108,71 @@ export default function MapComponent(){
         }
     }, [dataSourcesByLane]);
 
+    useEffect(() => {
+        datasourceSetup();
+    }, [laneMapRef.current]);
+
+
+
+    useEffect(() => {
+
+        if(!leafletViewRef.current && !isInit){
+            let view  = new LeafletView({
+                container: mapcontainer,
+                layers: [],
+
+                // autoZoomOnFirstMarker: true
+            });
+            console.log('new view created')
+            leafletViewRef.current = view;
+            setIsInt(true);
+        }
+
+    }, [isInit]);
+
+     useEffect(() => {
+        if(locationList && locationList.length > 0 && isInit){
+            locationList.forEach((location) => {
+                location.locationSources.forEach((loc) => {
+                    let newPointMarker = new PointMarkerLayer({
+                        name: location.laneName,
+                        dataSourceId: loc.id,
+                        getLocation: (rec: any) => {
+                            return ({x: rec.location.lon, y: rec.location.lat, z: rec.location.alt})
+                        },
+                        label: `<div class='popup-text-lane'>` + location.laneName + `</div>`,
+                        markerId: () => this.getId(),
+                        icon: '/default.svg',
+                        iconColor: 'rgba(0,0,0,1.0)',
+                        getIcon: {
+                            dataSourceIds: [loc.getId()],
+                            handler: function (rec: any) {
+                                if (location.status === 'Alarm') {
+                                    return  '/alarm.svg';
+                                } else if (location.status.includes('Fault')) {
+                                    return  '/fault.svg';
+                                } else{
+                                    return '/default.svg'
+                                }
+                            }
+                        },
+                        labelColor: 'rgba(255,255,255,1.0)',
+                        labelOutlineColor: 'rgba(0,0,0,1.0)',
+                        labelSize: 20,
+                        iconAnchor: [16, 16],
+                        labelOffset: [-5, -15],
+                        iconSize: [16, 16],
+                        description: getContent(location.status, location.laneName),
+                    });
+                    leafletViewRef.current?.addLayer(newPointMarker);
+                });
+                location.locationSources.map((src) => src.connect());
+            });
+        }
+
+    }, [locationList, isInit]);
+
+
     const updateLocationList = (laneName: string, newStatus: string) => {
         setLocationList((prevState) => {
             const updatedList = prevState.map((data) =>
@@ -182,11 +184,11 @@ export default function MapComponent(){
     };
 
     /***************content in popup************/
-    function getContent(status: any) {
+    function getContent(status: string, laneName: string) {
         return (
             `<div id='popup-data-layer' class='point-popup'><hr/>
                 <h3 class='popup-text-status'>Status: ${status}</h3>
-                <button onClick='location.href="./lane-view"' class="popup-button" type="button">VIEW LANE</button>
+                <button onClick='location.href="./lane-view?name=${encodeURIComponent(laneName)}"' class="popup-button" type="button">VIEW LANE</button>
             </div>`
         );
     }

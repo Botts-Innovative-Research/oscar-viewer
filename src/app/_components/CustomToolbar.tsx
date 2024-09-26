@@ -10,7 +10,7 @@ export default function CustomToolbar() {
         paddingInline: "1em"
       }}
     >
-      <Typography variant="h6">Alarms</Typography>
+      {/*<Typography variant="h6">Alarms</Typography>*/}
       <Stack direction={"row"}>
         <GridToolbarColumnsButton />
         <GridToolbarFilterButton />

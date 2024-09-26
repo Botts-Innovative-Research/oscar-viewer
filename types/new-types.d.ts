@@ -36,14 +36,16 @@ export type LaneStatusType = {
 }
 
 
-export interface LaneWithVideo {
-  laneName: string,
-  videoSources: typeof SweApi[],
-  status: string,
-}
-
 export interface LaneWithLocation{
   laneName: string,
   locationSources: typeof SweApi[],
   status: string
+}
+
+
+export interface LaneStatusItem {
+  laneName: string,
+  gammaSources: typeof SweApi[],
+  neutronSources: typeof SweApi[],
+  tamperSources: typeof SweApi[]
 }
