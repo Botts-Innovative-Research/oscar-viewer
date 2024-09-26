@@ -6,7 +6,6 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 // @ts-ignore
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {useSelector} from "react-redux";
-import {Datastream} from "@/lib/data/osh/Datastreams";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {INode, Node} from "@/lib/data/osh/Node";
 import {
@@ -114,7 +113,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             for(let mapEntry of laneMap.values()){
                 mapEntry.addDefaultSWEAPIs();
             }
-            
+
             laneMap.forEach((value, key) => {
                 lanes.set(key, value);
             });

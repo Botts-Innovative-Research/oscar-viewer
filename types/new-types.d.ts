@@ -1,5 +1,4 @@
-import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
-import {Datastream} from "@/lib/data/osh/Datastreams";
+
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import PointMarkerLayer from "osh-js/source/core/ui/layer/PointMarkerLayer";
 

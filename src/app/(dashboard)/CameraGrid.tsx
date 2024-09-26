@@ -3,7 +3,6 @@
 import { Grid, Pagination, Typography } from '@mui/material';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import "../style/cameragrid.css";
-import { Datastream } from '@/lib/data/osh/Datastreams';
 import { useSelector } from 'react-redux';
 import { LaneDSColl, LaneMapEntry, LaneMeta } from '@/lib/data/oscar/LaneCollection';
 import CameraGridVideo from '../_components/video/VideoComponent';
@@ -26,7 +25,7 @@ interface LaneWithVideo {
 }
 
 /* TODO
-If lane has multiple videostreams, just use one or 
+If lane has multiple videostreams, just use one or
 implement ability to switch between videostreams
 */
 export default function CameraGrid() {
@@ -58,7 +57,7 @@ export default function CameraGrid() {
                 // Current status of lane
                 status: 'none',
               };
-  
+
               videos.push(laneWithVideo);
             }
         }
@@ -136,7 +135,7 @@ export default function CameraGrid() {
 
   const updateVideoList = (laneName: string, newStatus: string) => {
     setVideoList((prevList) => {
-      const updatedList = prevList.map((videoData) => 
+      const updatedList = prevList.map((videoData) =>
         videoData.laneName === laneName ? {...videoData, status: newStatus } : videoData
       );
 
@@ -202,7 +201,7 @@ export default function CameraGrid() {
     {videoList != null && (
       <Grid container padding={2} justifyContent={"start"}>
         {videoList.slice(startItem, endItem).map((lane) => (
-          <VideoStatusWrapper key={lane.laneName} laneName={lane.laneName} status={lane.status} 
+          <VideoStatusWrapper key={lane.laneName} laneName={lane.laneName} status={lane.status}
           children={<VideoComponent id={lane.laneName} currentPage={0} videoSources={lane.videoSources}/>}>
           </VideoStatusWrapper>
         ))}
