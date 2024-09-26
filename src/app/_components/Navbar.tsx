@@ -25,7 +25,7 @@ import CloudRoundedIcon from '@mui/icons-material/CloudRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
 import {Button, Menu, MenuItem, Stack} from '@mui/material';
-import { useState } from 'react';
+import {useEffect, useState} from 'react';
 import Link from 'next/link';
 import {Label} from "@mui/icons-material";
 
@@ -164,6 +164,26 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
     },
   ]
 
+  const changeTitle = () =>{
+    switch(window.location.pathname){
+      case '/':
+        return 'Dashboard';
+      case '/lane-view':
+        return 'Lane View';
+      case '/map':
+        return 'Map';
+      case '/event-log':
+        return 'Event Log';
+      case '/servers':
+        return 'Server';
+      case '/account':
+        return 'Account'
+      case '/site-configuration':
+        return 'Site Configuration';
+
+    }
+  }
+
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
@@ -183,7 +203,8 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
           </IconButton>
           <Stack direction={"row"} width={"100%"} alignItems={"center"} justifyContent={"space-between"}>
             <Typography variant="h6" noWrap component="div">
-                Title
+              {/*{changeTitle()}*/}
+              Title
               </Typography>
             <IconButton
               color="inherit"

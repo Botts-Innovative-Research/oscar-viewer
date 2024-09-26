@@ -189,12 +189,11 @@ export default function LaneStatus() {
                         <Link href={{
                           pathname: '/lane-view',
                           query: {
-                            id: item.id,
                             name: item.name,
                           }
                         }}
                               passHref
-                              key={item.id}
+                              key={item.name}
                         >
 
                           <LaneStatusItem

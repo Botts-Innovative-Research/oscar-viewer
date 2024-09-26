@@ -63,11 +63,13 @@ export default function VideoGrid(props: LaneVideoProps) {
     useEffect(() => {
         console.log(videoList)
        if(videoList && videoList.length > 0){
-          videoList[0].videoSources
-              .slice(currentPage * maxItems, (currentPage + 1) * maxItems)
-              .forEach((src)=> {
-                  src.connect();
-              });
+
+           videoList[0].videoSources[currentPage].connect();
+           console.log('connecting src', videoList[0].videoSources[currentPage].name);
+              // .forEach((src)=> {
+              //     console.log('src', src.name)
+              //     src.connect();
+              // });
        }
     }, [videoList, currentPage]);
 
@@ -77,7 +79,7 @@ export default function VideoGrid(props: LaneVideoProps) {
         setCurrentPage((prevPage)=> {
             let currentPage = prevPage + 1
             console.log('next page', currentPage);
-            checkConnection(currentPage, prevPage);
+            checkConnection(prevPage);
             return currentPage;
         })
 
@@ -88,15 +90,14 @@ export default function VideoGrid(props: LaneVideoProps) {
         setCurrentPage((prevPage) => {
             let currentPage = prevPage - 1;
             console.log('prev page', currentPage)
-            checkConnection(currentPage, prevPage);
+            checkConnection(prevPage);
             return currentPage;
         })
 
     }
 
     //next page -> disconnect from the previous page and connect to the next page if its not connected we can connect it
-
-    async function checkConnection (currentPage: number, prevPage: number){
+    async function checkConnection (prevPage: number){
         if(prevPage >= 0){
             for (const video of videoList) {
                 const isConnected = await video.videoSources[prevPage].isConnected();
@@ -105,13 +106,6 @@ export default function VideoGrid(props: LaneVideoProps) {
                     video.videoSources[prevPage].disconnect();
                 }
 
-            }
-        }
-        for (const video of videoList) {
-            const isConnected = await video.videoSources[currentPage].isConnected();
-            if(!isConnected){
-                console.log('connecting', video.videoSources[currentPage].name)
-                video.videoSources[currentPage].connect();
             }
         }
     }
@@ -133,7 +127,7 @@ export default function VideoGrid(props: LaneVideoProps) {
                         sx={{height: '100%', padding: 2}}
                     >
                         {videoList.map((lane) => (
-                            <VideoComponent key={idVal.current++} id={lane.laneName} currentPage={0} videoSources={lane.videoSources}/>
+                            <VideoComponent key={idVal.current++} id={lane.laneName} currentPage={currentPage} videoSources={lane.videoSources}/>
                         ))}
 
                     </Stack>

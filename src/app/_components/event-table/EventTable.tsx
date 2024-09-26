@@ -12,7 +12,6 @@ import {EventTableData, EventTableDataCollection} from "@/lib/data/oscar/TableHe
 import CustomToolbar from "@/app/_components/CustomToolbar";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
-import {RootState} from "@/lib/state/Store";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {selectEventPreview, setEventPreview} from "@/lib/state/OSCARClientSlice";
 
@@ -189,7 +188,7 @@ export default function EventTable(props: {
   }
 
   return (
-      <Box sx={{height: 400, width: '100%'}}>
+      <Box sx={{height: 500, width: '100%'}}>
         <DataGrid
             rows={eventTable.data}
             columns={columns}

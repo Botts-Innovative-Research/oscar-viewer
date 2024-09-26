@@ -188,7 +188,7 @@ export default function MapComponent(){
         return (
             `<div id='popup-data-layer' class='point-popup'><hr/>
                 <h3 class='popup-text-status'>Status: ${status}</h3>
-                <button onClick='location.href="./lane-view", query:{name: laneName}' class="popup-button" type="button">VIEW LANE</button>
+                <button onClick='location.href="./lane-view?name=${encodeURIComponent(laneName)}"' class="popup-button" type="button">VIEW LANE</button>
             </div>`
         );
     }
