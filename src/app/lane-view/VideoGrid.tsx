@@ -1,7 +1,7 @@
 "use client";
 
 import {Box, Card, Grid, IconButton, Pagination, Stack, Typography } from '@mui/material';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import {useCallback, useContext, useEffect, useRef, useState} from 'react';
 import "../style/cameragrid.css";
 import { Datastream } from '@/lib/data/osh/Datastreams';
 import { useSelector } from 'react-redux';
@@ -28,99 +28,92 @@ interface LaneWithVideo {
     videoSources: typeof SweApi[]
 }
 export default function VideoGrid(props: LaneVideoProps) {
-
+    const idVal = useRef(1);
     const [videoList, setVideoList] = useState<LaneWithVideo[] | null>(null);
-
-    // Create and connect alarm statuses
-    const laneMap = useSelector((state: RootState) => selectLaneMap(state));
-
+    const maxItems = 1;
     const [currentPage, setCurrentPage] = useState(0);
     const [slideDirection, setSlideDirection] = useState<"right"| "left"| undefined>("left");
 
+
+    const laneMap = useSelector((state: RootState) => selectLaneMap(state));
+
     // Create and connect videostreams
     useEffect(() => {
-
         if(videoList == null || videoList.length == 0 && laneMap.size > 0) {
             let videos: LaneWithVideo[] = []
 
             laneMap.forEach((value, key) => {
-                if(laneMap.has(key)) {
+                if(key === props.laneName){
                     let ds: LaneMapEntry = laneMap.get(key);
-                    const videoSources = ds.datasourcesRealtime.filter((item) => item.name.includes('Video') && item.name.includes('Lane'));
-                    if(videoSources.length > 0 && key === props.laneName) {
-                        const laneWithVideo: LaneWithVideo = {
-                            // Get lane name
-                            laneName: key,
-                            // All video sources for the lane
-                            videoSources: videoSources,
-                        };
 
-                        videos.push(laneWithVideo);
+                    const videoSources = ds.datasourcesRealtime.filter((item) =>
+                        item.name.includes('Video') && item.name.includes('Lane')
+                    );
+
+                    if(videoSources.length > 0) {
+                        videos.push({laneName: key, videoSources});
                     }
                 }
-            })
+            });
             setVideoList(videos);
         }
     }, [laneMap, props.laneName]);
 
 
     useEffect(() => {
-        async function checkConnections() {
-            if(videoList != null && videoList.length > 0) {
-                // Connect to currently shown videostreams
-                videoList.forEach(async (video) => {
-                    let isConnected = false;
-                    for (const src of video.videoSources) {
-                        isConnected = await src.isConnected();
+        console.log(videoList)
+       if(videoList && videoList.length > 0){
+          videoList[0].videoSources
+              .slice(currentPage * maxItems, (currentPage + 1) * maxItems)
+              .forEach((src)=> {
+                  src.connect();
+              });
+       }
+    }, [videoList, currentPage]);
 
-                        if(!isConnected) {
-                            src.connect();
-                        }
-                    }
-                });
-
-                // Disconnect other videostreams
-                videoList.forEach(async (video, index) => {
-                    if(video && video.videoSources) {
-                        let isConnected = false;
-                        for (const src of video.videoSources) {
-                            isConnected = await src.isConnected();
-
-                            if(isConnected) {
-                                src.disconnect();
-                            }
-                        }
-
-
-                    }
-                });
-            }
-        }
-
-        checkConnections();
-
-    }, [videoList]);
-
-    const maxItems = 1; // Max number of videos per page
-    const [page, setPage] = useState(1);  // Page currently selected
-    const [startItem, setStartItem] = useState(0);  // Current start of range
-    const [endItem, setEndItem] = useState(6); // Current end of range
-
-    // Handle page value change
-    const handleChange = (event: React.ChangeEvent<unknown>, value: number) => {
-        setPage(value);
-        setStartItem(maxItems * (value - 1)); // Set startItem
-        setEndItem(maxItems * (value - 1) + maxItems); // Set endItem to offset by maxItems
-    };
 
     const handleNextPage = () =>{
         setSlideDirection("left");
-        setCurrentPage((prevpage)=> prevpage+1)
+        setCurrentPage((prevPage)=> {
+            let currentPage = prevPage + 1
+            console.log('next page', currentPage);
+            checkConnection(currentPage, prevPage);
+            return currentPage;
+        })
+
     }
 
     const handlePrevPage = () =>{
         setSlideDirection("right");
-        setCurrentPage((prevpage)=> prevpage - 1)
+        setCurrentPage((prevPage) => {
+            let currentPage = prevPage - 1;
+            console.log('prev page', currentPage)
+            checkConnection(currentPage, prevPage);
+            return currentPage;
+        })
+
+    }
+
+    //next page -> disconnect from the previous page and connect to the next page if its not connected we can connect it
+
+    async function checkConnection (currentPage: number, prevPage: number){
+        if(prevPage >= 0){
+            for (const video of videoList) {
+                const isConnected = await video.videoSources[prevPage].isConnected();
+                if(isConnected){
+                    console.log('disconnecting', video.videoSources[prevPage].name)
+                    video.videoSources[prevPage].disconnect();
+                }
+
+            }
+        }
+        for (const video of videoList) {
+            const isConnected = await video.videoSources[currentPage].isConnected();
+            if(!isConnected){
+                console.log('connecting', video.videoSources[currentPage].name)
+                video.videoSources[currentPage].connect();
+            }
+        }
     }
 
 
@@ -132,13 +125,20 @@ export default function VideoGrid(props: LaneVideoProps) {
                         <NavigateBeforeIcon/>
                     </IconButton>
 
-                    <Stack spacing={2} direction="row" alignContent="center" justifyContent={"start"} sx={{height: '100%', padding: 2}}>
-                        {videoList.slice(startItem, endItem).map((lane) => (
-                            <VideoComponent id={lane.laneName} videoSources={lane.videoSources}/>
+                    <Stack
+                        spacing={2}
+                        direction="row"
+                        alignContent="center"
+                        justifyContent={"start"}
+                        sx={{height: '100%', padding: 2}}
+                    >
+                        {videoList.map((lane) => (
+                            <VideoComponent key={idVal.current++} id={lane.laneName} currentPage={0} videoSources={lane.videoSources}/>
                         ))}
+
                     </Stack>
 
-                    <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={currentPage >= Math.ceil((videoList.length/ maxItems) -1)}>
+                    <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}}>
                         <NavigateNextIcon/>
                     </IconButton>
                 </Box>

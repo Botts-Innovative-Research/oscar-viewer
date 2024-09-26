@@ -109,7 +109,8 @@ export class LaneMapEntry {
                     password: this.parentNode.auth.password
                 },
                 startTime: "2020-01-01T08:13:25.845Z",
-                endTime: new Date((new Date().getTime() - 1000000)).toISOString()
+                endTime: "2055-01-01T08:13:25.845Z",
+                // endTime: new Date((new Date().getTime() - 1000000)).toISOString()
 
             });
 

@@ -7,6 +7,7 @@ import Box from "@mui/material/Box/Box";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
 
 interface OSHVideoProps {
+    currentPage: number,
     id: string
     videoSources: typeof SweApi[]
 }
@@ -14,7 +15,7 @@ interface OSHVideoProps {
 export default function VideoComponent(props: OSHVideoProps) {
     const hasRendered = useRef(false);
     const [videoView, setVideoView] = useState(null);
-    const [videoDataSource, setVideoDataSource] = useState(props.videoSources[0]);
+    const [videoDataSource, setVideoDataSource] = useState(props.videoSources[props.currentPage]);
 
     useEffect(() => {
         if(hasRendered.current) return;
@@ -31,7 +32,6 @@ export default function VideoComponent(props: OSHVideoProps) {
                     getTimestamp: (rec: any) => rec.time,
                 })]
             });
-
             setVideoView(view);
             hasRendered.current = true;
         }
