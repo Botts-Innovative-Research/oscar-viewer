@@ -20,6 +20,7 @@ import {selectLaneMap, setLaneMap, setLanes} from "@/lib/state/OSCARClientSlice"
 import {RootState} from "@/lib/state/Store";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import assert from "assert";
+import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
 
 interface IDataSourceContext {
     masterTimeSyncRef: MutableRefObject<typeof DataSynchronizer | undefined>
@@ -55,44 +56,16 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             console.error("No config node found in state. Cannot initialize application.");
         }
 
-        console.log("Initializing application...");
-        let cfgEP = configNode.getConfigEndpoint();
-        console.log("CONFIG Config endpoint: ", cfgEP);
-        // assume that the local server may have a config file that can be loaded
-        let localConfigResp = await fetch(`http://${cfgEP}/systems?uid=urn:ornl:oscar:client:configs`, {
-            headers: {
-                ...configNode.getBasicAuthHeader()
-            }
-        })
-        if (!localConfigResp.ok) {
-            let localConfig = localConfigResp.json()
-            console.info("Local config not loaded")
-            // Need to fire off some sort of alert on the screen
+        let filedata = await OSHSliceWriterReader.retrieveLatestConfig(configNode);
+
+        if (filedata) {
+            console.log("Filedata from config node:", filedata);
+            // load the filedata into the state
         } else {
-            // TODO: move this into a method in the slice writer/reader or somewhere else so it's 1 reusable and 2 not clogging up this Context file
-            let localConfigJson = await localConfigResp.json();
-            let systemId = localConfigJson.items[0].id;
-            // get datastream ID
-            let configDSResp = await fetch(encodeURI(`${cfgEP}/systems/${systemId}/datastreams`), {
-                headers: {
-                    ...configNode.getBasicAuthHeader()
-                }
-            });
-            let configDSJson = await configDSResp.json();
-            let dsID = configDSJson.items[0].id;
-            // fetch the latest result
-            let cfgObsResp = await fetch(`${cfgEP}/datastreams/${dsID}/observations?f=application/om%2Bjson&resultTime=latest`, {
-                headers: {
-                    ...configNode.getBasicAuthHeader()
-                }
-            });
-            let cfgObsJson = await cfgObsResp.json();
-            let cfgObservation = cfgObsJson.items[0];
-            // get the config object file data
-            let configString = cfgObservation.result.filedata;
-            // let configObj = JSON.parse(configString);
-            // TODO Load into state
+            console.log("No filedata found from config node");
+            // do nothing else for now
         }
+
     }, [dispatch, configNode]);
 
 

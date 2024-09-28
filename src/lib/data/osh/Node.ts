@@ -33,7 +33,7 @@ export interface INode {
 
     fetchLanes(): Promise<{ systems: ISystem[]; lanes: LaneMeta[] }>,
 
-    fetchSystemsTK(): void,
+    fetchSystemsTK(): Promise<any[]>,
 
     fetchLaneSystemsAndSubsystems(): Promise<Map<string, LaneMapEntry>>,
 
@@ -83,7 +83,8 @@ export class Node implements INode {
     getConnectedSystemsEndpoint() {
         let protocol = this.isSecure ? 'https' : 'http';
         // return `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
-        return `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
+        console.log("NODE TEST GET CSAPI ENDPOINT", this);
+        return `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
     }
 
     getConfigEndpoint() {
@@ -193,10 +194,9 @@ export class Node implements INode {
         return laneMap;
     }
 
-    async fetchSystemsTK() {
+    async fetchSystemsTK(): Promise<any[]> {
         let systemsApi = new Systems({
             endpointUrl: `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`,
-            // endpointUrl: "192.168.1.158:8781/sensorhub/api",
             tls: this.isSecure,
             connectorOpts: this.auth
         });
