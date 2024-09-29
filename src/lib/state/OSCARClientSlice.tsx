@@ -27,7 +27,7 @@ export interface IOSCARClientState {
 }
 
 const initialState: IOSCARClientState = {
-    currentUser: '',
+    currentUser: 'testuser',
     quickActions: [],
     eventPreview: {
         isOpen: false,

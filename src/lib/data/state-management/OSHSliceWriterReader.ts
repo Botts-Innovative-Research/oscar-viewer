@@ -11,6 +11,7 @@ import {INode, Node} from "@/lib/data/osh/Node";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import System from "osh-js/source/core/sweapi/system/System.js";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import OSCARClientSlice, {IOSCARClientState} from "@/lib/state/OSCARClientSlice";
 
 const CONFIG_UID = "urn:ornl:oscar:client:config";
 
@@ -33,11 +34,21 @@ export class OSHSliceWriterReader {
         return blob;
     }
 
-    static writeSliceToString(slice: IOSHSlice, filename: string = "testcfg.json") {
+    static writeConfigToString(configData: {oscarData: IOSCARClientState, oshData: IOSHSlice}, filename: string = "testcfg.json") {
+
+        console.log("Writing config to string: ", configData);
+        let data = {
+            user: {
+                name: configData.oscarData.currentUser,
+            },
+            nodes: configData.oshData.nodes,
+        }
+
+
         let obs: any = {
             "time": Date.now(),
             "filename": filename + ".json",
-            "filedata": JSON.stringify(slice)
+            "filedata": JSON.stringify(data)
         }
 
         return JSON.stringify(obs);
@@ -272,7 +283,7 @@ export class OSHSliceWriterReader {
                 console.error("[CFG] No config data found in observation");
                 return null;
             } else {
-                return json.filedata;
+                return json.items[0];
             }
         } else {
             console.log("[CFG] Error fetching config observation: ", configResp);

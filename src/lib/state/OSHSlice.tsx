@@ -111,6 +111,9 @@ export const Slice = createSlice({
         setDatasources: (state, action: PayloadAction<typeof SweApi[]>) => {
             state.datasources = action.payload;
         },
+        setNodes: (state, action: PayloadAction<INode[]>) => {
+            state.nodes = action.payload
+        },
         updateNode: (state, action: PayloadAction<INode>) => {
             const nodeIndex = state.nodes.findIndex((node: INode) => node.name === action.payload.name);
             state.nodes[nodeIndex] = action.payload as Node;
@@ -156,6 +159,7 @@ export const {
     setSystems,
     setDatastreams,
     setDatasources,
+    setNodes,
     updateNode,
     removeNode,
     changeConfigNode,
