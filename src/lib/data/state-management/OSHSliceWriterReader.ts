@@ -33,28 +33,29 @@ export class OSHSliceWriterReader {
         return blob;
     }
 
-    writeSliceToString(slice: IOSHSlice) {
+    static writeSliceToString(slice: IOSHSlice, filename: string = "testcfg.json") {
         let obs: any = {
             "time": Date.now(),
-            "filename": "testcfg.json",
+            "filename": filename + ".json",
             "filedata": JSON.stringify(slice)
         }
 
         return JSON.stringify(obs);
     }
 
-    async sendBlobToServer(body: string) {
-        // const formData = new FormData();
-        // formData.append('file', blob);
+    static async sendBlobToServer(node: INode, dsId: string, body: string) {
 
+        let epUri = encodeURIComponent(`f=application/om+json&resultTime=latest`);
+        let ep = `${node.getConnectedSystemsEndpoint()}/datastreams/${dsId}/observations?`;
 
-        const response = await fetch(this.destinationURL, {
+        const response = await fetch(ep, {
             method: 'POST',
             body: body,
             headers: {
                 'Authorization': 'Basic ' + btoa(`admin:admin`),
                 'Content-Type': 'application/swe+json'
-            }
+            },
+            mode: 'cors',
         });
         return response;
     }
@@ -135,7 +136,7 @@ export class OSHSliceWriterReader {
         });
 
         if (!cfgSystem) {
-            console.log("No config system found, creating one...");
+            console.log("No config system found, attempting to create one...");
             let cfgSystem = await this.insertConfigSystem(node);
             return cfgSystem;
         } else {

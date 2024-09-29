@@ -296,7 +296,7 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
           ))}
         </List>
         <Divider>
-          <Link href={"/dsavestate"} passHref>
+          <Link href={"/savestate"} passHref>
               <Label>Open Save State</Label>
           </Link>
         </Divider>
