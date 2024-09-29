@@ -81,7 +81,22 @@ export class LaneMapEntry {
         this.datasources.push(...datasources);
     }
 
+    resetDatasources() {
+        for(let ds of this.datasourcesRealtime){
+            ds.disconnect();
+        }
+        for(let ds of this.datasourcesBatch){
+            ds.disconnect();
+        }
+    }
+
     addDefaultSWEAPIs() {
+        // TODO: Verify that this doesn't negatively impact the app's visual usage
+        this.resetDatasources();
+
+        let rtArray = [];
+        let batchArray = [];
+
         for (let dsObj of this.datastreams) {
 
             let dsRT = new SweApi(`rtds - ${dsObj.properties.name}`, {
@@ -115,9 +130,11 @@ export class LaneMapEntry {
             });
 
             // this.datasources.push([dsRT, dsBatch]);
-            this.datasourcesRealtime.push(dsRT);
-            this.datasourcesBatch.push(dsBatch);
+            rtArray.push(dsRT);
+            batchArray.push(dsBatch);
         }
+        this.datasourcesRealtime = rtArray;
+        this.datasourcesBatch = batchArray;
     }
 
     createReplaySweApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {

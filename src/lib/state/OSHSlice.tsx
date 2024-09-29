@@ -37,11 +37,11 @@ export interface IOSHSlice {
 
 const initialNodeOpts: NodeOptions = {
     name: "Windows Test Node",
-    address: "127.0.0.1",
+    // address: "127.0.0.1",
     // address: "162.238.96.81",
-    // address: "192.168.1.158",
-    // port: 8781,
-    port: 8282,
+    address: "192.168.1.158",
+    port: 8781,
+    // port: 8282,
     oshPathRoot: "/sensorhub",
     sosEndpoint: "/sos",
     csAPIEndpoint: "/api",
@@ -54,9 +54,7 @@ const initialNodeOpts: NodeOptions = {
 const initialNode = new Node(initialNodeOpts);
 
 const initialState: IOSHSlice = {
-    // nodes: new Map<number, INode>([[1,new Node(1, "Windows Test Node", "162.238.96.81", 8781)]]),
     nodes: [new Node(initialNodeOpts)],
-    // currentNodeId: initialNode.id,
     configNode: null,
     systems: [],
     dataStreams: new Map<string, IDatastream>(),
@@ -113,6 +111,9 @@ export const Slice = createSlice({
         setDatasources: (state, action: PayloadAction<typeof SweApi[]>) => {
             state.datasources = action.payload;
         },
+        setNodes: (state, action: PayloadAction<INode[]>) => {
+            state.nodes = action.payload
+        },
         updateNode: (state, action: PayloadAction<INode>) => {
             const nodeIndex = state.nodes.findIndex((node: INode) => node.name === action.payload.name);
             state.nodes[nodeIndex] = action.payload as Node;
@@ -158,6 +159,7 @@ export const {
     setSystems,
     setDatastreams,
     setDatasources,
+    setNodes,
     updateNode,
     removeNode,
     changeConfigNode,

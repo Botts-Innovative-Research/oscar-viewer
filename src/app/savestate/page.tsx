@@ -6,12 +6,12 @@
 'use client';
 
 import React from "react";
-import TestStateWriter from "@/app/dsavestate/TestStateWriter";
+import StateManager from "@/app/savestate/StateManager";
 
 export default function Page() {
     return (
         <div>
-            <TestStateWriter />
+            <StateManager />
         </div>
     )
 }

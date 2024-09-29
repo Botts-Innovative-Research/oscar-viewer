@@ -1,6 +1,6 @@
 "use client";
 
-import {Box} from '@mui/material';
+import {Box, Typography} from '@mui/material';
 import {SelectedEvent} from 'types/new-types';
 
 import {useSelector} from "react-redux";
@@ -19,6 +19,7 @@ export default function QuickView() {
     return (
         <Box style={{width: '100%', height: '300', padding: 10, overflow: 'hidden'}}>
             {eventPreview.isOpen ? (<EventPreview/>) : (<MapComponent/>)}
+            {/*{eventPreview.isOpen ? (<EventPreview/>) : (<Typography>Map</Typography>)}*/}
         </Box>
     );
 }
