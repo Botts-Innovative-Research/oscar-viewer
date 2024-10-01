@@ -31,3 +31,7 @@ div.video-stream canvas {
 #video-stream-container {
     height: calc(100% - 10px);
 }
+
+chart-view-gamma{
+
+}

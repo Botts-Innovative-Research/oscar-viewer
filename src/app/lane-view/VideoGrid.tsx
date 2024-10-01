@@ -121,11 +121,12 @@ export default function VideoGrid(props: LaneVideoProps) {
                     </IconButton>
 
                     <Stack
+                        margin={0}
                         spacing={2}
                         direction="row"
                         alignContent="center"
-                        justifyContent={"start"}
-                        sx={{height: '100%', padding: 2}}
+                        justifyContent={"center"}
+                        sx={{ padding: 2, width: '50%', height: '50'}}
                     >
                         {videoList.map((lane) => (
                             <VideoComponent key={idVal.current++} id={lane.laneName} currentPage={currentPage} videoSources={lane.videoSources}/>

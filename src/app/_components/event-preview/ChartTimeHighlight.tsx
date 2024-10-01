@@ -37,13 +37,16 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     const horizontalThreshold = useState<number>(0);
     const gammaChartViewRef = useRef<typeof ChartJsView | null>(null);
     const neutronChartViewRef = useRef<typeof ChartJsView | null>(null);
+
     const [thresholdCurve, setThresholdCurve] = useState<typeof CurveLayer>();
     const [gammaCurve, setGammaCurve] = useState<typeof CurveLayer>();
     const [neutronCurve, setNeutronCurve] = useState<typeof CurveLayer>();
     const [occupancyCurve, setOccupancyCurve] = useState<typeof CurveLayer>();
+
     const gammatChartBaseId = "chart-view-event-detail-gamma-";
     const neutronChartBaseId = "chart-view-event-detail-neutron-";
     const bothChartBaseId = "chart-view-event-detail-both-";
+
     const [gammaChartID, setGammaChartID] = useState<string>("");
     const [neutronChartID, setNeutronChartID] = useState<string>("");
     const [bothChartID, setBothChartID] = useState<string>("");
@@ -207,23 +210,23 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     } else if (eventPreview.eventData.status === "Gamma") {
         return (
             <div>
-                <Typography variant="h6">Gamma Readings</Typography>
+                <Typography variant="h6">Gamma Plot</Typography>
                 <div id={gammaChartID}></div>
             </div>
         );
     } else if (eventPreview.eventData.status === "Neutron") {
         return (
             <div>
-                <Typography variant="h6">Neutron Readings</Typography>
+                <Typography variant="h6">Neutron Plot</Typography>
                 <div id={neutronChartID}></div>
             </div>
         );
     } else if (eventPreview.eventData.status === "Gamma & Neutron") {
         return (
             <div>
-                <Typography variant="h6">Gamma Readings</Typography>
+                <Typography variant="h6">Gamma Plot</Typography>
                 <div id={gammaChartID}></div>
-                <Typography variant="h6">Neutron Readings</Typography>
+                <Typography variant="h6">Neutron Plot</Typography>
                 <div id={neutronChartID}></div>
             </div>
         );

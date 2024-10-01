@@ -197,7 +197,7 @@ export default function EventTable(props: {
             initialState={{
               pagination: {
                 paginationModel: {
-                  pageSize: 20,
+                  pageSize: 25,
                 },
               },
               columns: {
@@ -209,7 +209,7 @@ export default function EventTable(props: {
                 }
               },
             }}
-            pageSizeOptions={[20]}
+            pageSizeOptions={[25]}
             slots={{toolbar: CustomToolbar}}
             slotProps={{
               columnsManagement: {
