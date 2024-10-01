@@ -3,17 +3,13 @@
  * All Rights Reserved
  */
 
-import {pink} from "@mui/material/colors";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
-import {GammaScanData, NeutronScanData, SweApiMessage} from "types/message-types";
-import Systems from "osh-js/source/core/sweapi/system/Systems.js";
 import System from "osh-js/source/core/sweapi/system/System.js";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import {INode} from "@/lib/data/osh/Node";
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
-import {IDatastream} from "@/lib/data/osh/Datastreams";
 
 class ILaneMeta {
     id: string;
@@ -82,10 +78,10 @@ export class LaneMapEntry {
     }
 
     resetDatasources() {
-        for(let ds of this.datasourcesRealtime){
+        for (let ds of this.datasourcesRealtime) {
             ds.disconnect();
         }
-        for(let ds of this.datasourcesBatch){
+        for (let ds of this.datasourcesBatch) {
             ds.disconnect();
         }
     }
@@ -281,8 +277,8 @@ export class LaneDSColl {
         this.neutronBatch = [];
         this.tamperRT = [];
         this.tamperBatch = [];
-        this.locBatch =[];
-        this.locRT =[];
+        this.locBatch = [];
+        this.locRT = [];
     }
 
     getDSArray(propName: string): typeof SweApi[] {
@@ -312,7 +308,10 @@ export class LaneDSColl {
         for (let ds of this.tamperBatch) {
             ds.subscribe(handler, [EventType.DATA]);
         }
-        for( let ds of this.locBatch){
+        for (let ds of this.locBatch) {
+            ds.subscribe(handler, [EventType.DATA]);
+        }
+        for (let ds of this.occBatch) {
             ds.subscribe(handler, [EventType.DATA]);
         }
     }
@@ -330,7 +329,7 @@ export class LaneDSColl {
         for (let ds of this.tamperRT) {
             ds.subscribe(handler, [EventType.DATA]);
         }
-        for (let ds of this.locRT){
+        for (let ds of this.locRT) {
             ds.subscribe(handler, [EventType.DATA]);
         }
     }
@@ -368,10 +367,10 @@ export class LaneDSColl {
         for (let ds of this.tamperBatch) {
             ds.connect();
         }
-        for (let ds of this.locRT){
+        for (let ds of this.locRT) {
             ds.connect();
         }
-        for (let ds of this.locBatch){
+        for (let ds of this.locBatch) {
             ds.connect();
         }
     }

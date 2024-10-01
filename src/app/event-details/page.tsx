@@ -1,17 +1,24 @@
 "use client";
 
 import { Grid, Paper, Stack, Typography } from "@mui/material";
-import { useState } from "react";
+import {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
 import { SelectedEvent } from "types/new-types";
 import BackButton from "../_components/BackButton";
 import DataRow from "./DataRow";
-import Media from "./Media";
+
 import MiscTable from "./MiscTable";
 import Comment from "./Comment";
 import AddComment from "./AddComment";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
+import VideoGrid from "@/app/lane-view/VideoGrid";
+import ChartTimeHighlight from "../_components/event-preview/ChartTimeHighlight";
+import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
+import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
 
 /**
  * Expects the following search params:
@@ -21,13 +28,117 @@ import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
  * Need to implement an error page to handle invalid/no search params
  */
 
-const testData = {
-  id: '1', secondaryInspection: false, laneId: '1', occupancyId: '1', startTime: 'XX:XX:XX AM', endTime: 'XX:XX:XX AM', maxGamma: 25642, status: 'Gamma',
-}
-
 export default function EventDetailsPage() {
-  const [selectedEvent, setSelectedEvent] = useState<SelectedEvent>({startTime: "XX:XX:XX AM", endTime: "XX:XX:XX AM"});  // Reference types/new-types.d.ts to change type
-  const alertDetails = useSelector((state: RootState) => selectEventPreview(state));
+    const laneMapRef = useContext(DataSourceContext).laneMapRef;
+    const eventPreview = useSelector(selectEventPreview);
+    const syncRef = useRef<typeof DataSynchronizer>();
+    const [currentTime, setCurrentTime] = useState<string>("");
+    const dsMapRef = useRef<Map<string, typeof SweApi[]>>();
+    const [localDSMap, setLocalDSMap] = useState<Map<string, typeof SweApi[]>>(new Map<string, typeof SweApi[]>());
+    const [dataSyncCreated, setDataSyncCreated] = useState<boolean>(false);
+    const [dataSyncReady, setDataSyncReady] = useState<boolean>(false);
+    const [datasourcesReady, setDatasourcesReady] = useState<boolean>(false);
+
+    // Video
+    const [videoDatasources, setVideoDatasources] = useState<typeof SweApi[]>([]);
+    const [activeVideoIDX, setActiveVideoIDX] = useState<number>(0);
+    const [videoReady, setVideoReady] = useState<boolean>(false);
+
+    // Chart
+    const [gammaDatasources, setGammaDS] = useState<typeof SweApi[]>([]);
+    const [neutronDatasources, setNeutronDS] = useState<typeof SweApi[]>([]);
+    const [occDatasources, setOccDS] = useState<typeof SweApi[]>([]);
+    const [thresholdDatasources, setThresholdDS] = useState<typeof SweApi[]>([]);
+    const [chartReady, setChartReady] = useState<boolean>(false);
+
+
+    useEffect(() => {
+        setCurrentTime(eventPreview.eventData.startTime);
+        // currentTime.current = eventPreview.eventData.startTime;
+        console.log("Current Time: ", currentTime);
+    }, [eventPreview]);
+
+    useMemo(() => {
+        // create dsMapRef of eventPreview
+        if (eventPreview) {
+            dsMapRef.current = laneMapRef.current.get(eventPreview.eventData.laneId).getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
+            console.log("EventPreview DS Map", dsMapRef.current);
+            setLocalDSMap(dsMapRef.current);
+        }
+    }, [eventPreview]);
+
+    const collectDataSources = useCallback(() => {
+        let currentLane = eventPreview.eventData.laneId;
+        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+
+        console.log("Collecting DataSources...", currLaneEntry, currentLane);
+
+        let tempDSMap = new Map<string, typeof SweApi[]>();
+        if (currLaneEntry) {
+            let datasources = currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
+            console.log("DataSources", datasources);
+            setLocalDSMap(datasources);
+            tempDSMap = datasources;
+        }
+        console.log("LocalDSMap", localDSMap);
+
+        setGammaDS(tempDSMap.get("gamma"));
+        setNeutronDS(tempDSMap.get("neutron"));
+        setThresholdDS(tempDSMap.get("gammaTrshld"));
+        setVideoDatasources(tempDSMap.get("video"));
+
+    }, [eventPreview, laneMapRef]);
+
+    const createDataSync = useCallback(() => {
+        if (!syncRef.current && !dataSyncCreated && videoDatasources.length > 0) {
+            syncRef.current = new DataSynchronizer({
+                dataSources: videoDatasources,
+                replaySpeed: 1.0,
+                startTime: eventPreview.eventData.startTime,
+                // endTime: eventPreview.eventData.endTime,
+                endTime: "now",
+            });
+            setDataSyncCreated(true);
+        }
+    }, [syncRef, dataSyncCreated, datasourcesReady, videoDatasources]);
+
+    useEffect(() => {
+        collectDataSources();
+    }, [eventPreview, laneMapRef]);
+
+    useEffect(() => {
+        createDataSync();
+    }, [gammaDatasources, neutronDatasources, thresholdDatasources, occDatasources, syncRef, dataSyncCreated, datasourcesReady]);
+
+    useEffect(() => {
+        if (chartReady && videoReady) {
+            console.log("Chart Ready, Starting DataSync");
+            gammaDatasources.forEach(ds => {
+                ds.connect();
+            });
+            neutronDatasources.forEach(ds => {
+                ds.connect();
+            });
+            thresholdDatasources.forEach(ds => {
+                ds.connect();
+            });
+            occDatasources.forEach(ds => {
+                ds.connect();
+            });
+            syncRef.current.connect().then(() => {
+                console.log("DataSync Should Be Connected", syncRef.current);
+            });
+            if(syncRef.current.isConnected()){
+                console.log("DataSync Connected!!!");
+            }else{
+                console.log("DataSync Not Connected... :(");
+            }
+        } else {
+            console.log("Chart Not Ready, cannot start DataSynchronizer...");
+        }
+    }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
+
+
 
   return (
     <Stack spacing={2} direction={"column"}>
@@ -39,27 +150,47 @@ export default function EventDetailsPage() {
       </Grid>
       <Grid item container spacing={2} sx={{ width: "100%" }}>
         <Paper variant='outlined' sx={{ width: "100%" }}>
-          <DataRow event={selectedEvent} />
+          <DataRow />
+        </Paper>
+      </Grid>
+
+      <Grid item container spacing={2} sx={{ width: "100%" }}>
+        <Paper variant='outlined' sx={{ width: "100%" }}>
+
+            <Grid container direction="row" spacing={2}>
+                <Grid item xs>
+                    <ChartTimeHighlight gammaDatasources={gammaDatasources}
+                                        neutronDatasources={neutronDatasources}
+                                        thresholdDatasources={thresholdDatasources}
+                                        occDatasources={occDatasources}
+                                        setChartReady={setChartReady}
+                                        modeType="detail"
+                    />
+
+                </Grid>
+                <Grid item xs>
+
+                    <LaneVideoPlayback videoDatasources={videoDatasources} setVideoReady={setVideoReady}
+                                       dataSynchronizer={syncRef.current}
+                                       addDataSource={setActiveVideoIDX}/>
+                    
+                </Grid>
+            </Grid>
         </Paper>
       </Grid>
       <Grid item container spacing={2} sx={{ width: "100%" }}>
         <Paper variant='outlined' sx={{ width: "100%" }}>
-          <Media event={selectedEvent} />
+          <MiscTable currentTime={currentTime} />
         </Paper>
       </Grid>
+      {/*<Grid item container spacing={2} sx={{ width: "100%" }}>*/}
+      {/*  <Paper variant='outlined' sx={{ width: "100%" }}>*/}
+      {/*    <Comment event={eventPreview.eventData} />*/}
+      {/*  </Paper>*/}
+      {/*</Grid>*/}
       <Grid item container spacing={2} sx={{ width: "100%" }}>
         <Paper variant='outlined' sx={{ width: "100%" }}>
-          <MiscTable event={selectedEvent} />
-        </Paper>
-      </Grid>
-      <Grid item container spacing={2} sx={{ width: "100%" }}>
-        <Paper variant='outlined' sx={{ width: "100%" }}>
-          <Comment event={selectedEvent} />
-        </Paper>
-      </Grid>
-      <Grid item container spacing={2} sx={{ width: "100%" }}>
-        <Paper variant='outlined' sx={{ width: "100%" }}>
-          <AddComment event={selectedEvent} />
+          <AddComment event={eventPreview.eventData} />
         </Paper>
       </Grid>
     </Stack>

@@ -2,9 +2,7 @@
 
 import {IEventTableData} from "../../../../types/new-types";
 import {useCallback, useContext, useEffect, useRef, useState} from "react";
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import EventTable from "./EventTable";
-import {IDatastream} from "@/lib/data/osh/Datastreams";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {AdjudicationData, EventTableData, EventTableDataCollection} from "@/lib/data/oscar/TableHelpers";
@@ -14,19 +12,6 @@ import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 
 interface TableProps {
     tableMode: "eventlog" | "alarmtable";
-}
-
-interface DSPair {
-    datastream: IDatastream;
-    datasource: typeof SweApi;
-}
-
-interface DatasourceGroup {
-    laneName: string;
-    gammaCountDS: DSPair;
-    neutronCountDS: DSPair;
-    tamperDS: DSPair;
-    occupancyDS: DSPair;
 }
 
 export default function Table({tableMode}: TableProps) {
@@ -98,8 +83,9 @@ export default function Table({tableMode}: TableProps) {
             let obsRes = await initialRes.nextPage();
             allResults.push(...obsRes);
             obsRes.map((obs: any) => {
+                // console.log("Observation Result: ", obs);
                 if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
-                    let newEvent = new EventTableData(idVal.current++, laneName, obs.result, new AdjudicationData('kalyn', 0));
+                    let newEvent = new EventTableData(idVal.current++, laneName, obs.result, new AdjudicationData('N/A', 0));
 
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
@@ -116,6 +102,18 @@ export default function Table({tableMode}: TableProps) {
 
     function BatchMsgHandler(laneName: string, message: any) {
         console.log("Batch message received:", laneName, message);
+        if(message.values){
+            for (let value of message.values) {
+                let newEvent = new EventTableData(idVal.current++, laneName, value.data, new AdjudicationData('N/A', 0));
+
+                let laneEntry = laneMapRef.current.get(laneName);
+                const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
+                newEvent.setSystemIdx(systemID);
+                batchOccupancyTableDataRef.current = [newEvent, ...batchOccupancyTableDataRef.current];
+
+            }
+            setData(batchOccupancyTableDataRef.current);
+        }
     }
 
     function RTMsgHandler(laneName: string, message: any) {
@@ -123,7 +121,7 @@ export default function Table({tableMode}: TableProps) {
         if (message.values) {
             for (let value of message.values) {
                 if (value.data.gammaAlarm === true || value.data.neutronAlarm === true) {
-                    let newEvent = new EventTableData(idVal.current++, laneName, value.data, new AdjudicationData('kalyn', 0));
+                    let newEvent = new EventTableData(idVal.current++, laneName, value.data, new AdjudicationData('N/A', 0));
 
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
@@ -138,7 +136,7 @@ export default function Table({tableMode}: TableProps) {
     const addSubscriptionCallbacks = useCallback(() => {
         for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
             const msgLaneName = laneName;
-            laneDSColl.addSubscribeHandlerToAllBatchDS((message: any) => BatchMsgHandler(msgLaneName, message));
+            laneDSColl.addSubscribeHandlerToALLDSMatchingName('occBatch', (message: any) => BatchMsgHandler(msgLaneName, message));
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('occRT', (message: any) => RTMsgHandler(msgLaneName, message));
             laneDSColl.connectAllDS();
         }
@@ -152,9 +150,24 @@ export default function Table({tableMode}: TableProps) {
         if (tableMode === "alarmtable") {
             let tableData = new EventTableDataCollection()
             tableData.setData(occupancyTableDataRef.current);
+            tableData.sortByStartTime("descending");
             tableDataRef.current = tableData
+
         } else if (tableMode === "eventlog") {
-            // tableDataRef.current = eventLog;
+
+            let batchedData = new EventTableDataCollection();
+            let tableData = new EventTableDataCollection()
+
+            batchedData.setData(batchOccupancyTableDataRef.current);
+            tableData.setData(occupancyTableDataRef.current);
+
+            batchedData.sortByStartTime("descending");
+            tableData.sortByStartTime("descending");
+            console.log('batch', batchedData)
+
+            let allOccupancyData = batchedData.data.concat(tableData.data);
+            tableDataRef.current = batchedData;
+
         } else {
             tableDataRef.current = new EventTableDataCollection();
         }

@@ -23,6 +23,7 @@ export class ChartInterceptProps {
     occDatasources: typeof SweApi[];
     thresholdDatasources: typeof SweApi[];
     setChartReady: Function;
+    modeType: string;
 }
 
 export default function ChartTimeHighlight(props: ChartInterceptProps) {
@@ -40,6 +41,12 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     const [gammaCurve, setGammaCurve] = useState<typeof CurveLayer>();
     const [neutronCurve, setNeutronCurve] = useState<typeof CurveLayer>();
     const [occupancyCurve, setOccupancyCurve] = useState<typeof CurveLayer>();
+    const gammatChartBaseId = "chart-view-event-detail-gamma-";
+    const neutronChartBaseId = "chart-view-event-detail-neutron-";
+    const bothChartBaseId = "chart-view-event-detail-both-";
+    const [gammaChartID, setGammaChartID] = useState<string>("");
+    const [neutronChartID, setNeutronChartID] = useState<string>("");
+    const [bothChartID, setBothChartID] = useState<string>("");
 
 
     const createCurveLayers = useCallback(() => {
@@ -114,10 +121,10 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         if (!gammaChartViewRef.current && !isReadyToRender && thresholdCurve && gammaCurve) {
             console.log("Creating Gamma Chart:", thresholdCurve, gammaCurve);
 
-            const container = document.getElementById("chart-view-event-detail-gamma");
+            const container = document.getElementById(gammaChartID);
             if (container) {
                 gammaChartViewRef.current = new ChartJsView({
-                    container: "chart-view-event-detail-gamma",
+                    container: gammaChartID,
                     layers: [thresholdCurve, gammaCurve],
                     css: "chart-view-event-detail",
                 });
@@ -128,18 +135,16 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         if (!neutronChartViewRef.current && !isReadyToRender && neutronCurve) {
             console.log("Creating Neutron Chart:", neutronCurve);
 
-            const containerN = document.getElementById("chart-view-event-detail-neutron");
+            const containerN = document.getElementById(neutronChartID);
             if (containerN) {
                 neutronChartViewRef.current = new ChartJsView({
-                    container: "chart-view-event-detail-neutron",
+                    container: neutronChartID,
                     layers: [neutronCurve],
                     css: "chart-view-event-detail",
                 });
                 setViewReady(true);
             }
         }
-
-
     }, [thresholdCurve, gammaCurve, neutronCurve, isReadyToRender]);
 
     const checkReadyToRender = useCallback(() => {
@@ -171,6 +176,20 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         }
     }, [isReadyToRender]);
 
+    const updateChartElIds = useCallback(() => {
+        if (eventPreview.eventData.status === "Gamma") {
+            setGammaChartID(gammatChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
+        } else if (eventPreview.eventData.status === "Neutron") {
+            setNeutronChartID(neutronChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
+        } else if (eventPreview.eventData.status === "Gamma & Neutron") {
+            setBothChartID(bothChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
+        }
+    }, [eventPreview]);
+
+    useEffect(() => {
+        updateChartElIds();
+    }, [eventPreview, props]);
+
     const checkForProvidedDataSources = useCallback(() => {
         console.log("[CI] Checking for provided data sources...");
         if (!props.gammaDatasources || !props.neutronDatasources || !props.thresholdDatasources) {
@@ -189,23 +208,23 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         return (
             <div>
                 <Typography variant="h6">Gamma Readings</Typography>
-                <div id="chart-view-event-detail-gamma"></div>
+                <div id={gammaChartID}></div>
             </div>
         );
     } else if (eventPreview.eventData.status === "Neutron") {
         return (
             <div>
                 <Typography variant="h6">Neutron Readings</Typography>
-                <div id="chart-view-event-detail-neutron"></div>
+                <div id={neutronChartID}></div>
             </div>
         );
     } else if (eventPreview.eventData.status === "Gamma & Neutron") {
         return (
             <div>
                 <Typography variant="h6">Gamma Readings</Typography>
-                <div id="chart-view-event-detail-gamma"></div>
+                <div id={gammaChartID}></div>
                 <Typography variant="h6">Neutron Readings</Typography>
-                <div id="chart-view-event-detail-neutron"></div>
+                <div id={neutronChartID}></div>
             </div>
         );
     }

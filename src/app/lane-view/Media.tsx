@@ -23,11 +23,7 @@ export default function Media(props: {
 
 
     return (
-      //chart gamma
-      //chart neutron
-
-
-      <Grid container direction="row" spacing={2}>
+        <Grid container direction="row" spacing={2}>
         <Grid item xs>
            <>
                <Typography>Chart1</Typography>

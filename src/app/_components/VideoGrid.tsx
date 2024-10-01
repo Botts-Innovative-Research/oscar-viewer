@@ -3,14 +3,15 @@
 import {Box, Card, Grid, IconButton, Pagination, Stack, Typography } from '@mui/material';
 import {useCallback, useContext, useEffect, useRef, useState} from 'react';
 import "../style/cameragrid.css";
+import { Datastream } from '@/lib/data/osh/Datastreams';
 import { useSelector } from 'react-redux';
 import { LaneDSColl, LaneMapEntry, LaneMeta } from '@/lib/data/oscar/LaneCollection';
-import CameraGridVideo from '../_components/video/VideoComponent';
+import CameraGridVideo from './video/VideoComponent';
 import { selectDatastreams } from '@/lib/state/OSHSlice';
 import { selectLaneMap, selectLanes } from '@/lib/state/OSCARClientSlice';
 import { RootState } from '@/lib/state/Store';
-import VideoComponent from '../_components/video/VideoComponent';
-import VideoStatusWrapper from '../_components/video/VideoStatusWrapper';
+import VideoComponent from './video/VideoComponent';
+import VideoStatusWrapper from './video/VideoStatusWrapper';
 import {EventType} from 'osh-js/source/core/event/EventType';
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
 import { Protocols } from "@/lib/data/Constants";
@@ -18,11 +19,9 @@ import {Mode} from 'osh-js/source/core/datasource/Mode';
 import {DataSourceContext} from '../contexts/DataSourceContext';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
-import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 
 interface LaneVideoProps{
-    laneName: string
+    laneName: string,
 }
 interface LaneWithVideo {
     laneName: string,
@@ -34,6 +33,7 @@ export default function VideoGrid(props: LaneVideoProps) {
     const maxItems = 1;
     const [currentPage, setCurrentPage] = useState(0);
     const [slideDirection, setSlideDirection] = useState<"right"| "left"| undefined>("left");
+    const [maxPages, setMaxPages] = useState(0);
 
 
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
@@ -61,16 +61,13 @@ export default function VideoGrid(props: LaneVideoProps) {
     }, [laneMap, props.laneName]);
 
 
+    //this will connect next video
     useEffect(() => {
-        console.log(videoList)
        if(videoList && videoList.length > 0){
 
            videoList[0].videoSources[currentPage].connect();
            console.log('connecting src', videoList[0].videoSources[currentPage].name);
-              // .forEach((src)=> {
-              //     console.log('src', src.name)
-              //     src.connect();
-              // });
+           setMaxPages(videoList[0].videoSources.length);
        }
     }, [videoList, currentPage]);
 
@@ -133,7 +130,7 @@ export default function VideoGrid(props: LaneVideoProps) {
 
                     </Stack>
 
-                    <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}}>
+                    <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={currentPage === maxPages}>
                         <NavigateNextIcon/>
                     </IconButton>
                 </Box>

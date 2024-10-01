@@ -11,8 +11,6 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import VideoView from "osh-js/source/core/ui/view/video/VideoView";
 import VideoDataLayer from "osh-js/source/core/ui/layer/VideoDataLayer";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
-import localFont from "next/dist/compiled/@next/font/dist/local";
-import {addDatasource} from "@/lib/state/OSHSlice";
 
 export class LaneVideoPlaybackProps {
     videoDatasources: typeof SweApi[];
@@ -21,7 +19,12 @@ export class LaneVideoPlaybackProps {
     addDataSource: Function;
 }
 
-export default function LaneVideoPlayback({videoDatasources, setVideoReady, dataSynchronizer, addDataSource}: LaneVideoPlaybackProps) {
+export default function LaneVideoPlayback({
+                                              videoDatasources,
+                                              setVideoReady,
+                                              dataSynchronizer,
+                                              addDataSource
+                                          }: LaneVideoPlaybackProps) {
     const dispatch = useAppDispatch();
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
     const [dataSources, setDatasources] = useState<typeof SweApi[]>([]);

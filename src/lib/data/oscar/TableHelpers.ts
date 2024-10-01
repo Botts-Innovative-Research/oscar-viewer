@@ -17,6 +17,8 @@ export class EventTableData implements IEventTableData {
     endTime: string;
     maxGamma?: number;
     maxNeutron?: number;
+    neutronBackground?: number;
+    pillarOccupancy?: number;
     status: string;
     adjudicatedUser?: string;
     adjudicatedCode?: number;
@@ -31,6 +33,8 @@ export class EventTableData implements IEventTableData {
         this.endTime = msgValue.endTime;
         this.maxGamma = msgValue.maxGamma > -1 ? msgValue.maxGamma : null;
         this.maxNeutron = msgValue.maxNeutron > -1 ? msgValue.maxNeutron : null;
+        this.neutronBackground = msgValue.neutronBackground > -1 ? msgValue.neutronBackground : null;
+        this.pillarOccupancy = msgValue.occupancyCount > -1 ? msgValue.occupancyCount : null;
         if (msgValue.gammaAlarm && msgValue.neutronAlarm) {
             this.status = "Gamma & Neutron";
         } else if (msgValue.gammaAlarm) {

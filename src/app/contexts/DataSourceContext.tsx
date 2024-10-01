@@ -8,18 +8,10 @@ import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {useSelector} from "react-redux";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {INode, Node} from "@/lib/data/osh/Node";
-import {
-    addDatasourceToDatastreamEntry,
-    changeConfigNode, createDatasourceOfDatastream,
-    setDatasources,
-    setDatastreams,
-    setSystems
-} from "@/lib/state/OSHSlice";
-import {System} from "@/lib/data/osh/Systems";
-import {selectLaneMap, setLaneMap, setLanes} from "@/lib/state/OSCARClientSlice";
+import {changeConfigNode} from "@/lib/state/OSHSlice";
+import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARClientSlice";
 import {RootState} from "@/lib/state/Store";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import assert from "assert";
 import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
 
 interface IDataSourceContext {

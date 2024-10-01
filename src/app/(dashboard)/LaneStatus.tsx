@@ -1,17 +1,16 @@
 "use client";
 
-import {Box, List, Stack, Typography } from '@mui/material';
+import {Box, Grid, List, Stack, Typography } from '@mui/material';
 import LaneStatusItem from '../_components/LaneStatusItem';
 import React, {useCallback, useContext, useEffect, useRef, useState} from 'react';
 import Link from "next/link";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 
-interface LaneStatusItem{
+interface LaneStatusProps{
   id: number;
   name: string;
   isOnline: boolean;
-  isAlarm: boolean;
   isTamper: boolean;
   isFault: boolean;
 }
@@ -19,17 +18,18 @@ interface LaneStatusItem{
 
 export default function LaneStatus() {
   const idVal = useRef(1);
-  const [statusList, setStatusList] = useState<LaneStatusItem[]>([]);
+  const [statusList, setStatusList] = useState<LaneStatusProps[]>([]);
 
   const {laneMapRef} = useContext(DataSourceContext);
   const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
 
   let timersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  let alarmStates= ['Alarm', 'Scan', 'Background']
 
   const datasourceSetup = useCallback(async () => {
 
     let laneDSMap = new Map<string, LaneDSColl>();
-    let newStatusList: LaneStatusItem[] = [];
+    let newStatusList: LaneStatusProps[] = [];
 
     for (let [laneid, lane] of laneMapRef.current.entries()) {
       laneDSMap.set(laneid, new LaneDSColl());
@@ -51,16 +51,17 @@ export default function LaneStatus() {
           laneDSColl.addDS('tamperRT', rtDS);
         }
       }
-      // const newLaneData = {
+
       newStatusList.push({
         id: idVal.current++,
         name: laneid,
         isOnline: false,
-        isAlarm: false,
         isTamper: false,
         isFault: false,
       });
-      setStatusList(prevState => [...newStatusList, ...prevState.filter(item => !newStatusList.some(newItem => newItem.name === item.name))]);
+
+      setStatusList(prevState => [...newStatusList,
+        ...prevState.filter(item => !newStatusList.some(newItem => newItem.name === item.name))]);
 
       setDataSourcesByLane(laneDSMap);
     }
@@ -70,32 +71,19 @@ export default function LaneStatus() {
     datasourceSetup();
   }, [laneMapRef.current]);
 
-
   const addSubscriptionCallbacks = useCallback(() => {
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
-      laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
-        // reset timer
-        restartTimer(laneName);
 
+      laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
         const state = message.values[0].data.alarmState;
-        if (state !== 'Scan' && state !== 'Background') {
-          updateStatus(laneName, state);
-        }
+        updateStatus(laneName, state);
 
       });
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
-        // reset timer
-        restartTimer(laneName);
-
         const state = message.values[0].data.alarmState;
-        if (state !== 'Scan' && state !== 'Background') {
-          updateStatus(laneName, state);
-        }
+        updateStatus(laneName, state);
       });
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
-        // reset timer
-        restartTimer(laneName);
-
         const state = message.values[0].data.tamperStatus;
         if (state) {
           updateStatus(laneName, 'Tamper');
@@ -109,83 +97,96 @@ export default function LaneStatus() {
   }, [dataSourcesByLane]);
 
   useEffect(() => {
+    console.log('callback')
     addSubscriptionCallbacks();
   }, [dataSourcesByLane]);
 
+  //implement a setTimeout if the lane does not receive any data in the first few seconds!
+
   function updateStatus(laneName: string, newState: string) {
 
-    setStatusList((prevState) => {
-      const existingLane = prevState.find((laneData) => laneData.name === laneName);
+    clearTimeout(timersRef.current.get(laneName));
 
-      if (existingLane) {
-        const updatedList = prevState.map((laneData) => {
+    setStatusList((prevList) => {
+      let existingLane = prevList.find((lane) => lane.name === laneName)
+
+      if(existingLane){
+        const updatedList = prevList.map((laneData) => {
           if (laneData.name === laneName) {
+
             if (newState === 'Tamper') {
+
               return {...laneData, isTamper: true, isOnline: true}
 
-            } else if (newState === 'Alarm') {
-              return {...laneData, isAlarm: true, isFault: false, isOnline: true}
+            }else if (newState === 'TamperOff') {
 
-            } else if (newState === 'Fault - Neutron High' || newState === 'Fault - Gamma High' || newState === 'Fault - Gamma Low') {
-              return {...laneData, isFault: true, isAlarm: false, isOnline: true}
+              return {...laneData, isTamper: false, isOnline: true}
 
-            } else if (newState === 'TamperOff') {
-              return {...laneData, isTamper: false, isOnline: true, timer: 15}
+            }else if (
+                newState === 'Fault - Neutron High' ||
+                newState === 'Fault - Gamma High' ||
+                newState === 'Fault - Gamma Low'
+            ) {
+              return {...laneData, isFault: true, isOnline: true}
 
-            } else if (newState === 'Clear'|| newState === 'Online') {
-              return {...laneData, isAlarm: false, isFault: false, isOnline: true}
+            }else if (newState === 'Clear'|| newState === 'Online'|| alarmStates.includes(newState)) {
 
-            } else if (newState === 'None') {
-              return {...laneData, isAlarm: false, isOnline: false, isFault: false, isTamper: false}
+              return {...laneData, isFault: false, isOnline: true}
+
+            }else if (newState === 'None') {
+
+              return {...laneData, isOnline: false, isFault: false, isTamper: false}
             }
           }
           return laneData;
         });
 
+
+        // dont reorder if state === alarm, bkg, scan or online
+        if(['Alarm', 'Scan', 'Background', 'Clear', 'Online', 'TamperOff'].includes(newState)) {
+          //check if online status and push to front
+          const offlineStatues = updatedList.filter((list) => !list.isOnline);
+          const onlineStatuses = updatedList.filter((list) => list.isOnline);
+
+          return  [...offlineStatues, ...onlineStatuses];
+        }
+        // put offline, fault, tamper at the top of the list
         const updatedLane = updatedList.find((data) => data.name === laneName);
 
-        if (newState !== 'Background' && newState !== 'Scan') {
-          setTimeout(() => updateStatus(laneName, 'Clear'), 10000);
-          const filteredStatuses = updatedList.filter((list) => list.name !== laneName);
-          return [updatedLane, ...filteredStatuses]
-        }
+        setTimeout(() => updateStatus(laneName, 'Clear'), 15000);
+        const filteredStatuses = updatedList.filter((list) => list.name !== laneName);
+        const offlineStatuses = filteredStatuses.filter((list) => !list.isOnline);
+        const onlineStatuses = filteredStatuses.filter((list) => list.isOnline);
 
-      } else {
-        const newLaneData = {
+        return [updatedLane, ...offlineStatuses, ...onlineStatuses]
+
+      }else{
+        console.log('lane doesnt exist.. creating lane', laneName);
+        const newLane: LaneStatusProps= {
           id: idVal.current++,
           name: laneName,
           isOnline: true,
-          isAlarm: newState === 'Alarm',
           isTamper: newState === 'Tamper',
-          isFault: newState.includes('Fault')
+          isFault: newState.includes('Fault'),
         }
-        return [newLaneData, ...prevState];
+        return [newLane, ... prevList]
       }
     });
   };
 
-  /**Restart timer when msg comes in**/
-  const restartTimer = useCallback((laneName: string) => {
-    if(timersRef.current.has(laneName)){
-      clearTimeout(timersRef.current.get(laneName));
-    }
 
-    const newTimer = setTimeout(() =>{
-      updateStatus(laneName, 'Online');
-    }, 1500);
-
-    timersRef.current.set(laneName, newTimer);
-  },[]);
-
+  console.log('length', statusList.length)
 
   return (
       <Stack padding={2} justifyContent={"start"} spacing={1}>
         <Typography variant="h6">Lane Status</Typography>
         <>
+          {/*<Box sx={{overflowY: "auto"}}>*/}
           <Box sx={{overflowY: "auto", maxHeight: 120}}>
             {statusList != null &&(
-                  <Stack spacing={1} sx={{ overflow: "auto", maxHeight: "100%" }}>
-                    {statusList.map((item) => (
+                <Grid container columns={40} spacing={1}>
+                  {statusList.map((item) => (
+                      <Grid item xs={10}>
                         <Link href={{
                           pathname: '/lane-view',
                           query: {
@@ -201,14 +202,14 @@ export default function LaneStatus() {
                               id={item.id}
                               name={item.name}
                               isOnline={item.isOnline}
-                              isAlarm={item.isAlarm}
                               isFault={item.isFault}
                               isTamper={item.isTamper}
                           />
 
                         </Link>
-                    ))}
-                  </Stack>
+                      </Grid>
+                  ))}
+                </Grid>
             )}
           </Box>
         </>

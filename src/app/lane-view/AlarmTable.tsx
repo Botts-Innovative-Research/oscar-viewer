@@ -1,4 +1,3 @@
-import { Box, Paper, Typography } from "@mui/material";
 import EventTable from "../_components/event-table/EventTable";
 import { IEventTableData } from "types/new-types";
 import {AdjudicationData, EventTableData, EventTableDataCollection} from "@/lib/data/oscar/TableHelpers";
@@ -134,7 +133,6 @@ export default function AlarmTablePage(props: LaneViewProps) {
     tableData.setData(occupancyTableDataRef.current);
     tableDataRef.current = tableData
   }, [data]);
-
 
 
   return (
