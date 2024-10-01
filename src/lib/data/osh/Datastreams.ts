@@ -18,7 +18,7 @@ export interface IDatastream {
     phenomenonTime: ITimePeriod,
     tls: boolean,
     playbackMode: string,
-    datasource: SweApi | null,
+    datasource: typeof SweApi | null,
 
     equals(other: Datastream): boolean;
     checkIfInObsProperties(propName: string): Promise<boolean>;
@@ -33,7 +33,7 @@ export class Datastream implements IDatastream {
     phenomenonTime: ITimePeriod | null;
     tls: boolean = false;
     playbackMode: string;
-    datasource: SweApi | null = null;
+    datasource: typeof SweApi | null = null;
     connectorOpts: { username:string, password:string };
 
     constructor(id: string, name: string, parentSystemId: string, phenomenonTime: ITimePeriod | null, tls: boolean = false, playbackMode: string = 'realTime') {
@@ -53,7 +53,7 @@ export class Datastream implements IDatastream {
         return this.id === other.id;
     }
 
-    generateSweApiObj(timeRange: { start: string, end: string } | null | undefined): SweApi {
+    generateSweApiObj(timeRange: { start: string, end: string } | null | undefined): typeof SweApi {
 
         if (timeRange) {
             this.phenomenonTime.beginPosition = timeRange.start;
@@ -94,17 +94,6 @@ export class Datastream implements IDatastream {
         });
         const resultJson = await resp.json();
         return resultJson.resultSchema.label === propName;
-    }
-
-    getSweApi(): SweApi {
-        if (this.datasource === null) {
-            this.generateSweApiObj(null);
-        }
-        return this.datasource;
-    }
-
-    addDatasourceID(id: string) {
-        this.datasourceIDs.push(id);
     }
 }
 

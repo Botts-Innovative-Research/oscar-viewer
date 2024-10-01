@@ -34,7 +34,10 @@ export class OSHSliceWriterReader {
         return blob;
     }
 
-    static writeConfigToString(configData: {oscarData: IOSCARClientState, oshData: IOSHSlice}, filename: string = "testcfg.json") {
+    static writeConfigToString(configData: {
+        oscarData: IOSCARClientState,
+        oshData: IOSHSlice
+    }, filename: string = "testcfg.json") {
 
         console.log("Writing config to string: ", configData);
         let data = {
@@ -91,6 +94,28 @@ export class OSHSliceWriterReader {
         // let configObj = JSON.parse(configString);
     }
 
+    static async checkForEndpoint(node: INode) {
+        let ep: string = `${node.getConnectedSystemsEndpoint()}`;
+        console.log("Checking for API endpoint: ", ep, node);
+
+        const response = await fetch(ep, {
+            method: 'GET',
+            mode: 'cors',
+            headers: {
+                ...node.getBasicAuthHeader(),
+                'Content-Type': 'application/sml+json'
+            }
+        });
+
+        if (response.ok) {
+            console.log("API Endpoint found: ", response);
+            return true;
+        } else {
+            console.warn("Error checking for API endpoint: ", response);
+            return false;
+        }
+    }
+
     static async insertConfigSystem(node: INode) {
 
         let cfgSystemJSON: string = JSON.stringify({
@@ -134,7 +159,7 @@ export class OSHSliceWriterReader {
             await this.insertConfigDatastream(node, sysId);
             return sysId;
         } else {
-            console.error("Error inserting config system: ", response);
+            console.warn("Error inserting config system: ", response);
         }
     }
 
@@ -260,33 +285,40 @@ export class OSHSliceWriterReader {
     }
 
     static async retrieveLatestConfig(node: INode) {
-        let sysId = await this.checkForConfigSystem(node);
+        let apiFound = await this.checkForEndpoint(node);
 
-        if (!sysId) return;
+        if (apiFound) {
+            let sysId = await this.checkForConfigSystem(node);
 
-        let dsId = await this.checkForConfigDatastream(node, sysId);
-        let epUri = encodeURIComponent(`f=application/om+json&resultTime=latest`);
-        let ep = `${node.getConnectedSystemsEndpoint()}/datastreams/${dsId}/observations?${epUri}`;
-        let configResp = await fetch(ep, {
-            method: 'GET',
-            headers: {
-                ...node.getBasicAuthHeader()
-            },
-            mode: 'cors',
-        });
+            if (!sysId) return;
 
-        if (configResp.ok) {
-            let json = await configResp.json();
-            console.log("[CFG] Config Observation: ", json.items[0]);
+            let dsId = await this.checkForConfigDatastream(node, sysId);
+            let epUri = encodeURIComponent(`f=application/om+json&resultTime=latest`);
+            let ep = `${node.getConnectedSystemsEndpoint()}/datastreams/${dsId}/observations?${epUri}`;
+            let configResp = await fetch(ep, {
+                method: 'GET',
+                headers: {
+                    ...node.getBasicAuthHeader()
+                },
+                mode: 'cors',
+            });
 
-            if (json.items.length === 0) {
-                console.error("[CFG] No config data found in observation");
-                return null;
+            if (configResp.ok) {
+                let json = await configResp.json();
+                console.log("[CFG] Config Observation: ", json.items[0]);
+
+                if (json.items.length === 0) {
+                    console.error("[CFG] No config data found in observation");
+                    return null;
+                } else {
+                    return json.items[0];
+                }
             } else {
-                return json.items[0];
+                console.log("[CFG] Error fetching config observation: ", configResp);
             }
         } else {
-            console.log("[CFG] Error fetching config observation: ", configResp);
+            console.error("API endpoint not found for node: ", node);
+            return null;
         }
     }
 }

@@ -9,6 +9,7 @@ import {ISystem, System} from "@/lib/data/osh/Systems";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import Systems from "osh-js/source/core/sweapi/system/Systems.js";
 import SystemFilter from "osh-js/source/core/sweapi/system/SystemFilter.js";
+import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
 
 const LANEREGEX = /^lane\d+$/;
 
@@ -162,6 +163,14 @@ export class Node implements INode {
     }
 
     async fetchLaneSystemsAndSubsystems(): Promise<Map<string, LaneMapEntry>> {
+
+        // check if node is reachable first
+        let isReachable = OSHSliceWriterReader.checkForEndpoint(this);
+        if(!isReachable) {
+            console.warn("Node is not reachable, check endpoint properties");
+            return new Map<string, LaneMapEntry>();
+        }
+
         let systems = await this.fetchSystemsTK();
         let laneMap = new Map<string, LaneMapEntry>();
         console.log("TK Systems retrieved:", systems);
