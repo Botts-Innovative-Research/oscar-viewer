@@ -149,7 +149,9 @@ export function EventPreview() {
     useEffect(() => {
         const interval = setInterval(async () => {
             let currTime = await syncRef.current.getCurrentTime();
-            setCurrentTime(currTime);
+            if (currentTime !== undefined) {
+                setCurrentTime(currTime);
+            }
         }, 1000);
 
         return () => clearInterval(interval);

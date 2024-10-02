@@ -207,7 +207,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
     useEffect(() => {
         let currTime = props.currentTime;
-        if (currTime?.data !== 0 && gammaChartViewRef.current) {
+        if (currTime?.data !== undefined && gammaChartViewRef.current) {
             let theTime = new Date(currTime.data);
             console.log("Current Time: ", currTime, theTime);
             const chart = gammaChartViewRef.current.chart;
@@ -260,6 +260,10 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 <Typography variant="h6">Neutron Readings</Typography>
                 <div id={neutronChartID}></div>
             </div>
+        );
+    }else {
+        return (
+            <Typography variant="h6">No Event Data</Typography>
         );
     }
 }
