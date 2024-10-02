@@ -206,10 +206,10 @@ export default function EventTable(props: {
                   secondaryInspection: viewSecondary,
                   adjudicatedCode: viewAdjudicated,
                   Menu: viewMenu,
-                }
+                },
               },
             }}
-            pageSizeOptions={[25]}
+            pageSizeOptions={[20]}
             slots={{toolbar: CustomToolbar}}
             slotProps={{
               columnsManagement: {
@@ -244,6 +244,7 @@ export default function EventTable(props: {
 
             }}
             sx={{
+
               // Assign styling to 'Status' column based on className
               [`.${gridClasses.cell}.highlightGamma`]: {
                 backgroundColor: "error.main",
@@ -271,7 +272,7 @@ export default function EventTable(props: {
                 color: "text.primary",
               },
 
-              border: "none"
+              border: "none",
             }}
         />
       </Box>

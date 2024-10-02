@@ -202,6 +202,7 @@ export default function CameraGrid() {
       <Grid container padding={2} justifyContent={"start"}>
         {videoList.slice(startItem, endItem).map((lane) => (
           <VideoStatusWrapper key={lane.laneName} laneName={lane.laneName} status={lane.status}
+              children={<VideoComponent id={lane.laneName} currentPage={0} videoSources={lane.videoSources}/>}
           >
           </VideoStatusWrapper>
         ))}
@@ -214,4 +215,4 @@ export default function CameraGrid() {
 }
 
 
- // children={<VideoComponent id={lane.laneName} currentPage={0} videoSources={lane.videoSources}/>}
+

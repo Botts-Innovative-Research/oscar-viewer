@@ -137,6 +137,7 @@ export default function AlarmTablePage(props: LaneViewProps) {
 
 
   return (
+
       <EventTable viewSecondary viewMenu viewAdjudicated  eventTable={tableDataRef.current}/>
   );
 }

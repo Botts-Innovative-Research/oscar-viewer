@@ -70,9 +70,16 @@ export default function VideoGrid(props: LaneVideoProps) {
 
     useEffect(() => {
         console.log(videoList)
-       if(videoList && videoList.length > 0 && currentPage <= videoList[0].videoSources.length){
-           videoList[0].videoSources[currentPage].connect();
+        let isConnected = false;
+       if(videoList && videoList.length > 0 && currentPage <= videoList[0].videoSources.length - 1){
            console.log('connecting src', videoList[0].videoSources[currentPage].name);
+
+           isConnected = videoList[0].videoSources[currentPage].isConnected()
+           if(isConnected){
+               console.log('iam connected already')
+               videoList[0].videoSources[currentPage].disconnect();
+           }
+           videoList[0].videoSources[currentPage].connect();
        }
     }, [videoList, currentPage]);
 
@@ -83,15 +90,15 @@ export default function VideoGrid(props: LaneVideoProps) {
         setCurrentPage((prevPage)=> {
             let nextPage = prevPage + 1
             console.log('next page', nextPage);
-            if(videoList && videoList[0] && nextPage <= maxPages){
+            // checkConnection(prevPage);
+            // return nextPage;
+            if(videoList && videoList[0] && nextPage <= maxPages-1){
                 checkConnection(prevPage);
                 return nextPage;
             }else{
                 return prevPage;
             }
-
         })
-
     }
 
     const handlePrevPage = () =>{
@@ -143,7 +150,7 @@ export default function VideoGrid(props: LaneVideoProps) {
 
                     </Stack>
 
-                    <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} >
+                    <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={currentPage === maxPages-1}>
                         <NavigateNextIcon/>
                     </IconButton>
                 </Box>
