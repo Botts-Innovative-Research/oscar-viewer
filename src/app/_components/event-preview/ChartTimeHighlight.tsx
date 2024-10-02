@@ -14,6 +14,7 @@ import CurveLayer from 'osh-js/source/core/ui/layer/CurveLayer.js';
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import annotationPlugin from 'chartjs-plugin-annotation';
 import {Chart, registerables} from 'chart.js';
+import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 
 Chart.register(...registerables, annotationPlugin);
 
@@ -24,6 +25,8 @@ export class ChartInterceptProps {
     thresholdDatasources: typeof SweApi[];
     setChartReady: Function;
     modeType: string;
+    syncRef?: typeof DataSynchronizer;
+    currentTime: any;
 }
 
 export default function ChartTimeHighlight(props: ChartInterceptProps) {
@@ -41,7 +44,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     const [gammaCurve, setGammaCurve] = useState<typeof CurveLayer>();
     const [neutronCurve, setNeutronCurve] = useState<typeof CurveLayer>();
     const [occupancyCurve, setOccupancyCurve] = useState<typeof CurveLayer>();
-    const gammatChartBaseId = "chart-view-event-detail-gamma-";
+    const gammaChartBaseId = "chart-view-event-detail-gamma-";
     const neutronChartBaseId = "chart-view-event-detail-neutron-";
     const bothChartBaseId = "chart-view-event-detail-both-";
     const [gammaChartID, setGammaChartID] = useState<string>("");
@@ -53,20 +56,21 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         // console.log("LocalDSMap", localDSMap);
         if (props.thresholdDatasources.length > 0) {
             console.log("Threshold DS", props.thresholdDatasources);
-            const tCurve = new CurveLayer({
+
+            const thresholdCurve = new CurveLayer({
                 dataSourceIds: props.thresholdDatasources.map((ds) => ds.id),
                 getValues: (rec: any, timestamp: any) => ({x: timestamp, y: rec.threshold}),
                 name: "Gamma Threshold"
             });
-            setThresholdCurve(tCurve);
+            setThresholdCurve(thresholdCurve);
 
-            const timeCurve = new CurveLayer({
-                dataSourceIds: props.thresholdDatasources.map((ds) => ds.id),
-                getValues: () => {
-                    return {x: 0}
-                },
-                name: "CurrentTime"
-            });
+            /* const timeCurve = new CurveLayer({
+                 dataSourceIds: props.thresholdDatasources.map((ds) => ds.id),
+                 getValues: () => {
+                     return {x: 0}
+                 },
+                 name: "CurrentTime"
+             });*/
         }
 
         if (props.gammaDatasources.length > 0) {
@@ -128,6 +132,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                     layers: [thresholdCurve, gammaCurve],
                     css: "chart-view-event-detail",
                 });
+
                 setViewReady(true);
             }
         }
@@ -178,7 +183,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
     const updateChartElIds = useCallback(() => {
         if (eventPreview.eventData.status === "Gamma") {
-            setGammaChartID(gammatChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
+            setGammaChartID(gammaChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
         } else if (eventPreview.eventData.status === "Neutron") {
             setNeutronChartID(neutronChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
         } else if (eventPreview.eventData.status === "Gamma & Neutron") {
@@ -199,6 +204,35 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             return true;
         }
     }, [props.gammaDatasources, props.neutronDatasources, props.thresholdDatasources]);
+
+    useEffect(() => {
+        let currTime = props.currentTime;
+        if (currTime?.data !== 0 && gammaChartViewRef.current) {
+            let theTime = new Date(currTime.data);
+            console.log("Current Time: ", currTime, theTime);
+            const chart = gammaChartViewRef.current.chart;
+            chart.options.plugins.annotation = {
+                annotations: {
+                    verticalLine: {
+                        type: 'line',
+                        // value: props.syncRef.getCurrentTime(),
+                        xMin: theTime,
+                        xMax: theTime,
+                        borderColor: 'yellow',
+                        borderWidth: 4,
+                        label: {
+                            enabled: true,
+                            content: 'Current Time'
+                        }
+                    }
+                }
+            };
+
+            chart.update();
+        }
+
+    }, [props.currentTime, gammaChartViewRef]);
+
 
     if (!checkForProvidedDataSources()) {
         return (

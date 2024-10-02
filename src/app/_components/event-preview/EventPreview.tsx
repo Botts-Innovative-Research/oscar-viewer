@@ -39,6 +39,7 @@ export function EventPreview() {
     const [occDatasources, setOccDS] = useState<typeof SweApi[]>([]);
     const [thresholdDatasources, setThresholdDS] = useState<typeof SweApi[]>([]);
     const [chartReady, setChartReady] = useState<boolean>(false);
+    const [currentTime, setCurrentTime] = useState<number>(0);
 
     // Video Specifics
     const [videoReady, setVideoReady] = useState<boolean>(false);
@@ -103,6 +104,7 @@ export function EventPreview() {
                 // endTime: eventPreview.eventData.endTime,
                 endTime: "now",
             });
+            syncRef.current.onTime
             setDataSyncCreated(true);
         }
     }, [syncRef, dataSyncCreated, datasourcesReady, videoDatasources]);
@@ -134,15 +136,24 @@ export function EventPreview() {
             syncRef.current.connect().then(() => {
                 console.log("DataSync Should Be Connected", syncRef.current);
             });
-            if(syncRef.current.isConnected()){
+            if (syncRef.current.isConnected()) {
                 console.log("DataSync Connected!!!");
-            }else{
+            } else {
                 console.log("DataSync Not Connected... :(");
             }
         } else {
             console.log("Chart Not Ready, cannot start DataSynchronizer...");
         }
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
+
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            let currTime = await syncRef.current.getCurrentTime();
+            setCurrentTime(currTime);
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <Stack p={1} display={"flex"}>
@@ -159,7 +170,7 @@ export function EventPreview() {
             </Stack>
             <ChartTimeHighlight gammaDatasources={gammaDatasources} neutronDatasources={neutronDatasources}
                                 thresholdDatasources={thresholdDatasources} occDatasources={occDatasources}
-                                setChartReady={setChartReady} modeType="preview"/>
+                                setChartReady={setChartReady} modeType="preview" currentTime={currentTime}/>
             <LaneVideoPlayback videoDatasources={videoDatasources} setVideoReady={setVideoReady}
                                dataSynchronizer={syncRef.current}
                                addDataSource={setActiveVideoIDX}/>
