@@ -29,21 +29,21 @@
 
 .popup-button:hover,
 .popup-button:focus {
-    background-color: #e5f4ff;
+    background-color: #c7e1f3;
 }
 
 
 .popup-text-status{
-    text-align: left;
+    text-align: center;
     font-weight: 500;
     font-size: 13px;
     margin-top: auto;
 }
 
 .popup-text-lane{
-    text-align: left;
+    text-align: center;
     font-weight: 500;
-    font-size: 13px;
+    font-size: 15px;
 }
 
 hr {

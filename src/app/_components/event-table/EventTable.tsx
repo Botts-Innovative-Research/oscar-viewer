@@ -188,7 +188,7 @@ export default function EventTable(props: {
   }
 
   return (
-      <Box sx={{height: 500, width: '100%'}}>
+      <Box sx={{height: 800, width: '100%'}}>
         <DataGrid
             rows={eventTable.data}
             columns={columns}
@@ -197,7 +197,7 @@ export default function EventTable(props: {
             initialState={{
               pagination: {
                 paginationModel: {
-                  pageSize: 25,
+                  pageSize: 20,
                 },
               },
               columns: {

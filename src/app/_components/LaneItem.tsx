@@ -10,10 +10,21 @@ export default function LaneItem(props: {
     name: string;
     status: string;
 }) {
+
+    const colors = (status: string) => {
+
+        if (status === 'Scan' || status === 'Background')
+            return ('#000');
+        else if( status === 'Alarm' || status === 'Tamper')
+            return ('#FFFFFF');
+
+    };
+
+
     if (props.status == "none")
         return (<></>)
     return (
-        <Paper key={props.id} variant='outlined' sx={{ cursor: 'pointer', padding: 1,
+        <Paper key={props.id} variant='outlined' color='#fff' sx={{ cursor: 'pointer', padding: 1,
             backgroundColor: (
                 props.status == "Alarm" ? "errorHighlight"
                     : props.status == 'Tamper' ? "secondaryHighlight"
@@ -25,8 +36,8 @@ export default function LaneItem(props: {
             )
         }}
         >
-            <Stack direction={"row"}>
-                <CircleRoundedIcon
+            <Stack direction={"row"} justifyContent={"left"} alignItems={"center"}>
+                <CircleRoundedIcon fontSize="large"
                     color={(
                         props.status === "Alarm" ? "error"
                             : props.status === 'Tamper' ? "secondary"
@@ -37,8 +48,8 @@ export default function LaneItem(props: {
                                                 : 'success'
                     )
                     }
-                    sx={{ marginRight: 2 }} />
-                <Typography variant="body1">{props.name} - {capitalize(props.status)}</Typography>
+                    sx={{ marginRight: 2}} />
+                <Typography variant="h6" color={colors(props.status)}>{props.name} - Status: {capitalize(props.status)}</Typography>
             </Stack>
         </Paper>
     );

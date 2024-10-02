@@ -121,7 +121,7 @@ export default function MapComponent(){
                 container: mapcontainer,
                 layers: [],
 
-                // autoZoomOnFirstMarker: true
+                autoZoomOnFirstMarker: true
             });
             console.log('new view created')
             leafletViewRef.current = view;
@@ -194,6 +194,6 @@ export default function MapComponent(){
     }
 
     return (
-        <Box id="mapcontainer" style={{width: '100%', height: '900px'}}></Box>
+        <Box id="mapcontainer" style={{width: '100%', height: '800px'}}></Box>
     );
 }

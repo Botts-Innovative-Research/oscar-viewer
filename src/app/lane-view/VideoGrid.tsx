@@ -31,11 +31,11 @@ interface LaneWithVideo {
 export default function VideoGrid(props: LaneVideoProps) {
     const idVal = useRef(1);
     const [videoList, setVideoList] = useState<LaneWithVideo[] | null>(null);
-    const maxItems = 1;
+    const maxItemsPerPage = 1;
     const [currentPage, setCurrentPage] = useState(0);
     const [slideDirection, setSlideDirection] = useState<"right"| "left"| undefined>("left");
 
-
+    const [maxPages, setMaxPages] = useState(0)
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
 
     // Create and connect videostreams
@@ -44,44 +44,52 @@ export default function VideoGrid(props: LaneVideoProps) {
             let videos: LaneWithVideo[] = []
 
             laneMap.forEach((value, key) => {
-                if(key === props.laneName){
+                if (key === props.laneName) {
                     let ds: LaneMapEntry = laneMap.get(key);
 
                     const videoSources = ds.datasourcesRealtime.filter((item) =>
                         item.name.includes('Video') && item.name.includes('Lane')
                     );
 
-                    if(videoSources.length > 0) {
+                    if (videoSources.length > 0) {
                         videos.push({laneName: key, videoSources});
                     }
                 }
             });
             setVideoList(videos);
+
         }
     }, [laneMap, props.laneName]);
+
+    useEffect(() => {
+        if(videoList && videoList.length> 0){
+            setMaxPages(videoList[0].videoSources.length);
+        }
+    }, [videoList]);
 
 
     useEffect(() => {
         console.log(videoList)
-       if(videoList && videoList.length > 0){
-
+       if(videoList && videoList.length > 0 && currentPage < videoList[0].videoSources.length){
            videoList[0].videoSources[currentPage].connect();
            console.log('connecting src', videoList[0].videoSources[currentPage].name);
-              // .forEach((src)=> {
-              //     console.log('src', src.name)
-              //     src.connect();
-              // });
        }
     }, [videoList, currentPage]);
 
+    console.log('max', maxPages)
 
     const handleNextPage = () =>{
         setSlideDirection("left");
         setCurrentPage((prevPage)=> {
-            let currentPage = prevPage + 1
-            console.log('next page', currentPage);
-            checkConnection(prevPage);
-            return currentPage;
+            let nextPage = prevPage + 1
+            console.log('next page', nextPage);
+            if(videoList && videoList[0] && nextPage < videoList[0].videoSources.length){
+                checkConnection(prevPage);
+                return nextPage;
+            }else{
+                return prevPage;
+            }
+
         })
 
     }
@@ -89,10 +97,11 @@ export default function VideoGrid(props: LaneVideoProps) {
     const handlePrevPage = () =>{
         setSlideDirection("right");
         setCurrentPage((prevPage) => {
-            let currentPage = prevPage - 1;
-            console.log('prev page', currentPage)
+            let currpage = prevPage - 1;
+            console.log('prev page', currpage)
             checkConnection(prevPage);
-            return currentPage;
+            return currpage;
+
         })
 
     }
@@ -134,7 +143,7 @@ export default function VideoGrid(props: LaneVideoProps) {
 
                     </Stack>
 
-                    <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}}>
+                    <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} >
                         <NavigateNextIcon/>
                     </IconButton>
                 </Box>

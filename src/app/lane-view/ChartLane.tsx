@@ -111,29 +111,29 @@ export default function ChartLane(props: ChartInterceptProps){
                     container: gammaChartID,
                     layers: [thresholdCurve, gammaCurve],
                     css: "chart-view",
-                    // chartjsProps: {
-                    //     chartProps: {
-                    //         scales: {
-                    //             yAxes: [{
-                    //                 scaleLabel: {
-                    //                     labelString: "CPS"
-                    //                 },
-                    //                 ticks: {
-                    //                     maxTicksLimit: 30
-                    //                 }
-                    //             }],
-                    //             xAxes: [{
-                    //                 scaleLabel: {
-                    //                     labelString: "Time"
-                    //                 },
-                    //                 ticks: {
-                    //                     maxTicksLimit: 20
-                    //                 }
-                    //             }],
-                    //         },
-                    //
-                    //     },
-                    // }
+                    chartjsProps: {
+                        chartProps: {
+                            scales: {
+                                yAxes: [{
+                                    scaleLabel: {
+                                        labelString: "CPS"
+                                    },
+                                    ticks: {
+                                        maxTicksLimit: 30
+                                    }
+                                }],
+                                xAxes: [{
+                                    scaleLabel: {
+                                        labelString: "Time"
+                                    },
+                                    ticks: {
+                                        maxTicksLimit: 20
+                                    }
+                                }],
+                            },
+
+                        },
+                    }
                 });
                 setViewReady(true);
             }
@@ -235,25 +235,20 @@ export default function ChartLane(props: ChartInterceptProps){
 
 
     return (
-
-        // <Box sx={{display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center", padding: 2, height:"100%", width: "100%"}}>
-            <Stack direction="column" spacing={2} alignItems="center" sx={{width: "100%", padding: 6, height:"100%", justifyContent: "center", margin: 0}}>
-                <Grid container direction="row" spacing={6} >
-                    <Grid item xs>
-                        <div id={gammaChartID} style={{
-                            marginBottom: 50,
-                            height: '85%',
-                        }}></div>
-                    </Grid>
-                    <Grid item xs>
-                    <div id={neutronChartID} style={{
-                        marginBottom: 50,
-                        height: '85%',
-                    }}></div>
-                </Grid>
+        <Grid container direction="row" spacing={6}  marginTop={2} marginLeft={2}>
+            <Grid item xs>
+                <div id={gammaChartID} style={{
+                    marginBottom: 50,
+                    height: '85%',
+                }}></div>
             </Grid>
-        </Stack>
-        // </Box>
+            <Grid item xs>
+                <div id={neutronChartID} style={{
+                    marginBottom: 50,
+                    height: '85%',
+                }}></div>
+            </Grid>
+        </Grid>
     );
 };
 
