@@ -70,7 +70,7 @@ export default function VideoGrid(props: LaneVideoProps) {
 
     useEffect(() => {
         console.log(videoList)
-       if(videoList && videoList.length > 0 && currentPage < videoList[0].videoSources.length){
+       if(videoList && videoList.length > 0 && currentPage <= videoList[0].videoSources.length){
            videoList[0].videoSources[currentPage].connect();
            console.log('connecting src', videoList[0].videoSources[currentPage].name);
        }
@@ -83,7 +83,7 @@ export default function VideoGrid(props: LaneVideoProps) {
         setCurrentPage((prevPage)=> {
             let nextPage = prevPage + 1
             console.log('next page', nextPage);
-            if(videoList && videoList[0] && nextPage < videoList[0].videoSources.length){
+            if(videoList && videoList[0] && nextPage <= maxPages){
                 checkConnection(prevPage);
                 return nextPage;
             }else{
