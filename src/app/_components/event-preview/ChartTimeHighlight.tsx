@@ -51,55 +51,85 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     const [neutronChartID, setNeutronChartID] = useState<string>("");
     const [bothChartID, setBothChartID] = useState<string>("");
 
+    function createGammaViewCurve(gammaDatasource: { id: any; }) {
+        if (!gammaDatasource) return null;
+
+        let gCurve = new CurveLayer({
+            dataSourceIds: [gammaDatasource.id],
+            getValues: (rec: any, timestamp: any) => {
+                // console.log(rec.gammaGrossCount1)
+                return {x: timestamp, y: rec.gammaGrossCount1}
+            },
+            name: "Gamma Count",
+            lineColor: "red",
+            backgroundColor: "red"
+        });
+
+        return gCurve;
+    }
+
+    function createNeutronViewCurve(neutronDatasource: { id: any; }) {
+        if (!neutronDatasource) return null;
+
+        let nCurve = new CurveLayer({
+            dataSourceIds: [neutronDatasource.id],
+            getValues: (rec: any, timestamp: any) => {
+                // console.log(rec.neutronGrossCount1);
+                return {x: timestamp, y: rec.neutronGrossCount1}
+            },
+            name: 'Neutron Count',
+            lineColor: "blue",
+            backgroundColor: "blue"
+        });
+
+        return nCurve;
+    }
+
+    function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
+        if (!thresholdDatasource) return null;
+
+        let thresholdCurve = new CurveLayer({
+            dataSourceIds: [thresholdDatasource.id],
+            getValues: (rec: any, timestamp: any) => ({x: timestamp, y: rec.threshold}),
+            name: "Gamma Threshold"
+        });
+
+        return thresholdCurve;
+    }
+
+    function createOccupancyViewCurve(occDatasource: { id: any; }) {
+        if (!occDatasource) return null;
+
+        let occCurve = new CurveLayer({
+            dataSourceIds: [occDatasource.id],
+            getValues: (rec: any, timestamp: any) => ({x: timestamp, y: rec.occupancy}),
+            name: "Occupancy"
+        });
+
+        return occCurve;
+    }
+
 
     const createCurveLayers = useCallback(() => {
         // console.log("LocalDSMap", localDSMap);
         if (props.thresholdDatasources.length > 0) {
             console.log("Threshold DS", props.thresholdDatasources);
 
-            const thresholdCurve = new CurveLayer({
-                dataSourceIds: props.thresholdDatasources.map((ds) => ds.id),
-                getValues: (rec: any, timestamp: any) => ({x: timestamp, y: rec.threshold}),
-                name: "Gamma Threshold"
-            });
-            setThresholdCurve(thresholdCurve);
-
-            /* const timeCurve = new CurveLayer({
-                 dataSourceIds: props.thresholdDatasources.map((ds) => ds.id),
-                 getValues: () => {
-                     return {x: 0}
-                 },
-                 name: "CurrentTime"
-             });*/
+            let tCurve = createThresholdViewCurve(props.thresholdDatasources[0]);
+            setThresholdCurve(tCurve);
         }
 
         if (props.gammaDatasources.length > 0) {
             console.log("Gamma DS", props.gammaDatasources);
-            const gCurve = new CurveLayer({
-                dataSourceIds: props.gammaDatasources.map((ds) => ds.id),
-                getValues: (rec: any, timestamp: any) => {
-                    // console.log(rec.gammaGrossCount1)
-                    return {x: timestamp, y: rec.gammaGrossCount1}
-                },
-                name: "Gamma Count",
-                lineColor: "red",
-                backgroundColor: "red"
-            });
+
+            let gCurve = createGammaViewCurve(props.gammaDatasources[0]);
             setGammaCurve(gCurve);
         }
 
         if (props.neutronDatasources.length > 0) {
             console.log("Neutron DS", props.neutronDatasources);
-            const nCurve = new CurveLayer({
-                dataSourceIds: props.neutronDatasources.map((ds) => ds.id),
-                getValues: (rec: any, timestamp: any) => {
-                    // console.log(rec.neutronGrossCount1);
-                    return {x: timestamp, y: rec.neutronGrossCount1}
-                },
-                name: 'Neutron Count',
-                lineColor: "blue",
-                backgroundColor: "blue"
-            });
+
+            let nCurve = createNeutronViewCurve(props.neutronDatasources[0]);
             setNeutronCurve(nCurve);
         }
 
@@ -122,7 +152,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     }, [resetView]);
 
     const checkForMountableAndCreateCharts = useCallback(() => {
-        if (!gammaChartViewRef.current && !isReadyToRender && thresholdCurve && gammaCurve) {
+        if (!gammaChartViewRef.current && thresholdCurve && gammaCurve) {
             console.log("Creating Gamma Chart:", thresholdCurve, gammaCurve);
 
             const container = document.getElementById(gammaChartID);
@@ -137,7 +167,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             }
         }
 
-        if (!neutronChartViewRef.current && !isReadyToRender && neutronCurve) {
+        if (!neutronChartViewRef.current && neutronCurve) {
             console.log("Creating Neutron Chart:", neutronCurve);
 
             const containerN = document.getElementById(neutronChartID);
@@ -165,12 +195,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     }, [checkForMountableAndCreateCharts]);
 
     useEffect(() => {
-        if (checkForProvidedDataSources()) {
-            createCurveLayers();
-        }
-    }, [props]);
-
-    useEffect(() => {
         checkReadyToRender();
     }, [chartsReady, viewReady]);
 
@@ -182,11 +206,11 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     }, [isReadyToRender]);
 
     const updateChartElIds = useCallback(() => {
-        if (eventPreview.eventData.status === "Gamma") {
+        if (eventPreview.eventData?.status === "Gamma") {
             setGammaChartID(gammaChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
-        } else if (eventPreview.eventData.status === "Neutron") {
+        } else if (eventPreview.eventData?.status === "Neutron") {
             setNeutronChartID(neutronChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
-        } else if (eventPreview.eventData.status === "Gamma & Neutron") {
+        } else if (eventPreview.eventData?.status === "Gamma & Neutron") {
             setBothChartID(bothChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
         }
     }, [eventPreview]);
@@ -195,7 +219,14 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         updateChartElIds();
     }, [eventPreview, props]);
 
-    const checkForProvidedDataSources = useCallback(() => {
+
+    useEffect(() => {
+        if (checkForProvidedDataSources()) {
+            createCurveLayers();
+        }
+    }, [props]);
+
+    function checkForProvidedDataSources() {
         console.log("[CI] Checking for provided data sources...");
         if (!props.gammaDatasources || !props.neutronDatasources || !props.thresholdDatasources) {
             console.warn("No DataSources provided for ChartTimeHighlight");
@@ -203,15 +234,24 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         } else {
             return true;
         }
-    }, [props.gammaDatasources, props.neutronDatasources, props.thresholdDatasources]);
+    }
+
+    // const checkForProvidedDataSources = useCallback(() => {
+    //     console.log("[CI] Checking for provided data sources...");
+    //     if (!props.gammaDatasources || !props.neutronDatasources || !props.thresholdDatasources) {
+    //         console.warn("No DataSources provided for ChartTimeHighlight");
+    //         return false;
+    //     } else {
+    //         return true;
+    //     }
+    // }, [props.gammaDatasources, props.neutronDatasources, props.thresholdDatasources]);
 
     useEffect(() => {
         let currTime = props.currentTime;
-        if (currTime?.data !== undefined && gammaChartViewRef.current) {
+        if (currTime?.data !== undefined) {
             let theTime = new Date(currTime.data);
             console.log("Current Time: ", currTime, theTime);
-            const chart = gammaChartViewRef.current.chart;
-            chart.options.plugins.annotation = {
+            let chartAnnotation = {
                 annotations: {
                     verticalLine: {
                         type: 'line',
@@ -227,32 +267,35 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                     }
                 }
             };
-
-            chart.update();
+            if (gammaChartViewRef.current) {
+                const gchart = gammaChartViewRef.current.chart;
+                gchart.options.plugins.annotation = chartAnnotation;
+                gchart.update();
+            }
+            if (neutronChartViewRef.current) {
+                const nchart = neutronChartViewRef.current.chart;
+                nchart.options.plugins.annotation = chartAnnotation;
+                nchart.update();
+            }
         }
-
     }, [props.currentTime, gammaChartViewRef]);
 
 
-    if (!checkForProvidedDataSources()) {
-        return (
-            <Typography variant="h6">No DataSources provided for ChartIntercept</Typography>
-        );
-    } else if (eventPreview.eventData.status === "Gamma") {
+    if (eventPreview.eventData?.status === "Gamma") {
         return (
             <div>
                 <Typography variant="h6">Gamma Readings</Typography>
                 <div id={gammaChartID}></div>
             </div>
         );
-    } else if (eventPreview.eventData.status === "Neutron") {
+    } else if (eventPreview.eventData?.status === "Neutron") {
         return (
             <div>
                 <Typography variant="h6">Neutron Readings</Typography>
                 <div id={neutronChartID}></div>
             </div>
         );
-    } else if (eventPreview.eventData.status === "Gamma & Neutron") {
+    } else if (eventPreview.eventData?.status === "Gamma & Neutron") {
         return (
             <div>
                 <Typography variant="h6">Gamma Readings</Typography>
@@ -261,7 +304,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 <div id={neutronChartID}></div>
             </div>
         );
-    }else {
+    } else {
         return (
             <Typography variant="h6">No Event Data</Typography>
         );
