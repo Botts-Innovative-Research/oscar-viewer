@@ -1,10 +1,6 @@
 'use client';
 
 import React, {createContext, MutableRefObject, ReactNode, useCallback, useEffect, useRef} from "react";
-// @ts-ignore
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
-// @ts-ignore
-import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {useSelector} from "react-redux";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {INode, Node} from "@/lib/data/osh/Node";
@@ -15,7 +11,6 @@ import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
 
 interface IDataSourceContext {
-    masterTimeSyncRef: MutableRefObject<typeof DataSynchronizer | undefined>
     laneMapRef: MutableRefObject<Map<string, LaneMapEntry>> | undefined
 }
 
@@ -26,11 +21,9 @@ export {DataSourceContext};
 
 
 export default function DataSourceProvider({children}: { children: ReactNode }) {
-    const mainDataSynchronizer = useSelector((state: RootState) => state.oshSlice.mainDataSynchronizer);
     const configNode: Node = useSelector((state: RootState) => state.oshSlice.configNode);
     const dispatch = useAppDispatch();
     const nodes = useSelector((state: RootState) => state.oshSlice.nodes);
-    const masterTimeSyncRef = useRef<typeof DataSynchronizer>();
     const minSystemFetchInterval = 30000;
     const [lastSystemFetch, setLastSystemFetch] = React.useState<number>(0);
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
@@ -105,7 +98,6 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }, [laneMap]);
 
     useEffect(() => {
-        // if(checkSystemFetchInterval()) {
         testSysFetch();
         setLastSystemFetch(Date.now());
         // }
@@ -115,14 +107,8 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         InitializeApplication();
     }, [InitializeApplication]);
 
-
-    if (!masterTimeSyncRef.current) {
-        masterTimeSyncRef.current = new DataSynchronizer({...mainDataSynchronizer});
-    }
-
-
     return (
-        <DataSourceContext.Provider value={{masterTimeSyncRef: useRef(), laneMapRef}}>
+        <DataSourceContext.Provider value={{laneMapRef}}>
             {children}
         </DataSourceContext.Provider>
     );

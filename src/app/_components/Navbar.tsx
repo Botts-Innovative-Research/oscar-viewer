@@ -33,6 +33,8 @@ const drawerWidth = 240;
 
 const openedMixin = (theme: Theme): CSSObject => ({
   width: drawerWidth,
+  
+  
   transition: theme.transitions.create('width', {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.enteringScreen,
@@ -85,20 +87,20 @@ const AppBar = styled(MuiAppBar, {
 }));
 
 const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' })(
-    ({ theme, open }) => ({
-      width: drawerWidth,
-      flexShrink: 0,
-      whiteSpace: 'nowrap',
-      boxSizing: 'border-box',
-      ...(open && {
-        ...openedMixin(theme),
-        '& .MuiDrawer-paper': openedMixin(theme),
-      }),
-      ...(!open && {
-        ...closedMixin(theme),
-        '& .MuiDrawer-paper': closedMixin(theme),
-      }),
+  ({ theme, open }) => ({
+    width: drawerWidth,
+    flexShrink: 0,
+    whiteSpace: 'nowrap',
+    boxSizing: 'border-box',
+    ...(open && {
+      ...openedMixin(theme),
+      '& .MuiDrawer-paper': openedMixin(theme),
     }),
+    ...(!open && {
+      ...closedMixin(theme),
+      '& .MuiDrawer-paper': closedMixin(theme),
+    }),
+  }),
 );
 
 export default function Navbar({ children }: { children: React.ReactNode }) {
@@ -166,135 +168,135 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
 
 
   return (
-      <Box sx={{ display: 'flex' }}>
-        <CssBaseline />
-        <AppBar
-            position="fixed"
-            open={drawerOpen}
-            elevation={0}
+    <Box sx={{ display: 'flex' }}>
+      <CssBaseline />
+      <AppBar
+        position="fixed"
+        open={drawerOpen}
+        elevation={0}
+        sx={{
+          backgroundColor: "background.default",
+          color: "text.primary",
+          borderBottom: "solid",
+          borderColor: "action.selected"
+        }}
+      >
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            onClick={handleDrawerOpen}
+            edge="start"
             sx={{
-              backgroundColor: "background.default",
-              color: "text.primary",
-              borderBottom: "solid",
-              borderColor: "action.selected"
+              marginRight: 5,
+              ...(drawerOpen && { display: 'none' }),
             }}
-        >
-          <Toolbar>
+          >
+            <MenuIcon />
+          </IconButton>
+          <Stack direction={"row"} width={"100%"} alignItems={"center"} justifyContent={"space-between"}>
+            <Typography variant="h6" noWrap component="div">
+              OSCAR
+            </Typography>
             <IconButton
-                color="inherit"
-                aria-label="open drawer"
-                onClick={handleDrawerOpen}
-                edge="start"
-                sx={{
-                  marginRight: 5,
-                  ...(drawerOpen && { display: 'none' }),
-                }}
+              color="inherit"
+              aria-label="open notifications"
+              onClick={handleMenuOpen}
             >
-              <MenuIcon />
+              <NotificationsRoundedIcon />
             </IconButton>
-            <Stack direction={"row"} width={"100%"} alignItems={"center"} justifyContent={"space-between"}>
-              <Typography variant="h6" noWrap component="div">
-                OSCAR
-              </Typography>
-              <IconButton
-                  color="inherit"
-                  aria-label="open notifications"
-                  onClick={handleMenuOpen}
-              >
-                <NotificationsRoundedIcon />
-              </IconButton>
-            </Stack>
-          </Toolbar>
-        </AppBar>
-        <Menu
-            id="basic-menu"
-            anchorEl={anchorEl}
-            open={menuOpen}
-            onClose={handleMenuClose}
-            MenuListProps={{
-              'aria-labelledby': 'basic-button',
-            }}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-        >
-          <MenuItem>Temp Item</MenuItem>
-        </Menu>
-        <Drawer variant="permanent" open={drawerOpen}>
-          <DrawerHeader>
-            <IconButton onClick={handleDrawerClose}>
-              <ChevronLeftIcon />
-            </IconButton>
-          </DrawerHeader>
-          <Divider />
-          <List>
-            {menuItems.map((item) => (
-                <Link href={item.href} passHref key={item.title}>
-                  <ListItem disablePadding sx={{ display: 'block' }}>
-                    <ListItemButton
-                        sx={{
-                          minHeight: 48,
-                          justifyContent: drawerOpen ? 'initial' : 'center',
-                          px: 2.5,
-                        }}
-                    >
-                      <ListItemIcon
-                          sx={{
-                            minWidth: 0,
-                            mr: drawerOpen ? 3 : 'auto',
-                            justifyContent: 'center',
-                          }}
-                      >
-                        {item.icon}
-                      </ListItemIcon>
-                      <ListItemText primary={item.title} sx={{ opacity: drawerOpen ? 1 : 0 }} />
-                    </ListItemButton>
-                  </ListItem>
-                </Link>
-            ))}
-          </List>
-          <Divider />
-          <List>
-            {settingsItems.map((item) => (
-                <Link href={item.href} passHref key={item.title}>
-                  <ListItem disablePadding sx={{ display: 'block' }}>
-                    <ListItemButton
-                        sx={{
-                          minHeight: 48,
-                          justifyContent: drawerOpen ? 'initial' : 'center',
-                          px: 2.5,
-                        }}
-                    >
-                      <ListItemIcon
-                          sx={{
-                            minWidth: 0,
-                            mr: drawerOpen ? 3 : 'auto',
-                            justifyContent: 'center',
-                          }}
-                      >
-                        {item.icon}
-                      </ListItemIcon>
-                      <ListItemText primary={item.title} sx={{ opacity: drawerOpen ? 1 : 0 }} />
-                    </ListItemButton>
-                  </ListItem>
-                </Link>
-            ))}
-          </List>
-          <Divider>
-            <Link href={"/savestate"} passHref>
-              <Label>Open Save State</Label>
+          </Stack>
+        </Toolbar>
+      </AppBar>
+      <Menu
+        id="basic-menu"
+        anchorEl={anchorEl}
+        open={menuOpen}
+        onClose={handleMenuClose}
+        MenuListProps={{
+          'aria-labelledby': 'basic-button',
+        }}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+      >
+        <MenuItem>Temp Item</MenuItem>
+      </Menu>
+      <Drawer variant="permanent" open={drawerOpen}>
+        <DrawerHeader>
+          <IconButton onClick={handleDrawerClose}>
+            <ChevronLeftIcon />
+          </IconButton>
+        </DrawerHeader>
+        <Divider />
+        <List>
+          {menuItems.map((item) => (
+            <Link href={item.href} passHref key={item.title}>
+              <ListItem disablePadding sx={{ display: 'block' }}>
+                <ListItemButton
+                  sx={{
+                    minHeight: 48,
+                    justifyContent: drawerOpen ? 'initial' : 'center',
+                    px: 2.5,
+                  }}
+                >
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 0,
+                      mr: drawerOpen ? 3 : 'auto',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText primary={item.title} sx={{ opacity: drawerOpen ? 1 : 0 }} />
+                </ListItemButton>
+              </ListItem>
             </Link>
-          </Divider>
-        </Drawer>
-        <Box component="main" sx={{ height: "100%", width: "100%", m: 2 }}>
-          <DrawerHeader />
-          {children}
-        </Box>
+          ))}
+        </List>
+        <Divider />
+        <List>
+          {settingsItems.map((item) => (
+            <Link href={item.href} passHref key={item.title}>
+              <ListItem disablePadding sx={{ display: 'block' }}>
+                <ListItemButton
+                  sx={{
+                    minHeight: 48,
+                    justifyContent: drawerOpen ? 'initial' : 'center',
+                    px: 2.5,
+                  }}
+                >
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 0,
+                      mr: drawerOpen ? 3 : 'auto',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText primary={item.title} sx={{ opacity: drawerOpen ? 1 : 0 }} />
+                </ListItemButton>
+              </ListItem>
+            </Link>
+          ))}
+        </List>
+        <Divider>
+          <Link href={"/savestate"} passHref>
+              <Label>Open Save State</Label>
+          </Link>
+        </Divider>
+      </Drawer>
+      <Box component="main" sx={{ height: "100%", width: "100%", m: 2 }}>
+        <DrawerHeader />
+        {children}
       </Box>
+    </Box>
   );
 }
