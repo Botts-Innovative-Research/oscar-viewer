@@ -1,13 +1,17 @@
 "use client";
 
 import { Grid, Paper, Stack, Typography } from "@mui/material";
-import {useState} from "react";
-import { IEventTableData, SelectedEvent } from "types/new-types";
+import {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
+import {IEventTableData, LaneStatusType, SelectedEvent} from "types/new-types";
 import BackButton from "../_components/BackButton";
 import { useSearchParams } from 'next/navigation'
 import LaneStatus from "./LaneStatus";
 import Media from "./Media";
 import AlarmTable from "./AlarmTable";
+import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import {START_TIME} from "@/lib/data/Constants";
 
 /**
  * Expects the following search params:
@@ -16,13 +20,21 @@ import AlarmTable from "./AlarmTable";
  * Need to implement an error page to handle invalid/no search params
  */
 
-
 export default function LaneViewPage() {
 
   const searchParams = useSearchParams();
-  const laneName = searchParams.get("name");
+  const currentLane = searchParams.get("name");
 
   const [selectedEvent, setSelectedEvent] = useState<SelectedEvent>({startTime: "XX:XX:XX AM", endTime: "XX:XX:XX AM"});  // Reference types/new-types.d.ts to change type
+  const [currentTime, setCurrentTime] = useState<string>("");
+
+
+  function setTimeStamp(){
+      const now = new Date();
+      const timestamp = now.toLocaleString();
+      console.log(timestamp)
+      setCurrentTime(timestamp);
+    }
 
 
     return (
@@ -35,17 +47,17 @@ export default function LaneViewPage() {
       </Grid>
       <Grid item container spacing={2} sx={{ width: "100%" }}>
         <Paper variant='outlined' sx={{ width: "100%"}}>
-          <LaneStatus laneName={laneName}/>
+          <LaneStatus laneName={currentLane}/>
         </Paper>
       </Grid>
       <Grid item container spacing={2} sx={{ width: "100%" }}>
         <Paper variant='outlined' sx={{ width: "100%" }}>
-          <Media event={selectedEvent} laneName={laneName}/>
+          <Media event={selectedEvent} laneName={currentLane} currentTime={currentTime}/>
         </Paper>
       </Grid>
       <Grid item container spacing={2} sx={{ width: "100%" }}>
         <Paper variant='outlined' sx={{ width: "100%" }}>
-          <AlarmTable laneName={laneName} />
+          <AlarmTable laneName={currentLane} />
         </Paper>
       </Grid>
     </Stack>

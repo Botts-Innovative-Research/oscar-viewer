@@ -27,11 +27,12 @@ export default function LaneStatusItem(props: {
                    justifyContent: 'left',
                    display: 'flex',
                    alignItems: 'center',
+
                    backgroundColor: (props.isTamper ? "secondaryHighlight" : props.isFault ? "info" : "inherit")}}
         >
             <Stack direction={"row"} spacing={1}>
 
-                <Typography variant="body1" style={{fontSize: 12}}>{props.name}</Typography>
+                <Typography variant="body1" style={{fontSize: 12, textWrap: 'nowrap'}}>{props.name}</Typography>
 
                 {props.isFault &&
                     <Tooltip title={'Fault'} arrow placement="top">

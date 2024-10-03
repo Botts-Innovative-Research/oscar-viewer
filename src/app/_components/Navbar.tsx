@@ -33,6 +33,8 @@ const drawerWidth = 240;
 
 const openedMixin = (theme: Theme): CSSObject => ({
   width: drawerWidth,
+  
+  
   transition: theme.transitions.create('width', {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.enteringScreen,
@@ -164,25 +166,6 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
     },
   ]
 
-  // const changeTitle = () =>{
-  //   switch(window.location.pathname){
-  //     case '/':
-  //       return 'Dashboard';
-  //     case '/lane-view':
-  //       return 'Lane View';
-  //     case '/map':
-  //       return 'Map';
-  //     case '/event-log':
-  //       return 'Event Log';
-  //     case '/servers':
-  //       return 'Server';
-  //     case '/account':
-  //       return 'Account'
-  //     case '/site-configuration':
-  //       return 'Site Configuration';
-
-  //   }
-  // }
 
   return (
     <Box sx={{ display: 'flex' }}>

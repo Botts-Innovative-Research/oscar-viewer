@@ -193,7 +193,7 @@ export default function EventTable(props: {
   }
 
   return (
-      <Box sx={{height: 500, width: '100%'}}>
+      <Box sx={{height: 800, width: '100%'}}>
         <DataGrid
             rows={eventTable.data}
             columns={columns}
@@ -211,7 +211,7 @@ export default function EventTable(props: {
                   secondaryInspection: viewSecondary,
                   adjudicatedCode: viewAdjudicated,
                   Menu: viewMenu,
-                }
+                },
               },
             }}
             pageSizeOptions={[20]}
@@ -249,6 +249,7 @@ export default function EventTable(props: {
 
             }}
             sx={{
+
               // Assign styling to 'Status' column based on className
               [`.${gridClasses.cell}.highlightGamma`]: {
                 backgroundColor: "error.main",
@@ -276,7 +277,7 @@ export default function EventTable(props: {
                 color: "text.primary",
               },
 
-              border: "none"
+              border: "none",
             }}
         />
       </Box>

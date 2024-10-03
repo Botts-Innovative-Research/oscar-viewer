@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import { Grid, Pagination, Typography } from '@mui/material';
 import { useCallback, useContext, useEffect, useState } from 'react';
@@ -46,20 +46,20 @@ export default function CameraGrid() {
 
       laneMap.forEach((value, key) => {
         if(laneMap.has(key)) {
-            let ds: LaneMapEntry = laneMap.get(key);
-            const videoSources = ds.datasourcesRealtime.filter((item) => item.name.includes('Video') && item.name.includes('Lane'));
-            if(videoSources.length > 0) {
-              const laneWithVideo: LaneWithVideo = {
-                // Get lane name
-                laneName: key,
-                // All video sources for the lane
-                videoSources: videoSources,
-                // Current status of lane
-                status: 'none',
-              };
+          let ds: LaneMapEntry = laneMap.get(key);
+          const videoSources = ds.datasourcesRealtime.filter((item) => item.name.includes('Video') && item.name.includes('Lane'));
+          if(videoSources.length > 0) {
+            const laneWithVideo: LaneWithVideo = {
+              // Get lane name
+              laneName: key,
+              // All video sources for the lane
+              videoSources: videoSources,
+              // Current status of lane
+              status: 'none',
+            };
 
-              videos.push(laneWithVideo);
-            }
+            videos.push(laneWithVideo);
+          }
         }
       })
 
@@ -104,11 +104,11 @@ export default function CameraGrid() {
   const addSubscriptionCallbacks = useCallback(() => {
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
-          const alarmState = message.values[0].data.alarmState;
-          if(alarmState != "Background" && alarmState != "Scan") {
-            updateVideoList(laneName, alarmState);
-          }
-        });
+        const alarmState = message.values[0].data.alarmState;
+        if(alarmState != "Background" && alarmState != "Scan") {
+          updateVideoList(laneName, alarmState);
+        }
+      });
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
         const alarmState = message.values[0].data.alarmState;
         if(alarmState != "Background" && alarmState != "Scan") {
@@ -136,7 +136,7 @@ export default function CameraGrid() {
   const updateVideoList = (laneName: string, newStatus: string) => {
     setVideoList((prevList) => {
       const updatedList = prevList.map((videoData) =>
-        videoData.laneName === laneName ? {...videoData, status: newStatus } : videoData
+          videoData.laneName === laneName ? {...videoData, status: newStatus } : videoData
       );
 
       const updatedVideo = updatedList.find((videoData) => videoData.laneName === laneName);
@@ -197,18 +197,19 @@ export default function CameraGrid() {
   };
 
   return (
-    <>
-    {videoList != null && (
-      <Grid container padding={2} justifyContent={"start"}>
-        {videoList.slice(startItem, endItem).map((lane) => (
-          <VideoStatusWrapper key={lane.laneName} laneName={lane.laneName} status={lane.status}
-          children={<VideoComponent id={lane.laneName} currentPage={0} videoSources={lane.videoSources}/>}>
-          </VideoStatusWrapper>
-        ))}
-      <Grid item xs={12} display={"flex"} justifyContent={"center"}>
-        <Pagination count={Math.ceil(videoList.length / maxItems)} onChange={handleChange} color="primary" showFirstButton showLastButton />
-      </Grid>
-    </Grid>)}
-    </>
+      <>
+        {videoList != null && (
+            <Grid container padding={2} justifyContent={"start"}>
+
+              {videoList.slice(startItem, endItem).map((lane) => (
+                  <VideoStatusWrapper key={lane.laneName} laneName={lane.laneName} status={lane.status}
+                                      children={<VideoComponent id={lane.laneName} currentPage={0} videoSources={lane.videoSources}/>}
+                  />
+              ))}
+              <Grid item xs={12} display={"flex"} justifyContent={"center"}>
+                <Pagination count={Math.ceil(videoList.length / maxItems)} onChange={handleChange} color="primary" showFirstButton showLastButton />
+              </Grid>
+            </Grid>)}
+      </>
   );
 }

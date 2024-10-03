@@ -177,14 +177,15 @@ export default function LaneStatus() {
 
   console.log('length', statusList.length)
 
+
+
   return (
       <Stack padding={2} justifyContent={"start"} spacing={1}>
         <Typography variant="h6">Lane Status</Typography>
         <>
-          {/*<Box sx={{overflowY: "auto"}}>*/}
-          <Box sx={{overflowY: "auto", maxHeight: 120}}>
-            {statusList != null &&(
-                <Grid container columns={40} spacing={1}>
+          <Box sx={{overflowY: "auto", maxHeight: 120,  flexGrow: 1}}>
+            {(
+                <Grid container columns={{sm: 10, md: 20, lg:30, xl:40}} spacing={1}>
                   {statusList.map((item) => (
                       <Grid item xs={10}>
                         <Link href={{
