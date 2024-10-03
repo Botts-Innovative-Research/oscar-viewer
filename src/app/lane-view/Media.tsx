@@ -30,11 +30,6 @@ export default function Media(props: {
     const [thresholdDatasources, setThresholdDS] = useState<any[]>([]);
     const [chartReady, setChartReady] = useState<boolean>(false);
 
-    const syncRef = useRef<typeof DataSynchronizer>();
-    const [dataSyncCreated, setDataSyncCreated] = useState<boolean>(false);
-    const [dataSyncReady, setDataSyncReady] = useState<boolean>(false);
-    const [datasourcesReady, setDatasourcesReady] = useState<boolean>(false);
-
 
     const datasourceSetup = useCallback(async () => {
         // @ts-ignore

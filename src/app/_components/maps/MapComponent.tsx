@@ -8,7 +8,7 @@ import LeafletView from "osh-js/source/core/ui/view/map/LeafletView";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import Box from "@mui/material/Box";
-import './Map.css';
+import '../../style/Map.css';
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import { LaneWithLocation } from "types/new-types";
 import {selectLaneMap} from "@/lib/state/OSCARClientSlice";
