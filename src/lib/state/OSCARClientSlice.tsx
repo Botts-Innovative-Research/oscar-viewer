@@ -3,8 +3,7 @@ import {enableMapSet} from "immer";
 import {LaneMapEntry, LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import {RootState} from "@/lib/state/Store";
 import {
-    selectDatastreams,
-    selectSystems
+    selectDatastreams
 } from "@/lib/state/OSHSlice";
 import {IDatastream} from "@/lib/data/osh/Datastreams";
 import {useSelector} from "react-redux";

@@ -46,6 +46,7 @@ export function EventPreview() {
     const [videoDatasources, setVideoDatasources] = useState<typeof SweApi[]>([]);
     const [activeVideoIDX, setActiveVideoIDX] = useState<number>(0);
 
+
     const handleAdjudication = (value: string) => {
         console.log("Adjudication Value: ", value);
     }
@@ -156,6 +157,10 @@ export function EventPreview() {
 
         return () => clearInterval(interval);
     }, []);
+
+    useEffect(() => {
+        console.log("Event Preview Changed", eventPreview);
+    }, [eventPreview]);
 
     return (
         <Stack p={1} display={"flex"}>

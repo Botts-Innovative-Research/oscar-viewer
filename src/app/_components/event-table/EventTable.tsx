@@ -170,6 +170,10 @@ export default function EventTable(props: {
 
   function onRowSelect(event: EventTableData) {
     if (event) {
+      dispatch(setEventPreview({
+        isOpen: false,
+        eventData: null,
+      }));
       console.log("Row selected: ", event);
       console.log("LaneMapRef: ", laneMapRef.current);
       const currentSystem = laneMapRef.current.get(event.laneId).systems.find((system) => system.properties.id === event.systemIdx)
@@ -180,6 +184,7 @@ export default function EventTable(props: {
         eventData: event,
       }));
     } else {
+      console.log("Setting EventPreview Data to null");
       dispatch(setEventPreview({
         isOpen: false,
         eventData: null,
