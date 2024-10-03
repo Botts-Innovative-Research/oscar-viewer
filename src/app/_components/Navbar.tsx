@@ -164,30 +164,40 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
     },
   ]
 
-  const changeTitle = () =>{
-    switch(window.location.pathname){
-      case '/':
-        return 'Dashboard';
-      case '/lane-view':
-        return 'Lane View';
-      case '/map':
-        return 'Map';
-      case '/event-log':
-        return 'Event Log';
-      case '/servers':
-        return 'Server';
-      case '/account':
-        return 'Account'
-      case '/site-configuration':
-        return 'Site Configuration';
+  // const changeTitle = () =>{
+  //   switch(window.location.pathname){
+  //     case '/':
+  //       return 'Dashboard';
+  //     case '/lane-view':
+  //       return 'Lane View';
+  //     case '/map':
+  //       return 'Map';
+  //     case '/event-log':
+  //       return 'Event Log';
+  //     case '/servers':
+  //       return 'Server';
+  //     case '/account':
+  //       return 'Account'
+  //     case '/site-configuration':
+  //       return 'Site Configuration';
 
-    }
-  }
+  //   }
+  // }
 
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
-      <AppBar position="fixed" open={drawerOpen} elevation={0} enableColorOnDark>
+      <AppBar
+        position="fixed"
+        open={drawerOpen}
+        elevation={0}
+        sx={{
+          backgroundColor: "background.default",
+          color: "text.primary",
+          borderBottom: "solid",
+          borderColor: "action.selected"
+        }}
+      >
         <Toolbar>
           <IconButton
             color="inherit"
@@ -203,9 +213,8 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
           </IconButton>
           <Stack direction={"row"} width={"100%"} alignItems={"center"} justifyContent={"space-between"}>
             <Typography variant="h6" noWrap component="div">
-              {/*{changeTitle()}*/}
-              Title
-              </Typography>
+              OSCAR
+            </Typography>
             <IconButton
               color="inherit"
               aria-label="open notifications"

@@ -1,6 +1,6 @@
 "use client";
 
-import { ThemeProvider, createTheme, useMediaQuery } from "@mui/material";
+import { Box, ThemeProvider, createTheme, useMediaQuery } from "@mui/material";
 import { ReactNode, Suspense, useMemo } from "react";
 import CssBaseline from '@mui/material/CssBaseline';
 import { getTheme } from "@/app/style/theme";
@@ -21,10 +21,11 @@ export default function Providers({ children }: { children: ReactNode }) {
   return (
     <Suspense fallback={<SuspenseLoad />}>
       <ThemeProvider theme={theme}>
-        <CssBaseline />
-        {children}
+        <Box sx={{backgroundColor: "background.default"}}>
+          <CssBaseline />
+          {children}
+        </Box>
       </ThemeProvider>
     </Suspense>
-    
   );
 }
