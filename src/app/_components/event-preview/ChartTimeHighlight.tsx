@@ -207,11 +207,11 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
     const updateChartElIds = useCallback(() => {
         if (eventPreview.eventData?.status === "Gamma") {
-            setGammaChartID(gammaChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
+            setGammaChartID(gammaChartBaseId + eventPreview.eventData?.id + "-" + props.modeType);
         } else if (eventPreview.eventData?.status === "Neutron") {
-            setNeutronChartID(neutronChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
+            setNeutronChartID(neutronChartBaseId + eventPreview.eventData?.id + "-" + props.modeType);
         } else if (eventPreview.eventData?.status === "Gamma & Neutron") {
-            setBothChartID(bothChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
+            setBothChartID(bothChartBaseId + eventPreview.eventData?.id + "-" + props.modeType);
         }
     }, [eventPreview]);
 

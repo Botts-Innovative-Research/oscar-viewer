@@ -53,7 +53,7 @@ export default function EventDetailsPage() {
 
 
     useEffect(() => {
-        setCurrentTime(eventPreview.eventData.startTime);
+        setCurrentTime(eventPreview.eventData?.startTime);
         // currentTime.current = eventPreview.eventData.startTime;
         console.log("Current Time: ", currentTime);
     }, [eventPreview]);
@@ -61,21 +61,21 @@ export default function EventDetailsPage() {
     useMemo(() => {
         // create dsMapRef of eventPreview
         if (eventPreview) {
-            dsMapRef.current = laneMapRef.current.get(eventPreview.eventData.laneId).getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
+            dsMapRef.current = laneMapRef.current.get(eventPreview.eventData?.laneId)?.getDatastreamsForEventDetail(eventPreview.eventData?.startTime, eventPreview.eventData?.endTime);
             console.log("EventPreview DS Map", dsMapRef.current);
             setLocalDSMap(dsMapRef.current);
         }
     }, [eventPreview]);
 
     const collectDataSources = useCallback(() => {
-        let currentLane = eventPreview.eventData.laneId;
+        let currentLane = eventPreview.eventData?.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
 
         console.log("Collecting DataSources...", currLaneEntry, currentLane);
 
         let tempDSMap = new Map<string, typeof SweApi[]>();
         if (currLaneEntry) {
-            let datasources = currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
+            let datasources = currLaneEntry?.getDatastreamsForEventDetail(eventPreview.eventData?.startTime, eventPreview.eventData?.endTime);
             console.log("DataSources", datasources);
             setLocalDSMap(datasources);
             tempDSMap = datasources;
@@ -94,7 +94,7 @@ export default function EventDetailsPage() {
             syncRef.current = new DataSynchronizer({
                 dataSources: videoDatasources,
                 replaySpeed: 1.0,
-                startTime: eventPreview.eventData.startTime,
+                startTime: eventPreview.eventData?.startTime,
                 // endTime: eventPreview.eventData.endTime,
                 endTime: "now",
             });

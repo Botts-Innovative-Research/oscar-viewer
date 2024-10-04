@@ -37,24 +37,24 @@ export default function DataRow(){
           </TableHead>
           <TableBody>
             <TableRow
-                key={eventData.id}
+                key={eventData?.id}
                 sx={{ '&:last-child td, &:last-child th': { border: 0, textAlign: "center" } }}
             >
               <TableCell align="center">
-                {eventData.secondaryInspection ? (
+                {eventData?.secondaryInspection ? (
                     <CheckRoundedIcon />
                 ): (
                     <CloseRoundedIcon />
                 )}
               </TableCell>
-              <TableCell>{eventData.laneId}</TableCell>
-              <TableCell>{eventData.occupancyId}</TableCell>
-              <TableCell>{eventData.startTime}</TableCell>
-              <TableCell>{eventData.endTime}</TableCell>
-              <TableCell>{eventData.maxGamma}</TableCell>
-              <TableCell>{eventData.maxNeutron}</TableCell>
-              <StatusTableCell status = {eventData.status}>{eventData.status}</StatusTableCell>
-              <TableCell>{eventData.adjudicatedUser}</TableCell>
+              <TableCell>{eventData?.laneId}</TableCell>
+              <TableCell>{eventData?.occupancyId}</TableCell>
+              <TableCell>{eventData?.startTime}</TableCell>
+              <TableCell>{eventData?.endTime}</TableCell>
+              <TableCell>{eventData?.maxGamma}</TableCell>
+              <TableCell>{eventData?.maxNeutron}</TableCell>
+              <StatusTableCell status = {eventData?.status}>{eventData?.status}</StatusTableCell>
+              <TableCell>{eventData?.adjudicatedUser}</TableCell>
             </TableRow>
           </TableBody>
         </Table>
