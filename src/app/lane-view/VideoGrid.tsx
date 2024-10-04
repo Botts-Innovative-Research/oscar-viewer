@@ -144,7 +144,7 @@ export default function VideoGrid(props: LaneVideoProps) {
                         justifyContent={"center"}
                         sx={{ padding: 2, width: '50%', height: '50'}}
                     >
-                        {videoList.map((lane) => (
+                        {videoList.slice(currentPage, maxPages).map((lane) => (
                             <VideoComponent key={idVal.current++} id={lane.laneName} currentPage={currentPage} videoSources={lane.videoSources}/>
                         ))}
 

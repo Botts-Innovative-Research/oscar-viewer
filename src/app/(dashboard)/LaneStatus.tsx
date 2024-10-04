@@ -97,7 +97,6 @@ export default function LaneStatus() {
   }, [dataSourcesByLane]);
 
   useEffect(() => {
-    console.log('callback')
     addSubscriptionCallbacks();
   }, [dataSourcesByLane]);
 
@@ -161,7 +160,6 @@ export default function LaneStatus() {
         return [updatedLane, ...offlineStatuses, ...onlineStatuses]
 
       }else{
-        console.log('lane doesnt exist.. creating lane', laneName);
         const newLane: LaneStatusProps= {
           id: idVal.current++,
           name: laneName,
@@ -173,10 +171,6 @@ export default function LaneStatus() {
       }
     });
   };
-
-
-  console.log('length', statusList.length)
-
 
 
   return (
