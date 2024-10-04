@@ -142,7 +142,8 @@ export default function AlarmTablePage(props: LaneViewProps) {
   useEffect(() => {
     let tableData = new EventTableDataCollection()
     tableData.setData(occupancyTableDataRef.current);
-    tableData.sortByStartTime("descending");
+    const sortedData = [...tableData.data].sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+    tableData.setData(sortedData);
     tableDataRef.current = tableData
   }, [data]);
 

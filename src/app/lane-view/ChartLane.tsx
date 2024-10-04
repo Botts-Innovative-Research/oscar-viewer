@@ -62,7 +62,7 @@ export default function ChartLane(props: ChartInterceptProps){
                 backgroundColor: "#ab47bc",
                 lineColor: '#ab47bc',
                 xLabel: 'Time',
-                yLabel: 'Sigma',
+                yLabel: 'CPS',
 
                 getValues: (rec: any, timestamp: any) => ({x: timestamp, y: rec.sigma}),
 

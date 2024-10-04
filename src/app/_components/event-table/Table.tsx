@@ -179,14 +179,15 @@ export default function Table({tableMode}: TableProps) {
         if (tableMode === "alarmtable") {
             let tableData = new EventTableDataCollection()
             tableData.setData(occupancyTableDataRef.current);
-            console.log('occ table data', occupancyTableDataRef)
-            tableData.sortByStartTime("descending");
+            const sortedData = [...tableData.data].sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+            tableData.setData(sortedData);
             tableDataRef.current = tableData
 
         } else if (tableMode === "eventlog") {
             let eventLogData = new EventTableDataCollection();
             eventLogData.setData(eventLogTableData.current);
-            eventLogData.sortByStartTime("descending");
+            const sortedData = [...eventLogData.data].sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+            eventLogData.setData(sortedData);
             tableDataRef.current = eventLogData;
         } else {
             tableDataRef.current = new EventTableDataCollection();

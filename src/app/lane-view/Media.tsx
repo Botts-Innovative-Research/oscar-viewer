@@ -41,8 +41,12 @@ export default function Media(props: {
                 for (let ds of lane.datastreams) {
 
                     let idx: number = lane.datastreams.indexOf(ds);
-                    // let rtDS = lane.datasourcesRealtime[idx];
+                    let rtDS = lane.datasourcesRealtime[idx];
                     let batchDS = lane.datasourcesBatch[idx];
+
+                    rtDS.properties.startTime = "now"
+                    rtDS.properties.endTime = "2055-01-01T08:13:25.845Z"
+
 
                     let startTime = (new Date(Date.now() - 1000 * 60)).toISOString();
                     batchDS.properties.startTime = startTime;
@@ -55,33 +59,33 @@ export default function Media(props: {
 
 
                     if (ds.properties.name.includes('Driver - Gamma Count')) {
-                        // laneDSColl?.addDS('gammaRT', rtDS);
+                        laneDSColl?.addDS('gammaRT', rtDS);
                         laneDSColl?.addDS('gammaBatch', batchDS);
-                        setGammaDS(prevState => [...prevState, batchDS]);
+                        setGammaDS(prevState => [...prevState, rtDS]);
+                        // setGammaDS(prevState => [...prevState, ...batchDS]);
                     }
 
                     if (ds.properties.name.includes('Driver - Neutron Count')) {
-                        // laneDSColl?.addDS('neutronRT', rtDS);
+                        laneDSColl?.addDS('neutronRT', rtDS);
                         laneDSColl?.addDS('neutronBatch', batchDS);
-                        setNeutronDS(prevState => [...prevState, batchDS]);
+                        setNeutronDS(prevState => [...prevState, rtDS]);
+                        // setNeutronDS(prevState => [...prevState, batchDS]);
                     }
 
                     if (ds.properties.name.includes('Driver - Gamma Threshold')) {
-                        // laneDSColl?.addDS('gammaTrshldRT', rtDS);
+                        laneDSColl?.addDS('gammaTrshldRT', rtDS);
                         laneDSColl?.addDS('gammaTrshldBatch', batchDS);
-                        setThresholdDS(prevState => [...prevState, batchDS]);
+                        setThresholdDS(prevState => [...prevState, rtDS]);
+                        // setThresholdDS(prevState => [...prevState, batchDS]);
                     }
 
                     if (ds.properties.name.includes('Driver - Occupancy')) {
-                        // laneDSColl?.addDS('occRT', rtDS);
+                        laneDSColl?.addDS('occRT', rtDS);
                         laneDSColl?.addDS('occBatch', batchDS);
-                        setOccDS(prevState => [...prevState, batchDS]);
+                        setOccDS(prevState => [...prevState, rtDS]);
+                        // setOccDS(prevState => [...prevState, batchDS]);
                     }
 
-                    // if (ds.properties.name.includes('Driver - Tamper')) {
-                    //     laneDSColl?.addDS('tamperRT', rtDS);
-                    //     laneDSColl?.addDS('tamperBatch', batchDS);
-                    // }
                 }
                 setDataSourcesByLane(laneDSMap);
             }
