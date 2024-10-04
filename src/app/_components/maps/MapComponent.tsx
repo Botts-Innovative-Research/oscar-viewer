@@ -194,6 +194,6 @@ export default function MapComponent(){
     }
 
     return (
-        <Box id="mapcontainer" style={{width: '100%', height: '800px'}}></Box>
+        <Box id="mapcontainer" style={{width: '100%', height: '900px'}}></Box>
     );
 }

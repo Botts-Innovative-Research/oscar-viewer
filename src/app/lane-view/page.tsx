@@ -26,16 +26,18 @@ export default function LaneViewPage() {
   const currentLane = searchParams.get("name");
 
   const [selectedEvent, setSelectedEvent] = useState<SelectedEvent>({startTime: "XX:XX:XX AM", endTime: "XX:XX:XX AM"});  // Reference types/new-types.d.ts to change type
-  const [currentTime, setCurrentTime] = useState<string>("");
+  const [currentTime, setCurrentTime] = useState<Date>();
 
 
   function setTimeStamp(){
       const now = new Date();
-      const timestamp = now.toLocaleString();
-      console.log(timestamp)
-      setCurrentTime(timestamp);
-    }
+      setCurrentTime(now);
+  }
 
+  useEffect(() => {
+    setTimeStamp();
+    console.log('current time is', currentTime)
+  }, []);
 
     return (
     <Stack spacing={2} direction={"column"}>
