@@ -1,33 +1,86 @@
 "use client";
 
-import { FormControl, InputLabel, ListSubheader, MenuItem, Select, SelectChangeEvent } from '@mui/material';
+import {
+    Checkbox,
+    FormControl,
+    InputLabel,
+    ListItemText,
+    ListSubheader,
+    MenuItem,
+    OutlinedInput,
+    Select,
+    SelectChangeEvent,
+    Theme
+} from '@mui/material';
 import {useEffect, useState} from 'react';
 
-export default function IsotopeSelect(props: {
-  onSelect: (value: string) => void, // Return selected value
-  value?: string, // Default selected value
-}) {
-  const [isotope, setIsotope] = useState(props.value || ''); // Adjudication selected value
+const isotopeChoices=[
+    "Neptunium",
+    "Plutonium",
+    "Uranium233",
+    "Uranium235",
+    "Uranium238",
+    "Americium",
+    "Barium",
+    "Bismuth",
+    "Californium",
+    "Cesium134",
+    "Cesium137",
+    "Cobalt57",
+    "Cobalt60",
+    "Europium152",
+    "Iridium",
+    "Manganese",
+    "Selenium",
+    "Sodium",
+    "Strontium",
+    "Fluorine",
+    "Gallium",
+    "Iodine123",
+    "Iodine131",
+    "Indium",
+    "Palladium",
+    "Technetium",
+    "Xenon",
+    "Potassium",
+    "Radium",
+    "Thorium"
+]
 
-  const handleChange = (event: SelectChangeEvent) => {
-      setIsotope(event.target.value); // Set local isotope
-      props.onSelect(event.target.value); // Return selected value to parent component
+export default function IsotopeSelect(props: {
+  onSelect: (value: string[]) => void, // Return selected value
+  value?: string[], // Default selected value
+}) {
+  const [isotope, setIsotope] = useState<string[]>([]); // Adjudication selected value
+
+  const handleChange = (event: SelectChangeEvent<typeof isotope>) => {
+      const {
+          target: {value},
+      } = event;
+
+      setIsotope(typeof value === 'string' ? value.split(', ') : value); // Set local isotope
+
+      props.onSelect(typeof value === 'string' ? value.split(', ') : value); // Return selected value to parent component
 
   };
 
     useEffect(() => {
-        setIsotope(props.value || ''); // Reset local state to prop value
+        setIsotope(props.value || []); // Reset local state to prop value
     }, [props.value]);
+
 
   return (
       <FormControl size="small" fullWidth>
         <InputLabel id="label" sx={{"&.MuiInputLabel-root":{color: "inherit"}}}>Isotope</InputLabel>
         <Select
-            variant="outlined"
-            id="label"
             label="Isotope"
+            id="label"
+            multiple
             value={isotope}
             onChange={handleChange}
+            // input={<OutlinedInput label="Isotope"/>}
+
+            renderValue={(selected) => selected.join(', ')}
             MenuProps={{
               MenuListProps: {
                 style: {
@@ -54,37 +107,14 @@ export default function IsotopeSelect(props: {
                   },
             }}
         >
-            <MenuItem value={"Neptunium"} >Neptunium (Np) 237</MenuItem>
-            <MenuItem value={"Plutonium"} >Plutonium (Pu) 239</MenuItem>
-            <MenuItem value={"Uranium233"} >Uranium (U) 233</MenuItem>
-            <MenuItem value={"Uranium235"} >Uranium (U) 235</MenuItem>
-            <MenuItem value={"Uranium238"}>Uranium (U) 238</MenuItem>
-            <MenuItem value={"Americium"} >Americium (Am) 241</MenuItem>
-            <MenuItem value={"Barium"} >Barium (Ba) 133</MenuItem>
-            <MenuItem value={"Bismuth"} >Bismuth (Bi) 207</MenuItem>
-            <MenuItem value={"Californium"} >Californium (Cf) 252*</MenuItem>
-            <MenuItem value={"Cesium134"} >Cesium (Cs) 134</MenuItem>
-            <MenuItem value={"Cesium137"}>Cesium (Cs) 137</MenuItem>
-            <MenuItem value={"Cobalt57"}>Cobalt (Co) 57</MenuItem>
-            <MenuItem value={"Cobalt60"}>Cobalt (Co) 60</MenuItem>
-            <MenuItem value={"Europium152"}>Europium (Eu) 152</MenuItem>
-            <MenuItem value={"Iridium"}>Iridium (Ir) 192</MenuItem>
-            <MenuItem value={"Manganese"}>Manganese (Mn) 54</MenuItem>
-            <MenuItem value={"Selenium"}>Selenium (Se) 75</MenuItem>
-            <MenuItem value={"Sodium"}>Sodium (Na) 22</MenuItem>
-            <MenuItem value={"Strontium"}>Strontium (Sr) 90*</MenuItem>
-            <MenuItem value={"Fluorine"}>Fluorine (F) 18</MenuItem>
-            <MenuItem value={"Gallium"}>Gallium (Ga) 67</MenuItem>
-            <MenuItem value={"Iodine123"}>Iodine (I) 123</MenuItem>
-            <MenuItem value={"Iodine131"}>Iodine (I) 131</MenuItem>
-            <MenuItem value={"Indium"}>Indium (In) 111</MenuItem>
-            <MenuItem value={"Palladium"}>Palladium (Pd) 103</MenuItem>
-            <MenuItem value={"Technetium"}>Technetium (Tc) 99m</MenuItem>
-            <MenuItem value={"Xenon"}>Xenon (Xe) 133</MenuItem>
-            <MenuItem value={"Potassium"}>Potassium (K) 40</MenuItem>
-            <MenuItem value={"Radium"}>Radium (Ra) 226</MenuItem>
-            <MenuItem value={"Thorium"}>Thorium (Th) 232</MenuItem>
-
+            {isotopeChoices.map((item) =>(
+                <MenuItem key={item} value={item}>
+                    {item}
+                    {/*<Checkbox checked={isotope.includes(item)}/>*/}
+                    {/*<ListItemText primary={item}/>*/}
+                </MenuItem>
+                ))
+            }
         </Select>
       </FormControl>
   );

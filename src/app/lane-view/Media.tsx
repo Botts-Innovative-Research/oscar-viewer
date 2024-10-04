@@ -1,6 +1,6 @@
 "use client";
 
-import {Grid, Typography } from "@mui/material";
+import {Box, Grid, Typography } from "@mui/material";
 import { SelectedEvent } from "types/new-types";
 import VideoGrid from "./VideoGrid";
 import ChartTimeHighlight from "@/app/_components/event-preview/ChartTimeHighlight";
@@ -46,7 +46,8 @@ export default function Media(props: {
 
                     let startTime = (new Date(Date.now() - 1000 * 60)).toISOString();
                     batchDS.properties.startTime = startTime;
-                    batchDS.properties.endTime = (new Date(Date.now())).toISOString();
+                    batchDS.properties.endTime = "2055-01-01T08:13:25.845Z";
+                    // batchDS.properties.endTime = (new Date(Date.now())).toISOString();
 
                     console.log('start', startTime);
 
@@ -104,6 +105,7 @@ export default function Media(props: {
 
 
     return (
+        <Box sx={{flexGrow: 1}}>
         <Grid container direction="row" spacing={2} justifyContent={"center"} alignItems={"center"}>
             <Grid item xs>
                 <ChartLane  laneName={props.laneName} setChartReady={setChartReady} occDatasources={occDatasources} gammaDatasources={gammaDatasources} neutronDatasources={neutronDatasources} thresholdDatasources={thresholdDatasources} />
@@ -112,6 +114,7 @@ export default function Media(props: {
                 <VideoGrid laneName={props.laneName}/>
             </Grid>
       </Grid>
+        </Box>
 
 
   );

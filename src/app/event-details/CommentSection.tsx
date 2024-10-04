@@ -66,7 +66,7 @@ export default function CommentSection(props: {
                       textAlign: "center"
 
                   }}>
-                      {comment.isotope}
+                      {comment.isotope.join(', ')}
                   </Box>
 
                   {/*<Stack direction={"column"} spacing={2}>*/}

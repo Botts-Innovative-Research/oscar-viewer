@@ -95,5 +95,5 @@ export interface Comment{
   files: File[];
   adjudication: any;
   isotope: any;
-  secondaryInspection: boolean;
+  secondaryInspection?: boolean;
 }

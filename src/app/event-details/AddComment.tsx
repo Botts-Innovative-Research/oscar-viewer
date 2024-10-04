@@ -31,12 +31,14 @@ export default function AddComment(props: {
   const [comments, setComments] = useState<Comment[]>([]);
   const [notes, setNotes] = useState("");
   const [adjudicated, setAdjudicated] = useState("");
-  const [isotope, setIsotope] = useState("");
+
+  const [isotope, setIsotope] = useState<string[]>(null);
+
   const [secondaryInspection, setSecondaryInspection] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  /**handle the file uploade**/
+  /**handle the file uploaded**/
   const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
     if(e.target.files === null){
       console.log('file is null')
@@ -53,7 +55,7 @@ export default function AddComment(props: {
     setAdjudicated(value);
   }
 
-  const handleIsotopeSelect = (value: string) =>  {
+  const handleIsotopeSelect = (value: string[]) =>  {
     console.log(value);
     setIsotope(value);
   }
@@ -77,7 +79,7 @@ export default function AddComment(props: {
     setNotes("");
     setUploadedFiles([]);
     setAdjudicated("");
-    setIsotope("");
+    setIsotope([]);
     setSecondaryInspection(false);
   }
 
