@@ -116,7 +116,10 @@ export default function Table({tableMode}: TableProps) {
         const existingOcc = new Set(occupancyTableDataRef.current.map(event => event.occupancyId));
         const filterOccList = allAlarmingEvents.filter((event) => !existingOcc.has(event.occupancyId));
 
-        eventLogTableData.current = [...nonAlarmingEvents, ...filterOccList, ...eventLogTableData.current];
+        const eventLogTableOccupancy = new Set(eventLogTableData.current.map(event => event.occupancyId));
+        const filterNonAlarmingOccList = nonAlarmingEvents.filter((event) => !eventLogTableOccupancy.has(event.occupancyId));
+
+        eventLogTableData.current = [...filterNonAlarmingOccList, ...filterOccList, ...eventLogTableData.current];
         occupancyTableDataRef.current = [...filterOccList, ...occupancyTableDataRef.current];
         setData(occupancyTableDataRef.current);
     }
@@ -153,8 +156,14 @@ export default function Table({tableMode}: TableProps) {
                     newEvent ? nonAlarmingEvents.push(newEvent) : null;
                 }
             }
-            eventLogTableData.current = [...nonAlarmingEvents, ...allAlarmingEvents, ...eventLogTableData.current];
-            occupancyTableDataRef.current = [...allAlarmingEvents, ...occupancyTableDataRef.current];
+            const existingOcc = new Set(occupancyTableDataRef.current.map(event => event.occupancyId));
+            const filterOccList = allAlarmingEvents.filter((event) => !existingOcc.has(event.occupancyId));
+
+            const eventLogTableOccupancy = new Set(eventLogTableData.current.map(event => event.occupancyId));
+            const filterNonAlarmingOccList = nonAlarmingEvents.filter((event) => !eventLogTableOccupancy.has(event.occupancyId));
+
+            eventLogTableData.current = [...filterNonAlarmingOccList, ...filterOccList, ...eventLogTableData.current];
+            occupancyTableDataRef.current = [...filterOccList, ...occupancyTableDataRef.current];
 
             setData(occupancyTableDataRef.current);
         }
