@@ -19,13 +19,13 @@ export default function MiscTable({currentTime}: {currentTime: string}) {
 
   const checkForSpeed = useCallback(async () => {
     if (eventData) {
-      let lme = laneMapRef.current.get(eventData.laneId);
+      let lme = laneMapRef.current.get(eventData?.laneId);
       console.log("Speed LaneMapEntry: ", lme, eventPreview);
       console.log("Speed Current Time", currentTime);
 
       let speedDS = lme.datastreams.find(ds => ds.properties.outputName === "speed");
       let speedRes = await speedDS.searchObservations(new ObservationFilter(
-          {resultTime: `${eventData.startTime}/${eventData.endTime}`}
+          {resultTime: `${eventData?.startTime}/${eventData?.endTime}`}
       ), 10000);
       let speedArr: any[] = await speedRes.nextPage();
 
@@ -52,13 +52,13 @@ export default function MiscTable({currentTime}: {currentTime: string}) {
             <TableBody>
               <TableRow>
                 <TableCell>Max Gamma Count Rate (cps)</TableCell>
-                <TableCell>{eventData.maxGamma}</TableCell>
+                <TableCell>{eventData?.maxGamma}</TableCell>
                 <TableCell>Neutron Background Count Rate</TableCell>
-                <TableCell>{eventData.neutronBackground}</TableCell>
+                <TableCell>{eventData?.neutronBackground}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>Max Neutron Count Rate (cps)</TableCell>
-                <TableCell>{eventData.maxNeutron}</TableCell>
+                <TableCell>{eventData?.maxNeutron}</TableCell>
                 <TableCell>Speed (kph)</TableCell>
                 <TableCell>{speedVal}</TableCell>
               </TableRow>
