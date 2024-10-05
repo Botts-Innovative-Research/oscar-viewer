@@ -1,6 +1,6 @@
 "use client";
 
-import {SelectedEvent} from "types/new-types";
+import {SelectedEvent} from "../../../../types/new-types";
 import {Box, Table, TableBody, TableCell, TableContainer, TableRow} from "@mui/material";
 import {useSelector} from "react-redux";
 import {selectEventPreview} from "@/lib/state/OSCARClientSlice";

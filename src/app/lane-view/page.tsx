@@ -5,9 +5,9 @@ import {useCallback, useContext, useEffect, useMemo, useRef, useState} from "rea
 import {IEventTableData, LaneStatusType, SelectedEvent} from "types/new-types";
 import BackButton from "../_components/BackButton";
 import { useSearchParams } from 'next/navigation'
-import LaneStatus from "./LaneStatus";
-import Media from "./Media";
-import AlarmTable from "./AlarmTable";
+import LaneStatus from "../_components/lane-view/LaneStatus";
+import Media from "../_components/lane-view/Media";
+import AlarmTable from "../_components/lane-view/AlarmTable";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";

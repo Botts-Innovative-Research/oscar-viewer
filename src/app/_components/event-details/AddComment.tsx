@@ -12,11 +12,11 @@ import {
   TextField,
   Typography
 } from "@mui/material";
-import {Comment, SelectedEvent} from "types/new-types";
+import {Comment, SelectedEvent} from "../../../../types/new-types";
 import UploadFileRoundedIcon from '@mui/icons-material/UploadFileRounded';
 import InsertDriveFileRoundedIcon from '@mui/icons-material/InsertDriveFileRounded';
 import React, {ChangeEvent, useRef, useState} from "react";
-import AdjudicationSelect from "../_components/event-preview/AdjudicationSelect";
+import AdjudicationSelect from "../event-preview/AdjudicationSelect";
 import IsotopeSelect from "./IsotopeSelect";
 import CommentSection from "./CommentSection"
 

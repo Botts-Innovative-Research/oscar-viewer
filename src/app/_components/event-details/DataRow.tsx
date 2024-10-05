@@ -1,6 +1,6 @@
 "use client";
 
-import { IEventTableData, SelectedEvent } from "types/new-types";
+import { IEventTableData, SelectedEvent } from "../../../../types/new-types";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';

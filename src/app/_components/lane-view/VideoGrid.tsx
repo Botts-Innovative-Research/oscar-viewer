@@ -2,26 +2,27 @@
 
 import {Box, Card, Grid, IconButton, Pagination, Stack, Typography } from '@mui/material';
 import {useCallback, useContext, useEffect, useRef, useState} from 'react';
-import "../style/cameragrid.css";
-import { Datastream } from '@/lib/data/osh/Datastreams';
+import "../../style/cameragrid.css";
 import { useSelector } from 'react-redux';
 import { LaneDSColl, LaneMapEntry, LaneMeta } from '@/lib/data/oscar/LaneCollection';
-import CameraGridVideo from './video/VideoComponent';
+import CameraGridVideo from '../video/VideoComponent';
 import { selectDatastreams } from '@/lib/state/OSHSlice';
 import { selectLaneMap, selectLanes } from '@/lib/state/OSCARClientSlice';
 import { RootState } from '@/lib/state/Store';
-import VideoComponent from './video/VideoComponent';
-import VideoStatusWrapper from './video/VideoStatusWrapper';
+import VideoComponent from '../video/VideoComponent';
+import VideoStatusWrapper from '../video/VideoStatusWrapper';
 import {EventType} from 'osh-js/source/core/event/EventType';
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
 import { Protocols } from "@/lib/data/Constants";
 import {Mode} from 'osh-js/source/core/datasource/Mode';
-import {DataSourceContext} from '../contexts/DataSourceContext';
+import {DataSourceContext} from '../../contexts/DataSourceContext';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
+import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 
 interface LaneVideoProps{
-    laneName: string,
+    laneName: string
 }
 interface LaneWithVideo {
     laneName: string,
@@ -30,12 +31,11 @@ interface LaneWithVideo {
 export default function VideoGrid(props: LaneVideoProps) {
     const idVal = useRef(1);
     const [videoList, setVideoList] = useState<LaneWithVideo[] | null>(null);
-    const maxItems = 1;
+    const maxItemsPerPage = 1;
     const [currentPage, setCurrentPage] = useState(0);
     const [slideDirection, setSlideDirection] = useState<"right"| "left"| undefined>("left");
-    const [maxPages, setMaxPages] = useState(0);
 
-
+    const [maxPages, setMaxPages] = useState(0)
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
 
     // Create and connect videostreams
@@ -44,52 +44,71 @@ export default function VideoGrid(props: LaneVideoProps) {
             let videos: LaneWithVideo[] = []
 
             laneMap.forEach((value, key) => {
-                if(key === props.laneName){
+                if (key === props.laneName) {
                     let ds: LaneMapEntry = laneMap.get(key);
 
                     const videoSources = ds.datasourcesRealtime.filter((item) =>
                         item.name.includes('Video') && item.name.includes('Lane')
                     );
 
-                    if(videoSources.length > 0) {
+                    if (videoSources.length > 0) {
                         videos.push({laneName: key, videoSources});
                     }
                 }
             });
             setVideoList(videos);
+
         }
     }, [laneMap, props.laneName]);
 
-
-    //this will connect next video
     useEffect(() => {
-       if(videoList && videoList.length > 0){
+        if(videoList && videoList.length> 0){
+            setMaxPages(videoList[0].videoSources.length);
+        }
+    }, [videoList]);
 
-           videoList[0].videoSources[currentPage].connect();
+
+    useEffect(() => {
+        console.log(videoList)
+        let isConnected = false;
+       if(videoList && videoList.length > 0 && currentPage <= videoList[0].videoSources.length - 1){
            console.log('connecting src', videoList[0].videoSources[currentPage].name);
-           setMaxPages(videoList[0].videoSources.length);
+
+           isConnected = videoList[0].videoSources[currentPage].isConnected()
+           if(isConnected){
+               console.log('iam connected already')
+               videoList[0].videoSources[currentPage].disconnect();
+           }
+           videoList[0].videoSources[currentPage].connect();
        }
     }, [videoList, currentPage]);
 
+    console.log('max', maxPages)
 
     const handleNextPage = () =>{
         setSlideDirection("left");
         setCurrentPage((prevPage)=> {
-            let currentPage = prevPage + 1
-            console.log('next page', currentPage);
-            checkConnection(prevPage);
-            return currentPage;
+            let nextPage = prevPage + 1
+            console.log('next page', nextPage);
+            // checkConnection(prevPage);
+            // return nextPage;
+            if(videoList && videoList[0] && nextPage <= maxPages-1){
+                checkConnection(prevPage);
+                return nextPage;
+            }else{
+                return prevPage;
+            }
         })
-
     }
 
     const handlePrevPage = () =>{
         setSlideDirection("right");
         setCurrentPage((prevPage) => {
-            let currentPage = prevPage - 1;
-            console.log('prev page', currentPage)
+            let currpage = prevPage - 1;
+            console.log('prev page', currpage)
             checkConnection(prevPage);
-            return currentPage;
+            return currpage;
+
         })
 
     }
@@ -118,19 +137,20 @@ export default function VideoGrid(props: LaneVideoProps) {
                     </IconButton>
 
                     <Stack
+                        margin={0}
                         spacing={2}
                         direction="row"
                         alignContent="center"
-                        justifyContent={"start"}
-                        sx={{height: '100%', padding: 2}}
+                        justifyContent={"center"}
+                        sx={{ padding: 2, width: '50%', height: '50'}}
                     >
-                        {videoList.map((lane) => (
+                        {videoList.slice(currentPage, maxPages).map((lane) => (
                             <VideoComponent key={idVal.current++} id={lane.laneName} currentPage={currentPage} videoSources={lane.videoSources}/>
                         ))}
 
                     </Stack>
 
-                    <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={currentPage === maxPages}>
+                    <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={currentPage === maxPages-1}>
                         <NavigateNextIcon/>
                     </IconButton>
                 </Box>

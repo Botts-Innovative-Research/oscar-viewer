@@ -3,10 +3,10 @@
 import { Grid, Paper, Stack, Typography } from "@mui/material";
 import {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
 import BackButton from "../_components/BackButton";
-import DataRow from "./DataRow";
+import DataRow from "../_components/event-details/DataRow";
 
-import MiscTable from "./MiscTable";
-import AddComment from "./AddComment";
+import MiscTable from "../_components/event-details/MiscTable";
+import AddComment from "../_components/event-details/AddComment";
 import {useSelector} from "react-redux";
 import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
 import ChartTimeHighlight from "../_components/event-preview/ChartTimeHighlight";

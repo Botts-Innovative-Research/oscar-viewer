@@ -1,10 +1,10 @@
 "use client";
 
-import {LaneStatusItem, LaneStatusType} from 'types/new-types';
+import {LaneStatusItem, LaneStatusType} from '../../../../types/new-types';
 import React, {useCallback, useContext, useEffect, useRef, useState} from 'react';
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
-import LaneItem from '../_components/LaneItem';
+import LaneItem from '../LaneItem';
 
 interface LaneStatusProps{
   laneName: string,

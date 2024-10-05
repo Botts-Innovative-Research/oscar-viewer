@@ -204,14 +204,15 @@ export default function ChartLane(props: ChartInterceptProps){
 
 
     return (
-        <Grid container direction="row" spacing={6} marginTop={2} marginLeft={2}>
-            <Grid item xs>
+        <Grid direction="row" marginTop={2} marginLeft={2}>
+        {/*<Grid container direction="row" spacing={6} marginTop={2} marginLeft={2}>*/}
+            <Grid item>
                 <div id={gammaChartID} style={{
                     marginBottom: 50,
                     height: '85%',
                 }}></div>
             </Grid>
-            <Grid item xs>
+            <Grid item>
                 <div id={neutronChartID} style={{
                     marginBottom: 50,
                     height: '85%',
@@ -220,29 +221,3 @@ export default function ChartLane(props: ChartInterceptProps){
         </Grid>
     );
 };
-
-{/*<Grid container direction="row" spacing={2}>*/}
-{/*    /!*<ToggleButtonGroup*!/*/}
-{/*    /!*    color="error"*!/*/}
-{/*    /!*    orientation="vertical"*!/*/}
-
-{/*    /!*>*!/*/}
-
-{/*    /!*    /!*<Button value="cps" onClick={() => handleChange('cps')}>CPS</Button>*!/*!/*/}
-{/*    /!*    /!*<Button value="sigma" onClick={() => handleChange("sigma")}>Sigma</Button>*!/*!/*/}
-{/*    /!*    /!*<Button value="both" onClick={() => handleChange("both")}>Both</Button>*!/*!/*/}
-{/*    /!*</ToggleButtonGroup>*!/*/}
-{/*   */}
-
-{/*</Grid>*/}
-
-{/*<div id={gammaChartID} style={{display: selectedChart === "cps" ? "block" : "none"}}></div>*/}
-{/*<div id={thresholdChartID} style={{display: selectedChart === "sigma" ? "block" : "none"}}></div>*/}
-{/*<div id={bothChartID} style={{display: selectedChart === "both" ? "block" : "none"}}></div>*/}
-
-{/*<div id={gammaChartID}*/}
-{/*     style={{contentVisibility: selectedChart === 'cps' ? 'visible' : 'hidden'}}></div>*/}
-{/*<div id={gammaChartID}*/}
-{/*     style={{contentVisibility: selectedChart === 'sigma' ? 'visible' : 'hidden'}}></div>*/}
-{/*<div id={gammaChartID}*/}
-{/*     style={{contentVisibility: selectedChart === 'both' ? 'visible' : 'hidden'}}></div>*/}

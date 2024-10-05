@@ -1,5 +1,5 @@
-import EventTable from "../_components/event-table/EventTable";
-import { IEventTableData } from "types/new-types";
+import EventTable from "../event-table/EventTable";
+import { IEventTableData } from "../../../../types/new-types";
 import {AdjudicationData, EventTableData, EventTableDataCollection} from "@/lib/data/oscar/TableHelpers";
 import {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";

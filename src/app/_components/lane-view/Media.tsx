@@ -1,7 +1,7 @@
 "use client";
 
 import {Box, Grid, Typography } from "@mui/material";
-import { SelectedEvent } from "types/new-types";
+import { SelectedEvent } from "../../../../types/new-types";
 import VideoGrid from "./VideoGrid";
 import ChartTimeHighlight from "@/app/_components/event-preview/ChartTimeHighlight";
 import {useAppDispatch} from "@/lib/state/Hooks";
@@ -13,7 +13,7 @@ import {selectEventPreview, setEventPreview, setShouldForceAlarmTableDeselect} f
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import ChartLane from "@/app/lane-view/ChartLane";
+import ChartLane from "@/app/_components/lane-view/ChartLane";
 
 
 export default function Media(props: {
@@ -109,15 +109,15 @@ export default function Media(props: {
 
 
     return (
-        <Box sx={{flexGrow: 1}}>
-        <Grid container direction="row" spacing={2} justifyContent={"center"} alignItems={"center"}>
-            <Grid item xs>
-                <ChartLane  laneName={props.laneName} setChartReady={setChartReady} occDatasources={occDatasources} gammaDatasources={gammaDatasources} neutronDatasources={neutronDatasources} thresholdDatasources={thresholdDatasources} />
-            </Grid>
-            <Grid item xs>
-                <VideoGrid laneName={props.laneName}/>
-            </Grid>
-      </Grid>
+        <Box sx={{flexGrow: 1, overflowX: "auto"}}>
+            <Grid container direction="row" spacing={2} justifyContent={"center"} alignItems={"center"}>
+                <Grid item xs={12} sm={6}>
+                    <ChartLane  laneName={props.laneName} setChartReady={setChartReady} occDatasources={occDatasources} gammaDatasources={gammaDatasources} neutronDatasources={neutronDatasources} thresholdDatasources={thresholdDatasources} />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                    <VideoGrid laneName={props.laneName}/>
+                </Grid>
+          </Grid>
         </Box>
 
 
