@@ -183,12 +183,23 @@ export default function MapComponent(){
         });
     };
 
+
     /***************content in popup************/
     function getContent(status: string, laneName: string) {
         return (
             `<div id='popup-data-layer' class='point-popup'><hr/>
                 <h3 class='popup-text-status'>Status: ${status}</h3>
-                <button onClick='location.href="./lane-view?name=${encodeURIComponent(laneName)}"' class="popup-button" type="button">VIEW LANE</button>
+                <Link 
+                href={{
+                    pathname: 'lane-view',
+                    query: {
+                        name: laneName,
+                    }
+                }}
+                passHref
+                >
+                    <button class="popup-button" type="button">VIEW LANE</button>
+                </Link>
             </div>`
         );
     }
