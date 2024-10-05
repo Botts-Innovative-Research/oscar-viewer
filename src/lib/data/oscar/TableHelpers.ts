@@ -43,8 +43,9 @@ export class EventTableData implements IEventTableData {
             this.status = "Neutron";
         }
         else{
-            console.warn("No alarm detected for event: ", msgValue);
-            return null;
+            this.status= "None"
+            // console.warn("No alarm detected for event: ", msgValue);
+            // return null;
         }
         this.adjudicatedUser = adjudicatedData ? adjudicatedData.user : null;
         this.adjudicatedCode = adjudicatedData ? adjudicatedData.code : null;

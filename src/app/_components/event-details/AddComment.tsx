@@ -12,11 +12,11 @@ import {
   TextField,
   Typography
 } from "@mui/material";
-import {Comment, SelectedEvent} from "types/new-types";
+import {Comment, SelectedEvent} from "../../../../types/new-types";
 import UploadFileRoundedIcon from '@mui/icons-material/UploadFileRounded';
 import InsertDriveFileRoundedIcon from '@mui/icons-material/InsertDriveFileRounded';
 import React, {ChangeEvent, useRef, useState} from "react";
-import AdjudicationSelect from "../_components/event-preview/AdjudicationSelect";
+import AdjudicationSelect from "../event-preview/AdjudicationSelect";
 import IsotopeSelect from "./IsotopeSelect";
 import CommentSection from "./CommentSection"
 
@@ -31,12 +31,14 @@ export default function AddComment(props: {
   const [comments, setComments] = useState<Comment[]>([]);
   const [notes, setNotes] = useState("");
   const [adjudicated, setAdjudicated] = useState("");
-  const [isotope, setIsotope] = useState("");
+
+  const [isotope, setIsotope] = useState<string[]>(null);
+
   const [secondaryInspection, setSecondaryInspection] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  /**handle the file uploade**/
+  /**handle the file uploaded**/
   const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
     if(e.target.files === null){
       console.log('file is null')
@@ -53,7 +55,7 @@ export default function AddComment(props: {
     setAdjudicated(value);
   }
 
-  const handleIsotopeSelect = (value: string) =>  {
+  const handleIsotopeSelect = (value: string[]) =>  {
     console.log(value);
     setIsotope(value);
   }
@@ -77,7 +79,7 @@ export default function AddComment(props: {
     setNotes("");
     setUploadedFiles([]);
     setAdjudicated("");
-    setIsotope("");
+    setIsotope([]);
     setSecondaryInspection(false);
   }
 

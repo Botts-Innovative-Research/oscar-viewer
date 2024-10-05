@@ -269,6 +269,7 @@ export class LaneDSColl {
     locBatch: typeof SweApi[];
     gammaTrshldBatch: typeof SweApi[];
     gammaTrshldRT: typeof SweApi[];
+    connectionRT: typeof SweApi[];
 
     constructor() {
         this.occRT = [];
@@ -283,6 +284,7 @@ export class LaneDSColl {
         this.locRT = [];
         this.gammaTrshldBatch = [];
         this.gammaTrshldRT = [];
+        this.connectionRT = [];
     }
 
     getDSArray(propName: string): typeof SweApi[] {
@@ -342,6 +344,9 @@ export class LaneDSColl {
         for (let ds of this.gammaTrshldRT) {
             ds.subscribe(handler, [EventType.DATA]);
         }
+        for (let ds of this.connectionRT) {
+            ds.subscribe(handler, [EventType.DATA]);
+        }
     }
 
     [key: string]: typeof SweApi[] | Function;
@@ -387,6 +392,9 @@ export class LaneDSColl {
             ds.connect();
         }
         for (let ds of this.gammaTrshldRT) {
+            ds.connect();
+        }
+        for (let ds of this.connectionRT) {
             ds.connect();
         }
     }

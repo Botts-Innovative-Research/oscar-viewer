@@ -2,17 +2,13 @@
 
 import { Grid, Paper, Stack, Typography } from "@mui/material";
 import {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
-import { SelectedEvent } from "types/new-types";
 import BackButton from "../_components/BackButton";
-import DataRow from "./DataRow";
+import DataRow from "../_components/event-details/DataRow";
 
-import MiscTable from "./MiscTable";
-import Comment from "./Comment";
-import AddComment from "./AddComment";
+import MiscTable from "../_components/event-details/MiscTable";
+import AddComment from "../_components/event-details/AddComment";
 import {useSelector} from "react-redux";
-import {RootState} from "@/lib/state/Store";
 import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
-import VideoGrid from "@/app/lane-view/VideoGrid";
 import ChartTimeHighlight from "../_components/event-preview/ChartTimeHighlight";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
@@ -140,59 +136,61 @@ export default function EventDetailsPage() {
 
 
 
-  return (
-    <Stack spacing={2} direction={"column"}>
-      <Grid item spacing={2}>
-        <BackButton />
-      </Grid>
-      <Grid item spacing={2}>
-        <Typography variant="h5">Event Details</Typography>
-      </Grid>
-      <Grid item container spacing={2} sx={{ width: "100%" }}>
-        <Paper variant='outlined' sx={{ width: "100%" }}>
-          <DataRow />
-        </Paper>
-      </Grid>
-
-      <Grid item container spacing={2} sx={{ width: "100%" }}>
-        <Paper variant='outlined' sx={{ width: "100%" }}>
-
-            <Grid container direction="row" spacing={2}>
-                <Grid item xs>
-                    <ChartTimeHighlight gammaDatasources={gammaDatasources}
-                                        neutronDatasources={neutronDatasources}
-                                        thresholdDatasources={thresholdDatasources}
-                                        occDatasources={occDatasources}
-                                        setChartReady={setChartReady}
-                                        modeType="detail"
-                    />
-
-                </Grid>
-                <Grid item xs>
-
-                    <LaneVideoPlayback videoDatasources={videoDatasources} setVideoReady={setVideoReady}
-                                       dataSynchronizer={syncRef.current}
-                                       addDataSource={setActiveVideoIDX}/>
-
-                </Grid>
+    return (
+        <Stack spacing={2} direction={"column"}>
+            <Grid item spacing={2}>
+                <BackButton />
             </Grid>
-        </Paper>
-      </Grid>
-      <Grid item container spacing={2} sx={{ width: "100%" }}>
-        <Paper variant='outlined' sx={{ width: "100%" }}>
-          <MiscTable currentTime={currentTime} />
-        </Paper>
-      </Grid>
-      {/*<Grid item container spacing={2} sx={{ width: "100%" }}>*/}
-      {/*  <Paper variant='outlined' sx={{ width: "100%" }}>*/}
-      {/*    <Comment event={eventPreview.eventData} />*/}
-      {/*  </Paper>*/}
-      {/*</Grid>*/}
-      <Grid item container spacing={2} sx={{ width: "100%" }}>
-        <Paper variant='outlined' sx={{ width: "100%" }}>
-          <AddComment event={eventPreview.eventData} />
-        </Paper>
-      </Grid>
-    </Stack>
-  );
+            <Grid item spacing={2}>
+                <Typography variant="h5">Event Details</Typography>
+            </Grid>
+            <Grid item container spacing={2} sx={{ width: "100%" }}>
+                <Paper variant='outlined' sx={{ width: "100%" }}>
+                    <DataRow />
+                </Paper>
+            </Grid>
+
+            <Grid item container spacing={2} sx={{ width: "100%" }}>
+                <Paper variant='outlined' sx={{ width: "100%" }}>
+
+                    <Grid container direction="row" spacing={2}>
+                        <Grid item xs>
+                            <ChartTimeHighlight gammaDatasources={gammaDatasources}
+                                                neutronDatasources={neutronDatasources}
+                                                thresholdDatasources={thresholdDatasources}
+                                                occDatasources={occDatasources}
+                                                setChartReady={setChartReady}
+                                                modeType="detail"
+                                                currentTime={currentTime}
+                            />
+
+                        </Grid>
+                        <Grid item xs>
+
+                            <LaneVideoPlayback videoDatasources={videoDatasources}
+                                               setVideoReady={setVideoReady}
+                                               dataSynchronizer={syncRef.current}
+                                               addDataSource={setActiveVideoIDX}/>
+
+                        </Grid>
+                    </Grid>
+                </Paper>
+            </Grid>
+            <Grid item container spacing={2} sx={{ width: "100%" }}>
+                <Paper variant='outlined' sx={{ width: "100%" }}>
+                    <MiscTable currentTime={currentTime} />
+                </Paper>
+            </Grid>
+            {/*<Grid item container spacing={2} sx={{ width: "100%" }}>*/}
+            {/*  <Paper variant='outlined' sx={{ width: "100%" }}>*/}
+            {/*    <Comment event={eventPreview.eventData} />*/}
+            {/*  </Paper>*/}
+            {/*</Grid>*/}
+            <Grid item container spacing={2} sx={{ width: "100%" }}>
+                <Paper variant='outlined' sx={{ width: "100%" }}>
+                    <AddComment event={eventPreview?.eventData} />
+                </Paper>
+            </Grid>
+        </Stack>
+    );
 }

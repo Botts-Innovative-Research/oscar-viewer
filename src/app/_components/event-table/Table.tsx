@@ -30,6 +30,8 @@ export default function Table({tableMode}: TableProps) {
     const batchOccupancyTableDataRef = useRef<EventTableData[]>([]);
     const occupancyTableDataRef = useRef<EventTableData[]>([]);
 
+    const eventLogTableData = useRef<EventTableData[]>([]);
+
     const datasourceSetup = useCallback(async () => {
 
         let laneDSMap = new Map<string, LaneDSColl>();
@@ -46,13 +48,16 @@ export default function Table({tableMode}: TableProps) {
                 batchDS.properties.startTime = ds.properties.validTime[0];
                 batchDS.properties.endTime = "now";
 
-                rtDS.properties.startTime = "now"
-                rtDS.properties.endTime = rtEndTime;
-                rtDS.properties.endTime = "2025-01-01T08:13:25.845Z"
+                // rtDS.properties.startTime = "now"
+                // // rtDS.properties.endTime = rtEndTime;
+                // rtDS.properties.endTime = "2055-01-01T08:13:25.845Z"
 
                 if (ds.properties.name.includes('Driver - Occupancy')) {
-                    await fetchObservations(laneid, ds, ds.properties.validTime[0], "now");
                     laneDSColl.addDS('occRT', rtDS);
+                    await fetchObservations(laneid, ds, ds.properties.validTime[0], "now");
+
+
+                    // laneDSColl.addDS('occBatch', batchDS);
                 }
                 if (ds.properties.name.includes('Driver - Gamma Count')) {
                     laneDSColl.addDS('gammaRT', rtDS);
@@ -76,7 +81,8 @@ export default function Table({tableMode}: TableProps) {
 
     async function fetchObservations(laneName: string, ds: typeof DataStream, timeStart: string, timeEnd: string) {
         let allResults: any[] = [];
-        let allEvents: EventTableData[] = [];
+        let allAlarmingEvents: EventTableData[] = [];
+        let nonAlarmingEvents: EventTableData[] = [];
 
         let initialRes = await ds.searchObservations(new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`}), 25000);
         while (initialRes.hasNext()) {
@@ -85,50 +91,71 @@ export default function Table({tableMode}: TableProps) {
             obsRes.map((obs: any) => {
                 // console.log("Observation Result: ", obs);
                 if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
+
                     let newEvent = new EventTableData(idVal.current++, laneName, obs.result, new AdjudicationData('N/A', 0));
 
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
                     newEvent.setSystemIdx(systemID);
 
-                    newEvent ? allEvents.push(newEvent) : null;
+                    newEvent ? allAlarmingEvents.push(newEvent) : null;
                 }
+                else if(obs.result.gammaAlarm === false || obs.result.neutronAlarm === false){ //for event log :p
+
+                    let newEvent = new EventTableData(idVal.current++, laneName, obs.result, new AdjudicationData('N/A', 0));
+
+                    let laneEntry = laneMapRef.current.get(laneName);
+                    const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
+                    newEvent.setSystemIdx(systemID);
+
+                    newEvent ? nonAlarmingEvents.push(newEvent) : null;
+                }
+
             });
         }
+        const existingOcc = new Set(occupancyTableDataRef.current.map(event => event.occupancyId));
+        const filterOccList = allAlarmingEvents.filter((event) => !existingOcc.has(event.occupancyId));
 
-        occupancyTableDataRef.current = [...allEvents, ...occupancyTableDataRef.current];
+        eventLogTableData.current = [...nonAlarmingEvents, ...filterOccList, ...eventLogTableData.current];
+        occupancyTableDataRef.current = [...filterOccList, ...occupancyTableDataRef.current];
         setData(occupancyTableDataRef.current);
     }
 
     function BatchMsgHandler(laneName: string, message: any) {
         console.log("Batch message received:", laneName, message);
-        if(message.values){
-            for (let value of message.values) {
-                let newEvent = new EventTableData(idVal.current++, laneName, value.data, new AdjudicationData('N/A', 0));
-
-                let laneEntry = laneMapRef.current.get(laneName);
-                const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
-                newEvent.setSystemIdx(systemID);
-                batchOccupancyTableDataRef.current = [newEvent, ...batchOccupancyTableDataRef.current];
-
-            }
-            setData(batchOccupancyTableDataRef.current);
-        }
     }
 
     function RTMsgHandler(laneName: string, message: any) {
-
+        let allAlarmingEvents: EventTableData[] = [];
+        let nonAlarmingEvents: EventTableData[] = [];
         if (message.values) {
             for (let value of message.values) {
+
                 if (value.data.gammaAlarm === true || value.data.neutronAlarm === true) {
+                    let newEvent = new EventTableData(idVal.current++, laneName, value.data, new AdjudicationData('N/A', 0));
+                    let laneEntry = laneMapRef.current.get(laneName);
+                    const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
+                    newEvent.setSystemIdx(systemID);
+                    console.log('alarming rt msg', newEvent);
+
+                    newEvent ? allAlarmingEvents.push(newEvent) : null;
+
+
+                }
+                else if (value.data.gammaAlarm === false || value.data.neutronAlarm === false) {
+
                     let newEvent = new EventTableData(idVal.current++, laneName, value.data, new AdjudicationData('N/A', 0));
 
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
                     newEvent.setSystemIdx(systemID);
-                    occupancyTableDataRef.current = [newEvent, ...occupancyTableDataRef.current];
+                    console.log('non alarming rt msg', newEvent);
+                    newEvent ? nonAlarmingEvents.push(newEvent) : null;
                 }
             }
+            eventLogTableData.current = [...nonAlarmingEvents, ...allAlarmingEvents, ...eventLogTableData.current];
+            occupancyTableDataRef.current = [...allAlarmingEvents, ...occupancyTableDataRef.current];
+
             setData(occupancyTableDataRef.current);
         }
     }
@@ -136,8 +163,10 @@ export default function Table({tableMode}: TableProps) {
     const addSubscriptionCallbacks = useCallback(() => {
         for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
             const msgLaneName = laneName;
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('occBatch', (message: any) => BatchMsgHandler(msgLaneName, message));
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('occRT', (message: any) => RTMsgHandler(msgLaneName, message));
+            // laneDSColl.addSubscribeHandlerToALLDSMatchingName('occBatch', (message: any) => BatchMsgHandler(msgLaneName, message));
+            laneDSColl.addSubscribeHandlerToALLDSMatchingName('occRT', (message: any) => {
+                RTMsgHandler(msgLaneName, message)
+            });
             laneDSColl.connectAllDS();
         }
     }, [dataSourcesByLane]);
@@ -150,24 +179,16 @@ export default function Table({tableMode}: TableProps) {
         if (tableMode === "alarmtable") {
             let tableData = new EventTableDataCollection()
             tableData.setData(occupancyTableDataRef.current);
-            tableData.sortByStartTime("descending");
+            const sortedData = [...tableData.data].sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+            tableData.setData(sortedData);
             tableDataRef.current = tableData
 
         } else if (tableMode === "eventlog") {
-
-            let batchedData = new EventTableDataCollection();
-            let tableData = new EventTableDataCollection()
-
-            batchedData.setData(batchOccupancyTableDataRef.current);
-            tableData.setData(occupancyTableDataRef.current);
-
-            batchedData.sortByStartTime("descending");
-            tableData.sortByStartTime("descending");
-            console.log('batch', batchedData)
-
-            let allOccupancyData = batchedData.data.concat(tableData.data);
-            tableDataRef.current = batchedData;
-
+            let eventLogData = new EventTableDataCollection();
+            eventLogData.setData(eventLogTableData.current);
+            const sortedData = [...eventLogData.data].sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+            eventLogData.setData(sortedData);
+            tableDataRef.current = eventLogData;
         } else {
             tableDataRef.current = new EventTableDataCollection();
         }

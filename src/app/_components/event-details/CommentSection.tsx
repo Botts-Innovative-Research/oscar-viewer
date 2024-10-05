@@ -2,7 +2,7 @@
 
 import {Avatar, Box, Button, Icon, Paper, Stack, TextField, Tooltip, Typography} from "@mui/material";
 import InsertDriveFileRoundedIcon from '@mui/icons-material/InsertDriveFileRounded';
-import { Comment} from "types/new-types";
+import { Comment} from "../../../../types/new-types";
 import React, {useState} from "react";
 
 
@@ -66,7 +66,7 @@ export default function CommentSection(props: {
                       textAlign: "center"
 
                   }}>
-                      {comment.isotope}
+                      {comment.isotope.join(', ')}
                   </Box>
 
                   {/*<Stack direction={"column"} spacing={2}>*/}

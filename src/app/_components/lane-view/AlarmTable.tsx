@@ -1,5 +1,5 @@
-import EventTable from "../_components/event-table/EventTable";
-import { IEventTableData } from "types/new-types";
+import EventTable from "../event-table/EventTable";
+import { IEventTableData } from "../../../../types/new-types";
 import {AdjudicationData, EventTableData, EventTableDataCollection} from "@/lib/data/oscar/TableHelpers";
 import {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
@@ -41,13 +41,14 @@ export default function AlarmTablePage(props: LaneViewProps) {
         batchDS.properties.startTime = ds.properties.validTime[0];
         batchDS.properties.endTime = "now";
 
-        rtDS.properties.startTime = "now"
-        rtDS.properties.endTime = rtEndTime;
-        rtDS.properties.endTime = "2025-01-01T08:13:25.845Z"
+        // rtDS.properties.startTime = "now"
+        // rtDS.properties.endTime = rtEndTime;
+        // rtDS.properties.endTime = "2025-01-01T08:13:25.845Z"
 
         if (ds.properties.name.includes('Driver - Occupancy')) {
-          await fetchObservations(laneid, ds, ds.properties.validTime[0], "now");
           laneDSColl.addDS('occRT', rtDS);
+          await fetchObservations(laneid, ds, ds.properties.validTime[0], "now");
+
         }
         if (ds.properties.name.includes('Driver - Gamma Count')) {
           laneDSColl.addDS('gammaRT', rtDS);
@@ -57,9 +58,6 @@ export default function AlarmTablePage(props: LaneViewProps) {
           laneDSColl.addDS('neutronRT', rtDS);
         }
 
-        if (ds.properties.name.includes('Driver - Tamper')) {
-          laneDSColl.addDS('tamperRT', rtDS);
-        }
       }
       setDataSourcesByLane(laneDSMap);
     }
@@ -72,26 +70,32 @@ export default function AlarmTablePage(props: LaneViewProps) {
 
   async function fetchObservations(laneName: string, ds: typeof DataStream, timeStart: string, timeEnd: string) {
     let allResults: any[] = [];
-    let allEvents: EventTableData[] = [];
+    let allAlarmingEvents: EventTableData[] = [];
 
     let initialRes = await ds.searchObservations(new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`}), 25000);
     while (initialRes.hasNext()) {
       let obsRes = await initialRes.nextPage();
       allResults.push(...obsRes);
       obsRes.map((obs: any) => {
-        if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true && laneName === props.laneName) {
-          let newEvent = new EventTableData(idVal.current++, laneName, obs.result, new AdjudicationData('kalyn', 0));
+        if(laneName === props.laneName)
+        {
+          if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
+            let newEvent = new EventTableData(idVal.current++, laneName, obs.result, new AdjudicationData('N/A', 0));
 
-          let laneEntry = laneMapRef.current.get(laneName);
-          const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
-          newEvent.setSystemIdx(systemID);
+            let laneEntry = laneMapRef.current.get(laneName);
+            const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
+            newEvent.setSystemIdx(systemID);
 
-          newEvent ? allEvents.push(newEvent) : null;
+            newEvent ? allAlarmingEvents.push(newEvent) : null;
+          }
         }
       });
     }
 
-    occupancyTableDataRef.current = [...allEvents.filter((event) => event.laneId === props.laneName), ...occupancyTableDataRef.current];
+    const existingOcc = new Set(occupancyTableDataRef.current.map(event => event.occupancyId));
+    const filterOccList = allAlarmingEvents.filter((event) => !existingOcc.has(event.occupancyId));
+
+    occupancyTableDataRef.current = [...filterOccList, ...occupancyTableDataRef.current];
     setData(occupancyTableDataRef.current);
   }
 
@@ -100,25 +104,32 @@ export default function AlarmTablePage(props: LaneViewProps) {
   }
 
   function RTMsgHandler(laneName: string, message: any) {
-      if (message.values) {
-        for (let value of message.values) {
-          if (value.data.gammaAlarm === true || value.data.neutronAlarm === true) {
-            let newEvent = new EventTableData(idVal.current++, laneName, value.data, new AdjudicationData('kalyn', 0));
+    let allAlarmingEvents: EventTableData[] = [];
 
-            let laneEntry = laneMapRef.current.get(laneName);
-            const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
-            newEvent.setSystemIdx(systemID);
-            occupancyTableDataRef.current = [newEvent, ...occupancyTableDataRef.current];
-          }
+    if (message.values) {
+      for (let value of message.values) {
+
+        if (value.data.gammaAlarm === true || value.data.neutronAlarm === true) {
+          let newEvent = new EventTableData(idVal.current++, laneName, value.data, new AdjudicationData('N/A', 0));
+          let laneEntry = laneMapRef.current.get(laneName);
+          const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
+          newEvent.setSystemIdx(systemID);
+          console.log('alarming rt msg', newEvent);
+
+          newEvent ? allAlarmingEvents.push(newEvent) : null;
+
+
         }
-        setData(occupancyTableDataRef.current);
       }
+      occupancyTableDataRef.current = [...allAlarmingEvents, ...occupancyTableDataRef.current];
+      setData(occupancyTableDataRef.current);
+    }
   }
 
   const addSubscriptionCallbacks = useCallback(() => {
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
       const msgLaneName = laneName;
-      laneDSColl.addSubscribeHandlerToAllBatchDS((message: any) => BatchMsgHandler(msgLaneName, message));
+      // laneDSColl.addSubscribeHandlerToALLDSMatchingName('occBatch', (message: any) => BatchMsgHandler(msgLaneName, message));
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('occRT', (message: any) => RTMsgHandler(msgLaneName, message));
       laneDSColl.connectAllDS();
     }
@@ -131,13 +142,13 @@ export default function AlarmTablePage(props: LaneViewProps) {
   useEffect(() => {
     let tableData = new EventTableDataCollection()
     tableData.setData(occupancyTableDataRef.current);
-    tableData.sortByStartTime("descending");
+    const sortedData = [...tableData.data].sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+    tableData.setData(sortedData);
     tableDataRef.current = tableData
   }, [data]);
 
 
   return (
-
       <EventTable viewSecondary viewMenu viewAdjudicated  eventTable={tableDataRef.current}/>
   );
 }
