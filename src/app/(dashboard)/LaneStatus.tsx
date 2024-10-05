@@ -50,6 +50,10 @@ export default function LaneStatus() {
         if (ds.properties.name.includes('Driver - Tamper')) {
           laneDSColl.addDS('tamperRT', rtDS);
         }
+
+        if (ds.properties.name.includes('Driver - Connection Status')) {
+          laneDSColl.addDS('connectionRT', rtDS);
+        }
       }
 
       newStatusList.push({
@@ -64,15 +68,27 @@ export default function LaneStatus() {
         ...prevState.filter(item => !newStatusList.some(newItem => newItem.name === item.name))]);
 
       setDataSourcesByLane(laneDSMap);
+
     }
   }, [laneMapRef.current]);
 
   useEffect(() => {
     datasourceSetup();
   }, [laneMapRef.current]);
+  console.log(dataSourcesByLane)
 
   const addSubscriptionCallbacks = useCallback(() => {
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
+      laneDSColl.addSubscribeHandlerToALLDSMatchingName('connectionRT', (message: any) => {
+        const connectedState = message.values[0].data.isConnected;
+        console.log('connected state: ', laneName, connectedState)
+        if (connectedState) {
+          updateStatus(laneName, 'Online');
+        } else {
+          updateStatus(laneName, 'Offline')
+        }
+
+      });
 
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
         const state = message.values[0].data.alarmState;
@@ -132,7 +148,7 @@ export default function LaneStatus() {
 
               return {...laneData, isFault: false, isOnline: true}
 
-            }else if (newState === 'None') {
+            }else if (newState === 'Offline') {
 
               return {...laneData, isOnline: false, isFault: false, isTamper: false}
             }
@@ -142,7 +158,7 @@ export default function LaneStatus() {
 
 
         // dont reorder if state === alarm, bkg, scan or online
-        if(['Alarm', 'Scan', 'Background', 'Clear', 'Online', 'TamperOff'].includes(newState)) {
+        if(['Alarm', 'Scan', 'Background', 'Clear', 'Online', 'TamperOff', 'Offline'].includes(newState)) {
           //check if online status and push to front
           const offlineStatues = updatedList.filter((list) => !list.isOnline);
           const onlineStatuses = updatedList.filter((list) => list.isOnline);
