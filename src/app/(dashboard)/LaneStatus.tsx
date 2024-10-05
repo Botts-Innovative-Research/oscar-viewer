@@ -75,13 +75,12 @@ export default function LaneStatus() {
   useEffect(() => {
     datasourceSetup();
   }, [laneMapRef.current]);
-  console.log(dataSourcesByLane)
+
 
   const addSubscriptionCallbacks = useCallback(() => {
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('connectionRT', (message: any) => {
         const connectedState = message.values[0].data.isConnected;
-        console.log('connected state: ', laneName, connectedState)
         if (connectedState) {
           updateStatus(laneName, 'Online');
         } else {

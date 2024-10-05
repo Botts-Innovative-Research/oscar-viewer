@@ -32,7 +32,7 @@ export default function LaneStatusItem(props: {
         >
             <Stack direction={"row"} spacing={1}>
 
-                <Typography variant="body1" style={{fontSize: 12, textWrap: 'nowrap'}}>{props.name}</Typography>
+                <Typography variant="body1" style={{fontSize: 12, textWrap: 'nowrap'}}>{props.name.length <= 11 ? props.name : (props.name.substr(0, 11)) }</Typography>
 
                 {props.isFault &&
                     <Tooltip title={'Fault'} arrow placement="top">
