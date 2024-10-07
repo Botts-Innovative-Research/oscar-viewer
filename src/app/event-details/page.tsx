@@ -1,8 +1,8 @@
 "use client";
 
-import { Grid, Paper, Stack, Typography } from "@mui/material";
+import {Grid, Paper, Stack, Typography} from "@mui/material";
 import {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
-import { SelectedEvent } from "types/new-types";
+import {SelectedEvent} from "types/new-types";
 import BackButton from "../_components/BackButton";
 import DataRow from "./DataRow";
 
@@ -86,6 +86,7 @@ export default function EventDetailsPage() {
         setNeutronDS(tempDSMap.get("neutron"));
         setThresholdDS(tempDSMap.get("gammaTrshld"));
         setVideoDatasources(tempDSMap.get("video"));
+        setDatasourcesReady(true);
 
     }, [eventPreview, laneMapRef]);
 
@@ -128,9 +129,9 @@ export default function EventDetailsPage() {
             syncRef.current.connect().then(() => {
                 console.log("DataSync Should Be Connected", syncRef.current);
             });
-            if(syncRef.current.isConnected()){
+            if (syncRef.current.isConnected()) {
                 console.log("DataSync Connected!!!");
-            }else{
+            } else {
                 console.log("DataSync Not Connected... :(");
             }
         } else {
@@ -139,60 +140,67 @@ export default function EventDetailsPage() {
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
 
 
+    return (
+        <Stack spacing={2} direction={"column"}>
+            <Grid item spacing={2}>
+                <BackButton/>
+            </Grid>
+            <Grid item spacing={2}>
+                <Typography variant="h5">Event Details</Typography>
+            </Grid>
+            <Grid item container spacing={2} sx={{width: "100%"}}>
+                <Paper variant='outlined' sx={{width: "100%"}}>
+                    <DataRow/>
+                </Paper>
+            </Grid>
 
-  return (
-    <Stack spacing={2} direction={"column"}>
-      <Grid item spacing={2}>
-        <BackButton />
-      </Grid>
-      <Grid item spacing={2}>
-        <Typography variant="h5">Event Details</Typography>
-      </Grid>
-      <Grid item container spacing={2} sx={{ width: "100%" }}>
-        <Paper variant='outlined' sx={{ width: "100%" }}>
-          <DataRow />
-        </Paper>
-      </Grid>
+            <Grid item container spacing={2} sx={{width: "100%"}}>
+                <Paper variant='outlined' sx={{width: "100%"}}>
 
-      <Grid item container spacing={2} sx={{ width: "100%" }}>
-        <Paper variant='outlined' sx={{ width: "100%" }}>
-
-            <Grid container direction="row" spacing={2}>
-                <Grid item xs>
-                    <ChartTimeHighlight gammaDatasources={gammaDatasources}
-                                        neutronDatasources={neutronDatasources}
-                                        thresholdDatasources={thresholdDatasources}
-                                        occDatasources={occDatasources}
+                    <Grid container direction="row" spacing={2}>
+                        <Grid item xs>
+                            {datasourcesReady && (
+                                <>
+                                    <ChartTimeHighlight
+                                        datasources={{
+                                            gamma: gammaDatasources[0],
+                                            neutron: neutronDatasources[0],
+                                            threshold: thresholdDatasources[0]
+                                        }}
                                         setChartReady={setChartReady}
                                         modeType="detail"
-                    />
-
-                </Grid>
-                <Grid item xs>
-
-                    <LaneVideoPlayback videoDatasources={videoDatasources} setVideoReady={setVideoReady}
-                                       dataSynchronizer={syncRef.current}
-                                       addDataSource={setActiveVideoIDX}/>
-                    
-                </Grid>
+                                        currentTime={currentTime}
+                                    />
+                                </>
+                            )}
+                        </Grid>
+                        <Grid item xs>
+                            {datasourcesReady && (
+                                <>
+                                    <LaneVideoPlayback videoDatasources={videoDatasources} setVideoReady={setVideoReady}
+                                                       dataSynchronizer={syncRef.current}
+                                                       addDataSource={setActiveVideoIDX}/>
+                                </>
+                            )}
+                        </Grid>
+                    </Grid>
+                </Paper>
             </Grid>
-        </Paper>
-      </Grid>
-      <Grid item container spacing={2} sx={{ width: "100%" }}>
-        <Paper variant='outlined' sx={{ width: "100%" }}>
-          <MiscTable currentTime={currentTime} />
-        </Paper>
-      </Grid>
-      {/*<Grid item container spacing={2} sx={{ width: "100%" }}>*/}
-      {/*  <Paper variant='outlined' sx={{ width: "100%" }}>*/}
-      {/*    <Comment event={eventPreview.eventData} />*/}
-      {/*  </Paper>*/}
-      {/*</Grid>*/}
-      <Grid item container spacing={2} sx={{ width: "100%" }}>
-        <Paper variant='outlined' sx={{ width: "100%" }}>
-          <AddComment event={eventPreview.eventData} />
-        </Paper>
-      </Grid>
-    </Stack>
-  );
+            <Grid item container spacing={2} sx={{width: "100%"}}>
+                <Paper variant='outlined' sx={{width: "100%"}}>
+                    <MiscTable currentTime={currentTime}/>
+                </Paper>
+            </Grid>
+            {/*<Grid item container spacing={2} sx={{ width: "100%" }}>*/}
+            {/*  <Paper variant='outlined' sx={{ width: "100%" }}>*/}
+            {/*    <Comment event={eventPreview.eventData} />*/}
+            {/*  </Paper>*/}
+            {/*</Grid>*/}
+            <Grid item container spacing={2} sx={{width: "100%"}}>
+                <Paper variant='outlined' sx={{width: "100%"}}>
+                    <AddComment event={eventPreview.eventData}/>
+                </Paper>
+            </Grid>
+        </Stack>
+    );
 }

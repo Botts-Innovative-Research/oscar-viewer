@@ -226,14 +226,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 break;
         }
         return ids;
-        // console.log("Setting Chart Element IDs");
-        // if (eventPreview.eventData?.status === "Gamma") {
-        //     setGammaChartID(gammaChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
-        // } else if (eventPreview.eventData?.status === "Neutron") {
-        //     setNeutronChartID(neutronChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
-        // } else if (eventPreview.eventData?.status === "Gamma & Neutron") {
-        //     setBothChartID(bothChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
-        // }
     }
 
     function checkForNeededChartElements(eventData: EventTableData) {
