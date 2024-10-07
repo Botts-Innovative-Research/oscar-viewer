@@ -13,7 +13,10 @@ import {
     CardHeader,
     Container,
     Stack,
-    TextField, Typography
+    TextField,
+    Typography,
+    useMediaQuery,
+    useTheme
 } from "@mui/material";
 import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
 import {RootState} from "@/lib/state/Store";
@@ -24,7 +27,6 @@ import {IOSCARClientState, setCurrentUser} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {Node, NodeOptions} from "@/lib/data/osh/Node";
 import Divider from "@mui/material/Divider";
-import {white} from "next/dist/lib/picocolors";
 
 
 export default function StateManager() {
@@ -49,6 +51,8 @@ export default function StateManager() {
     const [loadNodeOpts, setLoadNodeOpts] = useState<NodeOptions>(newNodeOpts);
     const [targetNode, setTargetNode] = useState<Node>(new Node(newNodeOpts));
     const [showLoadAlert, setShowLoadAlert] = useState<boolean>(false);
+    const theme = useTheme();
+    const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
     useEffect(() => {
         setLoadNodeOpts({...loadNodeOpts, ...defaultNode});
@@ -138,68 +142,79 @@ export default function StateManager() {
     }, [loadNodeOpts]);
 
     return (
-        <Container sx={{margin: 2, padding: 2, width: '100%'}}>
-            <CardHeader title={"Configuration Management"} titleTypographyProps={{variant: "h2"}}/>
-            <CardContent component="form">
-                <Stack spacing={3} divider={<Divider orientation={"vertical"} flexItem/>} direction="column">
+        <Box sx={{
+            margin: 2, padding: 2, width: isSmallScreen ? '100%' : '75%'}}>
+            <Card>
+                <CardHeader title={"Configuration Management"} titleTypographyProps={{variant: "h2"}}/>
+                <CardContent component="form">
+                    <Box>
+                        <Stack spacing={3} divider={<Divider orientation={"horizontal"} flexItem/>} direction="column">
 
-                    <Card variant={"outlined"}>
-                        <CardHeader title={"Save Config Options"}/>
-                        <CardContent>
-                            <Stack spacing={2}>
+                            <Card variant={"outlined"}>
+                                <CardHeader title={"Save Config Options"}/>
+                                <CardContent>
+                                    <Stack spacing={2}>
 
-                                <TextField label="File Name" value={fileName} onChange={handleChangeForm}/>
-                                <Button onClick={handleSaveState} variant={"contained"} color={"primary"}>
-                                    Save
-                                </Button>
-                            </Stack>
-                        </CardContent>
-                    </Card>
+                                        <TextField label="File Name" value={fileName} onChange={handleChangeForm}/>
+                                        <Button onClick={handleSaveState} variant={"contained"} color={"primary"}>
+                                            Save
+                                        </Button>
+                                    </Stack>
+                                </CardContent>
+                            </Card>
 
-                    <Card variant={"outlined"}>
-                        <CardHeader title={"Load Config Options"}/>
-                        <CardContent>
-                            <Stack spacing={2}>
-                                <TextField label="Server Address" name="address" value={loadNodeOpts.address}
-                                           onChange={handleChangeLoadForm}/>
-                                <TextField label="Server Port" name="port" value={loadNodeOpts.port}
-                                           onChange={handleChangeLoadForm}/>
-                                <TextField label="Server Endpoint" name="sosEndpoint" value={loadNodeOpts.oshPathRoot}
-                                           onChange={handleChangeLoadForm}/>
-                                <TextField label="API Endpoint" name="csAPIEndpoint" value={loadNodeOpts.csAPIEndpoint}
-                                           onChange={handleChangeLoadForm}/>
-                                <TextField label="Server Username" name="username" value={loadNodeOpts.auth.username}
-                                           onChange={handleChangeLoadForm}/>
-                                <TextField label="Server Password" name="password" value={loadNodeOpts.auth.password}
-                                           onChange={handleChangeLoadForm} type={"password"}/>
+                            <Card variant={"outlined"}>
+                                <CardHeader title={"Load Config Options"}/>
+                                <CardContent>
+                                    <Stack spacing={2}>
+                                        <TextField label="Server Address" name="address" value={loadNodeOpts.address}
+                                                   onChange={handleChangeLoadForm}/>
+                                        <TextField label="Server Port" name="port" value={loadNodeOpts.port}
+                                                   onChange={handleChangeLoadForm}/>
+                                        <TextField label="Server Endpoint" name="sosEndpoint"
+                                                   value={loadNodeOpts.oshPathRoot}
+                                                   onChange={handleChangeLoadForm}/>
+                                        <TextField label="API Endpoint" name="csAPIEndpoint"
+                                                   value={loadNodeOpts.csAPIEndpoint}
+                                                   onChange={handleChangeLoadForm}/>
+                                        <TextField label="Server Username" name="username"
+                                                   value={loadNodeOpts.auth.username}
+                                                   onChange={handleChangeLoadForm}/>
+                                        <TextField label="Server Password" name="password"
+                                                   value={loadNodeOpts.auth.password}
+                                                   onChange={handleChangeLoadForm} type={"password"}/>
 
-                                <Button onClick={toggleLoadAlert} variant={"contained"} color={"primary"} disabled={showLoadAlert}>
-                                    Load State
-                                </Button>
-                                {showLoadAlert && (
-                                    <Alert severity={"warning"} variant={"filled"}>
-                                        <AlertTitle>Warning</AlertTitle>
-                                        <Container>
-                                            <Stack spacing={2} direction={"row"}>
-                                                <Typography>
-                                                    Loading Config will overwrite the current configuration.
-                                                </Typography>
-                                                <Button variant={"contained"} color={"success"}
-                                                        onClick={handleLoadState}>
-                                                    Accept
-                                                </Button>
-                                                <Button variant={"contained"} color={"error"} onClick={toggleLoadAlert}>
-                                                    Cancel
-                                                </Button>
-                                            </Stack>
-                                        </Container>
-                                    </Alert>
-                                )}
-                            </Stack>
-                        </CardContent>
-                    </Card>
-                </Stack>
-            </CardContent>
-        </Container>
+                                        <Button onClick={toggleLoadAlert} variant={"contained"} color={"primary"}
+                                                disabled={showLoadAlert}>
+                                            Load State
+                                        </Button>
+                                        {showLoadAlert && (
+                                            <Alert severity={"warning"} variant={"filled"}>
+                                                <AlertTitle>Warning</AlertTitle>
+                                                <Container>
+                                                    <Stack spacing={2} direction={"row"}>
+                                                        <Typography>
+                                                            Loading Config will overwrite the current configuration.
+                                                        </Typography>
+                                                        <Button variant={"contained"} color={"success"}
+                                                                onClick={handleLoadState}>
+                                                            Accept
+                                                        </Button>
+                                                        <Button variant={"contained"} color={"error"}
+                                                                onClick={toggleLoadAlert}>
+                                                            Cancel
+                                                        </Button>
+                                                    </Stack>
+                                                </Container>
+                                            </Alert>
+                                        )}
+                                    </Stack>
+                                </CardContent>
+                            </Card>
+                        </Stack>
+                    </Box>
+                </CardContent>
+            </Card>
+        </Box>
     );
 }
