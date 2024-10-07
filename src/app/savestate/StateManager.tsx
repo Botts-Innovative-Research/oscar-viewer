@@ -140,7 +140,7 @@ export default function StateManager() {
     return (
         <Container sx={{margin: 2, padding: 2, width: '100%'}}>
             <CardHeader title={"Configuration Management"} titleTypographyProps={{variant: "h2"}}/>
-            <Box component="form" sx={{margin: 2}}>
+            <CardContent component="form">
                 <Stack spacing={3} divider={<Divider orientation={"vertical"} flexItem/>} direction="column">
 
                     <Card variant={"outlined"}>
@@ -173,7 +173,7 @@ export default function StateManager() {
                                 <TextField label="Server Password" name="password" value={loadNodeOpts.auth.password}
                                            onChange={handleChangeLoadForm} type={"password"}/>
 
-                                <Button onClick={toggleLoadAlert} variant={"contained"} color={"primary"}>
+                                <Button onClick={toggleLoadAlert} variant={"contained"} color={"primary"} disabled={showLoadAlert}>
                                     Load State
                                 </Button>
                                 {showLoadAlert && (
@@ -188,6 +188,9 @@ export default function StateManager() {
                                                         onClick={handleLoadState}>
                                                     Accept
                                                 </Button>
+                                                <Button variant={"contained"} color={"error"} onClick={toggleLoadAlert}>
+                                                    Cancel
+                                                </Button>
                                             </Stack>
                                         </Container>
                                     </Alert>
@@ -196,7 +199,7 @@ export default function StateManager() {
                         </CardContent>
                     </Card>
                 </Stack>
-            </Box>
+            </CardContent>
         </Container>
     );
 }
