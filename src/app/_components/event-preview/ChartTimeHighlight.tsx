@@ -5,7 +5,7 @@
 'use client';
 
 import {useCallback, useEffect, useRef, useState} from "react";
-import {Typography} from "@mui/material";
+import {Box, Typography} from "@mui/material";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
@@ -14,42 +14,30 @@ import CurveLayer from 'osh-js/source/core/ui/layer/CurveLayer.js';
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import annotationPlugin from 'chartjs-plugin-annotation';
 import {Chart, registerables} from 'chart.js';
-import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
+import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 
 Chart.register(...registerables, annotationPlugin);
 
 export class ChartInterceptProps {
-    gammaDatasources: typeof SweApi[];
-    neutronDatasources: typeof SweApi[];
-    occDatasources: typeof SweApi[];
-    thresholdDatasources: typeof SweApi[];
     setChartReady: Function;
     modeType: string;
-    syncRef?: typeof DataSynchronizer;
     currentTime: any;
+    datasources: { gamma: typeof SweApi, neutron: typeof SweApi, threshold: typeof SweApi };
 }
 
 export default function ChartTimeHighlight(props: ChartInterceptProps) {
     const eventPreview = useSelector((state: RootState) => selectEventPreview(state));
     const [chartsReady, setChartsReady] = useState<boolean>(false);
-    const [viewReady, setViewReady] = useState<boolean>(false);
+    // const [viewReady, setViewReady] = useState<boolean>(false);
     const [isReadyToRender, setIsReadyToRender] = useState<boolean>(false);
 
     // chart specifics
-    const timeVert = useState<Date>;
-    const horizontalThreshold = useState<number>(0);
-    const gammaChartViewRef = useRef<typeof ChartJsView | null>(null);
-    const neutronChartViewRef = useRef<typeof ChartJsView | null>(null);
-    const [thresholdCurve, setThresholdCurve] = useState<typeof CurveLayer>();
-    const [gammaCurve, setGammaCurve] = useState<typeof CurveLayer>();
-    const [neutronCurve, setNeutronCurve] = useState<typeof CurveLayer>();
-    const [occupancyCurve, setOccupancyCurve] = useState<typeof CurveLayer>();
+    const gammaChartViewRef = useRef<HTMLDivElement | null>(null);
+    const neutronChartViewRef = useRef<HTMLDivElement | null>(null);
     const gammaChartBaseId = "chart-view-event-detail-gamma-";
     const neutronChartBaseId = "chart-view-event-detail-neutron-";
-    const bothChartBaseId = "chart-view-event-detail-both-";
-    const [gammaChartID, setGammaChartID] = useState<string>("");
-    const [neutronChartID, setNeutronChartID] = useState<string>("");
-    const [bothChartID, setBothChartID] = useState<string>("");
+    const [gammaChartView, setGammaChartView] = useState<any>();
+    const [neutronChartView, setNeutronChartView] = useState<any>();
 
     function createGammaViewCurve(gammaDatasource: { id: any; }) {
         if (!gammaDatasource) return null;
@@ -110,36 +98,49 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     }
 
 
-    const createCurveLayers = useCallback(() => {
-        // console.log("LocalDSMap", localDSMap);
-        if (props.thresholdDatasources.length > 0) {
-            console.log("Threshold DS", props.thresholdDatasources);
+    // const createCurveLayers = useCallback(() => {
+    //     // reset views
+    //     // gammaChartViewRef.current?.destroy();
+    //     // neutronChartViewRef.current?.destroy();
+    //
+    //     if (props.thresholdDatasources.length > 0) {
+    //         console.log("Threshold DS", props.thresholdDatasources);
+    //
+    //         let tCurve = createThresholdViewCurve(props.thresholdDatasources[0]);
+    //         setThresholdCurve(tCurve);
+    //     }
+    //
+    //     if (props.gammaDatasources.length > 0) {
+    //         console.log("Gamma DS", props.gammaDatasources);
+    //
+    //         let gCurve = createGammaViewCurve(props.gammaDatasources[0]);
+    //         setGammaCurve(gCurve);
+    //     }
+    //
+    //     if (props.neutronDatasources.length > 0) {
+    //         console.log("Neutron DS", props.neutronDatasources);
+    //
+    //         let nCurve = createNeutronViewCurve(props.neutronDatasources[0]);
+    //         setNeutronCurve(nCurve);
+    //     }
+    //
+    //     // setChartsReady(true);
+    //     setLayersReady(true);
+    // }, [props]);
 
-            let tCurve = createThresholdViewCurve(props.thresholdDatasources[0]);
-            setThresholdCurve(tCurve);
+    function createCurveLayersAndReturn() {
+        let tCurve = createThresholdViewCurve(props.datasources.threshold);
+        let gCurve = createGammaViewCurve(props.datasources.gamma);
+        let nCurve = createNeutronViewCurve(props.datasources.neutron);
+        return {
+            gamma: gCurve,
+            neutron: nCurve,
+            threshold: tCurve
         }
-
-        if (props.gammaDatasources.length > 0) {
-            console.log("Gamma DS", props.gammaDatasources);
-
-            let gCurve = createGammaViewCurve(props.gammaDatasources[0]);
-            setGammaCurve(gCurve);
-        }
-
-        if (props.neutronDatasources.length > 0) {
-            console.log("Neutron DS", props.neutronDatasources);
-
-            let nCurve = createNeutronViewCurve(props.neutronDatasources[0]);
-            setNeutronCurve(nCurve);
-        }
-
-        setChartsReady(true);
-    }, [props]);
+    }
 
     const resetView = useCallback(() => {
         if (!eventPreview.isOpen) {
-            gammaChartViewRef.current.destroy();
-            neutronChartViewRef.current.destroy();
             gammaChartViewRef.current = null;
             neutronChartViewRef.current = null;
             setIsReadyToRender(false);
@@ -147,104 +148,109 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
     }, [eventPreview]);
 
-    useEffect(() => {
-        resetView();
-    }, [resetView]);
+    function createChartViews(layers: { gamma: any, threshold: any, neutron: any }, elementIds: string[]) {
+        console.log("Creating Chart Views", layers, elementIds);
+        let newChartViews: any = {gamma: null, neutron: null};
 
-    const checkForMountableAndCreateCharts = useCallback(() => {
-        if (!gammaChartViewRef.current && thresholdCurve && gammaCurve) {
-            console.log("Creating Gamma Chart:", thresholdCurve, gammaCurve);
+        for (let id of elementIds) {
 
-            const container = document.getElementById(gammaChartID);
-            if (container) {
-                gammaChartViewRef.current = new ChartJsView({
-                    container: gammaChartID,
-                    layers: [thresholdCurve, gammaCurve],
+            if (id.includes("gamma")) {
+
+                let gammaChartElt = document.createElement("div");
+                gammaChartElt.id = id;
+                gammaChartViewRef.current.appendChild(gammaChartElt);
+
+                console.log("Creating Gamma Chart in elmt", gammaChartViewRef.current);
+                let gammaChart = new ChartJsView({
+                    container: id,
+                    layers: [layers.gamma, layers.threshold],
                     css: "chart-view-event-detail",
                 });
-
-                setViewReady(true);
+                console.log("Created Gamma Chart", gammaChart);
+                newChartViews.gamma = gammaChart;
+                setGammaChartView(gammaChart);
             }
-        }
 
-        if (!neutronChartViewRef.current && neutronCurve) {
-            console.log("Creating Neutron Chart:", neutronCurve);
+            if (id.includes("neutron")) {
+                let neutronChartElt = document.createElement("div");
+                neutronChartElt.id = id;
+                neutronChartViewRef.current.appendChild(neutronChartElt);
 
-            const containerN = document.getElementById(neutronChartID);
-            if (containerN) {
-                neutronChartViewRef.current = new ChartJsView({
-                    container: neutronChartID,
-                    layers: [neutronCurve],
+                console.log("Creating Neutron Chart in elmt", neutronChartViewRef.current);
+                let neutronChart = new ChartJsView({
+                    container: id,
+                    layers: [layers.neutron],
                     css: "chart-view-event-detail",
                 });
-                setViewReady(true);
+                console.log("Created Neutron Chart", neutronChart);
+                newChartViews.neutron = neutronChart;
+                setNeutronChartView(neutronChart);
             }
+            // }
         }
-    }, [thresholdCurve, gammaCurve, neutronCurve, isReadyToRender]);
+        return newChartViews;
+    }
 
     const checkReadyToRender = useCallback(() => {
-        if (chartsReady && viewReady) {
+        if (chartsReady) {
             setIsReadyToRender(true);
         } else {
             setIsReadyToRender(false);
         }
-    }, [chartsReady, viewReady]);
+    }, [chartsReady]);
 
-    useEffect(() => {
-        checkForMountableAndCreateCharts();
-    }, [checkForMountableAndCreateCharts]);
-
-    useEffect(() => {
-        checkReadyToRender();
-    }, [chartsReady, viewReady]);
-
-    useEffect(() => {
-        if (isReadyToRender) {
-            console.log("Chart is ready to render");
-            props.setChartReady(true);
+    function updateChartElIds(eventData: EventTableData): string[] {
+        let ids: string[] = [];
+        let gammaId: string;
+        let neutronId: string
+        switch (eventData.status) {
+            case "Gamma":
+                gammaId = gammaChartBaseId + eventData.id + "-" + props.modeType;
+                // setGammaChartID(gammaId);
+                ids.push(gammaId);
+                break;
+            case "Neutron":
+                neutronId = neutronChartBaseId + eventData.id + "-" + props.modeType;
+                // setNeutronChartID(neutronId);
+                ids.push(neutronId);
+                break;
+            case "Gamma & Neutron":
+                gammaId = gammaChartBaseId + eventData.id + "-" + props.modeType;
+                neutronId = neutronChartBaseId + eventData.id + "-" + props.modeType;
+                // setGammaChartID(gammaId);
+                // setNeutronChartID(neutronId);
+                ids.push(gammaId, neutronId);
+                // setBothChartID(bothChartBaseId + eventData.id + "-" + props.modeType);
+                break;
+            default:
+                break;
         }
-    }, [isReadyToRender]);
-
-    const updateChartElIds = useCallback(() => {
-        if (eventPreview.eventData?.status === "Gamma") {
-            setGammaChartID(gammaChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
-        } else if (eventPreview.eventData?.status === "Neutron") {
-            setNeutronChartID(neutronChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
-        } else if (eventPreview.eventData?.status === "Gamma & Neutron") {
-            setBothChartID(bothChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
-        }
-    }, [eventPreview]);
-
-    useEffect(() => {
-        updateChartElIds();
-    }, [eventPreview, props]);
-
-
-    useEffect(() => {
-        if (checkForProvidedDataSources()) {
-            createCurveLayers();
-        }
-    }, [props]);
-
-    function checkForProvidedDataSources() {
-        console.log("[CI] Checking for provided data sources...");
-        if (!props.gammaDatasources || !props.neutronDatasources || !props.thresholdDatasources) {
-            console.warn("No DataSources provided for ChartTimeHighlight");
-            return false;
-        } else {
-            return true;
-        }
+        return ids;
+        // console.log("Setting Chart Element IDs");
+        // if (eventPreview.eventData?.status === "Gamma") {
+        //     setGammaChartID(gammaChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
+        // } else if (eventPreview.eventData?.status === "Neutron") {
+        //     setNeutronChartID(neutronChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
+        // } else if (eventPreview.eventData?.status === "Gamma & Neutron") {
+        //     setBothChartID(bothChartBaseId + eventPreview.eventData.id + "-" + props.modeType);
+        // }
     }
 
-    // const checkForProvidedDataSources = useCallback(() => {
-    //     console.log("[CI] Checking for provided data sources...");
-    //     if (!props.gammaDatasources || !props.neutronDatasources || !props.thresholdDatasources) {
-    //         console.warn("No DataSources provided for ChartTimeHighlight");
-    //         return false;
-    //     } else {
-    //         return true;
-    //     }
-    // }, [props.gammaDatasources, props.neutronDatasources, props.thresholdDatasources]);
+    function checkForNeededChartElements(eventData: EventTableData) {
+        switch (eventData.status) {
+            case "Gamma":
+                return ["gamma"];
+                break;
+            case "Neutron":
+                return ["neutron"];
+                break;
+            case "Gamma & Neutron":
+                return ["gamma", "neutron"];
+                break;
+            default:
+                return [];
+        }
+    }
 
     useEffect(() => {
         let currTime = props.currentTime;
@@ -255,7 +261,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 annotations: {
                     verticalLine: {
                         type: 'line',
-                        // value: props.syncRef.getCurrentTime(),
                         xMin: theTime,
                         xMax: theTime,
                         borderColor: 'yellow',
@@ -267,42 +272,87 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                     }
                 }
             };
-            if (gammaChartViewRef.current) {
-                const gchart = gammaChartViewRef.current.chart;
-                gchart.options.plugins.annotation = chartAnnotation;
-                gchart.update();
-            }
-            if (neutronChartViewRef.current) {
-                const nchart = neutronChartViewRef.current.chart;
-                nchart.options.plugins.annotation = chartAnnotation;
-                nchart.update();
+            if (chartsReady) {
+                console.log("Annotating Charts", gammaChartView, neutronChartView);
+
+                if (gammaChartView) {
+                    console.log("Annotating Gamma Chart", gammaChartView);
+                    const gchart = gammaChartView.chart;
+                    gchart.options.plugins.annotation = chartAnnotation;
+                    gchart.update();
+                }
+                if (neutronChartView) {
+                    console.log("Annotating Neutron Chart", neutronChartView);
+                    const nchart = neutronChartView.chart;
+                    nchart.options.plugins.annotation = chartAnnotation;
+                    nchart.update();
+                }
             }
         }
-    }, [props.currentTime, gammaChartViewRef]);
+    }, [props.currentTime, gammaChartView, neutronChartView, chartsReady]);
+
+    useEffect(() => {
+        if (eventPreview.eventData) {
+            let neededCharts = checkForNeededChartElements(eventPreview.eventData);
+            console.log("Found Needed Charts:", neededCharts);
+            for (let chartType of neededCharts) {
+                if (chartType === "gamma") {
+                    console.log("Gamma Element:", gammaChartViewRef.current);
+                    document
+                    // set gamma ID
+                } else if (chartType === "neutron") {
+                    console.log("Neutron Element:", neutronChartViewRef.current);
+                }
+            }
+            // setChartElementsFound(true);
+            let elementIds: any[] = updateChartElIds(eventPreview.eventData);
+            let layers = createCurveLayersAndReturn();
+            console.log("Chart Curve Layers", layers);
+            // setLayersReady(true);
+            let views = createChartViews(layers, elementIds);
+            console.log("Chart Views", views);
+            if (views.gamma || views.neutron) {
+                setChartsReady(true);
+            }
+        }
+    }, [eventPreview]);
+
+    useEffect(() => {
+        checkReadyToRender();
+    }, [chartsReady]);
+
+    useEffect(() => {
+        if (isReadyToRender) {
+            console.log("Chart is ready to render");
+            props.setChartReady(true);
+        }
+    }, [isReadyToRender]);
 
 
     if (eventPreview.eventData?.status === "Gamma") {
         return (
-            <div>
+            <Box sx={{width: "100%"}} ref={gammaChartViewRef}>
                 <Typography variant="h6">Gamma Readings</Typography>
-                <div id={gammaChartID}></div>
-            </div>
+                {/*<div id={gammaChartID} ref={gammaChartViewRef}></div>*/}
+            </Box>
         );
     } else if (eventPreview.eventData?.status === "Neutron") {
         return (
-            <div>
+            <Box sx={{width: "100%"}} ref={neutronChartViewRef}>
                 <Typography variant="h6">Neutron Readings</Typography>
-                <div id={neutronChartID}></div>
-            </div>
+                {/*<div id={neutronChartID} ref={neutronChartViewRef}></div>*/}
+            </Box>
         );
     } else if (eventPreview.eventData?.status === "Gamma & Neutron") {
         return (
-            <div>
-                <Typography variant="h6">Gamma Readings</Typography>
-                <div id={gammaChartID}></div>
-                <Typography variant="h6">Neutron Readings</Typography>
-                <div id={neutronChartID}></div>
-            </div>
+            <Box sx={{width: "100%"}}>
+                <div ref={gammaChartViewRef}>
+                    <Typography variant="h6">Gamma Readings</Typography>
+                </div>
+                <div ref={neutronChartViewRef}>
+                    <Typography variant="h6">Neutron Readings</Typography>
+                </div>
+            </Box>
         );
     } else {
         return (

@@ -18,13 +18,14 @@ import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 
 
-export function EventPreview() {
+export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTableData | null }) {
     const dispatch = useAppDispatch();
     const router = useRouter();
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
-    const eventPreview = useSelector(selectEventPreview);
+    // const eventPreview = useSelector(selectEventPreview);
     const dsMapRef = useRef<Map<string, typeof SweApi[]>>();
     const [localDSMap, setLocalDSMap] = useState<Map<string, typeof SweApi[]>>(new Map<string, typeof SweApi[]>());
     const [dataSyncReady, setDataSyncReady] = useState<boolean>(false);
@@ -40,6 +41,9 @@ export function EventPreview() {
     const [thresholdDatasources, setThresholdDS] = useState<typeof SweApi[]>([]);
     const [chartReady, setChartReady] = useState<boolean>(false);
     const [currentTime, setCurrentTime] = useState<number>(0);
+    const gammaChartRef = useRef<any>();
+    const neutronChartRef = useRef<any>();
+
 
     // Video Specifics
     const [videoReady, setVideoReady] = useState<boolean>(false);
@@ -64,17 +68,44 @@ export function EventPreview() {
         router.push("/event-details");
     }
 
-    useMemo(() => {
+    function disconnectDSArray(dsArray: typeof SweApi[]) {
+        dsArray.forEach(ds => {
+            ds.disconnect();
+        });
+    }
+
+    function setChartRef(type: string, ref: any) {
+        if (type === "gamma") {
+            gammaChartRef.current = ref;
+        } else if (type === "neutron") {
+            neutronChartRef.current = ref;
+        }
+
+    }
+
+    /*useMemo(() => {
+       /!* if(dsMapRef.current.size > 0) {
+            disconnectDSArray(gammaDatasources);
+            disconnectDSArray(neutronDatasources);
+            disconnectDSArray(thresholdDatasources);
+            disconnectDSArray(occDatasources);
+        }
         // create dsMapRef of eventPreview
-        if (eventPreview) {
+        if (eventPreview.isOpen) {
             dsMapRef.current = laneMapRef.current.get(eventPreview.eventData.laneId).getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
             console.log("EventPreview DS Map", dsMapRef.current);
             setLocalDSMap(dsMapRef.current);
-        }
-    }, [eventPreview]);
+        }*!/
+    }, [eventPreview]);*/
 
 
     const collectDataSources = useCallback(() => {
+
+        disconnectDSArray(gammaDatasources);
+        disconnectDSArray(neutronDatasources);
+        disconnectDSArray(thresholdDatasources);
+        disconnectDSArray(occDatasources);
+
         let currentLane = eventPreview.eventData.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
 
@@ -93,6 +124,7 @@ export function EventPreview() {
         setNeutronDS(tempDSMap.get("neutron"));
         setThresholdDS(tempDSMap.get("gammaTrshld"));
         setVideoDatasources(tempDSMap.get("video"));
+        setDatasourcesReady(true);
 
     }, [eventPreview, laneMapRef]);
 
@@ -143,7 +175,7 @@ export function EventPreview() {
                 console.log("DataSync Not Connected... :(");
             }
         } else {
-            console.log("Chart Not Ready, cannot start DataSynchronizer...");
+            // console.log("Chart Not Ready, cannot start DataSynchronizer...");
         }
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
 
@@ -175,12 +207,25 @@ export function EventPreview() {
                     <CloseRoundedIcon fontSize="small"/>
                 </IconButton>
             </Stack>
-            <ChartTimeHighlight gammaDatasources={gammaDatasources} neutronDatasources={neutronDatasources}
-                                thresholdDatasources={thresholdDatasources} occDatasources={occDatasources}
-                                setChartReady={setChartReady} modeType="preview" currentTime={currentTime}/>
-            <LaneVideoPlayback videoDatasources={videoDatasources} setVideoReady={setVideoReady}
-                               dataSynchronizer={syncRef.current}
-                               addDataSource={setActiveVideoIDX}/>
+            {/*<ChartTimeHighlight gammaDatasources={gammaDatasources} neutronDatasources={neutronDatasources}*/}
+            {/*                    thresholdDatasources={thresholdDatasources} occDatasources={occDatasources}*/}
+            {/*                    setChartReady={setChartReady} modeType="preview" currentTime={currentTime}/>*/}
+            {datasourcesReady && (
+                <>
+                    <ChartTimeHighlight key={eventPreview.eventData.id}
+                        datasources={{ gamma: gammaDatasources[0], neutron: neutronDatasources[0], threshold: thresholdDatasources[0] }}
+                        setChartReady={setChartReady}
+                        modeType="preview"
+                        currentTime={currentTime}
+                    />
+                    <LaneVideoPlayback key={eventPreview.eventData.id}
+                        videoDatasources={videoDatasources}
+                        setVideoReady={setVideoReady}
+                        dataSynchronizer={syncRef.current}
+                        addDataSource={setActiveVideoIDX}
+                    />
+                </>
+            )}
             <AdjudicationSelect onSelect={handleAdjudication}/>
             <TextField
                 id="outlined-multiline-static"

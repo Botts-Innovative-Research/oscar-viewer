@@ -18,7 +18,7 @@ export default function QuickView() {
 
     return (
         <Box style={{width: '100%', height: '300', padding: 10, overflow: 'hidden'}}>
-            {eventPreview.isOpen ? (<EventPreview/>) : (<MapComponent/>)}
+            {eventPreview.isOpen ? (<EventPreview key={eventPreview.eventData.id} isOpen={eventPreview.isOpen} eventData={eventPreview.eventData}/>) : (<MapComponent/>)}
             {/*{eventPreview.isOpen ? (<EventPreview/>) : (<Typography>Map</Typography>)}*/}
         </Box>
     );
