@@ -197,22 +197,15 @@ export default function ChartLane(props: ChartInterceptProps){
     }, [props.gammaDatasources, props.neutronDatasources, props.thresholdDatasources]);
 
 
-    // const handleChange = (chart: string) => {
-    //     setSelectedChart(chart)
-    // }
-
-
-
     return (
-        <Grid direction="row" marginTop={2} marginLeft={2}>
-        {/*<Grid container direction="row" spacing={6} marginTop={2} marginLeft={2}>*/}
-            <Grid item>
+        <Grid container direction="row" marginTop={2} marginLeft={1} spacing={3}>
+            <Grid item xs>
                 <div id={gammaChartID} style={{
                     marginBottom: 50,
                     height: '85%',
                 }}></div>
             </Grid>
-            <Grid item>
+            <Grid item xs>
                 <div id={neutronChartID} style={{
                     marginBottom: 50,
                     height: '85%',

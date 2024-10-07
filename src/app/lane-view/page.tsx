@@ -22,13 +22,14 @@ import {START_TIME} from "@/lib/data/Constants";
 
 export default function LaneViewPage() {
 
-  const searchParams = useSearchParams();
-  const currentLane = searchParams.get("name");
 
   const [selectedEvent, setSelectedEvent] = useState<SelectedEvent>({startTime: "XX:XX:XX AM", endTime: "XX:XX:XX AM"});  // Reference types/new-types.d.ts to change type
   const [currentTime, setCurrentTime] = useState<Date>();
+    const searchParams = useSearchParams();
 
 
+    const currentLane = searchParams.get("name");
+    console.log('current lane', currentLane)
   function setTimeStamp(){
       const now = new Date();
       setCurrentTime(now);
@@ -40,28 +41,29 @@ export default function LaneViewPage() {
   }, []);
 
     return (
-    <Stack spacing={2} direction={"column"}>
-      <Grid item spacing={2}>
-        <BackButton/>
-      </Grid>
-      <Grid item spacing={2}>
-        <Typography variant="h4">Lane View</Typography>
-      </Grid>
-      <Grid item container spacing={2} sx={{ width: "100%" }}>
-        <Paper variant='outlined' sx={{ width: "100%"}}>
-          <LaneStatus laneName={currentLane}/>
-        </Paper>
-      </Grid>
-      <Grid item container spacing={2} sx={{ width: "100%" }}>
-        <Paper variant='outlined' sx={{ width: "100%" }}>
-          <Media event={selectedEvent} laneName={currentLane} currentTime={currentTime}/>
-        </Paper>
-      </Grid>
-      <Grid item container spacing={2} sx={{ width: "100%" }}>
-        <Paper variant='outlined' sx={{ width: "100%" }}>
-          <AlarmTable laneName={currentLane} />
-        </Paper>
-      </Grid>
-    </Stack>
+
+        <Stack spacing={2} direction={"column"}>
+          <Grid item spacing={2}>
+            <BackButton/>
+          </Grid>
+          <Grid item spacing={2}>
+            <Typography variant="h4">Lane View</Typography>
+          </Grid>
+          <Grid item container spacing={2} sx={{ width: "100%" }}>
+            <Paper variant='outlined' sx={{ width: "100%"}}>
+              <LaneStatus laneName={currentLane}/>
+            </Paper>
+          </Grid>
+          <Grid item container spacing={2} sx={{ width: "100%" }}>
+            <Paper variant='outlined' sx={{ width: "100%" }}>
+              <Media event={selectedEvent} laneName={currentLane} currentTime={currentTime}/>
+            </Paper>
+          </Grid>
+          <Grid item container spacing={2} sx={{ width: "100%" }}>
+            <Paper variant='outlined' sx={{ width: "100%" }}>
+              <AlarmTable laneName={currentLane} />
+            </Paper>
+          </Grid>
+        </Stack>
   );
 }

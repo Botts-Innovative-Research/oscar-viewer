@@ -114,7 +114,7 @@ export default function Media(props: {
                 <Grid item xs={12} sm={6}>
                     <ChartLane  laneName={props.laneName} setChartReady={setChartReady} occDatasources={occDatasources} gammaDatasources={gammaDatasources} neutronDatasources={neutronDatasources} thresholdDatasources={thresholdDatasources} />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs>
                     <VideoGrid laneName={props.laneName}/>
                 </Grid>
           </Grid>
