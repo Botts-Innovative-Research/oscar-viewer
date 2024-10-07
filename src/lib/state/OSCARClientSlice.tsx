@@ -126,18 +126,19 @@ export const selectShouldForceAlarmTableDeselect = (state: RootState) => state.o
 
 
 // Compound Selectors
-export const selectSystemIdsOfLane = (laneId: string) => createSelector(
+/*export const selectSystemIdsOfLane = (laneId: string) => createSelector(
     [selectLaneById(laneId)],
     (lane) => lane.systemIds
-);
+);*/
 
-export const selectSystemsOfLane = (laneId: string) => createSelector(
+/*export const selectSystemsOfLane = (laneId: string) => createSelector(
     [selectSystemIdsOfLane(laneId), selectSystems],
     (systemIds, systems) => {
         return systems.filter((system: { id: any; }) => systemIds.includes(system.id));
     }
-);
+);*/
 
+/*
 export const selectDatastreamsOfLane = (laneId: string) => createSelector(
     [selectSystemsOfLane(laneId), selectDatastreams],
     (systems, datastreams) => {
@@ -150,6 +151,7 @@ export const selectDatastreamsOfLane = (laneId: string) => createSelector(
         }
         return datastreamsArr;
     });
+*/
 
 
 export default Slice.reducer;
