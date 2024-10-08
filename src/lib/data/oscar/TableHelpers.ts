@@ -3,7 +3,7 @@
  * All Rights Reserved
  */
 
-import {IEventTableData} from "../../../../types/new-types";
+import {IEventTableData, INationalTableData} from "../../../../types/new-types";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {warn} from "next/dist/build/output/log";
 import System from "osh-js/source/core/sweapi/system/System.js";
@@ -171,4 +171,42 @@ export class AdjudicationData {
     sendAdjudicationToServer() {
 
     }
+}
+
+
+export class NationalTableData implements INationalTableData {
+    id: number;
+    site: string;
+    occupancyCount: number;
+    gammaAlarmCount: number;
+    neutronAlarmCount: number;
+    faultAlarmCount: number;
+    tamperAlarmCount: number;
+
+    constructor(id: number, siteName: string, occupancyCount: number, gammaCount: number, neutronCount: number, faultCount: number, tamperCount: number) {
+        this.id = id;
+        this.site = siteName;
+        this.occupancyCount = occupancyCount;
+        this.gammaAlarmCount = gammaCount;
+        this.neutronAlarmCount= neutronCount;
+        this.faultAlarmCount= faultCount;
+        this.tamperAlarmCount = tamperCount;
+    }
+}
+
+export class NationalTableDataCollection{
+    data: NationalTableData[];
+    constructor() {
+        this.data = [];
+    }
+
+    setData(data: NationalTableData[]) {
+        this.data = data;
+    }
+
+    addData(data: NationalTableData) {
+        this.data.push(data);
+    }
+
+
 }

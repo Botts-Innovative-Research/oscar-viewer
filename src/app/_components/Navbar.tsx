@@ -24,6 +24,7 @@ import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
 import CloudRoundedIcon from '@mui/icons-material/CloudRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
+import MediationIcon from '@mui/icons-material/Mediation';
 import {Button, Menu, MenuItem, Stack} from '@mui/material';
 import {useEffect, useState} from 'react';
 import Link from 'next/link';
@@ -144,6 +145,11 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
       title: "Map",
       icon: <LocationOnRoundedIcon />,
       href: "/map",
+    },
+    {
+      title: "National",
+      icon: <MediationIcon />,
+      href: "/national-view",
     },
   ]
 

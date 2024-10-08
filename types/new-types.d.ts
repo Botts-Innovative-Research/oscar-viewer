@@ -6,7 +6,7 @@ import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {colorCodes} from "@/app/_components/event-preview/AdjudicationSelect";
 
 /**
- * Interface for Event Table data
+ * Interface for Event StatTable data
  */
 export interface IEventTableData {
   id: number; // Unique ID for event
@@ -22,14 +22,16 @@ export interface IEventTableData {
   adjudicatedCode?: number; // Adjudication code for event
 }
 
-export interface ILaneViewData {
+export interface INationalTableData {
   id: number; // Unique ID for event
-  laneId: string; // Lane ID
-  startTime: string;  // Start time of occupancy/event
-  endTime: string;  // End time of occupancy/event
-
-
+  site: string;
+  occupancyCount: number;
+  gammaAlarmCount: number;
+  neutronAlarmCount: number;
+  faultAlarmCount: number;
+  tamperAlarmCount: number;
 }
+
 
 /**
  * Event type to make request for more details

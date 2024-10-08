@@ -19,7 +19,6 @@ import ChartLane from "@/app/_components/lane-view/ChartLane";
 export default function Media(props: {
   event: SelectedEvent;
   laneName: string,
-    currentTime: Date
 }) {
 
     const {laneMapRef} = useContext(DataSourceContext);

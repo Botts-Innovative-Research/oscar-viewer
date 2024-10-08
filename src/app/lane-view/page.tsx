@@ -24,22 +24,9 @@ export default function LaneViewPage() {
 
 
   const [selectedEvent, setSelectedEvent] = useState<SelectedEvent>({startTime: "XX:XX:XX AM", endTime: "XX:XX:XX AM"});  // Reference types/new-types.d.ts to change type
-  const [currentTime, setCurrentTime] = useState<Date>();
+
     const searchParams = useSearchParams();
-
-
     const currentLane = searchParams.get("name");
-    console.log('current lane', currentLane)
-  function setTimeStamp(){
-      const now = new Date();
-      setCurrentTime(now);
-  }
-
-  useEffect(() => {
-    setTimeStamp();
-    console.log('current time is', currentTime)
-  }, []);
-
     return (
 
         <Stack spacing={2} direction={"column"}>
@@ -56,7 +43,7 @@ export default function LaneViewPage() {
           </Grid>
           <Grid item container spacing={2} sx={{ width: "100%" }}>
             <Paper variant='outlined' sx={{ width: "100%" }}>
-              <Media event={selectedEvent} laneName={currentLane} currentTime={currentTime}/>
+              <Media event={selectedEvent} laneName={currentLane} />
             </Paper>
           </Grid>
           <Grid item container spacing={2} sx={{ width: "100%" }}>

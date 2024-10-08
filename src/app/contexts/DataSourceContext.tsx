@@ -78,7 +78,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
         dispatch(setLaneMap(lanes));
         laneMapRef.current = lanes;
-        console.log("LaneMapRef for Table:", laneMapRef);
+        console.log("LaneMapRef for StatTable:", laneMapRef);
     }, [nodes]);
 
     useEffect(() => {

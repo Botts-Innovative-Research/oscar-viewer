@@ -45,8 +45,7 @@ export default function Table({tableMode}: TableProps) {
                 let rtDS = lane.datasourcesRealtime[idx];
                 let laneDSColl = laneDSMap.get(laneid);
 
-                batchDS.properties.startTime = ds.properties.validTime[0];
-                batchDS.properties.endTime = "now";
+
 
                 // rtDS.properties.startTime = "now"
                 // // rtDS.properties.endTime = rtEndTime;
@@ -55,9 +54,6 @@ export default function Table({tableMode}: TableProps) {
                 if (ds.properties.name.includes('Driver - Occupancy')) {
                     laneDSColl.addDS('occRT', rtDS);
                     await fetchObservations(laneid, ds, ds.properties.validTime[0], "now");
-
-
-                    // laneDSColl.addDS('occBatch', batchDS);
                 }
                 if (ds.properties.name.includes('Driver - Gamma Count')) {
                     laneDSColl.addDS('gammaRT', rtDS);
