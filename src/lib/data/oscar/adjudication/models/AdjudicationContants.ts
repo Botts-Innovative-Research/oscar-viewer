@@ -5,13 +5,22 @@
 
 export const AdjudicationDatastreamConstant: any = {
     name: "Occupancy Adjudication",
-    outputName: "adjudication",
-    validTime: [],
+    outputName: "Adjudication",
     schema: {
-        obsFormat: "application/om+json",
-        resultSchema: {
+        obsFormat: "application/swe+json",
+        recordSchema: {
             type: "DataRecord",
+            label: "Occupancy Adjudication Record",
             fields: [
+                {
+                    "type": "Time",
+                    "label": "Sampling Time",
+                    "name":"time",
+                    "referenceFrame": "http://www.opengis.net/def/trs/BIPM/0/UTC",
+                    "uom": {
+                        "href": "http://www.opengis.net/d…uom/ISO-8601/0/Gregorian"
+                    }
+                },
                 {
                     type: "Text",
                     name: "username",

@@ -13,6 +13,7 @@ import System from "osh-js/source/core/sweapi/system/System.js";
 import SystemFilter from "osh-js/source/core/sweapi/system/SystemFilter.js";
 import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
 import {AdjudicationDatastreamConstant} from "@/lib/data/oscar/adjudication/models/AdjudicationContants";
+import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 
 const LANEREGEX = /^lane\d+$/;
 
@@ -46,6 +47,10 @@ export interface INode {
     insertSubSystem(systemJSON: any, parentSystemId: string): Promise<string>
 
     insertAdjSystem(systemJSON: any): Promise<string>
+
+    insertAdjDatastream(systemId: string): Promise<string>
+
+    insertObservation(observationJSON: any, datastreamId: string): Promise<string>
 }
 
 export interface NodeOptions {
@@ -258,21 +263,38 @@ export class Node implements INode {
 
     }
 
+    // TODO: clean this up and verify that we aren't duplicating systems or outputs
     async fetchOrCreateAdjudicationSystems(laneMap: Map<string, LaneMapEntry>) {
-        let systems = await this.fetchSystemsTK();
+        let systems: typeof System[] = await this.fetchSystemsTK();
         console.log("[ADJ] Fetching adjudication systems for node: ", this, laneMap);
+        let adjSysAndDSMap: Map<string, string> = new Map();
 
         for (const [laneName, laneEntry] of laneMap as Map<string, LaneMapEntry>) {
             let system = systems.find((system: typeof System) => {
                 system.properties.properties.uid.includes("adjudication")
             });
+            let systemId: string;
             if (system) {
                 console.log("[ADJ] Found adjudication systems for lane: ", laneEntry, system);
+                // check for datastreams
+                let datastreams: typeof DataStream[] = await system.searchDataStreams();
+                if (datastreams.length > 0) {
+                    console.log("[ADJ] Found datastreams for adjudication system: ", datastreams);
+                    adjSysAndDSMap.set(system.id, datastreams[0].id);
+                } else {
+                    console.log("[ADJ] No datastreams found for adjudication system: ", system);
+                    let dsId = await this.insertAdjDatastream(system.id);
+                    adjSysAndDSMap.set(system.id, dsId);
+                }
             } else {
                 console.log(`[ADJ] No existing adjudication systems found, creating new system for lane" ${laneName}`);
-                laneEntry.insertAdjudicationSystem(laneName);
+                let sysId = await laneEntry.insertAdjudicationSystem(laneName);
+                // insert datastreams
+                let dsId = await this.insertAdjDatastream(sysId);
+                adjSysAndDSMap.set(sysId, dsId);
             }
         }
+        return adjSysAndDSMap;
     }
 
     async insertAdjSystem(systemJSON: any): Promise<string> {
@@ -308,7 +330,7 @@ export class Node implements INode {
             body: JSON.stringify(AdjudicationDatastreamConstant),
             headers: {
                 ...this.getBasicAuthHeader(),
-                'Content-Type': 'application/sml+json'
+                'Content-Type': 'application/json'
             }
         });
 

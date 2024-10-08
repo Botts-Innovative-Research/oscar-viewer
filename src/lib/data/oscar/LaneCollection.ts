@@ -274,6 +274,7 @@ export class LaneMapEntry {
         let sysId: string = await this.parentNode.insertAdjSystem(adJSysJSON);
         console.log("[ADJ] Inserted Adjudication System: ", sysId);
         // let dsId = this.insertAdjudicationDataStream(laneName);
+        return sysId;
     }
 
     async insertAdjudicationDataStream(systemId: string) {

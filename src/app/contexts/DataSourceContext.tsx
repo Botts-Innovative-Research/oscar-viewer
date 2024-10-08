@@ -81,10 +81,12 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         console.log("LaneMapRef for Table:", laneMapRef);
 
         // fetch adjudication systems
+        let adjMap: Map<string, string> = new Map();
         for(let node of nodes){
             console.log("[ADJ] Fetching adjudication systems for node: ", node, lanes);
-            await node.fetchOrCreateAdjudicationSystems(lanes);
+            adjMap = await node.fetchOrCreateAdjudicationSystems(lanes);
         }
+        console.log("[ADJ] Adjudication Systems Map:", adjMap);
 
     }, [nodes]);
 
