@@ -185,7 +185,7 @@ export class Node implements INode {
         // filter into lanes
         for (let system of systems) {
             // console.log("TK System:", system);
-            if (system.properties.properties?.uid.includes("lane")) {
+            if (system.properties.properties?.uid.includes("lane") && !system.properties.properties?.uid.includes("adjudication")) {
                 // console.log("TK Found lane system:", system);
                 // let laneName = system.properties.properties.uid.split(":").pop();
                 let laneName = system.properties.properties.name;
@@ -272,22 +272,6 @@ export class Node implements INode {
                 console.log(`[ADJ] No existing adjudication systems found, creating new system for lane" ${laneName}`);
                 laneEntry.insertAdjudicationSystem(laneName);
             }
-            /*console.log("[ADJ] Fetching adjudication systems for lane: ", laneEntry);
-            let systemApi: typeof System = laneEntry.laneSystem;
-            let res = await laneSystem.searchMembers(new SystemFilter({
-                q: "keyword=adjudication",
-                parent: [laneSystem.id]
-            }), 100);
-            while (res.hasNext()) {
-                let members = await res.nextPage();
-                console.log("[ADJ] Members:", members);
-                if(members.length > 0) {
-                    console.log("[ADJ] Found existing adjudication systems:", members);
-                }else{
-                    console.log("[ADJ] No existing adjudication systems found, creating new systems");
-                    laneEntry.insertAdjudicationSystem(laneName);
-                }
-            }*/
         }
     }
 
