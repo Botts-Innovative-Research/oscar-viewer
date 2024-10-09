@@ -5,7 +5,7 @@ import {useCallback, useContext, useEffect, useRef, useState} from "react";
 import EventTable from "./EventTable";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import {AdjudicationData, EventTableData, EventTableDataCollection} from "@/lib/data/oscar/TableHelpers";
+import {EventTableData, EventTableDataCollection} from "@/lib/data/oscar/TableHelpers";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 
@@ -92,7 +92,7 @@ export default function Table({tableMode}: TableProps) {
                 // console.log("Observation Result: ", obs);
                 if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
 
-                    let newEvent = new EventTableData(idVal.current++, laneName, obs.result, new AdjudicationData('N/A', 0));
+                    let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
 
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
@@ -102,7 +102,7 @@ export default function Table({tableMode}: TableProps) {
                 }
                 else if(obs.result.gammaAlarm === false || obs.result.neutronAlarm === false){ //for event log :p
 
-                    let newEvent = new EventTableData(idVal.current++, laneName, obs.result, new AdjudicationData('N/A', 0));
+                    let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
 
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
@@ -135,7 +135,7 @@ export default function Table({tableMode}: TableProps) {
             for (let value of message.values) {
 
                 if (value.data.gammaAlarm === true || value.data.neutronAlarm === true) {
-                    let newEvent = new EventTableData(idVal.current++, laneName, value.data, new AdjudicationData('N/A', 0));
+                    let newEvent = new EventTableData(idVal.current++, laneName, value.data);
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
                     newEvent.setSystemIdx(systemID);
@@ -147,7 +147,7 @@ export default function Table({tableMode}: TableProps) {
                 }
                 else if (value.data.gammaAlarm === false || value.data.neutronAlarm === false) {
 
-                    let newEvent = new EventTableData(idVal.current++, laneName, value.data, new AdjudicationData('N/A', 0));
+                    let newEvent = new EventTableData(idVal.current++, laneName, value.data);
 
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);

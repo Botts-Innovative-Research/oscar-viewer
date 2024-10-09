@@ -3,6 +3,7 @@
 import {FormControl, InputLabel, ListSubheader, MenuItem, Select, SelectChangeEvent} from '@mui/material';
 import {useEffect, useState} from 'react';
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationContants";
+import {IAdjudicationData} from "@/lib/data/oscar/adjudication/Adjudication";
 
 export const colorCodes = {
     real: {color: "error.dark"},
@@ -12,8 +13,7 @@ export const colorCodes = {
 };
 
 export default function AdjudicationSelect(props: {
-    onSelect: (value: string) => void, // Return selected value
-    // defaultValue?: string, // Default selected value
+    onSelect: (value: AdjudicationCode) => void, // Return selected value
 }) {
     const [adjudicated, setAdjudicated] = useState<AdjudicationCode>(AdjudicationCodes.codes[0]); // Adjudication selected value
     const [style, setStyle] = useState(colorCodes.other.color); // Adjudicated button style based on selected value
@@ -22,7 +22,7 @@ export default function AdjudicationSelect(props: {
         let value: AdjudicationCode = AdjudicationCodes.getCodeObjByLabel(event.target.value);
         console.log("[ADJ] Adjudication Selected: ", value);
         setAdjudicated(value); // Set local adjudicated state
-        props.onSelect(value.label); // Return selected value to parent component
+        props.onSelect(value); // Return selected value to parent component
 
         // Handle component styling
         if (value.group === "Real Alarm") {

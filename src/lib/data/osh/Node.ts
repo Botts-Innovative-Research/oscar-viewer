@@ -29,6 +29,7 @@ export interface INode {
     isSecure: boolean,
     auth: { username: string, password: string } | null,
     isDefaultNode: boolean
+    laneAdjMap?: Map<string, string>
 
     getConnectedSystemsEndpoint(): string,
 
@@ -64,6 +65,7 @@ export interface NodeOptions {
     auth?: { username: string, password: string } | null,
     isSecure?: boolean,
     isDefaultNode?: boolean
+    laneAdjMap?: Map<string, string>
 }
 
 export class Node implements INode {
@@ -78,6 +80,7 @@ export class Node implements INode {
     isSecure: boolean;
     auth: { username: string, password: string } | null = null;
     isDefaultNode: boolean;
+    laneAdjMap: Map<string, string> = new Map<string, string>();
 
     constructor(options: NodeOptions) {
         this.id = "node-" + randomUUID();
@@ -268,6 +271,7 @@ export class Node implements INode {
         let systems: typeof System[] = await this.fetchSystemsTK();
         console.log("[ADJ] Fetching adjudication systems for node: ", this, laneMap);
         let adjSysAndDSMap: Map<string, string> = new Map();
+        let laneAdjDsMap: Map<string, string> = new Map();
 
         for (const [laneName, laneEntry] of laneMap as Map<string, LaneMapEntry>) {
             let system = systems.find((system: typeof System) => {
@@ -281,10 +285,12 @@ export class Node implements INode {
                 if (datastreams.length > 0) {
                     console.log("[ADJ] Found datastreams for adjudication system: ", datastreams);
                     adjSysAndDSMap.set(system.id, datastreams[0].id);
+                    laneAdjDsMap.set(laneName, datastreams[0].id);
                 } else {
                     console.log("[ADJ] No datastreams found for adjudication system: ", system);
                     let dsId = await this.insertAdjDatastream(system.id);
                     adjSysAndDSMap.set(system.id, dsId);
+                    laneAdjDsMap.set(laneName, dsId);
                 }
             } else {
                 console.log(`[ADJ] No existing adjudication systems found, creating new system for lane" ${laneName}`);
@@ -292,8 +298,10 @@ export class Node implements INode {
                 // insert datastreams
                 let dsId = await this.insertAdjDatastream(sysId);
                 adjSysAndDSMap.set(sysId, dsId);
+                laneAdjDsMap.set(laneName, dsId);
             }
         }
+        this.laneAdjMap = laneAdjDsMap;
         return adjSysAndDSMap;
     }
 
