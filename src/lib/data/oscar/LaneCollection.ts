@@ -10,6 +10,7 @@ import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import {INode} from "@/lib/data/osh/Node";
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
+import {AdjudicationData} from "@/lib/data/oscar/TableHelpers";
 
 class ILaneMeta {
     id: string;
@@ -32,7 +33,6 @@ export class LaneMeta implements ILaneMeta {
         this.label = name.replace(" ", "_").toLowerCase();
         this.systemIds = systemIds;
         this.hasEML = hasEML;
-
     }
 }
 
@@ -43,6 +43,8 @@ export class LaneMapEntry {
     datasourcesBatch: any[];
     datasourcesRealtime: any[];
     parentNode: INode;
+    laneSystem: typeof System;
+    private adjDs: string;
 
     constructor(node: INode) {
         this.systems = [];
@@ -51,6 +53,10 @@ export class LaneMapEntry {
         this.datasourcesBatch = [];
         this.datasourcesRealtime = [];
         this.parentNode = node;
+    }
+
+    setLaneSystem(system: typeof System) {
+        this.laneSystem = system;
     }
 
     addSystem(system: any) {
@@ -253,6 +259,37 @@ export class LaneMapEntry {
             }
         }
         return dsMap;
+    }
+
+    async insertAdjudicationSystem(laneName: string) {
+        console.log("[ADJ] Inserting Adjudication System for lane: ", this);
+        let laneId = this.laneSystem.properties.properties.uid.split(":").pop();
+        let adJSysJSON = {
+            "type": "SimpleProcess",
+            "uniqueId": `urn:ornl:client:adjudication:${laneId}`,
+            "label": `Adjudication System - ${laneName}`,
+            "definition": "sosa:System"
+        }
+        console.log("[ADJ] Inserting Adjudication System: ", adJSysJSON);
+        let sysId: string = await this.parentNode.insertAdjSystem(adJSysJSON);
+        console.log("[ADJ] Inserted Adjudication System: ", sysId);
+        // let dsId = this.insertAdjudicationDataStream(laneName);
+        return sysId;
+    }
+
+    async insertAdjudicationDataStream(systemId: string) {
+        let dsRes = await this.parentNode.insertAdjDatastream(systemId);
+        if (dsRes) {
+            console.log("[ADJ] Inserted Adjudication Datastream: ", dsRes);
+            this.adjDs = dsRes;
+        }
+    }
+
+    async insertAdjudicationObservation(obsData: AdjudicationData) {
+        let obsRes = await this.parentNode.insertObservation(obsData, this.adjDs);
+        if (obsRes) {
+            console.log("[ADJ] Inserted Adjudication Observation: ", obsRes);
+        }
     }
 }
 
