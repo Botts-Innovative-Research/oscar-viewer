@@ -19,6 +19,7 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
+import {IAdjudicationData} from "@/lib/data/oscar/adjudication/Adjudication";
 
 
 export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTableData | null }) {
@@ -50,8 +51,11 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     const [videoDatasources, setVideoDatasources] = useState<typeof SweApi[]>([]);
     const [activeVideoIDX, setActiveVideoIDX] = useState<number>(0);
 
+    // Adjudication Specifics
+    const [adjFormData, setAdjFormData] = useState<IAdjudicationData | null>();
 
-    const handleAdjudication = (value: string) => {
+
+    const handleAdjudication = (value: IAdjudicationData) => {
         console.log("Adjudication Value: ", value);
     }
 
@@ -82,21 +86,6 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         }
 
     }
-
-    /*useMemo(() => {
-       /!* if(dsMapRef.current.size > 0) {
-            disconnectDSArray(gammaDatasources);
-            disconnectDSArray(neutronDatasources);
-            disconnectDSArray(thresholdDatasources);
-            disconnectDSArray(occDatasources);
-        }
-        // create dsMapRef of eventPreview
-        if (eventPreview.isOpen) {
-            dsMapRef.current = laneMapRef.current.get(eventPreview.eventData.laneId).getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
-            console.log("EventPreview DS Map", dsMapRef.current);
-            setLocalDSMap(dsMapRef.current);
-        }*!/
-    }, [eventPreview]);*/
 
 
     const collectDataSources = useCallback(() => {
