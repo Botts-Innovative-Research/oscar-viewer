@@ -246,19 +246,14 @@ export class Node implements INode {
 
     async fetchDatastreamsTK(laneMap: Map<string, LaneMapEntry>) {
         for (const [laneName, laneEntry] of laneMap) {
-            for (let system of laneEntry.systems) {
-                // console.log("TK DSSystem:", system);
-                try {
-                    const datastreams = await system.searchDataStreams(undefined, 100);
-                    while (datastreams.hasNext()) {
-                        const datastreamResults = await datastreams.nextPage();
-                        // console.log("TK DatastreamResults:", datastreamResults);
-                        laneEntry.addDatastreams(datastreamResults);
-                    }
-                    // console.log("TK Datastreams:", laneEntry.datastreams);
-                } catch (error) {
-                    console.error(`Error fetching datastreams for system ${system.id}:`, error);
+            try {
+                const datastreams = await laneEntry.laneSystem.searchDataStreams(undefined, 100);
+                while (datastreams.hasNext()) {
+                    const datastreamResults = await datastreams.nextPage();
+                    laneEntry.addDatastreams(datastreamResults);
                 }
+            } catch (error) {
+                console.error(`Error fetching datastreams for system ${laneEntry.laneSystem.id}:`, error);
             }
         }
     }
