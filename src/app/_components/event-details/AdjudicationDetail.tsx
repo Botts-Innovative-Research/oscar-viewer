@@ -18,9 +18,9 @@ import InsertDriveFileRoundedIcon from '@mui/icons-material/InsertDriveFileRound
 import React, {ChangeEvent, useContext, useRef, useState} from "react";
 import AdjudicationSelect from "../event-preview/AdjudicationSelect";
 import IsotopeSelect from "./IsotopeSelect";
-import CommentSection from "./CommentSection"
+import AdjudicationLog from "./AdjudicationLog"
 import {createAdjudicationObservation, IAdjudicationData} from "@/lib/data/oscar/adjudication/Adjudication";
-import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";
+import {selectCurrentUser, setShouldForceAlarmTableDeselect} from "@/lib/state/OSCARClientSlice";
 import {useSelector} from "react-redux";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationContants";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
@@ -53,6 +53,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
     const [adjData, setAdjData] = useState<IAdjudicationData>(defaultAdjData);
     const currentUser = useSelector(selectCurrentUser);
+    const [associatedAdjudications, setAssociatedAdjudications] = useState<Comment[]>([]);
+    const [shouldFetchLogs, setShouldFetchLogs] = useState<boolean>(false);
 
     /**handle the file uploaded**/
     const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -116,12 +118,10 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         if (name === 'secondaryInspection') {
             checked ? tempAdjData.secondaryInspectionStatus = "REQUESTED" : tempAdjData.secondaryInspectionStatus = "NONE";
             setSecondaryInspection(checked);
-        }
-        else if (name === 'vehicleId') {
+        } else if (name === 'vehicleId') {
             // setVehicleId(value);
             tempAdjData.id = value;
-        }
-        else if (name === 'notes') {
+        } else if (name === 'notes') {
             // setNotes(value)
             tempAdjData.feedback = value;
         }
@@ -160,19 +160,23 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         });
         console.log("[ADJ] Response: ", resp);
 
+        setShouldFetchLogs(true);
         resetForm();
+    }
+
+    function onFetchComplete() {
+        setShouldFetchLogs(false);
     }
 
 
     return (
         <Stack direction={"column"} p={2} spacing={2}>
-            <Stack direction={"column"} spacing={2}>
-                {comments.length > 0 && (
-                    <CommentSection comments={comments}/>
-                )}
-            </Stack>
+            <Typography variant="h4">Adjudication</Typography>
+            <Box>
+                <AdjudicationLog comments={comments} event={props.event} shouldFetch={shouldFetchLogs} onFetch={onFetchComplete}/>
+            </Box>
 
-            <Typography variant="h5">Adjudication Report</Typography>
+            <Typography variant="h5">Adjudication Report Form</Typography>
             <Stack direction={"row"} spacing={2} justifyContent={"start"} alignItems={"center"}>
                 {/*<Avatar>OP</Avatar>*/}
                 <Box>
@@ -209,25 +213,27 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 value={adjData.feedback}
                 onChange={handleChange}
             />
-            {uploadedFiles.length > 0 && (
-                <Paper variant='outlined' sx={{width: "100%"}}>
-                    <Stack
-                        sx={{
-                            maxHeight: '100px', // Adjust height based on item size
-                            overflowY: 'auto',
-                            p: 2,
-                        }}
-                        spacing={1}
-                    >
-                        {uploadedFiles.map((file, index) => (
-                            <Box display={"flex"} sx={{wordSpacing: 2}}>
-                                <InsertDriveFileRoundedIcon/>
-                                <Typography variant="body1">{file.name}</Typography>
-                            </Box>
-                        ))}
-                    </Stack>
-                </Paper>
-            )}
+            {
+                uploadedFiles.length > 0 && (
+                    <Paper variant='outlined' sx={{width: "100%"}}>
+                        <Stack
+                            sx={{
+                                maxHeight: '100px', // Adjust height based on item size
+                                overflowY: 'auto',
+                                p: 2,
+                            }}
+                            spacing={1}
+                        >
+                            {uploadedFiles.map((file, index) => (
+                                <Box display={"flex"} sx={{wordSpacing: 2}}>
+                                    <InsertDriveFileRoundedIcon/>
+                                    <Typography variant="body1">{file.name}</Typography>
+                                </Box>
+                            ))}
+                        </Stack>
+                    </Paper>
+                )
+            }
             <Stack direction={"row"} spacing={2} justifyContent={"space-between"} alignItems={"center"}
                    width={"100%"}>
                 <Button
@@ -264,5 +270,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             </Stack>
         </Stack>
-    );
+    )
+        ;
 }

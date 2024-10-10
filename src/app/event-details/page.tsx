@@ -188,11 +188,6 @@ export default function EventDetailsPage() {
                     <MiscTable currentTime={currentTime}/>
                 </Paper>
             </Grid>
-            {/*<Grid item container spacing={2} sx={{ width: "100%" }}>*/}
-            {/*  <Paper variant='outlined' sx={{ width: "100%" }}>*/}
-            {/*    <Comment event={eventPreview.eventData} />*/}
-            {/*  </Paper>*/}
-            {/*</Grid>*/}
             <Grid item container spacing={2} sx={{width: "100%"}}>
                 <Paper variant='outlined' sx={{width: "100%"}}>
                     <AdjudicationDetail event={eventPreview.eventData}/>

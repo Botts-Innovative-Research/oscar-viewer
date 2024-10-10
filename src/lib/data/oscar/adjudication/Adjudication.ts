@@ -1,3 +1,5 @@
+import {randomUUID} from "osh-js/source/core/utils/Utils";
+
 export interface IAdjudicationData {
     time: string,
     id: string;
@@ -26,6 +28,7 @@ export default class AdjudicationData {
 
     constructor(properties: IAdjudicationData) {
         Object.assign(this, properties);
+        this.id = randomUUID();
     }
 }
 

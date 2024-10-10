@@ -31,7 +31,7 @@ export interface INode {
     isDefaultNode: boolean
     laneAdjMap?: Map<string, string>
 
-    getConnectedSystemsEndpoint(): string,
+    getConnectedSystemsEndpoint(noProtocolPrefix: boolean): string,
 
     getBasicAuthHeader(): any,
 
@@ -96,11 +96,12 @@ export class Node implements INode {
         this.isDefaultNode = options.isDefaultNode || false;
     }
 
-    getConnectedSystemsEndpoint() {
+    getConnectedSystemsEndpoint(noProtocolPrefix: boolean = false) {
         let protocol = this.isSecure ? 'https' : 'http';
         // return `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
         console.log("NODE TEST GET CSAPI ENDPOINT", this);
-        return `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
+        return noProtocolPrefix ? `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`
+            : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
     }
 
     getConfigEndpoint() {

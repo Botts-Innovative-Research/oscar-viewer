@@ -7,6 +7,7 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import System from "osh-js/source/core/sweapi/system/System.js";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
+import DataStreams from "osh-js/source/core/sweapi/datastream/DataStreams.js";
 import {INode} from "@/lib/data/osh/Node";
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
@@ -81,6 +82,24 @@ export class LaneMapEntry {
 
     addDatasources(datasources: any[]) {
         this.datasources.push(...datasources);
+    }
+
+    async getAdjudicationDatastream(dsId: string) {
+        let isSecure = this.parentNode.isSecure;
+        let url = this.parentNode.getConnectedSystemsEndpoint(true);
+        console.log("[ADJ-log] Creating Adjudication Datastream: ", this, url);
+        let dsApi = new DataStreams({
+            // streamProtocol: isSecure ? "https" : "http",
+            endpointUrl: `${url}`,
+            tls: isSecure,
+            connectorOpts: {
+                username: this.parentNode.auth.username,
+                password: this.parentNode.auth.password
+            }
+        });
+        let datastream = await dsApi.getDataStreamById(dsId);
+        console.log("[ADJ-log] Adjudication Datastream: ", datastream);
+        return datastream;
     }
 
     resetDatasources() {
