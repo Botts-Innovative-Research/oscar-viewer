@@ -1,3 +1,5 @@
+import {randomUUID} from "osh-js/source/core/utils/Utils";
+
 export interface IAdjudicationData {
     time: string,
     id: string;
@@ -8,7 +10,8 @@ export interface IAdjudicationData {
     secondaryInspectionStatus: string
     filePaths: string
     occupancyId: string
-    alarmingSystemUid: string
+    alarmingSystemUid: string,
+    vehicleId?: string
 }
 
 export default class AdjudicationData {
@@ -21,24 +24,12 @@ export default class AdjudicationData {
     filePaths: string
     occupancyId: string
     alarmingSystemUid: string
+    vehicleId?: string
 
     constructor(properties: IAdjudicationData) {
         Object.assign(this, properties);
+        this.id = randomUUID();
     }
-
-    /*async insertDataAsResult(): Promise<void>{
-        // system id ok
-        // verify datastream exists
-        // insert observation into datastream
-    }
-
-    async verifyDatastreamExists(){
-
-    }
-
-    async verifySystem(parentLaneSystemId: string){
-        let laneSys =
-    }*/
 }
 
 export function createAdjudicationObservation(data: IAdjudicationData, resultTime: string): any {

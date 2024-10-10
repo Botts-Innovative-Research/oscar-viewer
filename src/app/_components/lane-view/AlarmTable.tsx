@@ -1,6 +1,6 @@
 import EventTable from "../event-table/EventTable";
 import { IEventTableData } from "../../../../types/new-types";
-import {AdjudicationData, EventTableData, EventTableDataCollection} from "@/lib/data/oscar/TableHelpers";
+import {EventTableData, EventTableDataCollection} from "@/lib/data/oscar/TableHelpers";
 import {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
@@ -80,7 +80,7 @@ export default function AlarmTablePage(props: LaneViewProps) {
         if(laneName === props.laneName)
         {
           if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
-            let newEvent = new EventTableData(idVal.current++, laneName, obs.result, new AdjudicationData('N/A', 0));
+            let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
 
             let laneEntry = laneMapRef.current.get(laneName);
             const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
@@ -110,7 +110,7 @@ export default function AlarmTablePage(props: LaneViewProps) {
       for (let value of message.values) {
 
         if (value.data.gammaAlarm === true || value.data.neutronAlarm === true) {
-          let newEvent = new EventTableData(idVal.current++, laneName, value.data, new AdjudicationData('N/A', 0));
+          let newEvent = new EventTableData(idVal.current++, laneName, value.data);
           let laneEntry = laneMapRef.current.get(laneName);
           const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
           newEvent.setSystemIdx(systemID);

@@ -14,6 +14,7 @@ export const colorCodes = {
 
 export default function AdjudicationSelect(props: {
     onSelect: (value: AdjudicationCode) => void, // Return selected value
+    adjCode: AdjudicationCode
 }) {
     const [adjudicated, setAdjudicated] = useState<AdjudicationCode>(AdjudicationCodes.codes[0]); // Adjudication selected value
     const [style, setStyle] = useState(colorCodes.other.color); // Adjudicated button style based on selected value
@@ -43,7 +44,7 @@ export default function AdjudicationSelect(props: {
                 variant="outlined"
                 id="label"
                 label="Adjudicate"
-                value={adjudicated.label}
+                value={props.adjCode.label}
                 onChange={handleChangeAdjCode}
                 MenuProps={{
                     MenuListProps: {
