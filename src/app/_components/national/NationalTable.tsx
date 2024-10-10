@@ -24,10 +24,7 @@ export default function NationalTable(props:{
 }){
 
     const natlTable = props.tableData;
-    console.log('props',props.tableData)
 
-
-    // const columns: GridColDef<(typeof rows)[number]>[] = [
     const columns: GridColDef<INationalTableData>[] = [
         {
             field: 'site',
