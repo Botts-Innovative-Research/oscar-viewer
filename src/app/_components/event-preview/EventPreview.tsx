@@ -3,14 +3,19 @@
  * All Rights Reserved
  */
 
-import {IconButton, Stack, TextField, Typography} from "@mui/material";
+import {Box, Button, Container, IconButton, Paper, Stack, TextField, Typography} from "@mui/material";
 import OpenInFullRoundedIcon from "@mui/icons-material/OpenInFullRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import AdjudicationSelect from "@/app/_components/event-preview/AdjudicationSelect";
-import {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
+import {ChangeEvent, useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
-import {selectEventPreview, setEventPreview, setShouldForceAlarmTableDeselect} from "@/lib/state/OSCARClientSlice";
+import {
+    selectCurrentUser,
+    selectEventPreview,
+    setEventPreview,
+    setShouldForceAlarmTableDeselect
+} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/navigation";
 import ChartTimeHighlight from "@/app/_components/event-preview/ChartTimeHighlight";
@@ -19,6 +24,12 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
+import {createAdjudicationObservation, IAdjudicationData} from "@/lib/data/oscar/adjudication/Adjudication";
+import Grid2 from "@mui/material/Unstable_Grid2";
+import {GridRow} from "@mui/x-data-grid";
+import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationContants";
+import {GridRootStyles} from "@mui/x-data-grid/components/containers/GridRootStyles";
+import {randomUUID} from "osh-js/source/core/utils/Utils";
 
 
 export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTableData | null }) {
@@ -32,6 +43,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     const [datasourcesReady, setDatasourcesReady] = useState<boolean>(false);
     const syncRef = useRef<typeof DataSynchronizer>();
     const [dataSyncCreated, setDataSyncCreated] = useState<boolean>(false);
+    const currentUser = useSelector(selectCurrentUser);
 
 
     // Chart Specifics
@@ -50,9 +62,63 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     const [videoDatasources, setVideoDatasources] = useState<typeof SweApi[]>([]);
     const [activeVideoIDX, setActiveVideoIDX] = useState<number>(0);
 
+    // Adjudication Specifics
+    const [adjFormData, setAdjFormData] = useState<IAdjudicationData | null>();
+    const [notes, setNotes] = useState<string>("");
+    const [adjudicationCode, setAdjudicationCode] = useState<AdjudicationCode>(AdjudicationCodes.codes[0]);
 
-    const handleAdjudication = (value: string) => {
+
+    const handleAdjudicationCode = (value: AdjudicationCode) => {
         console.log("Adjudication Value: ", value);
+        let newAdjData: IAdjudicationData = {
+            time: new Date().toISOString(),
+            id: randomUUID(),
+            username: currentUser,
+            feedback: notes,
+            adjudicationCode: value.label,
+            isotopes: "",
+            secondaryInspectionStatus: "NONE",
+            filePaths: "",
+            occupancyId: eventPreview.eventData.occupancyId,
+            alarmingSystemUid: eventPreview.eventData.systemIdx
+        }
+        console.log("[ADJ] New Adjudication Data, Ready to Send: ", newAdjData);
+        setAdjudicationCode(value);
+        setAdjFormData(newAdjData);
+    }
+    const handleNotes = (event: React.ChangeEvent<HTMLInputElement>) => {
+        let notesValues = event.target.value;
+        console.log("[ADJ] Notes: ", notesValues);
+        setNotes(notesValues);
+    }
+    const sendAdjudicationData = async () => {
+        let phenomenonTime = new Date().toISOString();
+        let comboData = adjFormData;
+        comboData.feedback = notes;
+        comboData.time = phenomenonTime;
+        let observation = createAdjudicationObservation(comboData, phenomenonTime);
+        console.log("[ADJ] Sending Adjudication Data: ", observation);
+        // send to server
+        let currentLane = eventPreview.eventData.laneId;
+        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+        const adjDsID = currLaneEntry.parentNode.laneAdjMap.get(currentLane);
+        const ep = currLaneEntry.parentNode.getConnectedSystemsEndpoint() + "/datastreams/" + adjDsID + "/observations";
+        let resp = await fetch(ep, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            // body: JSON.stringify(observation),
+            body: observation,
+            mode: "cors"
+        });
+        console.log("[ADJ] Response: ", resp);
+    }
+
+    const resetAdjudicationData = () => {
+        setAdjFormData(null);
+        setNotes("");
+        setAdjudicationCode(AdjudicationCodes.codes[0]);
     }
 
     const handleCloseRounded = () => {
@@ -82,21 +148,6 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         }
 
     }
-
-    /*useMemo(() => {
-       /!* if(dsMapRef.current.size > 0) {
-            disconnectDSArray(gammaDatasources);
-            disconnectDSArray(neutronDatasources);
-            disconnectDSArray(thresholdDatasources);
-            disconnectDSArray(occDatasources);
-        }
-        // create dsMapRef of eventPreview
-        if (eventPreview.isOpen) {
-            dsMapRef.current = laneMapRef.current.get(eventPreview.eventData.laneId).getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
-            console.log("EventPreview DS Map", dsMapRef.current);
-            setLocalDSMap(dsMapRef.current);
-        }*!/
-    }, [eventPreview]);*/
 
 
     const collectDataSources = useCallback(() => {
@@ -213,26 +264,43 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
             {datasourcesReady && (
                 <>
                     <ChartTimeHighlight key={eventPreview.eventData.id}
-                        datasources={{ gamma: gammaDatasources[0], neutron: neutronDatasources[0], threshold: thresholdDatasources[0] }}
-                        setChartReady={setChartReady}
-                        modeType="preview"
-                        currentTime={currentTime}
+                                        datasources={{
+                                            gamma: gammaDatasources[0],
+                                            neutron: neutronDatasources[0],
+                                            threshold: thresholdDatasources[0]
+                                        }}
+                                        setChartReady={setChartReady}
+                                        modeType="preview"
+                                        currentTime={currentTime}
                     />
                     <LaneVideoPlayback key={eventPreview.eventData.id}
-                        videoDatasources={videoDatasources}
-                        setVideoReady={setVideoReady}
-                        dataSynchronizer={syncRef.current}
-                        addDataSource={setActiveVideoIDX}
+                                       videoDatasources={videoDatasources}
+                                       setVideoReady={setVideoReady}
+                                       dataSynchronizer={syncRef.current}
+                                       addDataSource={setActiveVideoIDX}
                     />
                 </>
             )}
-            <AdjudicationSelect onSelect={handleAdjudication}/>
-            <TextField
-                id="outlined-multiline-static"
-                label="Notes"
-                multiline
-                rows={4}
-            />
+            <Stack spacing={2}>
+                <AdjudicationSelect adjCode={adjudicationCode} onSelect={handleAdjudicationCode}/>
+                <TextField
+                    onChange={handleNotes}
+                    id="outlined-multiline-static"
+                    label="Notes"
+                    multiline
+                    rows={4}
+                />
+                <Stack direction={"row"} spacing={10} sx={{width: "100%"}} justifyContent={"center"}>
+                    <Button onClick={sendAdjudicationData} variant={"contained"} size={"small"} fullWidth={false}
+                            color={"success"}
+                            disabled={adjFormData === null}
+                            sx={{width: "25%"}}>Submit</Button>
+
+                    <Button onClick={resetAdjudicationData} variant={"contained"} size={"small"} fullWidth={false}
+                            color={"secondary"}
+                            sx={{width: "25%"}}>Reset</Button>
+                </Stack>
+            </Stack>
         </Stack>
     )
 }

@@ -5,11 +5,15 @@
 
 // starts with lane, followed by 1 or more digits, ends after digit(s)
 import {LaneMapEntry, LaneMeta} from "@/lib/data/oscar/LaneCollection";
-import {ISystem, System} from "@/lib/data/osh/Systems";
+import {System as OSCARSystem} from "@/lib/data/osh/Systems";
+import {ISystem} from "@/lib/data/osh/Systems";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import Systems from "osh-js/source/core/sweapi/system/Systems.js";
+import System from "osh-js/source/core/sweapi/system/System.js";
 import SystemFilter from "osh-js/source/core/sweapi/system/SystemFilter.js";
 import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
+import {AdjudicationDatastreamConstant} from "@/lib/data/oscar/adjudication/models/AdjudicationContants";
+import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 
 const LANEREGEX = /^lane\d+$/;
 
@@ -25,8 +29,9 @@ export interface INode {
     isSecure: boolean,
     auth: { username: string, password: string } | null,
     isDefaultNode: boolean
+    laneAdjMap?: Map<string, string>
 
-    getConnectedSystemsEndpoint(): string,
+    getConnectedSystemsEndpoint(noProtocolPrefix: boolean): string,
 
     getBasicAuthHeader(): any,
 
@@ -39,6 +44,14 @@ export interface INode {
     fetchLaneSystemsAndSubsystems(): Promise<Map<string, LaneMapEntry>>,
 
     fetchDatastreamsTK(laneMap: Map<string, LaneMapEntry>): void,
+
+    insertSubSystem(systemJSON: any, parentSystemId: string): Promise<string>
+
+    insertAdjSystem(systemJSON: any): Promise<string>
+
+    insertAdjDatastream(systemId: string): Promise<string>
+
+    insertObservation(observationJSON: any, datastreamId: string): Promise<string>
 }
 
 export interface NodeOptions {
@@ -52,6 +65,7 @@ export interface NodeOptions {
     auth?: { username: string, password: string } | null,
     isSecure?: boolean,
     isDefaultNode?: boolean
+    laneAdjMap?: Map<string, string>
 }
 
 export class Node implements INode {
@@ -66,6 +80,7 @@ export class Node implements INode {
     isSecure: boolean;
     auth: { username: string, password: string } | null = null;
     isDefaultNode: boolean;
+    laneAdjMap: Map<string, string> = new Map<string, string>();
 
     constructor(options: NodeOptions) {
         this.id = "node-" + randomUUID();
@@ -81,11 +96,12 @@ export class Node implements INode {
         this.isDefaultNode = options.isDefaultNode || false;
     }
 
-    getConnectedSystemsEndpoint() {
+    getConnectedSystemsEndpoint(noProtocolPrefix: boolean = false) {
         let protocol = this.isSecure ? 'https' : 'http';
         // return `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
         console.log("NODE TEST GET CSAPI ENDPOINT", this);
-        return `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
+        return noProtocolPrefix ? `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`
+            : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
     }
 
     getConfigEndpoint() {
@@ -166,7 +182,7 @@ export class Node implements INode {
 
         // check if node is reachable first
         let isReachable = OSHSliceWriterReader.checkForEndpoint(this);
-        if(!isReachable) {
+        if (!isReachable) {
             console.warn("Node is not reachable, check endpoint properties");
             return new Map<string, LaneMapEntry>();
         }
@@ -178,18 +194,20 @@ export class Node implements INode {
         // filter into lanes
         for (let system of systems) {
             // console.log("TK System:", system);
-            if (system.properties.properties?.uid.includes("lane")) {
+            if (system.properties.properties?.uid.includes("lane") && !system.properties.properties?.uid.includes("adjudication")) {
                 // console.log("TK Found lane system:", system);
                 // let laneName = system.properties.properties.uid.split(":").pop();
                 let laneName = system.properties.properties.name;
 
                 if (laneMap.has(laneName)) {
                     laneMap.get(laneName).systems.push(system);
+                    laneMap.get(laneName).setLaneSystem(system);
                 } else {
                     laneMap.set(laneName, new LaneMapEntry(this));
                     // console.log("TK LaneMap:", laneMap, laneName);
                     let entry = laneMap.get(laneName);
                     entry.addSystem(system);
+                    entry.setLaneSystem(system);
                 }
 
                 let subsystems = await system.searchMembers();
@@ -228,19 +246,14 @@ export class Node implements INode {
 
     async fetchDatastreamsTK(laneMap: Map<string, LaneMapEntry>) {
         for (const [laneName, laneEntry] of laneMap) {
-            for (let system of laneEntry.systems) {
-                // console.log("TK DSSystem:", system);
-                try {
-                    const datastreams = await system.searchDataStreams(undefined, 100);
-                    while (datastreams.hasNext()) {
-                        const datastreamResults = await datastreams.nextPage();
-                        // console.log("TK DatastreamResults:", datastreamResults);
-                        laneEntry.addDatastreams(datastreamResults);
-                    }
-                    // console.log("TK Datastreams:", laneEntry.datastreams);
-                } catch (error) {
-                    console.error(`Error fetching datastreams for system ${system.id}:`, error);
+            try {
+                const datastreams = await laneEntry.laneSystem.searchDataStreams(undefined, 100);
+                while (datastreams.hasNext()) {
+                    const datastreamResults = await datastreams.nextPage();
+                    laneEntry.addDatastreams(datastreamResults);
                 }
+            } catch (error) {
+                console.error(`Error fetching datastreams for system ${laneEntry.laneSystem.id}:`, error);
             }
         }
     }
@@ -249,4 +262,115 @@ export class Node implements INode {
 
     }
 
+    // TODO: clean this up and verify that we aren't duplicating systems or outputs
+    async fetchOrCreateAdjudicationSystems(laneMap: Map<string, LaneMapEntry>) {
+        let systems: typeof System[] = await this.fetchSystemsTK();
+        console.log("[ADJ] Fetching adjudication systems for node: ", this, laneMap);
+        let adjSysAndDSMap: Map<string, string> = new Map();
+        let laneAdjDsMap: Map<string, string> = new Map();
+
+        for (const [laneName, laneEntry] of laneMap as Map<string, LaneMapEntry>) {
+            let system = systems.find((system: typeof System) => {
+                system.properties.properties.uid.includes("adjudication")
+            });
+            let systemId: string;
+            if (system) {
+                console.log("[ADJ] Found adjudication systems for lane: ", laneEntry, system);
+                // check for datastreams
+                let datastreams: typeof DataStream[] = await system.searchDataStreams();
+                if (datastreams.length > 0) {
+                    console.log("[ADJ] Found datastreams for adjudication system: ", datastreams);
+                    adjSysAndDSMap.set(system.id, datastreams[0].id);
+                    laneAdjDsMap.set(laneName, datastreams[0].id);
+                } else {
+                    console.log("[ADJ] No datastreams found for adjudication system: ", system);
+                    let dsId = await this.insertAdjDatastream(system.id);
+                    adjSysAndDSMap.set(system.id, dsId);
+                    laneAdjDsMap.set(laneName, dsId);
+                }
+            } else {
+                console.log(`[ADJ] No existing adjudication systems found, creating new system for lane" ${laneName}`);
+                let sysId = await laneEntry.insertAdjudicationSystem(laneName);
+                // insert datastreams
+                let dsId = await this.insertAdjDatastream(sysId);
+                adjSysAndDSMap.set(sysId, dsId);
+                laneAdjDsMap.set(laneName, dsId);
+            }
+        }
+        this.laneAdjMap = laneAdjDsMap;
+        return adjSysAndDSMap;
+    }
+
+    async insertAdjSystem(systemJSON: any): Promise<string> {
+        let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/`;
+        console.log("[ADJ] Inserting Adjudication System: ", ep, this);
+
+        const response = await fetch(ep, {
+            method: 'POST',
+            mode: 'cors',
+            body: JSON.stringify(systemJSON),
+            headers: {
+                ...this.getBasicAuthHeader(),
+                'Content-Type': 'application/sml+json'
+            }
+        });
+
+        if (response.ok) {
+            console.log("[ADJ] Adj System Inserted: ", response);
+            let sysId = response.headers.get("Location").split("/").pop();
+            return sysId;
+        } else {
+            console.warn("[ADJ] Error inserting Adj system: ", response);
+        }
+    }
+
+    async insertAdjDatastream(systemId: string): Promise<string> {
+        let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/${systemId}/datastreams`;
+        console.log("[ADJ] Inserting Adjudication Datastream: ", ep, this);
+
+        const response = await fetch(ep, {
+            method: 'POST',
+            mode: 'cors',
+            body: JSON.stringify(AdjudicationDatastreamConstant),
+            headers: {
+                ...this.getBasicAuthHeader(),
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            console.log("[ADJ] Adj Datastream Inserted: ", response);
+            let dsId = response.headers.get("Location").split("/").pop();
+            return dsId;
+        } else {
+            console.warn("[ADJ] Error inserting Adj Datastream: ", response);
+        }
+    }
+
+    async insertObservation(observationJSON: any, datastreamId: string): Promise<string> {
+        let ep: string = `${this.getConnectedSystemsEndpoint()}/datastreams/${datastreamId}/observations`;
+        console.log("[ADJ] Inserting Observation: ", ep, this);
+
+        const response = await fetch(ep, {
+            method: 'POST',
+            mode: 'cors',
+            body: JSON.stringify(observationJSON),
+            headers: {
+                ...this.getBasicAuthHeader(),
+                'Content-Type': 'application/sml+json'
+            }
+        });
+
+        if (response.ok) {
+            console.log("[NODE] Observation Inserted: ", response);
+            let obsId = response.headers.get("Location").split("/").pop();
+            return obsId;
+        } else {
+            console.warn("[Node] Error inserting Observation: ", response);
+        }
+    }
+
+    insertSubSystem(systemJSON: any, parentSystemId: string): Promise<string> {
+        return Promise.resolve("");
+    }
 }

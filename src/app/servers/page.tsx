@@ -3,7 +3,7 @@
 // create form component
 import {Box, Stack} from "@mui/material";
 import React from "react";
-import NodeForm from "@/app/servers/AddNode";
+import NodeForm from "@/app/servers/NodeForm";
 import NodeList from "@/app/servers/NodeList";
 import {INode} from "@/lib/data/osh/Node";
 

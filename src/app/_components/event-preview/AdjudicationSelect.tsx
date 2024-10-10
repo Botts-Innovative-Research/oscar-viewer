@@ -1,98 +1,107 @@
 "use client";
 
-import { FormControl, InputLabel, ListSubheader, MenuItem, Select, SelectChangeEvent } from '@mui/material';
+import {FormControl, InputLabel, ListSubheader, MenuItem, Select, SelectChangeEvent} from '@mui/material';
 import {useEffect, useState} from 'react';
+import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationContants";
+import {IAdjudicationData} from "@/lib/data/oscar/adjudication/Adjudication";
 
 export const colorCodes = {
-  real: { color: "error.dark" },
-  innocent: { color: "primary.dark" },
-  false: { color: "success.dark" },
-  other: { color: "text.primary" }
+    real: {color: "error.dark"},
+    innocent: {color: "primary.dark"},
+    false: {color: "success.dark"},
+    other: {color: "text.primary"}
 };
 
 export default function AdjudicationSelect(props: {
-  onSelect: (value: string) => void, // Return selected value
-  defaultValue?: string, // Default selected value
+    onSelect: (value: AdjudicationCode) => void, // Return selected value
+    adjCode: AdjudicationCode
 }) {
-  const [adjudicated, setAdjudicated] = useState(props.defaultValue || ''); // Adjudication selected value
-  const [style, setStyle] = useState(colorCodes.other.color); // Adjudicated button style based on selected value
+    const [adjudicated, setAdjudicated] = useState<AdjudicationCode>(AdjudicationCodes.codes[0]); // Adjudication selected value
+    const [style, setStyle] = useState(colorCodes.other.color); // Adjudicated button style based on selected value
 
-    useEffect(() => {
-        setAdjudicated(props.defaultValue);
-        if(props.defaultValue === ''){
-            setStyle("inherit")
+    const handleChangeAdjCode = (event: SelectChangeEvent) => {
+        let value: AdjudicationCode = AdjudicationCodes.getCodeObjByLabel(event.target.value);
+        console.log("[ADJ] Adjudication Selected: ", value);
+        setAdjudicated(value); // Set local adjudicated state
+        props.onSelect(value); // Return selected value to parent component
+
+        // Handle component styling
+        if (value.group === "Real Alarm") {
+            setStyle(colorCodes.real.color);
+        } else if (value.group === "Innocent Alarm") {
+            setStyle(colorCodes.innocent.color);
+        } else if (value.group === "False Alarm") {
+            setStyle(colorCodes.false.color);
+        } else {
+            setStyle(colorCodes.other.color);
         }
+    };
 
-    }, [props.defaultValue]);
+    return (
+        <FormControl size="small" fullWidth>
+            <InputLabel id="label" sx={{"&.MuiInputLabel-root": {color: style}}}>Adjudicate</InputLabel>
+            <Select
+                variant="outlined"
+                id="label"
+                label="Adjudicate"
+                value={props.adjCode.label}
+                onChange={handleChangeAdjCode}
+                MenuProps={{
+                    MenuListProps: {
+                        style: {
+                            maxHeight: 300
+                        }
+                    }
+                }}
+                autoWidth
+                style={{minWidth: "8em"}}
+                sx={{
+                    color: style,
+                    "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: style,
+                    },
+                    "&.MuiOutlinedInput-notchedOutline": {border: 1},
+                    "&.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline":
+                        {
+                            border: 2,
+                            borderRadius: "10px"
+                        },
+                    "&.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline":
+                        {
+                            border: 2,
+                        },
+                }}
+            >
+                <ListSubheader>Real Alarm</ListSubheader>
+                {AdjudicationCodes.getGroupCodes("Real Alarm").map((code) => (
+                    <MenuItem key={code.code} value={code.label} sx={colorCodes.real}>{code.label}</MenuItem>
+                ))}
 
-  const handleChange = (event: SelectChangeEvent) => {
-    setAdjudicated(event.target.value); // Set local adjudicated state
-    props.onSelect(event.target.value); // Return selected value to parent component
+                <ListSubheader>Innocent Alarm</ListSubheader>
+                {AdjudicationCodes.getGroupCodes("Innocent Alarm").map((code) => (
+                    <MenuItem key={code.code} value={code.label} sx={colorCodes.innocent}>{code.label}</MenuItem>
+                ))}
 
-    // Handle component styling
-    if (parseInt(event.target.value) < 3)
-      setStyle(colorCodes.real.color);
-    else if (parseInt(event.target.value) < 6)
-      setStyle(colorCodes.innocent.color);
-    else if (parseInt(event.target.value) < 9)
-      setStyle(colorCodes.false.color);
-    else
-      setStyle(colorCodes.other.color);
-  };
+                <ListSubheader>False Alarm</ListSubheader>
+                {AdjudicationCodes.getGroupCodes("False Alarm").map((code) => (
+                    <MenuItem key={code.code} value={code.label} sx={colorCodes.false}>{code.label}</MenuItem>
+                ))}
 
-  return (
-      <FormControl size="small" fullWidth>
-        <InputLabel id="label" sx={{"&.MuiInputLabel-root":{color: style}}}>Adjudicate</InputLabel>
-        <Select
-            variant="outlined"
-            id="label"
-            label="Adjudicate"
-            value={adjudicated}
-            onChange={handleChange}
-            MenuProps={{
-              MenuListProps: {
-                style: {
-                  maxHeight: 300
-                }
-              }
-            }}
-            autoWidth
-            style={{ minWidth: "8em" }}
-            sx={{
-              color: style,
-              "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: style,
-              },
-              "&.MuiOutlinedInput-notchedOutline": { border: 1 },
-              "&.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline":
-                  {
-                    border: 2,
-                    borderRadius: "10px"
-                  },
-              "&.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline":
-                  {
-                    border: 2,
-                  },
-            }}
-        >
-          <ListSubheader>Real Alarm</ListSubheader>
-          <MenuItem value={1} sx={colorCodes.real}>Code 1: Contraband Found</MenuItem>
-          <MenuItem value={2} sx={colorCodes.real}>Code 2: Other</MenuItem>
-          <ListSubheader>Innocent Alarm</ListSubheader>
-          <MenuItem value={3} sx={colorCodes.innocent}>Code 3: Medical Isotope Found</MenuItem>
-          <MenuItem value={4} sx={colorCodes.innocent}>Code 4: NORM Found</MenuItem>
-          <MenuItem value={5} sx={colorCodes.innocent}>Code 5: Declared Shipment of Radioactive Material</MenuItem>
-          <ListSubheader>False Alarm</ListSubheader>
-          <MenuItem value={6} sx={colorCodes.false}>Code 6: Physical Inspection Negative</MenuItem>
-          <MenuItem value={7} sx={colorCodes.false}>Code 7: RIID/ASP Indicates Background Only</MenuItem>
-          <MenuItem value={8} sx={colorCodes.false}>Code 8: Other</MenuItem>
-          <ListSubheader>Alarm/Tamper/Fault</ListSubheader>
-          <MenuItem value={9} sx={colorCodes.other}>Code 9: Authorized Test, Maintenence, or Training Activity</MenuItem>
-          <ListSubheader>Tamper/Fault</ListSubheader>
-          <MenuItem value={10} sx={colorCodes.other}>Code 10: Unauthorized Activity</MenuItem>
-          <ListSubheader>Other</ListSubheader>
-          <MenuItem value={11} sx={colorCodes.other}>Code 11: Other</MenuItem>
-        </Select>
-      </FormControl>
-  );
+                <ListSubheader>Alarm/Tamper/Fault</ListSubheader>
+                {AdjudicationCodes.getGroupCodes("Test/Maintenance").map((code) => (
+                    <MenuItem key={code.code} value={code.label} sx={colorCodes.other}>{code.label}</MenuItem>
+                ))}
+
+                <ListSubheader>Tamper/Fault</ListSubheader>
+                {AdjudicationCodes.getGroupCodes("Tamper/Fault").map((code) => (
+                    <MenuItem key={code.code} value={code.label} sx={colorCodes.other}>{code.label}</MenuItem>
+                ))}
+
+                <ListSubheader>Other</ListSubheader>
+                {AdjudicationCodes.getGroupCodes("Other").map((code) => (
+                    <MenuItem key={code.code} value={code.label} sx={colorCodes.other}>{code.label}</MenuItem>
+                ))}
+            </Select>
+        </FormControl>
+    );
 }

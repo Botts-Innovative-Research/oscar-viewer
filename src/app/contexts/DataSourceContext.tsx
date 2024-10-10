@@ -78,7 +78,16 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
         dispatch(setLaneMap(lanes));
         laneMapRef.current = lanes;
-        console.log("LaneMapRef for StatTable:", laneMapRef);
+        console.log("LaneMapRef for Table:", laneMapRef);
+
+        // fetch adjudication systems
+        let adjMap: Map<string, string> = new Map();
+        for(let node of nodes){
+            console.log("[ADJ] Fetching adjudication systems for node: ", node, lanes);
+            adjMap = await node.fetchOrCreateAdjudicationSystems(lanes);
+        }
+        console.log("[ADJ] Adjudication Systems Map:", adjMap);
+
     }, [nodes]);
 
     useEffect(() => {
@@ -91,8 +100,6 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
                 console.log("LaneMap test DS:", ds.datastreams[0]);
                 let test = ds.datastreams[0].stream();
                 console.log("LaneMap test DS stream:", test);
-
-
             }
         }
     }, [laneMap]);
