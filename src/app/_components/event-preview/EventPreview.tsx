@@ -27,7 +27,7 @@ import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {createAdjudicationObservation, IAdjudicationData} from "@/lib/data/oscar/adjudication/Adjudication";
 import Grid2 from "@mui/material/Unstable_Grid2";
 import {GridRow} from "@mui/x-data-grid";
-import {AdjudicationCode} from "@/lib/data/oscar/adjudication/models/AdjudicationContants";
+import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationContants";
 import {GridRootStyles} from "@mui/x-data-grid/components/containers/GridRootStyles";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 
@@ -65,6 +65,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     // Adjudication Specifics
     const [adjFormData, setAdjFormData] = useState<IAdjudicationData | null>();
     const [notes, setNotes] = useState<string>("");
+    const [adjudicationCode, setAdjudicationCode] = useState<AdjudicationCode>(AdjudicationCodes.codes[0]);
 
 
     const handleAdjudicationCode = (value: AdjudicationCode) => {
@@ -82,6 +83,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
             alarmingSystemUid: eventPreview.eventData.systemIdx
         }
         console.log("[ADJ] New Adjudication Data, Ready to Send: ", newAdjData);
+        setAdjudicationCode(value);
         setAdjFormData(newAdjData);
     }
     const handleNotes = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,6 +118,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     const resetAdjudicationData = () => {
         setAdjFormData(null);
         setNotes("");
+        setAdjudicationCode(AdjudicationCodes.codes[0]);
     }
 
     const handleCloseRounded = () => {
@@ -279,7 +282,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                 </>
             )}
             <Stack spacing={2}>
-                <AdjudicationSelect onSelect={handleAdjudicationCode}/>
+                <AdjudicationSelect adjCode={adjudicationCode} onSelect={handleAdjudicationCode}/>
                 <TextField
                     onChange={handleNotes}
                     id="outlined-multiline-static"

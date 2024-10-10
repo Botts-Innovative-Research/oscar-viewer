@@ -7,7 +7,7 @@ import BackButton from "../_components/BackButton";
 import DataRow from "../_components/event-details/DataRow";
 
 import MiscTable from "../_components/event-details/MiscTable";
-import AddComment from "../_components/event-details/AddComment";
+import AdjudicationDetail from "../_components/event-details/AdjudicationDetail";
 import {useSelector} from "react-redux";
 import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
 import ChartTimeHighlight from "../_components/event-preview/ChartTimeHighlight";
@@ -195,7 +195,7 @@ export default function EventDetailsPage() {
             {/*</Grid>*/}
             <Grid item container spacing={2} sx={{width: "100%"}}>
                 <Paper variant='outlined' sx={{width: "100%"}}>
-                    <AddComment event={eventPreview.eventData}/>
+                    <AdjudicationDetail event={eventPreview.eventData}/>
                 </Paper>
             </Grid>
         </Stack>

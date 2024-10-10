@@ -49,25 +49,22 @@ const isotopeChoices=[
 
 export default function IsotopeSelect(props: {
   onSelect: (value: string[]) => void, // Return selected value
-  value?: string[], // Default selected value
+  isotopeValue: string[]
 }) {
   const [isotope, setIsotope] = useState<string[]>([]); // Adjudication selected value
 
   const handleChange = (event: SelectChangeEvent<typeof isotope>) => {
+      // const isotopes = event.target.value;
+      // console.log("[ISO] Isotope Selected: ", isotopes);
       const {
           target: {value},
       } = event;
 
-      setIsotope(typeof value === 'string' ? value.split(', ') : value); // Set local isotope
-
-      props.onSelect(typeof value === 'string' ? value.split(', ') : value); // Return selected value to parent component
-
+      let isoValue = typeof value === 'string' ? value.split(', ') : value;
+      console.log("[ISO] Isotope Selected: ", value);
+      // setIsotope(isoValue); // Set local isotope
+      props.onSelect(isoValue);
   };
-
-    useEffect(() => {
-        setIsotope(props.value || []); // Reset local state to prop value
-    }, [props.value]);
-
 
   return (
       <FormControl size="small" fullWidth>
@@ -76,10 +73,8 @@ export default function IsotopeSelect(props: {
             label="Isotope"
             id="label"
             multiple
-            value={isotope}
+            value={props.isotopeValue}
             onChange={handleChange}
-            // input={<OutlinedInput label="Isotope"/>}
-
             renderValue={(selected) => selected.join(', ')}
             MenuProps={{
               MenuListProps: {
@@ -110,8 +105,6 @@ export default function IsotopeSelect(props: {
             {isotopeChoices.map((item) =>(
                 <MenuItem key={item} value={item}>
                     {item}
-                    {/*<Checkbox checked={isotope.includes(item)}/>*/}
-                    {/*<ListItemText primary={item}/>*/}
                 </MenuItem>
                 ))
             }
