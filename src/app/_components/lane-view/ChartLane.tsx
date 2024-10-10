@@ -88,7 +88,13 @@ export default function ChartLane(props: ChartInterceptProps){
                 yLabel: 'CPS',
                 maxValues: 100,
                 getValues: (rec: any, timestamp: any) => {
-                    return {x: timestamp, y: rec.gammaGrossCount1}
+                    if (rec.gammaGrossCount !== undefined) {
+                        return { x: timestamp, y: rec.gammaGrossCount };
+                    }
+                    else if (rec.gammaGrossCount1 !== undefined) {
+                        return { x: timestamp, y: rec.gammaGrossCount1 };
+                    }
+
                 },
 
             });
@@ -103,9 +109,14 @@ export default function ChartLane(props: ChartInterceptProps){
                 lineColor: '#29b6f6',
                 xLabel: 'Time',
                 yLabel: 'CPS',
-
                 getValues: (rec: any, timestamp: any) => {
-                    return {x: timestamp, y: rec.neutronGrossCount1}
+                    if(rec.neutronGrossCount !== undefined){
+                        return {x: timestamp, y: rec.neutronGrossCount}
+                    }
+                    else if(rec.neutronGrossCount1 !== undefined){
+                        return {x: timestamp, y: rec.neutronGrossCount1 }
+                    }
+
                 },
 
             });

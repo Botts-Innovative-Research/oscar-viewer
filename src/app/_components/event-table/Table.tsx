@@ -20,9 +20,6 @@ export default function Table({tableMode}: TableProps) {
     const [eventLog, setEventLog] = useState<IEventTableData[]>([]);
     const idVal = useRef(1);
 
-    let rtEndYear = new Date().setFullYear(new Date().getFullYear() + 1);
-    let rtEndTime = new Date(rtEndYear).toISOString();
-
     let startTime= "2020-01-01T08:13:25.845Z";
     let endTime = "2055-01-01T08:13:25.845Z"
 
@@ -30,9 +27,7 @@ export default function Table({tableMode}: TableProps) {
     const {laneMapRef} = useContext(DataSourceContext);
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
     const tableDataRef = useRef<EventTableDataCollection>(new EventTableDataCollection());
-    const batchOccupancyTableDataRef = useRef<EventTableData[]>([]);
     const occupancyTableDataRef = useRef<EventTableData[]>([]);
-
     const eventLogTableData = useRef<EventTableData[]>([]);
 
     const datasourceSetup = useCallback(async () => {
@@ -48,10 +43,6 @@ export default function Table({tableMode}: TableProps) {
                 let rtDS = lane.datasourcesRealtime[idx];
                 let laneDSColl = laneDSMap.get(laneid);
 
-
-                // rtDS.properties.startTime = "now"
-                // // rtDS.properties.endTime = rtEndTime;
-                // rtDS.properties.endTime = "2055-01-01T08:13:25.845Z"
 
                 if (ds.properties.name.includes('Driver - Occupancy')) {
                     laneDSColl.addDS('occRT', rtDS);

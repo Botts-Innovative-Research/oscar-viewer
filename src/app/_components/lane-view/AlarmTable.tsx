@@ -15,47 +15,49 @@ interface LaneViewProps {
 export default function AlarmTablePage(props: LaneViewProps) {
 
   const [data, setData] = useState<IEventTableData[]>([]); // Data to be displayed, depending on tableMode
+  const [eventLog, setEventLog] = useState<IEventTableData[]>([]);
+
   const idVal = useRef(1);
 
-  let rtEndYear = new Date().setFullYear(new Date().getFullYear() + 1);
-  let rtEndTime = new Date(rtEndYear).toISOString();
-
+  let startTime= "2020-01-01T08:13:25.845Z";
+  let endTime = "2055-01-01T08:13:25.845Z"
   const {laneMapRef} = useContext(DataSourceContext);
   const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
   const tableDataRef = useRef<EventTableDataCollection>(new EventTableDataCollection());
+
   const occupancyTableDataRef = useRef<EventTableData[]>([]);
 
 
   const datasourceSetup = useCallback(async () => {
     let laneDSMap = new Map<string, LaneDSColl>();
-    // check for occupancy "Driver -Occupancy"
+
+
     for (let [laneid, lane] of laneMapRef.current.entries()) {
       laneDSMap.set(laneid, new LaneDSColl());
       for (let ds of lane.datastreams) {
 
         let idx: number = lane.datastreams.indexOf(ds);
-        let batchDS = lane.datasourcesBatch[idx];
+        // let batchDS = lane.datasourcesBatch[idx];
         let rtDS = lane.datasourcesRealtime[idx];
         let laneDSColl = laneDSMap.get(laneid);
 
-        batchDS.properties.startTime = ds.properties.validTime[0];
-        batchDS.properties.endTime = "now";
+        // batchDS.properties.startTime = ds.properties.validTime[0];
+        // batchDS.properties.startTime = startTime;
+        // batchDS.properties.endTime = "now";
 
-        // rtDS.properties.startTime = "now"
-        // rtDS.properties.endTime = rtEndTime;
-        // rtDS.properties.endTime = "2025-01-01T08:13:25.845Z"
+        if(laneid == props.laneName){
+          if (ds.properties.name.includes('Driver - Occupancy')) {
+            laneDSColl.addDS('occRT', rtDS);
+            await fetchObservations(laneid, ds, startTime, "now");
 
-        if (ds.properties.name.includes('Driver - Occupancy')) {
-          laneDSColl.addDS('occRT', rtDS);
-          await fetchObservations(laneid, ds, ds.properties.validTime[0], "now");
+          }
+          if (ds.properties.name.includes('Driver - Gamma Count')) {
+            laneDSColl.addDS('gammaRT', rtDS);
+          }
 
-        }
-        if (ds.properties.name.includes('Driver - Gamma Count')) {
-          laneDSColl.addDS('gammaRT', rtDS);
-        }
-
-        if (ds.properties.name.includes('Driver - Neutron Count')) {
-          laneDSColl.addDS('neutronRT', rtDS);
+          if (ds.properties.name.includes('Driver - Neutron Count')) {
+            laneDSColl.addDS('neutronRT', rtDS);
+          }
         }
 
       }
@@ -71,41 +73,46 @@ export default function AlarmTablePage(props: LaneViewProps) {
   async function fetchObservations(laneName: string, ds: typeof DataStream, timeStart: string, timeEnd: string) {
     let allResults: any[] = [];
     let allAlarmingEvents: EventTableData[] = [];
+    let nonAlarmingEvents: EventTableData[] = [];
 
     let initialRes = await ds.searchObservations(new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`}), 25000);
     while (initialRes.hasNext()) {
       let obsRes = await initialRes.nextPage();
       allResults.push(...obsRes);
       obsRes.map((obs: any) => {
-        if(laneName === props.laneName)
-        {
-          if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
-            let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
+        // console.log("Observation Result: ", obs);
+        if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
 
-            let laneEntry = laneMapRef.current.get(laneName);
-            const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
-            newEvent.setSystemIdx(systemID);
+          let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
 
-            newEvent ? allAlarmingEvents.push(newEvent) : null;
-          }
+          let laneEntry = laneMapRef.current.get(laneName);
+          const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
+          newEvent.setSystemIdx(systemID);
+
+          newEvent ? allAlarmingEvents.push(newEvent) : null;
         }
+        else if(obs.result.gammaAlarm === false || obs.result.neutronAlarm === false){ //for event log :p
+
+          let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
+
+          let laneEntry = laneMapRef.current.get(laneName);
+          const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
+          newEvent.setSystemIdx(systemID);
+
+          newEvent ? nonAlarmingEvents.push(newEvent) : null;
+        }
+
       });
     }
 
-    const existingOcc = new Set(occupancyTableDataRef.current.map(event => event.occupancyId));
-    const filterOccList = allAlarmingEvents.filter((event) => !existingOcc.has(event.occupancyId));
+    occupancyTableDataRef.current = [...allAlarmingEvents, ...nonAlarmingEvents, ...occupancyTableDataRef.current];
 
-    occupancyTableDataRef.current = [...filterOccList, ...occupancyTableDataRef.current];
     setData(occupancyTableDataRef.current);
-  }
-
-  function BatchMsgHandler(laneName: string, message: any) {
-    console.log("Batch message received:", laneName, message);
   }
 
   function RTMsgHandler(laneName: string, message: any) {
     let allAlarmingEvents: EventTableData[] = [];
-
+    let nonAlarmingEvents: EventTableData[] = [];
     if (message.values) {
       for (let value of message.values) {
 
@@ -120,8 +127,20 @@ export default function AlarmTablePage(props: LaneViewProps) {
 
 
         }
+        else if (value.data.gammaAlarm === false || value.data.neutronAlarm === false) {
+
+          let newEvent = new EventTableData(idVal.current++, laneName, value.data);
+
+          let laneEntry = laneMapRef.current.get(laneName);
+          const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
+          newEvent.setSystemIdx(systemID);
+          console.log('non alarming rt msg', newEvent);
+          newEvent ? nonAlarmingEvents.push(newEvent) : null;
+        }
       }
-      occupancyTableDataRef.current = [...allAlarmingEvents, ...occupancyTableDataRef.current];
+
+      occupancyTableDataRef.current = [...allAlarmingEvents, ...nonAlarmingEvents, ...occupancyTableDataRef.current];
+
       setData(occupancyTableDataRef.current);
     }
   }
