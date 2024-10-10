@@ -160,11 +160,6 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
       href: "/servers",
     },
     {
-      title: "Site Configuration",
-      icon: <SettingsRoundedIcon />,
-      href: "/site-configuration",
-    },
-    {
       title: "Config Management",
         icon: <SaveRounded/>,
         href: "/savestate",
