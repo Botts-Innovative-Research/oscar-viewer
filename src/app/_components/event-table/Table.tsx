@@ -23,6 +23,9 @@ export default function Table({tableMode}: TableProps) {
     let rtEndYear = new Date().setFullYear(new Date().getFullYear() + 1);
     let rtEndTime = new Date(rtEndYear).toISOString();
 
+    let startTime= "2020-01-01T08:13:25.845Z";
+    let endTime = "2055-01-01T08:13:25.845Z"
+
     // Test global integrations
     const {laneMapRef} = useContext(DataSourceContext);
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
@@ -46,14 +49,14 @@ export default function Table({tableMode}: TableProps) {
                 let laneDSColl = laneDSMap.get(laneid);
 
 
-
                 // rtDS.properties.startTime = "now"
                 // // rtDS.properties.endTime = rtEndTime;
                 // rtDS.properties.endTime = "2055-01-01T08:13:25.845Z"
 
                 if (ds.properties.name.includes('Driver - Occupancy')) {
                     laneDSColl.addDS('occRT', rtDS);
-                    await fetchObservations(laneid, ds, ds.properties.validTime[0], "now");
+
+                    await fetchObservations(laneid, ds, startTime, "now");
                 }
                 if (ds.properties.name.includes('Driver - Gamma Count')) {
                     laneDSColl.addDS('gammaRT', rtDS);
@@ -109,14 +112,9 @@ export default function Table({tableMode}: TableProps) {
 
             });
         }
-        const existingOcc = new Set(occupancyTableDataRef.current.map(event => event.occupancyId));
-        const filterOccList = allAlarmingEvents.filter((event) => !existingOcc.has(event.occupancyId));
 
-        const eventLogTableOccupancy = new Set(eventLogTableData.current.map(event => event.occupancyId));
-        const filterNonAlarmingOccList = nonAlarmingEvents.filter((event) => !eventLogTableOccupancy.has(event.occupancyId));
-
-        eventLogTableData.current = [...filterNonAlarmingOccList, ...filterOccList, ...eventLogTableData.current];
-        occupancyTableDataRef.current = [...filterOccList, ...occupancyTableDataRef.current];
+        eventLogTableData.current = [...allAlarmingEvents, ...nonAlarmingEvents, ...eventLogTableData.current];
+        occupancyTableDataRef.current = [...allAlarmingEvents, ...occupancyTableDataRef.current];
         setData(occupancyTableDataRef.current);
     }
 
@@ -152,14 +150,9 @@ export default function Table({tableMode}: TableProps) {
                     newEvent ? nonAlarmingEvents.push(newEvent) : null;
                 }
             }
-            const existingOcc = new Set(occupancyTableDataRef.current.map(event => event.occupancyId));
-            const filterOccList = allAlarmingEvents.filter((event) => !existingOcc.has(event.occupancyId));
 
-            const eventLogTableOccupancy = new Set(eventLogTableData.current.map(event => event.occupancyId));
-            const filterNonAlarmingOccList = nonAlarmingEvents.filter((event) => !eventLogTableOccupancy.has(event.occupancyId));
-
-            eventLogTableData.current = [...filterNonAlarmingOccList, ...filterOccList, ...eventLogTableData.current];
-            occupancyTableDataRef.current = [...filterOccList, ...occupancyTableDataRef.current];
+            eventLogTableData.current = [...allAlarmingEvents, ...nonAlarmingEvents, ...eventLogTableData.current];
+            occupancyTableDataRef.current = [...allAlarmingEvents, ...occupancyTableDataRef.current];
 
             setData(occupancyTableDataRef.current);
         }
