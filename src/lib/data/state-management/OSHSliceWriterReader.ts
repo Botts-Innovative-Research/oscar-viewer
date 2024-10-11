@@ -195,6 +195,7 @@ export class OSHSliceWriterReader {
                             "type": "Time",
                             "label": "Sampling Time",
                             "name": "time",
+                            "definition": "http://www.opengis.net/def/property/OGC/0/SamplingTime",
                             "referenceFrame": "http://www.opengis.net/def/trs/BIPM/0/UTC",
                             "uom": {
                                 "href": "http://www.opengis.net/d…uom/ISO-8601/0/Gregorian"
