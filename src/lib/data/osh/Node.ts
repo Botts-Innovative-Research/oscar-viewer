@@ -203,7 +203,9 @@ export class Node implements INode {
                     laneMap.get(laneName).systems.push(system);
                     laneMap.get(laneName).setLaneSystem(system);
                 } else {
-                    laneMap.set(laneName, new LaneMapEntry(this));
+                    let tLaneEntry = new LaneMapEntry(this);
+                    tLaneEntry.laneId = laneName;
+                    laneMap.set(laneName, tLaneEntry);
                     // console.log("TK LaneMap:", laneMap, laneName);
                     let entry = laneMap.get(laneName);
                     entry.addSystem(system);
