@@ -21,7 +21,6 @@ export default function Table({tableMode}: TableProps) {
     const idVal = useRef(1);
 
     let startTime= "2020-01-01T08:13:25.845Z";
-    let endTime = "2055-01-01T08:13:25.845Z"
 
     // Test global integrations
     const {laneMapRef} = useContext(DataSourceContext);
@@ -29,6 +28,7 @@ export default function Table({tableMode}: TableProps) {
     const tableDataRef = useRef<EventTableDataCollection>(new EventTableDataCollection());
     const occupancyTableDataRef = useRef<EventTableData[]>([]);
     const eventLogTableData = useRef<EventTableData[]>([]);
+
 
     const datasourceSetup = useCallback(async () => {
 
@@ -79,7 +79,7 @@ export default function Table({tableMode}: TableProps) {
             let obsRes = await initialRes.nextPage();
             allResults.push(...obsRes);
             obsRes.map((obs: any) => {
-                // console.log("Observation Result: ", obs);
+
                 if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
 
                     let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
@@ -89,8 +89,9 @@ export default function Table({tableMode}: TableProps) {
                     newEvent.setSystemIdx(systemID);
 
                     newEvent ? allAlarmingEvents.push(newEvent) : null;
+
                 }
-                else if(obs.result.gammaAlarm === false || obs.result.neutronAlarm === false){ //for event log :p
+                else { //for event log :p
 
                     let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
 
@@ -99,6 +100,7 @@ export default function Table({tableMode}: TableProps) {
                     newEvent.setSystemIdx(systemID);
 
                     newEvent ? nonAlarmingEvents.push(newEvent) : null;
+
                 }
 
             });
@@ -109,9 +111,7 @@ export default function Table({tableMode}: TableProps) {
         setData(occupancyTableDataRef.current);
     }
 
-    function BatchMsgHandler(laneName: string, message: any) {
-        console.log("Batch message received:", laneName, message);
-    }
+
 
     function RTMsgHandler(laneName: string, message: any) {
         let allAlarmingEvents: EventTableData[] = [];
@@ -120,25 +120,24 @@ export default function Table({tableMode}: TableProps) {
             for (let value of message.values) {
 
                 if (value.data.gammaAlarm === true || value.data.neutronAlarm === true) {
+
                     let newEvent = new EventTableData(idVal.current++, laneName, value.data);
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
                     newEvent.setSystemIdx(systemID);
-                    console.log('alarming rt msg', newEvent);
 
                     newEvent ? allAlarmingEvents.push(newEvent) : null;
 
-
                 }
-                else if (value.data.gammaAlarm === false || value.data.neutronAlarm === false) {
-
+                else {
                     let newEvent = new EventTableData(idVal.current++, laneName, value.data);
 
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
                     newEvent.setSystemIdx(systemID);
-                    console.log('non alarming rt msg', newEvent);
+
                     newEvent ? nonAlarmingEvents.push(newEvent) : null;
+
                 }
             }
 
@@ -182,6 +181,7 @@ export default function Table({tableMode}: TableProps) {
             tableDataRef.current = new EventTableDataCollection();
         }
     }, [tableMode, data, eventLog]);
+
 
 
     /** Handle return value based on tableMode */

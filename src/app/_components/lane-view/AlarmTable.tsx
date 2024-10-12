@@ -15,12 +15,10 @@ interface LaneViewProps {
 export default function AlarmTablePage(props: LaneViewProps) {
 
   const [data, setData] = useState<IEventTableData[]>([]); // Data to be displayed, depending on tableMode
-  const [eventLog, setEventLog] = useState<IEventTableData[]>([]);
 
   const idVal = useRef(1);
 
   let startTime= "2020-01-01T08:13:25.845Z";
-  let endTime = "2055-01-01T08:13:25.845Z"
   const {laneMapRef} = useContext(DataSourceContext);
   const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
   const tableDataRef = useRef<EventTableDataCollection>(new EventTableDataCollection());
@@ -37,13 +35,8 @@ export default function AlarmTablePage(props: LaneViewProps) {
       for (let ds of lane.datastreams) {
 
         let idx: number = lane.datastreams.indexOf(ds);
-        // let batchDS = lane.datasourcesBatch[idx];
         let rtDS = lane.datasourcesRealtime[idx];
         let laneDSColl = laneDSMap.get(laneid);
-
-        // batchDS.properties.startTime = ds.properties.validTime[0];
-        // batchDS.properties.startTime = startTime;
-        // batchDS.properties.endTime = "now";
 
         if(laneid == props.laneName){
           if (ds.properties.name.includes('Driver - Occupancy')) {
@@ -91,7 +84,7 @@ export default function AlarmTablePage(props: LaneViewProps) {
 
           newEvent ? allAlarmingEvents.push(newEvent) : null;
         }
-        else if(obs.result.gammaAlarm === false || obs.result.neutronAlarm === false){ //for event log :p
+        else { //for event log :p
 
           let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
 
@@ -121,20 +114,18 @@ export default function AlarmTablePage(props: LaneViewProps) {
           let laneEntry = laneMapRef.current.get(laneName);
           const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
           newEvent.setSystemIdx(systemID);
-          console.log('alarming rt msg', newEvent);
 
           newEvent ? allAlarmingEvents.push(newEvent) : null;
 
 
         }
-        else if (value.data.gammaAlarm === false || value.data.neutronAlarm === false) {
+        else {
 
           let newEvent = new EventTableData(idVal.current++, laneName, value.data);
 
           let laneEntry = laneMapRef.current.get(laneName);
           const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
           newEvent.setSystemIdx(systemID);
-          console.log('non alarming rt msg', newEvent);
           newEvent ? nonAlarmingEvents.push(newEvent) : null;
         }
       }

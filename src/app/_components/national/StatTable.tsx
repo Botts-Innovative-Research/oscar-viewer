@@ -74,20 +74,21 @@ export default function StatTable(props: {
                 tamperAlarmCount: 0,
             }));
         });
-
+        let now = new Date();
         // update start time based on user input
         if(props.startTime === 'day'){
             setStartTime((new Date(Date.now() - 1000 * 60 * 60 * 24)).toISOString());
         }else if (props.startTime === 'week'){
             setStartTime((new Date(Date.now() - 1000 * 60 * 60 * 24 * 7)).toISOString());
         }else if(props.startTime === 'month'){
-            setStartTime((new Date(new Date().setMonth(new Date().getMonth() - 1))).toISOString());
+
+            let prevMonth = new Date(now.setMonth((now.getMonth() - 1)));
+            setStartTime(prevMonth.toISOString());
         }
 
         // call the datasources to set up the map of systems and datasources
         datasourceSetup();
     }, [laneMapRef.current, props.startTime]);
-
 
 
 
@@ -99,11 +100,8 @@ export default function StatTable(props: {
             laneDSMap.set(laneid, new LaneDSColl());
             for (let ds of lane.datastreams) {
                 let idx: number = lane.datastreams.indexOf(ds);
-                let batchDS = lane.datasourcesBatch[idx];
-                batchDS.properties.startTime = startTime;
-                batchDS.properties.endTime = "now";
 
-                if (ds.properties.name.includes('Driver') && ds.properties.name.includes('Occupancy')) {
+                if (ds.properties.name.includes('Driver - Occupancy')) {
                     await fetchObservations(lane.parentNode.name, ds, startTime, "now");
                 }
                 if (ds.properties.name.includes('Driver - Gamma Count')) {
@@ -131,12 +129,11 @@ export default function StatTable(props: {
         let tamperCount = 0;
         let faultCount = 0;
 
-
         let initialRes = await ds.searchObservations(new ObservationFilter({ resultTime: `${timeStart}/${timeEnd}` }), 25000);
-
 
         while (initialRes.hasNext()) {
             let obsRes = await initialRes.nextPage();
+
             obsRes.map((res: any) => {
 
                 if (ds.properties.name.includes('Driver - Neutron Count') && (res.result.alarmState === 'Alarm')) {
@@ -152,8 +149,11 @@ export default function StatTable(props: {
                     tamperCount++;
 
                 } else if (ds.properties.name.includes('Driver - Occupancy')) {
-                   console.log(ds.properties.name, res.result.startTime)
-                    occCount++;
+                    if(res.result.gammaAlarm === true || res.result.neutronAlarm === true){
+                        occCount++
+                    }else if(res.result.gammaAlarm === false || res.result.neutronAlarm === false){
+                        occCount++
+                    }
 
 
                 }
