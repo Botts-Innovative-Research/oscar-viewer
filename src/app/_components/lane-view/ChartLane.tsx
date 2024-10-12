@@ -37,8 +37,6 @@ export default function ChartLane(props: ChartInterceptProps){
     const gammaChartViewRef = useRef<typeof ChartJsView | null>(null);
     const neutronChartViewRef = useRef<typeof ChartJsView | null>(null);
 
-    // const [selectedChart, setSelectedChart] = useState<string>('both');
-
 
     const createCurveLayers = useCallback(() =>{
 
@@ -79,6 +77,7 @@ export default function ChartLane(props: ChartInterceptProps){
         }
 
         if(props.gammaDatasources.length > 0){
+            console.log(props.gammaDatasources)
             const gCurve = new CurveLayer({
                 dataSourceIds: props.gammaDatasources.map((ds) => ds.id),
                 name: "Gamma Plot",
@@ -99,6 +98,8 @@ export default function ChartLane(props: ChartInterceptProps){
 
             });
             setGammaCurve(gCurve);
+
+            console.log(gCurve)
         }
 
         if(props.neutronDatasources.length > 0){
@@ -109,6 +110,7 @@ export default function ChartLane(props: ChartInterceptProps){
                 lineColor: '#29b6f6',
                 xLabel: 'Time',
                 yLabel: 'CPS',
+                maxValues: 100,
                 getValues: (rec: any, timestamp: any) => {
                     if(rec.neutronGrossCount !== undefined){
                         return {x: timestamp, y: rec.neutronGrossCount}
@@ -127,14 +129,24 @@ export default function ChartLane(props: ChartInterceptProps){
 
     const checkForMountableAndCreateCharts = useCallback(() => {
 
-        if (!gammaChartViewRef.current && !isReadyToRender && thresholdCurve && gammaCurve) {
+        if (!gammaChartViewRef.current && !isReadyToRender && thresholdCurve || gammaCurve || sigmaCurve) {
             console.log("Creating Gamma Chart:", thresholdCurve, gammaCurve);
 
             const container = document.getElementById(gammaChartID);
+            let layers: any[] =[];
+            if(thresholdCurve && gammaCurve && sigmaCurve){
+                layers.push(thresholdCurve)
+                layers.push(gammaCurve)
+                layers.push(sigmaCurve)
+
+            }else if(gammaCurve && !thresholdCurve && !sigmaCurve){
+                layers.push(gammaCurve)
+            }
+
             if (container) {
                 gammaChartViewRef.current = new ChartJsView({
                     container: gammaChartID,
-                    layers: [thresholdCurve, gammaCurve, sigmaCurve],
+                    layers: layers,
                     css: "chart-view",
                 });
                 setViewReady(true);
