@@ -28,7 +28,7 @@ import MediationIcon from '@mui/icons-material/Mediation';
 import {Button, Menu, MenuItem, Stack} from '@mui/material';
 import {useEffect, useState} from 'react';
 import Link from 'next/link';
-import {Label} from "@mui/icons-material";
+import {Label, SaveRounded} from "@mui/icons-material";
 
 const drawerWidth = 240;
 
