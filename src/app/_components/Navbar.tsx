@@ -1,11 +1,10 @@
 "use client";
 
 import * as React from 'react';
-import {useState} from 'react';
-import {CSSObject, styled, Theme} from '@mui/material/styles';
+import { styled, Theme, CSSObject } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import MuiDrawer from '@mui/material/Drawer';
-import MuiAppBar, {AppBarProps as MuiAppBarProps} from '@mui/material/AppBar';
+import MuiAppBar, { AppBarProps as MuiAppBarProps } from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import List from '@mui/material/List';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -25,16 +24,18 @@ import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
 import CloudRoundedIcon from '@mui/icons-material/CloudRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
-import {Menu, MenuItem, Stack} from '@mui/material';
+import MediationIcon from '@mui/icons-material/Mediation';
+import {Button, Menu, MenuItem, Stack} from '@mui/material';
+import {useEffect, useState} from 'react';
 import Link from 'next/link';
-import {SaveRounded} from "@mui/icons-material";
+import {Label} from "@mui/icons-material";
 
 const drawerWidth = 240;
 
 const openedMixin = (theme: Theme): CSSObject => ({
   width: drawerWidth,
-
-
+  
+  
   transition: theme.transitions.create('width', {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.enteringScreen,
@@ -144,6 +145,11 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
       title: "Map",
       icon: <LocationOnRoundedIcon />,
       href: "/map",
+    },
+    {
+      title: "National",
+      icon: <MediationIcon />,
+      href: "/national-view",
     },
   ]
 
@@ -287,6 +293,11 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
         </List>
+        <Divider>
+          <Link href={"/savestate"} passHref>
+              <Label>Open Save State</Label>
+          </Link>
+        </Divider>
       </Drawer>
       <Box component="main" sx={{ height: "100%", width: "100%", m: 2 }}>
         <DrawerHeader />

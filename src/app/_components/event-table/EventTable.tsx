@@ -22,7 +22,7 @@ export default function EventTable(props: {
   viewMenu?: boolean, // Show three-dot menu button, default FALSE
   viewLane?: boolean, // Show 'View Lane' option in menu, default FALSE
   viewAdjudicated?: boolean, //shows Adjudicated status in the event log , not shown in the alarm table
-  eventTable: EventTableDataCollection,  // Table data
+  eventTable: EventTableDataCollection,  // StatTable data
 }) {
   // const onRowSelect = props.onRowSelect;
   const viewAdjudicated = props.viewAdjudicated || false;

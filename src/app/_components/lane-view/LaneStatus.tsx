@@ -61,14 +61,12 @@ export default function LaneStatus(props: LaneStatusProps) {
         updateStatus(laneName, state);
       });
 
-      // laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
-      //   const state = message.values[0].data.tamperStatus;
-      //   if (state) {
-      //     updateStatus(laneName, 'Tamper');
-      //   } else {
-      //     updateStatus(laneName, 'TamperOff')
-      //   }
-      // });
+      laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
+        const state = message.values[0].data.tamperStatus;
+        if (state) {
+          updateStatus(laneName, 'Tamper');
+        }
+      });
 
       laneDSColl.connectAllDS();
     }
@@ -80,9 +78,6 @@ export default function LaneStatus(props: LaneStatusProps) {
 
   function updateStatus(laneName: string, newState: string){
     if(laneName === props.laneName){
-      // if(newState === 'TamperOff'){
-      //
-      // }
       const newStatus: LaneStatusType ={
         id: idVal.current++,
         name: laneName,

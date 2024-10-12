@@ -37,8 +37,6 @@ export default function ChartLane(props: ChartInterceptProps){
     const gammaChartViewRef = useRef<typeof ChartJsView | null>(null);
     const neutronChartViewRef = useRef<typeof ChartJsView | null>(null);
 
-    // const [selectedChart, setSelectedChart] = useState<string>('both');
-
 
     const createCurveLayers = useCallback(() =>{
 
@@ -79,6 +77,7 @@ export default function ChartLane(props: ChartInterceptProps){
         }
 
         if(props.gammaDatasources.length > 0){
+            console.log(props.gammaDatasources)
             const gCurve = new CurveLayer({
                 dataSourceIds: props.gammaDatasources.map((ds) => ds.id),
                 name: "Gamma Plot",
@@ -88,11 +87,19 @@ export default function ChartLane(props: ChartInterceptProps){
                 yLabel: 'CPS',
                 maxValues: 100,
                 getValues: (rec: any, timestamp: any) => {
-                    return {x: timestamp, y: rec.gammaGrossCount1}
+                    if (rec.gammaGrossCount !== undefined) {
+                        return { x: timestamp, y: rec.gammaGrossCount };
+                    }
+                    else if (rec.gammaGrossCount1 !== undefined) {
+                        return { x: timestamp, y: rec.gammaGrossCount1 };
+                    }
+
                 },
 
             });
             setGammaCurve(gCurve);
+
+            console.log(gCurve)
         }
 
         if(props.neutronDatasources.length > 0){
@@ -103,9 +110,15 @@ export default function ChartLane(props: ChartInterceptProps){
                 lineColor: '#29b6f6',
                 xLabel: 'Time',
                 yLabel: 'CPS',
-
+                maxValues: 100,
                 getValues: (rec: any, timestamp: any) => {
-                    return {x: timestamp, y: rec.neutronGrossCount1}
+                    if(rec.neutronGrossCount !== undefined){
+                        return {x: timestamp, y: rec.neutronGrossCount}
+                    }
+                    else if(rec.neutronGrossCount1 !== undefined){
+                        return {x: timestamp, y: rec.neutronGrossCount1 }
+                    }
+
                 },
 
             });
@@ -116,14 +129,24 @@ export default function ChartLane(props: ChartInterceptProps){
 
     const checkForMountableAndCreateCharts = useCallback(() => {
 
-        if (!gammaChartViewRef.current && !isReadyToRender && thresholdCurve && gammaCurve) {
+        if (!gammaChartViewRef.current && !isReadyToRender && thresholdCurve || gammaCurve || sigmaCurve) {
             console.log("Creating Gamma Chart:", thresholdCurve, gammaCurve);
 
             const container = document.getElementById(gammaChartID);
+            let layers: any[] =[];
+            if(thresholdCurve && gammaCurve && sigmaCurve){
+                layers.push(thresholdCurve)
+                layers.push(gammaCurve)
+                layers.push(sigmaCurve)
+
+            }else if(gammaCurve && !thresholdCurve && !sigmaCurve){
+                layers.push(gammaCurve)
+            }
+
             if (container) {
                 gammaChartViewRef.current = new ChartJsView({
                     container: gammaChartID,
-                    layers: [thresholdCurve, gammaCurve, sigmaCurve],
+                    layers: layers,
                     css: "chart-view",
                 });
                 setViewReady(true);
@@ -197,22 +220,15 @@ export default function ChartLane(props: ChartInterceptProps){
     }, [props.gammaDatasources, props.neutronDatasources, props.thresholdDatasources]);
 
 
-    // const handleChange = (chart: string) => {
-    //     setSelectedChart(chart)
-    // }
-
-
-
     return (
-        <Grid direction="row" marginTop={2} marginLeft={2}>
-        {/*<Grid container direction="row" spacing={6} marginTop={2} marginLeft={2}>*/}
-            <Grid item>
+        <Grid container direction="row" marginTop={2} marginLeft={1} spacing={3}>
+            <Grid item xs>
                 <div id={gammaChartID} style={{
                     marginBottom: 50,
                     height: '85%',
                 }}></div>
             </Grid>
-            <Grid item>
+            <Grid item xs>
                 <div id={neutronChartID} style={{
                     marginBottom: 50,
                     height: '85%',

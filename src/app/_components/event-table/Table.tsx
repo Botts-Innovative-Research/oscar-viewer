@@ -20,17 +20,15 @@ export default function Table({tableMode}: TableProps) {
     const [eventLog, setEventLog] = useState<IEventTableData[]>([]);
     const idVal = useRef(1);
 
-    let rtEndYear = new Date().setFullYear(new Date().getFullYear() + 1);
-    let rtEndTime = new Date(rtEndYear).toISOString();
+    let startTime= "2020-01-01T08:13:25.845Z";
 
     // Test global integrations
     const {laneMapRef} = useContext(DataSourceContext);
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
     const tableDataRef = useRef<EventTableDataCollection>(new EventTableDataCollection());
-    const batchOccupancyTableDataRef = useRef<EventTableData[]>([]);
     const occupancyTableDataRef = useRef<EventTableData[]>([]);
-
     const eventLogTableData = useRef<EventTableData[]>([]);
+
 
     const datasourceSetup = useCallback(async () => {
 
@@ -45,19 +43,11 @@ export default function Table({tableMode}: TableProps) {
                 let rtDS = lane.datasourcesRealtime[idx];
                 let laneDSColl = laneDSMap.get(laneid);
 
-                batchDS.properties.startTime = ds.properties.validTime[0];
-                batchDS.properties.endTime = "now";
-
-                // rtDS.properties.startTime = "now"
-                // // rtDS.properties.endTime = rtEndTime;
-                // rtDS.properties.endTime = "2055-01-01T08:13:25.845Z"
 
                 if (ds.properties.name.includes('Driver - Occupancy')) {
                     laneDSColl.addDS('occRT', rtDS);
-                    await fetchObservations(laneid, ds, ds.properties.validTime[0], "now");
 
-
-                    // laneDSColl.addDS('occBatch', batchDS);
+                    await fetchObservations(laneid, ds, startTime, "now");
                 }
                 if (ds.properties.name.includes('Driver - Gamma Count')) {
                     laneDSColl.addDS('gammaRT', rtDS);
@@ -89,7 +79,7 @@ export default function Table({tableMode}: TableProps) {
             let obsRes = await initialRes.nextPage();
             allResults.push(...obsRes);
             obsRes.map((obs: any) => {
-                // console.log("Observation Result: ", obs);
+
                 if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
 
                     let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
@@ -99,8 +89,9 @@ export default function Table({tableMode}: TableProps) {
                     newEvent.setSystemIdx(systemID);
 
                     newEvent ? allAlarmingEvents.push(newEvent) : null;
+
                 }
-                else if(obs.result.gammaAlarm === false || obs.result.neutronAlarm === false){ //for event log :p
+                else { //for event log :p
 
                     let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
 
@@ -109,24 +100,18 @@ export default function Table({tableMode}: TableProps) {
                     newEvent.setSystemIdx(systemID);
 
                     newEvent ? nonAlarmingEvents.push(newEvent) : null;
+
                 }
 
             });
         }
-        const existingOcc = new Set(occupancyTableDataRef.current.map(event => event.occupancyId));
-        const filterOccList = allAlarmingEvents.filter((event) => !existingOcc.has(event.occupancyId));
 
-        const eventLogTableOccupancy = new Set(eventLogTableData.current.map(event => event.occupancyId));
-        const filterNonAlarmingOccList = nonAlarmingEvents.filter((event) => !eventLogTableOccupancy.has(event.occupancyId));
-
-        eventLogTableData.current = [...filterNonAlarmingOccList, ...filterOccList, ...eventLogTableData.current];
-        occupancyTableDataRef.current = [...filterOccList, ...occupancyTableDataRef.current];
+        eventLogTableData.current = [...allAlarmingEvents, ...nonAlarmingEvents, ...eventLogTableData.current];
+        occupancyTableDataRef.current = [...allAlarmingEvents, ...occupancyTableDataRef.current];
         setData(occupancyTableDataRef.current);
     }
 
-    function BatchMsgHandler(laneName: string, message: any) {
-        console.log("Batch message received:", laneName, message);
-    }
+
 
     function RTMsgHandler(laneName: string, message: any) {
         let allAlarmingEvents: EventTableData[] = [];
@@ -135,35 +120,29 @@ export default function Table({tableMode}: TableProps) {
             for (let value of message.values) {
 
                 if (value.data.gammaAlarm === true || value.data.neutronAlarm === true) {
+
                     let newEvent = new EventTableData(idVal.current++, laneName, value.data);
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
                     newEvent.setSystemIdx(systemID);
-                    console.log('alarming rt msg', newEvent);
 
                     newEvent ? allAlarmingEvents.push(newEvent) : null;
 
-
                 }
-                else if (value.data.gammaAlarm === false || value.data.neutronAlarm === false) {
-
+                else {
                     let newEvent = new EventTableData(idVal.current++, laneName, value.data);
 
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
                     newEvent.setSystemIdx(systemID);
-                    console.log('non alarming rt msg', newEvent);
+
                     newEvent ? nonAlarmingEvents.push(newEvent) : null;
+
                 }
             }
-            const existingOcc = new Set(occupancyTableDataRef.current.map(event => event.occupancyId));
-            const filterOccList = allAlarmingEvents.filter((event) => !existingOcc.has(event.occupancyId));
 
-            const eventLogTableOccupancy = new Set(eventLogTableData.current.map(event => event.occupancyId));
-            const filterNonAlarmingOccList = nonAlarmingEvents.filter((event) => !eventLogTableOccupancy.has(event.occupancyId));
-
-            eventLogTableData.current = [...filterNonAlarmingOccList, ...filterOccList, ...eventLogTableData.current];
-            occupancyTableDataRef.current = [...filterOccList, ...occupancyTableDataRef.current];
+            eventLogTableData.current = [...allAlarmingEvents, ...nonAlarmingEvents, ...eventLogTableData.current];
+            occupancyTableDataRef.current = [...allAlarmingEvents, ...occupancyTableDataRef.current];
 
             setData(occupancyTableDataRef.current);
         }
@@ -202,6 +181,7 @@ export default function Table({tableMode}: TableProps) {
             tableDataRef.current = new EventTableDataCollection();
         }
     }, [tableMode, data, eventLog]);
+
 
 
     /** Handle return value based on tableMode */

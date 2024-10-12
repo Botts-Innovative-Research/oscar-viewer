@@ -13,7 +13,9 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import { LaneWithLocation } from "types/new-types";
 import {selectLaneMap} from "@/lib/state/OSCARClientSlice";
 import "leaflet/dist/leaflet.css"
+import Link from "next/link";
 
+import {useRouter} from "next/router";
 
 export default function MapComponent(){
 
@@ -183,23 +185,13 @@ export default function MapComponent(){
         });
     };
 
-
     /***************content in popup************/
     function getContent(status: string, laneName: string) {
+
         return (
             `<div id='popup-data-layer' class='point-popup'><hr/>
                 <h3 class='popup-text-status'>Status: ${status}</h3>
-                <Link 
-                href={{
-                    pathname: 'lane-view',
-                    query: {
-                        name: laneName,
-                    }
-                }}
-                passHref
-                >
-                    <button class="popup-button" type="button">VIEW LANE</button>
-                </Link>
+                <button onClick='location.href="./lane-view?name=${laneName}"' class="popup-button" type="button">VIEW LANE</button>
             </div>`
         );
     }
@@ -208,3 +200,4 @@ export default function MapComponent(){
         <Box id="mapcontainer" style={{width: '100%', height: '900px'}}></Box>
     );
 }
+
