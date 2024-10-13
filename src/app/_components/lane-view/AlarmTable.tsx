@@ -21,7 +21,7 @@ export default function AlarmTablePage(props: LaneViewProps) {
   let startTime= "2020-01-01T08:13:25.845Z";
   const {laneMapRef} = useContext(DataSourceContext);
   const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
-  const tableDataRef = useRef<EventTableDataCollection>(new EventTableDataCollection());
+  const [tableData, setTableData] = useState<EventTableDataCollection>(new EventTableDataCollection());
 
   const occupancyTableDataRef = useRef<EventTableData[]>([]);
 
@@ -139,7 +139,6 @@ export default function AlarmTablePage(props: LaneViewProps) {
   const addSubscriptionCallbacks = useCallback(() => {
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
       const msgLaneName = laneName;
-      // laneDSColl.addSubscribeHandlerToALLDSMatchingName('occBatch', (message: any) => BatchMsgHandler(msgLaneName, message));
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('occRT', (message: any) => RTMsgHandler(msgLaneName, message));
       laneDSColl.connectAllDS();
     }
@@ -154,11 +153,11 @@ export default function AlarmTablePage(props: LaneViewProps) {
     tableData.setData(occupancyTableDataRef.current);
     const sortedData = [...tableData.data].sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
     tableData.setData(sortedData);
-    tableDataRef.current = tableData
+    setTableData(tableData)
   }, [data]);
 
 
   return (
-      <EventTable viewSecondary viewMenu viewAdjudicated  eventTable={tableDataRef.current}/>
+      <EventTable viewSecondary viewMenu viewAdjudicated  eventTable={tableData}/>
   );
 }
