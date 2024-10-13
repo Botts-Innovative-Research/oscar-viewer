@@ -1,8 +1,6 @@
 "use client";
 
 import {Box, Paper, Typography} from "@mui/material";
-
-import MapComponent from "@/app/_components/maps/MapComponent";
 import dynamic from "next/dynamic";
 import {useMemo} from "react";
 

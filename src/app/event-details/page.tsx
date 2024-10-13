@@ -51,8 +51,6 @@ export default function EventDetailsPage() {
 
     useEffect(() => {
         setCurrentTime(eventPreview.eventData?.startTime);
-        // currentTime.current = eventPreview.eventData.startTime;
-        console.log("Current Time: ", currentTime);
     }, [eventPreview]);
 
     useMemo(() => {

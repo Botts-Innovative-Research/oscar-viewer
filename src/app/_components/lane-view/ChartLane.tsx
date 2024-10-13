@@ -91,7 +91,8 @@ export default function ChartLane(props: ChartInterceptProps){
                         return { x: timestamp, y: rec.gammaGrossCount };
                     }
                     else if (rec.gammaGrossCount1 !== undefined) {
-                        return { x: timestamp, y: rec.gammaGrossCount1 };
+                        // let y = rec.gammaGrossCount1 + rec.gammaGrossCount2 + rec.gammaGrossCount3 + rec.gammaGrossCount4
+                        return { x: timestamp, y: rec.gammaGrossCount1};
                     }
 
                 },
@@ -116,7 +117,8 @@ export default function ChartLane(props: ChartInterceptProps){
                         return {x: timestamp, y: rec.neutronGrossCount}
                     }
                     else if(rec.neutronGrossCount1 !== undefined){
-                        return {x: timestamp, y: rec.neutronGrossCount1 }
+                        // let y = rec.neutronGrossCount1 + rec.neutronGrossCount2 + rec.neutronGrossCount3 + rec.neutronGrossCount4
+                        return {x: timestamp, y: rec.neutronGrossCount1}
                     }
 
                 },

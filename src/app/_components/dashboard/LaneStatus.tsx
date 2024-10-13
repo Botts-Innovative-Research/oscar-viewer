@@ -1,7 +1,7 @@
 "use client";
 
 import {Box, Grid, List, Stack, Typography } from '@mui/material';
-import LaneStatusItem from '../_components/LaneStatusItem';
+import LaneStatusItem from './LaneStatusItem';
 import React, {useCallback, useContext, useEffect, useRef, useState} from 'react';
 import Link from "next/link";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
@@ -114,8 +114,6 @@ export default function LaneStatus() {
   useEffect(() => {
     addSubscriptionCallbacks();
   }, [dataSourcesByLane]);
-
-  //implement a setTimeout if the lane does not receive any data in the first few seconds!
 
   function updateStatus(laneName: string, newState: string) {
 

@@ -2,20 +2,20 @@
 
 import { Grid, Pagination, Typography } from '@mui/material';
 import { useCallback, useContext, useEffect, useState } from 'react';
-import "../style/cameragrid.css";
+import "../../style/cameragrid.css";
 import { useSelector } from 'react-redux';
 import { LaneDSColl, LaneMapEntry, LaneMeta } from '@/lib/data/oscar/LaneCollection';
-import CameraGridVideo from '../_components/video/VideoComponent';
+import CameraGridVideo from '../video/VideoComponent';
 import { selectDatastreams } from '@/lib/state/OSHSlice';
 import { selectLaneMap, selectLanes } from '@/lib/state/OSCARClientSlice';
 import { RootState } from '@/lib/state/Store';
-import VideoComponent from '../_components/video/VideoComponent';
-import VideoStatusWrapper from '../_components/video/VideoStatusWrapper';
+import VideoComponent from '../video/VideoComponent';
+import VideoStatusWrapper from '../video/VideoStatusWrapper';
 import {EventType} from 'osh-js/source/core/event/EventType';
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
 import { Protocols } from "@/lib/data/Constants";
 import {Mode} from 'osh-js/source/core/datasource/Mode';
-import {DataSourceContext} from '../contexts/DataSourceContext';
+import {DataSourceContext} from '../../contexts/DataSourceContext';
 
 
 interface LaneWithVideo {

@@ -73,7 +73,6 @@ export default function AlarmTablePage(props: LaneViewProps) {
       let obsRes = await initialRes.nextPage();
       allResults.push(...obsRes);
       obsRes.map((obs: any) => {
-        console.log("Observation Result: ", obs);
         if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
 
           let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
@@ -84,7 +83,7 @@ export default function AlarmTablePage(props: LaneViewProps) {
 
           newEvent ? allAlarmingEvents.push(newEvent) : null;
         }
-        else { //for event log :p
+        else {
 
           let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
 
@@ -116,7 +115,6 @@ export default function AlarmTablePage(props: LaneViewProps) {
           newEvent.setSystemIdx(systemID);
 
           newEvent ? allAlarmingEvents.push(newEvent) : null;
-
 
         }
         else {

@@ -1,12 +1,8 @@
-import {createSelector, createSlice, PayloadAction} from "@reduxjs/toolkit";
+import {createSlice, PayloadAction} from "@reduxjs/toolkit";
 import {enableMapSet} from "immer";
 import {LaneMapEntry, LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import {RootState} from "@/lib/state/Store";
-import {
-    selectDatastreams
-} from "@/lib/state/OSHSlice";
-import {IDatastream} from "@/lib/data/osh/Datastreams";
-import {useSelector} from "react-redux";
+
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 
 enableMapSet();

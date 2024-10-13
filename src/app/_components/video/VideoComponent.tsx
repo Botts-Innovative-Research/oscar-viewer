@@ -14,7 +14,6 @@ interface OSHVideoProps {
 
 export default function VideoComponent(props: OSHVideoProps) {
 
-    console.log('vid current page',props.currentPage)
     const hasRendered = useRef(false);
     const [videoView, setVideoView] = useState(null);
     const [videoDataSource, setVideoDataSource] = useState(props.videoSources[props.currentPage]);

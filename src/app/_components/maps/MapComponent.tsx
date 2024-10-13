@@ -8,14 +8,12 @@ import LeafletView from "osh-js/source/core/ui/view/map/LeafletView";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import Box from "@mui/material/Box";
-import '../../style/Map.css';
+import '../../style/map.css';
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import { LaneWithLocation } from "types/new-types";
 import {selectLaneMap} from "@/lib/state/OSCARClientSlice";
 import "leaflet/dist/leaflet.css"
-import Link from "next/link";
 
-import {useRouter} from "next/router";
 
 export default function MapComponent(){
 
@@ -25,7 +23,6 @@ export default function MapComponent(){
 
     const [isInit, setIsInt]= useState(false);
 
-    /****global datasource references***/
     const {laneMapRef} = useContext(DataSourceContext);
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());

@@ -97,37 +97,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         return occCurve;
     }
 
-
-    // const createCurveLayers = useCallback(() => {
-    //     // reset views
-    //     // gammaChartViewRef.current?.destroy();
-    //     // neutronChartViewRef.current?.destroy();
-    //
-    //     if (props.thresholdDatasources.length > 0) {
-    //         console.log("Threshold DS", props.thresholdDatasources);
-    //
-    //         let tCurve = createThresholdViewCurve(props.thresholdDatasources[0]);
-    //         setThresholdCurve(tCurve);
-    //     }
-    //
-    //     if (props.gammaDatasources.length > 0) {
-    //         console.log("Gamma DS", props.gammaDatasources);
-    //
-    //         let gCurve = createGammaViewCurve(props.gammaDatasources[0]);
-    //         setGammaCurve(gCurve);
-    //     }
-    //
-    //     if (props.neutronDatasources.length > 0) {
-    //         console.log("Neutron DS", props.neutronDatasources);
-    //
-    //         let nCurve = createNeutronViewCurve(props.neutronDatasources[0]);
-    //         setNeutronCurve(nCurve);
-    //     }
-    //
-    //     // setChartsReady(true);
-    //     setLayersReady(true);
-    // }, [props]);
-
     function createCurveLayersAndReturn() {
         let tCurve = createThresholdViewCurve(props.datasources.threshold);
         let gCurve = createGammaViewCurve(props.datasources.gamma);

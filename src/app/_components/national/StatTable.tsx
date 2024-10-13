@@ -1,8 +1,5 @@
 "use client"
 
-
-
-
 import {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {INationalTableData} from "../../../../types/new-types";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
@@ -16,18 +13,10 @@ import  {selectNodes} from "@/lib/state/OSHSlice";
 import {EventTableData, NationalTableData, NationalTableDataCollection} from "@/lib/data/oscar/TableHelpers";
 
 
-
-
-
-
 export default function StatTable(props: {
     startTime: string
     endTime: string
-
-
 }){
-
-
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState("");
 
@@ -78,17 +67,6 @@ export default function StatTable(props: {
         });
         setStartTime(props.startTime)
         setEndTime(props.endTime)
-        // let now = new Date();
-        // // update start time based on user input
-        // if(props.startTime === 'day'){
-        //     setStartTime((new Date(Date.now() - 1000 * 60 * 60 * 24)).toISOString());
-        // }else if (props.startTime === 'week'){
-        //     setStartTime((new Date(Date.now() - 1000 * 60 * 60 * 24 * 7)).toISOString());
-        // }else if(props.startTime === 'month'){
-        //
-        //     let prevMonth = new Date(now.setMonth((now.getMonth() - 1)));
-        //     setStartTime(prevMonth.toISOString());
-        // }
 
         // call the datasources to set up the map of systems and datasources
         datasourceSetup();

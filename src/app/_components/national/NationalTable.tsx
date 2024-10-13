@@ -1,16 +1,3 @@
-
-
-
-// A table that summarizes the following from a single "site" (all rpms on a single opensensorhub node = site):
-//
-// number of occupancies
-// number of gamma alarms
-// number of neutron alarms
-// number of faults
-// number of tampers
-// This would utilize a batch request and then calculate the totals in the client.
-//extra functionality We will want to be able to adjust the time frame from 1 day, 1 week, 1 month from current date time.
-
 "use client";
 
 import {DataGrid, GridColDef} from "@mui/x-data-grid";

@@ -17,23 +17,19 @@ import {selectEventPreview, setEventPreview} from "@/lib/state/OSCARClientSlice"
 
 
 export default function EventTable(props: {
-  // onRowSelect?: (event: SelectedEvent) => void, // Return start/end time to parent
   viewSecondary?: boolean,  // Show 'Secondary Inspection' column, default FALSE
   viewMenu?: boolean, // Show three-dot menu button, default FALSE
   viewLane?: boolean, // Show 'View Lane' option in menu, default FALSE
   viewAdjudicated?: boolean, //shows Adjudicated status in the event log , not shown in the alarm table
   eventTable: EventTableDataCollection,  // StatTable data
 }) {
-  // const onRowSelect = props.onRowSelect;
   const viewAdjudicated = props.viewAdjudicated || false;
   const viewSecondary = props.viewSecondary || false;
   const viewMenu = props.viewMenu || false;
   const viewLane = props.viewLane || false;
   const eventTable = props.eventTable;
   const [selectionModel, setSelectionModel] = useState([]); // Currently selected row
-  const [currentEvent, setCurrentEvent] = useState<EventTableData | null>(null);
   const laneMapRef = useContext(DataSourceContext).laneMapRef;
-  const eventPreview = useSelector(selectEventPreview);
   const dispatch = useAppDispatch();
 
 

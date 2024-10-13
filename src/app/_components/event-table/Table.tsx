@@ -90,7 +90,7 @@ export default function Table({tableMode}: TableProps) {
                     newEvent ? allAlarmingEvents.push(newEvent) : null;
 
                 }
-                else { //for event log :p
+                else {
 
                     let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
                     let laneEntry = laneMapRef.current.get(laneName);

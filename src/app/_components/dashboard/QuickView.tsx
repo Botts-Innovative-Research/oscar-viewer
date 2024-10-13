@@ -1,12 +1,12 @@
 "use client";
 
 import {Box, Typography} from '@mui/material';
-import {SelectedEvent} from 'types/new-types';
+import {SelectedEvent} from '../../../../types/new-types';
 
 import {useSelector} from "react-redux";
 import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
 import {EventPreview} from "@/app/_components/event-preview/EventPreview";
-import MapComponent from '../_components/maps/MapComponent';
+import MapComponent from '../maps/MapComponent';
 
 
 export default function QuickView() {
@@ -19,7 +19,6 @@ export default function QuickView() {
     return (
         <Box style={{width: '100%', height: '300', padding: 10, overflow: 'hidden'}}>
             {eventPreview.isOpen ? (<EventPreview key={eventPreview.eventData.id} isOpen={eventPreview.isOpen} eventData={eventPreview.eventData}/>) : (<MapComponent/>)}
-            {/*{eventPreview.isOpen ? (<EventPreview/>) : (<Typography>Map</Typography>)}*/}
         </Box>
     );
 }
