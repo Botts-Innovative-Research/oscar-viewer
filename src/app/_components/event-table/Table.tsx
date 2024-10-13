@@ -25,7 +25,7 @@ export default function Table({tableMode}: TableProps) {
     // Test global integrations
     const {laneMapRef} = useContext(DataSourceContext);
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
-    const tableDataRef = useRef<EventTableDataCollection>(new EventTableDataCollection());
+    const [tableData, setTableData] = useState<EventTableDataCollection>(new EventTableDataCollection());
     const occupancyTableDataRef = useRef<EventTableData[]>([]);
     const eventLogTableData = useRef<EventTableData[]>([]);
 
@@ -83,7 +83,6 @@ export default function Table({tableMode}: TableProps) {
                 if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
 
                     let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
-
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
                     newEvent.setSystemIdx(systemID);
@@ -94,7 +93,6 @@ export default function Table({tableMode}: TableProps) {
                 else { //for event log :p
 
                     let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
-
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
                     newEvent.setSystemIdx(systemID);
@@ -131,7 +129,6 @@ export default function Table({tableMode}: TableProps) {
                 }
                 else {
                     let newEvent = new EventTableData(idVal.current++, laneName, value.data);
-
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
                     newEvent.setSystemIdx(systemID);
@@ -169,16 +166,16 @@ export default function Table({tableMode}: TableProps) {
             tableData.setData(occupancyTableDataRef.current);
             const sortedData = [...tableData.data].sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
             tableData.setData(sortedData);
-            tableDataRef.current = tableData
+            setTableData(tableData);
 
         } else if (tableMode === "eventlog") {
             let eventLogData = new EventTableDataCollection();
             eventLogData.setData(eventLogTableData.current);
             const sortedData = [...eventLogData.data].sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
             eventLogData.setData(sortedData);
-            tableDataRef.current = eventLogData;
+            setTableData(eventLogData);
         } else {
-            tableDataRef.current = new EventTableDataCollection();
+            setTableData(new EventTableDataCollection());
         }
     }, [tableMode, data, eventLog]);
 
@@ -187,11 +184,11 @@ export default function Table({tableMode}: TableProps) {
     /** Handle return value based on tableMode */
     if (tableMode == "alarmtable") {
         return (
-            <EventTable eventTable={tableDataRef.current}/>
+            <EventTable eventTable={tableData}/>
         )
     } else if (tableMode == "eventlog") {
         return (
-            <EventTable eventTable={tableDataRef.current} viewMenu viewLane viewSecondary viewAdjudicated/>
+            <EventTable eventTable={tableData} viewMenu viewLane viewSecondary viewAdjudicated/>
         )
     } else {
         return (<></>)

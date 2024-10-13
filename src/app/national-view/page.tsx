@@ -9,7 +9,6 @@ export default function NationalViewPage() {
 
     //todo: add functionality for user to select time from 1 day , 1 week,  1 month
 
-    //todo: add functionality for user to select time from 1 day , 1 week,  1 month
     const defaultStartTime = 'day';
     // const defaultStartTime = new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString();
     const [startTime, setStartTime] = useState(defaultStartTime);
