@@ -22,12 +22,14 @@ import {EventTableData, NationalTableData, NationalTableDataCollection} from "@/
 
 export default function StatTable(props: {
     startTime: string
+    endTime: string
 
 
 }){
 
 
-    const [startTime, setStartTime] = useState((new Date(Date.now() - 1000 * 60 * 60 * 24)).toISOString());
+    const [startTime, setStartTime] = useState("");
+    const [endTime, setEndTime] = useState("");
 
 
     const {laneMapRef} = useContext(DataSourceContext);
@@ -74,21 +76,23 @@ export default function StatTable(props: {
                 tamperAlarmCount: 0,
             }));
         });
-        let now = new Date();
-        // update start time based on user input
-        if(props.startTime === 'day'){
-            setStartTime((new Date(Date.now() - 1000 * 60 * 60 * 24)).toISOString());
-        }else if (props.startTime === 'week'){
-            setStartTime((new Date(Date.now() - 1000 * 60 * 60 * 24 * 7)).toISOString());
-        }else if(props.startTime === 'month'){
-
-            let prevMonth = new Date(now.setMonth((now.getMonth() - 1)));
-            setStartTime(prevMonth.toISOString());
-        }
+        setStartTime(props.startTime)
+        setEndTime(props.endTime)
+        // let now = new Date();
+        // // update start time based on user input
+        // if(props.startTime === 'day'){
+        //     setStartTime((new Date(Date.now() - 1000 * 60 * 60 * 24)).toISOString());
+        // }else if (props.startTime === 'week'){
+        //     setStartTime((new Date(Date.now() - 1000 * 60 * 60 * 24 * 7)).toISOString());
+        // }else if(props.startTime === 'month'){
+        //
+        //     let prevMonth = new Date(now.setMonth((now.getMonth() - 1)));
+        //     setStartTime(prevMonth.toISOString());
+        // }
 
         // call the datasources to set up the map of systems and datasources
         datasourceSetup();
-    }, [laneMapRef.current, props.startTime]);
+    }, [laneMapRef.current, props.startTime, props.endTime]);
 
 
 
@@ -102,23 +106,23 @@ export default function StatTable(props: {
                 let idx: number = lane.datastreams.indexOf(ds);
 
                 if (ds.properties.name.includes('Driver - Occupancy')) {
-                    await fetchObservations(lane.parentNode.name, ds, startTime, "now");
+                    await fetchObservations(lane.parentNode.name, ds, startTime, endTime);
                 }
                 if (ds.properties.name.includes('Driver - Gamma Count')) {
-                    await fetchObservations(lane.parentNode.name, ds, startTime, "now");
+                    await fetchObservations(lane.parentNode.name, ds, startTime, endTime);
                 }
 
                 if (ds.properties.name.includes('Driver - Neutron Count')) {
-                    await fetchObservations(lane.parentNode.name, ds, startTime, "now");
+                    await fetchObservations(lane.parentNode.name, ds, startTime, endTime);
                 }
 
                 if (ds.properties.name.includes('Driver - Tamper')) {
-                    await fetchObservations(lane.parentNode.name, ds, startTime, "now");
+                    await fetchObservations(lane.parentNode.name, ds, startTime, endTime);
                 }
             }
             setDataSourcesByLane(laneDSMap);
         }
-    }, [laneMapRef.current, startTime]);
+    }, [laneMapRef.current, startTime, endTime]);
 
 
     async function fetchObservations(siteName: string, ds: typeof DataStream, timeStart: string, timeEnd: string) {

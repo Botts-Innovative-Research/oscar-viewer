@@ -185,7 +185,7 @@ export default function LaneStatus() {
         return [newLane, ... prevList]
       }
     });
-  };
+  }
 
 
   return (
