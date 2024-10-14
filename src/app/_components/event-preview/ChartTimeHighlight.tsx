@@ -45,8 +45,12 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         let gCurve = new CurveLayer({
             dataSourceIds: [gammaDatasource.id],
             getValues: (rec: any, timestamp: any) => {
-                // console.log(rec.gammaGrossCount1)
-                return {x: timestamp, y: rec.gammaGrossCount1}
+                if (rec.gammaGrossCount !== undefined) {
+                    return { x: timestamp, y: rec.gammaGrossCount };
+                }
+                else if (rec.gammaCount1 !== undefined) {
+                    return { x: timestamp, y: rec.gammaCount1 };
+                }
             },
             name: "Gamma Count",
             lineColor: "red",
@@ -62,8 +66,12 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         let nCurve = new CurveLayer({
             dataSourceIds: [neutronDatasource.id],
             getValues: (rec: any, timestamp: any) => {
-                // console.log(rec.neutronGrossCount1);
-                return {x: timestamp, y: rec.neutronGrossCount1}
+                if(rec.neutronGrossCount !== undefined){
+                    return {x: timestamp, y: rec.neutronGrossCount}
+                }
+                else if(rec.neutronCount1 !== undefined){
+                    return {x: timestamp, y: rec.neutronCount1 }
+                }
             },
             name: 'Neutron Count',
             lineColor: "blue",

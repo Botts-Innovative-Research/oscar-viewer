@@ -1,7 +1,7 @@
 "use client"
 
 
-import {Box, Button, Grid, Stack, ToggleButton, ToggleButtonGroup, Typography} from "@mui/material";
+import {Grid} from "@mui/material";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
@@ -90,11 +90,9 @@ export default function ChartLane(props: ChartInterceptProps){
                     if (rec.gammaGrossCount !== undefined) {
                         return { x: timestamp, y: rec.gammaGrossCount };
                     }
-                    else if (rec.gammaGrossCount1 !== undefined) {
-                        // let y = rec.gammaGrossCount1 + rec.gammaGrossCount2 + rec.gammaGrossCount3 + rec.gammaGrossCount4
-                        return { x: timestamp, y: rec.gammaGrossCount1};
+                    else if (rec.gammaCount1 !== undefined) {
+                        return { x: timestamp, y: rec.gammaCount1 };
                     }
-
                 },
 
             });
@@ -116,11 +114,9 @@ export default function ChartLane(props: ChartInterceptProps){
                     if(rec.neutronGrossCount !== undefined){
                         return {x: timestamp, y: rec.neutronGrossCount}
                     }
-                    else if(rec.neutronGrossCount1 !== undefined){
-                        // let y = rec.neutronGrossCount1 + rec.neutronGrossCount2 + rec.neutronGrossCount3 + rec.neutronGrossCount4
-                        return {x: timestamp, y: rec.neutronGrossCount1}
+                    else if(rec.neutronCount1 !== undefined){
+                        return {x: timestamp, y: rec.neutronCount1 }
                     }
-
                 },
 
             });
