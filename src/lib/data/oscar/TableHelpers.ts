@@ -78,6 +78,10 @@ export class EventTableData implements IEventTableData {
     }
 
     setDataStreamId(dataStreamId: string){
+        if(!dataStreamId){
+            let error = new Error()
+            console.error("Datastream undefined, cannot set dsID", error.stack)
+        }
         this.dataStreamId = dataStreamId;
     }
 }

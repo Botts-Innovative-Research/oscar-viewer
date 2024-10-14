@@ -46,6 +46,7 @@ export class LaneMapEntry {
     parentNode: INode;
     laneSystem: typeof System;
     private adjDs: string;
+    adjControlStreamId: string
 
     constructor(node: INode) {
         this.systems = [];
@@ -310,6 +311,10 @@ export class LaneMapEntry {
             console.log("[ADJ] Inserted Adjudication Observation: ", obsRes);
         }
     }
+
+    addControlStreamId(id: string){
+        this.adjControlStreamId = id;
+    }
 }
 
 export class LaneDSColl {
@@ -453,9 +458,5 @@ export class LaneDSColl {
         for (let ds of this.connectionRT) {
             ds.connect();
         }
-    }
-
-    filterDatastreams(filter){
-        this.datastreams
     }
 }

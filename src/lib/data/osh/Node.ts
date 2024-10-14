@@ -52,6 +52,8 @@ export interface INode {
     insertAdjDatastream(systemId: string): Promise<string>
 
     insertObservation(observationJSON: any, datastreamId: string): Promise<string>
+
+    fetchControlStreams(): Promise<any>
 }
 
 export interface NodeOptions {
@@ -374,5 +376,25 @@ export class Node implements INode {
 
     insertSubSystem(systemJSON: any, parentSystemId: string): Promise<string> {
         return Promise.resolve("");
+    }
+
+    async fetchControlStreams(){
+        // have to use manual request due to osh-js having the wrong resource location
+        let ep = `${this.getConnectedSystemsEndpoint(false)}/controlstreams`
+        let response = await fetch(ep,{
+            method: "GET",
+            headers:{
+                ...this.getBasicAuthHeader(),
+                "Content-Type": "application/json"
+            }
+        });
+        if (response.ok){
+            let json = await response.json();
+            console.log("Control Streams", json['items']);
+            return json['items']
+        }else{
+            console.warn("Error getting Control Streams")
+            return []
+        }
     }
 }

@@ -81,12 +81,13 @@ export default function Table({tableMode}: TableProps) {
             obsRes.map((obs: any) => {
 
                 if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
+                    console.log("ADJ obs ", obs)
 
                     let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
                     newEvent.setSystemIdx(systemID);
-                    newEvent.setDataStreamId(obs.result.dataStreamId);
+                    newEvent.setDataStreamId(obs["datastream@id"]);
 
                     newEvent ? allAlarmingEvents.push(newEvent) : null;
 
@@ -97,7 +98,7 @@ export default function Table({tableMode}: TableProps) {
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
                     newEvent.setSystemIdx(systemID);
-                    newEvent.setDataStreamId(obs.result.dataStreamId);
+                    newEvent.setDataStreamId(obs["datastream@id"]);
 
                     newEvent ? nonAlarmingEvents.push(newEvent) : null;
 
