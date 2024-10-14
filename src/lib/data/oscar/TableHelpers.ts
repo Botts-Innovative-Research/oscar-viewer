@@ -24,6 +24,7 @@ export class EventTableData implements IEventTableData {
     adjudicatedCode?: number;
     adjudicatedData?: AdjudicationData;
     systemIdx?: string;
+    dataStreamId?: string
 
     constructor(id: number, laneId: string, msgValue: any, adjudicatedData: AdjudicationData | null = null) {
         this.id = id;
@@ -74,6 +75,14 @@ export class EventTableData implements IEventTableData {
 
     setSystemIdx(systemIdx: string) {
         this.systemIdx = systemIdx;
+    }
+
+    setDataStreamId(dataStreamId: string){
+        if(!dataStreamId){
+            let error = new Error()
+            console.error("Datastream undefined, cannot set dsID", error.stack)
+        }
+        this.dataStreamId = dataStreamId;
     }
 }
 

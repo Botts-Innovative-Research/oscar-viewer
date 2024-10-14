@@ -19,7 +19,11 @@ import React, {ChangeEvent, useContext, useRef, useState} from "react";
 import AdjudicationSelect from "../event-preview/AdjudicationSelect";
 import IsotopeSelect from "./IsotopeSelect";
 import AdjudicationLog from "./AdjudicationLog"
-import {createAdjudicationObservation, IAdjudicationData} from "@/lib/data/oscar/adjudication/Adjudication";
+import {
+    createAdjudicationObservation, findObservationIdBySamplingTime, generateCommandJSON,
+    IAdjudicationData,
+    sendSetAdjudicatedCommand
+} from "@/lib/data/oscar/adjudication/Adjudication";
 import {selectCurrentUser, setShouldForceAlarmTableDeselect} from "@/lib/state/OSCARClientSlice";
 import {useSelector} from "react-redux";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationContants";
@@ -149,7 +153,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         let currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
         const adjDsID = currLaneEntry.parentNode.laneAdjMap.get(currentLane);
-        const ep = currLaneEntry.parentNode.getConnectedSystemsEndpoint() + "/datastreams/" + adjDsID + "/observations";
+        // const adjDSId = props.event.dataStreamId;
+        const ep = currLaneEntry.parentNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + adjDsID + "/observations";
         let resp = await fetch(ep, {
             method: "POST",
             headers: {
@@ -159,6 +164,15 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             mode: "cors"
         });
         console.log("[ADJ] Response: ", resp);
+
+        // send command
+        // we can use endTime as it is the same a resultTime in testing, this may not be true in practice but this is a stop-gap fix anyway
+        let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, props.event.dataStreamId, props.event.endTime)
+
+        // guard
+        if(!refObservation) return
+        await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId,
+            generateCommandJSON(refObservation.id, true));
 
         setShouldFetchLogs(true);
         resetForm();
@@ -173,7 +187,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         <Stack direction={"column"} p={2} spacing={2}>
             <Typography variant="h4">Adjudication</Typography>
             <Box>
-                <AdjudicationLog comments={comments} event={props.event} shouldFetch={shouldFetchLogs} onFetch={onFetchComplete}/>
+                <AdjudicationLog comments={comments} event={props.event} shouldFetch={shouldFetchLogs}
+                                 onFetch={onFetchComplete}/>
             </Box>
 
             <Typography variant="h5">Adjudication Report Form</Typography>

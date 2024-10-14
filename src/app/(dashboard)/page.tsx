@@ -8,6 +8,7 @@ import {useMemo, useState} from "react";
 import {SelectedEvent} from "types/new-types";
 import Table from "../_components/event-table/Table";
 import dynamic from "next/dynamic";
+import Table2 from "@/app/_components/event-table/TableType2";
 
 export default function DashboardPage() {
   const [selectedEvent, setSelectedEvent] = useState<SelectedEvent>(null);  // Reference types/new-types.d.ts to change type
@@ -47,6 +48,7 @@ export default function DashboardPage() {
             </Paper>
           </Grid>
         </Grid>
+          <Table2 tableMode={"alarmtable"}/>
       </Grid>
   );
 }
