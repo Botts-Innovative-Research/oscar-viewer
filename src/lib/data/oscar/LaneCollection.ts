@@ -454,4 +454,8 @@ export class LaneDSColl {
             ds.connect();
         }
     }
+
+    filterDatastreams(filter){
+        this.datastreams
+    }
 }
