@@ -192,9 +192,9 @@ export default function LaneStatus() {
         <>
           <Box sx={{overflowY: "auto", maxHeight: 120,  flexGrow: 1}}>
             {(
-                <Grid container columns={{sm: 10, md: 20, lg:30, xl:40}} spacing={1} overflow={"hidden"}>
+                <Grid container columns={{sm: 12, md: 24, lg:36, xl:48}} spacing={1} >
                   {statusList.map((item) => (
-                      <Grid  key={item.id} item xs={10}>
+                      <Grid  key={item.id} item xs={12}>
                         <Link href={{
                           pathname: '/lane-view',
                           query: {

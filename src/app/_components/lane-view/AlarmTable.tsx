@@ -14,21 +14,20 @@ interface LaneViewProps {
 
 export default function AlarmTablePage(props: LaneViewProps) {
 
-  const [data, setData] = useState<IEventTableData[]>([]); // Data to be displayed, depending on tableMode
+  const [data, setData] = useState<IEventTableData[]>([]);
 
-  const idVal = useRef(1);
+  const idVal = useRef(0);
 
   let startTime= "2020-01-01T08:13:25.845Z";
   const {laneMapRef} = useContext(DataSourceContext);
   const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
+
   const [tableData, setTableData] = useState<EventTableDataCollection>(new EventTableDataCollection());
 
   const occupancyTableDataRef = useRef<EventTableData[]>([]);
 
-
   const datasourceSetup = useCallback(async () => {
     let laneDSMap = new Map<string, LaneDSColl>();
-
 
     for (let [laneid, lane] of laneMapRef.current.entries()) {
       laneDSMap.set(laneid, new LaneDSColl());
@@ -64,71 +63,43 @@ export default function AlarmTablePage(props: LaneViewProps) {
   }, [laneMapRef.current]);
 
   async function fetchObservations(laneName: string, ds: typeof DataStream, timeStart: string, timeEnd: string) {
-    let allResults: any[] = [];
-    let allAlarmingEvents: EventTableData[] = [];
-    let nonAlarmingEvents: EventTableData[] = [];
+    let allEvents: EventTableData[] = [];
 
     let initialRes = await ds.searchObservations(new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`}), 25000);
     while (initialRes.hasNext()) {
       let obsRes = await initialRes.nextPage();
-      allResults.push(...obsRes);
       obsRes.map((obs: any) => {
-        if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
 
-          let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
+        let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
 
-          let laneEntry = laneMapRef.current.get(laneName);
-          const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
-          newEvent.setSystemIdx(systemID);
+        let laneEntry = laneMapRef.current.get(laneName);
+        const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
+        newEvent.setSystemIdx(systemID);
 
-          newEvent ? allAlarmingEvents.push(newEvent) : null;
-        }
-        else {
-
-          let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
-
-          let laneEntry = laneMapRef.current.get(laneName);
-          const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
-          newEvent.setSystemIdx(systemID);
-
-          newEvent ? nonAlarmingEvents.push(newEvent) : null;
-        }
+        newEvent ? allEvents.push(newEvent) : null;
 
       });
     }
 
-    occupancyTableDataRef.current = [...allAlarmingEvents, ...nonAlarmingEvents, ...occupancyTableDataRef.current];
+    occupancyTableDataRef.current = [...allEvents, ...occupancyTableDataRef.current];
 
     setData(occupancyTableDataRef.current);
   }
 
   function RTMsgHandler(laneName: string, message: any) {
-    let allAlarmingEvents: EventTableData[] = [];
-    let nonAlarmingEvents: EventTableData[] = [];
+    let allEvents: EventTableData[] = [];
     if (message.values) {
       for (let value of message.values) {
 
-        if (value.data.gammaAlarm === true || value.data.neutronAlarm === true) {
-          let newEvent = new EventTableData(idVal.current++, laneName, value.data);
-          let laneEntry = laneMapRef.current.get(laneName);
-          const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
-          newEvent.setSystemIdx(systemID);
+        let newEvent = new EventTableData(idVal.current++, laneName, value.data);
 
-          newEvent ? allAlarmingEvents.push(newEvent) : null;
-
-        }
-        else {
-
-          let newEvent = new EventTableData(idVal.current++, laneName, value.data);
-
-          let laneEntry = laneMapRef.current.get(laneName);
-          const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
-          newEvent.setSystemIdx(systemID);
-          newEvent ? nonAlarmingEvents.push(newEvent) : null;
-        }
+        let laneEntry = laneMapRef.current.get(laneName);
+        const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
+        newEvent.setSystemIdx(systemID);
+        newEvent ? allEvents.push(newEvent) : null;
       }
 
-      occupancyTableDataRef.current = [...allAlarmingEvents, ...nonAlarmingEvents, ...occupancyTableDataRef.current];
+      occupancyTableDataRef.current = [...allEvents, ...occupancyTableDataRef.current];
 
       setData(occupancyTableDataRef.current);
     }
