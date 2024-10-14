@@ -46,6 +46,7 @@ export class LaneMapEntry {
     parentNode: INode;
     laneSystem: typeof System;
     private adjDs: string;
+    adjControlStreamId: string
 
     constructor(node: INode) {
         this.systems = [];
@@ -309,6 +310,10 @@ export class LaneMapEntry {
         if (obsRes) {
             console.log("[ADJ] Inserted Adjudication Observation: ", obsRes);
         }
+    }
+
+    addControlStreamId(id: string){
+        this.adjControlStreamId = id;
     }
 }
 

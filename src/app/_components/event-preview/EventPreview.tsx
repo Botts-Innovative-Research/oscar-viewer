@@ -24,7 +24,11 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
-import {createAdjudicationObservation, IAdjudicationData} from "@/lib/data/oscar/adjudication/Adjudication";
+import {
+    createAdjudicationObservation,
+    findObservationIdBySamplingTime, generateCommandJSON,
+    IAdjudicationData, sendSetAdjudicatedCommand
+} from "@/lib/data/oscar/adjudication/Adjudication";
 import Grid2 from "@mui/material/Unstable_Grid2";
 import {GridRow} from "@mui/x-data-grid";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationContants";
@@ -102,7 +106,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         let currentLane = eventPreview.eventData.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
         const adjDsID = currLaneEntry.parentNode.laneAdjMap.get(currentLane);
-        const ep = currLaneEntry.parentNode.getConnectedSystemsEndpoint() + "/datastreams/" + adjDsID + "/observations";
+        const ep = currLaneEntry.parentNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + adjDsID + "/observations";
         let resp = await fetch(ep, {
             method: "POST",
             headers: {
@@ -113,6 +117,15 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
             mode: "cors"
         });
         console.log("[ADJ] Response: ", resp);
+
+        // send command
+        // we can use endTime as it is the same a resultTime in testing, this may not be true in practice but this is a stop-gap fix anyway
+        let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, eventPreview.eventData.dataStreamId, eventPreview.eventData.endTime)
+
+        // guard
+        if(!refObservation) return
+        await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId,
+            generateCommandJSON(refObservation.id, true));
     }
 
     const resetAdjudicationData = () => {

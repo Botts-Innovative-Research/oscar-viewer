@@ -3,7 +3,7 @@
 import {IEventTableData} from "../../../../types/new-types";
 import {useCallback, useContext, useEffect, useRef, useState} from "react";
 import EventTable from "./EventTable";
-import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
+import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {EventTableData, EventTableDataCollection} from "@/lib/data/oscar/TableHelpers";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
@@ -81,11 +81,13 @@ export default function Table({tableMode}: TableProps) {
             obsRes.map((obs: any) => {
 
                 if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
+                    console.log("ADJ obs ", obs)
 
                     let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
                     newEvent.setSystemIdx(systemID);
+                    newEvent.setDataStreamId(obs["datastream@id"]);
 
                     newEvent ? allAlarmingEvents.push(newEvent) : null;
 
@@ -96,6 +98,7 @@ export default function Table({tableMode}: TableProps) {
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
                     newEvent.setSystemIdx(systemID);
+                    newEvent.setDataStreamId(obs["datastream@id"]);
 
                     newEvent ? nonAlarmingEvents.push(newEvent) : null;
 
@@ -111,7 +114,7 @@ export default function Table({tableMode}: TableProps) {
 
 
 
-    function RTMsgHandler(laneName: string, message: any) {
+    function RTMsgHandler(laneName: string, message: any, dataStreamId: string) {
         let allAlarmingEvents: EventTableData[] = [];
         let nonAlarmingEvents: EventTableData[] = [];
         if (message.values) {
@@ -123,6 +126,7 @@ export default function Table({tableMode}: TableProps) {
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
                     newEvent.setSystemIdx(systemID);
+                    newEvent.setDataStreamId(dataStreamId);
 
                     newEvent ? allAlarmingEvents.push(newEvent) : null;
 
@@ -132,6 +136,7 @@ export default function Table({tableMode}: TableProps) {
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
                     newEvent.setSystemIdx(systemID);
+                    newEvent.setDataStreamId(dataStreamId);
 
                     newEvent ? nonAlarmingEvents.push(newEvent) : null;
 
@@ -148,9 +153,11 @@ export default function Table({tableMode}: TableProps) {
     const addSubscriptionCallbacks = useCallback(() => {
         for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
             const msgLaneName = laneName;
-            // laneDSColl.addSubscribeHandlerToALLDSMatchingName('occBatch', (message: any) => BatchMsgHandler(msgLaneName, message));
+            // should only be one for now, but this whole process needs revisiting due to codebase changes introduced after initial implemntation
+            let laneEntryDS = laneMapRef.current.get(laneName).datastreams.filter((ds: typeof DataStream) => ds.properties.name.includes("Occupancy"))[0];
+            let dsId = laneEntryDS.properties.id
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('occRT', (message: any) => {
-                RTMsgHandler(msgLaneName, message)
+                RTMsgHandler(msgLaneName, message, dsId)
             });
             laneDSColl.connectAllDS();
         }

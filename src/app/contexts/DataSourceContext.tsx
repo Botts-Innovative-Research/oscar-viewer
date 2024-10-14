@@ -62,31 +62,37 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     const testSysFetch = useCallback(async () => {
         console.log("Received new nodes, updating state\nNodes:");
         console.log(nodes);
-        let lanes: Map<string, LaneMapEntry> = new Map();
+        let allLanes: Map<string, LaneMapEntry> = new Map();
         await Promise.all(nodes.map(async (node: INode) => {
             console.log("Fetching lanes from node ", node);
-            let laneMap = await node.fetchLaneSystemsAndSubsystems();
-            await node.fetchDatastreamsTK(laneMap);
-            for (let mapEntry of laneMap.values()) {
+            let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
+            await node.fetchDatastreamsTK(nodeLaneMap);
+            for (let mapEntry of nodeLaneMap.values()) {
                 mapEntry.addDefaultSWEAPIs();
             }
+            let nodeControlStreams = await node.fetchControlStreams()
 
-            laneMap.forEach((value, key) => {
-                lanes.set(key, value);
+            nodeLaneMap.forEach((value, key) => {
+                const controlStream = nodeControlStreams.find((cStream: any) =>
+                    value.systems.some((system) => system.properties.id === cStream['system@id'])
+                );
+                console.log("Found Matching Control Stream", controlStream);
+                value.addControlStreamId(controlStream.id);
+                allLanes.set(key, value);
             });
         }));
-
-        dispatch(setLaneMap(lanes));
-        laneMapRef.current = lanes;
-        console.log("LaneMapRef for Table:", laneMapRef);
 
         // fetch adjudication systems
         let adjMap: Map<string, string> = new Map();
         for(let node of nodes){
-            console.log("[ADJ] Fetching adjudication systems for node: ", node, lanes);
-            adjMap = await node.fetchOrCreateAdjudicationSystems(lanes);
+            console.log("[ADJ] Fetching adjudication systems for node: ", node, allLanes);
+            adjMap = await node.fetchOrCreateAdjudicationSystems(allLanes);
         }
         console.log("[ADJ] Adjudication Systems Map:", adjMap);
+
+        dispatch(setLaneMap(allLanes));
+        laneMapRef.current = allLanes;
+        console.log("LaneMapRef for Table:", laneMapRef);
 
     }, [nodes]);
 
