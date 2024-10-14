@@ -48,7 +48,6 @@ export default function DashboardPage() {
             </Paper>
           </Grid>
         </Grid>
-          <Table2 tableMode={"alarmtable"}/>
       </Grid>
   );
 }
