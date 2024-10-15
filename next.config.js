@@ -3,7 +3,7 @@
  * All Rights Reserved
  */
 module.exports = {
-
+    distDir: 'web',
     output: 'export',
     webpack: (config, { isServer }) => {
         config.resolve.fallback = {
