@@ -1,7 +1,7 @@
 "use client";
 
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {Box} from "@mui/material";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
@@ -15,7 +15,7 @@ import {
     GridActionsCellItem,
     GridCellParams,
     gridClasses,
-    GridColDef,
+    GridColDef, GridFilterModel,
     GridLogicOperator
 } from "@mui/x-data-grid";
 import CustomToolbar from "@/app/_components/CustomToolbar";
@@ -51,12 +51,18 @@ export default function Table2({
                                }: TableProps) {
     const laneMap = useSelector((state: RootState) => selectLaneMap(state))
     const [tableData, setTableData] = useState<EventTableData[]>([]);
+    const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
     // const viewAdjudicated = viewAdjudicated || false;
     // const viewSecondary = viewSecondary || false;
     // const viewMenu = viewMenu || false;
     // const viewLane = viewLane || false;
     const [selectionModel, setSelectionModel] = useState([]); // Currently selected row
     const dispatch = useAppDispatch();
+    const [filterModel, setFilterModel] = useState({
+        items: [
+            {field: 'adjudicated', operator: 'is', value: 'false'}
+        ],
+    })
 
     // gather all occupancy dataStreams
     function createDatastreams(lanes: Map<string, LaneMapEntry>) {
@@ -78,23 +84,48 @@ export default function Table2({
         return observations;
     }
 
+    async function streamObservations(laneEntry: LaneMapEntry) {
+        const observationFilter = new ObservationFilter({resultTime: `${new Date().toISOString()}/..`});
+        let futureTime = new Date();
+        futureTime.setFullYear(futureTime.getFullYear() + 1);
+        let occDS: typeof DataStream = laneEntry.findDataStreamByName("Driver - Occupancy");
+        if (!occDS) return;
+        console.log("Real-time Datasource", occDS);
+        occDS.streamObservations(new ObservationFilter({
+            resultTime: `now/${futureTime.toISOString()}`,
+            replaySpeed: 1
+        }), (observation: any) => {
+            console.log("Real-time Observation", observation)
+            let resultEvent = eventFromObservation(observation[0], laneEntry);
+            console.log("[EVT] Real-time EventTableData", resultEvent, tableData);
+            // let newTableData = [...tableData, resultEvent];
+            // setTableData(newTableData);
+            setTableData((prevState)=>[...prevState, resultEvent]);
+        })
+    }
+
     async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry): Promise<EventTableData[]> {
         let observations: EventTableData[] = [];
         while (obsCollection.hasNext()) {
             let obsResults = await obsCollection.nextPage();
             obsResults.map((obs: any) => {
-                let newEvent: EventTableData = new EventTableData(randomUUID(), laneEntry.laneName, obs.result);
-                newEvent.setSystemIdx(laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId));
-                newEvent.setDataStreamId(obs["datastream@id"]);
-                newEvent.setObservationId(obs.id);
-                console.log("[EVT] New Event Table Data", newEvent);
-                observations.push(newEvent);
+                let result = eventFromObservation(obs, laneEntry);
+                observations.push(result);
             })
         }
         return observations;
     }
 
-    async function setUpDataRetrieval(laneMap: Map<string, LaneMapEntry>) {
+    function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
+        let newEvent: EventTableData = new EventTableData(randomUUID(), laneEntry.laneName, obs.result);
+        newEvent.setSystemIdx(laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId));
+        newEvent.setDataStreamId(obs["datastream@id"]);
+        newEvent.setObservationId(obs.id);
+        console.log("[EVT] New Event Table Data", newEvent);
+        return newEvent;
+    }
+
+    async function doFetch(laneMap: Map<string, LaneMapEntry>) {
         let allFetchedResults: EventTableData[] = [];
         let promiseGroup: Promise<void>[] = [];
         // createDatastreams(laneMap)
@@ -111,18 +142,49 @@ export default function Table2({
         setTableData(allFetchedResults);
     }
 
+    function doStream(laneMap: Map<string, LaneMapEntry>) {
+        laneMap.forEach((entry) => {
+            streamObservations(entry);
+        })
+    }
+
+    function unadjudicatedFilteredList(tableData: EventTableData[]) {
+        console.log("event table data for adjudication filtered", tableData)
+        if (!tableData) return [];
+        let filtered = tableData.filter((entry) => entry.adjudicatedData.getCodeValue() === 0)
+        console.log("[EVT] adj filtered", filtered)
+        return filtered
+    }
+
+    function onlyAlarmingFilteredList(tableData: EventTableData[]) {
+        console.log("event table data for alarm filtered", tableData)
+        if (!tableData) return [];
+        let filtered = tableData.filter((entry: EventTableData) => entry.status !== 'None')
+        console.log("[EVT] alarm filtered", filtered)
+        return filtered
+    }
+
     useEffect(() => {
-        setUpDataRetrieval(laneMap);
+        // doFetch(laneMap);
+        dataStreamSetup(laneMap);
+    }, [laneMap]);
+
+    const dataStreamSetup = useCallback(async (laneMap) => {
+        doFetch(laneMap);
+        doStream(laneMap);
     }, [laneMap]);
 
     useEffect(() => {
         console.log('[EVT] Table Data Updated', tableData)
+        let filteredData = unadjudicatedFilteredList(onlyAlarmingFilteredList(tableData))
+        console.log("[EVT] Filtered Data", filteredData);
+        setFilteredTableData(filteredData);
     }, [tableData]);
 
 
-    /*------------------------------------------------------------------------------------------------------------------
-    Data Drid Setup and Related
-     -----------------------------------------------------------------------------------------------------------------*/
+    //------------------------------------------------------------------------------------------------------------------
+    // Data Grid Setup and Related
+    //------------------------------------------------------------------------------------------------------------------
 
     // Column definition for EventTable
     const columns: GridColDef<EventTableData>[] = [
@@ -279,24 +341,10 @@ export default function Table2({
         }
     }
 
-
-    /* /!** Handle return value based on tableMode *!/
-     if (tableMode == "alarmtable") {
-         return (
-             <EventTable eventTable={tableData}/>
-         )
-     } else if (tableMode == "eventlog") {
-         return (
-             <EventTable eventTable={tableData} viewMenu viewLane viewSecondary viewAdjudicated/>
-         )
-     } else {
-         return (<></>)
-     }*/
-
     return (
         <Box sx={{height: 800, width: '100%'}}>
             <DataGrid
-                rows={tableData}
+                rows={filteredTableData}
                 columns={columns}
                 onRowSelectionModelChange={handleRowSelection}
                 rowSelectionModel={selectionModel}
@@ -317,13 +365,6 @@ export default function Table2({
                     sorting: {
                         sortModel: [{field: 'startTime', sort: 'desc'}]
                     },
-                    filter: {
-                        filterModel: {
-                            items: [],
-                            quickFilterValues:['gamma', 'neutron'],
-                            quickFilterLogicOperator: GridLogicOperator.Or
-                        }
-                    }
                 }}
                 pageSizeOptions={[20]}
                 slots={{toolbar: CustomToolbar}}

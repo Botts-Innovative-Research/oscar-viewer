@@ -1,12 +1,13 @@
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {INode, Node} from "@/lib/data/osh/Node";
+import {AdjudicationCode} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 
 export interface IAdjudicationData {
     time: string,
     id: string;
     username: string
     feedback: string
-    adjudicationCode: string
+    adjudicationCode: AdjudicationCode
     isotopes: string
     secondaryInspectionStatus: string
     filePaths: string
@@ -19,7 +20,7 @@ export default class AdjudicationData {
     id: string;
     username: string
     feedback: string
-    adjudicationCode: string
+    adjudicationCode: AdjudicationCode
     isotopes: string
     secondaryInspectionStatus: string
     filePaths: string
@@ -30,6 +31,14 @@ export default class AdjudicationData {
     constructor(properties: IAdjudicationData) {
         Object.assign(this, properties);
         this.id = randomUUID();
+    }
+
+    getCodeAsString(): string {
+        return this.adjudicationCode.label;
+    }
+
+    getCodeValue():number{
+        return this.adjudicationCode.code;
     }
 }
 

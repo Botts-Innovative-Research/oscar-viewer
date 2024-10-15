@@ -26,7 +26,7 @@ import {
 } from "@/lib/data/oscar/adjudication/Adjudication";
 import {selectCurrentUser, setShouldForceAlarmTableDeselect} from "@/lib/state/OSCARClientSlice";
 import {useSelector} from "react-redux";
-import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationContants";
+import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
