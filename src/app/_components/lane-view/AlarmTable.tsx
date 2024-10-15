@@ -6,6 +6,7 @@ import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
+import {randomUUID} from "osh-js/source/core/utils/Utils";
 
 
 interface LaneViewProps {
@@ -75,7 +76,7 @@ export default function AlarmTablePage(props: LaneViewProps) {
       obsRes.map((obs: any) => {
         if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
 
-          let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
+          let newEvent = new EventTableData(randomUUID(), laneName, obs.result);
 
           let laneEntry = laneMapRef.current.get(laneName);
           const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
@@ -85,7 +86,7 @@ export default function AlarmTablePage(props: LaneViewProps) {
         }
         else {
 
-          let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
+          let newEvent = new EventTableData(randomUUID(), laneName, obs.result);
 
           let laneEntry = laneMapRef.current.get(laneName);
           const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
@@ -109,7 +110,7 @@ export default function AlarmTablePage(props: LaneViewProps) {
       for (let value of message.values) {
 
         if (value.data.gammaAlarm === true || value.data.neutronAlarm === true) {
-          let newEvent = new EventTableData(idVal.current++, laneName, value.data);
+          let newEvent = new EventTableData(randomUUID(), laneName, value.data);
           let laneEntry = laneMapRef.current.get(laneName);
           const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
           newEvent.setSystemIdx(systemID);
@@ -119,7 +120,7 @@ export default function AlarmTablePage(props: LaneViewProps) {
         }
         else {
 
-          let newEvent = new EventTableData(idVal.current++, laneName, value.data);
+          let newEvent = new EventTableData(randomUUID(), laneName, value.data);
 
           let laneEntry = laneMapRef.current.get(laneName);
           const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
