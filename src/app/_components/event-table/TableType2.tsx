@@ -30,6 +30,7 @@ interface TableProps {
     viewMenu?: boolean;
     viewLane?: boolean;
     viewAdjudicated?: boolean;
+    laneMap: Map<string, LaneMapEntry>
 }
 
 /**
@@ -40,6 +41,7 @@ interface TableProps {
  * @param viewMenu Show three-dot menu button, default FALSE
  * @param viewLane Show 'View Lane' option in menu, default FALSE
  * @param viewAdjudicated shows Adjudicated status in the event log , not shown in the alarm table
+ * @param laneMap map of LaneMapEntries to be used by created data sources
  * @constructor
  */
 export default function Table2({
@@ -47,31 +49,15 @@ export default function Table2({
                                    viewSecondary = false,
                                    viewMenu = false,
                                    viewLane = false,
-                                   viewAdjudicated = false
+                                   viewAdjudicated = false,
+                                   laneMap
                                }: TableProps) {
-    const laneMap = useSelector((state: RootState) => selectLaneMap(state))
+    // const laneMap = useSelector((state: RootState) => selectLaneMap(state))
     const [tableData, setTableData] = useState<EventTableData[]>([]);
     const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
-    // const viewAdjudicated = viewAdjudicated || false;
-    // const viewSecondary = viewSecondary || false;
-    // const viewMenu = viewMenu || false;
-    // const viewLane = viewLane || false;
     const [selectionModel, setSelectionModel] = useState([]); // Currently selected row
     const dispatch = useAppDispatch();
-    const [filterModel, setFilterModel] = useState({
-        items: [
-            {field: 'adjudicated', operator: 'is', value: 'false'}
-        ],
-    })
 
-    // gather all occupancy dataStreams
-    function createDatastreams(lanes: Map<string, LaneMapEntry>) {
-        for (let [laneName, laneEntry] of lanes.entries()) {
-            console.log("LaneEntry Datastreams", laneEntry.datastreams)
-            let filteredDatastreams = laneEntry.datastreams.filter((ds: typeof DataStream) => ds.properties.name.includes("Occupancy"));
-            console.log("LaneEntry Filtered Datastreams", filteredDatastreams);
-        }
-    }
 
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
@@ -100,7 +86,7 @@ export default function Table2({
             console.log("[EVT] Real-time EventTableData", resultEvent, tableData);
             // let newTableData = [...tableData, resultEvent];
             // setTableData(newTableData);
-            setTableData((prevState)=>[...prevState, resultEvent]);
+            setTableData((prevState) => [...prevState, resultEvent]);
         })
     }
 
@@ -164,6 +150,7 @@ export default function Table2({
         return filtered
     }
 
+
     useEffect(() => {
         // doFetch(laneMap);
         dataStreamSetup(laneMap);
@@ -176,7 +163,12 @@ export default function Table2({
 
     useEffect(() => {
         console.log('[EVT] Table Data Updated', tableData)
-        let filteredData = unadjudicatedFilteredList(onlyAlarmingFilteredList(tableData))
+        let filteredData: EventTableData[] = [];
+        if(tableMode === 'alarmtable') {
+            filteredData = unadjudicatedFilteredList(onlyAlarmingFilteredList(tableData))
+        }else if(tableMode === 'eventlog') {
+            filteredData = tableData;
+        }
         console.log("[EVT] Filtered Data", filteredData);
         setFilteredTableData(filteredData);
     }, [tableData]);
@@ -435,10 +427,3 @@ export default function Table2({
         </Box>
     )
 }
-
-//     return (
-//         <>
-//             <Typography>Testing Alternate Table Ideas</Typography>
-//         </>
-//     )
-// }
