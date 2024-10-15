@@ -134,7 +134,7 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
     {
       title: "Dashboard",
       icon: <DashboardRoundedIcon />,
-      href: "/",
+      href: "/dashboard",
     },
     {
       title: "Events",
@@ -158,7 +158,7 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
     {
       title: "Account",
       icon: <AccountCircleRoundedIcon />,
-      href: "/account",
+      href: "/",
     },
     {
       title: "Servers",
