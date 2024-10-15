@@ -31,7 +31,7 @@ import {
 } from "@/lib/data/oscar/adjudication/Adjudication";
 import Grid2 from "@mui/material/Unstable_Grid2";
 import {GridRow} from "@mui/x-data-grid";
-import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationContants";
+import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {GridRootStyles} from "@mui/x-data-grid/components/containers/GridRootStyles";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 

@@ -49,7 +49,7 @@ export const AdjudicationDatastreamConstant: any = {
                             "Code 6: Physical Inspection Negative",
                             "Code 7: RIID/ASP Indicates Background Only",
                             "Code 8: Other",
-                            "Code 9: Authorized Test, Maintenence, or Training Activity",
+                            "Code 9: Authorized Test, Maintenance, or Training Activity",
                             "Code 10: Unauthorized Activity",
                             "Code 11: Other",
                             ""
