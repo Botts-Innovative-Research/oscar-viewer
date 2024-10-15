@@ -5,7 +5,6 @@ import CameraGrid from "../_components/dashboard/CameraGrid";
 import LaneStatus from "../_components/dashboard/LaneStatus";
 
 import {useMemo} from "react";
-import Table from "../_components/event-table/Table";
 import dynamic from "next/dynamic";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
