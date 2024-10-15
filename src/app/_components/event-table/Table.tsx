@@ -8,6 +8,7 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {EventTableData, EventTableDataCollection} from "@/lib/data/oscar/TableHelpers";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
+import {randomUUID} from "osh-js/source/core/utils/Utils";
 
 
 interface TableProps {
@@ -83,7 +84,8 @@ export default function Table({tableMode}: TableProps) {
                 if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
                     console.log("ADJ obs ", obs)
 
-                    let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
+                    // let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
+                    let newEvent = new EventTableData(randomUUID(), laneName, obs.result);
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
                     newEvent.setSystemIdx(systemID);
@@ -94,7 +96,8 @@ export default function Table({tableMode}: TableProps) {
                 }
                 else {
 
-                    let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
+                    // let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
+                    let newEvent = new EventTableData(randomUUID(), laneName, obs.result);
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
                     newEvent.setSystemIdx(systemID);
@@ -122,7 +125,8 @@ export default function Table({tableMode}: TableProps) {
 
                 if (value.data.gammaAlarm === true || value.data.neutronAlarm === true) {
 
-                    let newEvent = new EventTableData(idVal.current++, laneName, value.data);
+                    // let newEvent = new EventTableData(idVal.current++, laneName, value.data);
+                    let newEvent = new EventTableData(randomUUID(), laneName, value.data);
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
                     newEvent.setSystemIdx(systemID);
@@ -132,7 +136,8 @@ export default function Table({tableMode}: TableProps) {
 
                 }
                 else {
-                    let newEvent = new EventTableData(idVal.current++, laneName, value.data);
+                    // let newEvent = new EventTableData(idVal.current++, laneName, value.data);
+                    let newEvent = new EventTableData(randomUUID(), laneName, value.data);
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
                     newEvent.setSystemIdx(systemID);
