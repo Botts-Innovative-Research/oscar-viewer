@@ -76,14 +76,14 @@ export default function Table2({
         futureTime.setFullYear(futureTime.getFullYear() + 1);
         let occDS: typeof DataStream = laneEntry.findDataStreamByName("Driver - Occupancy");
         if (!occDS) return;
-        console.log("Real-time Datasource", occDS);
+        // console.log("Real-time Datasource", occDS);
         occDS.streamObservations(new ObservationFilter({
             resultTime: `now/${futureTime.toISOString()}`,
             replaySpeed: 1
         }), (observation: any) => {
-            console.log("Real-time Observation", observation)
+            // console.log("Real-time Observation", observation)
             let resultEvent = eventFromObservation(observation[0], laneEntry);
-            console.log("[EVT] Real-time EventTableData", resultEvent, tableData);
+            // console.log("[EVT] Real-time EventTableData", resultEvent, tableData);
             // let newTableData = [...tableData, resultEvent];
             // setTableData(newTableData);
             setTableData((prevState) => [...prevState, resultEvent]);
@@ -107,7 +107,7 @@ export default function Table2({
         newEvent.setSystemIdx(laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId));
         newEvent.setDataStreamId(obs["datastream@id"]);
         newEvent.setObservationId(obs.id);
-        console.log("[EVT] New Event Table Data", newEvent);
+        // console.log("[EVT] New Event Table Data", newEvent);
         return newEvent;
     }
 
@@ -135,18 +135,18 @@ export default function Table2({
     }
 
     function unadjudicatedFilteredList(tableData: EventTableData[]) {
-        console.log("event table data for adjudication filtered", tableData)
+        // console.log("event table data for adjudication filtered", tableData)
         if (!tableData) return [];
         let filtered = tableData.filter((entry) => entry.adjudicatedData.getCodeValue() === 0)
-        console.log("[EVT] adj filtered", filtered)
+        // console.log("[EVT] adj filtered", filtered)
         return filtered
     }
 
     function onlyAlarmingFilteredList(tableData: EventTableData[]) {
-        console.log("event table data for alarm filtered", tableData)
+        // console.log("event table data for alarm filtered", tableData)
         if (!tableData) return [];
         let filtered = tableData.filter((entry: EventTableData) => entry.status !== 'None')
-        console.log("[EVT] alarm filtered", filtered)
+        // console.log("[EVT] alarm filtered", filtered)
         return filtered
     }
 
@@ -156,20 +156,20 @@ export default function Table2({
         dataStreamSetup(laneMap);
     }, [laneMap]);
 
-    const dataStreamSetup = useCallback(async (laneMap) => {
+    const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
         doFetch(laneMap);
         doStream(laneMap);
     }, [laneMap]);
 
     useEffect(() => {
-        console.log('[EVT] Table Data Updated', tableData)
+        // console.log('[EVT] Table Data Updated', tableData)
         let filteredData: EventTableData[] = [];
-        if(tableMode === 'alarmtable') {
+        if (tableMode === 'alarmtable') {
             filteredData = unadjudicatedFilteredList(onlyAlarmingFilteredList(tableData))
-        }else if(tableMode === 'eventlog') {
+        } else if (tableMode === 'eventlog') {
             filteredData = tableData;
         }
-        console.log("[EVT] Filtered Data", filteredData);
+        // console.log("[EVT] Filtered Data", filteredData);
         setFilteredTableData(filteredData);
     }, [tableData]);
 

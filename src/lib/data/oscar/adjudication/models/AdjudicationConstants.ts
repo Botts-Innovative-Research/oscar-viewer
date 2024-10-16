@@ -92,6 +92,12 @@ export const AdjudicationDatastreamConstant: any = {
                     "name": "alarmingSystemUid",
                     "definition": "http://sensorml.com/ont/swe/property/SystemUID",
                     "label": "UID of Alarming System"
+                },
+                {
+                    "type": "Text",
+                    "name": "vehicleId",
+                    "definition": "http://sensorml.com/ont/swe/property/VehicleIdentification",
+                    "label": "Vehicle ID"
                 }
             ]
         }
