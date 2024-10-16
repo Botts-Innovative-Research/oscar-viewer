@@ -2,7 +2,7 @@
 
 import {FormControl, InputLabel, ListSubheader, MenuItem, Select, SelectChangeEvent} from '@mui/material';
 import {useEffect, useState} from 'react';
-import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationContants";
+import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {IAdjudicationData} from "@/lib/data/oscar/adjudication/Adjudication";
 
 export const colorCodes = {

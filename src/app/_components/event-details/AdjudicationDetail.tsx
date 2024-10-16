@@ -26,7 +26,7 @@ import {
 } from "@/lib/data/oscar/adjudication/Adjudication";
 import {selectCurrentUser, setShouldForceAlarmTableDeselect} from "@/lib/state/OSCARClientSlice";
 import {useSelector} from "react-redux";
-import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationContants";
+import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
@@ -38,7 +38,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         id: "",
         username: "",
         feedback: "",
-        adjudicationCode: "",
+        adjudicationCode: AdjudicationCodes.getCodeObjByIndex(0),
         isotopes: "",
         secondaryInspectionStatus: "NONE",
         filePaths: "",
@@ -75,7 +75,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const handleAdjudicationSelect = (value: AdjudicationCode) => {
         console.log(value);
         let tAdjData = {...adjData};
-        tAdjData.adjudicationCode = value.label;
+        tAdjData.adjudicationCode = AdjudicationCodes.getCodeObjByLabel(value.label);
         setAdjData(tAdjData);
         setAdjCode(value);
     }
@@ -145,10 +145,10 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const sendAdjudicationData = async () => {
         let phenomenonTime = new Date().toISOString();
         let comboData = adjData;
-        // comboData.feedback = notes;
         comboData.time = phenomenonTime;
         let observation = createAdjudicationObservation(comboData, phenomenonTime);
         console.log("[ADJ] Sending Adjudication Data: ", observation);
+
         // send to server
         let currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
@@ -167,12 +167,12 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
         // send command
         // we can use endTime as it is the same a resultTime in testing, this may not be true in practice but this is a stop-gap fix anyway
-        let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, props.event.dataStreamId, props.event.endTime)
+        // let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, props.event.dataStreamId, props.event.endTime)
 
         // guard
-        if(!refObservation) return
+        // if(!refObservation) return
         await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId,
-            generateCommandJSON(refObservation.id, true));
+            generateCommandJSON(props.event.observationId, true));
 
         setShouldFetchLogs(true);
         resetForm();

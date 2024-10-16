@@ -12,6 +12,7 @@ import {INode} from "@/lib/data/osh/Node";
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
 import {AdjudicationData} from "@/lib/data/oscar/TableHelpers";
+import {isDynamicUsageError} from "next/dist/export/helpers/is-dynamic-usage-error";
 
 class ILaneMeta {
     id: string;
@@ -46,7 +47,8 @@ export class LaneMapEntry {
     parentNode: INode;
     laneSystem: typeof System;
     private adjDs: string;
-    adjControlStreamId: string
+    adjControlStreamId: string;
+    laneName: string;
 
     constructor(node: INode) {
         this.systems = [];
@@ -55,6 +57,7 @@ export class LaneMapEntry {
         this.datasourcesBatch = [];
         this.datasourcesRealtime = [];
         this.parentNode = node;
+        this.laneName = undefined
     }
 
     setLaneSystem(system: typeof System) {
@@ -83,6 +86,9 @@ export class LaneMapEntry {
 
     addDatasources(datasources: any[]) {
         this.datasources.push(...datasources);
+    }
+    setLaneName(name: string){
+        this.laneName = name;
     }
 
     async getAdjudicationDatastream(dsId: string) {
@@ -193,8 +199,13 @@ export class LaneMapEntry {
         });
     }
 
-    lookupSystemIdFromDataStreamId(dsId: string) {
-        let stream = this.datastreams.find((ds) => ds.id === dsId);
+    findDataStreamByName(nameFilter: string): typeof DataStream {
+        let ds: typeof DataStream = this.datastreams.find((ds) => ds.properties.name.includes(nameFilter))
+        return ds;
+    }
+
+    lookupSystemIdFromDataStreamId(dsId: string): string {
+        let stream: typeof DataStream = this.datastreams.find((ds) => ds.id === dsId);
         return this.systems.find((sys) => sys.properties.id === stream.properties["system@id"]).properties.id;
     }
 
@@ -312,7 +323,7 @@ export class LaneMapEntry {
         }
     }
 
-    addControlStreamId(id: string){
+    addControlStreamId(id: string) {
         this.adjControlStreamId = id;
     }
 }

@@ -1,12 +1,13 @@
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {INode, Node} from "@/lib/data/osh/Node";
+import {AdjudicationCode} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 
 export interface IAdjudicationData {
     time: string,
     id: string;
     username: string
     feedback: string
-    adjudicationCode: string
+    adjudicationCode: AdjudicationCode
     isotopes: string
     secondaryInspectionStatus: string
     filePaths: string
@@ -19,7 +20,7 @@ export default class AdjudicationData {
     id: string;
     username: string
     feedback: string
-    adjudicationCode: string
+    adjudicationCode: AdjudicationCode
     isotopes: string
     secondaryInspectionStatus: string
     filePaths: string
@@ -30,6 +31,14 @@ export default class AdjudicationData {
     constructor(properties: IAdjudicationData) {
         Object.assign(this, properties);
         this.id = randomUUID();
+    }
+
+    getCodeAsString(): string {
+        return this.adjudicationCode.label;
+    }
+
+    getCodeValue():number{
+        return this.adjudicationCode.code;
     }
 }
 
@@ -57,7 +66,7 @@ export function createAdjudicationObservation(data: IAdjudicationData, resultTim
     let obs = {
         "phenomenonTime": resultTime,
         "result": {
-            "time": new Date(resultTime).getTime(),
+            // "time": new Date(resultTime).getTime(),
             // "id": data.id,
             "username": data.username,
             "feedback": data.feedback,
@@ -66,11 +75,12 @@ export function createAdjudicationObservation(data: IAdjudicationData, resultTim
             "secondaryInspectionStatus": data.secondaryInspectionStatus,
             "filePaths": data.filePaths,
             "occupancyId": data.occupancyId,
-            "alarmingSystemUid": data.alarmingSystemUid
+            "alarmingSystemUid": data.alarmingSystemUid,
+            "vehicleId": data.vehicleId ? data.vehicleId : ""
         }
     }
     // return obs
-    return JSON.stringify(obs, ['phenomenonTime', 'result', 'time', 'id', 'username', 'feedback', 'adjudicationCode', 'isotopes', 'secondaryInspectionStatus', 'filePaths', 'occupancyId', 'alarmingSystemUid'], 2);
+    return JSON.stringify(obs, ['phenomenonTime', 'result', 'time', 'id', 'username', 'feedback', 'adjudicationCode', 'isotopes', 'secondaryInspectionStatus', 'filePaths', 'occupancyId', 'alarmingSystemUid', 'vehicleId'], 2);
 }
 
 export async function sendSetAdjudicatedCommand(node: INode, controlStreamId: string, command: AdjudicationCommand | string) {

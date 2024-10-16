@@ -3,19 +3,14 @@
  * All Rights Reserved
  */
 
-import {Box, Button, Container, IconButton, Paper, Stack, TextField, Typography} from "@mui/material";
+import {Button, IconButton, Stack, TextField, Typography} from "@mui/material";
 import OpenInFullRoundedIcon from "@mui/icons-material/OpenInFullRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import AdjudicationSelect from "@/app/_components/event-preview/AdjudicationSelect";
-import {ChangeEvent, useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
+import {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
-import {
-    selectCurrentUser,
-    selectEventPreview,
-    setEventPreview,
-    setShouldForceAlarmTableDeselect
-} from "@/lib/state/OSCARClientSlice";
+import {selectCurrentUser, setEventPreview, setShouldForceAlarmTableDeselect} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/navigation";
 import ChartTimeHighlight from "@/app/_components/event-preview/ChartTimeHighlight";
@@ -26,13 +21,12 @@ import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {
     createAdjudicationObservation,
-    findObservationIdBySamplingTime, generateCommandJSON,
-    IAdjudicationData, sendSetAdjudicatedCommand
+    findObservationIdBySamplingTime,
+    generateCommandJSON,
+    IAdjudicationData,
+    sendSetAdjudicatedCommand
 } from "@/lib/data/oscar/adjudication/Adjudication";
-import Grid2 from "@mui/material/Unstable_Grid2";
-import {GridRow} from "@mui/x-data-grid";
-import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationContants";
-import {GridRootStyles} from "@mui/x-data-grid/components/containers/GridRootStyles";
+import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 
 
@@ -123,7 +117,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, eventPreview.eventData.dataStreamId, eventPreview.eventData.endTime)
 
         // guard
-        if(!refObservation) return
+        if (!refObservation) return
         await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId,
             generateCommandJSON(refObservation.id, true));
     }
@@ -276,21 +270,21 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
             {/*                    setChartReady={setChartReady} modeType="preview" currentTime={currentTime}/>*/}
             {datasourcesReady && (
                 <>
-                    <ChartTimeHighlight key={eventPreview.eventData.id}
-                                        datasources={{
-                                            gamma: gammaDatasources[0],
-                                            neutron: neutronDatasources[0],
-                                            threshold: thresholdDatasources[0]
-                                        }}
-                                        setChartReady={setChartReady}
-                                        modeType="preview"
-                                        currentTime={currentTime}
+                    <ChartTimeHighlight
+                        datasources={{
+                            gamma: gammaDatasources[0],
+                            neutron: neutronDatasources[0],
+                            threshold: thresholdDatasources[0]
+                        }}
+                        setChartReady={setChartReady}
+                        modeType="preview"
+                        currentTime={currentTime}
                     />
-                    <LaneVideoPlayback key={eventPreview.eventData.id}
-                                       videoDatasources={videoDatasources}
-                                       setVideoReady={setVideoReady}
-                                       dataSynchronizer={syncRef.current}
-                                       addDataSource={setActiveVideoIDX}
+                    <LaneVideoPlayback
+                        videoDatasources={videoDatasources}
+                        setVideoReady={setVideoReady}
+                        dataSynchronizer={syncRef.current}
+                        addDataSource={setActiveVideoIDX}
                     />
                 </>
             )}
