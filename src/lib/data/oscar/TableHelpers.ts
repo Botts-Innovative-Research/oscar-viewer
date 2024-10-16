@@ -9,6 +9,7 @@ import {warn} from "next/dist/build/output/log";
 import System from "osh-js/source/core/sweapi/system/System.js";
 import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
 import {AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
+import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";
 
 export class EventTableData implements IEventTableData {
     id: number;
@@ -43,27 +44,15 @@ export class EventTableData implements IEventTableData {
             this.status = "Gamma";
         } else if (msgValue.neutronAlarm) {
             this.status = "Neutron";
-        }
-        else{
-            this.status= "None"
+        } else {
+            this.status = "None"
             // console.warn("No alarm detected for event: ", msgValue);
             // return null;
         }
-        this.adjudicatedData = adjudicatedData ? adjudicatedData: new AdjudicationData({
-            time: "",
-            id: "",
-            username: "",
-            feedback:"",
-            adjudicationCode: AdjudicationCodes.getCodeObjByIndex(0),
-            isotopes: "",
-            secondaryInspectionStatus: "",
-            filePaths: "",
-            occupancyId: msgValue.occupancyId,
-            alarmingSystemUid: ""
-        });
+        this.adjudicatedData = adjudicatedData ? adjudicatedData : new AdjudicationData("N/A", "N/A", "N/A");
     }
 
-    addAdjudicationData(aData: AdjudicationData) {
+    setAdjudicationData(aData: AdjudicationData) {
         this.adjudicatedData = aData;
     }
 
@@ -85,14 +74,15 @@ export class EventTableData implements IEventTableData {
         this.systemIdx = systemIdx;
     }
 
-    setDataStreamId(dataStreamId: string){
-        if(!dataStreamId){
+    setDataStreamId(dataStreamId: string) {
+        if (!dataStreamId) {
             let error = new Error()
             console.error("Datastream undefined, cannot set dsID", error.stack)
         }
         this.dataStreamId = dataStreamId;
     }
-    setObservationId(id: string){
+
+    setObservationId(id: string) {
         this.observationId = id;
     }
 }
@@ -114,43 +104,43 @@ export class EventTableDataCollection {
     }
 
     sortByStartTime(order: string) {
-        if(order === "ascending"){
+        if (order === "ascending") {
             this.data.sort((a, b) => {
                 return a.getStartTimeNum() - b.getStartTimeNum();
             });
-        }else if(order === "descending"){
+        } else if (order === "descending") {
             this.data.sort((a, b) => {
                 return b.getStartTimeNum() - a.getStartTimeNum();
             });
-        }else{
+        } else {
             console.log("Invalid ordering provided");
         }
     }
 
     sortByEndTime(order: string) {
-        if(order === "ascending"){
+        if (order === "ascending") {
             this.data.sort((a, b) => {
                 return a.getEndTimeNum() - b.getEndTimeNum();
             });
-        }else if(order === "descending"){
+        } else if (order === "descending") {
             this.data.sort((a, b) => {
                 return b.getEndTimeNum() - a.getEndTimeNum();
             });
-        }else{
+        } else {
             console.log("Invalid ordering provided");
         }
     }
 
     sortByLaneId(order: string) {
-        if(order === "ascending"){
+        if (order === "ascending") {
             this.data.sort((a, b) => {
                 return a.laneId.localeCompare(b.laneId);
             });
-        }else if(order === "descending"){
+        } else if (order === "descending") {
             this.data.sort((a, b) => {
                 return b.laneId.localeCompare(a.laneId);
             });
-        }else{
+        } else {
             console.log("Invalid ordering provided");
         }
     }
@@ -179,14 +169,15 @@ export class NationalTableData implements INationalTableData {
         this.site = siteName;
         this.occupancyCount = occupancyCount;
         this.gammaAlarmCount = gammaCount;
-        this.neutronAlarmCount= neutronCount;
-        this.faultAlarmCount= faultCount;
+        this.neutronAlarmCount = neutronCount;
+        this.faultAlarmCount = faultCount;
         this.tamperAlarmCount = tamperCount;
     }
 }
 
-export class NationalTableDataCollection{
+export class NationalTableDataCollection {
     data: NationalTableData[];
+
     constructor() {
         this.data = [];
     }
