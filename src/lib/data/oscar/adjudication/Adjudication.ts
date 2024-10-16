@@ -66,7 +66,7 @@ export function createAdjudicationObservation(data: IAdjudicationData, resultTim
     let obs = {
         "phenomenonTime": resultTime,
         "result": {
-            "time": new Date(resultTime).getTime(),
+            // "time": new Date(resultTime).getTime(),
             // "id": data.id,
             "username": data.username,
             "feedback": data.feedback,
@@ -75,11 +75,12 @@ export function createAdjudicationObservation(data: IAdjudicationData, resultTim
             "secondaryInspectionStatus": data.secondaryInspectionStatus,
             "filePaths": data.filePaths,
             "occupancyId": data.occupancyId,
-            "alarmingSystemUid": data.alarmingSystemUid
+            "alarmingSystemUid": data.alarmingSystemUid,
+            "vehicleId": data.vehicleId ? data.vehicleId : ""
         }
     }
     // return obs
-    return JSON.stringify(obs, ['phenomenonTime', 'result', 'time', 'id', 'username', 'feedback', 'adjudicationCode', 'isotopes', 'secondaryInspectionStatus', 'filePaths', 'occupancyId', 'alarmingSystemUid'], 2);
+    return JSON.stringify(obs, ['phenomenonTime', 'result', 'time', 'id', 'username', 'feedback', 'adjudicationCode', 'isotopes', 'secondaryInspectionStatus', 'filePaths', 'occupancyId', 'alarmingSystemUid', 'vehicleId'], 2);
 }
 
 export async function sendSetAdjudicatedCommand(node: INode, controlStreamId: string, command: AdjudicationCommand | string) {
