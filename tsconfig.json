@@ -31,15 +31,19 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     }
   },
   "include": [
     "./src/**/*",
     ".next/types/**/*.ts",
     "./types/new-types.d.ts",
-    "./types/osh-js.d.tsx"
-, "new-types.d.ts"  ],
+    "./types/osh-js.d.tsx",
+    "new-types.d.ts",
+    "web/types/**/*.ts"
+  ],
   "exclude": [
     "node_modules"
   ]

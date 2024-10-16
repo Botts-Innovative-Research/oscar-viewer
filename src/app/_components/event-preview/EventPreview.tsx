@@ -114,12 +114,12 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
 
         // send command
         // we can use endTime as it is the same a resultTime in testing, this may not be true in practice but this is a stop-gap fix anyway
-        let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, eventPreview.eventData.dataStreamId, eventPreview.eventData.endTime)
+        // let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, eventPreview.eventData.dataStreamId, eventPreview.eventData.endTime)
 
         // guard
-        if (!refObservation) return
+        // if (!refObservation) return
         await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId,
-            generateCommandJSON(refObservation.id, true));
+            generateCommandJSON(eventPreview.eventData.observationId, true));
     }
 
     const resetAdjudicationData = () => {
