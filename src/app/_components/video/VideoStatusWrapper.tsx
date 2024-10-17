@@ -16,12 +16,18 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
           sx={{
             "&.MuiGrid-item": 
               {...props.status != "none" ? {
+                // Styling for alarm and tamper states
                 border: "solid",
                 borderWidth: "2px",
                 borderColor: (props.status == "Alarm" ? "error.main" : "secondary.main"),
                 backgroundColor: (props.status == "Alarm" ? "errorHighlight" : "secondaryHighlight"),
-              } : {},
-              padding: "0px",
+              } : {
+                // Styling for tamper state
+                border: "solid",
+                borderWidth: "2px",
+                borderColor: "#bdbdbd",
+              },
+              margin: "2px",
             },
           }}
         >
