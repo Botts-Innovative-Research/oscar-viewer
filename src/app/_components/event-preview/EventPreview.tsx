@@ -73,7 +73,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
             id: randomUUID(),
             username: currentUser,
             feedback: notes,
-            adjudicationCode: value.label,
+            adjudicationCode: value,
             isotopes: "",
             secondaryInspectionStatus: "NONE",
             filePaths: "",
