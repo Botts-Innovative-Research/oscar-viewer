@@ -52,13 +52,14 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const [adjudicationCode, setAdjCode] = useState(AdjudicationCodes.codes[0]);
     const [isotope, setIsotope] = useState<string[]>([]);
     const [secondaryInspection, setSecondaryInspection] = useState(false);
+    const [vehicleId, setVehicleId] = useState<string>("");
+    const [feedback, setFeedback] = useState<string>("");
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
     const currentUser = useSelector(selectCurrentUser);
     const [associatedAdjudications, setAssociatedAdjudications] = useState<Comment[]>([]);
     const [shouldFetchLogs, setShouldFetchLogs] = useState<boolean>(false);
-
-    const adjudication = new AdjudicationData(currentUser, props.event.occupancyId, props.event.systemIdx);
+    const adjudication = props.event ? new AdjudicationData(currentUser, props.event.occupancyId, props.event.systemIdx) : null;
     const [adjData, setAdjData] = useState<AdjudicationData>(adjudication);
 
     /**handle the file uploaded**/
@@ -128,10 +129,10 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             checked ? tempAdjData.secondaryInspectionStatus = "REQUESTED" : tempAdjData.secondaryInspectionStatus = "NONE";
             setSecondaryInspection(checked);
         } else if (name === 'vehicleId') {
-            // setVehicleId(value);
+            setVehicleId(value);
             tempAdjData.vehicleId = value;
         } else if (name === 'notes') {
-            // setNotes(value)
+            setFeedback(value)
             tempAdjData.feedback = value;
         }
         console.log("[ADJ-D] Adj Data: ", tempAdjData);
@@ -195,8 +196,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         <Stack direction={"column"} p={2} spacing={2}>
             <Typography variant="h4">Adjudication</Typography>
             <Box>
-                <AdjudicationLog comments={comments} event={props.event} shouldFetch={shouldFetchLogs}
-                                 onFetch={onFetchComplete}/>
+                {/*<AdjudicationLog comments={comments} event={props.event} shouldFetch={shouldFetchLogs}*/}
+                {/*                 onFetch={onFetchComplete}/>*/}
             </Box>
 
             <Typography variant="h5">Adjudication Report Form</Typography>
@@ -215,7 +216,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                         <TextField
                             label="VehicleId"
                             name="vehicleId"
-                            value={adjData.vehicleId}
+                            value={vehicleId}
                             onChange={handleChange}
 
                         />
@@ -233,7 +234,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 name="notes"
                 multiline
                 rows={4}
-                value={adjData.feedback}
+                value={feedback}
                 onChange={handleChange}
             />
             {

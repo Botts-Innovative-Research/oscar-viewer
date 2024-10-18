@@ -28,7 +28,7 @@ export class EventTableData implements IEventTableData {
     dataStreamId?: string;
     observationId: string;
 
-    constructor(id: number, laneId: string, msgValue: any, adjudicatedData: AdjudicationData | null = null) {
+    constructor(id: number, laneId: string, msgValue: any, observationId: string, adjudicatedData: AdjudicationData | null = null) {
         this.id = id
         this.laneId = laneId
         this.occupancyId = msgValue.occupancyCount;
@@ -50,6 +50,7 @@ export class EventTableData implements IEventTableData {
             // return null;
         }
         this.adjudicatedData = adjudicatedData ? adjudicatedData : new AdjudicationData("N/A", "N/A", "N/A");
+        this.observationId = observationId;
     }
 
     setAdjudicationData(aData: AdjudicationData) {
@@ -84,6 +85,11 @@ export class EventTableData implements IEventTableData {
 
     setObservationId(id: string) {
         this.observationId = id;
+    }
+
+    private hashEntry(){
+        let sTHex = this.startTime.toString(16);
+
     }
 }
 
