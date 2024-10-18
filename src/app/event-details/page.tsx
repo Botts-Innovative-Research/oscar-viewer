@@ -55,7 +55,7 @@ export default function EventDetailsPage() {
 
     useMemo(() => {
         // create dsMapRef of eventPreview
-        if (eventPreview) {
+        if (eventPreview && dsMapRef.current) {
             dsMapRef.current = laneMapRef.current.get(eventPreview.eventData?.laneId)?.getDatastreamsForEventDetail(eventPreview.eventData?.startTime, eventPreview.eventData?.endTime);
             console.log("EventPreview DS Map", dsMapRef.current);
             setLocalDSMap(dsMapRef.current);
@@ -158,9 +158,9 @@ export default function EventDetailsPage() {
                                 <>
                                     <ChartTimeHighlight
                                         datasources={{
-                                            gamma: gammaDatasources[0],
-                                            neutron: neutronDatasources[0],
-                                            threshold: thresholdDatasources[0]
+                                            gamma: gammaDatasources[0] ? gammaDatasources[0] : null,
+                                            neutron: neutronDatasources[0] ? neutronDatasources[0] : null,
+                                            threshold: thresholdDatasources[0] ? thresholdDatasources[0] : null
                                         }}
                                         setChartReady={setChartReady}
                                         modeType="detail"

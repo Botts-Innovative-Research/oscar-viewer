@@ -9,7 +9,7 @@
     "postinstall": "patch-package",
     "dev": "next dev",
     "lint": "next lint",
-    "start-exported": "npx serve@latest out"
+    "start-exported": "npx serve@latest web"
   },
   "keywords": [
     "OpenSensorHub",
