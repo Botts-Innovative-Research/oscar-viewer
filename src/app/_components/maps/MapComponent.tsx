@@ -75,7 +75,6 @@ export default function MapComponent() {
                     locationDs.push(ds);
                 }
 
-
                 if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")) {
                     laneDSColl.addDS('gammaRT', rtDS);
                 }
