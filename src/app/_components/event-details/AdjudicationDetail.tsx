@@ -19,14 +19,14 @@ import React, {ChangeEvent, useContext, useRef, useState} from "react";
 import AdjudicationSelect from "../event-preview/AdjudicationSelect";
 import IsotopeSelect from "./IsotopeSelect";
 import AdjudicationLog from "./AdjudicationLog"
-import {
+import AdjudicationData, {
     createAdjudicationObservation, findObservationIdBySamplingTime, generateCommandJSON,
     IAdjudicationData,
     sendSetAdjudicatedCommand
 } from "@/lib/data/oscar/adjudication/Adjudication";
 import {selectCurrentUser, setShouldForceAlarmTableDeselect} from "@/lib/state/OSCARClientSlice";
 import {useSelector} from "react-redux";
-import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationContants";
+import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
@@ -38,7 +38,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         id: "",
         username: "",
         feedback: "",
-        adjudicationCode: "",
+        adjudicationCode: AdjudicationCodes.getCodeObjByIndex(0),
         isotopes: "",
         secondaryInspectionStatus: "NONE",
         filePaths: "",
@@ -52,13 +52,15 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const [adjudicationCode, setAdjCode] = useState(AdjudicationCodes.codes[0]);
     const [isotope, setIsotope] = useState<string[]>([]);
     const [secondaryInspection, setSecondaryInspection] = useState(false);
+    const [vehicleId, setVehicleId] = useState<string>("");
+    const [feedback, setFeedback] = useState<string>("");
     const fileInputRef = useRef<HTMLInputElement | null>(null);
-
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
-    const [adjData, setAdjData] = useState<IAdjudicationData>(defaultAdjData);
     const currentUser = useSelector(selectCurrentUser);
     const [associatedAdjudications, setAssociatedAdjudications] = useState<Comment[]>([]);
     const [shouldFetchLogs, setShouldFetchLogs] = useState<boolean>(false);
+    const adjudication = props.event ? new AdjudicationData(currentUser, props.event.occupancyId, props.event.systemIdx) : null;
+    const [adjData, setAdjData] = useState<AdjudicationData>(adjudication);
 
     /**handle the file uploaded**/
     const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -74,8 +76,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const handleAdjudicationSelect = (value: AdjudicationCode) => {
         console.log(value);
-        let tAdjData = {...adjData};
-        tAdjData.adjudicationCode = value.label;
+        let tAdjData: AdjudicationData = adjData;
+        tAdjData.adjudicationCode = AdjudicationCodes.getCodeObjByLabel(value.label);
+        console.log("Updating ADJ code:", tAdjData);
         setAdjData(tAdjData);
         setAdjCode(value);
     }
@@ -83,7 +86,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const handleIsotopeSelect = (value: string[]) => {
         console.log(value);
         let valueString = value.join(', ');
-        let tAdjData = {...adjData};
+        let tAdjData = adjData;
         tAdjData.isotopes = valueString;
         // setIsotope(value);
         console.log("[ADJ-D] Isotope: ", valueString);
@@ -118,15 +121,18 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value, checked} = e.target;
 
-        let tempAdjData = {...adjData};
+        let tempAdjData = adjData;
+
+        tempAdjData.username = currentUser;
+
         if (name === 'secondaryInspection') {
             checked ? tempAdjData.secondaryInspectionStatus = "REQUESTED" : tempAdjData.secondaryInspectionStatus = "NONE";
             setSecondaryInspection(checked);
         } else if (name === 'vehicleId') {
-            // setVehicleId(value);
-            tempAdjData.id = value;
+            setVehicleId(value);
+            tempAdjData.vehicleId = value;
         } else if (name === 'notes') {
-            // setNotes(value)
+            setFeedback(value)
             tempAdjData.feedback = value;
         }
         console.log("[ADJ-D] Adj Data: ", tempAdjData);
@@ -135,7 +141,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     function resetForm() {
         console.log("[ADJ-D] Resetting Form");
-        setAdjData(defaultAdjData);
+        setAdjData(adjudication);
         setUploadedFiles([]);
         setSecondaryInspection(false);
         setIsotope([]);
@@ -144,17 +150,20 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const sendAdjudicationData = async () => {
         let phenomenonTime = new Date().toISOString();
-        let comboData = adjData;
-        // comboData.feedback = notes;
-        comboData.time = phenomenonTime;
-        let observation = createAdjudicationObservation(comboData, phenomenonTime);
+        let tempAdjData: AdjudicationData = adjData;
+        console.log("Adj Data to send", tempAdjData);
+        tempAdjData.setTime(phenomenonTime);
+        // let observation = createAdjudicationObservation(comboData, phenomenonTime);
+        let observation = tempAdjData.createAdjudicationObservation();
         console.log("[ADJ] Sending Adjudication Data: ", observation);
+
         // send to server
         let currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
         const adjDsID = currLaneEntry.parentNode.laneAdjMap.get(currentLane);
         // const adjDSId = props.event.dataStreamId;
         const ep = currLaneEntry.parentNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + adjDsID + "/observations";
+
         let resp = await fetch(ep, {
             method: "POST",
             headers: {
@@ -167,12 +176,12 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
         // send command
         // we can use endTime as it is the same a resultTime in testing, this may not be true in practice but this is a stop-gap fix anyway
-        let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, props.event.dataStreamId, props.event.endTime)
+        // let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, props.event.dataStreamId, props.event.endTime)
 
         // guard
-        if(!refObservation) return
+        // if(!refObservation) return
         await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId,
-            generateCommandJSON(refObservation.id, true));
+            generateCommandJSON(props.event.observationId, true));
 
         setShouldFetchLogs(true);
         resetForm();
@@ -207,7 +216,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                         <TextField
                             label="VehicleId"
                             name="vehicleId"
-                            value={adjData.id}
+                            value={vehicleId}
                             onChange={handleChange}
 
                         />
@@ -225,7 +234,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 name="notes"
                 multiline
                 rows={4}
-                value={adjData.feedback}
+                value={feedback}
                 onChange={handleChange}
             />
             {
@@ -285,6 +294,5 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             </Stack>
         </Stack>
-    )
-        ;
+    );
 }

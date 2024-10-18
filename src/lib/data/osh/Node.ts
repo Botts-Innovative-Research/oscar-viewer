@@ -12,7 +12,7 @@ import Systems from "osh-js/source/core/sweapi/system/Systems.js";
 import System from "osh-js/source/core/sweapi/system/System.js";
 import SystemFilter from "osh-js/source/core/sweapi/system/SystemFilter.js";
 import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
-import {AdjudicationDatastreamConstant} from "@/lib/data/oscar/adjudication/models/AdjudicationContants";
+import {AdjudicationDatastreamConstant} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 
 const LANEREGEX = /^lane\d+$/;
@@ -206,7 +206,7 @@ export class Node implements INode {
                     laneMap.get(laneName).setLaneSystem(system);
                 } else {
                     let tLaneEntry = new LaneMapEntry(this);
-                    tLaneEntry.laneId = laneName;
+                    tLaneEntry.setLaneName(laneName);
                     laneMap.set(laneName, tLaneEntry);
                     // console.log("TK LaneMap:", laneMap, laneName);
                     let entry = laneMap.get(laneName);

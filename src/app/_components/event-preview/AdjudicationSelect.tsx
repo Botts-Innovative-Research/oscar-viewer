@@ -2,7 +2,7 @@
 
 import {FormControl, InputLabel, ListSubheader, MenuItem, Select, SelectChangeEvent} from '@mui/material';
 import {useEffect, useState} from 'react';
-import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationContants";
+import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {IAdjudicationData} from "@/lib/data/oscar/adjudication/Adjudication";
 
 export const colorCodes = {
@@ -16,13 +16,13 @@ export default function AdjudicationSelect(props: {
     onSelect: (value: AdjudicationCode) => void, // Return selected value
     adjCode: AdjudicationCode
 }) {
-    const [adjudicated, setAdjudicated] = useState<AdjudicationCode>(AdjudicationCodes.codes[0]); // Adjudication selected value
+    /*const [adjudicated, setAdjudicated] = useState<AdjudicationCode>(AdjudicationCodes.codes[0]); // Adjudication selected value*/
     const [style, setStyle] = useState(colorCodes.other.color); // Adjudicated button style based on selected value
 
     const handleChangeAdjCode = (event: SelectChangeEvent) => {
         let value: AdjudicationCode = AdjudicationCodes.getCodeObjByLabel(event.target.value);
         console.log("[ADJ] Adjudication Selected: ", value);
-        setAdjudicated(value); // Set local adjudicated state
+        /*setAdjudicated(value); // Set local adjudicated state*/
         props.onSelect(value); // Return selected value to parent component
 
         // Handle component styling

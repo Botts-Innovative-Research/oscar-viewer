@@ -1,12 +1,14 @@
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {INode, Node} from "@/lib/data/osh/Node";
+import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
+
 
 export interface IAdjudicationData {
     time: string,
     id: string;
     username: string
     feedback: string
-    adjudicationCode: string
+    adjudicationCode: AdjudicationCode
     isotopes: string
     secondaryInspectionStatus: string
     filePaths: string
@@ -15,21 +17,91 @@ export interface IAdjudicationData {
     vehicleId?: string
 }
 
-export default class AdjudicationData {
+export default class AdjudicationData implements IAdjudicationData {
+    time: string;
     id: string;
     username: string
     feedback: string
-    adjudicationCode: string
+    adjudicationCode: AdjudicationCode
     isotopes: string
-    secondaryInspectionStatus: string
+    secondaryInspectionStatus: "NONE" | "REQUESTED" | "COMPLETED"
     filePaths: string
     occupancyId: string
     alarmingSystemUid: string
     vehicleId?: string
 
-    constructor(properties: IAdjudicationData) {
-        Object.assign(this, properties);
+    // constructor(properties: IAdjudicationData) {
+    //     Object.assign(this, properties);
+    //     this.id = randomUUID();
+    // }
+
+    constructor(username: string, occupancyId: string, alarmingSystemUid: string) {
+        this.username = username;
+        this.occupancyId = occupancyId;
+        this.alarmingSystemUid = alarmingSystemUid;
+        this.adjudicationCode = AdjudicationCodes.getCodeObjByIndex(0);
+        this.secondaryInspectionStatus = "NONE";
         this.id = randomUUID();
+    }
+
+    setTime(isoTime: string) {
+        this.time = isoTime;
+    }
+
+    setFeedback(feedback: string) {
+        this.feedback = feedback;
+    }
+
+    setIsotopes(isotopes: string) {
+        this.isotopes = isotopes;
+    }
+
+    setSecondaryInspectionStatus(secondaryInspectionStatus: "NONE" | "REQUESTED" | "COMPLETED") {
+        this.secondaryInspectionStatus = secondaryInspectionStatus;
+    }
+
+    setFilePaths(filePaths: string) {
+        this.filePaths = filePaths;
+    }
+
+    setAdjudicationCode(adjudicationCode: AdjudicationCode) {
+        this.adjudicationCode = adjudicationCode;
+    }
+
+    setVehicleId(vehicleId: string){
+        this.vehicleId = vehicleId;
+    }
+
+    getCodeAsString(): string {
+        return this.adjudicationCode.label;
+    }
+
+    getCodeValue(): number {
+        return this.adjudicationCode.code;
+    }
+
+    createAdjudicationObservation(): any {
+        // this method needs to validate the data beforehand
+        console.log("Creating adjudication observation:", this)
+        let obs = {
+            "phenomenonTime": this.time,
+            "result": {
+                "username": this.username,
+                "feedback": this.feedback,
+                "adjudicationCode": this.adjudicationCode.label,
+                "isotopes": this.isotopes ? this.isotopes : "",
+                "secondaryInspectionStatus": this.secondaryInspectionStatus,
+                "filePaths": this.filePaths? this.filePaths : "",
+                "occupancyId": this.occupancyId,
+                "alarmingSystemUid": this.alarmingSystemUid,
+                "vehicleId": this.vehicleId ? this.vehicleId : ""
+            }
+        }
+        // return obs
+        let jsonString: string = JSON.stringify(obs, ['phenomenonTime', 'result', 'username', 'feedback', 'adjudicationCode', 'isotopes',
+            'secondaryInspectionStatus', 'filePaths', 'occupancyId', 'alarmingSystemUid', 'vehicleId'], 2);
+        console.log("Created ADJ String Representation", jsonString);
+        return jsonString
     }
 }
 
@@ -54,10 +126,11 @@ export class AdjudicationCommand {
 }
 
 export function createAdjudicationObservation(data: IAdjudicationData, resultTime: string): any {
+    console.log("Creating adjudication observation:", data)
     let obs = {
         "phenomenonTime": resultTime,
         "result": {
-            "time": new Date(resultTime).getTime(),
+            // "time": new Date(resultTime).getTime(),
             // "id": data.id,
             "username": data.username,
             "feedback": data.feedback,
@@ -66,11 +139,12 @@ export function createAdjudicationObservation(data: IAdjudicationData, resultTim
             "secondaryInspectionStatus": data.secondaryInspectionStatus,
             "filePaths": data.filePaths,
             "occupancyId": data.occupancyId,
-            "alarmingSystemUid": data.alarmingSystemUid
+            "alarmingSystemUid": data.alarmingSystemUid,
+            "vehicleId": data.vehicleId ? data.vehicleId : ""
         }
     }
     // return obs
-    return JSON.stringify(obs, ['phenomenonTime', 'result', 'time', 'id', 'username', 'feedback', 'adjudicationCode', 'isotopes', 'secondaryInspectionStatus', 'filePaths', 'occupancyId', 'alarmingSystemUid'], 2);
+    return JSON.stringify(obs, ['phenomenonTime', 'result', 'time', 'id', 'username', 'feedback', 'adjudicationCode', 'isotopes', 'secondaryInspectionStatus', 'filePaths', 'occupancyId', 'alarmingSystemUid', 'vehicleId'], 2);
 }
 
 export async function sendSetAdjudicatedCommand(node: INode, controlStreamId: string, command: AdjudicationCommand | string) {

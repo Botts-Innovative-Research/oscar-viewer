@@ -3,19 +3,14 @@
  * All Rights Reserved
  */
 
-import {Box, Button, Container, IconButton, Paper, Stack, TextField, Typography} from "@mui/material";
+import {Button, IconButton, Stack, TextField, Typography} from "@mui/material";
 import OpenInFullRoundedIcon from "@mui/icons-material/OpenInFullRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import AdjudicationSelect from "@/app/_components/event-preview/AdjudicationSelect";
-import {ChangeEvent, useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
+import {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
-import {
-    selectCurrentUser,
-    selectEventPreview,
-    setEventPreview,
-    setShouldForceAlarmTableDeselect
-} from "@/lib/state/OSCARClientSlice";
+import {selectCurrentUser, setEventPreview, setShouldForceAlarmTableDeselect} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/navigation";
 import ChartTimeHighlight from "@/app/_components/event-preview/ChartTimeHighlight";
@@ -24,16 +19,16 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
-import {
+import AdjudicationData, {
     createAdjudicationObservation,
-    findObservationIdBySamplingTime, generateCommandJSON,
-    IAdjudicationData, sendSetAdjudicatedCommand
+    findObservationIdBySamplingTime,
+    generateCommandJSON,
+    IAdjudicationData,
+    sendSetAdjudicatedCommand
 } from "@/lib/data/oscar/adjudication/Adjudication";
-import Grid2 from "@mui/material/Unstable_Grid2";
-import {GridRow} from "@mui/x-data-grid";
-import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationContants";
-import {GridRootStyles} from "@mui/x-data-grid/components/containers/GridRootStyles";
+import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
+import {updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
 
 
 export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTableData | null }) {
@@ -70,6 +65,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     const [adjFormData, setAdjFormData] = useState<IAdjudicationData | null>();
     const [notes, setNotes] = useState<string>("");
     const [adjudicationCode, setAdjudicationCode] = useState<AdjudicationCode>(AdjudicationCodes.codes[0]);
+    const [adjudication, setAdjudication] = useState<AdjudicationData | null>();
 
 
     const handleAdjudicationCode = (value: AdjudicationCode) => {
@@ -79,16 +75,21 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
             id: randomUUID(),
             username: currentUser,
             feedback: notes,
-            adjudicationCode: value.label,
+            adjudicationCode: value,
             isotopes: "",
             secondaryInspectionStatus: "NONE",
             filePaths: "",
             occupancyId: eventPreview.eventData.occupancyId,
             alarmingSystemUid: eventPreview.eventData.systemIdx
         }
+        let adjudicationData = new AdjudicationData(currentUser, eventPreview.eventData.occupancyId,
+            eventPreview.eventData.systemIdx);
+        adjudicationData.setFeedback(notes);
+        adjudicationData.setAdjudicationCode(value);
         console.log("[ADJ] New Adjudication Data, Ready to Send: ", newAdjData);
         setAdjudicationCode(value);
         setAdjFormData(newAdjData);
+        setAdjudication(adjudicationData);
     }
     const handleNotes = (event: React.ChangeEvent<HTMLInputElement>) => {
         let notesValues = event.target.value;
@@ -97,10 +98,14 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     }
     const sendAdjudicationData = async () => {
         let phenomenonTime = new Date().toISOString();
-        let comboData = adjFormData;
-        comboData.feedback = notes;
-        comboData.time = phenomenonTime;
-        let observation = createAdjudicationObservation(comboData, phenomenonTime);
+        // let comboData = adjFormData;
+        let comboData = adjudication;
+        // comboData.feedback = notes;
+        comboData.setFeedback(notes);
+        // comboData.time = phenomenonTime;
+        comboData.setTime(phenomenonTime);
+        // let observation = createAdjudicationObservation(comboData, phenomenonTime);
+        let observation = comboData.createAdjudicationObservation();
         console.log("[ADJ] Sending Adjudication Data: ", observation);
         // send to server
         let currentLane = eventPreview.eventData.laneId;
@@ -120,16 +125,18 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
 
         // send command
         // we can use endTime as it is the same a resultTime in testing, this may not be true in practice but this is a stop-gap fix anyway
-        let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, eventPreview.eventData.dataStreamId, eventPreview.eventData.endTime)
+        // let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, eventPreview.eventData.dataStreamId, eventPreview.eventData.endTime)
 
         // guard
-        if(!refObservation) return
+        // if (!refObservation) return
         await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId,
-            generateCommandJSON(refObservation.id, true));
+            generateCommandJSON(eventPreview.eventData.observationId, true));
+        dispatch(updateSelectedEventAdjudication(comboData));
     }
 
     const resetAdjudicationData = () => {
         setAdjFormData(null);
+        setAdjudication(null);
         setNotes("");
         setAdjudicationCode(AdjudicationCodes.codes[0]);
     }
@@ -276,21 +283,21 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
             {/*                    setChartReady={setChartReady} modeType="preview" currentTime={currentTime}/>*/}
             {datasourcesReady && (
                 <>
-                    <ChartTimeHighlight key={eventPreview.eventData.id}
-                                        datasources={{
-                                            gamma: gammaDatasources[0],
-                                            neutron: neutronDatasources[0],
-                                            threshold: thresholdDatasources[0]
-                                        }}
-                                        setChartReady={setChartReady}
-                                        modeType="preview"
-                                        currentTime={currentTime}
+                    <ChartTimeHighlight
+                        datasources={{
+                            gamma: gammaDatasources[0],
+                            neutron: neutronDatasources[0],
+                            threshold: thresholdDatasources[0]
+                        }}
+                        setChartReady={setChartReady}
+                        modeType="preview"
+                        currentTime={currentTime}
                     />
-                    <LaneVideoPlayback key={eventPreview.eventData.id}
-                                       videoDatasources={videoDatasources}
-                                       setVideoReady={setVideoReady}
-                                       dataSynchronizer={syncRef.current}
-                                       addDataSource={setActiveVideoIDX}
+                    <LaneVideoPlayback
+                        videoDatasources={videoDatasources}
+                        setVideoReady={setVideoReady}
+                        dataSynchronizer={syncRef.current}
+                        addDataSource={setActiveVideoIDX}
                     />
                 </>
             )}
