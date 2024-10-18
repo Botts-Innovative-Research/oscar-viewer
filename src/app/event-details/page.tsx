@@ -158,9 +158,9 @@ export default function EventDetailsPage() {
                                 <>
                                     <ChartTimeHighlight
                                         datasources={{
-                                            gamma: gammaDatasources[0] ? gammaDatasources : null,
-                                            neutron: neutronDatasources[0] ? neutronDatasources : null,
-                                            threshold: thresholdDatasources[0] ? thresholdDatasources : null
+                                            gamma: gammaDatasources[0] ? gammaDatasources[0] : null,
+                                            neutron: neutronDatasources[0] ? neutronDatasources[0] : null,
+                                            threshold: thresholdDatasources[0] ? thresholdDatasources[0] : null
                                         }}
                                         setChartReady={setChartReady}
                                         modeType="detail"
