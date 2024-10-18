@@ -40,7 +40,6 @@ export default function DashboardPage() {
             <Grid item container spacing={2} style={{flexBasis: '66.66%', flexGrow: 0, flexShrink: 0}}>
                 <Grid item xs={8}>
                     <Paper variant='outlined' sx={{height: "100%"}}>
-                        {/*<Table tableMode={"alarmtable"} />*/}
                         <Table2 tableMode={'alarmtable'} laneMap={laneMap}/>
                     </Paper>
                 </Grid>
@@ -50,7 +49,6 @@ export default function DashboardPage() {
                     </Paper>
                 </Grid>
             </Grid>
-            {/*<Table2 tableMode={'alarmtable'}/>*/}
         </Grid>
     );
 }
