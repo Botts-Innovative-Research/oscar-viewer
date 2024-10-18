@@ -21,106 +21,58 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 
-interface LaneVideoProps{
-    laneName: string
+interface VideoProps{
+   videoList: LaneWithVideo[]
 }
 interface LaneWithVideo {
     laneName: string,
     videoSources: typeof SweApi[]
 }
-export default function VideoGrid(props: LaneVideoProps) {
+export default function VideoGrid({videoList}: VideoProps) {
     const idVal = useRef(1);
-    const [videoList, setVideoList] = useState<LaneWithVideo[] | null>(null);
     const [currentPage, setCurrentPage] = useState(0);
     const [slideDirection, setSlideDirection] = useState<"right"| "left"| undefined>("left");
-
     const [maxPages, setMaxPages] = useState(0)
-    const laneMap = useSelector((state: RootState) => selectLaneMap(state));
 
-    // Create and connect videostreams
+
     useEffect(() => {
-        if(videoList == null || videoList.length == 0 && laneMap.size > 0) {
-            let videos: LaneWithVideo[] = []
 
-            laneMap.forEach((value, key) => {
-                if (key === props.laneName) {
-                    let ds: LaneMapEntry = laneMap.get(key);
+        if(videoList && videoList.length > 0 && currentPage <= maxPages - 1){
 
-                    const videoSources = ds.datasourcesRealtime.filter((item) =>
-                        item.name.includes('Video') && item.name.includes('Lane')
-                    );
+            const currentVideo = videoList[0].videoSources[currentPage];
+            const isConnected = currentVideo.isConnected();
 
-                    if (videoSources.length > 0) {
-                        videos.push({laneName: key, videoSources});
-                    }
-                }
-            });
-            setVideoList(videos);
-
+            if(isConnected){
+                currentVideo.disconnect();
+            }
+            currentVideo.connect();
         }
-    }, [laneMap, props.laneName]);
 
-    useEffect(() => {
-        if(videoList && videoList.length> 0){
-            setMaxPages(videoList[0].videoSources.length);
-        }
-    }, [videoList]);
-
-
-    useEffect(() => {
-        console.log(videoList)
-        let isConnected = false;
-       if(videoList && videoList.length > 0 && currentPage <= videoList[0].videoSources.length - 1){
-           console.log('connecting src', videoList[0].videoSources[currentPage].name);
-
-           isConnected = videoList[0].videoSources[currentPage].isConnected()
-           if(isConnected){
-               console.log('iam connected already')
-               videoList[0].videoSources[currentPage].disconnect();
-           }
-           videoList[0].videoSources[currentPage].connect();
-       }
     }, [videoList, currentPage]);
 
-    console.log('max', maxPages)
+    const handleNextPage = () => {
+        if (currentPage < maxPages - 1) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
 
-    const handleNextPage = () =>{
-        setSlideDirection("left");
-        setCurrentPage((prevPage)=> {
-            let nextPage = prevPage + 1
-            if(videoList && videoList[0] && nextPage <= maxPages-1){
-                checkConnection(prevPage);
-                return nextPage;
-            }else{
-                return prevPage;
-            }
-        })
-    }
-
-    const handlePrevPage = () =>{
-        setSlideDirection("right");
-        setCurrentPage((prevPage) => {
-            let currpage = prevPage - 1;
-            checkConnection(prevPage);
-            return currpage;
-
-        })
-
-    }
+    const handlePrevPage = () => {
+        if (currentPage > 0) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
 
     //next page -> disconnect from the previous page and connect to the next page if its not connected we can connect it
-    async function checkConnection (prevPage: number){
-        if(prevPage >= 0){
-            for (const video of videoList) {
-                const isConnected = await video.videoSources[prevPage].isConnected();
-                if(isConnected){
-                    console.log('disconnecting', video.videoSources[prevPage].name)
-                    video.videoSources[prevPage].disconnect();
-                }
-
-            }
-        }
-    }
+    // async function checkConnection (prevPage: number){
+    //     if(prevPage >= 0){
+    //             const isConnected = await videoList.videoSources[prevPage].isConnected();
+    //             if(isConnected){
+    //                 videoList.videoSources[prevPage].disconnect();
+    //             }
+    //
+    //
+    //     }
+    // }
 
 
     return (
@@ -150,8 +102,7 @@ export default function VideoGrid(props: LaneVideoProps) {
                     </IconButton>
                 </Box>
             )}
-
-
         </>
+
     );
 }
