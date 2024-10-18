@@ -9,12 +9,26 @@ import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {DataGrid, GridColDef} from "@mui/x-data-grid";
 import {Stack, Typography} from "@mui/material";
+import {AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 
 const logColumns: GridColDef<AdjudicationData>[] = [
     {field: 'secondaryInspectionStatus', headerName: 'Secondary Inspection Status', width: 200},
-    {field: 'adjudicationCode', headerName: 'Adjudication Code', width: 400},
-    {field: 'isotopes', headerName: 'Isotopes', width: 200},
-    {field: 'vehicleId', headerName: 'Vehicle ID', width: 200},
+    {
+        field: 'adjudicationCode', headerName: 'Adjudication Code', width: 400, valueGetter: (value, row) => {
+            console.log("ADJDEt - ", row);
+            return row.adjudicationCode.label
+        }
+    },
+    {
+        field: 'isotopes', headerName: 'Isotopes', width: 200, valueGetter: (value) => {
+            if (value === "") return "N/A";
+        }
+    },
+    {
+        field: 'vehicleId', headerName: 'Vehicle ID', width: 200, valueGetter: (value) => {
+            if (value === "") return "N/A";
+        }
+    },
 ];
 
 export default function AdjudicationLog(props: {
@@ -74,7 +88,13 @@ export default function AdjudicationLog(props: {
             let obsRes = await observations.nextPage();
             let adjDataArr = obsRes.map((obs: any) => {
                 console.log("[ADJ-Log] Adjudication Datastream Observation: ", obs);
-                return new AdjudicationData(obs.result as IAdjudicationData);
+                let data = new AdjudicationData(obs.result.username, obs.result.occupancyId, obs.result.alarmingSystemUid);
+                data.setFeedback(obs.result.feedback);
+                data.setIsotopes(obs.result.isotopes);
+                data.setSecondaryInspectionStatus(obs.result.secondaryInspectionStatus);
+                data.setAdjudicationCode(AdjudicationCodes.getCodeObjByLabel(obs.result.adjudicationCode));
+                data.setVehicleId(obs.result.vehicleId);
+                return data
             });
             console.log("[ADJ-Log] Adjudication Datastream Observations: ", adjDataArr);
             setAdjLog(adjDataArr);

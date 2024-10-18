@@ -68,6 +68,10 @@ export default class AdjudicationData implements IAdjudicationData {
         this.adjudicationCode = adjudicationCode;
     }
 
+    setVehicleId(vehicleId: string){
+        this.vehicleId = vehicleId;
+    }
+
     getCodeAsString(): string {
         return this.adjudicationCode.label;
     }
@@ -85,7 +89,7 @@ export default class AdjudicationData implements IAdjudicationData {
                 "username": this.username,
                 "feedback": this.feedback,
                 "adjudicationCode": this.adjudicationCode.label,
-                "isotopes": this.isotopes,
+                "isotopes": this.isotopes ? this.isotopes : "",
                 "secondaryInspectionStatus": this.secondaryInspectionStatus,
                 "filePaths": this.filePaths? this.filePaths : "",
                 "occupancyId": this.occupancyId,

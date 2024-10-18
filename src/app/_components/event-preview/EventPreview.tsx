@@ -19,7 +19,7 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
-import {
+import AdjudicationData, {
     createAdjudicationObservation,
     findObservationIdBySamplingTime,
     generateCommandJSON,
@@ -28,6 +28,7 @@ import {
 } from "@/lib/data/oscar/adjudication/Adjudication";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
+import {updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
 
 
 export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTableData | null }) {
@@ -64,6 +65,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     const [adjFormData, setAdjFormData] = useState<IAdjudicationData | null>();
     const [notes, setNotes] = useState<string>("");
     const [adjudicationCode, setAdjudicationCode] = useState<AdjudicationCode>(AdjudicationCodes.codes[0]);
+    const [adjudication, setAdjudication] = useState<AdjudicationData | null>();
 
 
     const handleAdjudicationCode = (value: AdjudicationCode) => {
@@ -80,9 +82,14 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
             occupancyId: eventPreview.eventData.occupancyId,
             alarmingSystemUid: eventPreview.eventData.systemIdx
         }
+        let adjudicationData = new AdjudicationData(currentUser, eventPreview.eventData.occupancyId,
+            eventPreview.eventData.systemIdx);
+        adjudicationData.setFeedback(notes);
+        adjudicationData.setAdjudicationCode(value);
         console.log("[ADJ] New Adjudication Data, Ready to Send: ", newAdjData);
         setAdjudicationCode(value);
         setAdjFormData(newAdjData);
+        setAdjudication(adjudicationData);
     }
     const handleNotes = (event: React.ChangeEvent<HTMLInputElement>) => {
         let notesValues = event.target.value;
@@ -91,10 +98,14 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     }
     const sendAdjudicationData = async () => {
         let phenomenonTime = new Date().toISOString();
-        let comboData = adjFormData;
-        comboData.feedback = notes;
-        comboData.time = phenomenonTime;
-        let observation = createAdjudicationObservation(comboData, phenomenonTime);
+        // let comboData = adjFormData;
+        let comboData = adjudication;
+        // comboData.feedback = notes;
+        comboData.setFeedback(notes);
+        // comboData.time = phenomenonTime;
+        comboData.setTime(phenomenonTime);
+        // let observation = createAdjudicationObservation(comboData, phenomenonTime);
+        let observation = comboData.createAdjudicationObservation();
         console.log("[ADJ] Sending Adjudication Data: ", observation);
         // send to server
         let currentLane = eventPreview.eventData.laneId;
@@ -120,10 +131,12 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         // if (!refObservation) return
         await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId,
             generateCommandJSON(eventPreview.eventData.observationId, true));
+        dispatch(updateSelectedEventAdjudication(comboData));
     }
 
     const resetAdjudicationData = () => {
         setAdjFormData(null);
+        setAdjudication(null);
         setNotes("");
         setAdjudicationCode(AdjudicationCodes.codes[0]);
     }

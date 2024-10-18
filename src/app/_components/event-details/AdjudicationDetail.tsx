@@ -196,8 +196,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         <Stack direction={"column"} p={2} spacing={2}>
             <Typography variant="h4">Adjudication</Typography>
             <Box>
-                {/*<AdjudicationLog comments={comments} event={props.event} shouldFetch={shouldFetchLogs}*/}
-                {/*                 onFetch={onFetchComplete}/>*/}
+                <AdjudicationLog comments={comments} event={props.event} shouldFetch={shouldFetchLogs}
+                                 onFetch={onFetchComplete}/>
             </Box>
 
             <Typography variant="h5">Adjudication Report Form</Typography>
