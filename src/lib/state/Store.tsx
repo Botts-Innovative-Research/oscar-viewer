@@ -7,12 +7,14 @@ import {configureStore} from '@reduxjs/toolkit';
 import AppReducer from './Slice';
 import OSHReducer from './OSHSlice';
 import OSCARClientReducer from './OSCARClientSlice';
+import EventDataReducer from './EventDataSlice';
 
 export const makeStore = configureStore({
     reducer: {
         appState: AppReducer,
         oscarClientSlice: OSCARClientReducer,
         oshSlice: OSHReducer,
+        eventLogSlice: EventDataReducer
     },
     middleware: (getDefaultMiddleWare) =>
         getDefaultMiddleWare({
