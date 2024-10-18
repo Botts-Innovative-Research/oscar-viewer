@@ -34,8 +34,8 @@ const drawerWidth = 240;
 
 const openedMixin = (theme: Theme): CSSObject => ({
   width: drawerWidth,
-  
-  
+
+
   transition: theme.transitions.create('width', {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.enteringScreen,
@@ -293,11 +293,7 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
         </List>
-        <Divider>
-          <Link href={"/savestate"} passHref>
-              <Label>Open Save State</Label>
-          </Link>
-        </Divider>
+        <Divider/>
       </Drawer>
       <Box component="main" sx={{ height: "100%", width: "100%", m: 2 }}>
         <DrawerHeader />
