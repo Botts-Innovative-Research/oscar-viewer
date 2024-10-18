@@ -23,7 +23,7 @@ export default function DataRow(){
       <TableContainer>
         <Table sx={{ minWidth: 650 }} aria-label="simple table">
           <TableHead>
-            <TableRow  sx={{ '&:last-child td, &:last-child th': { border: 0, textAlign: "center", fontWeight: "bold" } }}>
+            <TableRow  sx={{ '&:last-child td, &:last-child th': { border: 0, textAlign: "center" } }}>
               <TableCell align="center">Secondary Inspection</TableCell>
               <TableCell>Lane ID</TableCell>
               <TableCell>Occupancy ID</TableCell>

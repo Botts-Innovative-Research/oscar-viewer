@@ -83,18 +83,20 @@ export default function StatTable(props: {
             for (let ds of lane.datastreams) {
                 let idx: number = lane.datastreams.indexOf(ds);
 
-                if (ds.properties.name.includes('Driver - Occupancy')) {
-                    await fetchObservations(lane.parentNode.name, ds, startTime, endTime);
-                }
-                if (ds.properties.name.includes('Driver - Gamma Count')) {
+
+                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
                     await fetchObservations(lane.parentNode.name, ds, startTime, endTime);
                 }
 
-                if (ds.properties.name.includes('Driver - Neutron Count')) {
+                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
                     await fetchObservations(lane.parentNode.name, ds, startTime, endTime);
                 }
 
-                if (ds.properties.name.includes('Driver - Tamper')) {
+                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status")){
+                    await fetchObservations(lane.parentNode.name, ds, startTime, endTime);
+                }
+
+                if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/pillar-occupancy-count")) {
                     await fetchObservations(lane.parentNode.name, ds, startTime, endTime);
                 }
             }
@@ -118,26 +120,26 @@ export default function StatTable(props: {
 
             obsRes.map((res: any) => {
 
-                if (ds.properties.name.includes('Driver - Neutron Count') && (res.result.alarmState === 'Alarm')) {
+                if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count") && (res.result.alarmState === 'Alarm')) {
                     neutronCount++;
-                } else if (ds.properties.name.includes('Driver - Gamma Count')) {
+                }
+                else if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
                     if(res.result.alarmState === 'Alarm'){
                         gammaCount++;
                     }
                     else if(res.result.alarmState.includes('Fault')){
                         faultCount++;
                     }
-                }else if (ds.properties.name.includes('Driver - Tamper') && res.result.tamperStatus === true) {
+                }
+                else if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status") && res.result.tamperStatus === true) {
                     tamperCount++;
-
-                } else if (ds.properties.name.includes('Driver - Occupancy')) {
+                }
+                else if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/pillar-occupancy-count")) {
                     if(res.result.gammaAlarm === true || res.result.neutronAlarm === true){
                         occCount++
                     }else if(res.result.gammaAlarm === false || res.result.neutronAlarm === false){
                         occCount++
                     }
-
-
                 }
             })
         }

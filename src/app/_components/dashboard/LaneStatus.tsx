@@ -39,21 +39,19 @@ export default function LaneStatus() {
         let rtDS = lane.datasourcesRealtime[idx];
         let laneDSColl = laneDSMap.get(laneid);
 
-        if (ds.properties.name.includes('Driver - Gamma Count')) {
+        if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
           laneDSColl.addDS('gammaRT', rtDS);
         }
-
-        if (ds.properties.name.includes('Driver - Neutron Count')) {
+        if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
           laneDSColl.addDS('neutronRT', rtDS);
         }
-
-        if (ds.properties.name.includes('Driver - Tamper')) {
+        if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status")){
           laneDSColl.addDS('tamperRT', rtDS);
         }
-
-        if (ds.properties.name.includes('Driver - Connection Status')) {
+        if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/connection-status")){
           laneDSColl.addDS('connectionRT', rtDS);
         }
+
       }
 
       newStatusList.push({

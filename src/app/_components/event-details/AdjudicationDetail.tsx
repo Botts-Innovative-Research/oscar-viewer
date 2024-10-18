@@ -129,7 +129,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             // setNotes(value)
             tempAdjData.feedback = value;
         }
-        console.log("[ADJ-D] Adj Data: ", tempAdjData);
+        // console.log("[ADJ-D] Adj Data: ", tempAdjData);
         setAdjData(tempAdjData);
     }
 

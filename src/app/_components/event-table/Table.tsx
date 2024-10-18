@@ -11,10 +11,11 @@ import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 
 
 interface TableProps {
-    tableMode: "eventlog" | "alarmtable";
+    tableMode: "eventlog" | "alarmtable" | "laneview";
+    laneName?: string;
 }
 
-export default function Table({tableMode}: TableProps) {
+export default function Table({tableMode, laneName}: TableProps) {
 
     const [data, setData] = useState<IEventTableData[]>([]); // Data to be displayed, depending on tableMode
     const [eventLog, setEventLog] = useState<IEventTableData[]>([]);
@@ -39,25 +40,23 @@ export default function Table({tableMode}: TableProps) {
             for (let ds of lane.datastreams) {
 
                 let idx: number = lane.datastreams.indexOf(ds);
-                let batchDS = lane.datasourcesBatch[idx];
                 let rtDS = lane.datasourcesRealtime[idx];
                 let laneDSColl = laneDSMap.get(laneid);
 
 
-                if (ds.properties.name.includes('Driver - Occupancy')) {
+                if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/pillar-occupancy-count")) {
                     laneDSColl.addDS('occRT', rtDS);
 
                     await fetchObservations(laneid, ds, startTime, "now");
                 }
-                if (ds.properties.name.includes('Driver - Gamma Count')) {
+                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
+
                     laneDSColl.addDS('gammaRT', rtDS);
                 }
-
-                if (ds.properties.name.includes('Driver - Neutron Count')) {
+                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
                     laneDSColl.addDS('neutronRT', rtDS);
                 }
-
-                if (ds.properties.name.includes('Driver - Tamper')) {
+                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status")){
                     laneDSColl.addDS('tamperRT', rtDS);
                 }
             }
@@ -81,7 +80,7 @@ export default function Table({tableMode}: TableProps) {
             obsRes.map((obs: any) => {
 
                 if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
-                    console.log("ADJ obs ", obs)
+                    // console.log("ADJ obs ", obs)
 
                     let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
                     let laneEntry = laneMapRef.current.get(laneName);
@@ -181,7 +180,15 @@ export default function Table({tableMode}: TableProps) {
             const sortedData = [...eventLogData.data].sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
             eventLogData.setData(sortedData);
             setTableData(eventLogData);
-        } else {
+        } else if (tableMode === "laneview") {
+            let eventLogData = new EventTableDataCollection();
+            eventLogData.setData(eventLogTableData.current);
+            const filteredData = [...eventLogData.data].filter((data) => data.laneId === laneName)
+
+            const sortedData = [...filteredData].sort((a,b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+            eventLogData.setData(sortedData);
+            setTableData(eventLogData);
+        }  else {
             setTableData(new EventTableDataCollection());
         }
     }, [tableMode, data, eventLog]);
@@ -196,6 +203,10 @@ export default function Table({tableMode}: TableProps) {
     } else if (tableMode == "eventlog") {
         return (
             <EventTable eventTable={tableData} viewMenu viewLane viewSecondary viewAdjudicated/>
+        )
+    } else if (tableMode == "laneview") {
+        return (
+            <EventTable eventTable={tableData} />
         )
     } else {
         return (<></>)

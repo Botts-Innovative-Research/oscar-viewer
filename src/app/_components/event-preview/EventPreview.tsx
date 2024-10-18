@@ -245,7 +245,9 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
 
     useEffect(() => {
         const interval = setInterval(async () => {
+
             let currTime = await syncRef.current.getCurrentTime();
+
             if (currentTime !== undefined) {
                 setCurrentTime(currTime);
             }

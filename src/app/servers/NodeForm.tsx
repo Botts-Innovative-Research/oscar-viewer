@@ -10,7 +10,7 @@ import {
     Card,
     Checkbox,
     Container,
-    FormControlLabel,
+    FormControlLabel, Snackbar, SnackbarCloseReason,
     Stack,
     TextField,
     Tooltip,
@@ -26,6 +26,8 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     modeChangeCallback?: (editMode: boolean, editNode: INode) => void
     editNode?: INode
 }) {
+    const [openSnack, setOpenSnack] = useState(false);
+
     const dispatch = useAppDispatch();
     const newNodeOpts: NodeOptions = {
         name: "New Node",
@@ -75,10 +77,13 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         e.preventDefault();
         if (isEditNode) {
             dispatch(updateNode(newNode));
+            console.log('dispatch', dispatch(addNode(newNode)));
             modeChangeCallback(false, null);
         } else {
             dispatch(addNode(newNode));
+            console.log('dispatch', dispatch(addNode(newNode)));
             modeChangeCallback(false, null);
+
         }
     }
 
@@ -86,6 +91,17 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         return <Container><Typography variant="h4" align="center">Loading...</Typography></Container>
     }
 
+
+    const handleCloseSnack = (
+        event: React.SyntheticEvent | Event,
+        reason?: SnackbarCloseReason,
+    ) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+
+        setOpenSnack(false);
+    };
 
     return (
         <Card sx={{margin: 2, width: '100%'}}>
@@ -115,6 +131,12 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                     </FormControlLabel>
                     <Button variant={"contained"} color={"primary"}
                             onClick={handleButtonAction}>{isEditNode ? "Save Changes" : "Add Node"}</Button>
+                    {/*<Snackbar*/}
+                    {/*    open={openSnack}*/}
+                    {/*    autoHideDuration={5000}*/}
+                    {/*    onClose={handleCloseSnack}*/}
+                    {/*    message={'Node Added'}*/}
+                    {/*/>*/}
                     <Button variant={"contained"} color={"secondary"}
                             onClick={() => modeChangeCallback(false, null)}>Cancel</Button>
                 </Stack>
