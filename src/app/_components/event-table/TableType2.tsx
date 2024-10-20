@@ -24,11 +24,13 @@ import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {
     addEventToLog,
-    selectEventTableData,
+    selectEventTableData, selectEventTableDataArray,
     selectHasFetched,
     setEventLogData, setHasFetchedInitial,
     setSelectedEvent
 } from "@/lib/state/EventDataSlice";
+import {TableDataManager} from "@/lib/data/TableDataManager";
+import {setInterval} from "next/dist/compiled/@edge-runtime/primitives";
 
 
 interface TableProps {
@@ -61,12 +63,10 @@ export default function Table2({
                                }: TableProps) {
     // const laneMap = useSelector((state: RootState) => selectLaneMap(state))
     // const [tableData, setTableData] = useState<EventTableData[]>([]);
-    const tableData = useSelector((state: RootState) => selectEventTableData(state))
+    const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
     const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
     const [selectionModel, setSelectionModel] = useState([]); // Currently selected row
-    const hasFetched = useSelector((state:RootState)=> selectHasFetched(state));
     const dispatch = useAppDispatch();
-
 
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
@@ -75,40 +75,48 @@ export default function Table2({
             return;
         }
         let obsCollection = await occDS.searchObservations(observationFilter, 250000);
-        let observations = await handleObservations(obsCollection, laneEntry);
+        let observations = await handleObservations(obsCollection, laneEntry, false);
         return observations;
     }
 
     async function streamObservations(laneEntry: LaneMapEntry) {
-        const observationFilter = new ObservationFilter({resultTime: `${new Date().toISOString()}/..`});
+        // const observationFilter = new ObservationFilter({resultTime: `${new Date().toISOString()}/..`});
         let futureTime = new Date();
         futureTime.setFullYear(futureTime.getFullYear() + 1);
         let occDS: typeof DataStream = laneEntry.findDataStreamByName("Driver - Occupancy");
         if (!occDS) return;
-        // console.log("Real-time Datasource", occDS);
         occDS.streamObservations(new ObservationFilter({
-            resultTime: `now/${futureTime.toISOString()}`,
-            replaySpeed: 1
+            resultTime: `now/${futureTime.toISOString()}`
         }), (observation: any) => {
-            // console.log("Real-time Observation", observation)
             let resultEvent = eventFromObservation(observation[0], laneEntry);
-            // console.log("[EVT] Real-time EventTableData", resultEvent, tableData);
-            // let newTableData = [...tableData, resultEvent];
-            // setTableData(newTableData);
-            // setTableData((prevState) => [...prevState, resultEvent]);
+            console.log("[EVT] Real-time EventTableData", resultEvent, tableData);
             dispatch(addEventToLog(resultEvent));
 
         })
     }
 
-    async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry): Promise<EventTableData[]> {
+    /*function streamObservations2(occDS: typeof DataStream, laneEntry: LaneMapEntry) {
+        let futureTime = new Date();
+        futureTime.setFullYear(futureTime.getFullYear() + 1);
+
+        occDS.streamObservations(new ObservationFilter({
+            resultTime: `now/${futureTime.toISOString()}`,
+            replaySpeed: 1
+        }), (observation: any) => {
+            let resultEvent = eventFromObservation(observation[0], laneEntry);
+            dispatch(addEventToLog(resultEvent));
+        })
+    }*/
+
+    async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<EventTableData[]> {
         let observations: EventTableData[] = [];
         while (obsCollection.hasNext()) {
             let obsResults = await obsCollection.nextPage();
             obsResults.map((obs: any) => {
                 let result = eventFromObservation(obs, laneEntry);
                 observations.push(result);
-                dispatch(addEventToLog(result));
+                // when fetching, this operation is a bit too costly so we probably want to just set the table with all the results we've collected
+                if (addToLog) dispatch(addEventToLog(result));
             })
         }
         return observations;
@@ -124,7 +132,7 @@ export default function Table2({
     }
 
     async function doFetch(laneMap: Map<string, LaneMapEntry>) {
-        // let allFetchedResults: EventTableData[] = [];
+        let allFetchedResults: EventTableData[] = [];
         let promiseGroup: Promise<void>[] = [];
         // createDatastreams(laneMap)
         laneMap.forEach((entry: LaneMapEntry, laneName: string) => {
@@ -132,13 +140,14 @@ export default function Table2({
                 let startTimeForObs = new Date();
                 startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
                 await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
-                // let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
-                // allFetchedResults = [...allFetchedResults, ...fetchedResults];
+                let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
+                allFetchedResults = [...allFetchedResults, ...fetchedResults];
             })();
             promiseGroup.push(promise);
         });
         await Promise.all(promiseGroup);
         // setTableData(allFetchedResults);
+        dispatch(setEventLogData(allFetchedResults))
     }
 
     function doStream(laneMap: Map<string, LaneMapEntry>) {
@@ -171,6 +180,7 @@ export default function Table2({
 
 
     useEffect(() => {
+        // collectDatastreams();
         // doFetch(laneMap);
         dataStreamSetup(laneMap);
     }, [laneMap]);
@@ -180,13 +190,22 @@ export default function Table2({
         doStream(laneMap);
     }, [laneMap]);
 
+    // useEffect(() => {
+    //     doStream(laneMap);
+    // }, [rtDataStreams]);
+
+    // useEffect(() => {
+    //     setInterval(doFetch(laneMap, 10000));
+    // }, []);
+
     useEffect(() => {
+        console.log("Table Log Updated")
         // console.log('[EVT] Table Data Updated', tableData)
         let filteredData: EventTableData[] = [];
         if (tableMode === 'alarmtable') {
             filteredData = unadjudicatedFilteredList(onlyAlarmingFilteredList(tableData))
         } else if (tableMode === 'eventlog') {
-            if(laneMap.size === 1) {
+            if (laneMap.size === 1) {
                 const laneId = Array.from(laneMap.keys())[0];
                 filteredData = onlyLaneFilteredList(tableData, laneId)
             }

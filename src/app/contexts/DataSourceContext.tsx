@@ -9,6 +9,7 @@ import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARClientSlice";
 import {RootState} from "@/lib/state/Store";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
+import {setEventLogData} from "@/lib/state/EventDataSlice";
 
 interface IDataSourceContext {
     laneMapRef: MutableRefObject<Map<string, LaneMapEntry>> | undefined
@@ -96,8 +97,8 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
     }, [nodes]);
 
-    useEffect(() => {
-        if (laneMap.size > 0) {
+    /*useEffect(() => {
+       /!* if (laneMap.size > 0) {
             console.log("LaneMap After Update:", laneMap);
             if (laneMap.has("lane1")) {
                 let ds: LaneMapEntry = laneMap.get("lane1")
@@ -107,8 +108,8 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
                 let test = ds.datastreams[0].stream();
                 console.log("LaneMap test DS stream:", test);
             }
-        }
-    }, [laneMap]);
+        }*!/
+    }, [laneMap]);*/
 
     useEffect(() => {
         testSysFetch();
@@ -119,6 +120,26 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     useEffect(() => {
         InitializeApplication();
     }, [InitializeApplication]);
+
+    function updateTableData(shouldAddPerEntry: boolean, observations: any){
+        dispatch(setEventLogData(observations))
+        /*if (shouldAddPerEntry){
+            observations.forEach((obs: any)=>{
+                dispatch(addEventToLog(obs))
+            })
+        }else{
+            dispatch(setEventLogData(observations))
+        }*/
+    }
+
+   /* useEffect(() => {
+        // when laneMap changes do a fetch and start streaming data
+        // need to implement a set of checks that will clean up and stop streaming
+        let tableDataManager = new TableDataManager(updateTableData);
+        tableDataManager.doFetch(laneMap);
+        tableDataManager.doStream(laneMap);
+    }, [laneMap]);*/
+
 
     return (
         <DataSourceContext.Provider value={{laneMapRef}}>
