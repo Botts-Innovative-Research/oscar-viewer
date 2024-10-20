@@ -7,7 +7,6 @@ import LaneStatus from "../_components/dashboard/LaneStatus";
 import {useMemo} from "react";
 import Table from "../_components/event-table/Table";
 import dynamic from "next/dynamic";
-import Table2 from "@/app/_components/event-table/TableType2";
 
 export default function DashboardPage() {
 

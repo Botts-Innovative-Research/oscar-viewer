@@ -1,19 +1,17 @@
 "use client";
 
 import {Box, Grid, IconButton, Pagination, Stack, Typography} from '@mui/material';
-import {useCallback, useContext, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useContext, useEffect, useRef, useState} from 'react';
 
 import { useSelector } from 'react-redux';
-import { LaneDSColl, LaneMapEntry, LaneMeta } from '@/lib/data/oscar/LaneCollection';
-import { selectLaneMap, selectLanes } from '@/lib/state/OSCARClientSlice';
+import { LaneDSColl, LaneMapEntry } from '@/lib/data/oscar/LaneCollection';
+import { selectLaneMap } from '@/lib/state/OSCARClientSlice';
 import { RootState } from '@/lib/state/Store';
 import VideoStatusWrapper from '../video/VideoStatusWrapper';
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
 import {DataSourceContext} from '../../contexts/DataSourceContext';
-import VideoGrid from './VideoGrid';
+import VideoCarousel from '../video/VideoCarousel';
 
-
-//since a
 
 interface LaneWithVideo {
   laneName: string,
@@ -35,7 +33,7 @@ export default function CameraGrid() {
 
   // Create and connect videostreams
   useEffect(() => {
-    if(videoList == null || videoList.length == 0 && laneMap.size > 0) {
+    if(videoList == null || videoList.length == 0 && laneMap.size > 0 && dsVideo.length > 0) {
       let videos: LaneWithVideo[] = []
 
       laneMap.forEach((value, key) => {
@@ -155,8 +153,36 @@ export default function CameraGrid() {
     })
   };
 
-  // DELETE ABOVE ON PRODUCTION
-  const maxItems = 4; // Max number of videos per page
+  useEffect(() => {
+    async function checkConnections() {
+      if(videoList != null && videoList.length > 0) {
+        // Connect to currently shown videostreams
+        videoList.slice(startItem, endItem).forEach(async (video) => {
+          const isConnected = await video.videoSources[0].isConnected();
+          if(!isConnected) {
+            video.videoSources[0].connect();
+          }
+        });
+
+        // Disconnect other videostreams
+        videoList.forEach(async (video, index) => {
+          if(index < startItem || index >= endItem && video && video.videoSources[0]) {
+            const isConnected = await video.videoSources[0].isConnected();
+            if(isConnected) {
+              video.videoSources[0].disconnect();
+            }
+          }
+        });
+      }
+    }
+
+    checkConnections();
+
+  }, [videoList]);
+
+
+
+  const maxItems = 6; // Max number of videos per page
   const [page, setPage] = useState(1);  // Page currently selected
   const [startItem, setStartItem] = useState(0);  // Current start of range
   const [endItem, setEndItem] = useState(maxItems); // Current end of range
@@ -175,11 +201,10 @@ export default function CameraGrid() {
 
               {videoList.slice(startItem, endItem).map((lane) => (
                   <VideoStatusWrapper key={idVal.current++} laneName={lane.laneName} status={lane.status}>
-                    <VideoGrid laneName={lane.laneName} videoSources={lane.videoSources}/>
+                    <VideoCarousel laneName={lane.laneName} videoSources={lane.videoSources}/>
                   </VideoStatusWrapper>
+
               ))}
-
-
               <Grid item xs={12} display={"flex"} justifyContent={"center"}>
                 <Pagination count={Math.ceil(videoList.length / maxItems)} page={page} onChange={handleChange} color="primary" showFirstButton showLastButton/>
               </Grid>

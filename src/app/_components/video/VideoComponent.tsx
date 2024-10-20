@@ -6,6 +6,7 @@ import VideoDataLayer from 'osh-js/source/core/ui/layer/VideoDataLayer';
 import Box from "@mui/material/Box/Box";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
 
+
 interface OSHVideoProps {
     currentPage: number,
     id: string
@@ -39,6 +40,6 @@ export default function VideoComponent(props: OSHVideoProps) {
     }, []);
 
     return (
-        <Box id={props.id} style={{ width: "100%", height: "100%", }}/>
+        <Box id={props.id} style={{ width: "100%", height: "100%" }}></Box>
     )
 }

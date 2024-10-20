@@ -20,13 +20,17 @@ import React, {useEffect, useState} from "react";
 import {addNode, updateNode} from "@/lib/state/OSHSlice";
 import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
 import {useAppDispatch} from "@/lib/state/Hooks";
+import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
+import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 
 export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     isEditNode: boolean,
     modeChangeCallback?: (editMode: boolean, editNode: INode) => void
     editNode?: INode
 }) {
+
     const [openSnack, setOpenSnack] = useState(false);
+    const[nodeSnackMsg, setNodeSnackMsg] = useState("");
 
     const dispatch = useAppDispatch();
     const newNodeOpts: NodeOptions = {
@@ -70,11 +74,14 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         } else {
             (tNode as any)[name] = value;
         }
+
         setNewNode(tNode);
+
     };
 
-    const handleButtonAction = (e: React.FormEvent) => {
+    const handleButtonAction = async (e: React.FormEvent) => {
         e.preventDefault();
+
         if (isEditNode) {
             dispatch(updateNode(newNode));
             console.log('dispatch', dispatch(addNode(newNode)));
@@ -85,6 +92,8 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
             modeChangeCallback(false, null);
 
         }
+        await checkReachable(newNode)
+        setOpenSnack(true)
     }
 
     if (!newNode) {
@@ -102,6 +111,21 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
         setOpenSnack(false);
     };
+
+     async function checkReachable(node: any){
+         const endpoint = `${node.getConnectedSystemsEndpoint()}`;
+
+         try {
+             const response = await fetch(endpoint);
+             if (!response.ok) {
+                 setNodeSnackMsg('Node is unreachable. Check your node.');
+             } else {
+                 setNodeSnackMsg('Node is reachable.');
+             }
+         } catch (error) {
+             setNodeSnackMsg('Node is unreachable. Check your node.');
+         }
+    }
 
     return (
         <Card sx={{margin: 2, width: '100%'}}>
@@ -131,12 +155,12 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                     </FormControlLabel>
                     <Button variant={"contained"} color={"primary"}
                             onClick={handleButtonAction}>{isEditNode ? "Save Changes" : "Add Node"}</Button>
-                    {/*<Snackbar*/}
-                    {/*    open={openSnack}*/}
-                    {/*    autoHideDuration={5000}*/}
-                    {/*    onClose={handleCloseSnack}*/}
-                    {/*    message={'Node Added'}*/}
-                    {/*/>*/}
+                    <Snackbar
+                        open={openSnack}
+                        autoHideDuration={5000}
+                        onClose={handleCloseSnack}
+                        message={nodeSnackMsg}
+                    />
                     <Button variant={"contained"} color={"secondary"}
                             onClick={() => modeChangeCallback(false, null)}>Cancel</Button>
                 </Stack>

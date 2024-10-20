@@ -30,7 +30,6 @@ export default function ChartLane(props: ChartInterceptProps){
     const [neutronChartID, setNeutronChartID] = useState<string>("");
 
     const [thresholdCurve, setThresholdCurve] = useState<typeof CurveLayer>();
-    const [sigmaCurve, setSigmaCurve] = useState<typeof CurveLayer>();
     const [gammaCurve, setGammaCurve] = useState<typeof CurveLayer>();
     const [neutronCurve, setNeutronCurve] = useState<typeof CurveLayer>();
 
@@ -53,27 +52,6 @@ export default function ChartLane(props: ChartInterceptProps){
 
             });
             setThresholdCurve(tCurve);
-
-            const sCurve = new CurveLayer({
-                dataSourceIds: props.thresholdDatasources.map((ds) => ds.id),
-                name: "Sigma",
-                backgroundColor: "#ab47bc",
-                lineColor: '#ab47bc',
-                xLabel: 'Time',
-                yLabel: 'CPS',
-
-                getValues: (rec: any, timestamp: any) => ({x: timestamp, y: rec.sigma}),
-
-            });
-            setSigmaCurve(sCurve);
-
-            const timeCurve = new CurveLayer({
-                dataSourceIds: props.thresholdDatasources.map((ds) => ds.id),
-                getValues: () => {
-                    return {x: 0}
-                },
-                name: "Current Time"
-            });
         }
 
         if(props.gammaDatasources.length > 0){
@@ -127,17 +105,14 @@ export default function ChartLane(props: ChartInterceptProps){
 
     const checkForMountableAndCreateCharts = useCallback(() => {
 
-        if (!gammaChartViewRef.current && !isReadyToRender && thresholdCurve || gammaCurve || sigmaCurve) {
+        if (!gammaChartViewRef.current && !isReadyToRender && thresholdCurve || gammaCurve) {
             console.log("Creating Gamma Chart:", thresholdCurve, gammaCurve);
 
             const container = document.getElementById(gammaChartID);
             let layers: any[] =[];
-            if(thresholdCurve && gammaCurve && sigmaCurve){
-                layers.push(thresholdCurve)
-                layers.push(gammaCurve)
-                layers.push(sigmaCurve)
-
-            }else if(gammaCurve && !thresholdCurve && !sigmaCurve){
+            if(thresholdCurve && gammaCurve){
+                layers.push(thresholdCurve, gammaCurve)
+            }else if(gammaCurve && !thresholdCurve){
                 layers.push(gammaCurve)
             }
 
