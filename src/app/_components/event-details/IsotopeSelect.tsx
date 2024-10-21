@@ -44,7 +44,8 @@ const isotopeChoices=[
     "Xenon",
     "Potassium",
     "Radium",
-    "Thorium"
+    "Thorium",
+    "Unknown"
 ]
 
 export default function IsotopeSelect(props: {

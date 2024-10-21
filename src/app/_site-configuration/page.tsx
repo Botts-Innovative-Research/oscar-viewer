@@ -1,6 +1,17 @@
-import { Button, Checkbox, FormControlLabel, FormGroup, Stack, TextField, Typography } from "@mui/material";
+import {
+    Button,
+    Checkbox,
+    FormControlLabel,
+    FormGroup,
+    Stack,
+    TextField,
+    Typography
+} from "@mui/material";
+
 
 export default function SiteConfiguration() {
+
+
   return (
     <Stack spacing={2}>
       <Typography variant="h4">Site Configuration</Typography>

@@ -20,7 +20,6 @@ body {
 div.video-stream {
     width: 99%;
     height: 99%;
-    /*border: 1px solid #dee2e6;*/
     resize: none;
     overflow: hidden;
     margin: auto;
@@ -32,6 +31,3 @@ div.video-stream canvas {
     height: calc(100% - 10px);
 }
 
-chart-view-gamma{
-
-}

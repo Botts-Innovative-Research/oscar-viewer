@@ -13,6 +13,8 @@
  *
  */
 
+import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
+
 /**
  * Retrieves the value of a nested property from the given object
  * @param obj The object being mined for data

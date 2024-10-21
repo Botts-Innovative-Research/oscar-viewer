@@ -3,11 +3,12 @@
 import {Box, Grid } from "@mui/material";
 import { SelectedEvent } from "../../../../types/new-types";
 import VideoGrid from "./VideoGrid";
-import {useCallback, useContext, useEffect, useState} from "react";
+import {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import ChartLane from "@/app/_components/lane-view/ChartLane";
+import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 
 
 export default function Media(props: {
@@ -18,9 +19,13 @@ export default function Media(props: {
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
     const [gammaDatasources, setGammaDS] = useState<any[]>([]);
     const [neutronDatasources, setNeutronDS] = useState<any[]>([]);
-    const [occDatasources, setOccDS] = useState<any[]>([]);
     const [thresholdDatasources, setThresholdDS] = useState<any[]>([]);
     const [chartReady, setChartReady] = useState<boolean>(false);
+
+
+    const syncRef = useRef<typeof DataSynchronizer>();
+    const [dataSyncCreated, setDataSyncCreated] = useState<boolean>(false);
+    const [dataSyncReady, setDataSyncReady] = useState<boolean>(false);
 
 
     const datasourceSetup = useCallback(async () => {
@@ -44,20 +49,17 @@ export default function Media(props: {
                         laneDSColl?.addDS('gammaRT', rtDS);
                         setGammaDS(prevState => [...prevState, rtDS]);
                     }
-
                     if (ds.properties.name.includes('Driver - Neutron Count')) {
                         laneDSColl?.addDS('neutronRT', rtDS);
                         setNeutronDS(prevState => [...prevState, rtDS]);
                     }
-
                     if (ds.properties.name.includes('Driver - Gamma Threshold')) {
                         laneDSColl?.addDS('gammaTrshldRT', rtDS);
                         setThresholdDS(prevState => [...prevState, rtDS]);
                     }
-
                     if (ds.properties.name.includes('Driver - Occupancy')) {
+                        rtDS.connect();
                         laneDSColl?.addDS('occRT', rtDS);
-                        setOccDS(prevState => [...prevState, rtDS]);
                     }
 
                 }
@@ -69,25 +71,51 @@ export default function Media(props: {
     useEffect(() => {
         datasourceSetup();
     }, [laneMapRef.current]);
+
+
+    // const createDataSync = useCallback(() =>{
+    //     if(!syncRef.current && !dataSyncCreated && gammaDatasources.length> 0){
+    //        syncRef.current = new DataSynchronizer({
+    //            timerResolution: 5,
+    //            dataSources: gammaDatasources,
+    //            replaySpeed: 1.0
+    //         })
+    //
+    //         setDataSyncCreated(true);
+    //     }
+    // },[gammaDatasources, syncRef, dataSyncCreated])
+
+    // useEffect(() => {
+    //     createDataSync();
+    // }, [gammaDatasources, neutronDatasources, thresholdDatasources, syncRef, dataSyncCreated]);
+
+
     useEffect(() => {
-        gammaDatasources.forEach(ds => {
-            console.log('ds', ds)
-            ds.connect();
-        });
-        neutronDatasources.forEach(ds => {
-            ds.connect();
-        });
-        thresholdDatasources.forEach(ds => {
-            ds.connect();
-        });
-    }, [gammaDatasources, neutronDatasources, thresholdDatasources]);
+        if(chartReady){
+            gammaDatasources.forEach(ds => {
+                ds.connect();
+            });
+            neutronDatasources.forEach(ds => {
+                ds.connect();
+            });
+            thresholdDatasources.forEach(ds => {
+                ds.connect();
+            });
+            // syncRef.current.connect();
+        }
+
+    }, [thresholdDatasources, gammaDatasources, neutronDatasources, syncRef, dataSyncReady, dataSyncCreated, chartReady]);
 
 
     return (
         <Box sx={{flexGrow: 1, overflowX: "auto"}}>
             <Grid container direction="row" spacing={2} justifyContent={"center"} alignItems={"center"}>
                 <Grid item xs={12} sm={6}>
-                    <ChartLane  laneName={props.laneName} setChartReady={setChartReady} occDatasources={occDatasources} gammaDatasources={gammaDatasources} neutronDatasources={neutronDatasources} thresholdDatasources={thresholdDatasources} />
+                    <ChartLane  laneName={props.laneName} setChartReady={setChartReady}  datasources={{
+                        gamma: gammaDatasources[0],
+                        neutron: neutronDatasources[0],
+                        threshold: thresholdDatasources[0]
+                    }}/>
                 </Grid>
                 <Grid item xs>
                     <VideoGrid laneName={props.laneName}/>
