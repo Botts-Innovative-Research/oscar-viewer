@@ -84,29 +84,18 @@ export default function Table2({
         let futureTime = new Date();
         futureTime.setFullYear(futureTime.getFullYear() + 1);
         let occDS: typeof DataStream = laneEntry.findDataStreamByName("Driver - Occupancy");
-        if (!occDS) return;
+        // if (!occDS) return;
         occDS.streamObservations(new ObservationFilter({
             resultTime: `now/${futureTime.toISOString()}`
         }), (observation: any) => {
+            console.log("[evt] real-time observation found", observation, laneEntry.laneName);
             let resultEvent = eventFromObservation(observation[0], laneEntry);
-            console.log("[EVT] Real-time EventTableData", resultEvent, tableData);
+            // console.log("[EVT] Real-time EventTableData", resultEvent, tableData);
+            console.log("[EVT] Real-time EventTableData", observation, resultEvent);
             dispatch(addEventToLog(resultEvent));
 
         })
     }
-
-    /*function streamObservations2(occDS: typeof DataStream, laneEntry: LaneMapEntry) {
-        let futureTime = new Date();
-        futureTime.setFullYear(futureTime.getFullYear() + 1);
-
-        occDS.streamObservations(new ObservationFilter({
-            resultTime: `now/${futureTime.toISOString()}`,
-            replaySpeed: 1
-        }), (observation: any) => {
-            let resultEvent = eventFromObservation(observation[0], laneEntry);
-            dispatch(addEventToLog(resultEvent));
-        })
-    }*/
 
     async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<EventTableData[]> {
         let observations: EventTableData[] = [];
