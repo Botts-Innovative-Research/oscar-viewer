@@ -10,11 +10,11 @@ import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
 import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView.js";
-import CurveLayer from 'osh-js/source/core/ui/layer/CurveLayer.js';
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import annotationPlugin from 'chartjs-plugin-annotation';
 import {Chart, registerables} from 'chart.js';
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
+import {createGammaViewCurve, createNeutronViewCurve, createThresholdViewCurve } from "@/app/utils/ChartUtils";
 
 Chart.register(...registerables, annotationPlugin);
 
@@ -39,71 +39,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     const [gammaChartView, setGammaChartView] = useState<any>();
     const [neutronChartView, setNeutronChartView] = useState<any>();
 
-    function createGammaViewCurve(gammaDatasource: { id: any; }) {
-        if (!gammaDatasource) return null;
-
-        let gCurve = new CurveLayer({
-            dataSourceIds: [gammaDatasource.id],
-            getValues: (rec: any, timestamp: any) => {
-                if (rec.gammaGrossCount !== undefined) {
-                    return { x: timestamp, y: rec.gammaGrossCount };
-                }
-                else if (rec.gammaCount1 !== undefined) {
-                    return { x: timestamp, y: rec.gammaCount1 };
-                }
-            },
-            name: "Gamma Count",
-            lineColor: "red",
-            backgroundColor: "red"
-        });
-
-        return gCurve;
-    }
-
-    function createNeutronViewCurve(neutronDatasource: { id: any; }) {
-        if (!neutronDatasource) return null;
-
-        let nCurve = new CurveLayer({
-            dataSourceIds: [neutronDatasource.id],
-            getValues: (rec: any, timestamp: any) => {
-                if(rec.neutronGrossCount !== undefined){
-                    return {x: timestamp, y: rec.neutronGrossCount}
-                }
-                else if(rec.neutronCount1 !== undefined){
-                    return {x: timestamp, y: rec.neutronCount1 }
-                }
-            },
-            name: 'Neutron Count',
-            lineColor: "blue",
-            backgroundColor: "blue"
-        });
-
-        return nCurve;
-    }
-
-    function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
-        if (!thresholdDatasource) return null;
-
-        let thresholdCurve = new CurveLayer({
-            dataSourceIds: [thresholdDatasource.id],
-            getValues: (rec: any, timestamp: any) => ({x: timestamp, y: rec.threshold}),
-            name: "Gamma Threshold"
-        });
-
-        return thresholdCurve;
-    }
-
-    function createOccupancyViewCurve(occDatasource: { id: any; }) {
-        if (!occDatasource) return null;
-
-        let occCurve = new CurveLayer({
-            dataSourceIds: [occDatasource.id],
-            getValues: (rec: any, timestamp: any) => ({x: timestamp, y: rec.occupancy}),
-            name: "Occupancy"
-        });
-
-        return occCurve;
-    }
 
     function createCurveLayersAndReturn() {
         let tCurve = createThresholdViewCurve(props.datasources.threshold);
@@ -163,7 +98,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 newChartViews.neutron = neutronChart;
                 setNeutronChartView(neutronChart);
             }
-            // }
         }
         return newChartViews;
     }

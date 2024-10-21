@@ -6,13 +6,16 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
 import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView";
+import {
+    createGammaSigmaCalcViewCurve,
+    createGammaViewCurve,
+    createNeutronViewCurve,
+    createThresholdViewCurve
+} from "@/app/utils/ChartUtils";
 
 export class ChartInterceptProps {
     laneName: string;
-    gammaDatasources: typeof SweApi[];
-    neutronDatasources: typeof SweApi[];
-    occDatasources: typeof SweApi[];
-    thresholdDatasources: typeof SweApi[];
+    datasources: { gamma: typeof SweApi, neutron: typeof SweApi, threshold: typeof SweApi };
     setChartReady: Function;
 }
 
@@ -26,11 +29,12 @@ export default function ChartLane(props: ChartInterceptProps){
     const gammaChartBaseId = "chart-view-gamma";
     const neutronChartBaseId = "chart-view-neutron";
 
-    const [gammaChartID, setGammaChartID] = useState<string>("");
-    const [neutronChartID, setNeutronChartID] = useState<string>("");
+    const [gammaChartID, setGammaChartID] = useState<string>(gammaChartBaseId);
+    const [neutronChartID, setNeutronChartID] = useState<string>(neutronChartBaseId);
 
     const [thresholdCurve, setThresholdCurve] = useState<typeof CurveLayer>();
     const [gammaCurve, setGammaCurve] = useState<typeof CurveLayer>();
+    const [gammaSigmaCurve, setGammaSigmaCurve] = useState<typeof CurveLayer>();
     const [neutronCurve, setNeutronCurve] = useState<typeof CurveLayer>();
 
     const gammaChartViewRef = useRef<typeof ChartJsView | null>(null);
@@ -38,70 +42,27 @@ export default function ChartLane(props: ChartInterceptProps){
 
 
     const createCurveLayers = useCallback(() =>{
+        // if(props.datasources.threshold){
+        //     let tCurve = createThresholdViewCurve(props.datasources.threshold);
+        //     setThresholdCurve(tCurve);
+        // }
 
-        if(props.thresholdDatasources.length > 0){
-            const tCurve = new CurveLayer({
-                dataSourceIds: props.thresholdDatasources.map((ds) => ds.id),
-                name: "Gamma Threshold",
-                // backgroundColor: "#ab47bc",
-                // lineColor: '#ab47bc',
-                xLabel: 'Time',
-                yLabel: 'CPS',
-
-                getValues: (rec: any, timestamp: any) => ({x: timestamp, y: rec.threshold}),
-
-            });
-            setThresholdCurve(tCurve);
+        if(props.datasources.gamma && props.datasources.threshold){
+            let sCurve = createGammaSigmaCalcViewCurve(props.datasources.gamma, props.datasources.threshold);
+            // let gCurve = createGammaViewCurve(props.datasources.gamma);
+            setGammaSigmaCurve(sCurve);
         }
-
-        if(props.gammaDatasources.length > 0){
-            console.log(props.gammaDatasources)
-            const gCurve = new CurveLayer({
-                dataSourceIds: props.gammaDatasources.map((ds) => ds.id),
-                name: "Gamma Plot",
-                backgroundColor: "#f44336",
-                lineColor: "#f44336",
-                xLabel: 'Time',
-                yLabel: 'CPS',
-                maxValues: 100,
-                getValues: (rec: any, timestamp: any) => {
-                    if (rec.gammaGrossCount !== undefined) {
-                        return { x: timestamp, y: rec.gammaGrossCount };
-                    }
-                    else if (rec.gammaCount1 !== undefined) {
-                        return { x: timestamp, y: rec.gammaCount1 };
-                    }
-                },
-
-            });
+        if(props.datasources.gamma){
+            let gCurve = createGammaViewCurve(props.datasources.gamma);
             setGammaCurve(gCurve);
-
-            console.log(gCurve)
         }
 
-        if(props.neutronDatasources.length > 0){
-            const nCurve = new CurveLayer({
-                dataSourceIds: props.neutronDatasources.map((ds) => ds.id),
-                name: 'Neutron Plot',
-                backgroundColor: "#29b6f6",
-                lineColor: '#29b6f6',
-                xLabel: 'Time',
-                yLabel: 'CPS',
-                maxValues: 100,
-                getValues: (rec: any, timestamp: any) => {
-                    if(rec.neutronGrossCount !== undefined){
-                        return {x: timestamp, y: rec.neutronGrossCount}
-                    }
-                    else if(rec.neutronCount1 !== undefined){
-                        return {x: timestamp, y: rec.neutronCount1 }
-                    }
-                },
-
-            });
+        if(props.datasources.neutron){
+            let nCurve = createNeutronViewCurve(props.datasources.neutron);
             setNeutronCurve(nCurve);
         }
 
-    },[props]);
+    },[props.datasources]);
 
     const checkForMountableAndCreateCharts = useCallback(() => {
 
@@ -111,9 +72,10 @@ export default function ChartLane(props: ChartInterceptProps){
             const container = document.getElementById(gammaChartID);
             let layers: any[] =[];
             if(thresholdCurve && gammaCurve){
-                layers.push(thresholdCurve, gammaCurve)
-            }else if(gammaCurve && !thresholdCurve){
+                layers.push(thresholdCurve)
                 layers.push(gammaCurve)
+            }else if(gammaCurve && !thresholdCurve){
+                layers.push(gammaSigmaCurve)
             }
 
             if (container) {
@@ -121,6 +83,38 @@ export default function ChartLane(props: ChartInterceptProps){
                     container: gammaChartID,
                     layers: layers,
                     css: "chart-view",
+                    chartjsProps: {
+                        chartProps: {
+                            scales: {
+                                y:{
+                                    title: {
+                                        display: true,
+                                        text: 'Gamma Sigma'
+                                    },
+                                },
+                                yAxes: [{
+                                    scaleLabel: {
+                                        labelString: "Sigma"
+                                    },
+                                    ticks: {
+                                        maxTicksLimit: 20
+                                    }
+                                }],
+                                xAxes: [{
+                                    scaleLabel: {
+                                        labelString: "Time"
+                                    },
+                                    ticks: {
+                                        maxTicksLimit: 20
+                                    }
+                                }],
+                            },
+                            maintainAspectRatio: false
+                        }
+                    },
+                    datasetsProps: {
+                        backgroundColor: 'rgba(141,242,246, 0.1)'
+                    }
                 });
                 setViewReady(true);
             }
@@ -135,6 +129,32 @@ export default function ChartLane(props: ChartInterceptProps){
                     container: neutronChartID,
                     layers: [neutronCurve],
                     css: "chart-view",
+                    chartjsProps: {
+                        chartProps: {
+                            scales: {
+                                yAxes: [{
+
+                                    scaleLabel: {
+                                        labelString: "CPS"
+                                    },
+                                    ticks: {
+                                        maxTicksLimit: 20
+                                    }
+                                }],
+                                xAxes: [{
+                                    scaleLabel: {
+                                        labelString: "Time"
+                                    },
+                                    ticks: {
+                                        maxTicksLimit: 20
+                                    }
+                                }],
+                            },
+                            maintainAspectRatio: true
+                        }
+                    }, datasetsProps: {
+                        backgroundColor: 'rgba(141,242,246, 0.1)'
+                    }
                 });
                 setViewReady(true);
             }
@@ -171,26 +191,16 @@ export default function ChartLane(props: ChartInterceptProps){
         }
     }, [isReadyToRender]);
 
-    const updateChartElIds = useCallback(() => {
-
-        setGammaChartID(gammaChartBaseId);
-        setNeutronChartID(neutronChartBaseId);
-
-    }, []);
-
-    useEffect(() => {
-        updateChartElIds();
-    }, [props]);
 
     const checkForProvidedDataSources = useCallback(() => {
         console.log("[CI] Checking for provided data sources...");
-        if (!props.gammaDatasources || !props.neutronDatasources || !props.thresholdDatasources) {
+        if (!props.datasources) {
             console.warn("No DataSources provided for ChartTimeHighlight");
             return false;
         } else {
             return true;
         }
-    }, [props.gammaDatasources, props.neutronDatasources, props.thresholdDatasources]);
+    }, [props.datasources]);
 
 
     return (
