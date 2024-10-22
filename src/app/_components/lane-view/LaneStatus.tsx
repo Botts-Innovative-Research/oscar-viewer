@@ -31,7 +31,7 @@ export default function LaneStatus(props: LaneStatusProps) {
           let laneDSColl = laneDSMap.get(laneid);
 
 
-          if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-count")){
+          if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
 
             laneDSColl.addDS('gammaRT', rtDS);
           }
@@ -56,7 +56,6 @@ export default function LaneStatus(props: LaneStatusProps) {
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
         const state = message.values[0].data.alarmState;
-        console.log(state)
         updateStatus(laneName, state);
       });
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
@@ -82,15 +81,12 @@ export default function LaneStatus(props: LaneStatusProps) {
   }, [dataSourcesByLane]);
 
   function updateStatus(laneName: string, newState: string){
-    // if(laneName === props.laneName){
       const newStatus: LaneStatusType ={
         id: idVal.current++,
         name: laneName,
         status: newState
       }
       setLaneStatus(newStatus);
-    // }
-
   }
 
   return (

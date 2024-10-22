@@ -32,7 +32,6 @@ export default function ChartLane(props: ChartInterceptProps){
     const [gammaChartID, setGammaChartID] = useState<string>(gammaChartBaseId);
     const [neutronChartID, setNeutronChartID] = useState<string>(neutronChartBaseId);
 
-    const [thresholdCurve, setThresholdCurve] = useState<typeof CurveLayer>();
     const [gammaCurve, setGammaCurve] = useState<typeof CurveLayer>();
     const [gammaSigmaCurve, setGammaSigmaCurve] = useState<typeof CurveLayer>();
     const [neutronCurve, setNeutronCurve] = useState<typeof CurveLayer>();
@@ -42,20 +41,19 @@ export default function ChartLane(props: ChartInterceptProps){
 
 
     const createCurveLayers = useCallback(() =>{
-        // if(props.datasources.threshold){
-        //     let tCurve = createThresholdViewCurve(props.datasources.threshold);
-        //     setThresholdCurve(tCurve);
-        // }
 
-        if(props.datasources.gamma && props.datasources.threshold){
-            let sCurve = createGammaSigmaCalcViewCurve(props.datasources.gamma, props.datasources.threshold);
-            // let gCurve = createGammaViewCurve(props.datasources.gamma);
-            setGammaSigmaCurve(sCurve);
-        }
         if(props.datasources.gamma){
+
+            if(props.datasources.threshold){
+                let sCurve = createGammaSigmaCalcViewCurve(props.datasources.gamma, props.datasources.threshold);
+                setGammaSigmaCurve(sCurve);
+
+            }
+
             let gCurve = createGammaViewCurve(props.datasources.gamma);
             setGammaCurve(gCurve);
         }
+
 
         if(props.datasources.neutron){
             let nCurve = createNeutronViewCurve(props.datasources.neutron);
@@ -64,57 +62,49 @@ export default function ChartLane(props: ChartInterceptProps){
 
     },[props.datasources]);
 
+
     const checkForMountableAndCreateCharts = useCallback(() => {
 
-        if (!gammaChartViewRef.current && !isReadyToRender && thresholdCurve || gammaCurve) {
-            console.log("Creating Gamma Chart:", thresholdCurve, gammaCurve);
+        if (!gammaChartViewRef.current && !isReadyToRender && (gammaSigmaCurve || gammaCurve)) {
+            console.log("Creating Gamma Chart:", gammaSigmaCurve, gammaCurve);
 
             const container = document.getElementById(gammaChartID);
             let layers: any[] =[];
-            if(thresholdCurve && gammaCurve){
-                layers.push(thresholdCurve)
-                layers.push(gammaCurve)
-            }else if(gammaCurve && !thresholdCurve){
-                layers.push(gammaSigmaCurve)
+
+            if (gammaCurve) {
+                layers.push(gammaCurve);
+            }
+            if (gammaSigmaCurve) {
+                layers.push(gammaSigmaCurve);
             }
 
             if (container) {
                 gammaChartViewRef.current = new ChartJsView({
+                    type: 'line',
                     container: gammaChartID,
                     layers: layers,
-                    css: "chart-view",
-                    chartjsProps: {
-                        chartProps: {
-                            scales: {
-                                y:{
-                                    title: {
-                                        display: true,
-                                        text: 'Gamma Sigma'
-                                    },
-                                },
-                                yAxes: [{
-                                    scaleLabel: {
-                                        labelString: "Sigma"
-                                    },
-                                    ticks: {
-                                        maxTicksLimit: 20
-                                    }
-                                }],
-                                xAxes: [{
-                                    scaleLabel: {
-                                        labelString: "Time"
-                                    },
-                                    ticks: {
-                                        maxTicksLimit: 20
-                                    }
-                                }],
+                    css: "chart-view-lane-view",
+                    options:{
+                        responsive: true,
+                        scales: {
+                            'left-y-axis': {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                ticks: { beginAtZero: true, color: '#f44336' },
+                                grid: {display: false,  drawOnChartArea: false,}
+
                             },
-                            maintainAspectRatio: false
-                        }
+                            'right-y-axis':{
+                                type: 'linear',
+                                display: true,
+                                ticks: { beginAtZero: true, color: '#9b27b0' },
+                                position: 'right',
+                                grid: {display: false,  drawOnChartArea: false,}
+
+                            },
+                        },
                     },
-                    datasetsProps: {
-                        backgroundColor: 'rgba(141,242,246, 0.1)'
-                    }
                 });
                 setViewReady(true);
             }
@@ -150,7 +140,7 @@ export default function ChartLane(props: ChartInterceptProps){
                                     }
                                 }],
                             },
-                            maintainAspectRatio: true
+                            maintainAspectRatio: false
                         }
                     }, datasetsProps: {
                         backgroundColor: 'rgba(141,242,246, 0.1)'
@@ -159,7 +149,7 @@ export default function ChartLane(props: ChartInterceptProps){
                 setViewReady(true);
             }
         }
-    }, [thresholdCurve, gammaCurve, neutronCurve, isReadyToRender]);
+    }, [gammaSigmaCurve, gammaCurve, neutronCurve, isReadyToRender]);
 
     const checkReadyToRender = useCallback(() => {
         if (chartsReady && viewReady) {
@@ -204,7 +194,7 @@ export default function ChartLane(props: ChartInterceptProps){
 
 
     return (
-        <Grid container direction="row" marginTop={2} marginLeft={1} spacing={3}>
+        <Grid container direction="row" marginTop={2} marginLeft={1} spacing={4}>
             <Grid item xs>
                 <div id={gammaChartID} style={{
                     marginBottom: 50,

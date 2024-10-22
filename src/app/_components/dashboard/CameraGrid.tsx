@@ -103,7 +103,13 @@ export default function CameraGrid() {
   }, [laneMapRef.current]);
 
   const addSubscriptionCallbacks = useCallback(() => {
+
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
+      // guard against a lane where there is no video source so we can avoid an error popup
+      if (!videoList.some((lane) => lane.laneName === laneName)) {
+        continue;
+      }
+
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
         const alarmState = message.values[0].data.alarmState;
 

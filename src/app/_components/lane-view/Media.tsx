@@ -23,11 +23,6 @@ export default function Media(props: {
     const [chartReady, setChartReady] = useState<boolean>(false);
 
 
-    const syncRef = useRef<typeof DataSynchronizer>();
-    const [dataSyncCreated, setDataSyncCreated] = useState<boolean>(false);
-    const [dataSyncReady, setDataSyncReady] = useState<boolean>(false);
-
-
     const datasourceSetup = useCallback(async () => {
         // @ts-ignore
         let laneDSMap = new Map<string, LaneDSColl>();
@@ -45,22 +40,20 @@ export default function Media(props: {
 
                     let laneDSColl = laneDSMap.get(laneid);
 
-                    if (ds.properties.name.includes('Driver - Gamma Count')) {
+
+                    if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
                         laneDSColl?.addDS('gammaRT', rtDS);
                         setGammaDS(prevState => [...prevState, rtDS]);
                     }
-                    if (ds.properties.name.includes('Driver - Neutron Count')) {
+                    if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
                         laneDSColl?.addDS('neutronRT', rtDS);
                         setNeutronDS(prevState => [...prevState, rtDS]);
                     }
-                    if (ds.properties.name.includes('Driver - Gamma Threshold')) {
+                    if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/threshold")){
                         laneDSColl?.addDS('gammaTrshldRT', rtDS);
                         setThresholdDS(prevState => [...prevState, rtDS]);
                     }
-                    if (ds.properties.name.includes('Driver - Occupancy')) {
-                        rtDS.connect();
-                        laneDSColl?.addDS('occRT', rtDS);
-                    }
+
 
                 }
                 setDataSourcesByLane(laneDSMap);
@@ -72,39 +65,20 @@ export default function Media(props: {
         datasourceSetup();
     }, [laneMapRef.current]);
 
-
-    // const createDataSync = useCallback(() =>{
-    //     if(!syncRef.current && !dataSyncCreated && gammaDatasources.length> 0){
-    //        syncRef.current = new DataSynchronizer({
-    //            timerResolution: 5,
-    //            dataSources: gammaDatasources,
-    //            replaySpeed: 1.0
-    //         })
-    //
-    //         setDataSyncCreated(true);
-    //     }
-    // },[gammaDatasources, syncRef, dataSyncCreated])
-
-    // useEffect(() => {
-    //     createDataSync();
-    // }, [gammaDatasources, neutronDatasources, thresholdDatasources, syncRef, dataSyncCreated]);
-
-
     useEffect(() => {
-        if(chartReady){
-            gammaDatasources.forEach(ds => {
-                ds.connect();
-            });
-            neutronDatasources.forEach(ds => {
-                ds.connect();
-            });
-            thresholdDatasources.forEach(ds => {
-                ds.connect();
-            });
-            // syncRef.current.connect();
-        }
 
-    }, [thresholdDatasources, gammaDatasources, neutronDatasources, syncRef, dataSyncReady, dataSyncCreated, chartReady]);
+        gammaDatasources.forEach(ds => {
+            ds.connect();
+        });
+        neutronDatasources.forEach(ds => {
+            ds.connect();
+        });
+        thresholdDatasources.forEach(ds => {
+            ds.connect();
+        });
+
+
+    }, [thresholdDatasources, gammaDatasources, neutronDatasources]);
 
 
     return (

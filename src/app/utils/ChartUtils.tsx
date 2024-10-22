@@ -1,4 +1,5 @@
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
+import {useState} from "react";
 
 export function createSigmaViewCurve(thresholdDatasource: { id: any; }) {
     if (!thresholdDatasource) return null;
@@ -48,53 +49,72 @@ export  function createNeutronViewCurve(neutronDatasource: { id: any; }) {
         maxValues: 20,
         backgroundColor: "#29b6f6",
         lineColor: '#29b6f6',
+        xLabel: 'Time',
+        yLabel: 'CPS',
     });
 
     return nCurve;
 }
 
 export  function createGammaSigmaCalcViewCurve(gammaDatasource: { id: any; }, thresholdDatasource: { id: any; }) {
-    if (!gammaDatasource) return null;
+    let bkgCount = 0;
+    let state = ''
+    if (!gammaDatasource && !thresholdDatasource) return null;
 
-    let gCurve = new CurveLayer({
+    let sCurve = new CurveLayer({
         dataSourceIds: [gammaDatasource.id, thresholdDatasource.id],
-        getValues: (rec: any, timestamp: any) => {
-            if (rec.gammaGrossCount !== undefined) {
-                let nsigma= (rec.gammaGrossCount - rec.threshold)/rec.sigma
+        getValues: (rec: any) => {
+
+
+            if(rec.gammaGrossCount && rec.alarmState){
+                bkgCount = rec.gammaGrossCount;
+                state = rec.alarmState
+            }
+
+            if(rec.threshold && rec.sigma && bkgCount != 0 && state === 'Background'){
+
+                const nsigma = (rec.threshold - bkgCount) / rec.sigma;
+
+                console.log('state', state, 'nsigma', nsigma)
 
                 return { x: rec.timestamp, y: nsigma};
             }
-            else if (rec.gammaCount1 !== undefined) {
-
-                return { x: rec.timestamp, y: rec.gammaCount1 };
+            else {
+                return {x:rec.timestamp, y: 0}
             }
         },
-        maxValues: 20,
-        name: "Gamma-Sigma",
-        backgroundColor: "#f44336",
-        lineColor: "#f44336",
+        maxValues: 100,
+        name: "Gamma Sigma",
+        yAxisID: 'right-y-axis',
+        yLabel: 'Sigma',
+        borderWith: 1,
+        backgroundColor: "#9b27b0",
+        lineColor: "#9b27b0",
+
     });
 
-    return gCurve;
+    return sCurve;
 }
+
+
+
 export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
     if (!gammaDatasource) return null;
 
     let gCurve = new CurveLayer({
         dataSourceIds: [gammaDatasource.id],
         getValues: (rec: any, timestamp: any) => {
-            if (rec.gammaGrossCount !== undefined) {
-
-                return { x: timestamp, y: rec.gammaGrossCount };
-            }
-            else if (rec.gammaCount1 !== undefined) {
-                return { x: timestamp, y: rec.gammaCount1 };
-            }
+            return { x: timestamp, y: rec.gammaGrossCount};
         },
-        maxValues: 20,
+        maxValues: 100,
         name: "Gamma Count",
+
+        yAxisID: 'left-y-axis',
+        yLabel: 'CPS',
+        borderWidth: 1,
         backgroundColor: "#f44336",
         lineColor: "#f44336",
+
     });
 
     return gCurve;
