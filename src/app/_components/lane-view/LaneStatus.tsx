@@ -16,29 +16,32 @@ export default function LaneStatus(props: LaneStatusProps) {
   const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
   const [laneStatus, setLaneStatus] = useState<LaneStatusType>();
 
-
   const datasourceSetup = useCallback(async () => {
     // @ts-ignore
     let laneDSMap = new Map<string, LaneDSColl>();
 
     for (let [laneid, lane] of laneMapRef.current.entries()) {
-      laneDSMap.set(laneid, new LaneDSColl());
-      for (let ds of lane.datastreams) {
 
-        let idx: number = lane.datastreams.indexOf(ds);
-        let rtDS = lane.datasourcesRealtime[idx];
-        let laneDSColl = laneDSMap.get(laneid);
+      if(laneid === props.laneName){
+        laneDSMap.set(laneid, new LaneDSColl());
+        for (let ds of lane.datastreams) {
 
-        if (ds.properties.name.includes('Driver - Gamma Count')) {
-          laneDSColl.addDS('gammaRT', rtDS);
-        }
+          let idx: number = lane.datastreams.indexOf(ds);
+          let rtDS = lane.datasourcesRealtime[idx];
+          let laneDSColl = laneDSMap.get(laneid);
 
-        if (ds.properties.name.includes('Driver - Neutron Count')) {
-          laneDSColl.addDS('neutronRT', rtDS);
-        }
 
-        if (ds.properties.name.includes('Driver - Tamper')) {
-          laneDSColl.addDS('tamperRT', rtDS);
+          if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
+
+            laneDSColl.addDS('gammaRT', rtDS);
+          }
+          if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
+            laneDSColl.addDS('neutronRT', rtDS);
+          }
+          if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status")){
+            laneDSColl.addDS('tamperRT', rtDS);
+          }
+
         }
       }
       setDataSourcesByLane(laneDSMap);
@@ -53,7 +56,6 @@ export default function LaneStatus(props: LaneStatusProps) {
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
         const state = message.values[0].data.alarmState;
-
         updateStatus(laneName, state);
       });
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
@@ -65,6 +67,8 @@ export default function LaneStatus(props: LaneStatusProps) {
         const state = message.values[0].data.tamperStatus;
         if (state) {
           updateStatus(laneName, 'Tamper');
+        }else{
+          updateStatus(laneName, 'Clear')
         }
       });
 
@@ -77,14 +81,12 @@ export default function LaneStatus(props: LaneStatusProps) {
   }, [dataSourcesByLane]);
 
   function updateStatus(laneName: string, newState: string){
-    if(laneName === props.laneName){
       const newStatus: LaneStatusType ={
         id: idVal.current++,
         name: laneName,
         status: newState
       }
       setLaneStatus(newStatus);
-    }
   }
 
   return (

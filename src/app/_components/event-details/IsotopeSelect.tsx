@@ -15,6 +15,8 @@ import {
 import {useEffect, useState} from 'react';
 
 const isotopeChoices=[
+    "",
+    "Unknown",
     "Neptunium",
     "Plutonium",
     "Uranium233",
@@ -44,14 +46,14 @@ const isotopeChoices=[
     "Xenon",
     "Potassium",
     "Radium",
-    "Thorium"
+    "Thorium",
 ]
 
 export default function IsotopeSelect(props: {
   onSelect: (value: string[]) => void, // Return selected value
   isotopeValue: string[]
 }) {
-  const [isotope, setIsotope] = useState<string[]>([]); // Adjudication selected value
+  const [isotope, setIsotope] = useState<string[]>([""]); // Adjudication selected value
 
   const handleChange = (event: SelectChangeEvent<typeof isotope>) => {
       // const isotopes = event.target.value;
@@ -59,11 +61,17 @@ export default function IsotopeSelect(props: {
       const {
           target: {value},
       } = event;
-
       let isoValue = typeof value === 'string' ? value.split(', ') : value;
+
+      //if isotope is not known then only can choose that value,
+      if(isoValue.includes('Unknown')){
+          props.onSelect(["Unknown"])
+      }else{
+          props.onSelect(isoValue);
+      }
       console.log("[ISO] Isotope Selected: ", value);
       // setIsotope(isoValue); // Set local isotope
-      props.onSelect(isoValue);
+
   };
 
   return (

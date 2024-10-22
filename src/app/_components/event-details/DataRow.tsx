@@ -24,14 +24,14 @@ export default function DataRow() {
             <Table sx={{minWidth: 650}} aria-label="simple table">
                 <TableHead>
                     <TableRow
-                        sx={{'&:last-child td, &:last-child th': {border: 0, textAlign: "center", fontWeight: "bold"}}}>
+                        sx={{'&:last-child td, &:last-child th': {border: 0, textAlign: "center"}}}>
                         <TableCell align="center">Secondary Inspection</TableCell>
                         <TableCell>Lane ID</TableCell>
                         <TableCell>Occupancy ID</TableCell>
                         <TableCell>Start Time</TableCell>
                         <TableCell>End Time</TableCell>
-                        <TableCell>Max Gamma Count</TableCell>
-                        <TableCell>Max Neutron Count</TableCell>
+                        <TableCell>Max Gamma</TableCell>
+                        <TableCell>Max Neutron</TableCell>
                         <TableCell>Status</TableCell>
                         <TableCell>Adjudicated</TableCell>
                     </TableRow>
@@ -49,7 +49,7 @@ export default function DataRow() {
                             <TableCell>{eventData.endTime}</TableCell>
                             <TableCell>{eventData.maxGamma}</TableCell>
                             <TableCell>{eventData.maxNeutron}</TableCell>
-                            {/*<StatusTableCell status={eventData.status}>{eventData.status}</StatusTableCell>*/}
+                            <StatusTableCell status={eventData.status}>{eventData.status}</StatusTableCell>
                             <TableCell>{eventData.adjudicatedUser}</TableCell>
                         </TableRow>
                     ) : (

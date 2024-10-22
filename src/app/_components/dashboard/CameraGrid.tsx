@@ -1,21 +1,16 @@
 "use client";
 
-import { Grid, Pagination, Typography } from '@mui/material';
-import { useCallback, useContext, useEffect, useState } from 'react';
-import "../../style/cameragrid.css";
+import {Box, Grid, IconButton, Pagination, Stack, Typography} from '@mui/material';
+import React, {useCallback, useContext, useEffect, useRef, useState} from 'react';
+
 import { useSelector } from 'react-redux';
-import { LaneDSColl, LaneMapEntry, LaneMeta } from '@/lib/data/oscar/LaneCollection';
-import CameraGridVideo from '../video/VideoComponent';
-import { selectDatastreams } from '@/lib/state/OSHSlice';
-import { selectLaneMap, selectLanes } from '@/lib/state/OSCARClientSlice';
+import { LaneDSColl, LaneMapEntry } from '@/lib/data/oscar/LaneCollection';
+import { selectLaneMap } from '@/lib/state/OSCARClientSlice';
 import { RootState } from '@/lib/state/Store';
-import VideoComponent from '../video/VideoComponent';
 import VideoStatusWrapper from '../video/VideoStatusWrapper';
-import {EventType} from 'osh-js/source/core/event/EventType';
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
-import { Protocols } from "@/lib/data/Constants";
-import {Mode} from 'osh-js/source/core/datasource/Mode';
 import {DataSourceContext} from '../../contexts/DataSourceContext';
+import VideoCarousel from '../video/VideoCarousel';
 
 
 interface LaneWithVideo {
@@ -24,54 +19,57 @@ interface LaneWithVideo {
   status: string,
 }
 
-/* TODO
-If lane has multiple videostreams, just use one or
-implement ability to switch between videostreams
-*/
+
 export default function CameraGrid() {
-  const lanes: LaneMeta[] = useSelector(selectLanes);
+  const idVal = useRef(1)
   const [videoList, setVideoList] = useState<LaneWithVideo[] | null>(null);
 
   // Create and connect alarm statuses
   const {laneMapRef} = useContext(DataSourceContext);
   const laneMap = useSelector((state: RootState) => selectLaneMap(state));
+  const [dsVideo, setDsVideo] = useState([]);
 
   const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
 
   // Create and connect videostreams
   useEffect(() => {
-
-    if(videoList == null || videoList.length == 0 && laneMap.size > 0) {
+    if(videoList == null || videoList.length == 0 && laneMap.size > 0 && dsVideo.length > 0) {
       let videos: LaneWithVideo[] = []
 
       laneMap.forEach((value, key) => {
         if(laneMap.has(key)) {
-          let ds: LaneMapEntry = laneMap.get(key);
-          const videoSources = ds.datasourcesRealtime.filter((item) => item.name.includes('Video') && item.name.includes('Lane'));
-          if(videoSources.length > 0) {
-            const laneWithVideo: LaneWithVideo = {
-              // Get lane name
-              laneName: key,
-              // All video sources for the lane
-              videoSources: videoSources,
-              // Current status of lane
-              status: 'none',
-            };
 
-            videos.push(laneWithVideo);
-          }
+          let ds: LaneMapEntry = laneMap.get(key);
+
+          dsVideo.map((dss) => {
+            const videoSources = ds.datasourcesRealtime.filter((item) => item.properties.resource === ("/datastreams/" + dss.properties.id + "/observations"));
+
+            if (videoSources.length > 0) {
+              //if lane exists add video source to lane else create a new lane
+              const existingLane = videos.find((lane)=> lane.laneName === key);
+              if(existingLane){
+                existingLane.videoSources.push(...videoSources);
+              }else{
+                const laneWithVideo: LaneWithVideo = {
+                  laneName: key,
+                  videoSources: videoSources,
+                  status: 'none',
+                };
+                videos.push(laneWithVideo);
+              }
+            }
+          });
         }
       })
-
-      console.log(videos);
       setVideoList(videos);
     }
-  }, [laneMap]);
-
+  }, [laneMap, dsVideo]);
 
   const datasourceSetup = useCallback(async () => {
 
     let laneDSMap = new Map<string, LaneDSColl>();
+
+    let videoDs: any[] = [];
 
     for (let [laneid, lane] of laneMapRef.current.entries()) {
       laneDSMap.set(laneid, new LaneDSColl());
@@ -81,18 +79,21 @@ export default function CameraGrid() {
         let rtDS = lane.datasourcesRealtime[idx];
         let laneDSColl = laneDSMap.get(laneid);
 
-        if (ds.properties.name.includes('Driver - Gamma Count')) {
+        if (ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/RasterImage")) {
+          videoDs.push(ds);
+        }
+
+        if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
           laneDSColl.addDS('gammaRT', rtDS);
         }
-
-        if (ds.properties.name.includes('Driver - Neutron Count')) {
+        if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
           laneDSColl.addDS('neutronRT', rtDS);
         }
-
-        if (ds.properties.name.includes('Driver - Tamper')) {
+        if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status")){
           laneDSColl.addDS('tamperRT', rtDS);
         }
       }
+      setDsVideo(videoDs);
       setDataSourcesByLane(laneDSMap);
     }
   }, [laneMapRef.current]);
@@ -102,10 +103,18 @@ export default function CameraGrid() {
   }, [laneMapRef.current]);
 
   const addSubscriptionCallbacks = useCallback(() => {
+
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
+      // guard against a lane where there is no video source so we can avoid an error popup
+      if (!videoList.some((lane) => lane.laneName === laneName)) {
+        continue;
+      }
+
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
         const alarmState = message.values[0].data.alarmState;
+
         if(alarmState != "Background" && alarmState != "Scan") {
+          console.log(alarmState)
           updateVideoList(laneName, alarmState);
         }
       });
@@ -116,9 +125,9 @@ export default function CameraGrid() {
         }
       });
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
-        const alarmState = message.values[0].data.alarmState;
-        if(alarmState != "Background" && alarmState != "Scan") {
-          updateVideoList(laneName, alarmState);
+        const tamperStatus = message.values[0].data.tamperStatus;
+        if(tamperStatus) {
+          updateVideoList(laneName, 'Tamper');
         }
       });
 
@@ -135,59 +144,34 @@ export default function CameraGrid() {
 
   const updateVideoList = (laneName: string, newStatus: string) => {
     setVideoList((prevList) => {
-      const updatedList = prevList.map((videoData) =>
-          videoData.laneName === laneName ? {...videoData, status: newStatus } : videoData
-      );
+      let existingVideo = prevList.find((video) => video.laneName === laneName)
 
-      const updatedVideo = updatedList.find((videoData) => videoData.laneName === laneName);
+      if(existingVideo){
+        const updatedList = prevList.map((videoData) =>{
+          if(videoData.laneName === laneName){
+            return {...videoData, status: newStatus}
+          }
+          return videoData;
+        });
+        const updatedVideo = updatedList.find((videoData) => videoData.laneName === laneName);
 
-      if(newStatus !== 'Background' && newStatus !== 'Scan') {
-        // Get timeout from config
-        setTimeout(() => updateVideoList(laneName, "none"), 10000);
-        const filteredVideos = updatedList.filter((videoData) => videoData.laneName !== laneName);
-        return [updatedVideo, ...filteredVideos];
+        if(newStatus !== 'Background' && newStatus !== 'Scan') {
+          // Get timeout from config
+          setTimeout(() => updateVideoList(laneName, "none"), 10000);
+          const filteredVideos = updatedList.filter((videoData) => videoData.laneName !== laneName);
+          return [updatedVideo, ...filteredVideos];
+        }
+
+        return updatedList;
       }
 
-      return updatedList;
     })
   };
-
-  useEffect(() => {
-
-    async function checkConnections() {
-      if(videoList != null && videoList.length > 0) {
-        // Connect to currently shown videostreams
-        videoList.slice(startItem, endItem).forEach(async (video) => {
-          const isConnected = await video.videoSources[0].isConnected();
-          if(!isConnected) {
-            video.videoSources[0].connect();
-          }
-        });
-
-        // Disconnect other videostreams
-        videoList.forEach(async (video, index) => {
-          if(index < startItem || index >= endItem && video && video.videoSources[0]) {
-            const isConnected = await video.videoSources[0].isConnected();
-            if(isConnected) {
-              video.videoSources[0].disconnect();
-            }
-          }
-        });
-      }
-    }
-
-    checkConnections();
-
-  }, [videoList]);
-
-  // TODO: Create swe api objects and pass to children
-
-  // DELETE ABOVE ON PRODUCTION
 
   const maxItems = 6; // Max number of videos per page
   const [page, setPage] = useState(1);  // Page currently selected
   const [startItem, setStartItem] = useState(0);  // Current start of range
-  const [endItem, setEndItem] = useState(6); // Current end of range
+  const [endItem, setEndItem] = useState(maxItems); // Current end of range
 
   // Handle page value change
   const handleChange = (event: React.ChangeEvent<unknown>, value: number) => {
@@ -199,17 +183,19 @@ export default function CameraGrid() {
   return (
       <>
         {videoList != null && (
-            <Grid container padding={2} justifyContent={"start"}>
+            <Grid container padding={2} justifyContent={"start"} spacing={1}>
 
               {videoList.slice(startItem, endItem).map((lane) => (
-                  <VideoStatusWrapper key={lane.laneName} laneName={lane.laneName} status={lane.status}
-                                      children={<VideoComponent id={lane.laneName} currentPage={0} videoSources={lane.videoSources}/>}
-                  />
+                  <VideoStatusWrapper key={idVal.current++} laneName={lane.laneName} status={lane.status}>
+                    <VideoCarousel laneName={lane.laneName} videoSources={lane.videoSources}/>
+                  </VideoStatusWrapper>
+
               ))}
               <Grid item xs={12} display={"flex"} justifyContent={"center"}>
-                <Pagination count={Math.ceil(videoList.length / maxItems)} onChange={handleChange} color="primary" showFirstButton showLastButton />
+                <Pagination count={Math.ceil(videoList.length / maxItems)} page={page} onChange={handleChange} color="primary" showFirstButton showLastButton/>
               </Grid>
-            </Grid>)}
+            </Grid>
+        )}
       </>
   );
 }

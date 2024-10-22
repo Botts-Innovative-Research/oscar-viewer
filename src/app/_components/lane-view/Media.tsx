@@ -3,11 +3,12 @@
 import {Box, Grid } from "@mui/material";
 import { SelectedEvent } from "../../../../types/new-types";
 import VideoGrid from "./VideoGrid";
-import {useCallback, useContext, useEffect, useState} from "react";
+import {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import ChartLane from "@/app/_components/lane-view/ChartLane";
+import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 
 
 export default function Media(props: {
@@ -18,7 +19,6 @@ export default function Media(props: {
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
     const [gammaDatasources, setGammaDS] = useState<any[]>([]);
     const [neutronDatasources, setNeutronDS] = useState<any[]>([]);
-    const [occDatasources, setOccDS] = useState<any[]>([]);
     const [thresholdDatasources, setThresholdDS] = useState<any[]>([]);
     const [chartReady, setChartReady] = useState<boolean>(false);
 
@@ -40,25 +40,20 @@ export default function Media(props: {
 
                     let laneDSColl = laneDSMap.get(laneid);
 
-                    if (ds.properties.name.includes('Driver - Gamma Count')) {
+
+                    if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
                         laneDSColl?.addDS('gammaRT', rtDS);
                         setGammaDS(prevState => [...prevState, rtDS]);
                     }
-
-                    if (ds.properties.name.includes('Driver - Neutron Count')) {
+                    if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
                         laneDSColl?.addDS('neutronRT', rtDS);
                         setNeutronDS(prevState => [...prevState, rtDS]);
                     }
-
-                    if (ds.properties.name.includes('Driver - Gamma Threshold')) {
+                    if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/threshold")){
                         laneDSColl?.addDS('gammaTrshldRT', rtDS);
                         setThresholdDS(prevState => [...prevState, rtDS]);
                     }
 
-                    if (ds.properties.name.includes('Driver - Occupancy')) {
-                        laneDSColl?.addDS('occRT', rtDS);
-                        setOccDS(prevState => [...prevState, rtDS]);
-                    }
 
                 }
                 setDataSourcesByLane(laneDSMap);
@@ -69,9 +64,10 @@ export default function Media(props: {
     useEffect(() => {
         datasourceSetup();
     }, [laneMapRef.current]);
+
     useEffect(() => {
+
         gammaDatasources.forEach(ds => {
-            console.log('ds', ds)
             ds.connect();
         });
         neutronDatasources.forEach(ds => {
@@ -80,14 +76,20 @@ export default function Media(props: {
         thresholdDatasources.forEach(ds => {
             ds.connect();
         });
-    }, [gammaDatasources, neutronDatasources, thresholdDatasources]);
+
+
+    }, [thresholdDatasources, gammaDatasources, neutronDatasources]);
 
 
     return (
         <Box sx={{flexGrow: 1, overflowX: "auto"}}>
             <Grid container direction="row" spacing={2} justifyContent={"center"} alignItems={"center"}>
                 <Grid item xs={12} sm={6}>
-                    <ChartLane  laneName={props.laneName} setChartReady={setChartReady} occDatasources={occDatasources} gammaDatasources={gammaDatasources} neutronDatasources={neutronDatasources} thresholdDatasources={thresholdDatasources} />
+                    <ChartLane  laneName={props.laneName} setChartReady={setChartReady}  datasources={{
+                        gamma: gammaDatasources[0],
+                        neutron: neutronDatasources[0],
+                        threshold: thresholdDatasources[0]
+                    }}/>
                 </Grid>
                 <Grid item xs>
                     <VideoGrid laneName={props.laneName}/>

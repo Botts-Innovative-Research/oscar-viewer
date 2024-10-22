@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
@@ -15,44 +14,52 @@ import {selectLaneMap} from "@/lib/state/OSCARClientSlice";
 import "leaflet/dist/leaflet.css"
 
 
-export default function MapComponent(){
+export default function MapComponent() {
 
-    const leafletViewRef = useRef< typeof LeafletView | null>(null);
+    const leafletViewRef = useRef<typeof LeafletView | null>(null);
     const [locationList, setLocationList] = useState<LaneWithLocation[] | null>(null);
     const mapcontainer: string = "mapcontainer";
 
-    const [isInit, setIsInt]= useState(false);
+    const [isInit, setIsInt] = useState(false);
 
     const {laneMapRef} = useContext(DataSourceContext);
-    const laneMap = useSelector((state: RootState) => selectLaneMap(state));
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
+    const laneMap = useSelector((state: RootState) => selectLaneMap(state));
 
-    /******************location & video datasource********************/
+    const [dsLocations, setDsLocations] = useState([]);
+
     useEffect(() =>{
         if(locationList == null || locationList.length === 0 && laneMap.size > 0) {
             let locations: LaneWithLocation[] = [];
             laneMap.forEach((value, key) => {
                 if (laneMap.has(key)) {
                     let ds: LaneMapEntry = laneMap.get(key);
-                    const locationSources = ds.datasourcesBatch.filter((item) => item.name.includes('Sensor Location') && item.name.includes('Lane'));
-                    const laneWithLocation: LaneWithLocation = {
-                        laneName: key,
-                        locationSources: locationSources,
-                        status: 'None',
-                    };
 
-                    locations.push(laneWithLocation);
+                    dsLocations.map((dss) => {
+                        const locationSources = ds.datasourcesBatch.filter((item) => (item.properties.resource === ("/datastreams/" + dss.properties.id + "/observations")))
+
+                        const laneWithLocation: LaneWithLocation = {
+                            laneName: key,
+                            locationSources: locationSources,
+                            status: 'None',
+                        };
+
+                        locations.push(laneWithLocation);
+
+                        }
+                    )
                 }
             });
             setLocationList(locations);
         }
-    },[laneMap]);
+    },[laneMap, dsLocations]);
 
     /*****************lane status datasources******************/
     const datasourceSetup = useCallback(async () => {
         // @ts-ignore
         let laneDSMap = new Map<string, LaneDSColl>();
 
+        let locationDs: any[] = [];
 
         for (let [laneid, lane] of laneMapRef.current.entries()) {
             laneDSMap.set(laneid, new LaneDSColl());
@@ -60,20 +67,26 @@ export default function MapComponent(){
 
                 let idx: number = lane.datastreams.indexOf(ds);
                 let rtDS = lane.datasourcesRealtime[idx];
+                let batchDS = lane.datasourcesBatch[idx];
                 let laneDSColl = laneDSMap.get(laneid);
 
-                if (ds.properties.name.includes('Driver - Gamma Count')) {
+                if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/property/OGC/0/SensorLocation") && !ds.properties.name.includes('Rapiscan') || ds.properties.observedProperties[0].definition.includes('http://sensorml.com/ont/swe/property/LocationVector')) {
+                    laneDSColl.addDS('locBatch', batchDS);
+                    locationDs.push(ds);
+                }
+
+                if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")) {
                     laneDSColl.addDS('gammaRT', rtDS);
                 }
-
-                if (ds.properties.name.includes('Driver - Neutron Count')) {
+                if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")) {
                     laneDSColl.addDS('neutronRT', rtDS);
                 }
-
-                if (ds.properties.name.includes('Driver - Tamper')) {
+                if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status")) {
                     laneDSColl.addDS('tamperRT', rtDS);
                 }
+
             }
+            setDsLocations(locationDs);
             setDataSourcesByLane(laneDSMap);
         }
     }, [laneMapRef.current]);
@@ -82,17 +95,17 @@ export default function MapComponent(){
         for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
             const msgLaneName = laneName;
 
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) =>{
+            laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
                 let alarmstate = message.values[0].data.alarmState;
                 updateLocationList(msgLaneName, alarmstate);
             });
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) =>{
+            laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
                 let alarmstate = message.values[0].data.alarmState;
                 updateLocationList(msgLaneName, alarmstate);
             });
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
                 let tamperState = message.values[0].data.tamperStatus;
-                if(tamperState){
+                if (tamperState) {
                     updateLocationList(msgLaneName, 'Tamper');
                 }
             });
@@ -102,7 +115,7 @@ export default function MapComponent(){
     }, [dataSourcesByLane]);
 
     useEffect(() => {
-        if(locationList !== null && locationList.length > 0){
+        if (locationList !== null && locationList.length > 0) {
             addSubscriptionCallbacks();
         }
     }, [dataSourcesByLane]);
@@ -112,11 +125,10 @@ export default function MapComponent(){
     }, [laneMapRef.current]);
 
 
-
     useEffect(() => {
 
-        if(!leafletViewRef.current && !isInit){
-            let view  = new LeafletView({
+        if (!leafletViewRef.current && !isInit) {
+            let view = new LeafletView({
                 container: mapcontainer,
                 layers: [],
 
@@ -129,10 +141,10 @@ export default function MapComponent(){
 
     }, [isInit]);
 
-     useEffect(() => {
+    useEffect(() => {
         if(locationList && locationList.length > 0 && isInit){
             locationList.forEach((location) => {
-                location.locationSources.forEach((loc) => {
+                location.locationSources.forEach((loc: any) => {
                     let newPointMarker = new PointMarkerLayer({
                         name: location.laneName,
                         dataSourceId: loc.id,
@@ -165,12 +177,11 @@ export default function MapComponent(){
                     });
                     leafletViewRef.current?.addLayer(newPointMarker);
                 });
-                location.locationSources.map((src) => src.connect());
+                location.locationSources.map((src: any) => src.connect());
             });
         }
 
     }, [locationList, isInit]);
-
 
     const updateLocationList = (laneName: string, newStatus: string) => {
         setLocationList((prevState) => {
@@ -197,4 +208,3 @@ export default function MapComponent(){
         <Box id="mapcontainer" style={{width: '100%', height: '900px'}}></Box>
     );
 }
-

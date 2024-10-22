@@ -45,7 +45,7 @@ export default function LaneItem(props: {
                                     : props.status === 'Fault - Gamma High' ? 'info'
                                         : props.status === 'Fault - Neutron Low' ? 'info'
                                             : props.status === 'Scan' || props.status === 'Background' ? 'success'
-                                                : 'success'
+                                                : 'inherit'
                     )
                     }
                     sx={{ marginRight: 2}} />

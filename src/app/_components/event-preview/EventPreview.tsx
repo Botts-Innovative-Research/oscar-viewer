@@ -3,11 +3,11 @@
  * All Rights Reserved
  */
 
-import {Button, IconButton, Stack, TextField, Typography} from "@mui/material";
+import {Button, IconButton, Snackbar, SnackbarCloseReason, Stack, TextField, Typography} from "@mui/material";
 import OpenInFullRoundedIcon from "@mui/icons-material/OpenInFullRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import AdjudicationSelect from "@/app/_components/event-preview/AdjudicationSelect";
-import {useCallback, useContext, useEffect, useRef, useState} from "react";
+import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
 import {selectCurrentUser, setEventPreview, setShouldForceAlarmTableDeselect} from "@/lib/state/OSCARClientSlice";
@@ -67,6 +67,9 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     const [adjudicationCode, setAdjudicationCode] = useState<AdjudicationCode>(AdjudicationCodes.codes[0]);
     const [adjudication, setAdjudication] = useState<AdjudicationData | null>();
 
+    //snackbar
+    const [adjSnackMsg, setAdjSnackMsg] = useState('');
+    const [openSnack, setOpenSnack] = useState(false);
 
     const handleAdjudicationCode = (value: AdjudicationCode) => {
         console.log("Adjudication Value: ", value);
@@ -112,16 +115,28 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
         const adjDsID = currLaneEntry.parentNode.laneAdjMap.get(currentLane);
         const ep = currLaneEntry.parentNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + adjDsID + "/observations";
-        let resp = await fetch(ep, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            // body: JSON.stringify(observation),
-            body: observation,
-            mode: "cors"
-        });
-        console.log("[ADJ] Response: ", resp);
+        try{
+            let resp = await fetch(ep, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                // body: JSON.stringify(observation),
+                body: observation,
+                mode: "cors"
+            });
+            console.log("[ADJ] Response: ", resp);
+
+            if(resp.ok){
+                setAdjSnackMsg('Adjudication Submitted Successfully')
+            }else{
+                setAdjSnackMsg('Adjudication Submission Failed. Check your connection.')
+            }
+        }catch(error){
+            setAdjSnackMsg('Adjudication failed to submit.')
+        }
+
+        setOpenSnack(true)
 
         // send command
         // we can use endTime as it is the same a resultTime in testing, this may not be true in practice but this is a stop-gap fix anyway
@@ -252,7 +267,9 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
 
     useEffect(() => {
         const interval = setInterval(async () => {
+
             let currTime = await syncRef.current.getCurrentTime();
+
             if (currentTime !== undefined) {
                 setCurrentTime(currTime);
             }
@@ -264,6 +281,17 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     useEffect(() => {
         console.log("Event Preview Changed", eventPreview);
     }, [eventPreview]);
+
+    const handleCloseSnack = (
+        event: React.SyntheticEvent | Event,
+        reason?: SnackbarCloseReason,
+    ) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+
+        setOpenSnack(false);
+    };
 
     return (
         <Stack p={1} display={"flex"}>
@@ -315,6 +343,12 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                             color={"success"}
                             disabled={adjFormData === null}
                             sx={{width: "25%"}}>Submit</Button>
+                    <Snackbar
+                        open={openSnack}
+                        autoHideDuration={5000}
+                        onClose={handleCloseSnack}
+                        message={adjSnackMsg}
+                    />
 
                     <Button onClick={resetAdjudicationData} variant={"contained"} size={"small"} fullWidth={false}
                             color={"secondary"}

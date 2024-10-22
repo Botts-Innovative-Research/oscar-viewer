@@ -106,6 +106,22 @@ export class Node implements INode {
             : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
     }
 
+    // getSOSEndpoint(noProtocolPrefix: boolean = false) {
+    //     let protocol = this.isSecure ? 'https' : 'http';
+    //     // return `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
+    //     console.log("NODE TEST GET CSAPI ENDPOINT", this);
+    //     return noProtocolPrefix ? `${this.address}:${this.port}${this.oshPathRoot}${this.sosEndpoint}`
+    //         : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.sosEndpoint}`;
+    // }
+    //
+    // getEndpoint(noProtocolPrefix: boolean = false) {
+    //     let protocol = this.isSecure ? 'https' : 'http';
+    //     // return `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
+    //     console.log("NODE TEST GET CSAPI ENDPOINT", this);
+    //     return noProtocolPrefix ? `${this.address}:${this.port}${this.oshPathRoot}/admin`
+    //         : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}/admin`;
+    // }
+
     getConfigEndpoint() {
         // let protocol = this.isSecure ? 'https' : 'http';
         return `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIConfigEndpoint}`;
