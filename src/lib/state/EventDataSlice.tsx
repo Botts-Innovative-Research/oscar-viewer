@@ -41,9 +41,14 @@ export const Slice = createSlice({
             state.selectedEvent = action.payload;
         },
         addEventToLog: (state, action: PayloadAction<EventTableData>) => {
-            if (state.eventLog.some((data) => data.observationId === action.payload.observationId)) return;
-            console.log("Adding to Event Log", action.payload);
-            state.eventLog.push(action.payload);
+            let checkForEntry = state.eventLog.some((evtData)=> evtData.observationId === action.payload.observationId);
+            console.log("evt table, entry found status:", checkForEntry, action.payload.observationId);
+            // if (state.eventLog.some((data) => data.observationId === action.payload.observationId)) return;
+            console.log("EVT table Adding to Event Log", action.payload);
+            let currentLog = [];
+            currentLog =  [...state.eventLog];
+            currentLog.push(action.payload);
+            state.eventLog = currentLog;
             // state.eventLog.set(action.payload.observationId, action.payload);
         },
         updateSelectedEventAdjudication: (state, action: PayloadAction<AdjudicationData>) => {
@@ -71,7 +76,7 @@ export const selectEventTableData = (state: RootState) => state.eventLogSlice.ev
 export const selectEventTableDataArray = (state: RootState) => state.eventLogSlice.eventLog;
 export const selectSelectedEvent = (state: RootState) => state.eventLogSlice.selectedEvent;
 export const selectHasFetched = (state: RootState) => state.eventLogSlice.hasFetchedInitial;
-/*export const selectUnadjudicatedTableData = (state: RootState) => {
+export const selectUnadjudicatedTableData = (state: RootState) => {
     let tArr = Array.from(state.eventLogSlice.eventLog.values());
     return tArr.filter((entry) => entry.adjudicatedData.getCodeValue() === 0)
 }
@@ -86,6 +91,6 @@ export const selectLaneTableData = (state: RootState, laneId: string) => {
 export const selectAlarmingAndNonAdjudicatedData = (state: RootState) => {
     let tArr = Array.from(state.eventLogSlice.eventLog.values());
     return tArr.filter((entry: EventTableData) => entry.status !== 'None' && entry.adjudicatedData.getCodeValue() === 0);
-}*/
+}
 
 export default Slice.reducer

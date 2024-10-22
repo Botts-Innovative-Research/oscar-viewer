@@ -5,32 +5,24 @@ import {useCallback, useEffect, useState} from "react";
 import {Box} from "@mui/material";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
-import {selectLaneMap, setEventPreview} from "@/lib/state/OSCARClientSlice";
+import {setEventPreview} from "@/lib/state/OSCARClientSlice";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
-import {
-    DataGrid,
-    GridActionsCellItem,
-    GridCellParams,
-    gridClasses,
-    GridColDef, GridFilterModel,
-    GridLogicOperator
-} from "@mui/x-data-grid";
+import {DataGrid, GridActionsCellItem, GridCellParams, gridClasses, GridColDef} from "@mui/x-data-grid";
 import CustomToolbar from "@/app/_components/CustomToolbar";
 import NotesRoundedIcon from "@mui/icons-material/NotesRounded";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {
     addEventToLog,
-    selectEventTableData, selectEventTableDataArray,
-    selectHasFetched,
-    setEventLogData, setHasFetchedInitial,
+    selectAlarmingAndNonAdjudicatedData,
+    selectEventTableDataArray,
+    selectLaneTableData,
+    setEventLogData,
     setSelectedEvent
 } from "@/lib/state/EventDataSlice";
-import {TableDataManager} from "@/lib/data/TableDataManager";
-import {setInterval} from "next/dist/compiled/@edge-runtime/primitives";
 
 
 interface TableProps {
@@ -88,10 +80,10 @@ export default function Table2({
         occDS.streamObservations(new ObservationFilter({
             resultTime: `now/${futureTime.toISOString()}`
         }), (observation: any) => {
-            console.log("[evt] real-time observation found", observation, laneEntry.laneName);
+            console.log("[evt table real-time observation found", observation, laneEntry.laneName);
             let resultEvent = eventFromObservation(observation[0], laneEntry);
             // console.log("[EVT] Real-time EventTableData", resultEvent, tableData);
-            console.log("[EVT] Real-time EventTableData", observation, resultEvent);
+            console.log("[EVT table Real-time EventTableData", observation, resultEvent);
             dispatch(addEventToLog(resultEvent));
 
         })
@@ -112,9 +104,10 @@ export default function Table2({
     }
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
-        let newEvent: EventTableData = new EventTableData(randomUUID(), laneEntry.laneName, obs.result, obs["datastream@id"]);
+        console.log("evt observation to entry", obs);
+        let newEvent: EventTableData = new EventTableData(randomUUID(), laneEntry.laneName, obs.result, obs.id);
         newEvent.setSystemIdx(laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId));
-        // newEvent.setDataStreamId(obs["datastream@id"]);
+        newEvent.setDataStreamId(obs["datastream@id"]);
         newEvent.setObservationId(obs.id);
         // console.log("[EVT] New Event Table Data", newEvent);
         return newEvent;
@@ -188,19 +181,24 @@ export default function Table2({
     // }, []);
 
     useEffect(() => {
-        console.log("Table Log Updated")
-        // console.log('[EVT] Table Data Updated', tableData)
+        // console.log("Table Log Updated")
+        console.log('[EVT] Table Data Updated', tableData)
         let filteredData: EventTableData[] = [];
         if (tableMode === 'alarmtable') {
             filteredData = unadjudicatedFilteredList(onlyAlarmingFilteredList(tableData))
+            console.log("[EVT table prevtable Filtered Data", filteredData);
         } else if (tableMode === 'eventlog') {
             if (laneMap.size === 1) {
                 const laneId = Array.from(laneMap.keys())[0];
                 filteredData = onlyLaneFilteredList(tableData, laneId)
             }
         }
-        // console.log("[EVT] Filtered Data", filteredData);
-        setFilteredTableData(filteredData);
+        // setFilteredTableData(filteredData);
+        setFilteredTableData((prevState)=>{
+            console.log("EVT table prevtable data", prevState);
+            console.log("EVT table newtable", filteredData)
+            return filteredData;
+        })
     }, [tableData]);
 
 
