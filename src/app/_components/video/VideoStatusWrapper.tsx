@@ -33,7 +33,7 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
                 {props.children}
 
                 <Link href={{pathname: '/lane-view', query: {name: props.laneName}}} passHref>
-                    <Button size="small" sx={{color:'#000000', fontSize: {xs: "0.75rem", sm: "0.85rem", md: "0.9rem", lg: "1rem"} }}>{props.laneName}</Button>
+                    <Button size="small" sx={{fontSize: {xs: "0.75rem", sm: "0.85rem", md: "0.9rem", lg: "1rem"} }}>{props.laneName}</Button>
                 </Link>
             </Grid>
 
