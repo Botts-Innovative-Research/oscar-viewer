@@ -17,7 +17,11 @@ export default function VideoComponent(props: OSHVideoProps) {
 
     const hasRendered = useRef(false);
     const [videoView, setVideoView] = useState(null);
-    const [videoDataSource, setVideoDataSource] = useState(props.videoSources[props.currentPage]);
+    const [videoDataSource, setVideoDataSource] = useState(props.videoSources[0]);
+
+    useEffect(() => {
+        setVideoDataSource(props.videoSources[props.currentPage])
+    }, [props.currentPage]);
 
     useEffect(() => {
         if(hasRendered.current) return;
@@ -37,7 +41,7 @@ export default function VideoComponent(props: OSHVideoProps) {
             setVideoView(view);
             hasRendered.current = true;
         }
-    }, []);
+    }, [videoDataSource]);
 
     return (
         <Box id={props.id} style={{ width: "100%", height: "100%" }}/>

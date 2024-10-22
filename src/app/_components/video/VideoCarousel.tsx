@@ -17,36 +17,29 @@ interface LaneWithVideo {
 
 export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo) {
 
-
     const [currentPage, setCurrentPage] = useState(0);
-    // const [slideDirection, setSlideDirection] = useState<"right" | "left" | undefined>("left");
-    const [hovered, setHovered] = useState(false); // New hover state
+    const [hovered, setHovered] = useState(false);
 
     const maxPages = videoSources.length;
 
     useEffect(() => {
 
-        if(videoSources.length > 0){
+        if(videoSources.length > 0 && currentPage <= videoSources.length ){
+
             const currentVideo = videoSources[currentPage];
-            if(!currentVideo){
-                return;
+
+            if(currentVideo){
+                if(currentVideo.isConnected()){
+                    currentVideo.disconnect();
+                }
+                currentVideo.connect()
             }
-
-            currentVideo.connect();
-            if(currentVideo.isConnected){
-                console.log('video connected', currentVideo)
-            }
-
-
-            // checkConnection(currentPage-1).then(() => {
-            //     currentVideo.connect();
-            //     console.log('video connected', currentVideo)
-            // })
+            
         }
 
     }, [currentPage, videoSources]);
 
-    async function checkConnection (prevPage: number){
+    async function disconnect (prevPage: number){
         if(prevPage >= 0){
 
             const isConnected = await videoSources[prevPage].isConnected();
@@ -57,36 +50,14 @@ export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo)
         }
     }
 
+
     const handleNextPage = () => {
-        setCurrentPage((prevPage) => {
-            let nextPage = prevPage + 1;
-            if(nextPage <= videoSources.length -1){
-                checkConnection(prevPage)
-
-                return nextPage;
-            }else{
-                return prevPage;
-            }
-
-
-
-        });
+        setCurrentPage((prevPage) => Math.min(prevPage + 1, maxPages - 1));
     };
 
     const handlePrevPage = () => {
-        setCurrentPage((prevPage) => {
-            let currpage = prevPage - 1;
-            if(currpage >= 0){
-                checkConnection(currpage + 1).then(() =>{
-                    return currpage
-                })
-            }else{
-                return 0
-            }
-        });
+        setCurrentPage((prevPage) => Math.max(prevPage - 1, 0));
     };
-
-
 
     return (
         <Box
@@ -98,34 +69,33 @@ export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo)
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
         >
-            {maxPages > 1 && currentPage !== 0 &&(
+            {maxPages > 1 && currentPage > 0 && (
                 <StyledButtonWrapper $prev={true} $fullHeightHover={true} $next={false}>
-                    <StyledIconButton  $alwaysVisible={false} $fullHeightHover={true} onClick={handlePrevPage} disabled={currentPage === 0}>
-                        <NavigateBeforeIcon sx={{fontSize: '1.5rem'}}/>
+                    <StyledIconButton $alwaysVisible={false} $fullHeightHover={true} onClick={handlePrevPage} disabled={currentPage === 0}>
+                        <NavigateBeforeIcon sx={{ fontSize: '1.5rem' }} />
                     </StyledIconButton>
                 </StyledButtonWrapper>
-
             )}
-
 
             {maxPages > 1 && (
-                <StyledButtonWrapper  $prev={false} $next={true} $fullHeightHover={true}>
-                    <StyledIconButton  $alwaysVisible={false} $fullHeightHover={true} onClick={handleNextPage} disabled={currentPage===maxPages}>
-                        <NavigateNextIcon sx={{fontSize: '1.5rem'}}/>
+                <StyledButtonWrapper $prev={false} $next={true} $fullHeightHover={true}>
+                    <StyledIconButton $alwaysVisible={false} $fullHeightHover={true} onClick={handleNextPage} disabled={currentPage === maxPages - 1}>
+                        <NavigateNextIcon sx={{ fontSize: '1.5rem' }} />
                     </StyledIconButton>
                 </StyledButtonWrapper>
-
             )}
 
-
-            <Stack spacing={2} direction="column" alignContent="center" justifyContent="center" sx={{ padding: 1 }} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
-                {videoSources.map((videoSrc, index) => (
-
-                    <VideoComponent key={`${laneName}-${index}`} id={`${laneName}-${index}`} videoSources={[videoSrc]} currentPage={index} />
-
-                ))}
+            <Stack spacing={2} direction="column" alignContent="center" justifyContent="center" sx={{ padding: 1 }}>
+                {videoSources.length > 0 && (
+                    <VideoComponent
+                        key={`${laneName}-${currentPage}`}
+                        id={`${laneName}-${currentPage}`}
+                        videoSources={[videoSources[currentPage]]}
+                        currentPage={currentPage}
+                    />
+                )}
             </Stack>
-
         </Box>
     );
+
 }

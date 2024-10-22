@@ -49,7 +49,7 @@ export default function DataRow() {
                             <TableCell>{eventData.endTime}</TableCell>
                             <TableCell>{eventData.maxGamma}</TableCell>
                             <TableCell>{eventData.maxNeutron}</TableCell>
-                            {/*<StatusTableCell status={eventData.status}>{eventData.status}</StatusTableCell>*/}
+                            <StatusTableCell status={eventData.status}>{eventData.status}</StatusTableCell>
                             <TableCell>{eventData.adjudicatedUser}</TableCell>
                         </TableRow>
                     ) : (

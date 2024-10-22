@@ -7,7 +7,7 @@ import {
     Checkbox,
     FormControlLabel,
     InputBase,
-    Paper,
+    Paper, Snackbar, SnackbarCloseReason,
     Stack,
     TextField,
     Typography
@@ -61,6 +61,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const [shouldFetchLogs, setShouldFetchLogs] = useState<boolean>(false);
     const adjudication = props.event ? new AdjudicationData(currentUser, props.event.occupancyId, props.event.systemIdx) : null;
     const [adjData, setAdjData] = useState<AdjudicationData>(adjudication);
+
+
+    //snackbar
+    const [adjSnackMsg, setAdjSnackMsg] = useState('');
+    const [openSnack, setOpenSnack] = useState(false);
 
     /**handle the file uploaded**/
     const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -141,11 +146,13 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     function resetForm() {
         console.log("[ADJ-D] Resetting Form");
+        setVehicleId('')
         setAdjData(adjudication);
         setUploadedFiles([]);
         setSecondaryInspection(false);
         setIsotope([]);
         setAdjCode(AdjudicationCodes.codes[0]);
+        setFeedback('')
     }
 
     const sendAdjudicationData = async () => {
@@ -164,15 +171,27 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         // const adjDSId = props.event.dataStreamId;
         const ep = currLaneEntry.parentNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + adjDsID + "/observations";
 
-        let resp = await fetch(ep, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: observation,
-            mode: "cors"
-        });
-        console.log("[ADJ] Response: ", resp);
+        try{
+            let resp = await fetch(ep, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: observation,
+                mode: "cors"
+            });
+            console.log("[ADJ] Response: ", resp);
+
+            if(resp.ok){
+                setAdjSnackMsg('Adjudication Submitted Successfully')
+            }else{
+                setAdjSnackMsg('Adjudication Submission Failed. Check connection.')
+            }
+        }catch(error){
+            setAdjSnackMsg('Adjudication failed to submit.')
+        }
+        setOpenSnack(true);
+        resetForm();
 
         // send command
         // we can use endTime as it is the same a resultTime in testing, this may not be true in practice but this is a stop-gap fix anyway
@@ -184,13 +203,23 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             generateCommandJSON(props.event.observationId, true));
 
         setShouldFetchLogs(true);
-        resetForm();
+
     }
 
     function onFetchComplete() {
         setShouldFetchLogs(false);
     }
 
+    const handleCloseSnack = (
+        event: React.SyntheticEvent | Event,
+        reason?: SnackbarCloseReason,
+    ) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+
+        setOpenSnack(false);
+    };
 
     return (
         <Stack direction={"column"} p={2} spacing={2}>
@@ -290,6 +319,12 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                          onChange={handleChange}/>} label="Secondary Inspection"/>
                     <Button disableElevation variant={"contained"} color={"success"}
                             onClick={sendAdjudicationData}>Submit</Button>
+                    <Snackbar
+                        open={openSnack}
+                        autoHideDuration={5000}
+                        onClose={handleCloseSnack}
+                        message={adjSnackMsg}
+                    />
                 </Stack>
 
             </Stack>
