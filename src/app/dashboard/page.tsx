@@ -5,12 +5,12 @@ import CameraGrid from "../_components/dashboard/CameraGrid";
 import LaneStatus from "../_components/dashboard/LaneStatus";
 
 import {useMemo} from "react";
-import Table from "../_components/event-table/Table";
 import dynamic from "next/dynamic";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectLaneMap} from "@/lib/state/OSCARClientSlice";
 import Table2 from "@/app/_components/event-table/TableType2";
+import {RootState} from "@/lib/state/Store";
 
 export default function DashboardPage() {
     const laneMap = useSelector((state: RootState) => selectLaneMap(state))
