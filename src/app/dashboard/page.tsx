@@ -10,7 +10,6 @@ import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectLaneMap} from "@/lib/state/OSCARClientSlice";
 import Table2 from "@/app/_components/event-table/TableType2";
-import {RootState} from "@/lib/state/Store";
 
 export default function DashboardPage() {
     const laneMap = useSelector((state: RootState) => selectLaneMap(state))
