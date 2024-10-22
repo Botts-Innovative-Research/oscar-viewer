@@ -93,12 +93,12 @@ export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo)
             sx={{
                 position: 'relative',
                 width: '100%',
-                height: 'auto'
+                height: '100%'
             }}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
         >
-            {maxPages > 1 && (
+            {maxPages > 1 && currentPage !== 0 &&(
                 <StyledButtonWrapper $prev={true} $fullHeightHover={true} $next={false}>
                     <StyledIconButton  $alwaysVisible={false} $fullHeightHover={true} onClick={handlePrevPage} disabled={currentPage === 0}>
                         <NavigateBeforeIcon sx={{fontSize: '1.5rem'}}/>
@@ -118,7 +118,7 @@ export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo)
             )}
 
 
-            <Stack spacing={2} direction="column" alignContent="center" justifyContent="center" sx={{ padding: 1 }}  onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+            <Stack spacing={2} direction="column" alignContent="center" justifyContent="center" sx={{ padding: 1 }} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
                 {videoSources.map((videoSrc, index) => (
 
                     <VideoComponent key={`${laneName}-${index}`} id={`${laneName}-${index}`} videoSources={[videoSrc]} currentPage={index} />

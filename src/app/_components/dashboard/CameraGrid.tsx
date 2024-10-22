@@ -106,7 +106,9 @@ export default function CameraGrid() {
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
         const alarmState = message.values[0].data.alarmState;
+
         if(alarmState != "Background" && alarmState != "Scan") {
+          console.log(alarmState)
           updateVideoList(laneName, alarmState);
         }
       });
@@ -117,9 +119,9 @@ export default function CameraGrid() {
         }
       });
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
-        const alarmState = message.values[0].data.alarmState;
-        if(alarmState != "Background" && alarmState != "Scan") {
-          updateVideoList(laneName, alarmState);
+        const tamperStatus = message.values[0].data.tamperStatus;
+        if(tamperStatus) {
+          updateVideoList(laneName, 'Tamper');
         }
       });
 
@@ -136,51 +138,57 @@ export default function CameraGrid() {
 
   const updateVideoList = (laneName: string, newStatus: string) => {
     setVideoList((prevList) => {
-      const updatedList = prevList.map((videoData) =>
-          videoData.laneName === laneName ? {...videoData, status: newStatus } : videoData
-      );
+      let existingVideo = prevList.find((video) => video.laneName === laneName)
 
-      const updatedVideo = updatedList.find((videoData) => videoData.laneName === laneName);
+      if(existingVideo){
+        const updatedList = prevList.map((videoData) =>{
+          if(videoData.laneName === laneName){
+            return {...videoData, status: newStatus}
+          }
+          return videoData;
+        });
+        const updatedVideo = updatedList.find((videoData) => videoData.laneName === laneName);
 
-      if(newStatus !== 'Background' && newStatus !== 'Scan') {
-        // Get timeout from config
-        setTimeout(() => updateVideoList(laneName, "none"), 10000);
-        const filteredVideos = updatedList.filter((videoData) => videoData.laneName !== laneName);
-        return [updatedVideo, ...filteredVideos];
+        if(newStatus !== 'Background' && newStatus !== 'Scan') {
+          // Get timeout from config
+          setTimeout(() => updateVideoList(laneName, "none"), 10000);
+          const filteredVideos = updatedList.filter((videoData) => videoData.laneName !== laneName);
+          return [updatedVideo, ...filteredVideos];
+        }
+
+        return updatedList;
       }
 
-      return updatedList;
     })
   };
 
-  // useEffect(() => {
-  //   async function checkConnections() {
-  //     if(videoList != null && videoList.length > 0) {
-  //       // Connect to currently shown videostreams
-  //       videoList.slice(startItem, endItem).forEach(async (video) => {
-  //         const isConnected = await video.videoSources[0].isConnected();
-  //         if(!isConnected) {
-  //           video.videoSources[0].connect();
-  //         }
-  //       });
+  //   useEffect(() => {
   //
-  //       // Disconnect other videostreams
-  //       videoList.forEach(async (video, index) => {
-  //         if(index < startItem || index >= endItem && video && video.videoSources[0]) {
+  //     async function checkConnections() {
+  //       if(videoList != null && videoList.length > 0) {
+  //         // Connect to currently shown videostreams
+  //         videoList.slice(startItem, endItem).forEach(async (video) => {
   //           const isConnected = await video.videoSources[0].isConnected();
-  //           if(isConnected) {
-  //             video.videoSources[0].disconnect();
+  //           if(!isConnected) {
+  //             video.videoSources[0].connect();
   //           }
-  //         }
-  //       });
+  //         });
+  //
+  //         // Disconnect other videostreams
+  //         videoList.forEach(async (video, index) => {
+  //           if(index < startItem || index >= endItem && video && video.videoSources[0]) {
+  //             const isConnected = await video.videoSources[0].isConnected();
+  //             if(isConnected) {
+  //               video.videoSources[0].disconnect();
+  //             }
+  //           }
+  //         });
+  //       }
   //     }
-  //   }
   //
-  //   checkConnections();
+  //     checkConnections();
   //
-  // }, [videoList]);
-
-
+  //   }, [videoList]);
 
   const maxItems = 6; // Max number of videos per page
   const [page, setPage] = useState(1);  // Page currently selected
@@ -197,7 +205,7 @@ export default function CameraGrid() {
   return (
       <>
         {videoList != null && (
-            <Grid container padding={2} justifyContent={"start"} >
+            <Grid container padding={2} justifyContent={"start"} spacing={1}>
 
               {videoList.slice(startItem, endItem).map((lane) => (
                   <VideoStatusWrapper key={idVal.current++} laneName={lane.laneName} status={lane.status}>

@@ -123,7 +123,6 @@ export default function LaneStatus() {
       if(existingLane){
         const updatedList = prevList.map((laneData) => {
           if (laneData.name === laneName) {
-
             if (newState === 'Tamper') {
 
               return {...laneData, isTamper: true, isOnline: true}
