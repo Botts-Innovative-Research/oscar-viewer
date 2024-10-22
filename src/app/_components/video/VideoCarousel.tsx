@@ -34,7 +34,7 @@ export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo)
                 }
                 currentVideo.connect()
             }
-            
+
         }
 
     }, [currentPage, videoSources]);

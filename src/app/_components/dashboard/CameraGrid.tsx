@@ -162,34 +162,6 @@ export default function CameraGrid() {
     })
   };
 
-  //   useEffect(() => {
-  //
-  //     async function checkConnections() {
-  //       if(videoList != null && videoList.length > 0) {
-  //         // Connect to currently shown videostreams
-  //         videoList.slice(startItem, endItem).forEach(async (video) => {
-  //           const isConnected = await video.videoSources[0].isConnected();
-  //           if(!isConnected) {
-  //             video.videoSources[0].connect();
-  //           }
-  //         });
-  //
-  //         // Disconnect other videostreams
-  //         videoList.forEach(async (video, index) => {
-  //           if(index < startItem || index >= endItem && video && video.videoSources[0]) {
-  //             const isConnected = await video.videoSources[0].isConnected();
-  //             if(isConnected) {
-  //               video.videoSources[0].disconnect();
-  //             }
-  //           }
-  //         });
-  //       }
-  //     }
-  //
-  //     checkConnections();
-  //
-  //   }, [videoList]);
-
   const maxItems = 6; // Max number of videos per page
   const [page, setPage] = useState(1);  // Page currently selected
   const [startItem, setStartItem] = useState(0);  // Current start of range

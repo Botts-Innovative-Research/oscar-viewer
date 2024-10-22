@@ -70,7 +70,7 @@ export default function MapComponent() {
                 let batchDS = lane.datasourcesBatch[idx];
                 let laneDSColl = laneDSMap.get(laneid);
 
-                if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/property/OGC/0/SensorLocation") && !ds.properties.name.includes('Rapiscan')) {
+                if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/property/OGC/0/SensorLocation") && !ds.properties.name.includes('Rapiscan') || ds.properties.observedProperties[0].definition.includes('http://sensorml.com/ont/swe/property/LocationVector')) {
                     laneDSColl.addDS('locBatch', batchDS);
                     locationDs.push(ds);
                 }
