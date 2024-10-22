@@ -38,12 +38,7 @@ export  function createNeutronViewCurve(neutronDatasource: { id: any; }) {
     let nCurve = new CurveLayer({
         dataSourceIds: [neutronDatasource.id],
         getValues: (rec: any, timestamp: any) => {
-            if(rec.neutronGrossCount !== undefined){
-                return {x: timestamp, y: rec.neutronGrossCount}
-            }
-            else if(rec.neutronCount1 !== undefined){
-                return {x: timestamp, y: rec.neutronCount1 }
-            }
+            return {x: timestamp, y: rec.neutronGrossCount}
         },
         name: 'Neutron Count',
         maxValues: 20,
