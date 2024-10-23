@@ -61,23 +61,23 @@ export  function createNSigmaCalcViewCurve(gammaDatasource: { id: any; }, thresh
         dataSourceIds: [gammaDatasource.id, thresholdDatasource.id],
         getValues: (rec: any) => {
 
-
-            if(rec.gammaGrossCount && rec.alarmState){
-                bkgCount = rec.gammaGrossCount;
-                state = rec.alarmState
-            }
-
-            if(rec.threshold && rec.sigma && bkgCount != 0 && state === 'Background'){
-
-                const nsigma = (rec.threshold - bkgCount) / rec.sigma;
-
-                console.log('state', state, 'nsigma', nsigma)
-
-                return { x: rec.timestamp, 'right-y-axis': nsigma};
-            }
-            else {
-                return {x:rec.timestamp, y: 0}
-            }
+            return {x: rec.timestamp, y: rec.sigma}
+            // if(rec.gammaGrossCount && rec.alarmState){
+            //     bkgCount = rec.gammaGrossCount;
+            //     state = rec.alarmState
+            // }
+            //
+            // if(rec.threshold && rec.sigma && bkgCount != 0 && state === 'Background'){
+            //
+            //     const nsigma = (rec.threshold - bkgCount) / rec.sigma;
+            //
+            //     console.log('state', state, 'nsigma', nsigma)
+            //
+            //     return { x: rec.timestamp, 'right-y-axis': nsigma};
+            // }
+            // else {
+            //     return {x:rec.timestamp, y: 0}
+            // }
         },
         maxValues: 100,
         name: "NSigma",

@@ -131,7 +131,7 @@ export default function CameraGrid() {
     if (videoList !== null && videoList.length > 0) {
       addSubscriptionCallbacks();
     }
-  }, [dataSourcesByLane]);
+  }, [dataSourcesByLane, videoList]);
 
   const updateVideoList = (laneName: string, newStatus: string) => {
     setVideoList((prevList) => {

@@ -17,14 +17,14 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
                           {...props.status !== "none" ? {
                                   // Styling for alarm and tamper states
                                   border: "solid",
-                                  borderWidth: "2px",
+                                  borderWidth: "1px",
                                   borderColor: (props.status == "Alarm" ? "error.main" : "secondary.main"),
                                   backgroundColor: (props.status == "Alarm" ? "errorHighlight" : "secondaryHighlight"),
                               } : {
                                   // Styling for tamper state
                                   border: "solid",
-                                  borderWidth: "2px",
-                                  borderColor: "#bdbdbd",
+                                  borderWidth: "1px",
+                                  borderColor:  "rgba(0, 0, 0, 0.12)",
                               },
                               margin: "2px",
                           },
@@ -33,7 +33,7 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
                 {props.children}
 
                 <Link href={{pathname: '/lane-view', query: {name: props.laneName}}} passHref>
-                    <Button size="small" sx={{color:'#000', fontSize: {xs: "0.75rem", sm: "0.85rem", md: "0.9rem", lg: "1rem"} }}>{props.laneName}</Button>
+                    <Typography variant="body1" style={{fontSize: 12, textWrap: 'nowrap'}}>{props.laneName}</Typography>
                 </Link>
             </Grid>
 
