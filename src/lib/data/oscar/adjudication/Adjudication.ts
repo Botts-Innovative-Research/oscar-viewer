@@ -148,6 +148,7 @@ export function createAdjudicationObservation(data: IAdjudicationData, resultTim
 }
 
 export async function sendSetAdjudicatedCommand(node: INode, controlStreamId: string, command: AdjudicationCommand | string) {
+    console.log("Adjudication Body:", command);
     let ep = node.getConnectedSystemsEndpoint(false) + `/controlstreams/${controlStreamId}/commands`
     let response = await fetch(ep, {
         method: "POST",

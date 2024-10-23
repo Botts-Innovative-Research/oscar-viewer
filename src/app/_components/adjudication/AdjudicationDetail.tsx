@@ -1,35 +1,43 @@
+/*
+ * Copyright (c) 2024.  Botts Innovative Research, Inc.
+ * All Rights Reserved
+ */
+
 "use client";
 
 import {
-    Avatar,
     Box,
     Button,
     Checkbox,
     FormControlLabel,
     InputBase,
-    Paper, Snackbar, SnackbarCloseReason,
+    Paper,
+    Snackbar,
+    SnackbarCloseReason,
     Stack,
     TextField,
     Typography
 } from "@mui/material";
-import {Comment, SelectedEvent} from "../../../../types/new-types";
+import {Comment} from "../../../../types/new-types";
 import UploadFileRoundedIcon from '@mui/icons-material/UploadFileRounded';
 import InsertDriveFileRoundedIcon from '@mui/icons-material/InsertDriveFileRounded';
 import React, {ChangeEvent, useContext, useRef, useState} from "react";
-import AdjudicationSelect from "../event-preview/AdjudicationSelect";
 import IsotopeSelect from "./IsotopeSelect";
 import AdjudicationLog from "./AdjudicationLog"
 import AdjudicationData, {
-    createAdjudicationObservation, findObservationIdBySamplingTime, generateCommandJSON,
+    findObservationIdBySamplingTime,
+    generateCommandJSON,
     IAdjudicationData,
     sendSetAdjudicatedCommand
 } from "@/lib/data/oscar/adjudication/Adjudication";
-import {selectCurrentUser, setShouldForceAlarmTableDeselect} from "@/lib/state/OSCARClientSlice";
+import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";
 import {useSelector} from "react-redux";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
+import {updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
 
@@ -190,20 +198,20 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         }catch(error){
             setAdjSnackMsg('Adjudication failed to submit.')
         }
-        setOpenSnack(true);
-        resetForm();
 
         // send command
         // we can use endTime as it is the same a resultTime in testing, this may not be true in practice but this is a stop-gap fix anyway
-        // let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, props.event.dataStreamId, props.event.endTime)
+        let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, props.event.dataStreamId, props.event.endTime)
 
-        // guard
-        // if(!refObservation) return
+        // guard, maybe add an appropriate snackbar
+        if (!refObservation) return
         await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId,
-            generateCommandJSON(props.event.observationId, true));
+            generateCommandJSON(refObservation.id, true));
+        // dispatch(updateSelectedEventAdjudication(comboData));
 
         setShouldFetchLogs(true);
-
+        setOpenSnack(true);
+        resetForm();
     }
 
     function onFetchComplete() {
