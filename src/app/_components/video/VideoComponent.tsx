@@ -17,11 +17,11 @@ export default function VideoComponent(props: OSHVideoProps) {
 
     const hasRendered = useRef(false);
     const [videoView, setVideoView] = useState(null);
-    const [videoDataSource, setVideoDataSource] = useState(props.videoSources[0]);
+    const [videoDataSource, setVideoDataSource] = useState(props.videoSources[props.currentPage]);
 
-    useEffect(() => {
-        setVideoDataSource(props.videoSources[props.currentPage])
-    }, [props.currentPage]);
+    // useEffect(() => {
+    //     setVideoDataSource(props.videoSources[props.currentPage])
+    // }, [props.currentPage]);
 
     useEffect(() => {
         if(hasRendered.current) return;

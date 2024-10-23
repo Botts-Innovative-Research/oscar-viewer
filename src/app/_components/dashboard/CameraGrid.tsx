@@ -31,6 +31,8 @@ export default function CameraGrid() {
 
   const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
 
+
+
   // Create and connect videostreams
   useEffect(() => {
     if(videoList == null || videoList.length == 0 && laneMap.size > 0 && dsVideo.length > 0) {
@@ -81,6 +83,7 @@ export default function CameraGrid() {
 
         if (ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/RasterImage")) {
           videoDs.push(ds);
+          // laneDSColl.addDS('videoRT', rtDS);
         }
 
         if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
@@ -102,31 +105,33 @@ export default function CameraGrid() {
     datasourceSetup();
   }, [laneMapRef.current]);
 
-  const addSubscriptionCallbacks = useCallback(() => {
 
+  const addSubscriptionCallbacks = useCallback(() => {
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
-      // guard against a lane where there is no video source so we can avoid an error popup
+
       if (!videoList.some((lane) => lane.laneName === laneName)) {
         continue;
       }
 
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
         const alarmState = message.values[0].data.alarmState;
-
+        console.log(alarmState)
         if(alarmState != "Background" && alarmState != "Scan") {
-          console.log(alarmState)
           updateVideoList(laneName, alarmState);
         }
       });
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
         const alarmState = message.values[0].data.alarmState;
+        console.log(alarmState)
         if(alarmState != "Background" && alarmState != "Scan") {
+
           updateVideoList(laneName, alarmState);
         }
       });
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
-        const tamperStatus = message.values[0].data.tamperStatus;
-        if(tamperStatus) {
+        const alarmState = message.values[0].data.tamperStatus;
+        if(alarmState) {
+          console.log(alarmState)
           updateVideoList(laneName, 'Tamper');
         }
       });
@@ -140,33 +145,53 @@ export default function CameraGrid() {
     if(videoList !== null && videoList.length > 0) {
       addSubscriptionCallbacks();
     }
-  }, [dataSourcesByLane]);
+  }, [dataSourcesByLane, videoList]);
+
 
   const updateVideoList = (laneName: string, newStatus: string) => {
     setVideoList((prevList) => {
-      let existingVideo = prevList.find((video) => video.laneName === laneName)
+      const updatedList = prevList.map((videoData) =>
+          videoData.laneName === laneName ? {...videoData, status: newStatus } : videoData
+      );
 
-      if(existingVideo){
-        const updatedList = prevList.map((videoData) =>{
-          if(videoData.laneName === laneName){
-            return {...videoData, status: newStatus}
-          }
-          return videoData;
-        });
-        const updatedVideo = updatedList.find((videoData) => videoData.laneName === laneName);
+      const updatedVideo = updatedList.find((videoData) => videoData.laneName === laneName);
 
-        if(newStatus !== 'Background' && newStatus !== 'Scan') {
-          // Get timeout from config
-          setTimeout(() => updateVideoList(laneName, "none"), 10000);
-          const filteredVideos = updatedList.filter((videoData) => videoData.laneName !== laneName);
-          return [updatedVideo, ...filteredVideos];
-        }
-
-        return updatedList;
+      if(newStatus !== 'Background' && newStatus !== 'Scan') {
+        // Get timeout from config
+        setTimeout(() => updateVideoList(laneName, "none"), 10000);
+        const filteredVideos = updatedList.filter((videoData) => videoData.laneName !== laneName);
+        return [updatedVideo, ...filteredVideos];
       }
 
+      return updatedList;
     })
   };
+
+  // const updateVideoList = (laneName: string, newStatus: string) => {
+  //   setVideoList((prevList) => {
+  //     let existingVideo = prevList.find((video) => video.laneName === laneName)
+  //
+  //     if(existingVideo){
+  //       const updatedList = prevList.map((videoData) =>{
+  //         if(videoData.laneName === laneName){
+  //           return {...videoData, status: newStatus}
+  //         }
+  //         return videoData;
+  //       });
+  //       const updatedVideo = updatedList.find((videoData) => videoData.laneName === laneName);
+  //
+  //       if(newStatus !== 'Background' && newStatus !== 'Scan') {
+  //         // Get timeout from config
+  //         setTimeout(() => updateVideoList(laneName, "none"), 10000);
+  //         const filteredVideos = updatedList.filter((videoData) => videoData.laneName !== laneName);
+  //         return [updatedVideo, ...filteredVideos];
+  //       }
+  //
+  //       return updatedList;
+  //     }
+  //
+  //   })
+  // };
 
   const maxItems = 6; // Max number of videos per page
   const [page, setPage] = useState(1);  // Page currently selected
@@ -186,9 +211,7 @@ export default function CameraGrid() {
             <Grid container padding={2} justifyContent={"start"} spacing={1}>
 
               {videoList.slice(startItem, endItem).map((lane) => (
-                  <VideoStatusWrapper key={idVal.current++} laneName={lane.laneName} status={lane.status}>
-                    <VideoCarousel laneName={lane.laneName} videoSources={lane.videoSources}/>
-                  </VideoStatusWrapper>
+                  <VideoStatusWrapper key={idVal.current++} laneName={lane.laneName} status={lane.status} children={(<VideoCarousel laneName={lane.laneName} videoSources={lane.videoSources}/>)}/>
 
               ))}
               <Grid item xs={12} display={"flex"} justifyContent={"center"}>

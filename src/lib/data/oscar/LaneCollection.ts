@@ -350,6 +350,9 @@ export class LaneDSColl {
     gammaTrshldBatch: typeof SweApi[];
     gammaTrshldRT: typeof SweApi[];
     connectionRT: typeof SweApi[];
+    connectionBatch: typeof SweApi[];
+    videoRT: typeof SweApi[];
+    videoBatch: typeof SweApi[];
 
     constructor() {
         this.occRT = [];
@@ -365,6 +368,9 @@ export class LaneDSColl {
         this.gammaTrshldBatch = [];
         this.gammaTrshldRT = [];
         this.connectionRT = [];
+        this.connectionBatch = [];
+        this.videoRT = [];
+        this.videoBatch = [];
     }
 
     getDSArray(propName: string): typeof SweApi[] {
@@ -403,6 +409,13 @@ export class LaneDSColl {
         for (let ds of this.gammaTrshldBatch) {
             ds.subscribe(handler, [EventType.DATA]);
         }
+
+        for (let ds of this.connectionBatch) {
+            ds.subscribe(handler, [EventType.DATA]);
+        }
+        for (let ds of this.videoBatch) {
+            ds.subscribe(handler, [EventType.DATA]);
+        }
     }
 
     addSubscribeHandlerToAllRTDS(handler: Function) {
@@ -425,6 +438,9 @@ export class LaneDSColl {
             ds.subscribe(handler, [EventType.DATA]);
         }
         for (let ds of this.connectionRT) {
+            ds.subscribe(handler, [EventType.DATA]);
+        }
+        for (let ds of this.videoRT) {
             ds.subscribe(handler, [EventType.DATA]);
         }
     }
@@ -475,6 +491,15 @@ export class LaneDSColl {
             ds.connect();
         }
         for (let ds of this.connectionRT) {
+            ds.connect();
+        }
+        for (let ds of this.videoRT) {
+            ds.connect();
+        }
+        for (let ds of this.videoBatch) {
+            ds.connect();
+        }
+        for (let ds of this.connectionBatch) {
             ds.connect();
         }
     }

@@ -1,7 +1,7 @@
-import {Box, Button, Typography } from "@mui/material";
+import {Box, Button, Tooltip, Typography} from "@mui/material";
 import Grid from "@mui/material/Grid/Grid";
 import Link from "next/link";
-import { PropsWithChildren} from "react";
+import React, { PropsWithChildren} from "react";
 
 interface VideoStatusWrapperProps {
     laneName: string
@@ -17,25 +17,30 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
                           {...props.status != "none" ? {
                                   // Styling for alarm and tamper states
                                   border: "solid",
-                                  borderWidth: "2px",
+                                  borderWidth: "1px",
                                   borderColor: (props.status == "Alarm" ? "error.main" : "secondary.main"),
                                   backgroundColor: (props.status == "Alarm" ? "errorHighlight" : "secondaryHighlight"),
                               } : {
-                                  // Styling for tamper state
+                                  // Styling for t>mper state
                                   border: "solid",
-                                  borderWidth: "2px",
-                                  borderColor: "#bdbdbd",
+                                  borderWidth: "1px",
+                                  borderColor: "rgba(0, 0, 0, 0.12)",
+                                  borderRadius: "10px"
                               },
                               margin: "2px",
                           },
                   }}
             >
                 {props.children}
-
-                <Link href={{pathname: '/lane-view', query: {name: props.laneName}}} passHref>
-                    <Button size="small" sx={{fontSize: {xs: "0.75rem", sm: "0.85rem", md: "0.9rem", lg: "1rem"} }}>{props.laneName}</Button>
-                </Link>
+                <Typography variant="body1" style={{fontSize: 12, textWrap: 'nowrap'}}>{props.laneName}</Typography>
             </Grid>
 
     )
 }
+
+
+{/*<Link href={{pathname: '/lane-view', query: {name: props.laneName}}} passHref>*/}
+{/*<Tooltip title={props.laneName} arrow placement="bottom">*/}
+{/*    <Typography variant="body2" style={{textWrap: 'nowrap'}}>{props.laneName.length <= 10 ? props.laneName : (props.laneName.substr(0, 10)) }</Typography>*/}
+{/*</Tooltip>*/}
+{/*</Link>*/}

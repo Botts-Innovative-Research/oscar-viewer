@@ -1,4 +1,4 @@
-import {Avatar, Box, IconButton, Stack } from '@mui/material';
+import {Avatar, Box, Grid, IconButton, Stack } from '@mui/material';
 import { useState, useEffect } from 'react';
 import "../../style/cameragrid.css";
 import VideoComponent from './VideoComponent';
@@ -25,77 +25,106 @@ export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo)
     useEffect(() => {
 
         if(videoSources.length > 0 && currentPage <= videoSources.length ){
+        // if(videoSources.length > 0 ){
 
             const currentVideo = videoSources[currentPage];
 
-            if(currentVideo){
-                if(currentVideo.isConnected()){
-                    currentVideo.disconnect();
+
+            if(videoSources.length > 0 && currentPage <= videoSources.length ){
+
+                const currentVideo = videoSources[currentPage];
+
+                if(currentVideo){
+                    if(currentVideo.isConnected()){
+                        currentVideo.disconnect();
+                    }
+                    currentVideo.connect()
                 }
-                currentVideo.connect()
+
             }
 
         }
 
     }, [currentPage, videoSources]);
 
-    async function disconnect (prevPage: number){
+    // const handleNextPage = () => {
+    //     setCurrentPage((prevPage) => Math.min(prevPage + 1, maxPages - 1));
+    // };
+    //
+    // const handlePrevPage = () => {
+    //     setCurrentPage((prevPage) => Math.max(prevPage - 1, 0));
+    // };
+
+    const handleNextPage = () =>{
+        setCurrentPage((prevPage)=> {
+            let nextPage = prevPage + 1
+            if(nextPage <= maxPages-1){
+                checkConnection(prevPage);
+                return nextPage;
+            }else{
+                return prevPage;
+            }
+        })
+    }
+
+    const handlePrevPage = () =>{
+        setCurrentPage((prevPage) => {
+            let currpage = prevPage - 1;
+            checkConnection(prevPage);
+            return currpage;
+
+        })
+
+    }
+
+    //next page -> disconnect from the previous page and connect to the next page if its not connected we can connect it
+    async function checkConnection (prevPage: number){
         if(prevPage >= 0){
 
             const isConnected = await videoSources[prevPage].isConnected();
             if(isConnected){
-                await videoSources[prevPage].disconnect();
-                console.log('disconnected', videoSources[prevPage])
+                console.log('disconnecting', videoSources[prevPage].name)
+                videoSources[prevPage].disconnect();
             }
+
         }
     }
 
-
-    const handleNextPage = () => {
-        setCurrentPage((prevPage) => Math.min(prevPage + 1, maxPages - 1));
-    };
-
-    const handlePrevPage = () => {
-        setCurrentPage((prevPage) => Math.max(prevPage - 1, 0));
-    };
-
     return (
-        <Box
-            sx={{
-                position: 'relative',
-                width: '100%',
-                height: '100%'
-            }}
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
-        >
-            {maxPages > 1 && currentPage > 0 && (
-                <StyledButtonWrapper $prev={true} $fullHeightHover={true} $next={false}>
-                    <StyledIconButton $alwaysVisible={false} $fullHeightHover={true} onClick={handlePrevPage} disabled={currentPage === 0}>
-                        <NavigateBeforeIcon sx={{ fontSize: '1.5rem' }} />
-                    </StyledIconButton>
-                </StyledButtonWrapper>
-            )}
-
-            {maxPages > 1 && (
-                <StyledButtonWrapper $prev={false} $next={true} $fullHeightHover={true}>
-                    <StyledIconButton $alwaysVisible={false} $fullHeightHover={true} onClick={handleNextPage} disabled={currentPage === maxPages - 1}>
-                        <NavigateNextIcon sx={{ fontSize: '1.5rem' }} />
-                    </StyledIconButton>
-                </StyledButtonWrapper>
-            )}
-
-            <Stack spacing={2} direction="column" alignContent="center" justifyContent="center" sx={{ padding: 1 }}>
-                {videoSources.length > 0 && (
-                    <VideoComponent
-                        key={`${laneName}-${currentPage}`}
-                        id={`${laneName}-${currentPage}`}
-                        videoSources={[videoSources[currentPage]]}
-                        currentPage={currentPage}
-                    />
+        <Grid item xs>
+            <Box
+                onMouseEnter={() => setHovered(true)}
+                onMouseLeave={() => setHovered(false)}
+            >
+                {maxPages > 1 && currentPage > 0 && (
+                    <StyledButtonWrapper $prev={true} $fullHeightHover={true} $next={false}>
+                        <StyledIconButton $alwaysVisible={false} $fullHeightHover={true} onClick={handlePrevPage} disabled={currentPage === 0}>
+                            <NavigateBeforeIcon sx={{ fontSize: '1.5rem' }} />
+                        </StyledIconButton>
+                    </StyledButtonWrapper>
                 )}
-            </Stack>
-        </Box>
+
+                {maxPages > 1 && (
+                    <StyledButtonWrapper $prev={false} $next={true} $fullHeightHover={true}>
+                        <StyledIconButton $alwaysVisible={false} $fullHeightHover={true} onClick={handleNextPage} disabled={currentPage === maxPages}>
+                            <NavigateNextIcon sx={{ fontSize: '1.5rem' }} />
+                        </StyledIconButton>
+                    </StyledButtonWrapper>
+                )}
+
+                <Stack spacing={2} direction="column" alignItems="center" justifyContent="center" padding={1}>
+                    {videoSources.length > 0 && (
+                        <VideoComponent
+                            key={`${laneName}-${currentPage}`}
+                            id={`${laneName}-${currentPage}`}
+                            videoSources={[videoSources[currentPage]]}
+                            currentPage={currentPage}
+                        />
+                    )}
+                </Stack>
+            </Box>
+        </Grid>
+
     );
 
 }

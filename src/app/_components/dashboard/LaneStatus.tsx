@@ -168,8 +168,8 @@ export default function LaneStatus() {
         const onlineStatuses = filteredStatuses.filter((list) => list.isOnline);
 
         return [updatedLane, ...offlineStatuses, ...onlineStatuses]
-
-      }else{
+      }
+      else{
         const newLane: LaneStatusProps= {
           id: idVal.current++,
           name: laneName,
