@@ -477,5 +477,6 @@ export class LaneDSColl {
         for (let ds of this.connectionRT) {
             ds.connect();
         }
+        console.info("Connecting all datasources of:", this);
     }
 }

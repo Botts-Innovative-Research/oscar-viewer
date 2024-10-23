@@ -14,7 +14,7 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
             <Grid item xs={2} display={"flex"} direction={"column"} alignItems={"center"}
                   sx={{
                       "&.MuiGrid-item":
-                          {...props.status != "none" ? {
+                          {...props.status !== "none" ? {
                                   // Styling for alarm and tamper states
                                   border: "solid",
                                   borderWidth: "2px",
