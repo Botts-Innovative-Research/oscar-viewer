@@ -115,7 +115,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
         const adjDsID = currLaneEntry.parentNode.laneAdjMap.get(currentLane);
         const ep = currLaneEntry.parentNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + adjDsID + "/observations";
-        try{
+        try {
             let resp = await fetch(ep, {
                 method: "POST",
                 headers: {
@@ -137,12 +137,18 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                 generateCommandJSON(refObservation.id, true));
             dispatch(updateSelectedEventAdjudication(comboData));
 
-            if(resp.ok){
+            if (resp.ok) {
                 setAdjSnackMsg('Adjudication Submitted Successfully')
-            }else{
+                resetAdjudicationData();
+                dispatch(setEventPreview({
+                    isOpen: false,
+                    eventData: null
+                }));
+                dispatch(setShouldForceAlarmTableDeselect(true))
+            } else {
                 setAdjSnackMsg('Adjudication Submission Failed. Check your connection.')
             }
-        }catch(error){
+        } catch (error) {
             setAdjSnackMsg('Adjudication failed to submit.')
         }
 
@@ -150,6 +156,10 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     }
 
     const resetAdjudicationData = () => {
+        disconnectDSArray(gammaDatasources);
+        disconnectDSArray(neutronDatasources);
+        disconnectDSArray(thresholdDatasources);
+        disconnectDSArray(occDatasources);
         setAdjFormData(null);
         setAdjudication(null);
         setNotes("");
