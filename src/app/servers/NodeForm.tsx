@@ -118,12 +118,12 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
          try {
              const response = await fetch(endpoint);
              if (!response.ok) {
-                 setNodeSnackMsg('Node is unreachable. Check your node.');
+                 setNodeSnackMsg('Node is unreachable. Check your node configuration.');
              } else {
                  setNodeSnackMsg('Node is reachable.');
              }
          } catch (error) {
-             setNodeSnackMsg('Node is unreachable. Check your node.');
+             setNodeSnackMsg('Node is unreachable. Check your node configuration.');
          }
     }
 
