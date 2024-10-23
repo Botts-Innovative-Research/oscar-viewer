@@ -14,24 +14,6 @@ export function createSigmaViewCurve(thresholdDatasource: { id: any; }) {
 
     return sigmaCurve;
 }
-
-
-
-export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
-    if (!thresholdDatasource) return null;
-
-    let thresholdCurve = new CurveLayer({
-        dataSourceIds: [thresholdDatasource.id],
-        getValues: (rec: any, timestamp: any) => ({x: timestamp, y: rec.threshold}),
-        name: "Gamma Threshold",
-        backgroundColor: "#ab47bc",
-        lineColor: '#ab47bc',
-        maxValues: 20,
-    });
-
-    return thresholdCurve;
-}
-
 export  function createNeutronViewCurve(neutronDatasource: { id: any; }) {
     if (!neutronDatasource) return null;
 
@@ -51,12 +33,31 @@ export  function createNeutronViewCurve(neutronDatasource: { id: any; }) {
     return nCurve;
 }
 
-export  function createGammaSigmaCalcViewCurve(gammaDatasource: { id: any; }, thresholdDatasource: { id: any; }) {
+
+export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
+    if (!thresholdDatasource) return null;
+
+    let thresholdCurve = new CurveLayer({
+        dataSourceIds: [thresholdDatasource.id],
+        getValues: (rec: any, timestamp: any) => ({x: timestamp, y: rec.threshold}),
+        name: "Threshold",
+        backgroundColor: "#9b27b0",
+        lineColor: '#9b27b0',
+        maxValues: 20,
+        yLabel: 'CPS',
+        borderWidth: 1,
+
+    });
+
+    return thresholdCurve;
+}
+
+export  function createNSigmaCalcViewCurve(gammaDatasource: { id: any; }, thresholdDatasource: { id: any; }) {
     let bkgCount = 0;
     let state = ''
     if (!gammaDatasource && !thresholdDatasource) return null;
 
-    let sCurve = new CurveLayer({
+    let nCurve = new CurveLayer({
         dataSourceIds: [gammaDatasource.id, thresholdDatasource.id],
         getValues: (rec: any) => {
 
@@ -72,25 +73,23 @@ export  function createGammaSigmaCalcViewCurve(gammaDatasource: { id: any; }, th
 
                 console.log('state', state, 'nsigma', nsigma)
 
-                return { x: rec.timestamp, y: nsigma};
+                return { x: rec.timestamp, 'right-y-axis': nsigma};
             }
             else {
                 return {x:rec.timestamp, y: 0}
             }
         },
         maxValues: 100,
-        name: "Gamma Sigma",
+        name: "NSigma",
         yAxisID: 'right-y-axis',
-        yLabel: 'Sigma',
         borderWith: 1,
-        backgroundColor: "#9b27b0",
-        lineColor: "#9b27b0",
+        backgroundColor: "#e0bee7",
+        lineColor: "#a895ab",
 
     });
 
-    return sCurve;
+    return nCurve;
 }
-
 
 
 export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
@@ -101,15 +100,11 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
         getValues: (rec: any, timestamp: any) => {
             return { x: timestamp, y: rec.gammaGrossCount};
         },
-        maxValues: 100,
+        maxValues: 20,
         name: "Gamma Count",
-
-        yAxisID: 'left-y-axis',
-        yLabel: 'CPS',
         borderWidth: 1,
         backgroundColor: "#f44336",
         lineColor: "#f44336",
-
     });
 
     return gCurve;

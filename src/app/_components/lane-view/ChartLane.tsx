@@ -7,7 +7,7 @@ import React, {useCallback, useEffect, useRef, useState} from "react";
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
 import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView";
 import {
-    createGammaSigmaCalcViewCurve,
+    createNSigmaCalcViewCurve,
     createGammaViewCurve,
     createNeutronViewCurve,
     createThresholdViewCurve
@@ -33,7 +33,8 @@ export default function ChartLane(props: ChartInterceptProps){
     const [neutronChartID, setNeutronChartID] = useState<string>(neutronChartBaseId);
 
     const [gammaCurve, setGammaCurve] = useState<typeof CurveLayer>();
-    const [gammaSigmaCurve, setGammaSigmaCurve] = useState<typeof CurveLayer>();
+    const [thresholdCurve, setThresholdCurve] = useState<typeof CurveLayer>();
+    const [nSigmaCurve, setNSigmaCurve] = useState<typeof CurveLayer>();
     const [neutronCurve, setNeutronCurve] = useState<typeof CurveLayer>();
 
     const gammaChartViewRef = useRef<typeof ChartJsView | null>(null);
@@ -45,9 +46,11 @@ export default function ChartLane(props: ChartInterceptProps){
         if(props.datasources.gamma){
 
             if(props.datasources.threshold){
-                let sCurve = createGammaSigmaCalcViewCurve(props.datasources.gamma, props.datasources.threshold);
-                setGammaSigmaCurve(sCurve);
+                let nCurve = createNSigmaCalcViewCurve(props.datasources.gamma, props.datasources.threshold);
+                setNSigmaCurve(nCurve);
 
+                let tCurve = createThresholdViewCurve(props.datasources.threshold);
+                setThresholdCurve(tCurve);
             }
 
             let gCurve = createGammaViewCurve(props.datasources.gamma);
@@ -65,8 +68,9 @@ export default function ChartLane(props: ChartInterceptProps){
 
     const checkForMountableAndCreateCharts = useCallback(() => {
 
-        if (!gammaChartViewRef.current && !isReadyToRender && (gammaSigmaCurve || gammaCurve)) {
-            console.log("Creating Gamma Chart:", gammaSigmaCurve, gammaCurve);
+        if (!gammaChartViewRef.current && !isReadyToRender && (thresholdCurve || gammaCurve || nSigmaCurve)) {
+        // if (!gammaChartViewRef.current && !isReadyToRender && gammaCurve) {
+            console.log("Creating Gamma Chart:", gammaCurve);
 
             const container = document.getElementById(gammaChartID);
             let layers: any[] =[];
@@ -74,8 +78,9 @@ export default function ChartLane(props: ChartInterceptProps){
             if (gammaCurve) {
                 layers.push(gammaCurve);
             }
-            if (gammaSigmaCurve) {
-                layers.push(gammaSigmaCurve);
+            if (thresholdCurve) {
+                layers.push(thresholdCurve);
+                // layers.push(nSigmaCurve)
             }
 
             if (container) {
@@ -85,22 +90,74 @@ export default function ChartLane(props: ChartInterceptProps){
                     layers: layers,
                     css: "chart-view-lane-view",
                     options:{
-                        responsive: true,
+                        //shows both ciunt and thresh when hover over time index...
+                        interaction: {
+                            intersect: false,
+                            mode: 'index',
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Gamma Chart',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                align: 'center',
+                                position: 'top',
+
+                            },
+
+                            //count threshold legend position
+                            legend: {
+                                display: true,
+                                align: 'center',
+                                position: 'bottom',
+                            }
+                        },
+                        autoPadding: true,
+                        responsive: true, //resizes chart based on container size... good for browser changing size
                         scales: {
-                            'left-y-axis': {
-                                type: 'linear',
+                            y:{
+                                title:{
+                                    display: true,
+                                    text: 'CPS',
+
+                                },
                                 display: true,
                                 position: 'left',
-                                ticks: { beginAtZero: true, color: '#f44336' },
-                                grid: {display: false,  drawOnChartArea: false,}
+                                align: 'center',
+                                suggestedMin: 0,
+                                suggestedMax: 1500,
+                                ticks: {
+
+                                },
+                                grid: {display: false, beginAtZero: true}
 
                             },
                             'right-y-axis':{
-                                type: 'linear',
+                                title:{
+                                    display: true,
+                                    text: 'Sigma',
+                                    // color: '#f44336',
+                                },
                                 display: true,
-                                ticks: { beginAtZero: true, color: '#9b27b0' },
-                                position: 'right',
-                                grid: {display: false,  drawOnChartArea: false,}
+                                position: 'left',
+                                suggestedMin: -10,
+                                suggestedMax: 10,
+
+
+                                // ticks: {
+                                //     beginAtZero: false, color: '#9b27b0' ,
+                                //     callback: function(value: any){
+                                //
+                                //         return value
+                                //     }
+                                // },
+                                ticks: {
+                                },
+
+                                grid: {display: false,}
 
                             },
                         },
@@ -119,37 +176,59 @@ export default function ChartLane(props: ChartInterceptProps){
                     container: neutronChartID,
                     layers: [neutronCurve],
                     css: "chart-view",
-                    chartjsProps: {
-                        chartProps: {
-                            scales: {
-                                yAxes: [{
 
-                                    scaleLabel: {
-                                        labelString: "CPS"
-                                    },
-                                    ticks: {
-                                        maxTicksLimit: 20
-                                    }
-                                }],
-                                xAxes: [{
-                                    scaleLabel: {
-                                        labelString: "Time"
-                                    },
-                                    ticks: {
-                                        maxTicksLimit: 20
-                                    }
-                                }],
+                    options: {
+                        //shows both count and thresh when hover over time index...
+                        interaction: {
+                            intersect: false,
+                            mode: 'index',
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Neutron Chart',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                align: 'center',
+                                position: 'top',
+                                padding: {
+                                    top: 10,
+                                    bottom: 10,
+
+                                }
                             },
-                            maintainAspectRatio: false
+                            //where do you want it positioned at
+                            legend: {
+                                display: true,
+                                align: 'right',
+                                position: 'bottom',
+
+
+                            }
+                        },
+                        responsive: true, //resizes chart based on container size... good for browser changing size
+                        scales: {
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'CPS',
+                                },
+                                display: true,
+                                position: 'left',
+                                align: 'center',
+                                ticks: {
+                                },
+
+                            },
                         }
-                    }, datasetsProps: {
-                        backgroundColor: 'rgba(141,242,246, 0.1)'
-                    }
+                    },
                 });
                 setViewReady(true);
             }
         }
-    }, [gammaSigmaCurve, gammaCurve, neutronCurve, isReadyToRender]);
+    }, [gammaCurve, nSigmaCurve,thresholdCurve, neutronCurve, isReadyToRender]);
 
     const checkReadyToRender = useCallback(() => {
         if (chartsReady && viewReady) {
