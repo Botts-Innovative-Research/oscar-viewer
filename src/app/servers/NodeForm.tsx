@@ -29,6 +29,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     editNode?: INode
 }) {
 
+
     const [openSnack, setOpenSnack] = useState(false);
     const[nodeSnackMsg, setNodeSnackMsg] = useState("");
 
@@ -149,14 +150,12 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                     <TextField label="Username" name="username" value={newNode.auth.username} onChange={handleChange}/>
                     <TextField label="Password" name="password" type={"password"} value={newNode.auth.password}
                                onChange={handleChange}/>
-                    <FormControlLabel
-                        control={<Checkbox name="isSecure" checked={newNode.isSecure} onChange={handleChange}/>}
-                        label="Is Secure">
-                    </FormControlLabel>
+                    <FormControlLabel control={<Checkbox name="isSecure" checked={newNode.isSecure} onChange={handleChange}/>} label="Is Secure"/>
                     <Button variant={"contained"} color={"primary"}
                             onClick={handleButtonAction}>{isEditNode ? "Save Changes" : "Add Node"}</Button>
                     <Snackbar
                         open={openSnack}
+                        anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         autoHideDuration={5000}
                         onClose={handleCloseSnack}
                         message={nodeSnackMsg}

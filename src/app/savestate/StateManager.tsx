@@ -83,9 +83,9 @@ export default function StateManager() {
         if (cfgDSId === null) {
             let obs = OSHSliceWriterReader.writeConfigToString({oscarData: oscarSlice, oshData: oshSlice}, fileName);
             let resp = await OSHSliceWriterReader.sendBlobToServer(defaultNode, dsID, obs);
-            if(resp){
-               setSaveSnackMsg('OSCAR Configuration Saved')
-            }else{
+            if (resp) {
+                setSaveSnackMsg('OSCAR Configuration Saved')
+            } else {
                 setSaveSnackMsg('Failed to save OSCAR Configuration')
             }
             setOpenSaveSnack(true)
@@ -110,7 +110,7 @@ export default function StateManager() {
             let nodes = cfgJSON.nodes.map((opt: NodeOptions) => new Node(opt));
             dispatch(setNodes(nodes));
 
-        }else{
+        } else {
             setLoadSnackMsg('Failed to load OSCAR State')
         }
         setOpenSnack(true)
@@ -184,7 +184,8 @@ export default function StateManager() {
 
     return (
         <Box sx={{
-            margin: 2, padding: 2, width: isSmallScreen ? '100%' : '75%'}}>
+            margin: 2, padding: 2, width: isSmallScreen ? '100%' : '75%'
+        }}>
             <Card>
                 <CardHeader title={"Configuration Management"} titleTypographyProps={{variant: "h2"}}/>
                 <CardContent component="form">
@@ -197,7 +198,8 @@ export default function StateManager() {
                                     <Stack spacing={2}>
 
                                         <TextField label="File Name" value={fileName} onChange={handleChangeForm}/>
-                                        <Button onClick={toggleSaveAlert} variant={"contained"} color={"primary"} disabled={showSaveAlert}>
+                                        <Button onClick={toggleSaveAlert} variant={"contained"} color={"primary"}
+                                                disabled={showSaveAlert}>
                                             Save
                                         </Button>
                                         {showSaveAlert && (
@@ -206,12 +208,15 @@ export default function StateManager() {
 
                                                 <Stack spacing={2} direction={"row"}>
                                                     <Typography>
-                                                        Are you sure you want to save the configuration (and overwrite the previous one)?
+                                                        Are you sure you want to save the configuration (and overwrite
+                                                        the previous one)?
                                                     </Typography>
-                                                    <Button color={"success"} variant="contained" onClick={handleSaveState}>
+                                                    <Button color={"success"} variant="contained"
+                                                            onClick={handleSaveState}>
                                                         Save
                                                     </Button>
-                                                    <Button color={"error"} variant="contained"  onClick={toggleSaveAlert}>
+                                                    <Button color={"error"} variant="contained"
+                                                            onClick={toggleSaveAlert}>
                                                         Cancel
                                                     </Button>
                                                 </Stack>
@@ -219,6 +224,7 @@ export default function StateManager() {
                                             </Alert>
                                         )}
                                         <Snackbar
+                                            anchorOrigin={{vertical: 'top', horizontal: 'center'}}
                                             open={openSaveSnack}
                                             autoHideDuration={5000}
                                             onClose={handleCloseSnack}
@@ -249,7 +255,8 @@ export default function StateManager() {
                                                    value={loadNodeOpts.auth.password}
                                                    onChange={handleChangeLoadForm} type={"password"}/>
 
-                                        <Button onClick={toggleLoadAlert} variant={"contained"} color={"primary"} disabled={showLoadAlert}>
+                                        <Button onClick={toggleLoadAlert} variant={"contained"} color={"primary"}
+                                                disabled={showLoadAlert}>
                                             Load State
                                         </Button>
                                         {showLoadAlert && (
@@ -258,7 +265,8 @@ export default function StateManager() {
                                                 <Container>
                                                     <Stack spacing={2} direction={"row"}>
                                                         <Typography>
-                                                            Are you sure you want to load the configuration (and overwrite the previous one)?
+                                                            Are you sure you want to load the configuration (and
+                                                            overwrite the previous one)?
                                                         </Typography>
                                                         <Button variant={"contained"} color={"success"}
                                                                 onClick={handleLoadState}>
@@ -273,6 +281,7 @@ export default function StateManager() {
                                             </Alert>
                                         )}
                                         <Snackbar
+                                            anchorOrigin={{vertical: 'top', horizontal: 'center'}}
                                             open={openSnack}
                                             autoHideDuration={5000}
                                             onClose={handleCloseSnack}

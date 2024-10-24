@@ -29,7 +29,7 @@ interface LaneWithVideo {
     videoSources: typeof SweApi[]
 }
 export default function VideoGrid(props: LaneVideoProps) {
-    const idVal = useRef(1);
+
     const [videoList, setVideoList] = useState<LaneWithVideo[] | null>(null);
     const [currentPage, setCurrentPage] = useState(0);
 
@@ -136,7 +136,7 @@ export default function VideoGrid(props: LaneVideoProps) {
                         sx={{ padding: 2, width: '50%', height: '50'}}
                     >
                         {videoList.slice(currentPage, maxPages).map((lane) => (
-                            <VideoComponent key={idVal.current++} id={lane.laneName} currentPage={currentPage} videoSources={lane.videoSources}/>
+                            <VideoComponent key={lane.laneName} id={lane.laneName} currentPage={currentPage} videoSources={lane.videoSources}/>
                         ))}
 
                     </Stack>

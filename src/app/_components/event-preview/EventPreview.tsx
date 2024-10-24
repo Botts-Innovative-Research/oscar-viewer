@@ -344,6 +344,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                             disabled={adjFormData === null}
                             sx={{width: "25%"}}>Submit</Button>
                     <Snackbar
+                        anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         open={openSnack}
                         autoHideDuration={5000}
                         onClose={handleCloseSnack}
