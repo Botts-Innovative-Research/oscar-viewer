@@ -328,6 +328,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     <Button disableElevation variant={"contained"} color={"success"}
                             onClick={sendAdjudicationData}>Submit</Button>
                     <Snackbar
+                        anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         open={openSnack}
                         autoHideDuration={5000}
                         onClose={handleCloseSnack}

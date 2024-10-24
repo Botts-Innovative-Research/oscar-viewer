@@ -48,7 +48,6 @@ export default function LaneViewPage() {
           </Grid>
           <Grid item container spacing={2} sx={{ width: "100%" }}>
             <Paper variant='outlined' sx={{ width: "100%" }}>
-              {/*<AlarmTable laneName={currentLane} />*/}
                 <Table2 tableMode={'eventlog'} laneMap={newMap} viewLane viewSecondary viewAdjudicated viewMenu/>
             </Paper>
           </Grid>

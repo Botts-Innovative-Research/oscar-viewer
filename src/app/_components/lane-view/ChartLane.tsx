@@ -69,7 +69,6 @@ export default function ChartLane(props: ChartInterceptProps){
     const checkForMountableAndCreateCharts = useCallback(() => {
 
         if (!gammaChartViewRef.current && !isReadyToRender && (thresholdCurve || gammaCurve || nSigmaCurve)) {
-        // if (!gammaChartViewRef.current && !isReadyToRender && gammaCurve) {
             console.log("Creating Gamma Chart:", gammaCurve);
 
             const container = document.getElementById(gammaChartID);
@@ -82,6 +81,7 @@ export default function ChartLane(props: ChartInterceptProps){
                 layers.push(thresholdCurve);
                 // layers.push(nSigmaCurve)
             }
+            console.log('layers', layers)
 
             if (container) {
                 gammaChartViewRef.current = new ChartJsView({
@@ -90,7 +90,6 @@ export default function ChartLane(props: ChartInterceptProps){
                     layers: layers,
                     css: "chart-view-lane-view",
                     options:{
-                        //shows both ciunt and thresh when hover over time index...
                         interaction: {
                             intersect: false,
                             mode: 'index',
@@ -127,19 +126,18 @@ export default function ChartLane(props: ChartInterceptProps){
                                 display: true,
                                 position: 'left',
                                 align: 'center',
-                                suggestedMin: 0,
+                                // suggestedMin: 0,
                                 suggestedMax: 1500,
                                 ticks: {
 
                                 },
-                                grid: {display: false, beginAtZero: true}
+                                grid: {display: false, beginAtZero: false}
 
                             },
                             'right-y-axis':{
                                 title:{
                                     display: true,
                                     text: 'Sigma',
-                                    // color: '#f44336',
                                 },
                                 display: true,
                                 position: 'left',
@@ -155,6 +153,28 @@ export default function ChartLane(props: ChartInterceptProps){
                                 //     }
                                 // },
                                 ticks: {
+                                    // callback: function(value: any, index: any, ticks: any){
+                                    //     //value is the tick value on the axi
+                                    //     //index
+                                    //     let gammaValues = gammaCurve.data;
+                                    //     let thresholdValues = thresholdCurve.data;
+                                    //
+                                    //     let sigmaValues = nSigmaCurve.data;
+                                    //
+                                    //     if(sigmaValues.length> 0){
+                                    //         console.log(sigmaValues[0].y)
+                                    //     }
+                                    //
+                                    //     if(thresholdValues.length > 0 && gammaValues.length> 0){
+                                    //
+                                    //         // console.log('thres data', thresholdValues[0].y,'gammaVals', gammaValues[0].y)
+                                    //         value = (thresholdValues[0].y -gammaValues[0].y)/ 32
+                                    //         // console.log('value', value)
+                                    //         return value.toFixed(0)
+                                    //         // return (thresholdValues-gammaValues)/sigmaValues
+                                    //     }
+                                    //
+                                    // }
                                 },
 
                                 grid: {display: false,}
@@ -199,7 +219,6 @@ export default function ChartLane(props: ChartInterceptProps){
 
                                 }
                             },
-                            //where do you want it positioned at
                             legend: {
                                 display: true,
                                 align: 'right',
@@ -228,7 +247,7 @@ export default function ChartLane(props: ChartInterceptProps){
                 setViewReady(true);
             }
         }
-    }, [gammaCurve, nSigmaCurve,thresholdCurve, neutronCurve, isReadyToRender]);
+    }, [gammaCurve, nSigmaCurve, thresholdCurve, neutronCurve, isReadyToRender]);
 
     const checkReadyToRender = useCallback(() => {
         if (chartsReady && viewReady) {

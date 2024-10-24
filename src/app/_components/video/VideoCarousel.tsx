@@ -14,41 +14,32 @@ interface LaneWithVideo {
     videoSources: typeof SweApi[]
 }
 
-
 export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo) {
 
     const [currentPage, setCurrentPage] = useState(0);
     const [hovered, setHovered] = useState(false);
 
-    const maxPages = videoSources.length;
+    const [maxPages, setMaxPages]= useState(0)
+
+    useEffect(() => {
+        setMaxPages(videoSources.length)
+    }, [videoSources]);
+
 
     useEffect(() => {
 
-        if(videoSources.length > 0 && currentPage <= videoSources.length ){
+        if(videoSources.length > 0 && currentPage <= maxPages ){
 
             const currentVideo = videoSources[currentPage];
 
-            if(currentVideo){
-                if(currentVideo.isConnected()){
-                    currentVideo.disconnect();
-                }
-                currentVideo.connect()
+            if(currentVideo.isConnected()){
+                currentVideo.disconnect();
             }
+            currentVideo.connect()
 
         }
 
     }, [currentPage, videoSources]);
-
-    async function disconnect (prevPage: number){
-        if(prevPage >= 0){
-
-            const isConnected = await videoSources[prevPage].isConnected();
-            if(isConnected){
-                await videoSources[prevPage].disconnect();
-                console.log('disconnected', videoSources[prevPage])
-            }
-        }
-    }
 
 
     const handleNextPage = () => {
@@ -59,13 +50,9 @@ export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo)
         setCurrentPage((prevPage) => Math.max(prevPage - 1, 0));
     };
 
+
     return (
         <Box
-            sx={{
-                position: 'relative',
-                width: '100%',
-                height: '100%'
-            }}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
         >
@@ -85,7 +72,7 @@ export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo)
                 </StyledButtonWrapper>
             )}
 
-            <Stack spacing={2} direction="column" alignContent="center" justifyContent="center" sx={{ padding: 1 }}>
+            <Stack direction="column" justifyContent="center">
                 {videoSources.length > 0 && (
                     <VideoComponent
                         key={`${laneName}-${currentPage}`}
