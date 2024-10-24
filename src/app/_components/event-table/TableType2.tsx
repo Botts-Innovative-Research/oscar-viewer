@@ -104,7 +104,7 @@ export default function Table2({
     }
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
-        console.log("evt observation to entry", obs);
+        // console.log("evt observation to entry", obs);
         let newEvent: EventTableData = new EventTableData(randomUUID(), laneEntry.laneName, obs.result, obs.id);
         newEvent.setSystemIdx(laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId));
         newEvent.setDataStreamId(obs["datastream@id"]);
@@ -182,7 +182,7 @@ export default function Table2({
 
     useEffect(() => {
         // console.log("Table Log Updated")
-        console.log('[EVT] Table Data Updated', tableData)
+        // console.log('[EVT] Table Data Updated', tableData)
         let filteredData: EventTableData[] = [];
         if (tableMode === 'alarmtable') {
             filteredData = unadjudicatedFilteredList(onlyAlarmingFilteredList(tableData))
@@ -195,8 +195,8 @@ export default function Table2({
         }
         // setFilteredTableData(filteredData);
         setFilteredTableData((prevState)=>{
-            console.log("EVT table prevtable data", prevState);
-            console.log("EVT table newtable", filteredData)
+            // console.log("EVT table prevtable data", prevState);
+            // console.log("EVT table newtable", filteredData)
             return filteredData;
         })
     }, [tableData]);
@@ -315,7 +315,7 @@ export default function Table2({
     // Handle currently selected row
     const handleRowSelection = (selection: any[]) => {
 
-        console.log("Selection: ", selection);
+        // console.log("Selection: ", selection);
 
         const selectedId = selection[0]; // Get the first selected ID
 
@@ -343,10 +343,10 @@ export default function Table2({
                 isOpen: false,
                 eventData: null,
             }));
-            console.log("Row selected: ", event);
+            // console.log("Row selected: ", event);
             // const currentSystem = laneMapRef.current.get(event.laneId).systems.find((system) => system.properties.id === event.systemIdx);
             const currentSystem = laneMap.get(event.laneId).systems.find((system) => system.properties.id === event.systemIdx);
-            console.log("[EVT] Current System: ", currentSystem);
+            // console.log("[EVT] Current System: ", currentSystem);
 
             let selectedEventPreview = {
                 isOpen: true,
@@ -359,7 +359,7 @@ export default function Table2({
             }));
             dispatch(setSelectedEvent(selectedEventPreview.eventData));
         } else {
-            console.log("Setting EventPreview Data to null");
+            // console.log("Setting EventPreview Data to null");
             dispatch(setEventPreview({
                 isOpen: false,
                 eventData: null,

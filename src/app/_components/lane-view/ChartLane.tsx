@@ -69,7 +69,6 @@ export default function ChartLane(props: ChartInterceptProps){
     const checkForMountableAndCreateCharts = useCallback(() => {
 
         if (!gammaChartViewRef.current && !isReadyToRender && (thresholdCurve || gammaCurve || nSigmaCurve)) {
-            // if (!gammaChartViewRef.current && !isReadyToRender && gammaCurve) {
             console.log("Creating Gamma Chart:", gammaCurve);
 
             const container = document.getElementById(gammaChartID);
@@ -82,6 +81,7 @@ export default function ChartLane(props: ChartInterceptProps){
                 layers.push(thresholdCurve);
                 // layers.push(nSigmaCurve)
             }
+            console.log('layers', layers)
 
             if (container) {
                 gammaChartViewRef.current = new ChartJsView({
@@ -90,7 +90,6 @@ export default function ChartLane(props: ChartInterceptProps){
                     layers: layers,
                     css: "chart-view-lane-view",
                     options:{
-                        //shows both ciunt and thresh when hover over time index...
                         interaction: {
                             intersect: false,
                             mode: 'index',
@@ -139,7 +138,6 @@ export default function ChartLane(props: ChartInterceptProps){
                                 title:{
                                     display: true,
                                     text: 'Sigma',
-                                    // color: '#f44336',
                                 },
                                 display: true,
                                 position: 'left',
@@ -221,7 +219,6 @@ export default function ChartLane(props: ChartInterceptProps){
 
                                 }
                             },
-                            //where do you want it positioned at
                             legend: {
                                 display: true,
                                 align: 'right',

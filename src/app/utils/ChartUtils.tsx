@@ -91,7 +91,6 @@ export  function createNSigmaCalcViewCurve(gammaDatasource: { id: any; }, thresh
     return nCurve;
 }
 
-
 export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
     if (!gammaDatasource) return null;
 

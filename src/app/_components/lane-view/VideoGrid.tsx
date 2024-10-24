@@ -32,7 +32,6 @@ export default function VideoGrid(props: LaneVideoProps) {
     const idVal = useRef(1);
     const [videoList, setVideoList] = useState<LaneWithVideo[] | null>(null);
     const [currentPage, setCurrentPage] = useState(0);
-    const [slideDirection, setSlideDirection] = useState<"right"| "left"| undefined>("left");
 
     const [maxPages, setMaxPages] = useState(0)
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
@@ -82,10 +81,8 @@ export default function VideoGrid(props: LaneVideoProps) {
        }
     }, [videoList, currentPage]);
 
-    console.log('max', maxPages)
 
     const handleNextPage = () =>{
-        setSlideDirection("left");
         setCurrentPage((prevPage)=> {
             let nextPage = prevPage + 1
             if(videoList && videoList[0] && nextPage <= maxPages-1){
@@ -98,7 +95,6 @@ export default function VideoGrid(props: LaneVideoProps) {
     }
 
     const handlePrevPage = () =>{
-        setSlideDirection("right");
         setCurrentPage((prevPage) => {
             let currpage = prevPage - 1;
             checkConnection(prevPage);
