@@ -25,8 +25,6 @@ export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo)
         setMaxPages(videoSources.length)
     }, [videoSources]);
 
-    // const maxPages = videoSources.length;
-    // console.log(maxPages)
 
     useEffect(() => {
 

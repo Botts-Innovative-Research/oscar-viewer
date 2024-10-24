@@ -78,14 +78,6 @@ export default function VideoGrid(props: LaneVideoProps) {
     }, [videoList, currentPage, maxPages]);
 
 
-    // const handleNextPage = () => {
-    //     setCurrentPage((prevPage) => Math.min(prevPage + 1, maxPages - 1));
-    // };
-    //
-    // const handlePrevPage = () => {
-    //     setCurrentPage((prevPage) => Math.max(prevPage - 1, 0));
-    // };
-
     const handleNextPage = () =>{
         setCurrentPage((prevPage)=> {
             let nextPage = prevPage + 1
