@@ -103,6 +103,7 @@ export default function CameraGrid() {
     }
   }, [laneMap]);
 
+  console.log('videolist',videoList)
 
   const datasourceSetup = useCallback(async () => {
 
@@ -236,7 +237,7 @@ export default function CameraGrid() {
   return (
       <>
         {videoList != null && (
-            <Grid container padding={2} justifyContent={"start"}>
+            <Grid container padding={2} justifyContent={"start"} spacing={1}>
 
               {videoList.slice(startItem, endItem).map((lane) => (
                   <VideoStatusWrapper key={lane.laneName} laneName={lane.laneName} status={lane.status}

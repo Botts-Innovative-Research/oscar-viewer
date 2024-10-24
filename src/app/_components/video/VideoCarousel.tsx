@@ -19,11 +19,18 @@ export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo)
     const [currentPage, setCurrentPage] = useState(0);
     const [hovered, setHovered] = useState(false);
 
-    const maxPages = videoSources.length;
+    const [maxPages, setMaxPages]= useState(0)
+
+    useEffect(() => {
+        setMaxPages(videoSources.length)
+    }, [videoSources]);
+
+    // const maxPages = videoSources.length;
+    // console.log(maxPages)
 
     useEffect(() => {
 
-        if(videoSources.length > 0 && currentPage <= videoSources.length ){
+        if(videoSources.length > 0 && currentPage <= maxPages ){
 
             const currentVideo = videoSources[currentPage];
 
@@ -34,7 +41,7 @@ export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo)
 
         }
 
-    }, [currentPage]);
+    }, [currentPage, videoSources]);
 
 
     const handleNextPage = () => {
@@ -44,6 +51,7 @@ export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo)
     const handlePrevPage = () => {
         setCurrentPage((prevPage) => Math.max(prevPage - 1, 0));
     };
+
 
     return (
         <Box
