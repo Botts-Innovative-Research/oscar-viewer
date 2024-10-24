@@ -67,20 +67,24 @@ export default function VideoGrid(props: LaneVideoProps) {
 
 
     useEffect(() => {
-        console.log(videoList)
-        let isConnected = false;
-       if(videoList && videoList.length > 0 && currentPage <= videoList[0].videoSources.length - 1){
-           console.log('connecting src', videoList[0].videoSources[currentPage].name);
 
-           isConnected = videoList[0].videoSources[currentPage].isConnected()
-           if(isConnected){
-               console.log('iam connected already')
-               videoList[0].videoSources[currentPage].disconnect();
-           }
-           videoList[0].videoSources[currentPage].connect();
-       }
-    }, [videoList, currentPage]);
+        if(videoList && videoList.length > 0 && currentPage <= maxPages){
+            const currentVideo = videoList[0].videoSources[currentPage];
+            if(currentVideo.isConnected()){
+                currentVideo.disconnect()
+            }
+            currentVideo.connect();
+        }
+    }, [videoList, currentPage, maxPages]);
 
+
+    // const handleNextPage = () => {
+    //     setCurrentPage((prevPage) => Math.min(prevPage + 1, maxPages - 1));
+    // };
+    //
+    // const handlePrevPage = () => {
+    //     setCurrentPage((prevPage) => Math.max(prevPage - 1, 0));
+    // };
 
     const handleNextPage = () =>{
         setCurrentPage((prevPage)=> {
@@ -118,10 +122,9 @@ export default function VideoGrid(props: LaneVideoProps) {
         }
     }
 
-
     return (
         <>
-            {videoList != null && (
+            {videoList != null && videoList.length > 0 && (
                 <Box sx={{display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center"}}>
                     <IconButton onClick={handlePrevPage} sx={{margin: 2, cursor: 'pointer'}} disabled={currentPage === 0}>
                         <NavigateBeforeIcon/>
@@ -133,12 +136,14 @@ export default function VideoGrid(props: LaneVideoProps) {
                         direction="row"
                         alignContent="center"
                         justifyContent={"center"}
-                        sx={{ padding: 2, width: '50%', height: '50'}}
+                        sx={{ padding: 2, width: '50%', height: '50', border: "solid", borderWidth: '1px', borderColor: "rgba(0, 0, 0, 0.12)"}}
                     >
-                        {videoList.slice(currentPage, maxPages).map((lane) => (
-                            <VideoComponent key={lane.laneName} id={lane.laneName} currentPage={currentPage} videoSources={lane.videoSources}/>
-                        ))}
-
+                        <VideoComponent
+                            key={videoList[0].videoSources[currentPage].name}
+                            id={videoList[0].laneName}
+                            currentPage={currentPage}
+                            videoSources={[videoList[0].videoSources[currentPage]]}
+                        />
                     </Stack>
 
                     <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={currentPage === maxPages-1}>
