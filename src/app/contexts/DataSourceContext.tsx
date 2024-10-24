@@ -9,6 +9,7 @@ import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARClientSlice";
 import {RootState} from "@/lib/state/Store";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
+import AlarmAudio from "../_components/AlarmAudio";
 
 interface IDataSourceContext {
     laneMapRef: MutableRefObject<Map<string, LaneMapEntry>> | undefined
@@ -120,9 +121,11 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         InitializeApplication();
     }, [InitializeApplication]);
 
-    return (
+    return (<>
+        <AlarmAudio/>
         <DataSourceContext.Provider value={{laneMapRef}}>
             {children}
         </DataSourceContext.Provider>
+        </>
     );
 };
