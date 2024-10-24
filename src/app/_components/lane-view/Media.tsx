@@ -22,6 +22,19 @@ export default function Media(props: {
     const [thresholdDatasources, setThresholdDS] = useState<any[]>([]);
     const [chartReady, setChartReady] = useState<boolean>(false);
 
+    let startTime = new Date().toISOString()
+
+    //timecontroller
+    let datasources: any[]=[];
+
+    let [masterTimeController, setMasterTimeController] = useState<typeof DataSynchronizer>(
+        new DataSynchronizer({
+            replaySpeed: 1,
+            intervalRate: 5,
+            // dataSources: datasources,
+            startTime: startTime,
+        }));
+
 
     const datasourceSetup = useCallback(async () => {
         // @ts-ignore
@@ -35,7 +48,7 @@ export default function Media(props: {
                     let idx: number = lane.datastreams.indexOf(ds);
                     let rtDS = lane.datasourcesRealtime[idx];
 
-                    rtDS.properties.startTime = "now"
+                    rtDS.properties.startTime = new Date().toISOString()
                     rtDS.properties.endTime = "2055-01-01T08:13:25.845Z"
 
                     let laneDSColl = laneDSMap.get(laneid);
@@ -44,14 +57,17 @@ export default function Media(props: {
                     if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
                         laneDSColl?.addDS('gammaRT', rtDS);
                         setGammaDS(prevState => [...prevState, rtDS]);
+                        datasources.push(gammaDatasources)
                     }
                     if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
                         laneDSColl?.addDS('neutronRT', rtDS);
                         setNeutronDS(prevState => [...prevState, rtDS]);
+                        datasources.push(neutronDatasources)
                     }
                     if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/threshold")){
                         laneDSColl?.addDS('gammaTrshldRT', rtDS);
                         setThresholdDS(prevState => [...prevState, rtDS]);
+                        datasources.push(thresholdDatasources)
                     }
 
 
@@ -66,19 +82,39 @@ export default function Media(props: {
     }, [laneMapRef.current]);
 
     useEffect(() => {
+        if(gammaDatasources.length > 0){
+            let TimeController = new DataSynchronizer({
+                replaySpeed:1,
+                intervalRate:5,
+                dataSources: [gammaDatasources, neutronDatasources, thresholdDatasources],
+                startTime: gammaDatasources[0].startTime
+            });
 
-        gammaDatasources.forEach(ds => {
-            ds.connect();
-        });
-        neutronDatasources.forEach(ds => {
-            ds.connect();
-        });
-        thresholdDatasources.forEach(ds => {
-            ds.connect();
-        });
+            setMasterTimeController(TimeController);
+            TimeController.connect()
+        }
 
 
-    }, [thresholdDatasources, gammaDatasources, neutronDatasources]);
+    }, [gammaDatasources, neutronDatasources, thresholdDatasources]);
+
+
+
+
+    // useEffect(() => {
+    //
+    //
+    //     gammaDatasources.forEach(ds => {
+    //         ds.connect();
+    //     });
+    //     neutronDatasources.forEach(ds => {
+    //         ds.connect();
+    //     });
+    //     thresholdDatasources.forEach(ds => {
+    //         ds.connect();
+    //     });
+    //
+    //
+    // }, [thresholdDatasources, gammaDatasources, neutronDatasources]);
 
 
     return (

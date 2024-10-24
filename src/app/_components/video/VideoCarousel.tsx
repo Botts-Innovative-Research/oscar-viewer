@@ -14,57 +14,84 @@ interface LaneWithVideo {
     videoSources: typeof SweApi[]
 }
 
-
 export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo) {
 
     const [currentPage, setCurrentPage] = useState(0);
     const [hovered, setHovered] = useState(false);
 
-    const maxPages = videoSources.length;
+    const [maxPages, setMaxPages]= useState(0)
+
+    useEffect(() => {
+        setMaxPages(videoSources.length)
+    }, [videoSources]);
+
 
     useEffect(() => {
 
-        if(videoSources.length > 0 && currentPage <= videoSources.length ){
+        if(videoSources.length > 0 && currentPage <= maxPages ){
 
             const currentVideo = videoSources[currentPage];
 
-            if(currentVideo){
-                if(currentVideo.isConnected()){
-                    currentVideo.disconnect();
-                }
-                currentVideo.connect()
+            if(currentVideo.isConnected()){
+                currentVideo.disconnect();
             }
+            currentVideo.connect()
 
         }
 
     }, [currentPage, videoSources]);
 
-    async function disconnect (prevPage: number){
-        if(prevPage >= 0){
 
-            const isConnected = await videoSources[prevPage].isConnected();
-            if(isConnected){
-                await videoSources[prevPage].disconnect();
-                console.log('disconnected', videoSources[prevPage])
+    // const handleNextPage = () => {
+    //     setCurrentPage((prevPage) => Math.min(prevPage + 1, maxPages - 1));
+    // };
+    //
+    // const handlePrevPage = () => {
+    //     setCurrentPage((prevPage) => Math.max(prevPage - 1, 0));
+    // };
+
+
+    const handleNextPage = () =>{
+        setCurrentPage((prevPage)=> {
+            let nextPage = prevPage + 1
+            if(videoSources && nextPage <= maxPages-1){
+                checkConnection(prevPage);
+                return nextPage;
+            }else{
+                return prevPage;
             }
-        }
+        })
     }
 
+    const handlePrevPage = () =>{
+        setCurrentPage((prevPage) => {
+            let currpage = prevPage - 1;
+            checkConnection(prevPage);
+            return currpage;
 
-    const handleNextPage = () => {
-        setCurrentPage((prevPage) => Math.min(prevPage + 1, maxPages - 1));
-    };
+        })
 
-    const handlePrevPage = () => {
-        setCurrentPage((prevPage) => Math.max(prevPage - 1, 0));
-    };
+    }
 
+    //next page -> disconnect from the previous page and connect to the next page if its not connected we can connect it
+    async function checkConnection (prevPage: number){
+        if(prevPage >= 0){
+            // for (const video of videoList) {
+                const isConnected = await videoSources[prevPage].isConnected();
+                if(isConnected){
+                    console.log('disconnecting', videoSources[prevPage].name)
+                    videoSources[prevPage].disconnect();
+                }
+
+            // }
+        }
+    }
     return (
         <Box
             sx={{
                 position: 'relative',
-                width: '100%',
-                height: '100%'
+                height: '100%',
+                width: '100%'
             }}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
@@ -85,7 +112,7 @@ export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo)
                 </StyledButtonWrapper>
             )}
 
-            <Stack spacing={2} direction="column" alignContent="center" justifyContent="center" sx={{ padding: 1 }}>
+            <Stack direction="column" justifyContent="center">
                 {videoSources.length > 0 && (
                     <VideoComponent
                         key={`${laneName}-${currentPage}`}

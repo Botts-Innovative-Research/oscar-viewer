@@ -44,6 +44,6 @@ export default function VideoComponent(props: OSHVideoProps) {
     }, [videoDataSource]);
 
     return (
-        <Box id={props.id} style={{ width: "100%", height: "100%" }}/>
+        <Box id={props.id} style={{ width: "100%", height: "100%"}}/>
     )
 }

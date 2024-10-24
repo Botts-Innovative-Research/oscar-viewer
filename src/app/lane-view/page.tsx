@@ -1,19 +1,16 @@
 "use client";
 
-import { Grid, Paper, Stack, Typography } from "@mui/material";
+import {Grid, Paper, Stack, Typography} from "@mui/material";
 import BackButton from "../_components/BackButton";
-import { useSearchParams } from 'next/navigation'
+import {useSearchParams} from 'next/navigation'
 import LaneStatus from "../_components/lane-view/LaneStatus";
 import Media from "../_components/lane-view/Media";
-import AlarmTable from "../_components/lane-view/AlarmTable";
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
-import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import {START_TIME} from "@/lib/data/Constants";
+import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import Table2 from "@/app/_components/event-table/TableType2";
 import {useSelector} from "react-redux";
 import {selectLaneMap} from "@/lib/state/OSCARClientSlice";
 import {RootState} from "@/lib/state/Store";
+import {useEffect, useState} from "react";
 
 
 export default function LaneViewPage() {
@@ -51,7 +48,6 @@ export default function LaneViewPage() {
           </Grid>
           <Grid item container spacing={2} sx={{ width: "100%" }}>
             <Paper variant='outlined' sx={{ width: "100%" }}>
-              {/*<AlarmTable laneName={currentLane} />*/}
                 <Table2 tableMode={'eventlog'} laneMap={newMap} viewLane viewSecondary viewAdjudicated viewMenu/>
             </Paper>
           </Grid>

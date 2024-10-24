@@ -6,7 +6,6 @@
 import {Button, IconButton, Snackbar, SnackbarCloseReason, Stack, TextField, Typography} from "@mui/material";
 import OpenInFullRoundedIcon from "@mui/icons-material/OpenInFullRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import AdjudicationSelect from "@/app/_components/event-preview/AdjudicationSelect";
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
@@ -29,6 +28,7 @@ import AdjudicationData, {
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
+import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 
 
 export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTableData | null }) {
@@ -115,7 +115,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
         const adjDsID = currLaneEntry.parentNode.laneAdjMap.get(currentLane);
         const ep = currLaneEntry.parentNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + adjDsID + "/observations";
-        try{
+        try {
             let resp = await fetch(ep, {
                 method: "POST",
                 headers: {
@@ -127,29 +127,39 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
             });
             console.log("[ADJ] Response: ", resp);
 
-            if(resp.ok){
+            // send command
+            // we can use endTime as it is the same a resultTime in testing, this may not be true in practice but this is a stop-gap fix anyway
+            let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, eventPreview.eventData.dataStreamId, eventPreview.eventData.endTime)
+
+            // guard, maybe add an appropriate snackbar
+            if (!refObservation) return
+            await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId,
+                generateCommandJSON(refObservation.id, true));
+            dispatch(updateSelectedEventAdjudication(comboData));
+
+            if (resp.ok) {
                 setAdjSnackMsg('Adjudication Submitted Successfully')
-            }else{
+                resetAdjudicationData();
+                dispatch(setEventPreview({
+                    isOpen: false,
+                    eventData: null
+                }));
+                dispatch(setShouldForceAlarmTableDeselect(true))
+            } else {
                 setAdjSnackMsg('Adjudication Submission Failed. Check your connection.')
             }
-        }catch(error){
+        } catch (error) {
             setAdjSnackMsg('Adjudication failed to submit.')
         }
 
         setOpenSnack(true)
-
-        // send command
-        // we can use endTime as it is the same a resultTime in testing, this may not be true in practice but this is a stop-gap fix anyway
-        // let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, eventPreview.eventData.dataStreamId, eventPreview.eventData.endTime)
-
-        // guard
-        // if (!refObservation) return
-        await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId,
-            generateCommandJSON(eventPreview.eventData.observationId, true));
-        dispatch(updateSelectedEventAdjudication(comboData));
     }
 
     const resetAdjudicationData = () => {
+        disconnectDSArray(gammaDatasources);
+        disconnectDSArray(neutronDatasources);
+        disconnectDSArray(thresholdDatasources);
+        disconnectDSArray(occDatasources);
         setAdjFormData(null);
         setAdjudication(null);
         setNotes("");
@@ -344,6 +354,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                             disabled={adjFormData === null}
                             sx={{width: "25%"}}>Submit</Button>
                     <Snackbar
+                        anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         open={openSnack}
                         autoHideDuration={5000}
                         onClose={handleCloseSnack}

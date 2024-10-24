@@ -7,7 +7,6 @@ import BackButton from "../_components/BackButton";
 import DataRow from "../_components/event-details/DataRow";
 
 import MiscTable from "../_components/event-details/MiscTable";
-import AdjudicationDetail from "../_components/event-details/AdjudicationDetail";
 import {useSelector} from "react-redux";
 import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
 import ChartTimeHighlight from "../_components/event-preview/ChartTimeHighlight";
@@ -16,6 +15,7 @@ import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
+import AdjudicationDetail from "@/app/_components/adjudication/AdjudicationDetail";
 
 /**
  * Expects the following search params:

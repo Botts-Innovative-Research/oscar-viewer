@@ -5,28 +5,22 @@ import {useCallback, useEffect, useState} from "react";
 import {Box} from "@mui/material";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
-import {selectLaneMap, setEventPreview} from "@/lib/state/OSCARClientSlice";
+import {setEventPreview} from "@/lib/state/OSCARClientSlice";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
-import {
-    DataGrid,
-    GridActionsCellItem,
-    GridCellParams,
-    gridClasses,
-    GridColDef, GridFilterModel,
-    GridLogicOperator
-} from "@mui/x-data-grid";
+import {DataGrid, GridActionsCellItem, GridCellParams, gridClasses, GridColDef} from "@mui/x-data-grid";
 import CustomToolbar from "@/app/_components/CustomToolbar";
 import NotesRoundedIcon from "@mui/icons-material/NotesRounded";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {
     addEventToLog,
-    selectEventTableData,
-    selectHasFetched,
-    setEventLogData, setHasFetchedInitial,
+    selectAlarmingAndNonAdjudicatedData,
+    selectEventTableDataArray,
+    selectLaneTableData,
+    setEventLogData,
     setSelectedEvent
 } from "@/lib/state/EventDataSlice";
 
@@ -61,12 +55,10 @@ export default function Table2({
                                }: TableProps) {
     // const laneMap = useSelector((state: RootState) => selectLaneMap(state))
     // const [tableData, setTableData] = useState<EventTableData[]>([]);
-    const tableData = useSelector((state: RootState) => selectEventTableData(state))
+    const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
     const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
     const [selectionModel, setSelectionModel] = useState([]); // Currently selected row
-    const hasFetched = useSelector((state:RootState)=> selectHasFetched(state));
     const dispatch = useAppDispatch();
-
 
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
@@ -75,56 +67,54 @@ export default function Table2({
             return;
         }
         let obsCollection = await occDS.searchObservations(observationFilter, 250000);
-        let observations = await handleObservations(obsCollection, laneEntry);
+        let observations = await handleObservations(obsCollection, laneEntry, false);
         return observations;
     }
 
     async function streamObservations(laneEntry: LaneMapEntry) {
-        const observationFilter = new ObservationFilter({resultTime: `${new Date().toISOString()}/..`});
+        // const observationFilter = new ObservationFilter({resultTime: `${new Date().toISOString()}/..`});
         let futureTime = new Date();
         futureTime.setFullYear(futureTime.getFullYear() + 1);
         let occDS: typeof DataStream = laneEntry.findDataStreamByName("Driver - Occupancy");
-        if (!occDS) return;
-        // console.log("Real-time Datasource", occDS);
+        // if (!occDS) return;
         occDS.streamObservations(new ObservationFilter({
-            resultTime: `now/${futureTime.toISOString()}`,
-            replaySpeed: 1
+            resultTime: `now/${futureTime.toISOString()}`
         }), (observation: any) => {
-            // console.log("Real-time Observation", observation)
+            console.log("[evt table real-time observation found", observation, laneEntry.laneName);
             let resultEvent = eventFromObservation(observation[0], laneEntry);
             // console.log("[EVT] Real-time EventTableData", resultEvent, tableData);
-            // let newTableData = [...tableData, resultEvent];
-            // setTableData(newTableData);
-            // setTableData((prevState) => [...prevState, resultEvent]);
+            console.log("[EVT table Real-time EventTableData", observation, resultEvent);
             dispatch(addEventToLog(resultEvent));
 
         })
     }
 
-    async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry): Promise<EventTableData[]> {
+    async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<EventTableData[]> {
         let observations: EventTableData[] = [];
         while (obsCollection.hasNext()) {
             let obsResults = await obsCollection.nextPage();
             obsResults.map((obs: any) => {
                 let result = eventFromObservation(obs, laneEntry);
                 observations.push(result);
-                dispatch(addEventToLog(result));
+                // when fetching, this operation is a bit too costly so we probably want to just set the table with all the results we've collected
+                if (addToLog) dispatch(addEventToLog(result));
             })
         }
         return observations;
     }
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
-        let newEvent: EventTableData = new EventTableData(randomUUID(), laneEntry.laneName, obs.result, obs["datastream@id"]);
+        // console.log("evt observation to entry", obs);
+        let newEvent: EventTableData = new EventTableData(randomUUID(), laneEntry.laneName, obs.result, obs.id);
         newEvent.setSystemIdx(laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId));
-        // newEvent.setDataStreamId(obs["datastream@id"]);
+        newEvent.setDataStreamId(obs["datastream@id"]);
         newEvent.setObservationId(obs.id);
         // console.log("[EVT] New Event Table Data", newEvent);
         return newEvent;
     }
 
     async function doFetch(laneMap: Map<string, LaneMapEntry>) {
-        // let allFetchedResults: EventTableData[] = [];
+        let allFetchedResults: EventTableData[] = [];
         let promiseGroup: Promise<void>[] = [];
         // createDatastreams(laneMap)
         laneMap.forEach((entry: LaneMapEntry, laneName: string) => {
@@ -132,13 +122,14 @@ export default function Table2({
                 let startTimeForObs = new Date();
                 startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
                 await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
-                // let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
-                // allFetchedResults = [...allFetchedResults, ...fetchedResults];
+                let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
+                allFetchedResults = [...allFetchedResults, ...fetchedResults];
             })();
             promiseGroup.push(promise);
         });
         await Promise.all(promiseGroup);
         // setTableData(allFetchedResults);
+        dispatch(setEventLogData(allFetchedResults))
     }
 
     function doStream(laneMap: Map<string, LaneMapEntry>) {
@@ -171,6 +162,7 @@ export default function Table2({
 
 
     useEffect(() => {
+        // collectDatastreams();
         // doFetch(laneMap);
         dataStreamSetup(laneMap);
     }, [laneMap]);
@@ -180,19 +172,33 @@ export default function Table2({
         doStream(laneMap);
     }, [laneMap]);
 
+    // useEffect(() => {
+    //     doStream(laneMap);
+    // }, [rtDataStreams]);
+
+    // useEffect(() => {
+    //     setInterval(doFetch(laneMap, 10000));
+    // }, []);
+
     useEffect(() => {
+        // console.log("Table Log Updated")
         // console.log('[EVT] Table Data Updated', tableData)
         let filteredData: EventTableData[] = [];
         if (tableMode === 'alarmtable') {
             filteredData = unadjudicatedFilteredList(onlyAlarmingFilteredList(tableData))
+            console.log("[EVT table prevtable Filtered Data", filteredData);
         } else if (tableMode === 'eventlog') {
-            if(laneMap.size === 1) {
+            if (laneMap.size === 1) {
                 const laneId = Array.from(laneMap.keys())[0];
                 filteredData = onlyLaneFilteredList(tableData, laneId)
             }
         }
-        // console.log("[EVT] Filtered Data", filteredData);
-        setFilteredTableData(filteredData);
+        // setFilteredTableData(filteredData);
+        setFilteredTableData((prevState)=>{
+            // console.log("EVT table prevtable data", prevState);
+            // console.log("EVT table newtable", filteredData)
+            return filteredData;
+        })
     }, [tableData]);
 
 
@@ -309,7 +315,7 @@ export default function Table2({
     // Handle currently selected row
     const handleRowSelection = (selection: any[]) => {
 
-        console.log("Selection: ", selection);
+        // console.log("Selection: ", selection);
 
         const selectedId = selection[0]; // Get the first selected ID
 
@@ -337,10 +343,10 @@ export default function Table2({
                 isOpen: false,
                 eventData: null,
             }));
-            console.log("Row selected: ", event);
+            // console.log("Row selected: ", event);
             // const currentSystem = laneMapRef.current.get(event.laneId).systems.find((system) => system.properties.id === event.systemIdx);
             const currentSystem = laneMap.get(event.laneId).systems.find((system) => system.properties.id === event.systemIdx);
-            console.log("[EVT] Current System: ", currentSystem);
+            // console.log("[EVT] Current System: ", currentSystem);
 
             let selectedEventPreview = {
                 isOpen: true,
@@ -353,7 +359,7 @@ export default function Table2({
             }));
             dispatch(setSelectedEvent(selectedEventPreview.eventData));
         } else {
-            console.log("Setting EventPreview Data to null");
+            // console.log("Setting EventPreview Data to null");
             dispatch(setEventPreview({
                 isOpen: false,
                 eventData: null,
