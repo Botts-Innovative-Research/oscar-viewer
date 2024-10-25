@@ -114,17 +114,18 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     };
 
      async function checkReachable(node: any){
+         console.log('node', node)
          const endpoint = `${node.getConnectedSystemsEndpoint()}`;
 
          try {
              const response = await fetch(endpoint);
              if (!response.ok) {
-                 setNodeSnackMsg('Node is unreachable. Check your node configuration.');
+                 setNodeSnackMsg(`Connection failed. Unreachable server at ${node.address}.`);
              } else {
-                 setNodeSnackMsg('Node is reachable.');
+                 setNodeSnackMsg(`Successfully connected to server at ${node.address}`);
              }
          } catch (error) {
-             setNodeSnackMsg('Node is unreachable. Check your node configuration.');
+             setNodeSnackMsg('Connection failed. Confirm IP, port, and server availability.');
          }
     }
 

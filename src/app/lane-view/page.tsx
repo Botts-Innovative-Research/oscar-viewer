@@ -19,14 +19,13 @@ export default function LaneViewPage() {
     const searchParams = useSearchParams();
     const currentLane = searchParams.get("name");
     const [filteredLaneMap, setFilteredLaneMap] = useState<Map<string, LaneMapEntry>>(null);
+    const [currentTime, setCurrentTime] = useState('');
 
     console.log("Lane name:", currentLane)
     let newMap = new Map<string, LaneMapEntry>();
     newMap.set(currentLane, laneMap.get(currentLane));
 
-    useEffect(()=>{
 
-    },[laneMap])
 
     return (
         <Stack spacing={2} direction={"column"}>
@@ -43,7 +42,7 @@ export default function LaneViewPage() {
           </Grid>
           <Grid item container spacing={2} sx={{ width: "100%" }}>
             <Paper variant='outlined' sx={{ width: "100%" }}>
-              <Media laneName={currentLane} />
+              <Media laneName={currentLane}/>
             </Paper>
           </Grid>
           <Grid item container spacing={2} sx={{ width: "100%" }}>

@@ -9,11 +9,10 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import ChartLane from "@/app/_components/lane-view/ChartLane";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
+import {Mode} from "osh-js/source/core/datasource/Mode";
 
 
-export default function Media(props: {
-  laneName: string,
-}) {
+export default function Media(props: { laneName: string}) {
 
     const {laneMapRef} = useContext(DataSourceContext);
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
@@ -29,9 +28,9 @@ export default function Media(props: {
 
     let [masterTimeController, setMasterTimeController] = useState<typeof DataSynchronizer>(
         new DataSynchronizer({
-            replaySpeed: 1,
+            replaySpeed: 1.0,
             intervalRate: 5,
-            // dataSources: datasources,
+            mode: Mode.REAL_TIME,
             startTime: startTime,
         }));
 
@@ -48,7 +47,8 @@ export default function Media(props: {
                     let idx: number = lane.datastreams.indexOf(ds);
                     let rtDS = lane.datasourcesRealtime[idx];
 
-                    rtDS.properties.startTime = new Date().toISOString()
+                    // rtDS.properties.startTime = new Date().toISOString()
+                    rtDS.properties.startTime = startTime;
                     rtDS.properties.endTime = "2055-01-01T08:13:25.845Z"
 
                     let laneDSColl = laneDSMap.get(laneid);
@@ -81,40 +81,46 @@ export default function Media(props: {
         datasourceSetup();
     }, [laneMapRef.current]);
 
-    useEffect(() => {
-        if(gammaDatasources.length > 0){
-            let TimeController = new DataSynchronizer({
-                replaySpeed:1,
-                intervalRate:5,
-                dataSources: [gammaDatasources, neutronDatasources, thresholdDatasources],
-                startTime: gammaDatasources[0].startTime
-            });
+    const [dataSyncCreated, setDataSyncCreated] = useState<boolean>(false);
 
-            setMasterTimeController(TimeController);
-            TimeController.connect()
+    const [dataSyncReady, setDataSyncReady] = useState<boolean>(false);
+    const syncRef = useRef<typeof DataSynchronizer>();
+
+    const createSync = useCallback(()=>{
+        if(!dataSyncCreated && !syncRef.current && thresholdDatasources.length > 0){
+           let timeController = new DataSynchronizer({
+                dataSources: thresholdDatasources,
+                replaySpeed: 1.0,
+                intervalRate: 5,
+                mode: Mode.REAL_TIME,
+                startTime: startTime,
+            })
+            setDataSyncCreated(true);
+           setMasterTimeController(timeController)
         }
+    }, [syncRef, dataSyncCreated, thresholdDatasources])
 
 
-    }, [gammaDatasources, neutronDatasources, thresholdDatasources]);
+    useEffect(() => {
+        createSync();
+    }, [gammaDatasources, neutronDatasources, thresholdDatasources, syncRef, dataSyncCreated]);
 
 
 
+    useEffect(() => {
+        gammaDatasources.forEach(ds => {
+            ds.connect();
+        });
+        neutronDatasources.forEach(ds => {
+            ds.connect();
+        });
+        // thresholdDatasources.forEach(ds => {
+        //     ds.connect();
+        // });
 
-    // useEffect(() => {
-    //
-    //
-    //     gammaDatasources.forEach(ds => {
-    //         ds.connect();
-    //     });
-    //     neutronDatasources.forEach(ds => {
-    //         ds.connect();
-    //     });
-    //     thresholdDatasources.forEach(ds => {
-    //         ds.connect();
-    //     });
-    //
-    //
-    // }, [thresholdDatasources, gammaDatasources, neutronDatasources]);
+        masterTimeController.connect()
+
+    }, [thresholdDatasources, gammaDatasources, neutronDatasources, dataSyncCreated, dataSyncReady, syncRef]);
 
 
     return (

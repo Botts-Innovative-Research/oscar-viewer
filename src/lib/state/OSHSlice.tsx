@@ -20,11 +20,11 @@ export interface IOSHSlice {
 
 const initialNodeOpts: NodeOptions = {
     name: "Local Node",
-    // address: "127.0.0.1",
+    address: "127.0.0.1",
     // address: "162.238.96.81",
-    address: "192.168.1.158",
-    port: 8781,
-    // port: 8282,
+    // address: "192.168.1.158",
+    // port: 8781,
+    port: 8282,
     oshPathRoot: "/sensorhub",
     sosEndpoint: "/sos",
     csAPIEndpoint: "/api",

@@ -103,7 +103,6 @@ export default function CameraGrid() {
     }
   }, [laneMap]);
 
-  console.log('videolist',videoList)
 
   const datasourceSetup = useCallback(async () => {
 
@@ -127,9 +126,8 @@ export default function CameraGrid() {
         if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status")){
           laneDSColl.addDS('tamperRT', rtDS);
         }
-
-        if(ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/RasterImage") || ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/RasterImage")){
-          console.log("Video DS Found", ds);
+        if(ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/RasterImage") || ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/VideoFrame")){
+          console.log("Video DS Found",ds);
           videoDs.push(ds);
         }
       }

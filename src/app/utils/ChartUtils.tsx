@@ -23,7 +23,7 @@ export  function createNeutronViewCurve(neutronDatasource: { id: any; }) {
             return {x: timestamp, y: rec.neutronGrossCount}
         },
         name: 'Neutron Count',
-        maxValues: 20,
+        maxValues: 25,
         backgroundColor: "#29b6f6",
         lineColor: '#29b6f6',
         xLabel: 'Time',
@@ -43,7 +43,7 @@ export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
         name: "Threshold",
         backgroundColor: "#9b27b0",
         lineColor: '#9b27b0',
-        maxValues: 20,
+        maxValues: 30,
         yLabel: 'CPS',
         borderWidth: 1,
 
@@ -99,7 +99,7 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
         getValues: (rec: any, timestamp: any) => {
             return { x: timestamp, y: rec.gammaGrossCount};
         },
-        maxValues: 20,
+        maxValues: 70,
         name: "Gamma Count",
         borderWidth: 1,
         backgroundColor: "#f44336",

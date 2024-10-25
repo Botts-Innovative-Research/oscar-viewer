@@ -292,7 +292,6 @@ export default function ChartLane(props: ChartInterceptProps){
 
 
 
-
     return (
         <Grid container direction="row" marginTop={2} marginLeft={1} spacing={4}>
             <Grid item xs>
