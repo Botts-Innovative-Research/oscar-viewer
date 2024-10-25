@@ -51,16 +51,19 @@ export default function ChartLane(props: ChartInterceptProps){
 
                 let tCurve = createThresholdViewCurve(props.datasources.threshold);
                 setThresholdCurve(tCurve);
+                console.log('new thres curve layer created')
             }
 
             let gCurve = createGammaViewCurve(props.datasources.gamma);
             setGammaCurve(gCurve);
+            console.log('new gamma curve layer created')
         }
 
 
         if(props.datasources.neutron){
             let nCurve = createNeutronViewCurve(props.datasources.neutron);
             setNeutronCurve(nCurve);
+            console.log('new neutorn curve layer created')
         }
 
     },[props.datasources]);
@@ -68,8 +71,8 @@ export default function ChartLane(props: ChartInterceptProps){
 
     const checkForMountableAndCreateCharts = useCallback(() => {
 
-        if (!gammaChartViewRef.current && !isReadyToRender && (thresholdCurve || gammaCurve || nSigmaCurve)) {
-            console.log("Creating Gamma Chart:", gammaCurve);
+        if (!gammaChartViewRef.current && !isReadyToRender && (thresholdCurve || gammaCurve)) {
+            console.log("Creating Gamma Chart with layers:", { gammaCurve, thresholdCurve });
 
             const container = document.getElementById(gammaChartID);
             let layers: any[] =[];
@@ -79,13 +82,11 @@ export default function ChartLane(props: ChartInterceptProps){
             }
             if (thresholdCurve) {
                 layers.push(thresholdCurve);
-                // layers.push(nSigmaCurve)
             }
             console.log('layers', layers)
 
             if (container) {
                 gammaChartViewRef.current = new ChartJsView({
-                    type: 'line',
                     container: gammaChartID,
                     layers: layers,
                     css: "chart-view-lane-view",
@@ -247,7 +248,7 @@ export default function ChartLane(props: ChartInterceptProps){
                 setViewReady(true);
             }
         }
-    }, [gammaCurve, nSigmaCurve, thresholdCurve, neutronCurve, isReadyToRender]);
+    }, [gammaCurve, thresholdCurve, neutronCurve, isReadyToRender]);
 
     const checkReadyToRender = useCallback(() => {
         if (chartsReady && viewReady) {

@@ -16,22 +16,21 @@ export default function Media(props: { laneName: string}) {
 
     const {laneMapRef} = useContext(DataSourceContext);
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
-    const [gammaDatasources, setGammaDS] = useState<any[]>([]);
-    const [neutronDatasources, setNeutronDS] = useState<any[]>([]);
-    const [thresholdDatasources, setThresholdDS] = useState<any[]>([]);
+    const [gammaDatasources, setGammaDS] = useState(null);
+    const [neutronDatasources, setNeutronDS] = useState(null);
+    const [thresholdDatasources, setThresholdDS] = useState(null);
     const [chartReady, setChartReady] = useState<boolean>(false);
 
     let startTime = new Date().toISOString()
 
     let datasources: any[]=[];
 
-    let [masterTimeController, setMasterTimeController] = useState<typeof DataSynchronizer>(
-        new DataSynchronizer({
-            replaySpeed: 1.0,
-            intervalRate: 5,
-            mode: Mode.REAL_TIME,
-            startTime: startTime,
-        }));
+    let [masterTimeController, setMasterTimeController] = useState<typeof DataSynchronizer>(null);
+
+    useEffect(() => {
+        datasourceSetup();
+
+    }, [laneMapRef.current]);
 
 
     const datasourceSetup = useCallback(async () => {
@@ -46,7 +45,6 @@ export default function Media(props: { laneName: string}) {
                     let idx: number = lane.datastreams.indexOf(ds);
                     let rtDS = lane.datasourcesRealtime[idx];
 
-                    // rtDS.properties.startTime = new Date().toISOString()
                     rtDS.properties.startTime = startTime;
                     rtDS.properties.endTime = "2055-01-01T08:13:25.845Z"
 
@@ -55,68 +53,102 @@ export default function Media(props: { laneName: string}) {
 
                     if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
                         laneDSColl?.addDS('gammaRT', rtDS);
-                        setGammaDS(prevState => [...prevState, rtDS]);
-                        datasources.push(gammaDatasources)
+                        setGammaDS( rtDS);
                     }
+
                     if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
                         laneDSColl?.addDS('neutronRT', rtDS);
-                        setNeutronDS(prevState => [...prevState, rtDS]);
-                        datasources.push(neutronDatasources)
+                        setNeutronDS(rtDS);
+
                     }
                     if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/threshold")){
                         laneDSColl?.addDS('gammaTrshldRT', rtDS);
-                        setThresholdDS(prevState => [...prevState, rtDS]);
-                        datasources.push(thresholdDatasources)
+                        setThresholdDS(rtDS);
                     }
-
-
                 }
                 setDataSourcesByLane(laneDSMap);
+
             }
         }
+
     }, [laneMapRef.current]);
 
-    useEffect(() => {
-        datasourceSetup();
-    }, [laneMapRef.current]);
+
+    useEffect(()=>{
+        if(gammaDatasources){
+            datasources.push(gammaDatasources)
+        }
+        if(thresholdDatasources){
+            datasources.push(thresholdDatasources)
+        }
+    }, [gammaDatasources, thresholdDatasources])
+
 
     const [dataSyncCreated, setDataSyncCreated] = useState<boolean>(false);
 
-    const [dataSyncReady, setDataSyncReady] = useState<boolean>(false);
     const syncRef = useRef<typeof DataSynchronizer>();
 
-    const createSync = useCallback(()=>{
-        if(!dataSyncCreated && !syncRef.current && thresholdDatasources.length > 0){
-           let timeController = new DataSynchronizer({
-                dataSources: thresholdDatasources,
+    // const createSync = useCallback(()=>{
+    //     if(!dataSyncCreated && !syncRef.current && thresholdDatasources.length > 0){
+    //        let timeController = new DataSynchronizer({
+    //             dataSources: thresholdDatasources,
+    //             replaySpeed: 1.0,
+    //             intervalRate: 5,
+    //             mode: Mode.REAL_TIME,
+    //             startTime: startTime,
+    //         })
+    //         setDataSyncCreated(true);
+    //        setMasterTimeController(timeController)
+    //     }
+    // }, [syncRef, dataSyncCreated, thresholdDatasources])
+
+    const createSync = useCallback(() => {
+        if (!dataSyncCreated && !syncRef.current && datasources.length > 0) {
+            console.log('datatta', datasources)
+            let timeController = new DataSynchronizer({
+                dataSources: datasources,
                 replaySpeed: 1.0,
                 intervalRate: 5,
                 mode: Mode.REAL_TIME,
                 startTime: startTime,
-            })
+            });
+            console.log("Data Synchronizer created:", timeController);
             setDataSyncCreated(true);
-           setMasterTimeController(timeController)
+            setMasterTimeController(timeController);
         }
-    }, [syncRef, dataSyncCreated, thresholdDatasources])
+    }, [syncRef, dataSyncCreated, datasources, startTime]);
+
+
+    // useEffect(() => {
+    //     createSync();
+    // }, [gammaDatasources, neutronDatasources, thresholdDatasources, syncRef, dataSyncCreated]);
+
 
 
     useEffect(() => {
-        createSync();
-    }, [gammaDatasources, neutronDatasources, thresholdDatasources, syncRef, dataSyncCreated]);
+        // gammaDatasources.forEach(ds => {
+        //     ds.connect();
+        // });
+        // neutronDatasources.forEach(ds => {
+        //     ds.connect();
+        // });
+        if(neutronDatasources){
+            neutronDatasources.connect()
+        }
 
+        if(gammaDatasources){
+            gammaDatasources.connect()
+        }
+        if(thresholdDatasources){
+            thresholdDatasources.connect()
+        }
 
+        // if(masterTimeController != null){
+        //     masterTimeController.connect()
+        //
+        // }
 
-    useEffect(() => {
-        gammaDatasources.forEach(ds => {
-            ds.connect();
-        });
-        neutronDatasources.forEach(ds => {
-            ds.connect();
-        });
-
-        masterTimeController.connect()
-
-    }, [thresholdDatasources, gammaDatasources, neutronDatasources, dataSyncCreated, dataSyncReady, syncRef]);
+    }, [thresholdDatasources, gammaDatasources, neutronDatasources, masterTimeController]);
 
 
     return (
@@ -124,9 +156,9 @@ export default function Media(props: { laneName: string}) {
             <Grid container direction="row" spacing={2} justifyContent={"center"} alignItems={"center"}>
                 <Grid item xs={12} sm={6}>
                     <ChartLane  laneName={props.laneName} setChartReady={setChartReady}  datasources={{
-                        gamma: gammaDatasources[0],
-                        neutron: neutronDatasources[0],
-                        threshold: thresholdDatasources[0]
+                        gamma: gammaDatasources,
+                        neutron: neutronDatasources,
+                        threshold: thresholdDatasources
                     }}/>
                 </Grid>
                 <Grid item xs>

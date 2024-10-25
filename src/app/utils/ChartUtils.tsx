@@ -43,7 +43,7 @@ export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
         name: "Threshold",
         backgroundColor: "#9b27b0",
         lineColor: '#9b27b0',
-        maxValues: 25,
+        // maxValues: 25,
         yLabel: 'CPS',
         borderWidth: 1,
 
@@ -97,7 +97,7 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
     let gCurve = new CurveLayer({
         dataSourceIds: [gammaDatasource.id],
         getValues: (rec: any, timestamp: any) => ({ x: timestamp, y: rec.gammaGrossCount}),
-        maxValues: 25,
+        // maxValues: 50,
         name: "Gamma Count",
         borderWidth: 1,
         backgroundColor: "#f44336",

@@ -30,34 +30,81 @@ interface LaneWithVideo {
 }
 export default function VideoGrid(props: LaneVideoProps) {
 
+    const {laneMapRef} = useContext(DataSourceContext);
+
     const [videoList, setVideoList] = useState<LaneWithVideo[] | null>(null);
     const [currentPage, setCurrentPage] = useState(0);
 
     const [maxPages, setMaxPages] = useState(0)
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
+    const [dsVideo, setDsVideo] = useState([]);
+
+
+    const datasourceSetup = useCallback(async () => {
+
+        let laneDSMap = new Map<string, LaneDSColl>();
+        let videoDs: any[] = [];
+
+        for (let [laneid, lane] of laneMap.entries()) {
+            laneDSMap.set(laneid, new LaneDSColl());
+            for (let ds of lane.datastreams) {
+
+                let idx: number = lane.datastreams.indexOf(ds);
+                let rtDS = lane.datasourcesRealtime[idx];
+                let laneDSColl = laneDSMap.get(laneid);
+
+                if(ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/RasterImage") || ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/VideoFrame")){
+                    console.log("Video DS Found",ds);
+                    videoDs.push(rtDS);
+                }
+            }
+            setDsVideo(videoDs);
+        }
+    }, [laneMapRef.current]);
+
+    useEffect(() => {
+        datasourceSetup();
+    }, [laneMapRef.current]);
 
     // Create and connect videostreams
     useEffect(() => {
         if(videoList == null || videoList.length == 0 && laneMap.size > 0) {
-            let videos: LaneWithVideo[] = []
+            let updatedVideos: LaneWithVideo[] = []
 
             laneMap.forEach((value, key) => {
                 if (key === props.laneName) {
                     let ds: LaneMapEntry = laneMap.get(key);
 
-                    const videoSources = ds.datasourcesRealtime.filter((item) =>
-                        item.name.includes('Video') && item.name.includes('Lane')
-                    );
+                    dsVideo.forEach((dss) =>{
+                        const videoSources = ds.datasourcesRealtime.filter((item) => item.properties.resource === (dss.properties.resource));
+                        if(videoSources.length > 0){
+                            let existingLane = updatedVideos.find((lane) => lane.laneName === key);
+                            if (existingLane) {
 
-                    if (videoSources.length > 0) {
-                        videos.push({laneName: key, videoSources});
-                    }
+                                existingLane.videoSources.push(...videoSources.filter((source) => !existingLane.videoSources.some((existingSource) => existingSource === source)));
+                            } else {
+
+                                updatedVideos.push({ laneName: key, videoSources });
+                            }
+
+                        }
+                    })
+
+                    // const videoSources = ds.datasourcesRealtime.filter((item) =>
+                    //     item.name.includes('Video') && item.name.includes('Lane')
+                    // );
+                    //
+                    // if (videoSources.length > 0) {
+                    //     videos.push({laneName: key, videoSources});
+                    // }
                 }
             });
-            setVideoList(videos);
+            setVideoList(updatedVideos);
 
         }
-    }, [laneMap, props.laneName]);
+    }, [laneMap, props.laneName, dsVideo]);
+
+    console.log(videoList)
 
     useEffect(() => {
         if(videoList && videoList.length> 0){

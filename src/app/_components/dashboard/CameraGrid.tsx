@@ -37,72 +37,6 @@ export default function CameraGrid() {
   const [startItem, setStartItem] = useState(0);  // Current start of range
   const [endItem, setEndItem] = useState(maxItems); // Current end of range
 
-   // useEffect(() => {
-   //    if(videoList == null || videoList.length == 0 && laneMap.size > 0 && dsVideo.length > 0) {
-   //      let videos: LaneWithVideo[] = []
-   //
-   //      laneMap.forEach((value, key) => {
-   //        if(laneMap.has(key)) {
-   //
-   //          let ds: LaneMapEntry = laneMap.get(key);
-   //
-   //          dsVideo.map((dss) => {
-   //            const videoSources = ds.datasourcesRealtime.filter((item) => item.properties.resource === ("/datastreams/" + dss.properties.id + "/observations"));
-   //
-   //            if (videoSources.length > 0) {
-   //              //if lane exists add video source to lane else create a new lane
-   //              const existingLane = videos.find((lane)=> lane.laneName === key);
-   //              if(existingLane){
-   //                existingLane.videoSources.push(...videoSources);
-   //              }else{
-   //                const laneWithVideo: LaneWithVideo = {
-   //                  laneName: key,
-   //                  videoSources: videoSources,
-   //                  status: 'none',
-   //                };
-   //                videos.push(laneWithVideo);
-   //              }
-   //            }
-   //          });
-   //        }
-   //      })
-   //      setVideoList(videos);
-   //    }
-   //  }, [laneMap, dsVideo]);
-
-  // Create and connect videostreams
-  useEffect(() => {
-
-    if (videoList == null || videoList.length == 0 && laneMap.size > 0) {
-      let videos: LaneWithVideo[] = []
-
-      laneMap.forEach((value, key) => {
-        let ds: LaneMapEntry = value;
-
-        const videoSources = ds.datasourcesRealtime.filter((item) => item.name.includes('Video') && item.name.includes('Lane'));
-
-        if (videoSources.length > 0) {
-          const existingLane = videos.find((lane)=> lane.laneName === key);
-          if(existingLane){
-            existingLane.videoSources.push(...videoSources);
-          }else{
-            const laneWithVideo: LaneWithVideo = {
-              laneName: key,
-              videoSources: videoSources,
-              status: 'none',
-            };
-            videos.push(laneWithVideo);
-          }
-
-
-        }
-      });
-
-      console.log("CamGrid - Videos", videos);
-      setVideoList(videos);
-    }
-  }, [laneMap]);
-
 
   const datasourceSetup = useCallback(async () => {
 
@@ -129,6 +63,7 @@ export default function CameraGrid() {
         if(ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/RasterImage") || ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/VideoFrame")){
           console.log("Video DS Found",ds);
           videoDs.push(ds);
+          laneDSColl.addDS('videoRT', rtDS)
         }
       }
       setDsVideo(videoDs);
@@ -140,7 +75,77 @@ export default function CameraGrid() {
     datasourceSetup();
   }, [laneMapRef.current]);
 
+  useEffect(() => {
+     if(videoList == null || videoList.length == 0 && laneMap.size > 0 && dsVideo.length > 0) {
+       let updatedVideos: LaneWithVideo[] = []
+
+       laneMap.forEach((value, key) => {
+         if(laneMap.has(key)) {
+
+           let ds: LaneMapEntry = laneMap.get(key);
+
+           dsVideo.map((dss) => {
+             const videoSources = ds.datasourcesRealtime.filter((item) => item.properties.resource === ("/datastreams/" + dss.properties.id + "/observations"));
+
+             if (videoSources.length > 0) {
+               //if lane exists add video source to lane else create a new lane
+               const existingLane = updatedVideos.find((lane)=> lane.laneName === key);
+
+               if(existingLane){
+                 existingLane.videoSources.push(...videoSources.filter((source) => !existingLane.videoSources.some((existingSource) => existingSource === source)));
+               }else{
+                 const laneWithVideo: LaneWithVideo = {
+                   laneName: key,
+                   videoSources: videoSources,
+                   status: 'none',
+                 };
+                 updatedVideos.push(laneWithVideo);
+               }
+             }
+           });
+         }
+       })
+       setVideoList(updatedVideos);
+     }
+   }, [laneMap, dsVideo]);
+
+  // useEffect(() => {
+  //
+  //   if (videoList == null || videoList.length == 0 && laneMap.size > 0) {
+  //     let videos: LaneWithVideo[] = []
+  //
+  //     laneMap.forEach((value, key) => {
+  //       let ds: LaneMapEntry = value;
+  //
+  //       const videoSources = ds.datasourcesRealtime.filter((item) => item.name.includes('Video') && item.name.includes('Lane'));
+  //
+  //       if (videoSources.length > 0) {
+  //         const existingLane = videos.find((lane)=> lane.laneName === key);
+  //         if(existingLane){
+  //           existingLane.videoSources.push(...videoSources);
+  //         }else{
+  //           const laneWithVideo: LaneWithVideo = {
+  //             laneName: key,
+  //             videoSources: videoSources,
+  //             status: 'none',
+  //           };
+  //           videos.push(laneWithVideo);
+  //         }
+  //
+  //
+  //       }
+  //     });
+  //
+  //     console.log("CamGrid - Videos", videos);
+  //     setVideoList(videos);
+  //   }
+  // }, [laneMap]);
+
+
+
+
   const addSubscriptionCallbacks = useCallback(() => {
+    console.log('callback called')
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
 
       // guard against a lane where there is no video source, so we can avoid an error popup
@@ -169,14 +174,14 @@ export default function CameraGrid() {
 
       laneDSColl.connectAllDS();
     }
-  }, [dataSourcesByLane]);
+  }, [dataSourcesByLane, videoList]);
 
 
   useEffect(() => {
     // if (videoList !== null && videoList.length > 0) {
       addSubscriptionCallbacks();
     // }
-  }, [dataSourcesByLane]);
+  }, [dataSourcesByLane, videoList]);
 
 
 
@@ -198,30 +203,6 @@ export default function CameraGrid() {
       return updatedList;
     })
   };
-
-  // const updateVideoList = (laneName: string, newStatus: string) => {
-  //   setVideoList((prevList) => {
-  //     let existingVideo = prevList.find((video) => video.laneName === laneName)
-  //
-  //     if(existingVideo){
-  //       const updatedList = prevList.map((videoData) =>{
-  //         if(videoData.laneName === laneName){
-  //           return {...videoData, status: newStatus}
-  //         }
-  //         return videoData;
-  //       });
-  //       const updatedVideo = updatedList.find((videoData) => videoData.laneName === laneName);
-  //
-  //       if(newStatus !== 'Background' && newStatus !== 'Scan') {
-  //         // Get timeout from config
-  //         setTimeout(() => updateVideoList(laneName, "none"), 10000);
-  //         const filteredVideos = updatedList.filter((videoData) => videoData.laneName !== laneName);
-  //         return [updatedVideo, ...filteredVideos];
-  //       }
-  //       return updatedList;
-  //     }
-  //   })
-  // };
 
 
   // Handle camera grid pages
