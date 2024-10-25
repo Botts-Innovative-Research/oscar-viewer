@@ -17,9 +17,7 @@ import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {
     addEventToLog,
-    selectAlarmingAndNonAdjudicatedData,
     selectEventTableDataArray,
-    selectLaneTableData,
     setEventLogData,
     setSelectedEvent
 } from "@/lib/state/EventDataSlice";
@@ -53,8 +51,7 @@ export default function Table2({
                                    viewAdjudicated = false,
                                    laneMap
                                }: TableProps) {
-    // const laneMap = useSelector((state: RootState) => selectLaneMap(state))
-    // const [tableData, setTableData] = useState<EventTableData[]>([]);
+
     const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
     const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
     const [selectionModel, setSelectionModel] = useState([]); // Currently selected row
@@ -72,18 +69,14 @@ export default function Table2({
     }
 
     async function streamObservations(laneEntry: LaneMapEntry) {
-        // const observationFilter = new ObservationFilter({resultTime: `${new Date().toISOString()}/..`});
+
         let futureTime = new Date();
         futureTime.setFullYear(futureTime.getFullYear() + 1);
         let occDS: typeof DataStream = laneEntry.findDataStreamByName("Driver - Occupancy");
-        // if (!occDS) return;
         occDS.streamObservations(new ObservationFilter({
             resultTime: `now/${futureTime.toISOString()}`
         }), (observation: any) => {
-            console.log("[evt table real-time observation found", observation, laneEntry.laneName);
             let resultEvent = eventFromObservation(observation[0], laneEntry);
-            // console.log("[EVT] Real-time EventTableData", resultEvent, tableData);
-            console.log("[EVT table Real-time EventTableData", observation, resultEvent);
             dispatch(addEventToLog(resultEvent));
 
         })
@@ -104,18 +97,18 @@ export default function Table2({
     }
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
-        // console.log("evt observation to entry", obs);
         let newEvent: EventTableData = new EventTableData(randomUUID(), laneEntry.laneName, obs.result, obs.id);
         newEvent.setSystemIdx(laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId));
         newEvent.setDataStreamId(obs["datastream@id"]);
         newEvent.setObservationId(obs.id);
-        // console.log("[EVT] New Event Table Data", newEvent);
+
         return newEvent;
     }
 
     async function doFetch(laneMap: Map<string, LaneMapEntry>) {
         let allFetchedResults: EventTableData[] = [];
         let promiseGroup: Promise<void>[] = [];
+
         // createDatastreams(laneMap)
         laneMap.forEach((entry: LaneMapEntry, laneName: string) => {
             let promise = (async () => {
@@ -127,8 +120,8 @@ export default function Table2({
             })();
             promiseGroup.push(promise);
         });
+
         await Promise.all(promiseGroup);
-        // setTableData(allFetchedResults);
         dispatch(setEventLogData(allFetchedResults))
     }
 
@@ -139,22 +132,20 @@ export default function Table2({
     }
 
     function unadjudicatedFilteredList(tableData: EventTableData[]) {
-        // console.log("event table data for adjudication filtered", tableData)
         if (!tableData) return [];
         let filtered = tableData.filter((entry) => {
             if (entry.isAdjudicated) return false;
             return entry.adjudicatedData.getCodeValue() === 0;
 
         })
-        // console.log("[EVT] adj filtered", filtered)
+
         return filtered
     }
 
     function onlyAlarmingFilteredList(tableData: EventTableData[]) {
-        // console.log("event table data for alarm filtered", tableData)
         if (!tableData) return [];
         let filtered = tableData.filter((entry: EventTableData) => entry.status !== 'None')
-        // console.log("[EVT] alarm filtered", filtered)
+
         return filtered
     }
 
@@ -166,8 +157,6 @@ export default function Table2({
 
 
     useEffect(() => {
-        // collectDatastreams();
-        // doFetch(laneMap);
         dataStreamSetup(laneMap);
     }, [laneMap]);
 
@@ -175,14 +164,6 @@ export default function Table2({
         doFetch(laneMap);
         doStream(laneMap);
     }, [laneMap]);
-
-    // useEffect(() => {
-    //     doStream(laneMap);
-    // }, [rtDataStreams]);
-
-    // useEffect(() => {
-    //     setInterval(doFetch(laneMap, 10000));
-    // }, []);
 
     useEffect(() => {
         // console.log("Table Log Updated")
@@ -319,8 +300,6 @@ export default function Table2({
     // Handle currently selected row
     const handleRowSelection = (selection: any[]) => {
 
-        // console.log("Selection: ", selection);
-
         const selectedId = selection[0]; // Get the first selected ID
 
         if (selectionModel[0] === selectedId) {
@@ -347,10 +326,6 @@ export default function Table2({
                 isOpen: false,
                 eventData: null,
             }));
-            // console.log("Row selected: ", event);
-            // const currentSystem = laneMapRef.current.get(event.laneId).systems.find((system) => system.properties.id === event.systemIdx);
-            const currentSystem = laneMap.get(event.laneId).systems.find((system) => system.properties.id === event.systemIdx);
-            // console.log("[EVT] Current System: ", currentSystem);
 
             let selectedEventPreview = {
                 isOpen: true,
@@ -363,7 +338,6 @@ export default function Table2({
             }));
             dispatch(setSelectedEvent(selectedEventPreview.eventData));
         } else {
-            // console.log("Setting EventPreview Data to null");
             dispatch(setEventPreview({
                 isOpen: false,
                 eventData: null,
