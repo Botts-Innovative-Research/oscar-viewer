@@ -10,7 +10,8 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {DataGrid, GridColDef} from "@mui/x-data-grid";
 import {Checkbox, FormControlLabel, Stack, Typography} from "@mui/material";
 import {AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
-
+import {Simulate} from "react-dom/test-utils";
+import toggle = Simulate.toggle;
 
 const logColumns: GridColDef<AdjudicationData>[] = [
     {field: 'secondaryInspectionStatus', headerName: 'Secondary Inspection Status', width: 200},
