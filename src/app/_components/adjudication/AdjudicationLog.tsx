@@ -8,8 +8,10 @@ import AdjudicationData, {IAdjudicationData} from "@/lib/data/oscar/adjudication
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {DataGrid, GridColDef} from "@mui/x-data-grid";
-import {Stack, Typography} from "@mui/material";
+import {Checkbox, FormControlLabel, Stack, Typography} from "@mui/material";
 import {AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
+import {Simulate} from "react-dom/test-utils";
+import toggle = Simulate.toggle;
 
 const logColumns: GridColDef<AdjudicationData>[] = [
     {field: 'secondaryInspectionStatus', headerName: 'Secondary Inspection Status', width: 200},
@@ -57,6 +59,8 @@ export default function AdjudicationLog(props: {
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
     const [laneAdjdatastream, setLaneAdjDatastream] = useState<typeof DataStream>();
     const [adjLog, setAdjLog] = useState<AdjudicationData[]>([]);
+    const [onlySameObs, setOnlySameObs] = useState(false);
+    const [filteredLog, setFilteredLog] = useState<AdjudicationData[]>([]);
 
     const getAdjudicationStyle = (adjudication: number) => {
         if (adjudication < 3) {
@@ -116,7 +120,12 @@ export default function AdjudicationLog(props: {
 
     useEffect(() => {
         console.log("[ADJ-Log] Adjudication Log Updated: ", adjLog);
-    }, [adjLog]);
+        let filteredLog = [...adjLog];
+        if (onlySameObs) {
+            filteredLog = adjLog.filter((adjData) => adjData.occupancyId === props.event.occupancyId);
+        }
+        setFilteredLog(filteredLog);
+    }, [adjLog, onlySameObs]);
 
     useEffect(() => {
         if (props.shouldFetch) {
@@ -127,12 +136,21 @@ export default function AdjudicationLog(props: {
         }
     }, [props.shouldFetch]);
 
+    function toggleOnlySameObs() {
+        setOnlySameObs(prevState => !prevState);
+    }
+
     return (
         <>
             <Stack spacing={2}>
-                <Typography variant="h5">Logged Adjudications</Typography>
+                <Stack direction={"column"} spacing={1}>
+                    <Typography variant="h5">Logged Adjudications</Typography>
+                    <FormControlLabel control={<Checkbox value={onlySameObs} onClick={toggleOnlySameObs}/>}
+                                      label="Show From Only Same Observation ID"></FormControlLabel>
+
+                </Stack>
                 <DataGrid
-                    rows={adjLog}
+                    rows={filteredLog}
                     columns={logColumns}
                     initialState={{
                         pagination: {
