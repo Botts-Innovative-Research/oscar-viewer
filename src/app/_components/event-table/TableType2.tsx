@@ -141,7 +141,11 @@ export default function Table2({
     function unadjudicatedFilteredList(tableData: EventTableData[]) {
         // console.log("event table data for adjudication filtered", tableData)
         if (!tableData) return [];
-        let filtered = tableData.filter((entry) => entry.adjudicatedData.getCodeValue() === 0)
+        let filtered = tableData.filter((entry) => {
+            if (entry.isAdjudicated) return false;
+            return entry.adjudicatedData.getCodeValue() === 0;
+
+        })
         // console.log("[EVT] adj filtered", filtered)
         return filtered
     }
@@ -194,7 +198,7 @@ export default function Table2({
             }
         }
         // setFilteredTableData(filteredData);
-        setFilteredTableData((prevState)=>{
+        setFilteredTableData((prevState) => {
             console.log("EVT table prevtable data", prevState);
             console.log("EVT table newtable", filteredData)
             return filteredData;

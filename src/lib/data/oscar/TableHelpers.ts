@@ -27,6 +27,7 @@ export class EventTableData implements IEventTableData {
     systemIdx?: string;
     dataStreamId?: string;
     observationId: string;
+    isAdjudicated:string;
 
     constructor(id: number, laneId: string, msgValue: any, observationId: string, adjudicatedData: AdjudicationData | null = null) {
         this.id = id
@@ -50,6 +51,7 @@ export class EventTableData implements IEventTableData {
             // return null;
         }
         this.adjudicatedData = adjudicatedData ? adjudicatedData : new AdjudicationData("N/A", "N/A", "N/A");
+        this.isAdjudicated = msgValue.isAdjudicated;
         this.observationId = observationId;
     }
 
