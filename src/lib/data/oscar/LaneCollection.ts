@@ -209,6 +209,15 @@ export class LaneMapEntry {
         return this.systems.find((sys) => sys.properties.id === stream.properties["system@id"]).properties.id;
     }
 
+    findDataStreamByObsProperty(obsProperty: string){
+        let stream: typeof DataStream = this.datastreams.find((ds)=> {
+            console.log("FIND ds props", ds)
+            let hasProp = ds.properties.observedProperties.some((prop: any)=> prop.definition === obsProperty)
+            return hasProp;
+        });
+        return stream;
+    }
+
 
     /**
      * Retrieves datastreams within the specified time range and categorizes them by event detail types.

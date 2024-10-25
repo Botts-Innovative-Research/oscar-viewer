@@ -59,7 +59,8 @@ export default function Table2({
 
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
-        let occDS: typeof DataStream = laneEntry.findDataStreamByName("Driver - Occupancy");
+        let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty("http://www.opengis.net/def/pillar-occupancy-count");
+
         if (!occDS) {
             return;
         }
@@ -72,7 +73,7 @@ export default function Table2({
 
         let futureTime = new Date();
         futureTime.setFullYear(futureTime.getFullYear() + 1);
-        let occDS: typeof DataStream = laneEntry.findDataStreamByName("Driver - Occupancy");
+        let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty("http://www.opengis.net/def/pillar-occupancy-count");
         occDS.streamObservations(new ObservationFilter({
             resultTime: `now/${futureTime.toISOString()}`
         }), (observation: any) => {
