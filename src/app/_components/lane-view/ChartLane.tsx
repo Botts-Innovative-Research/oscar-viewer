@@ -86,8 +86,9 @@ export default function ChartLane(props: ChartInterceptProps){
 
             if (container) {
                 gammaChartViewRef.current = new ChartJsView({
+                    type: 'line',
                     container: gammaChartID,
-                    layers: layers,
+                    layers: [gammaCurve],
                     css: "chart-view-lane-view",
                     options:{
                         interaction: {
@@ -177,7 +178,7 @@ export default function ChartLane(props: ChartInterceptProps){
                                     // }
                                 },
 
-                                grid: {display: false,}
+                                grid: {display: true,}
 
                             },
                         },
