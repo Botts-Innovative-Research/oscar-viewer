@@ -83,7 +83,6 @@ export default function ChartLane(props: ChartInterceptProps){
             if (thresholdCurve) {
                 layers.push(thresholdCurve);
             }
-            console.log('layers', layers)
 
             if (container) {
                 gammaChartViewRef.current = new ChartJsView({
@@ -91,10 +90,10 @@ export default function ChartLane(props: ChartInterceptProps){
                     layers: layers,
                     css: "chart-view-lane-view",
                     options:{
-                        interaction: {
-                            intersect: false,
-                            mode: 'index',
-                        },
+                        // interaction: {
+                        //     intersect: false,
+                        //     mode: 'index',
+                        // },
                         plugins: {
                             title: {
                                 display: true,

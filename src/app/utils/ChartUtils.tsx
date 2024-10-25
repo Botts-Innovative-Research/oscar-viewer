@@ -97,7 +97,7 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
     let gCurve = new CurveLayer({
         dataSourceIds: [gammaDatasource.id],
         getValues: (rec: any, timestamp: any) => ({ x: timestamp, y: rec.gammaGrossCount}),
-        // maxValues: 50,
+        maxValues: 100,
         name: "Gamma Count",
         borderWidth: 1,
         backgroundColor: "#f44336",
