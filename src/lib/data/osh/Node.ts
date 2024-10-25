@@ -14,6 +14,7 @@ import SystemFilter from "osh-js/source/core/sweapi/system/SystemFilter.js";
 import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
 import {AdjudicationDatastreamConstant} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
+import DataStreamFilter from "osh-js/source/core/sweapi/datastream/DataStreamFilter.js";
 
 const LANEREGEX = /^lane\d+$/;
 
@@ -290,26 +291,28 @@ export class Node implements INode {
         let laneAdjDsMap: Map<string, string> = new Map();
 
         for (const [laneName, laneEntry] of laneMap as Map<string, LaneMapEntry>) {
-            let system = systems.find((system: typeof System) => {
-                system.properties.properties.uid.includes("adjudication")
+            let system = systems.find((sys: typeof System) => {
+                return sys.properties.properties.uid.includes("adjudication")
             });
-            let systemId: string;
+            console.log("[ADJ-INSERT] systems check", system)
             if (system) {
-                console.log("[ADJ] Found adjudication systems for lane: ", laneEntry, system);
+                console.log("[ADJ-INSERT] Found adjudication systems for lane: ", laneEntry, system);
                 // check for datastreams
-                let datastreams: typeof DataStream[] = await system.searchDataStreams();
-                if (datastreams.length > 0) {
-                    console.log("[ADJ] Found datastreams for adjudication system: ", datastreams);
-                    adjSysAndDSMap.set(system.id, datastreams[0].id);
-                    laneAdjDsMap.set(laneName, datastreams[0].id);
+                let streamCollection: any = await system.searchDataStreams(new DataStreamFilter(), 1000);
+                // if (datastreams.length > 0) {
+                if (streamCollection.hasNext()) {
+                    let datastreams = await streamCollection.nextPage();
+                    console.log("[ADJ-INSERT] Found datastreams for adjudication system: ", datastreams);
+                    adjSysAndDSMap.set(system.properties.id, datastreams[0].properties.id);
+                    laneAdjDsMap.set(laneName, datastreams[0].properties.id);
                 } else {
-                    console.log("[ADJ] No datastreams found for adjudication system: ", system);
+                    console.log("[ADJ-INSERT] No datastreams found for adjudication system: ", system);
                     let dsId = await this.insertAdjDatastream(system.id);
-                    adjSysAndDSMap.set(system.id, dsId);
+                    adjSysAndDSMap.set(system.properties.id, dsId);
                     laneAdjDsMap.set(laneName, dsId);
                 }
             } else {
-                console.log(`[ADJ] No existing adjudication systems found, creating new system for lane" ${laneName}`);
+                console.log(`[ADJ-INSERT] No existing adjudication systems found, creating new system for lane" ${laneName}`);
                 let sysId = await laneEntry.insertAdjudicationSystem(laneName);
                 // insert datastreams
                 let dsId = await this.insertAdjDatastream(sysId);
@@ -394,21 +397,21 @@ export class Node implements INode {
         return Promise.resolve("");
     }
 
-    async fetchControlStreams(){
+    async fetchControlStreams() {
         // have to use manual request due to osh-js having the wrong resource location
         let ep = `${this.getConnectedSystemsEndpoint(false)}/controlstreams`
-        let response = await fetch(ep,{
+        let response = await fetch(ep, {
             method: "GET",
-            headers:{
+            headers: {
                 ...this.getBasicAuthHeader(),
                 "Content-Type": "application/json"
             }
         });
-        if (response.ok){
+        if (response.ok) {
             let json = await response.json();
             console.log("Control Streams", json['items']);
             return json['items']
-        }else{
+        } else {
             console.warn("Error getting Control Streams")
             return []
         }
