@@ -74,8 +74,6 @@ export default function LaneVideoPlayback({
 
     return (
         <div>
-            <Typography variant="h4" color="textSecondary" gutterBottom>
-                Video Playback</Typography>
             <div id="event-preview-video"></div>
         </div>
     )

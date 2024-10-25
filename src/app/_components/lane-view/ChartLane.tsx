@@ -116,8 +116,20 @@ export default function ChartLane(props: ChartInterceptProps){
                             }
                         },
                         autoPadding: true,
-                        responsive: true, //resizes chart based on container size... good for browser changing size
+                        responsive: true,
                         scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Time',
+                                },
+                                // ticks: {
+                                    // stepSize: 200, //200ms
+                                    // callback: function(value: any) {
+                                    //     return value + ' ms'; // Display in milliseconds
+                                    // }
+                                // }
+                            },
                             y:{
                                 title:{
                                     display: true,
@@ -230,6 +242,12 @@ export default function ChartLane(props: ChartInterceptProps){
                         },
                         responsive: true, //resizes chart based on container size... good for browser changing size
                         scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Time',
+                                },
+                            },
                             y: {
                                 title: {
                                     display: true,
