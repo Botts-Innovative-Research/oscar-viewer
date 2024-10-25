@@ -19,7 +19,6 @@ export default function LaneViewPage() {
     const searchParams = useSearchParams();
     const currentLane = searchParams.get("name");
     const [filteredLaneMap, setFilteredLaneMap] = useState<Map<string, LaneMapEntry>>(null);
-    const [currentTime, setCurrentTime] = useState('');
 
     console.log("Lane name:", currentLane)
     let newMap = new Map<string, LaneMapEntry>();

@@ -1,5 +1,5 @@
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
-import {useState} from "react";
+
 
 export function createSigmaViewCurve(thresholdDatasource: { id: any; }) {
     if (!thresholdDatasource) return null;

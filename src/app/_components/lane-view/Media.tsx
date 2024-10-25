@@ -23,7 +23,6 @@ export default function Media(props: { laneName: string}) {
 
     let startTime = new Date().toISOString()
 
-    //timecontroller
     let datasources: any[]=[];
 
     let [masterTimeController, setMasterTimeController] = useState<typeof DataSynchronizer>(
@@ -114,9 +113,6 @@ export default function Media(props: { laneName: string}) {
         neutronDatasources.forEach(ds => {
             ds.connect();
         });
-        // thresholdDatasources.forEach(ds => {
-        //     ds.connect();
-        // });
 
         masterTimeController.connect()
 
