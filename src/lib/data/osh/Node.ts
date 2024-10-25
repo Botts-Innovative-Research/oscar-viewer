@@ -179,7 +179,7 @@ export class Node implements INode {
             fetchedSystems.push(newSystem);
             const uidSplit = system.properties.uid.split(":");
             // Test for lane signature in uid
-            if (LANEREGEX.test(uidSplit[uidSplit.length - 1])) {
+            if (system.properties.uid.includes("urn:osh:system:")) {
                 console.info("Found System matching lane signature");
                 const newLaneName = system.properties.name;
                 // Fetch subsystems
