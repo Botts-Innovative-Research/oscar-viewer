@@ -50,7 +50,6 @@ export default function Media(props: { laneName: string}) {
 
                     let laneDSColl = laneDSMap.get(laneid);
 
-
                     if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
                         laneDSColl?.addDS('gammaRT', rtDS);
                         setGammaDS( rtDS);
@@ -84,9 +83,9 @@ export default function Media(props: { laneName: string}) {
     }, [gammaDatasources, thresholdDatasources])
 
 
-    const [dataSyncCreated, setDataSyncCreated] = useState<boolean>(false);
-
-    const syncRef = useRef<typeof DataSynchronizer>();
+    // const [dataSyncCreated, setDataSyncCreated] = useState<boolean>(false);
+    //
+    // const syncRef = useRef<typeof DataSynchronizer>();
 
     // const createSync = useCallback(()=>{
     //     if(!dataSyncCreated && !syncRef.current && thresholdDatasources.length > 0){
@@ -102,21 +101,21 @@ export default function Media(props: { laneName: string}) {
     //     }
     // }, [syncRef, dataSyncCreated, thresholdDatasources])
 
-    const createSync = useCallback(() => {
-        if (!dataSyncCreated && !syncRef.current && datasources.length > 0) {
-            console.log('datatta', datasources)
-            let timeController = new DataSynchronizer({
-                dataSources: datasources,
-                replaySpeed: 1.0,
-                intervalRate: 5,
-                mode: Mode.REAL_TIME,
-                startTime: startTime,
-            });
-            console.log("Data Synchronizer created:", timeController);
-            setDataSyncCreated(true);
-            setMasterTimeController(timeController);
-        }
-    }, [syncRef, dataSyncCreated, datasources, startTime]);
+    // const createSync = useCallback(() => {
+    //     if (!dataSyncCreated && !syncRef.current && datasources.length > 0) {
+    //         console.log('datatta', datasources)
+    //         let timeController = new DataSynchronizer({
+    //             dataSources: datasources,
+    //             replaySpeed: 1.0,
+    //             intervalRate: 5,
+    //             mode: Mode.REAL_TIME,
+    //             startTime: startTime,
+    //         });
+    //         console.log("Data Synchronizer created:", timeController);
+    //         setDataSyncCreated(true);
+    //         setMasterTimeController(timeController);
+    //     }
+    // }, [syncRef, dataSyncCreated, datasources, startTime]);
 
 
     // useEffect(() => {
@@ -126,12 +125,7 @@ export default function Media(props: { laneName: string}) {
 
 
     useEffect(() => {
-        // gammaDatasources.forEach(ds => {
-        //     ds.connect();
-        // });
-        // neutronDatasources.forEach(ds => {
-        //     ds.connect();
-        // });
+
         if(neutronDatasources){
             neutronDatasources.connect()
         }
@@ -166,7 +160,5 @@ export default function Media(props: { laneName: string}) {
                 </Grid>
           </Grid>
         </Box>
-
-
   );
 }
