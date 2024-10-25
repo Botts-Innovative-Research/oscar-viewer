@@ -90,10 +90,10 @@ export default function ChartLane(props: ChartInterceptProps){
                     layers: layers,
                     css: "chart-view-lane-view",
                     options:{
-                        // interaction: {
-                        //     intersect: false,
-                        //     mode: 'index',
-                        // },
+                        interaction: {
+                            intersect: false,
+                            mode: 'index',
+                        },
                         plugins: {
                             title: {
                                 display: true,
