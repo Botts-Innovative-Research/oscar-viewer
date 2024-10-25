@@ -195,8 +195,8 @@ export default function Table2({
         }
         // setFilteredTableData(filteredData);
         setFilteredTableData((prevState)=>{
-            // console.log("EVT table prevtable data", prevState);
-            // console.log("EVT table newtable", filteredData)
+            console.log("EVT table prevtable data", prevState);
+            console.log("EVT table newtable", filteredData)
             return filteredData;
         })
     }, [tableData]);
