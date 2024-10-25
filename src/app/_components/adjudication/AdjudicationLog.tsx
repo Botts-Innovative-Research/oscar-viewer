@@ -22,11 +22,13 @@ const logColumns: GridColDef<AdjudicationData>[] = [
     {
         field: 'isotopes', headerName: 'Isotopes', width: 200, valueGetter: (value) => {
             if (value === "") return "N/A";
+            else return value;
         }
     },
     {
         field: 'vehicleId', headerName: 'Vehicle ID', width: 200, valueGetter: (value) => {
             if (value === "") return "N/A";
+            else return value;
         }
     },
 ];
