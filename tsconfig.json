@@ -1,13 +1,50 @@
 {
   "compilerOptions": {
-    "jsx": "react",
-    "lib": ["dom", "es2015"],
+    "jsx": "preserve",
+    "lib": [
+      "dom",
+      "es2015"
+    ],
     "module": "commonjs",
     "noImplicitAny": true,
     "outDir": "./build/",
     "sourceMap": true,
-    "target": "es5",
-    "allowSyntheticDefaultImports": true
+    "target": "es6",
+    "allowSyntheticDefaultImports": true,
+    "allowJs": true,
+    "checkJs": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "noEmit": true,
+    "incremental": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "emitDeclarationOnly": false,
+    "traceResolution": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
   },
-  "include": ["./src/**/*"]
+  "include": [
+    "./src/**/*",
+    ".next/types/**/*.ts",
+    "./types/new-types.d.ts",
+    "./types/osh-js.d.tsx",
+    "new-types.d.ts",
+    "web/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

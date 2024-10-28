@@ -1,0 +1,1 @@
+declare module "osh-js/source/core/*"

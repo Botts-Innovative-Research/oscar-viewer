@@ -3,3 +3,8 @@
 /.idea
 /build
 package-lock.json
+/.next
+.DS_Store
+src/.DS_Store
+/out
+/web
