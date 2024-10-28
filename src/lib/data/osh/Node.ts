@@ -16,7 +16,6 @@ import {AdjudicationDatastreamConstant} from "@/lib/data/oscar/adjudication/mode
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import DataStreamFilter from "osh-js/source/core/sweapi/datastream/DataStreamFilter.js";
 
-const LANEREGEX = /^lane\d+$/;
 
 export interface INode {
     id: string,
@@ -177,7 +176,6 @@ export class Node implements INode {
             const newSystem = new System(system.id, system.properties.uid, system.properties.name, this, null);
             console.log("New System:", newSystem);
             fetchedSystems.push(newSystem);
-            const uidSplit = system.properties.uid.split(":");
             // Test for lane signature in uid
             if (system.properties.uid.includes("urn:osh:system:")) {
                 console.info("Found System matching lane signature");
@@ -213,7 +211,7 @@ export class Node implements INode {
         // filter into lanes
         for (let system of systems) {
             // console.log("TK System:", system);
-            if (system.properties.properties?.uid.includes("lane") && !system.properties.properties?.uid.includes("adjudication")) {
+            if (system.properties.properties?.uid.includes("urn:osh:system:") && !system.properties.properties?.uid.includes("adjudication")) {
                 // console.log("TK Found lane system:", system);
                 // let laneName = system.properties.properties.uid.split(":").pop();
                 let laneName = system.properties.properties.name;
@@ -266,7 +264,7 @@ export class Node implements INode {
     }
 
     async fetchDatastreamsTK(laneMap: Map<string, LaneMapEntry>) {
-        for (const [laneName, laneEntry] of laneMap) {
+        for (const [, laneEntry] of laneMap) {
             try {
                 const datastreams = await laneEntry.laneSystem.searchDataStreams(undefined, 100);
                 while (datastreams.hasNext()) {
