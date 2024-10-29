@@ -24,7 +24,8 @@ export default class AdjudicationData implements IAdjudicationData {
     feedback: string
     adjudicationCode: AdjudicationCode
     isotopes: string
-    secondaryInspectionStatus: "NONE" | "REQUESTED" | "COMPLETED"
+    secondaryInspectionStatus: string
+    // secondaryInspectionStatus: "NONE" | "REQUESTED" | "COMPLETED"
     filePaths: string
     occupancyId: string
     alarmingSystemUid: string

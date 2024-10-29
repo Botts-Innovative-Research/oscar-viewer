@@ -38,6 +38,7 @@ import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 import {updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
+import SecondaryInspectionSelect from "@/app/_components/adjudication/SecondaryInspectionSelect";
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
 
@@ -57,9 +58,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
     const [comments, setComments] = useState<Comment[]>([]);
+
     const [adjudicationCode, setAdjCode] = useState(AdjudicationCodes.codes[0]);
     const [isotope, setIsotope] = useState<string[]>([]);
-    const [secondaryInspection, setSecondaryInspection] = useState(false);
+    const [secondaryInspection, setSecondaryInspection] = useState('');
+
     const [vehicleId, setVehicleId] = useState<string>("");
     const [feedback, setFeedback] = useState<string>("");
     const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -108,6 +111,17 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         setAdjData(tAdjData);
     }
 
+    const handleInspectionSelect = (value: string) => {
+        console.log(value);
+        let tAdjData = adjData;
+        tAdjData.secondaryInspectionStatus = value;
+
+        console.log("[ADJ-D] Secondary Inspection: ", value);
+
+        setSecondaryInspection(value);
+        setAdjData(tAdjData);
+    }
+
     const handleSubmit = () => {
         //require user before allowing submission
         // const newComment: Comment = {
@@ -138,10 +152,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
         tempAdjData.username = currentUser;
 
-        if (name === 'secondaryInspection') {
-            checked ? tempAdjData.secondaryInspectionStatus = "REQUESTED" : tempAdjData.secondaryInspectionStatus = "NONE";
-            setSecondaryInspection(checked);
-        } else if (name === 'vehicleId') {
+        // if (name === 'secondaryInspection') {
+        //     checked ? tempAdjData.secondaryInspectionStatus = "REQUESTED" : tempAdjData.secondaryInspectionStatus = "NONE";
+        //     setSecondaryInspection(checked);
+        // }
+        if (name === 'vehicleId') {
             setVehicleId(value);
             tempAdjData.vehicleId = value;
         } else if (name === 'notes') {
@@ -157,7 +172,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         setVehicleId('')
         setAdjData(adjudication);
         setUploadedFiles([]);
-        setSecondaryInspection(false);
+        setSecondaryInspection('');
         setIsotope([]);
         setAdjCode(AdjudicationCodes.codes[0]);
         setFeedback('')
@@ -323,8 +338,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     />
                 </Button>
                 <Stack direction={"row"} spacing={2}>
-                    <FormControlLabel control={<Checkbox name="secondaryInspection" checked={secondaryInspection}
-                                                         onChange={handleChange}/>} label="Secondary Inspection"/>
+                    <SecondaryInspectionSelect secondarySelectVal={secondaryInspection} onSelect={handleInspectionSelect}/>
+                    {/*<FormControlLabel control={<Checkbox name="secondaryInspection" checked={secondaryInspection}*/}
+                    {/*                                     onChange={handleChange}/>} label="Secondary Inspection"/>*/}
                     <Button disableElevation variant={"contained"} color={"success"}
                             onClick={sendAdjudicationData}>Submit</Button>
                     <Snackbar

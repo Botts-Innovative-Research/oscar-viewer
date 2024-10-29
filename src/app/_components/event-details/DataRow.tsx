@@ -41,7 +41,8 @@ export default function DataRow() {
                         <TableRow key={eventData.id}
                                   sx={{'&:last-child td, &:last-child th': {border: 0, textAlign: "center"}}}>
                             <TableCell align="center">
-                                {eventData.secondaryInspection ? <CheckRoundedIcon/> : <CloseRoundedIcon/>}
+                                {eventData.secondaryInspection}
+                                {/*{eventData.secondaryInspection ? <CheckRoundedIcon/> : <CloseRoundedIcon/>}*/}
                             </TableCell>
                             <TableCell>{eventData.laneId}</TableCell>
                             <TableCell>{eventData.occupancyId}</TableCell>

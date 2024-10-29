@@ -53,14 +53,12 @@ export default function IsotopeSelect(props: {
   onSelect: (value: string[]) => void, // Return selected value
   isotopeValue: string[]
 }) {
-  const [isotope, setIsotope] = useState<string[]>([""]); // Adjudication selected value
+  const [isotope, setIsotope] = useState<string[]>([""]);
 
   const handleChange = (event: SelectChangeEvent<typeof isotope>) => {
       // const isotopes = event.target.value;
       // console.log("[ISO] Isotope Selected: ", isotopes);
-      const {
-          target: {value},
-      } = event;
+      const {target: {value},} = event;
       let isoValue = typeof value === 'string' ? value.split(', ') : value;
 
       //if isotope is not known then only can choose that value,
