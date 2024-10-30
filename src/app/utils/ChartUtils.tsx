@@ -1,21 +1,6 @@
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
 
 
-export function createSigmaViewCurve(thresholdDatasource: { id: any; }) {
-    if (!thresholdDatasource) return null;
-
-    let sigmaCurve = new CurveLayer({
-        dataSourceIds: [thresholdDatasource.id],
-        getValues: (rec: any) => ({x: rec.timestamp, y: rec.sigma}),
-        name: "Gamma Sigma",
-        backgroundColor: "#ab47bc",
-        lineColor: '#ab47bc',
-        hidden: false
-    });
-
-    return sigmaCurve;
-}
-
 export  function createNeutronViewCurve(neutronDatasource: { id: any; }) {
     if (!neutronDatasource) return null;
 
@@ -37,7 +22,6 @@ export  function createNeutronViewCurve(neutronDatasource: { id: any; }) {
     return nCurve;
 }
 
-
 export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
     if (!thresholdDatasource) return null;
 
@@ -57,26 +41,32 @@ export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
 }
 
 // get latest gamma background from threshold datasource to calc nsigma for chart
-export  function createNSigmaCalcViewCurve(thresholdDatasource: { id: any; }) {
+export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDatasource: any) {
     if (!thresholdDatasource) return null;
 
+    let latestGB: number;
+
     let nCurve = new CurveLayer({
-        dataSourceIds: [thresholdDatasource.id],
+        dataSourceIds: [gammaDatasource.id, thresholdDatasource.id],
         getValues: (rec: any) => {
-            return {x: rec.timestamp, y: rec.latestGammaBackground}
+
+            if(rec.latestGammaBackground){
+                latestGB = rec.latestGammaBackground;
+            }
+
+            if(rec.gammaGrossCount && latestGB !== undefined){
+                let nSigmaValue: number = (rec.gammaGrossCount - latestGB) / Math.sqrt(latestGB)
+                return {x: rec.timestamp, y: nSigmaValue}
+            }
+
         },
         name: "NSigma",
         yAxisID: 'nsigma',
-        data: {
-            dataset: [{
-                hidden: true
-            }]
-        },
         borderWith: 1,
-        // backgroundColor: "#e0bee7",
-        // lineColor: "#e0bee7",
-        visible: false,
-        hidden: true,
+        hidden: false,
+        visible: true,
+        backgroundColor: "#e0bee7",
+        lineColor: "#e0bee7",
         maxValues: 25,
     });
 
