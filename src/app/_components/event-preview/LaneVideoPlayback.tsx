@@ -6,7 +6,7 @@
 import {useAppDispatch} from "@/lib/state/Hooks";
 import React, {useContext, useEffect, useRef, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import {Typography} from "@mui/material";
+import {Grid, Typography} from "@mui/material";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import VideoView from "osh-js/source/core/ui/view/video/VideoView";
 import VideoDataLayer from "osh-js/source/core/ui/layer/VideoDataLayer";
@@ -44,7 +44,7 @@ export default function LaneVideoPlayback({
             videoViewRef.current = new VideoView({
                 container: "event-preview-video",
                 showStats: true,
-                showTime: true,
+                showTime: false,
                 layers: [new VideoDataLayer({
                     dataSourceId: dataSources[selVideoIdx].id,
                     getFrameData: (rec: any) => rec.img,
@@ -73,8 +73,6 @@ export default function LaneVideoPlayback({
 
 
     return (
-        <div>
-            <div id="event-preview-video"></div>
-        </div>
+        <Grid item id="event-preview-video"></Grid>
     )
 }
