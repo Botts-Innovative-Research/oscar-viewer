@@ -6,9 +6,9 @@ import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication
 import {IAdjudicationData} from "@/lib/data/oscar/adjudication/Adjudication";
 
 const secondarySelectChoices=[
-    "None",
-    "Completed Inspection",
-    "Requested Inspection",
+    "NONE",
+    "COMPLETED",
+    "REQUESTED",
 ]
 export default function SecondaryInspectionSelect(props: {
     onSelect: (value: string) => void, // Return selected value
