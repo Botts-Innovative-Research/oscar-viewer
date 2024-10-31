@@ -136,10 +136,11 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         console.log("Creating Chart Views", layers, elementIds);
         let newChartViews: any = {gammaCPS: null, neutron: null, gammaNsigma: null};
 
+
         for (let id of elementIds) {
             console.log('ele ids', elementIds)
 
-            if (id.includes("gammaCPS")) {
+            if (id.includes("gammaCPS") && gammaCpsChartViewRef.current) {
 
                 let gammaCpsChartElt = document.createElement("div");
                 gammaCpsChartElt.id = id;
@@ -156,7 +157,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 setGammaCpsChartView(gammaCpsChart);
             }
 
-            if (id.includes("gammaNSIGMA")) {
+            if (id.includes("gammaNSIGMA") && gammaNSigmaChartViewRef.current) {
                 let gammaChartElt = document.createElement("div");
                 gammaChartElt.id = id;
                 gammaNSigmaChartViewRef.current?.appendChild(gammaChartElt);
@@ -172,7 +173,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 newChartViews.gammaNsigma = gammaNsigmaChart;
             }
 
-            if (id.includes("neutron")) {
+            if (id.includes("neutron") && neutronChartViewRef.current) {
                 let neutronChartElt = document.createElement("div");
                 neutronChartElt.id = id;
                 neutronChartViewRef.current?.appendChild(neutronChartElt);
@@ -288,9 +289,11 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     // switch between cps and sigma chart
     const handleToggle= (event: React.MouseEvent<HTMLElement>, newView: any) =>{
         if(newView){
+            console.log('new view', newView)
             setToggleView(newView);
         }
     }
+
 
     if (eventPreview.eventData?.status === "Gamma") {
         return (
@@ -299,11 +302,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                     {gammaButtons}
                 </ToggleButtonGroup>
                 <Grid item xs sx={{width: "100%"}}>
-                    {toggleView === "cps" ? (
-                        <Box sx={{width: "100%"}}  ref={gammaCpsChartViewRef}></Box>
-                    ) : (
-                        <Box sx={{width: "100%"}}  ref={gammaNSigmaChartViewRef}></Box>
-                    )}
+                    <Box ref={ toggleView === 'cps' ? gammaCpsChartViewRef : gammaNSigmaChartViewRef} sx={{width: "100%"}}></Box>
                 </Grid>
             </Box>
 
@@ -321,11 +320,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 </ToggleButtonGroup>
                 <Grid container direction="column" spacing={4}>
                     <Grid item xs sx={{width: "100%"}}>
-                        {toggleView === "cps" ? (
-                            <Box ref={gammaCpsChartViewRef} sx={{width: "100%"}} ></Box>
-                        ) : (
-                            <Box ref={gammaNSigmaChartViewRef} sx={{width: "100%"}} ></Box>
-                        )}
+                        <Box ref={ toggleView === 'cps' ? gammaCpsChartViewRef : gammaNSigmaChartViewRef} sx={{width: "100%"}}></Box>
                     </Grid>
                     <Grid item xs={12} sx={{ width: "100%" }} ref={neutronChartViewRef}></Grid>
                 </Grid>
