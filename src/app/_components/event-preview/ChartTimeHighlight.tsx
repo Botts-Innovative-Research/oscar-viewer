@@ -82,54 +82,54 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         }
     }, [eventPreview]);
 
-    useEffect(() => {
-        let currTime = props.currentTime;
-        if (currTime?.data !== undefined) {
-            let theTime = new Date(currTime.data);
-            console.log("Current Time: ", currTime, theTime);
-
-            let chartAnnotation = {
-                annotations: {
-                    verticalLine: {
-                        type: 'line',
-                        xMin: theTime,
-                        xMax: theTime,
-                        borderColor: 'yellow',
-                        borderWidth: 4,
-                        label: {
-                            enabled: true,
-                            content: 'Current Time'
-                        }
-                    }
-                }
-            };
-
-            if (chartsReady) {
-                console.log("Annotating Charts", gammaCpsChartView, gammaNsigmaChartView, neutronChartView);
-
-                if (gammaCpsChartView) {
-                    console.log("Annotating Gamma Cps Chart", gammaCpsChartView);
-                    const gchart = gammaCpsChartView.chart;
-                    gchart.options.plugins.annotation = chartAnnotation;
-                    gchart.update();
-                }
-
-                if (gammaNsigmaChartView) {
-                    console.log("Annotating Gamma Nsigma Chart", gammaNsigmaChartView);
-                    const gchart = gammaNsigmaChartView.chart;
-                    gchart.options.plugins.annotation = chartAnnotation;
-                    gchart.update();
-                }
-
-                if (neutronChartView) {
-                    console.log("Annotating Neutron Chart", neutronChartView);
-                    const nchart = neutronChartView.chart;
-                    nchart.options.plugins.annotation = chartAnnotation;
-                    nchart.update();
-                }
-            }
-        }
-    }, [props.currentTime, gammaCpsChartView, gammaNsigmaChartView, neutronChartView, chartsReady]);
+    // useEffect(() => {
+    //     let currTime = props.currentTime;
+    //     if (currTime?.data !== undefined) {
+    //         let theTime = new Date(currTime.data);
+    //         console.log("Current Time: ", currTime, theTime);
+    //
+    //         let chartAnnotation = {
+    //             annotations: {
+    //                 verticalLine: {
+    //                     type: 'line',
+    //                     xMin: theTime,
+    //                     xMax: theTime,
+    //                     borderColor: 'yellow',
+    //                     borderWidth: 4,
+    //                     label: {
+    //                         enabled: true,
+    //                         content: 'Current Time'
+    //                     }
+    //                 }
+    //             }
+    //         };
+    //
+    //         if (chartsReady) {
+    //             console.log("Annotating Charts", gammaCpsChartView, gammaNsigmaChartView, neutronChartView);
+    //
+    //             if (gammaCpsChartView) {
+    //                 console.log("Annotating Gamma Cps Chart", gammaCpsChartView);
+    //                 const gchart = gammaCpsChartView.chart;
+    //                 gchart.options.plugins.annotation = chartAnnotation;
+    //                 gchart.update();
+    //             }
+    //
+    //             if (gammaNsigmaChartView) {
+    //                 console.log("Annotating Gamma Nsigma Chart", gammaNsigmaChartView);
+    //                 const gchart = gammaNsigmaChartView.chart;
+    //                 gchart.options.plugins.annotation = chartAnnotation;
+    //                 gchart.update();
+    //             }
+    //
+    //             if (neutronChartView) {
+    //                 console.log("Annotating Neutron Chart", neutronChartView);
+    //                 const nchart = neutronChartView.chart;
+    //                 nchart.options.plugins.annotation = chartAnnotation;
+    //                 nchart.update();
+    //             }
+    //         }
+    //     }
+    // }, [props.currentTime, gammaCpsChartView, gammaNsigmaChartView, neutronChartView, chartsReady]);
 
     function createChartViews(layers: { gamma: any, threshold: any, neutron: any, nsigma: any }, elementIds: string[]) {
 
@@ -148,8 +148,34 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
                 let gammaCpsChart = new ChartJsView({
                     container: id,
-                    layers: [layers.gamma, layers.threshold],
+                    layers: [layers.gamma, layers.threshold, layers.nsigma],
                     css: "chart-view-event-detail",
+                    options:{
+                        interaction: {
+                            intersect: false,
+                            mode: 'index',
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Time',
+                                },
+                            },
+                            y:{
+                                title:{
+                                    display: true,
+                                    text: 'CPS',
+
+                                },
+                                display: true,
+                                position: 'left',
+                                align: 'center',
+                                grid: {display: false, beginAtZero: false}
+
+                            },
+                        },
+                    },
                 });
 
                 console.log("Created Gamma Chart", gammaCpsChart);
@@ -157,21 +183,21 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 setGammaCpsChartView(gammaCpsChart);
             }
 
-            if (id.includes("gammaNSIGMA") && gammaNSigmaChartViewRef.current) {
-                let gammaChartElt = document.createElement("div");
-                gammaChartElt.id = id;
-                gammaNSigmaChartViewRef.current?.appendChild(gammaChartElt);
-
-                let gammaNsigmaChart = new ChartJsView({
-                    container: id,
-                    layers: [layers.nsigma],
-                    css: "chart-view-event-detail",
-                });
-
-                console.log("Created Gamma Nsigma Chart", gammaNsigmaChart);
-                setGammaNsigmaChartView(gammaNsigmaChart);
-                newChartViews.gammaNsigma = gammaNsigmaChart;
-            }
+            // if (id.includes("gammaNSIGMA") && gammaNSigmaChartViewRef.current) {
+            //     let gammaChartElt = document.createElement("div");
+            //     gammaChartElt.id = id;
+            //     gammaNSigmaChartViewRef.current?.appendChild(gammaChartElt);
+            //
+            //     let gammaNsigmaChart = new ChartJsView({
+            //         container: id,
+            //         layers: [layers.nsigma],
+            //         css: "chart-view-event-detail",
+            //     });
+            //
+            //     console.log("Created Gamma Nsigma Chart", gammaNsigmaChart);
+            //     setGammaNsigmaChartView(gammaNsigmaChart);
+            //     newChartViews.gammaNsigma = gammaNsigmaChart;
+            // }
 
             if (id.includes("neutron") && neutronChartViewRef.current) {
                 let neutronChartElt = document.createElement("div");
@@ -287,11 +313,8 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
 
     // switch between cps and sigma chart
-    const handleToggle= (event: React.MouseEvent<HTMLElement>, newView: any) =>{
-        if(newView){
-            console.log('new view', newView)
-            setToggleView(newView);
-        }
+    const handleToggle= (event: React.MouseEvent<HTMLElement>, newView: string) =>{
+        setToggleView(newView);
     }
 
 
@@ -302,7 +325,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                     {gammaButtons}
                 </ToggleButtonGroup>
                 <Grid item xs sx={{width: "100%"}}>
-                    <Box ref={ toggleView === 'cps' ? gammaCpsChartViewRef : gammaNSigmaChartViewRef} sx={{width: "100%"}}></Box>
+                    <Box ref={ toggleView === 'cps' ? gammaCpsChartViewRef : gammaNSigmaChartViewRef } sx={{width: "100%"}}></Box>
                 </Grid>
             </Box>
 

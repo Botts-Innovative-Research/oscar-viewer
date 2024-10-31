@@ -32,7 +32,6 @@ export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
         backgroundColor: "#9b27b0",
         lineColor: '#9b27b0',
         borderWidth: 1,
-        hidden: false,
         visible: true,
         maxValues: 25,
     });
@@ -63,7 +62,6 @@ export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDataso
         name: "NSigma",
         yAxisID: 'nsigma',
         borderWith: 1,
-        hidden: false,
         visible: true,
         backgroundColor: "#e0bee7",
         lineColor: "#e0bee7",
@@ -84,7 +82,6 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
         backgroundColor: "#f44336",
         lineColor: "#f44336",
         yLabel: 'CPS',
-        hidden: false,
         visible: true,
         // maxValues: 25,
     });
