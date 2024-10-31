@@ -28,12 +28,13 @@ export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
     let thresholdCurve = new CurveLayer({
         dataSourceIds: [thresholdDatasource.id],
         getValues: (rec: any) => ({x: rec.timestamp, y: rec.threshold}),
-        name: "Threshold",
+        name: "Threshold (CPS)",
         backgroundColor: "#9b27b0",
         lineColor: '#9b27b0',
         borderWidth: 1,
         visible: true,
         maxValues: 25,
+        // yAxisID: 'y',
     });
 
     return thresholdCurve;
@@ -44,6 +45,7 @@ export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDataso
     if (!thresholdDatasource) return null;
 
     let latestGB: number;
+    let latestSigma: number;
 
     let nCurve = new CurveLayer({
         dataSourceIds: [gammaDatasource.id, thresholdDatasource.id],
@@ -52,19 +54,23 @@ export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDataso
             if(rec.latestGammaBackground){
                 latestGB = rec.latestGammaBackground;
             }
+            if(rec.sigma){
+                latestSigma = rec.sigma;
+            }
 
             if(rec.gammaGrossCount && latestGB !== undefined){
+                // let nSigmaValue: number = (rec.gammaGrossCount - latestGB) / latestSigma
                 let nSigmaValue: number = (rec.gammaGrossCount - latestGB) / Math.sqrt(latestGB)
                 return {x: rec.timestamp, y: nSigmaValue}
             }
 
         },
-        name: "NSigma",
-        yAxisID: 'nsigma',
+        name: "Gamma (Nσ)",
+        // yAxisID: 'y1',
         borderWith: 1,
         visible: true,
-        backgroundColor: "#e0bee7",
-        lineColor: "#e0bee7",
+        backgroundColor: "#d76b6b",
+        lineColor: "#d76b6b",
         maxValues: 25,
     });
 
@@ -77,11 +83,29 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
     let gCurve = new CurveLayer({
         dataSourceIds: [gammaDatasource.id],
         getValues: (rec: any) => ({ x: rec.timestamp, y: rec.gammaGrossCount}),
-        name: "Gamma Count",
+        name: "Gamma (CPS)",
         borderWidth: 1,
         backgroundColor: "#f44336",
         lineColor: "#f44336",
-        yLabel: 'CPS',
+        // yAxisID: 'y',
+        visible: true,
+        // maxValues: 25,
+    });
+
+    return gCurve;
+}
+
+export  function createThreshSigmaViewCurve(thresholdDatasource: { id: any; }) {
+    if (!thresholdDatasource) return null;
+
+    let gCurve = new CurveLayer({
+        dataSourceIds: [thresholdDatasource.id],
+        getValues: (rec: any) => ({ x: rec.timestamp, y: rec.nSigma}),
+        name: "Threshold (Nσ)",
+        borderWidth: 1,
+        backgroundColor: "#9f7fde",
+        lineColor: "#9f7fde",
+        // yAxisID: 'y1',
         visible: true,
         // maxValues: 25,
     });
