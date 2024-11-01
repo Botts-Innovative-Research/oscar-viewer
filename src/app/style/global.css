@@ -18,3 +18,7 @@ a, a:hover, a:focus, a:active {
   background: #808080;
   border-radius: 2px;
 }
+
+.chart-view-event-detail canvas{
+  height: 300px;
+}

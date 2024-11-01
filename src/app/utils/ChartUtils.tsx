@@ -33,7 +33,6 @@ export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
         lineColor: '#9b27b0',
         borderWidth: 1,
         visible: true,
-        maxValues: 25,
         yLabel: 'CPS'
     });
 
@@ -51,7 +50,6 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
         lineColor: "#f44336",
         visible: true,
         yLabel: 'CPS',
-        maxValues: 25,
     });
 
     return gCurve;
@@ -80,8 +78,8 @@ export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDataso
         name: "Gamma",
         borderWith: 1,
         visible: true,
-        backgroundColor: "#f18787",
-        lineColor: "#f18787",
+        backgroundColor: "#f44336",
+        lineColor: "#f44336",
         maxValues: 25,
         yLabel: 'Nσ'
     });
@@ -99,8 +97,8 @@ export  function createThreshSigmaViewCurve(thresholdDatasource: { id: any; }) {
         getValues: (rec: any) => ({ x: rec.timestamp, y: rec.nSigma}),
         name: "Threshold",
         borderWidth: 1,
-        backgroundColor: "#b9a3ea",
-        lineColor: "#b9a3ea",
+        backgroundColor: "#9b27b0",
+        lineColor: "#9b27b0",
         visible: true,
         maxValues: 25,
         yLabel: 'Nσ'
