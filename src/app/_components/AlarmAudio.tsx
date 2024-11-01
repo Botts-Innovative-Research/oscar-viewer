@@ -36,7 +36,7 @@ export default function AlarmAudio(props: PropsWithChildren) {
         }
         if(isLoaded.current) {
             const audio = getAlarmAudio();
-            if(tableData[tableData.length-1].status != 'None') {
+            if(tableData.length > 0 && tableData[tableData.length-1].status != 'None') {
                 console.log("Playing alarm audio")
                 audio.play();
             }

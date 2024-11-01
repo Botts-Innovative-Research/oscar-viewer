@@ -43,7 +43,7 @@ export default function LaneVideoPlayback({
 
             videoViewRef.current = new VideoView({
                 container: "event-preview-video",
-                showStats: true,
+                showStats: false,
                 showTime: false,
                 layers: [new VideoDataLayer({
                     dataSourceId: dataSources[selVideoIdx].id,

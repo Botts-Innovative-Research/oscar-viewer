@@ -27,7 +27,7 @@ export default function VideoComponent(props: OSHVideoProps) {
         if(hasRendered.current) return;
 
         if(videoView == null && videoDataSource != null) {
-            
+
             const view = new VideoView({
                 container: props.id,
                 showTime: false,
@@ -35,7 +35,7 @@ export default function VideoComponent(props: OSHVideoProps) {
                 layers: [new VideoDataLayer({
                     dataSourceId: [videoDataSource.getId()],
                     getFrameData: (rec: any) => rec.img,
-                    getTimestamp: (rec: any) => rec.time,
+                    getTimestamp: (rec: any) => rec.timestamp,
                 })]
             });
             setVideoView(view);
