@@ -33,8 +33,8 @@ export default function ChartLane(props: ChartInterceptProps){
     const [neutronChartID, setNeutronChartID] = useState<string>(neutronChartBaseId);
 
     const [gammaCurve, setGammaCurve] = useState<typeof CurveLayer>();
-    const [thresholdCurve, setThresholdCurve] = useState<typeof CurveLayer>();
-    const [nSigmaCurve, setNSigmaCurve] = useState<typeof CurveLayer>();
+    // const [thresholdCurve, setThresholdCurve] = useState<typeof CurveLayer>();
+    // const [nSigmaCurve, setNSigmaCurve] = useState<typeof CurveLayer>();
     const [neutronCurve, setNeutronCurve] = useState<typeof CurveLayer>();
 
     const gammaChartViewRef = useRef<typeof ChartJsView | null>(null);
@@ -45,14 +45,14 @@ export default function ChartLane(props: ChartInterceptProps){
 
         if(props.datasources.gamma){
 
-            if(props.datasources.threshold){
-                let nCurve = createNSigmaCalcViewCurve(props.datasources.gamma, props.datasources.threshold);
-                setNSigmaCurve(nCurve);
-
-                let tCurve = createThresholdViewCurve(props.datasources.threshold);
-                setThresholdCurve(tCurve);
-                console.log('new thres curve layer created')
-            }
+            // if(props.datasources.threshold){
+            //     // let nCurve = createNSigmaCalcViewCurve(props.datasources.gamma);
+            //     // setNSigmaCurve(nCurve);
+            //
+            //     let tCurve = createThresholdViewCurve(props.datasources.threshold);
+            //     setThresholdCurve(tCurve);
+            //     console.log('new thres curve layer created')
+            // }
 
             let gCurve = createGammaViewCurve(props.datasources.gamma);
             setGammaCurve(gCurve);
@@ -71,8 +71,8 @@ export default function ChartLane(props: ChartInterceptProps){
 
     const checkForMountableAndCreateCharts = useCallback(() => {
 
-        if (!gammaChartViewRef.current && !isReadyToRender && (thresholdCurve || gammaCurve)) {
-            console.log("Creating Gamma Chart with layers:", { gammaCurve, thresholdCurve });
+        if (!gammaChartViewRef.current && !isReadyToRender && gammaCurve) {
+            console.log("Creating Gamma Chart with layers:", { gammaCurve});
 
             const container = document.getElementById(gammaChartID);
             let layers: any[] =[];
@@ -80,9 +80,9 @@ export default function ChartLane(props: ChartInterceptProps){
             if (gammaCurve) {
                 layers.push(gammaCurve);
             }
-            if (thresholdCurve) {
-                layers.push(thresholdCurve);
-            }
+            // if (thresholdCurve) {
+            //     layers.push(thresholdCurve);
+            // }
 
             if (container) {
                 gammaChartViewRef.current = new ChartJsView({
@@ -107,8 +107,6 @@ export default function ChartLane(props: ChartInterceptProps){
                                 position: 'top',
 
                             },
-
-                            //count threshold legend position
                             legend: {
                                 display: true,
                                 align: 'center',
@@ -123,12 +121,6 @@ export default function ChartLane(props: ChartInterceptProps){
                                     display: true,
                                     text: 'Time',
                                 },
-                                // ticks: {
-                                    // stepSize: 200, //200ms
-                                    // callback: function(value: any) {
-                                    //     return value + ' ms'; // Display in milliseconds
-                                    // }
-                                // }
                             },
                             y:{
                                 title:{
@@ -139,58 +131,7 @@ export default function ChartLane(props: ChartInterceptProps){
                                 display: true,
                                 position: 'left',
                                 align: 'center',
-                                // suggestedMin: 0,
-                                suggestedMax: 1500,
-                                ticks: {
-
-                                },
                                 grid: {display: false, beginAtZero: false}
-
-                            },
-                            'right-y-axis':{
-                                title:{
-                                    display: true,
-                                    text: 'Sigma',
-                                },
-                                display: true,
-                                position: 'left',
-                                suggestedMin: -10,
-                                suggestedMax: 10,
-
-
-                                // ticks: {
-                                //     beginAtZero: false, color: '#9b27b0' ,
-                                //     callback: function(value: any){
-                                //
-                                //         return value
-                                //     }
-                                // },
-                                ticks: {
-                                    // callback: function(value: any, index: any, ticks: any){
-                                    //     //value is the tick value on the axi
-                                    //     //index
-                                    //     let gammaValues = gammaCurve.data;
-                                    //     let thresholdValues = thresholdCurve.data;
-                                    //
-                                    //     let sigmaValues = nSigmaCurve.data;
-                                    //
-                                    //     if(sigmaValues.length> 0){
-                                    //         console.log(sigmaValues[0].y)
-                                    //     }
-                                    //
-                                    //     if(thresholdValues.length > 0 && gammaValues.length> 0){
-                                    //
-                                    //         // console.log('thres data', thresholdValues[0].y,'gammaVals', gammaValues[0].y)
-                                    //         value = (thresholdValues[0].y -gammaValues[0].y)/ 32
-                                    //         // console.log('value', value)
-                                    //         return value.toFixed(0)
-                                    //         // return (thresholdValues-gammaValues)/sigmaValues
-                                    //     }
-                                    //
-                                    // }
-                                },
-
-                                grid: {display: true,}
 
                             },
                         },
@@ -211,7 +152,6 @@ export default function ChartLane(props: ChartInterceptProps){
                     css: "chart-view",
 
                     options: {
-                        //shows both count and thresh when hover over time index...
                         interaction: {
                             intersect: false,
                             mode: 'index',
@@ -229,18 +169,15 @@ export default function ChartLane(props: ChartInterceptProps){
                                 padding: {
                                     top: 10,
                                     bottom: 10,
-
                                 }
                             },
                             legend: {
                                 display: true,
                                 align: 'right',
                                 position: 'bottom',
-
-
                             }
                         },
-                        responsive: true, //resizes chart based on container size... good for browser changing size
+                        responsive: true,
                         scales: {
                             x: {
                                 title: {
@@ -266,7 +203,7 @@ export default function ChartLane(props: ChartInterceptProps){
                 setViewReady(true);
             }
         }
-    }, [gammaCurve, thresholdCurve, neutronCurve, isReadyToRender]);
+    }, [gammaCurve, neutronCurve, isReadyToRender]);
 
     const checkReadyToRender = useCallback(() => {
         if (chartsReady && viewReady) {

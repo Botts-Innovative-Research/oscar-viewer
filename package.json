@@ -58,7 +58,6 @@
     "browserify-zlib": "^0.2.0",
     "buffer": "^6.0.3",
     "cesium": "^1.114.0",
-    "chart.js": "^4.4.4",
     "chartjs-adapter-moment": "^1.0.1",
     "chartjs-plugin-annotation": "^3.0.1",
     "dayjs": "^1.11.13",

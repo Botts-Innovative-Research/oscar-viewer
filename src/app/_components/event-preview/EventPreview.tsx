@@ -3,7 +3,18 @@
  * All Rights Reserved
  */
 
-import {Button, IconButton, Snackbar, SnackbarCloseReason, Stack, TextField, Typography} from "@mui/material";
+import {
+    Box,
+    Button,
+    Grid,
+    IconButton,
+    Snackbar,
+    SnackbarCloseReason,
+    Stack,
+    TextField,
+    ToggleButton, ToggleButtonGroup,
+    Typography
+} from "@mui/material";
 import OpenInFullRoundedIcon from "@mui/icons-material/OpenInFullRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
@@ -278,7 +289,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     useEffect(() => {
         const interval = setInterval(async () => {
 
-            let currTime = await syncRef.current.getCurrentTime();
+            let currTime = await syncRef.current?.getCurrentTime();
 
             if (currentTime !== undefined) {
                 setCurrentTime(currTime);
@@ -303,8 +314,9 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         setOpenSnack(false);
     };
 
+
     return (
-        <Stack p={1} display={"flex"}>
+        <Stack p={1} display={"flex"} spacing={1}>
             <Stack direction={"row"} justifyContent={"space-between"} spacing={1}>
                 <Stack direction={"row"} spacing={1} alignItems={"center"}>
                     <Typography variant="h6">Occupancy ID: {eventPreview.eventData.occupancyId}</Typography>
@@ -316,29 +328,33 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                     <CloseRoundedIcon fontSize="small"/>
                 </IconButton>
             </Stack>
-            {/*<ChartTimeHighlight gammaDatasources={gammaDatasources} neutronDatasources={neutronDatasources}*/}
-            {/*                    thresholdDatasources={thresholdDatasources} occDatasources={occDatasources}*/}
-            {/*                    setChartReady={setChartReady} modeType="preview" currentTime={currentTime}/>*/}
+
+
             {datasourcesReady && (
-                <>
+                <Box>
+
                     <ChartTimeHighlight
                         datasources={{
                             gamma: gammaDatasources[0],
                             neutron: neutronDatasources[0],
                             threshold: thresholdDatasources[0]
-                        }}
+                    }}
                         setChartReady={setChartReady}
                         modeType="preview"
                         currentTime={currentTime}
                     />
+
                     <LaneVideoPlayback
                         videoDatasources={videoDatasources}
                         setVideoReady={setVideoReady}
                         dataSynchronizer={syncRef.current}
                         addDataSource={setActiveVideoIDX}
                     />
-                </>
+
+                </Box>
             )}
+
+
             <Stack spacing={2}>
                 <AdjudicationSelect adjCode={adjudicationCode} onSelect={handleAdjudicationCode}/>
                 <TextField

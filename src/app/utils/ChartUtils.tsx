@@ -1,26 +1,13 @@
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
 
 
-export function createSigmaViewCurve(thresholdDatasource: { id: any; }) {
-    if (!thresholdDatasource) return null;
-
-    let sigmaCurve = new CurveLayer({
-        dataSourceIds: [thresholdDatasource.id],
-        getValues: (rec: any, timestamp: any) => ({x: timestamp, y: rec.sigma}),
-        name: "Gamma Sigma",
-        backgroundColor: "#ab47bc",
-        lineColor: '#ab47bc',
-    });
-
-    return sigmaCurve;
-}
 export  function createNeutronViewCurve(neutronDatasource: { id: any; }) {
     if (!neutronDatasource) return null;
 
     let nCurve = new CurveLayer({
         dataSourceIds: [neutronDatasource.id],
-        getValues: (rec: any, timestamp: any) => {
-            return {x: timestamp, y: rec.neutronGrossCount}
+        getValues: (rec: any) => {
+            return {x: rec.timestamp, y: rec.neutronGrossCount}
         },
         name: 'Neutron Count',
         maxValues: 25,
@@ -28,81 +15,93 @@ export  function createNeutronViewCurve(neutronDatasource: { id: any; }) {
         lineColor: '#29b6f6',
         xLabel: 'Time',
         yLabel: 'CPS',
+        visible: true,
+        hidden: false
     });
 
     return nCurve;
 }
-
 
 export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
     if (!thresholdDatasource) return null;
 
     let thresholdCurve = new CurveLayer({
         dataSourceIds: [thresholdDatasource.id],
-        getValues: (rec: any, timestamp: any) => ({x: timestamp, y: rec.threshold}),
+        getValues: (rec: any) => ({x: rec.timestamp, y: rec.threshold}),
         name: "Threshold",
         backgroundColor: "#9b27b0",
         lineColor: '#9b27b0',
-        // maxValues: 25,
-        yLabel: 'CPS',
         borderWidth: 1,
-
+        visible: true,
+        yLabel: 'CPS'
     });
 
     return thresholdCurve;
 }
-
-export  function createNSigmaCalcViewCurve(gammaDatasource: { id: any; }, thresholdDatasource: { id: any; }) {
-    let bkgCount = 0;
-    let state = ''
-    if (!gammaDatasource && !thresholdDatasource) return null;
-
-    let nCurve = new CurveLayer({
-        dataSourceIds: [gammaDatasource.id, thresholdDatasource.id],
-        getValues: (rec: any) => {
-
-            return {x: rec.timestamp, y: rec.sigma}
-            // if(rec.gammaGrossCount && rec.alarmState){
-            //     bkgCount = rec.gammaGrossCount;
-            //     state = rec.alarmState
-            // }
-            //
-            // if(rec.threshold && rec.sigma && bkgCount != 0 && state === 'Background'){
-            //
-            //     const nsigma = (rec.threshold - bkgCount) / rec.sigma;
-            //
-            //     console.log('state', state, 'nsigma', nsigma)
-            //
-            //     return { x: rec.timestamp, 'right-y-axis': nsigma};
-            // }
-            // else {
-            //     return {x:rec.timestamp, y: 0}
-            // }
-        },
-        maxValues: 100,
-        name: "NSigma",
-        yAxisID: 'right-y-axis',
-        borderWith: 1,
-        backgroundColor: "#e0bee7",
-        lineColor: "#a895ab",
-
-    });
-
-    return nCurve;
-}
-
 export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
     if (!gammaDatasource) return null;
 
     let gCurve = new CurveLayer({
         dataSourceIds: [gammaDatasource.id],
-        getValues: (rec: any, timestamp: any) => ({ x: timestamp, y: rec.gammaGrossCount}),
-        maxValues: 25,
-        name: "Gamma Count",
+        getValues: (rec: any) => ({ x: rec.timestamp, y: rec.gammaGrossCount}),
+        name: "Gamma",
         borderWidth: 1,
         backgroundColor: "#f44336",
         lineColor: "#f44336",
+        visible: true,
         yLabel: 'CPS',
+    });
+
+    return gCurve;
+}
+
+// get latest gamma background from threshold datasource to calc nsigma for chart
+export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDatasource: any) {
+    if (!thresholdDatasource) return null;
+
+    let latestGB: number;
+
+    let nCurve = new CurveLayer({
+        dataSourceIds: [gammaDatasource.id, thresholdDatasource.id],
+        getValues: (rec: any, timestamp: any) => {
+
+            if(rec.latestGammaBackground){
+                latestGB = rec.latestGammaBackground;
+            }
+
+            if(rec.gammaGrossCount && latestGB !== undefined){
+                let nSigmaValue: number = (rec.gammaGrossCount - latestGB) / Math.sqrt(latestGB)
+                return {x: timestamp, y: nSigmaValue}
+            }
+
+        },
+        name: "Gamma",
+        borderWith: 1,
+        visible: true,
+        backgroundColor: "#f44336",
+        lineColor: "#f44336",
+        maxValues: 25,
+        yLabel: 'Nσ'
+    });
+
+    return nCurve;
+}
+
+
+
+export  function createThreshSigmaViewCurve(thresholdDatasource: { id: any; }) {
+    if (!thresholdDatasource) return null;
+
+    let gCurve = new CurveLayer({
+        dataSourceIds: [thresholdDatasource.id],
+        getValues: (rec: any) => ({ x: rec.timestamp, y: rec.nSigma}),
+        name: "Threshold",
+        borderWidth: 1,
+        backgroundColor: "#9b27b0",
+        lineColor: "#9b27b0",
+        visible: true,
+        maxValues: 25,
+        yLabel: 'Nσ'
     });
 
     return gCurve;
@@ -113,8 +112,10 @@ export  function createOccupancyViewCurve(occDatasource: { id: any; }) {
 
     let occCurve = new CurveLayer({
         dataSourceIds: [occDatasource.id],
-        getValues: (rec: any, timestamp: any) => ({x: timestamp, y: rec.occupancy}),
-        name: "Occupancy"
+        getValues: (rec: any, timestamp: any) => ({x: rec.timestamp, y: rec.occupancy}),
+        name: "Occupancy",
+        hidden: false,
+        maxValues: 25,
     });
 
     return occCurve;

@@ -1,7 +1,7 @@
 "use client";
 
-import {Grid, Paper, Stack, Typography} from "@mui/material";
-import {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
+import {Box, Grid, Paper, Stack, Typography} from "@mui/material";
+import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
 import {SelectedEvent} from "types/new-types";
 import BackButton from "../_components/BackButton";
 import DataRow from "../_components/event-details/DataRow";
@@ -136,26 +136,26 @@ export default function EventDetailsPage() {
 
 
     return (
-        <Stack spacing={2} direction={"column"}>
-            <Grid item spacing={2}>
-                <BackButton/>
-            </Grid>
-            <Grid item spacing={2}>
-                <Typography variant="h5">Event Details</Typography>
-            </Grid>
-            <Grid item container spacing={2} sx={{width: "100%"}}>
-                <Paper variant='outlined' sx={{width: "100%"}}>
-                    <DataRow/>
-                </Paper>
+        <Stack spacing={4} direction={"column"} sx={{width: "100%"}}>
+            <Grid container spacing={2} alignItems="center">
+                <Grid item xs={"auto"} >
+                    <BackButton/>
+                </Grid>
+                <Grid item xs>
+                    <Typography variant="h5">Event Details</Typography>
+                </Grid>
             </Grid>
 
-            <Grid item container spacing={2} sx={{width: "100%"}}>
-                <Paper variant='outlined' sx={{width: "100%"}}>
+            <Paper variant='outlined' sx={{ width: '100%'}}>
+                <DataRow/>
+            </Paper>
 
-                    <Grid container direction="row" spacing={2}>
-                        <Grid item xs>
+            <Paper variant='outlined' sx={{ width: '100%'}}>
+                <Box>
+                    <Grid container direction="row" spacing={5} justifyContent={"center"}>
+                        <Grid item xs={12} md={6}>
                             {datasourcesReady && (
-                                <>
+                                <Box sx={{margin: 2}}>
                                     <ChartTimeHighlight
                                         datasources={{
                                             gamma: gammaDatasources[0] ? gammaDatasources[0] : null,
@@ -166,31 +166,37 @@ export default function EventDetailsPage() {
                                         modeType="detail"
                                         currentTime={currentTime}
                                     />
-                                </>
+                                </Box>
+
                             )}
                         </Grid>
-                        <Grid item xs>
+                        <Grid item xs={12} md={6}>
                             {datasourcesReady && (
-                                <>
+                                <Box  sx={{
+                                    margin: '10px',
+                                    p: 2,
+                                    border: "1px solid",
+                                    borderColor: "rgba(0, 0, 0, 0.12)",
+                                    borderRadius: 2,
+                                }}>
                                     <LaneVideoPlayback videoDatasources={videoDatasources} setVideoReady={setVideoReady}
                                                        dataSynchronizer={syncRef.current}
                                                        addDataSource={setActiveVideoIDX}/>
-                                </>
+                                </Box>
                             )}
                         </Grid>
                     </Grid>
-                </Paper>
-            </Grid>
-            <Grid item container spacing={2} sx={{width: "100%"}}>
-                <Paper variant='outlined' sx={{width: "100%"}}>
-                    <MiscTable currentTime={currentTime}/>
-                </Paper>
-            </Grid>
-            <Grid item container spacing={2} sx={{width: "100%"}}>
-                <Paper variant='outlined' sx={{width: "100%"}}>
+                </Box>
+            </Paper>
+
+            <Paper variant='outlined' sx={{width: "100%"}}>
+                <MiscTable currentTime={currentTime}/>
+            </Paper>
+
+            <Paper variant='outlined' sx={{width: "100%"}}>
                     <AdjudicationDetail event={eventPreview.eventData}/>
-                </Paper>
-            </Grid>
+            </Paper>
+
         </Stack>
     );
 }
