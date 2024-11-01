@@ -117,8 +117,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             let status = eventPreview.eventData.status;
             if(status.includes('Gamma')){
 
-
-
                 let gammaChartElt = document.createElement("div");
                 gammaChartElt.id =  elementIds.find(id=> id.includes('gamma'));
                 gammaChartViewRef.current?.appendChild(gammaChartElt);
@@ -174,15 +172,12 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                     container:  neutronChartElt.id,
                     layers: [layers.neutron],
                     css: "chart-view-event-detail",
-                    // type: 'line',
+                    type: 'line',
                     options: {
-                    //     plugins: { legend: { display: true, labels: { boxWidth: 12 }, position: 'bottom' } },
-                    //     responsive: true,
-                    //     maintainAspectRatio: false,
-                    //     stacked: false,
+
                         scales: {
                             x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
-                            y: { type: 'linear', position: 'left', title: { display: true, text: 'Neutron CPS', padding: 15 }, beginAtZero: false }
+                            y: { type: 'linear', position: 'left', title: { display: true, text: 'CPS', padding: 15 }, beginAtZero: false }
                         }
                     }
                 });
@@ -194,15 +189,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             setChartsReady(true);
         }
 
-        // if(gammaChartView){
-        //     gammaChartView.chart.update()
-        // }
-        // if(nsigmaChartView){
-        //     nsigmaChartView.chart.update()
-        // }
-        // if(neutronChartView){
-        //     neutronChartView.chart.update()
-        // }
     }, [eventPreview]);
 
     useEffect(() => {
