@@ -194,65 +194,65 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     useEffect(() => {
         if (toggleView === 'cps' && gammaChartView) {
             gammaChartView.chart.update();
-            console.log("CPS chart updated");
+            console.log("CPS chart updated", gammaChartView);
         }
         if (toggleView === 'sigma' && nsigmaChartView) {
             nsigmaChartView.chart.update();
-            console.log("NSigma chart updated");
+            console.log("NSigma chart updated", nsigmaChartView);
         }
     }, [toggleView, gammaChartView, nsigmaChartView]);
 
 
-    // useEffect(() => {
-    //     let currTime = props.currentTime;
-    //     if (currTime?.data !== undefined) {
-    //         let theTime = new Date(currTime.data);
-    //         console.log("Current Time: ", currTime, theTime);
-    //
-    //         let chartAnnotation = {
-    //             annotations: {
-    //                 verticalLine: {
-    //                     type: 'line',
-    //                     xMin: theTime,
-    //                     xMax: theTime,
-    //                     borderColor: 'yellow',
-    //                     borderWidth: 4,
-    //                     label: {
-    //                         enabled: true,
-    //                         content: 'Current Time'
-    //                     }
-    //                 }
-    //             }
-    //         };
-    //
-    //         if (chartsReady) {
-    //             console.log("Annotating Charts", gammaChartView, neutronChartView, nsigmaChartView);
-    //
-    //             if (gammaChartView) {
-    //                 console.log("Annotating Gamma Chart", gammaChartView);
-    //                 const gchart = gammaChartView.chart;
-    //                 gchart.options.plugins.annotation = chartAnnotation;
-    //
-    //                 gchart.update();
-    //             }
-    //
-    //             if (nsigmaChartView) {
-    //                 console.log("Annotating Nsigma Chart", nsigmaChartView);
-    //                 const nSigmachart = nsigmaChartView.chart;
-    //                 nSigmachart.options.plugins.annotation = chartAnnotation;
-    //
-    //                 nSigmachart.update();
-    //             }
-    //
-    //             if (neutronChartView) {
-    //                 console.log("Annotating Neutron Chart", neutronChartView);
-    //                 const nchart = neutronChartView.chart;
-    //                 nchart.options.plugins.annotation = chartAnnotation;
-    //                 nchart.update();
-    //             }
-    //         }
-    //     }
-    // }, [props.currentTime, gammaChartView, nsigmaChartView, neutronChartView, chartsReady]);
+    useEffect(() => {
+        let currTime = props.currentTime;
+        if (currTime?.data !== undefined) {
+            let theTime = new Date(currTime.data);
+            console.log("Current Time: ", currTime, theTime);
+
+            let chartAnnotation = {
+                annotations: {
+                    verticalLine: {
+                        type: 'line',
+                        xMin: theTime,
+                        xMax: theTime,
+                        borderColor: 'yellow',
+                        borderWidth: 4,
+                        label: {
+                            enabled: true,
+                            content: 'Current Time'
+                        }
+                    }
+                }
+            };
+
+            if (chartsReady) {
+                console.log("Annotating Charts", gammaChartView, neutronChartView, nsigmaChartView);
+
+                if (gammaChartView) {
+                    console.log("Annotating Gamma Chart", gammaChartView);
+                    const gchart = gammaChartView.chart;
+                    gchart.options.plugins.annotation = chartAnnotation;
+
+                    gchart.update();
+                }
+
+                if (nsigmaChartView) {
+                    console.log("Annotating Nsigma Chart", nsigmaChartView);
+                    const nSigmachart = nsigmaChartView.chart;
+                    nSigmachart.options.plugins.annotation = chartAnnotation;
+
+                    nSigmachart.update();
+                }
+
+                if (neutronChartView) {
+                    console.log("Annotating Neutron Chart", neutronChartView);
+                    const nchart = neutronChartView.chart;
+                    nchart.options.plugins.annotation = chartAnnotation;
+                    nchart.update();
+                }
+            }
+        }
+    }, [props.currentTime, gammaChartView, nsigmaChartView, neutronChartView, chartsReady]);
 
     useEffect(() => {
         checkReadyToRender();

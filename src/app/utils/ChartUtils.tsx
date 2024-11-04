@@ -9,7 +9,7 @@ export  function createNeutronViewCurve(neutronDatasource: { id: any; }) {
         getValues: (rec: any) => {
             return {x: rec.timestamp, y: rec.neutronGrossCount}
         },
-        name: 'Neutron Count',
+        name: 'Neutron',
         maxValues: 25,
         backgroundColor: "#29b6f6",
         lineColor: '#29b6f6',
@@ -33,7 +33,9 @@ export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
         lineColor: '#9b27b0',
         borderWidth: 1,
         visible: true,
-        yLabel: 'CPS'
+        hidden: false,
+        xLabel: 'Time',
+        yLabel: 'CPS',
     });
 
     return thresholdCurve;
@@ -49,6 +51,8 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
         backgroundColor: "#f44336",
         lineColor: "#f44336",
         visible: true,
+        hidden: false,
+        xLabel: 'Time',
         yLabel: 'CPS',
     });
 
@@ -68,6 +72,7 @@ export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDataso
             if(rec.latestGammaBackground){
                 latestGB = rec.latestGammaBackground;
             }
+            console.log('nisgma timestamp', rec.timestamp)
 
             if(rec.gammaGrossCount && latestGB !== undefined){
                 let nSigmaValue: number = (rec.gammaGrossCount - latestGB) / Math.sqrt(latestGB)
@@ -77,11 +82,13 @@ export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDataso
         },
         name: "Gamma",
         borderWith: 1,
-        visible: true,
         backgroundColor: "#f44336",
         lineColor: "#f44336",
         maxValues: 25,
-        yLabel: 'Nσ'
+        xLabel: 'Time',
+        yLabel: 'Nσ',
+        visible: true,
+        hidden: false,
     });
 
     return nCurve;
@@ -100,8 +107,10 @@ export  function createThreshSigmaViewCurve(thresholdDatasource: { id: any; }) {
         backgroundColor: "#9b27b0",
         lineColor: "#9b27b0",
         visible: true,
+        hidden: false,
         maxValues: 25,
-        yLabel: 'Nσ'
+        xLabel: 'Time',
+        yLabel: 'Nσ',
     });
 
     return gCurve;

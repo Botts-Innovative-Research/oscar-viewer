@@ -33,8 +33,6 @@ export default function ChartLane(props: ChartInterceptProps){
     const [neutronChartID, setNeutronChartID] = useState<string>(neutronChartBaseId);
 
     const [gammaCurve, setGammaCurve] = useState<typeof CurveLayer>();
-    // const [thresholdCurve, setThresholdCurve] = useState<typeof CurveLayer>();
-    // const [nSigmaCurve, setNSigmaCurve] = useState<typeof CurveLayer>();
     const [neutronCurve, setNeutronCurve] = useState<typeof CurveLayer>();
 
     const gammaChartViewRef = useRef<typeof ChartJsView | null>(null);
@@ -44,16 +42,6 @@ export default function ChartLane(props: ChartInterceptProps){
     const createCurveLayers = useCallback(() =>{
 
         if(props.datasources.gamma){
-
-            // if(props.datasources.threshold){
-            //     // let nCurve = createNSigmaCalcViewCurve(props.datasources.gamma);
-            //     // setNSigmaCurve(nCurve);
-            //
-            //     let tCurve = createThresholdViewCurve(props.datasources.threshold);
-            //     setThresholdCurve(tCurve);
-            //     console.log('new thres curve layer created')
-            // }
-
             let gCurve = createGammaViewCurve(props.datasources.gamma);
             setGammaCurve(gCurve);
             console.log('new gamma curve layer created')
@@ -80,21 +68,14 @@ export default function ChartLane(props: ChartInterceptProps){
             if (gammaCurve) {
                 layers.push(gammaCurve);
             }
-            // if (thresholdCurve) {
-            //     layers.push(thresholdCurve);
-            // }
 
             if (container) {
                 gammaChartViewRef.current = new ChartJsView({
                     type: 'line',
                     container: gammaChartID,
                     layers: [gammaCurve],
-                    css: "chart-view-lane-view",
+                    css: "chart-view",
                     options:{
-                        interaction: {
-                            intersect: false,
-                            mode: 'index',
-                        },
                         plugins: {
                             title: {
                                 display: true,
@@ -113,7 +94,6 @@ export default function ChartLane(props: ChartInterceptProps){
                                 position: 'bottom',
                             }
                         },
-                        autoPadding: true,
                         responsive: true,
                         scales: {
                             x: {
@@ -131,7 +111,10 @@ export default function ChartLane(props: ChartInterceptProps){
                                 display: true,
                                 position: 'left',
                                 align: 'center',
-                                grid: {display: false, beginAtZero: false}
+                                grid: {beginAtZero: false},
+                                ticks: {
+                                },
+
 
                             },
                         },
@@ -152,10 +135,6 @@ export default function ChartLane(props: ChartInterceptProps){
                     css: "chart-view",
 
                     options: {
-                        interaction: {
-                            intersect: false,
-                            mode: 'index',
-                        },
                         plugins: {
                             title: {
                                 display: true,
