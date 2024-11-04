@@ -26,7 +26,7 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
                                   borderWidth: "1px",
                                   borderColor:  "rgba(0, 0, 0, 0.12)",
                               },
-                              margin: "2px",
+                              margin: "0px 0px 4px 0px",
                           },
                   }}
             >
