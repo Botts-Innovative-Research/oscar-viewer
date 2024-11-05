@@ -14,6 +14,7 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {selectEventPreview, setEventPreview} from "@/lib/state/OSCARClientSlice";
+import {useRouter} from "next/navigation";
 
 
 export default function EventTable(props: {
@@ -32,13 +33,14 @@ export default function EventTable(props: {
   const laneMapRef = useContext(DataSourceContext).laneMapRef;
   const dispatch = useAppDispatch();
 
+  const router = useRouter();
 
   // Column definition for EventTable
   const columns: GridColDef<IEventTableData>[] = [
     {
       field: 'secondaryInspection',
       headerName: 'Secondary Inspection',
-      type: 'boolean',
+      type: 'string',
     },
     {
       field: 'laneId',
@@ -65,7 +67,7 @@ export default function EventTable(props: {
       headerName: 'Max Gamma (cps)',
       valueFormatter: (value) => {
         // Append units to number value, or return 'N/A'
-        return typeof value === 'number' ? value : 'N/A';
+        return typeof value === 'number' ? value : 0;
       },
     },
     {
@@ -73,7 +75,7 @@ export default function EventTable(props: {
       headerName: 'Max Neutron (cps)',
       valueFormatter: (value) => {
         // Append units to number value, or return 'N/A'
-        return typeof value === 'number' ? value : 'N/A';
+        return typeof value === 'number' ? value : 0;
       },
     },
     {
@@ -110,14 +112,14 @@ export default function EventTable(props: {
         <GridActionsCellItem
             icon={<NotesRoundedIcon/>}
             label="Details"
-            onClick={() => console.log(params.id)}
+            onClick={() => handleEventPreview()}
             showInMenu
         />,
         (viewLane ?
                 <GridActionsCellItem
                     icon={<VisibilityRoundedIcon/>}
                     label="View Lane"
-                    onClick={() => console.log(params.id)}
+                    onClick={() => handleLaneView(params.row.laneId)}
                     showInMenu
                 />
                 : <></>
@@ -125,6 +127,14 @@ export default function EventTable(props: {
       ],
     },
   ];
+
+  const handleLaneView = (laneName: string) => {
+    router.push(`/lane-view?name=${encodeURIComponent(laneName)}`);
+  };
+
+  const handleEventPreview = () =>{
+    router.push("/event-details")
+  }
 
   // Manage list of columns in toggle menu
   const getColumnList = () => {
