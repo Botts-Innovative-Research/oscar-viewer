@@ -303,7 +303,8 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         return (
             <Grid item xs  sx={{width: "100%"}} ref={neutronChartViewRef}></Grid>
         );
-    } else if (eventPreview.eventData?.status === "Gamma & Neutron") {
+    //     || eventPreview.eventData?.status === "None"
+    } else if (eventPreview.eventData?.status === "Gamma & Neutron" ) {
         return (
             <Box display='flex' alignItems="center">
                 <ToggleButtonGroup size="small" orientation="vertical" onChange={handleToggle} exclusive value={toggleView}>

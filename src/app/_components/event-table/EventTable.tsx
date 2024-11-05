@@ -29,10 +29,11 @@ export default function EventTable(props: {
   const viewMenu = props.viewMenu || false;
   const viewLane = props.viewLane || false;
   const eventTable = props.eventTable;
+
   const [selectionModel, setSelectionModel] = useState([]); // Currently selected row
   const laneMapRef = useContext(DataSourceContext).laneMapRef;
-  const dispatch = useAppDispatch();
 
+  const dispatch = useAppDispatch();
   const router = useRouter();
 
   // Column definition for EventTable
@@ -84,24 +85,26 @@ export default function EventTable(props: {
       type: 'string',
     },
     {
-      field: 'adjudicatedCode',
+      field: 'isAdjudicated',
       headerName: 'Adjudicated',
-      valueFormatter: (value) => {
-        const adjCode = {
-          1: 'Code 1: Contraband Found',
-          2: 'Code 2: Other',
-          3: 'Code 3: Medical Isotope Found',
-          4: 'Code 4: NORM Found',
-          5: 'Code 5: Declared Shipment of Radioactive Material',
-          6: 'Code 6: Physical Inspection Negative',
-          7: 'Code 7: RIID/ASP Indicates Background Only',
-          8: 'Code 8: Other',
-          9: 'Code 9: Authorized Test, Maintenance, or Training Activity',
-          10: 'Code 10: Unauthorized Activity',
-          11: 'Code 11: Other'
-        };
-        return typeof value === 'number' ? adjCode[value] : 'None';
-      }
+      type: 'string',
+      valueFormatter: (value) => value ? "Yes" : "No",
+      // valueFormatter: (value) => {
+      //   const adjCode = {
+      //     1: 'Code 1: Contraband Found',
+      //     2: 'Code 2: Other',
+      //     3: 'Code 3: Medical Isotope Found',
+      //     4: 'Code 4: NORM Found',
+      //     5: 'Code 5: Declared Shipment of Radioactive Material',
+      //     6: 'Code 6: Physical Inspection Negative',
+      //     7: 'Code 7: RIID/ASP Indicates Background Only',
+      //     8: 'Code 8: Other',
+      //     9: 'Code 9: Authorized Test, Maintenance, or Training Activity',
+      //     10: 'Code 10: Unauthorized Activity',
+      //     11: 'Code 11: Other'
+      //   };
+      //   return typeof value === 'number' ? adjCode[value] : 'No';
+      // }
     },
     {
       field: 'Menu',
@@ -112,7 +115,7 @@ export default function EventTable(props: {
         <GridActionsCellItem
             icon={<NotesRoundedIcon/>}
             label="Details"
-            onClick={() => handleEventPreview()}
+            onClick={() => handleEventPreview}
             showInMenu
         />,
         (viewLane ?
@@ -133,6 +136,7 @@ export default function EventTable(props: {
   };
 
   const handleEventPreview = () =>{
+    //should we set the event preview open here using dispatch?
     router.push("/event-details")
   }
 

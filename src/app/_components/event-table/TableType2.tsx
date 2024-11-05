@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {useCallback, useEffect, useState} from "react";
@@ -21,6 +21,7 @@ import {
     setEventLogData,
     setSelectedEvent
 } from "@/lib/state/EventDataSlice";
+import {useRouter} from "next/navigation";
 
 
 interface TableProps {
@@ -56,6 +57,7 @@ export default function Table2({
     const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
     const [selectionModel, setSelectionModel] = useState([]); // Currently selected row
     const dispatch = useAppDispatch();
+    const router = useRouter();
 
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
@@ -223,16 +225,15 @@ export default function Table2({
             field: 'maxGamma',
             headerName: 'Max Gamma (cps)',
             valueFormatter: (value) => {
-                // Append units to number value, or return 'N/A'
-                return typeof value === 'number' ? value : 'N/A';
+                return typeof value === 'number' ? value : 0;
             },
         },
         {
             field: 'maxNeutron',
             headerName: 'Max Neutron (cps)',
             valueFormatter: (value) => {
-                // Append units to number value, or return 'N/A'
-                return typeof value === 'number' ? value : 'N/A';
+
+                return typeof value === 'number' ? value : 0;
             },
         },
         {
@@ -269,14 +270,14 @@ export default function Table2({
                 <GridActionsCellItem
                     icon={<NotesRoundedIcon/>}
                     label="Details"
-                    onClick={() => console.log(params.id)}
+                    onClick={() => handleEventPreview()}
                     showInMenu
                 />,
                 (viewLane ?
                         <GridActionsCellItem
                             icon={<VisibilityRoundedIcon/>}
                             label="View Lane"
-                            onClick={() => console.log(params.id)}
+                            onClick={() => handleLaneView(params.row.laneId)}
                             showInMenu
                         />
                         : <></>
@@ -284,6 +285,15 @@ export default function Table2({
             ],
         },
     ];
+
+    const handleLaneView = (laneName: string) => {
+        router.push(`/lane-view?name=${encodeURIComponent(laneName)}`);
+    };
+
+    const handleEventPreview = () =>{
+        //should we set the event preview open here using dispatch?
+        router.push("/event-details")
+    }
 
     // Manage list of columns in toggle menu
     const getColumnList = () => {

@@ -20,6 +20,7 @@ export interface IEventTableData {
   status: string; // Alarm status -> enum?
   adjudicatedUser?: string; // User ID that adjudicated event
   adjudicatedCode?: number; // Adjudication code for event
+  isAdjudicated?: boolean;
 }
 
 export interface INationalTableData {

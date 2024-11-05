@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {IEventTableData} from "../../../../types/new-types";
 import {useCallback, useContext, useEffect, useRef, useState} from "react";
@@ -57,9 +57,8 @@ export default function Table({tableMode, laneName}: TableProps) {
                 if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
                     laneDSColl.addDS('neutronRT', rtDS);
                 }
-                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status")){
-                    laneDSColl.addDS('tamperRT', rtDS);
-                }
+
+
             }
             setDataSourcesByLane(laneDSMap);
         }
@@ -81,7 +80,7 @@ export default function Table({tableMode, laneName}: TableProps) {
             obsRes.map((obs: any) => {
 
                 if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
-                    // console.log("ADJ obs ", obs)
+                    console.log("ADJ obs ", obs)
 
                     // let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
                     let newEvent = new EventTableData(randomUUID(), laneName, obs.result);
@@ -125,7 +124,7 @@ export default function Table({tableMode, laneName}: TableProps) {
                 if (value.data.gammaAlarm === true || value.data.neutronAlarm === true) {
 
                     // let newEvent = new EventTableData(idVal.current++, laneName, value.data);
-                    let newEvent = new EventTableData(randomUUID(), laneName, value.data);
+                    let newEvent = new EventTableData(randomUUID(), laneName, value.data, randomUUID(), );
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
                     newEvent.setSystemIdx(systemID);
@@ -158,8 +157,8 @@ export default function Table({tableMode, laneName}: TableProps) {
         for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
             const msgLaneName = laneName;
             // should only be one for now, but this whole process needs revisiting due to codebase changes introduced after initial implemntation
-            let laneEntryDS = laneMapRef.current.get(laneName).datastreams.filter((ds: typeof DataStream) => ds.properties.name.includes("Occupancy"))[0];
-            let dsId = laneEntryDS.properties.id
+            let laneEntryDS = laneMapRef.current.get(laneName).datastreams.filter((ds: typeof DataStream) => ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/pillar-occupancy-count"))[0];
+            let dsId = laneEntryDS.properties?.id
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('occRT', (message: any) => {
                 RTMsgHandler(msgLaneName, message, dsId)
             });

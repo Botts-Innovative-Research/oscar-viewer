@@ -10,7 +10,7 @@ import Table2 from "@/app/_components/event-table/TableType2";
 import {useSelector} from "react-redux";
 import {selectLaneMap} from "@/lib/state/OSCARClientSlice";
 import {RootState} from "@/lib/state/Store";
-import {useEffect, useState} from "react";
+import React, {useEffect, useState} from "react";
 
 
 export default function LaneViewPage() {
@@ -28,12 +28,15 @@ export default function LaneViewPage() {
 
     return (
         <Stack spacing={2} direction={"column"}>
-          <Grid item spacing={2}>
-            <BackButton/>
-          </Grid>
-          <Grid item spacing={2}>
-            <Typography variant="h4">Lane View</Typography>
-          </Grid>
+            <Grid container spacing={2} alignItems="center">
+                <Grid item xs={"auto"} >
+                    <BackButton/>
+                </Grid>
+                <Grid item xs>
+                    <Typography variant="h4">Lane View</Typography>
+                </Grid>
+            </Grid>
+
           <Grid item container spacing={2} sx={{ width: "100%" }}>
             <Paper variant='outlined' sx={{ width: "100%"}}>
               <LaneStatus laneName={currentLane}/>

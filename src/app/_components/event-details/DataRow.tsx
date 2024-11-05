@@ -5,6 +5,7 @@ import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from "
 import {useSelector} from "react-redux";
 import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
 import {styled, Theme} from "@mui/material/styles";
+import {selectEventTableDataArray} from "@/lib/state/EventDataSlice";
 
 
 const StatusTableCell = styled(TableCell)(({theme, status}: { theme: Theme, status: string }) => ({
@@ -17,6 +18,8 @@ export default function DataRow() {
     const eventPreview = useSelector(selectEventPreview);
     const eventData: IEventTableData | null = eventPreview?.eventData || null;
 
+    console.log('event preeview', eventPreview)
+    console.log('event data', eventData)
     return (
         <TableContainer>
             <Table sx={{minWidth: 650}} aria-label="simple table">
@@ -45,8 +48,8 @@ export default function DataRow() {
                             <TableCell>{eventData.endTime}</TableCell>
                             <TableCell>{eventData.maxGamma}</TableCell>
                             <TableCell>{eventData.maxNeutron}</TableCell>
-                            <StatusTableCell status={eventData.status}>{eventData.status}</StatusTableCell>
-                            <TableCell>{eventData.adjudicatedCode}</TableCell>
+                            <StatusTableCell status = {eventData.status}>{eventData.status}</StatusTableCell>
+                            <TableCell>{eventData.isAdjudicated ? "Yes" : "No"}</TableCell>
                         </TableRow>
                     ) : (
                         <TableRow>

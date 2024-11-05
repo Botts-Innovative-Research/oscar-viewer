@@ -214,6 +214,7 @@ export class LaneMapEntry {
         let stream: typeof DataStream = this.datastreams.find((ds)=> {
             console.log("FIND ds props", ds)
             let hasProp = ds.properties.observedProperties.some((prop: any)=> prop.definition === obsProperty)
+
             return hasProp;
         });
         return stream;
@@ -361,6 +362,9 @@ export class LaneDSColl {
     gammaTrshldRT: typeof SweApi[];
     connectionRT: typeof SweApi[];
     videoRT: typeof SweApi[];
+    adjRT: typeof SweApi[];
+    adjBatch: typeof SweApi[];
+
 
     constructor() {
         this.occRT = [];
@@ -377,6 +381,8 @@ export class LaneDSColl {
         this.gammaTrshldRT = [];
         this.connectionRT = [];
         this.videoRT = [];
+        this.adjRT = [];
+        this.adjBatch = [];
     }
 
     getDSArray(propName: string): typeof SweApi[] {
@@ -415,6 +421,10 @@ export class LaneDSColl {
         for (let ds of this.gammaTrshldBatch) {
             ds.subscribe(handler, [EventType.DATA]);
         }
+        for (let ds of this.adjBatch) {
+            ds.subscribe(handler, [EventType.DATA]);
+        }
+
     }
 
     addSubscribeHandlerToAllRTDS(handler: Function) {
@@ -440,6 +450,9 @@ export class LaneDSColl {
             ds.subscribe(handler, [EventType.DATA]);
         }
         for (let ds of this.videoRT) {
+            ds.subscribe(handler, [EventType.DATA]);
+        }
+        for (let ds of this.adjRT) {
             ds.subscribe(handler, [EventType.DATA]);
         }
     }
@@ -493,6 +506,12 @@ export class LaneDSColl {
             ds.connect();
         }
         for (let ds of this.videoRT) {
+            ds.connect();
+        }
+        for (let ds of this.adjBatch) {
+            ds.connect();
+        }
+        for (let ds of this.adjRT) {
             ds.connect();
         }
         console.info("Connecting all datasources of:", this);
