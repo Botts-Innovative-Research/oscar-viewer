@@ -22,7 +22,6 @@ import {
 } from "@/app/utils/ChartUtils";
 
 
-
 Chart.register(annotationPlugin );
 
 export class ChartInterceptProps {
@@ -144,10 +143,12 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
                 const newNsigmaChart = new ChartJsView({
                     container: nsigmaChartElt.id,
+                    // layers: [layers.nsigma],
                     layers: [layers.nsigma, layers.threshNsigma],
                     css: "chart-view-event-detail",
                     type: 'line',
                     options: {
+                        stacked: true,
                         scales: {
                             x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
                             y: { type: 'linear', position: 'left', title: { display: true, text: 'Nσ', padding: 15 }, beginAtZero: false }
@@ -156,7 +157,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 });
 
                 setGammaNsigmaChartView(newNsigmaChart);
-                console.log('nsigma chart created',newNsigmaChart)
+                console.log('nsigma chart created', newNsigmaChart)
             }
 
 
@@ -225,31 +226,33 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 }
             };
 
+            console.log("Annotating Charts", gammaChartView, neutronChartView, nsigmaChartView);
+            if (gammaChartView) {
+                console.log("Annotating Gamma Chart", gammaChartView);
+                const gchart = gammaChartView.chart;
+                gchart.options.plugins.annotation = chartAnnotation;
+
+                gchart.update();
+            }
+
+            if (nsigmaChartView) {
+                console.log("Annotating Nsigma Chart", nsigmaChartView);
+                const nSigmachart = nsigmaChartView.chart;
+                nSigmachart.options.plugins.annotation = chartAnnotation;
+                nSigmachart.update();
+            }
+
+            if (neutronChartView) {
+                console.log("Annotating Neutron Chart", neutronChartView);
+                const nchart = neutronChartView.chart;
+                nchart.options.plugins.annotation = chartAnnotation;
+                nchart.update();
+            }
+
             if (chartsReady) {
-                console.log("Annotating Charts", gammaChartView, neutronChartView, nsigmaChartView);
 
-                if (gammaChartView) {
-                    console.log("Annotating Gamma Chart", gammaChartView);
-                    const gchart = gammaChartView.chart;
-                    gchart.options.plugins.annotation = chartAnnotation;
 
-                    gchart.update();
-                }
 
-                if (nsigmaChartView) {
-                    console.log("Annotating Nsigma Chart", nsigmaChartView);
-                    const nSigmachart = nsigmaChartView.chart;
-                    nSigmachart.options.plugins.annotation = chartAnnotation;
-
-                    nSigmachart.update();
-                }
-
-                if (neutronChartView) {
-                    console.log("Annotating Neutron Chart", neutronChartView);
-                    const nchart = neutronChartView.chart;
-                    nchart.options.plugins.annotation = chartAnnotation;
-                    nchart.update();
-                }
             }
         }
     }, [props.currentTime, gammaChartView, nsigmaChartView, neutronChartView, chartsReady]);
@@ -282,34 +285,24 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         }
     }
 
-
     // switch between cps and sigma chart
     const handleToggle= (event: React.MouseEvent<HTMLElement>, newView: string) =>{
         setToggleView(newView);
     }
 
-    const clearChartContainer = (ref: React.MutableRefObject<HTMLDivElement>) => {
-        if (ref.current) {
-            while (ref.current.firstChild) {
-                ref.current.removeChild(ref.current.firstChild);
-            }
-        }
-    };
-
     if (eventPreview.eventData?.status === "Gamma") {
         return (
-        <Box>
-            <ToggleButtonGroup size="small" orientation="horizontal" onChange={handleToggle} exclusive value={toggleView}>
-                {gammaToggleButtons}
-            </ToggleButtonGroup>
-            <Grid item xs sx={{ width: "100%", display: toggleView === 'cps' ? 'block' : 'none' }} ref={gammaChartViewRef} />
-            <Grid item xs sx={{ width: "100%", display: toggleView === 'sigma' ? 'block' : 'none' }} ref={nSigmaChartViewRef} />
-        </Box>
+            <Box>
+                <ToggleButtonGroup size="small" orientation="horizontal" onChange={handleToggle} exclusive value={toggleView}>
+                    {gammaToggleButtons}
+                </ToggleButtonGroup>
+                <Grid item xs sx={{ width: "100%", display: toggleView === 'cps' ? 'block' : 'none' }} ref={gammaChartViewRef} />
+                <Grid item xs sx={{ width: "100%", display: toggleView === 'sigma' ? 'block' : 'none' }} ref={nSigmaChartViewRef} />
+            </Box>
         );
     } else if (eventPreview.eventData?.status === "Neutron") {
         return (
             <Grid item xs  sx={{width: "100%"}} ref={neutronChartViewRef}></Grid>
-
         );
     } else if (eventPreview.eventData?.status === "Gamma & Neutron") {
         return (

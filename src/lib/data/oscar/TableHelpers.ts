@@ -13,7 +13,7 @@ import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";
 
 export class EventTableData implements IEventTableData {
     id: number;
-    secondaryInspection?: boolean;
+    secondaryInspection?: string;
     laneId: string;
     occupancyId: string;
     startTime: string;
