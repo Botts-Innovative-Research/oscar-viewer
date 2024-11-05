@@ -95,6 +95,7 @@ export default function EventDetailsPage() {
                 endTime: "now",
             });
             setDataSyncCreated(true);
+            syncRef.current.onTime
         }
     }, [syncRef, dataSyncCreated, datasourcesReady, videoDatasources]);
 
@@ -134,6 +135,17 @@ export default function EventDetailsPage() {
         }
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
 
+    useEffect(() => {
+        const interval = setInterval(async () => {
+
+            let currTime = await syncRef.current?.getCurrentTime();
+            if (currentTime !== undefined) {
+                setCurrentTime(currTime);
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <Stack spacing={4} direction={"column"} sx={{width: "100%"}}>
