@@ -290,7 +290,6 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         const interval = setInterval(async () => {
 
             let currTime = await syncRef.current?.getCurrentTime();
-
             if (currentTime !== undefined) {
                 setCurrentTime(currTime);
             }
@@ -338,7 +337,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                             gamma: gammaDatasources[0],
                             neutron: neutronDatasources[0],
                             threshold: thresholdDatasources[0]
-                    }}
+                        }}
                         setChartReady={setChartReady}
                         modeType="preview"
                         currentTime={currentTime}
