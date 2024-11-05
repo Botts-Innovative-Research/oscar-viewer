@@ -22,8 +22,7 @@ import {
 } from "@/app/utils/ChartUtils";
 
 
-
-Chart.register(annotationPlugin );
+Chart.register(...registerables, annotationPlugin);
 
 export class ChartInterceptProps {
     setChartReady: Function;
@@ -54,8 +53,8 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     const [toggleView, setToggleView] = useState("cps");
 
     const gammaToggleButtons = [
-        <ToggleButton value={"cps"} key={"cps"}>CPS</ToggleButton>,
-        <ToggleButton value={"sigma"} key={"sigma"}>NSigma</ToggleButton>
+        <ToggleButton color= 'error' value={"cps"} key={"cps"}>CPS</ToggleButton>,
+        <ToggleButton color= 'secondary' value={"sigma"} key={"sigma"}>NSigma</ToggleButton>
     ];
 
 
@@ -110,6 +109,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
     useEffect(() => {
         if (eventPreview.eventData) {
+
             let elementIds: any[] = updateChartElIds(eventPreview.eventData);
             let layers = createCurveLayersAndReturn();
 
@@ -148,6 +148,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                     css: "chart-view-event-detail",
                     type: 'line',
                     options: {
+                        stacked: true,
                         scales: {
                             x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
                             y: { type: 'linear', position: 'left', title: { display: true, text: 'Nσ', padding: 15 }, beginAtZero: false }
@@ -156,10 +157,8 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 });
 
                 setGammaNsigmaChartView(newNsigmaChart);
-                console.log('nsigma chart created',newNsigmaChart)
+                console.log('nsigma chart created', newNsigmaChart)
             }
-
-
 
             if(status.includes('Neutron') && neutronChartViewRef.current){
 
@@ -185,30 +184,18 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 setNeutronChartView(newNeutronChart);
 
             }
-
             setChartsReady(true);
+
         }
 
     }, [eventPreview]);
 
     useEffect(() => {
-        if (toggleView === 'cps' && gammaChartView) {
-            gammaChartView.chart.update();
-            console.log("CPS chart updated", gammaChartView);
-        }
-        if (toggleView === 'sigma' && nsigmaChartView) {
-            nsigmaChartView.chart.update();
-            console.log("NSigma chart updated", nsigmaChartView);
-        }
-    }, [toggleView, gammaChartView, nsigmaChartView]);
-
-
-    useEffect(() => {
         let currTime = props.currentTime;
+        console.log('curr time', currTime)
         if (currTime?.data !== undefined) {
             let theTime = new Date(currTime.data);
             console.log("Current Time: ", currTime, theTime);
-
             let chartAnnotation = {
                 annotations: {
                     verticalLine: {
@@ -225,34 +212,47 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 }
             };
 
-            if (chartsReady) {
-                console.log("Annotating Charts", gammaChartView, neutronChartView, nsigmaChartView);
+            console.log("Annotating Charts", gammaChartView, neutronChartView, nsigmaChartView);
+            if (gammaChartView) {
+                console.log("Annotating Gamma Chart", gammaChartView);
+                const gchart = gammaChartView.chart;
+                gchart.options.plugins.annotation = chartAnnotation;
 
-                if (gammaChartView) {
-                    console.log("Annotating Gamma Chart", gammaChartView);
-                    const gchart = gammaChartView.chart;
-                    gchart.options.plugins.annotation = chartAnnotation;
-
-                    gchart.update();
-                }
-
-                if (nsigmaChartView) {
-                    console.log("Annotating Nsigma Chart", nsigmaChartView);
-                    const nSigmachart = nsigmaChartView.chart;
-                    nSigmachart.options.plugins.annotation = chartAnnotation;
-
-                    nSigmachart.update();
-                }
-
-                if (neutronChartView) {
-                    console.log("Annotating Neutron Chart", neutronChartView);
-                    const nchart = neutronChartView.chart;
-                    nchart.options.plugins.annotation = chartAnnotation;
-                    nchart.update();
-                }
+                gchart.update();
             }
+
+            if (nsigmaChartView) {
+                console.log("Annotating Nsigma Chart", nsigmaChartView);
+                const nSigmachart = nsigmaChartView.chart;
+                nSigmachart.options.plugins.annotation = chartAnnotation;
+                nSigmachart.update();
+            }
+
+            if (neutronChartView) {
+                console.log("Annotating Neutron Chart", neutronChartView);
+                const nchart = neutronChartView.chart;
+                nchart.options.plugins.annotation = chartAnnotation;
+                nchart.update();
+            }
+
+
         }
-    }, [props.currentTime, gammaChartView, nsigmaChartView, neutronChartView, chartsReady]);
+    }, [props.currentTime, gammaChartView, nsigmaChartView, neutronChartView]);
+
+    useEffect(() => {
+        if (toggleView === 'cps' && gammaChartView) {
+            gammaChartView.chart.update();
+            console.log("CPS chart updated", gammaChartView);
+        }
+        if (toggleView === 'sigma' && nsigmaChartView) {
+            nsigmaChartView.chart.update();
+            console.log("NSigma chart updated", nsigmaChartView);
+        }
+    }, [toggleView, gammaChartView, nsigmaChartView]);
+
+
+
+
 
     useEffect(() => {
         checkReadyToRender();
@@ -282,44 +282,35 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         }
     }
 
-
     // switch between cps and sigma chart
     const handleToggle= (event: React.MouseEvent<HTMLElement>, newView: string) =>{
         setToggleView(newView);
     }
 
-    const clearChartContainer = (ref: React.MutableRefObject<HTMLDivElement>) => {
-        if (ref.current) {
-            while (ref.current.firstChild) {
-                ref.current.removeChild(ref.current.firstChild);
-            }
-        }
-    };
-
     if (eventPreview.eventData?.status === "Gamma") {
         return (
-        <Box>
-            <ToggleButtonGroup size="small" orientation="horizontal" onChange={handleToggle} exclusive value={toggleView}>
-                {gammaToggleButtons}
-            </ToggleButtonGroup>
-            <Grid item xs sx={{ width: "100%", display: toggleView === 'cps' ? 'block' : 'none' }} ref={gammaChartViewRef} />
-            <Grid item xs sx={{ width: "100%", display: toggleView === 'sigma' ? 'block' : 'none' }} ref={nSigmaChartViewRef} />
-        </Box>
+            <Box display='flex' alignItems="center">
+                <ToggleButtonGroup size="small" orientation="vertical" onChange={handleToggle} exclusive value={toggleView}>
+                    {gammaToggleButtons}
+                </ToggleButtonGroup>
+                <Grid container direction="column" spacing={2}>
+                    <Grid item xs sx={{ width: "100%", display: toggleView === 'cps' ? 'block' : 'none' }} ref={gammaChartViewRef} />
+                    <Grid item xs sx={{ width: "100%", display: toggleView === 'sigma' ? 'block' : 'none' }} ref={nSigmaChartViewRef} />
+                </Grid>
+            </Box>
         );
     } else if (eventPreview.eventData?.status === "Neutron") {
         return (
             <Grid item xs  sx={{width: "100%"}} ref={neutronChartViewRef}></Grid>
-
         );
     } else if (eventPreview.eventData?.status === "Gamma & Neutron") {
         return (
-            <Box>
-                <Grid container direction="column" spacing={4}>
-                    <Grid item xs>
-                        <ToggleButtonGroup size="small" orientation="horizontal" onChange={handleToggle} exclusive value={toggleView}>
-                            {gammaToggleButtons}
-                        </ToggleButtonGroup>
-                    </Grid>
+            <Box display='flex' alignItems="center">
+                <ToggleButtonGroup size="small" orientation="vertical" onChange={handleToggle} exclusive value={toggleView}>
+                    {gammaToggleButtons}
+                </ToggleButtonGroup>
+
+                <Grid container direction="column" spacing={2}>
                     <Grid item xs sx={{ width: "100%", display: toggleView === 'cps' ? 'block' : 'none' }} ref={gammaChartViewRef} />
                     <Grid item xs sx={{ width: "100%", display: toggleView === 'sigma' ? 'block' : 'none' }} ref={nSigmaChartViewRef} />
                     <Grid item xs={12} sx={{ width: "100%" }} ref={neutronChartViewRef}></Grid>

@@ -10,7 +10,7 @@ import {colorCodes} from "@/app/_components/event-preview/AdjudicationSelect";
  */
 export interface IEventTableData {
   id: number; // Unique ID for event
-  secondaryInspection?: boolean;  // Whether or not there has been a secondary inspection performed
+  secondaryInspection?: string;  // Whether or not there has been a secondary inspection performed
   laneId: string; // Lane ID
   occupancyId: string;  // Occupancy ID
   startTime: string;  // Start time of occupancy/event
