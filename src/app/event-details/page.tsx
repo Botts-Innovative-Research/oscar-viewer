@@ -17,6 +17,9 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
 import AdjudicationDetail from "@/app/_components/adjudication/AdjudicationDetail";
 
+
+
+
 /**
  * Expects the following search params:
  * startTime: string;
@@ -161,6 +164,9 @@ export default function EventDetailsPage() {
 
         return () => clearInterval(interval);
     }, []);
+
+
+
 
     return (
         <Stack spacing={4} direction={"column"} sx={{width: "100%"}}>

@@ -1,7 +1,6 @@
 "use client";
 
 import {Box, Grid } from "@mui/material";
-import { SelectedEvent } from "../../../../types/new-types";
 import VideoGrid from "./VideoGrid";
 import {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
@@ -9,8 +8,6 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import ChartLane from "@/app/_components/lane-view/ChartLane";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
-import {Mode} from "osh-js/source/core/datasource/Mode";
-
 
 export default function Media(props: { laneName: string}) {
 
