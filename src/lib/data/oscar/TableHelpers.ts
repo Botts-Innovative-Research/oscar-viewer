@@ -27,9 +27,9 @@ export class EventTableData implements IEventTableData {
     systemIdx?: string;
     dataStreamId?: string;
     observationId: string;
-    isAdjudicated:string;
+    isAdjudicated: boolean;
 
-    constructor(id: number, laneId: string, msgValue: any, observationId: string, adjudicatedData: AdjudicationData | null = null) {
+    constructor(id: number, laneId: string, msgValue: any, observationId: string,  adjudicatedData: AdjudicationData | null = null) {
         this.id = id
         this.laneId = laneId
         this.occupancyId = msgValue.occupancyCount;
@@ -47,12 +47,11 @@ export class EventTableData implements IEventTableData {
             this.status = "Neutron";
         } else {
             this.status = "None"
-            // console.warn("No alarm detected for event: ", msgValue);
-            // return null;
         }
         this.adjudicatedData = adjudicatedData ? adjudicatedData : new AdjudicationData("N/A", "N/A", "N/A");
         this.isAdjudicated = msgValue.isAdjudicated;
         this.observationId = observationId;
+        this.secondaryInspection = msgValue.secondaryInspection;
     }
 
     setAdjudicationData(aData: AdjudicationData) {
@@ -63,6 +62,10 @@ export class EventTableData implements IEventTableData {
     //     this.secondaryInspection = true;
     //     this.adjudicatedData.secondaryInspectionStatus = true
     // }
+
+    setSecondaryInspection(inspection: string){
+        this.secondaryInspection = inspection
+    }
 
     // comparators
     getStartTimeNum(): number {
@@ -90,7 +93,7 @@ export class EventTableData implements IEventTableData {
     }
 
     private hashEntry(){
-        let sTHex = this.startTime.toString(16);
+        // let sTHex = this.startTime.toString(16);
 
     }
 }

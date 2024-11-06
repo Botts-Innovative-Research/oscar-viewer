@@ -331,7 +331,6 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
 
             {datasourcesReady && (
                 <Box>
-
                     <ChartTimeHighlight
                         datasources={{
                             gamma: gammaDatasources[0],

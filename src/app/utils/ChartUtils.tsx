@@ -10,7 +10,7 @@ export  function createNeutronViewCurve(neutronDatasource: { id: any; }) {
             return {x: rec.timestamp, y: rec.neutronGrossCount}
         },
         name: 'Neutron',
-        // maxValues: 25,
+        maxValues: 50,
         borderWidth: 1.5,
         lineColor: '#29b6f6',
         backgroundColor: '#29b6f6',
@@ -39,6 +39,7 @@ export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
         yLabel: 'CPS',
         order: 1,
         fill: 1,
+        maxValues: 50,
 
     });
 
@@ -60,6 +61,7 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
         yLabel: 'CPS',
         order: 1,
         fill: 1,
+        maxValues: 50,
     });
 
     return gCurve;
@@ -98,7 +100,8 @@ export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDataso
         visible: true,
         hidden: false,
         fill: 1,
-        order: 1
+        order: 1,
+        maxValues: 50,
     });
 
     return nCurve;
@@ -118,7 +121,7 @@ export  function createThreshSigmaViewCurve(thresholdDatasource: { id: any; }) {
         lineColor: '#9b27b0',
         visible: true,
         hidden: false,
-        // maxValues: 25,
+        maxValues: 50,
         xLabel: 'Time',
         yLabel: 'Nσ',
         order: 1,

@@ -94,6 +94,7 @@ export default function EventDetailsPage() {
                 // endTime: eventPreview.eventData.endTime,
                 endTime: "now",
             });
+            syncRef.current.onTime
             setDataSyncCreated(true);
             syncRef.current.onTime
         }
@@ -106,6 +107,8 @@ export default function EventDetailsPage() {
     useEffect(() => {
         createDataSync();
     }, [gammaDatasources, neutronDatasources, thresholdDatasources, occDatasources, syncRef, dataSyncCreated, datasourcesReady]);
+
+
 
     useEffect(() => {
         if (chartReady && videoReady) {
@@ -147,6 +150,18 @@ export default function EventDetailsPage() {
         return () => clearInterval(interval);
     }, []);
 
+    useEffect(() => {
+        const interval = setInterval(async () => {
+
+            let currTime = await syncRef.current?.getCurrentTime();
+            if (currentTime !== undefined) {
+                setCurrentTime(currTime);
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, []);
+
     return (
         <Stack spacing={4} direction={"column"} sx={{width: "100%"}}>
             <Grid container spacing={2} alignItems="center">
@@ -154,7 +169,7 @@ export default function EventDetailsPage() {
                     <BackButton/>
                 </Grid>
                 <Grid item xs>
-                    <Typography variant="h5">Event Details</Typography>
+                    <Typography variant="h4">Event Details</Typography>
                 </Grid>
             </Grid>
 
@@ -163,16 +178,17 @@ export default function EventDetailsPage() {
             </Paper>
 
             <Paper variant='outlined' sx={{ width: '100%'}}>
+                {datasourcesReady && (
                 <Box>
-                    <Grid container direction="row" spacing={5} justifyContent={"center"}>
+                    <Grid container direction="row" spacing={2} justifyContent={"center"}>
                         <Grid item xs={12} md={6}>
-                            {datasourcesReady && (
                                 <Box sx={{margin: 2}}>
                                     <ChartTimeHighlight
                                         datasources={{
-                                            gamma: gammaDatasources[0] ? gammaDatasources[0] : null,
-                                            neutron: neutronDatasources[0] ? neutronDatasources[0] : null,
-                                            threshold: thresholdDatasources[0] ? thresholdDatasources[0] : null
+                                            gamma: gammaDatasources?.[0] ?? null,
+                                            neutron: neutronDatasources?.[0] ?? null,
+                                            threshold: thresholdDatasources?.[0] ?? null
+
                                         }}
                                         setChartReady={setChartReady}
                                         modeType="detail"
@@ -180,10 +196,8 @@ export default function EventDetailsPage() {
                                     />
                                 </Box>
 
-                            )}
                         </Grid>
                         <Grid item xs={12} md={6}>
-                            {datasourcesReady && (
                                 <Box  sx={{
                                     margin: '10px',
                                     p: 2,
@@ -195,10 +209,10 @@ export default function EventDetailsPage() {
                                                        dataSynchronizer={syncRef.current}
                                                        addDataSource={setActiveVideoIDX}/>
                                 </Box>
-                            )}
                         </Grid>
                     </Grid>
                 </Box>
+                    )}
             </Paper>
 
             <Paper variant='outlined' sx={{width: "100%"}}>

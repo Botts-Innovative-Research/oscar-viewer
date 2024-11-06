@@ -109,7 +109,7 @@ export default function AdjudicationLog(props: {
 
     useEffect(() => {
         getLaneAdjDatastream();
-    }, [props.event.laneId]);
+    }, [props.event?.laneId]);
 
     useEffect(() => {
         if (laneAdjdatastream) {

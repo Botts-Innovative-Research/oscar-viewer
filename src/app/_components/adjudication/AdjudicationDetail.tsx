@@ -31,7 +31,7 @@ import AdjudicationData, {
     sendSetAdjudicatedCommand
 } from "@/lib/data/oscar/adjudication/Adjudication";
 import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";
-import {useSelector} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
@@ -73,6 +73,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const adjudication = props.event ? new AdjudicationData(currentUser, props.event.occupancyId, props.event.systemIdx) : null;
     const [adjData, setAdjData] = useState<AdjudicationData>(adjudication);
 
+    const dispatch = useDispatch();
 
     //snackbar
     const [adjSnackMsg, setAdjSnackMsg] = useState('');
@@ -114,35 +115,13 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const handleInspectionSelect = (value: string) => {
         console.log(value);
         let tAdjData = adjData;
+
         tAdjData.secondaryInspectionStatus = value;
 
         console.log("[ADJ-D] Secondary Inspection: ", value);
-
         setSecondaryInspection(value);
+
         setAdjData(tAdjData);
-    }
-
-    const handleSubmit = () => {
-        //require user before allowing submission
-        // const newComment: Comment = {
-        //     user: user,
-        //     vehicleId: vehicleId,
-        //     notes: notes,
-        //     files: uploadedFiles,
-        //     secondaryInspection: secondaryInspection,
-        //     adjudication: adjudicated,
-        //     isotope: isotope
-        // }
-        // setComments([...comments, newComment]);
-        // console.log(newComment)
-
-        // setUser("");
-        // setVehicleId("");
-        // setNotes("");
-        // setUploadedFiles([]);
-        // setAdjudicated("");
-        // setIsotope([]);
-        // setSecondaryInspection(false);
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -194,6 +173,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         // const adjDSId = props.event.dataStreamId;
         const ep = currLaneEntry.parentNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + adjDsID + "/observations";
 
+        console.log('temp adjudicated dat', tempAdjData)
         try{
             let resp = await fetch(ep, {
                 method: "POST",
@@ -207,6 +187,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             if(resp.ok){
                 setAdjSnackMsg('Adjudication Submitted Successfully')
+                dispatch(updateSelectedEventAdjudication(tempAdjData))
             }else{
                 setAdjSnackMsg('Adjudication Submission Failed. Check connection.')
             }
@@ -217,6 +198,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         // send command
         // we can use endTime as it is the same a resultTime in testing, this may not be true in practice but this is a stop-gap fix anyway
         let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, props.event.dataStreamId, props.event.endTime)
+        console.log('refObservation', refObservation)
+
 
         // guard, maybe add an appropriate snackbar
         if (!refObservation) return
@@ -233,10 +216,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         setShouldFetchLogs(false);
     }
 
-    const handleCloseSnack = (
-        event: React.SyntheticEvent | Event,
-        reason?: SnackbarCloseReason,
-    ) => {
+    const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
         if (reason === 'clickaway') {
             return;
         }
@@ -248,8 +228,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         <Stack direction={"column"} p={2} spacing={2}>
             <Typography variant="h4">Adjudication</Typography>
             <Box>
-                <AdjudicationLog comments={comments} event={props.event} shouldFetch={shouldFetchLogs}
-                                 onFetch={onFetchComplete}/>
+                <AdjudicationLog comments={comments} event={props.event} shouldFetch={shouldFetchLogs} onFetch={onFetchComplete}/>
             </Box>
 
             <Typography variant="h5">Adjudication Report Form</Typography>
