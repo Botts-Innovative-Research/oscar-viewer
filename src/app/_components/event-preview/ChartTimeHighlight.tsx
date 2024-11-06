@@ -286,10 +286,13 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     if (eventPreview.eventData?.status === "Gamma") {
         return (
             <Box display='flex' alignItems="center">
-                <ToggleButtonGroup size="small" orientation="vertical" onChange={handleToggle} exclusive value={toggleView}>
-                    {gammaToggleButtons}
-                </ToggleButtonGroup>
+
                 <Grid container direction="column" spacing={2}>
+                    <Grid item>
+                        <ToggleButtonGroup size="small" orientation="vertical" onChange={handleToggle} exclusive value={toggleView}>
+                            {gammaToggleButtons}
+                        </ToggleButtonGroup>
+                    </Grid>
                     <Grid item xs sx={{ width: "100%", display: toggleView === 'cps' ? 'block' : 'none' }} ref={gammaChartViewRef} />
                     <Grid item xs sx={{ width: "100%", display: toggleView === 'sigma' ? 'block' : 'none' }} ref={nSigmaChartViewRef} />
                 </Grid>
@@ -302,11 +305,13 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     } else{
         return (
             <Box display='flex' alignItems="center">
-                <ToggleButtonGroup size="small" orientation="vertical" onChange={handleToggle} exclusive value={toggleView}>
-                    {gammaToggleButtons}
-                </ToggleButtonGroup>
 
                 <Grid container direction="column" spacing={2}>
+                    <Grid item>
+                        <ToggleButtonGroup size="small" orientation="vertical" onChange={handleToggle} exclusive value={toggleView}>
+                            {gammaToggleButtons}
+                        </ToggleButtonGroup>
+                    </Grid>
                     <Grid item xs sx={{ width: "100%", display: toggleView === 'cps' ? 'block' : 'none' }} ref={gammaChartViewRef} />
                     <Grid item xs sx={{ width: "100%", display: toggleView === 'sigma' ? 'block' : 'none' }} ref={nSigmaChartViewRef} />
                     <Grid item xs={12} sx={{ width: "100%" }} ref={neutronChartViewRef}></Grid>
