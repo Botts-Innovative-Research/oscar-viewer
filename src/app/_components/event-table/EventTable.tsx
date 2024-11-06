@@ -113,14 +113,19 @@ export default function EventTable(props: {
       headerName: '',
       type: 'actions',
       maxWidth: 50,
+
       getActions: (params) => [
-        <GridActionsCellItem
-            icon={<NotesRoundedIcon/>}
-            label="Details"
-            onClick={() => handleEventPreview()}
-            showInMenu
-        />,
-        (viewLane ?
+        (selectionModel.includes(params.row.id) ?
+                <GridActionsCellItem
+                    icon={<VisibilityRoundedIcon/>}
+                    label="Details"
+                    onClick={() => handleEventPreview()}
+                    showInMenu
+                />
+
+                : <></>
+        ),
+        (viewLane && selectionModel.includes(params.row.id)  ?
                 <GridActionsCellItem
                     icon={<VisibilityRoundedIcon/>}
                     label="View Lane"
@@ -130,6 +135,24 @@ export default function EventTable(props: {
                 : <></>
         ),
       ],
+
+      // getActions: (params) => [
+      //   <GridActionsCellItem
+      //       icon={<NotesRoundedIcon/>}
+      //       label="Details"
+      //       onClick={() => handleEventPreview()}
+      //       showInMenu
+      //   />,
+      //   (viewLane ?
+      //           <GridActionsCellItem
+      //               icon={<VisibilityRoundedIcon/>}
+      //               label="View Lane"
+      //               onClick={() => handleLaneView(params.row.laneId)}
+      //               showInMenu
+      //           />
+      //           : <></>
+      //   ),
+      // ],
     },
   ];
 
@@ -147,7 +170,7 @@ export default function EventTable(props: {
     const excludeFields: string[] = [];
     // Exclude fields based on component parameters
     if (!viewSecondary) excludeFields.push('secondaryInspection');
-    if (!viewMenu) excludeFields.push('Menu');
+    // if (!viewMenu) excludeFields.push('Menu');
     if (!viewAdjudicated) excludeFields.push('adjudicatedCode');
 
     return columns
@@ -222,7 +245,7 @@ export default function EventTable(props: {
                 columnVisibilityModel: {
                   secondaryInspection: viewSecondary,
                   adjudicatedCode: viewAdjudicated,
-                  Menu: viewMenu,
+                  // Menu: viewMenu,
                 },
               },
             }}

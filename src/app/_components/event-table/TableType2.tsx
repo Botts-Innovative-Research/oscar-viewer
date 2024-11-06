@@ -47,7 +47,7 @@ interface TableProps {
 export default function Table2({
                                    tableMode,
                                    viewSecondary = false,
-                                   viewMenu = false,
+                                   // viewMenu = false,
                                    viewLane = false,
                                    viewAdjudicated = false,
                                    laneMap
@@ -268,18 +268,13 @@ export default function Table2({
             headerName: '',
             type: 'actions',
             maxWidth: 50,
+
             getActions: (params) => [
-                <GridActionsCellItem
-                    icon={<NotesRoundedIcon/>}
-                    label="Details"
-                    onClick={() => handleEventPreview()}
-                    showInMenu
-                />,
-                (viewLane ?
+                (selectionModel.includes(params.row.id) ?
                         <GridActionsCellItem
                             icon={<VisibilityRoundedIcon/>}
-                            label="View Lane"
-                            onClick={() => handleLaneView(params.row.laneId)}
+                            label="Details"
+                            onClick={() => handleEventPreview()}
                             showInMenu
                         />
                         : <></>
@@ -288,9 +283,6 @@ export default function Table2({
         },
     ];
 
-    const handleLaneView = (laneName: string) => {
-        router.push(`/lane-view?name=${encodeURIComponent(laneName)}`);
-    };
 
     const handleEventPreview = () =>{
         //should we set the event preview open here using dispatch?
@@ -302,8 +294,11 @@ export default function Table2({
         const excludeFields: string[] = [];
         // Exclude fields based on component parameters
         if (!viewSecondary) excludeFields.push('secondaryInspection');
-        if (!viewMenu) excludeFields.push('Menu');
         if (!viewAdjudicated) excludeFields.push('isAdjudicated');
+
+        // if (!viewMenu) excludeFields.push('Menu');
+
+
         // if (!viewAdjudicated) excludeFields.push('adjudicatedCode');
 
         return columns
@@ -321,6 +316,7 @@ export default function Table2({
             setSelectionModel([]);
             if (onRowSelect) {
                 onRowSelect(null); // Return an empty object when deselected
+
             }
         } else {
             // Otherwise, set the new selection
@@ -379,7 +375,7 @@ export default function Table2({
                             secondaryInspection: viewSecondary,
                             isAdjudicated: viewAdjudicated,
                             // adjudicatedCode: viewAdjudicated,
-                            Menu: viewMenu,
+                            // Menu: viewMenu,
                         },
                     },
                     sorting: {
