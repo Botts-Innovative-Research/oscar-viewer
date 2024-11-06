@@ -189,7 +189,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 setAdjSnackMsg('Adjudication Submitted Successfully')
                 dispatch(updateSelectedEventAdjudication(tempAdjData))
             }else{
-                setAdjSnackMsg('Adjudication Submission Failed. Check connection.')
+                setAdjSnackMsg('Adjudication Submission Failed. Check connection and form then try again.')
             }
         }catch(error){
             setAdjSnackMsg('Adjudication failed to submit.')
