@@ -138,10 +138,10 @@ export default function AdjudicationLog(props: {
 
     useEffect(() => {
         console.log("[ADJ-Log] Adjudication Log Updated: ", adjLog);
-        let filteredLog = adjLog;
-        if (onlySameObs) {
-            filteredLog = adjLog.filter((adjData) => props.event.occupancyId.toString() === adjData.occupancyId);
-        }
+        let filteredLog = adjLog.filter((adjData) => props.event.occupancyId.toString() === adjData.occupancyId);
+        // if (onlySameObs) {
+        //     filteredLog = adjLog.filter((adjData) => props.event.occupancyId.toString() === adjData.occupancyId);
+        // }
         setFilteredLog(filteredLog);
     }, [adjLog, onlySameObs]);
 
@@ -163,8 +163,7 @@ export default function AdjudicationLog(props: {
             <Stack spacing={2}>
                 <Stack direction={"column"} spacing={1}>
                     <Typography variant="h5">Logged Adjudications</Typography>
-                    <FormControlLabel control={<Checkbox value={onlySameObs} onClick={toggleOnlySameObs}/>}
-                                      label="Show Only Same Occupancy"></FormControlLabel>
+                    {/*<FormControlLabel control={<Checkbox value={onlySameObs} onClick={toggleOnlySameObs}/>} label="Show Only Same Occupancy"></FormControlLabel>*/}
 
                 </Stack>
                 <DataGrid
