@@ -295,10 +295,6 @@ export default function Table2({
         // Exclude fields based on component parameters
         if (!viewSecondary) excludeFields.push('secondaryInspection');
         if (!viewAdjudicated) excludeFields.push('isAdjudicated');
-
-        // if (!viewMenu) excludeFields.push('Menu');
-
-
         // if (!viewAdjudicated) excludeFields.push('adjudicatedCode');
 
         return columns
@@ -375,7 +371,7 @@ export default function Table2({
                             secondaryInspection: viewSecondary,
                             isAdjudicated: viewAdjudicated,
                             // adjudicatedCode: viewAdjudicated,
-                            // Menu: viewMenu,
+
                         },
                     },
                     sorting: {

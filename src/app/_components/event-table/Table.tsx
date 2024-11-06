@@ -206,7 +206,7 @@ export default function Table({tableMode, laneName}: TableProps) {
         )
     } else if (tableMode == "eventlog") {
         return (
-            <EventTable eventTable={tableData} viewMenu viewLane viewSecondary viewAdjudicated/>
+            <EventTable eventTable={tableData} viewLane viewSecondary viewAdjudicated/>
         )
     } else if (tableMode == "laneview") {
         return (

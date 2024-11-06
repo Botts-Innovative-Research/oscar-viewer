@@ -19,14 +19,14 @@ import {useRouter} from "next/navigation";
 
 export default function EventTable(props: {
   viewSecondary?: boolean,  // Show 'Secondary Inspection' column, default FALSE
-  viewMenu?: boolean, // Show three-dot menu button, default FALSE
+  // viewMenu?: boolean, // Show three-dot menu button, default FALSE
   viewLane?: boolean, // Show 'View Lane' option in menu, default FALSE
   viewAdjudicated?: boolean, //shows Adjudicated status in the event log , not shown in the alarm table
   eventTable: EventTableDataCollection,  // StatTable data
 }) {
   const viewAdjudicated = props.viewAdjudicated || false;
   const viewSecondary = props.viewSecondary || false;
-  const viewMenu = props.viewMenu || false;
+  // const viewMenu = props.viewMenu || false;
   const viewLane = props.viewLane || false;
   const eventTable = props.eventTable;
 
@@ -136,23 +136,6 @@ export default function EventTable(props: {
         ),
       ],
 
-      // getActions: (params) => [
-      //   <GridActionsCellItem
-      //       icon={<NotesRoundedIcon/>}
-      //       label="Details"
-      //       onClick={() => handleEventPreview()}
-      //       showInMenu
-      //   />,
-      //   (viewLane ?
-      //           <GridActionsCellItem
-      //               icon={<VisibilityRoundedIcon/>}
-      //               label="View Lane"
-      //               onClick={() => handleLaneView(params.row.laneId)}
-      //               showInMenu
-      //           />
-      //           : <></>
-      //   ),
-      // ],
     },
   ];
 
