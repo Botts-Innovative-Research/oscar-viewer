@@ -242,24 +242,26 @@ export default function Table2({
             type: 'string',
         },
         {
-            field: 'adjudicatedCode',
+            field: 'isAdjudicated',
+            // field: 'adjudicatedCode',
             headerName: 'Adjudicated',
-            valueFormatter: (value) => {
-                const adjCode = {
-                    1: 'Code 1: Contraband Found',
-                    2: 'Code 2: Other',
-                    3: 'Code 3: Medical Isotope Found',
-                    4: 'Code 4: NORM Found',
-                    5: 'Code 5: Declared Shipment of Radioactive Material',
-                    6: 'Code 6: Physical Inspection Negative',
-                    7: 'Code 7: RIID/ASP Indicates Background Only',
-                    8: 'Code 8: Other',
-                    9: 'Code 9: Authorized Test, Maintenance, or Training Activity',
-                    10: 'Code 10: Unauthorized Activity',
-                    11: 'Code 11: Other'
-                };
-                return typeof value === 'number' ? adjCode[value] : 'None';
-            }
+            valueFormatter: (value) => value ? "Yes" : "No",
+            // valueFormatter: (value) => {
+            //     const adjCode = {
+            //         1: 'Code 1: Contraband Found',
+            //         2: 'Code 2: Other',
+            //         3: 'Code 3: Medical Isotope Found',
+            //         4: 'Code 4: NORM Found',
+            //         5: 'Code 5: Declared Shipment of Radioactive Material',
+            //         6: 'Code 6: Physical Inspection Negative',
+            //         7: 'Code 7: RIID/ASP Indicates Background Only',
+            //         8: 'Code 8: Other',
+            //         9: 'Code 9: Authorized Test, Maintenance, or Training Activity',
+            //         10: 'Code 10: Unauthorized Activity',
+            //         11: 'Code 11: Other'
+            //     };
+            //     return typeof value === 'number' ? adjCode[value] : 'None';
+            // }
         },
         {
             field: 'Menu',
@@ -301,7 +303,8 @@ export default function Table2({
         // Exclude fields based on component parameters
         if (!viewSecondary) excludeFields.push('secondaryInspection');
         if (!viewMenu) excludeFields.push('Menu');
-        if (!viewAdjudicated) excludeFields.push('adjudicatedCode');
+        if (!viewAdjudicated) excludeFields.push('isAdjudicated');
+        // if (!viewAdjudicated) excludeFields.push('adjudicatedCode');
 
         return columns
             .filter((column) => !excludeFields.includes(column.field))
@@ -374,7 +377,8 @@ export default function Table2({
                         // Manage visible columns in table based on component parameters
                         columnVisibilityModel: {
                             secondaryInspection: viewSecondary,
-                            adjudicatedCode: viewAdjudicated,
+                            isAdjudicated: viewAdjudicated,
+                            // adjudicatedCode: viewAdjudicated,
                             Menu: viewMenu,
                         },
                     },

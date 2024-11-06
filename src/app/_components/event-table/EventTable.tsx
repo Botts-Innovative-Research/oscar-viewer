@@ -85,6 +85,8 @@ export default function EventTable(props: {
       type: 'string',
     },
     {
+      //TODO: when adjudication is updated to working state chang this back to adjudicatedCode
+      // field: 'adjudicatedCode',
       field: 'isAdjudicated',
       headerName: 'Adjudicated',
       type: 'string',
@@ -115,7 +117,7 @@ export default function EventTable(props: {
         <GridActionsCellItem
             icon={<NotesRoundedIcon/>}
             label="Details"
-            onClick={() => handleEventPreview}
+            onClick={() => handleEventPreview()}
             showInMenu
         />,
         (viewLane ?
