@@ -5,6 +5,7 @@
 
 import {IDatastream} from "@/lib/data/osh/Datastreams";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import DataStream from "osh-js/source/core/sweapi/datastream/DataStream";
 import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
 
 /**
@@ -13,7 +14,7 @@ import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
  * @param datasource singular SweApi Datasource
  * @param sourceToStreamMap map of datasource id to datastream id, from state, typically
  */
-export function associateDatasourceToLane(laneDatastreams: Map<string, IDatastream>, datasource: SweApi, sourceToStreamMap: Map<string, string>) {
+export function associateDatasourceToLane(laneDatastreams: Map<string, IDatastream>, datasource: typeof SweApi, sourceToStreamMap: Map<string, string>) {
     let newLaneDSPair = {laneName: "", datasource: datasource};
     for (let [laneName, datastreams] of laneDatastreams) {
         for (let ds of datastreams) {
@@ -69,4 +70,12 @@ export function getDatasourcesOfLane(laneDatastreams: Map<string, IDatastream[]>
     }
 
     return laneDatasources;
+}
+
+export function isVideoDatastream(datastream: typeof DataStream): boolean {
+    const RASTER_IMAGE_DEF = "http://sensorml.com/ont/swe/property/RasterImage";
+    const VIDEO_FRAME_DEF = "http://sensorml.com/ont/swe/property/VideoFrame";
+
+    return datastream.properties.observedProperties[0].definition.includes(RASTER_IMAGE_DEF)
+    || datastream.properties.observedProperties[0].definition.includes(VIDEO_FRAME_DEF);
 }

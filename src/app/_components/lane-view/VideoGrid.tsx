@@ -20,6 +20,7 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
+import { isVideoDatastream } from '@/lib/data/oscar/Utilities';
 
 interface LaneVideoProps{
     laneName: string
@@ -53,7 +54,7 @@ export default function VideoGrid(props: LaneVideoProps) {
                 let rtDS = lane.datasourcesRealtime[idx];
                 let laneDSColl = laneDSMap.get(laneid);
 
-                if(ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/RasterImage") || ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/VideoFrame")){
+                if(isVideoDatastream(ds)) {
                     console.log("Video DS Found",ds);
                     videoDs.push(rtDS);
                 }

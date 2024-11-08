@@ -212,7 +212,7 @@ export class LaneMapEntry {
 
     findDataStreamByObsProperty(obsProperty: string){
         let stream: typeof DataStream = this.datastreams.find((ds)=> {
-            console.log("FIND ds props", ds)
+            // console.log("FIND ds props", ds)
             let hasProp = ds.properties.observedProperties.some((prop: any)=> prop.definition === obsProperty)
 
             return hasProp;
@@ -508,12 +508,6 @@ export class LaneDSColl {
         for (let ds of this.videoRT) {
             ds.connect();
         }
-        for (let ds of this.adjBatch) {
-            ds.connect();
-        }
-        for (let ds of this.adjRT) {
-            ds.connect();
-        }
-        console.info("Connecting all datasources of:", this);
+        // console.info("Connecting all datasources of:", this);
     }
 }

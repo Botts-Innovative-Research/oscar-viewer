@@ -12,6 +12,7 @@ import VideoStatusWrapper from '../video/VideoStatusWrapper';
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
 import VideoCarousel from "@/app/_components/video/VideoCarousel";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import { isVideoDatastream } from '@/lib/data/oscar/Utilities';
 
 
 interface LaneWithVideo {
@@ -60,7 +61,8 @@ export default function CameraGrid() {
         if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status")){
           laneDSColl.addDS('tamperRT', rtDS);
         }
-        if(ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/RasterImage") || ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/VideoFrame")){
+        if(isVideoDatastream(ds)) {
+          console.log("Video DS Found",ds);
           videoDs.push(ds);
           laneDSColl.addDS('videoRT', rtDS)
         }

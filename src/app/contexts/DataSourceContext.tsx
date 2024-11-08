@@ -90,6 +90,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             console.log("Fetching lanes from node ", node);
             let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
             await node.fetchDatastreamsTK(nodeLaneMap);
+            await node.fetchProcessVideoDatastreams(nodeLaneMap);
             for (let mapEntry of nodeLaneMap.values()) {
                 mapEntry.addDefaultSWEAPIs();
             }

@@ -15,7 +15,10 @@ import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterRe
 import {AdjudicationDatastreamConstant} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import DataStreamFilter from "osh-js/source/core/sweapi/datastream/DataStreamFilter.js";
+import { isVideoDatastream } from "../oscar/Utilities";
 
+const SYSTEM_UID_PREFIX = "urn:osh:system:";
+const DATABASE_PROCESS_UID_PREFIX = "urn:osh:process:rapiscan:";
 
 export interface INode {
     id: string,
@@ -44,6 +47,8 @@ export interface INode {
     fetchLaneSystemsAndSubsystems(): Promise<Map<string, LaneMapEntry>>,
 
     fetchDatastreamsTK(laneMap: Map<string, LaneMapEntry>): void,
+
+    fetchProcessVideoDatastreams(laneMap: Map<string, LaneMapEntry>): void
 
     insertSubSystem(systemJSON: any, parentSystemId: string): Promise<string>
 
@@ -162,7 +167,7 @@ export class Node implements INode {
             console.log("New System:", newSystem);
             fetchedSystems.push(newSystem);
             // Test for lane signature in uid
-            if (system.properties.uid.includes("urn:osh:system:")) {
+            if (system.properties.uid.includes(SYSTEM_UID_PREFIX)) {
                 console.info("Found System matching lane signature");
                 const newLaneName = system.properties.name;
                 // Fetch subsystems
@@ -196,7 +201,7 @@ export class Node implements INode {
         // filter into lanes
         for (let system of systems) {
             // console.log("TK System:", system);
-            if (system.properties.properties?.uid.includes("urn:osh:system:") && !system.properties.properties?.uid.includes("adjudication")) {
+            if (system.properties.properties?.uid.includes(SYSTEM_UID_PREFIX) && !system.properties.properties?.uid.includes("adjudication")) {
                 // console.log("TK Found lane system:", system);
                 // let laneName = system.properties.properties.uid.split(":").pop();
                 let laneName = system.properties.properties.name;
@@ -255,9 +260,61 @@ export class Node implements INode {
                 while (datastreams.hasNext()) {
                     const datastreamResults = await datastreams.nextPage();
                     laneEntry.addDatastreams(datastreamResults);
+                    console.log("DS FOR " + laneName);
+                    console.log(datastreamResults)
                 }
             } catch (error) {
                 console.error(`Error fetching datastreams for system ${laneEntry.laneSystem.id}:`, error);
+            }
+        }
+    }
+
+    async fetchProcessVideoDatastreams(laneMap: Map<string, LaneMapEntry>) {
+
+        // TODO: Check if "urn:osh:process:rapiscan:" exists as a system on node
+        // TODO: Match video datastreams to process datastreams using "<systemUID>:<outputName>"
+        // TODO: Add to list of datastreams
+
+        const systems = await this.fetchSystemsTK();
+        const databaseProcesses = systems.filter((system: any) => system.properties.properties.uid.includes(DATABASE_PROCESS_UID_PREFIX));
+        console.log("DB PROCESSES: ");
+        console.log(databaseProcesses);
+
+        const videoDsMap = new Map<typeof DataStream, string>(); // <ds, laneName>
+        for(const [laneName, laneEntry] of laneMap) {
+            const laneVideoStreams = laneEntry.datastreams.filter((ds) => isVideoDatastream(ds));
+            laneVideoStreams.forEach((videoDatastream) => videoDsMap.set(videoDatastream, laneName));
+        }
+
+        let allProcessVideostreamsMap = new Map<string, typeof DataStream>(); // <outputName, ds>
+
+        for(const process of databaseProcesses) {
+            const datastreamSearch = await process.searchDataStreams(undefined, 100);
+            while(datastreamSearch.hasNext()) {
+                const datastreamPage = await datastreamSearch.nextPage();
+                // find videostreams
+                // add to lane ds list
+                const videoDatastreams = datastreamPage.filter((datastream: typeof DataStream) => isVideoDatastream(datastream));
+                videoDatastreams.forEach((videoDatastream: typeof DataStream) => allProcessVideostreamsMap.set(videoDatastream.properties.outputName, videoDatastream));
+            }
+        }
+        console.log("All process streams");
+        console.log(allProcessVideostreamsMap);
+        console.log("All videos map: ");
+        console.log(videoDsMap);
+
+        for (const [videoDs, laneName] of videoDsMap) {
+            const videoStreamUID = videoDs.properties["system@link"].uid;
+            const videoStreamOutputName = videoDs.properties.outputName;
+            const processVideoStreamOutputName = `${videoStreamUID}:${videoStreamOutputName}`;
+
+            const processVideoDs = allProcessVideostreamsMap.get(processVideoStreamOutputName);
+            console.log("Process Video Datastream: ", processVideoStreamOutputName);
+
+            if(processVideoDs) {
+                // laneMap.get(laneName).addDatastreams([processVideoDs]);
+                console.log("Added process video datastream to lane: ", laneName);
+                console.log(laneMap);
             }
         }
     }
@@ -277,9 +334,9 @@ export class Node implements INode {
             let system = systems.find((sys: typeof System) => {
                 return sys.properties.properties.uid.includes("adjudication")
             });
-            console.log("[ADJ-INSERT] systems check", system)
+            // console.log("[ADJ-INSERT] systems check", system)
             if (system) {
-                console.log("[ADJ-INSERT] Found adjudication systems for lane: ", laneEntry, system);
+                // console.log("[ADJ-INSERT] Found adjudication systems for lane: ", laneEntry, system);
                 // check for datastreams
                 let streamCollection: any = await system.searchDataStreams(new DataStreamFilter(), 1000);
                 // if (datastreams.length > 0) {
@@ -309,7 +366,7 @@ export class Node implements INode {
 
     async insertAdjSystem(systemJSON: any): Promise<string> {
         let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/`;
-        console.log("[ADJ] Inserting Adjudication System: ", ep, this);
+        // console.log("[ADJ] Inserting Adjudication System: ", ep, this);
 
         const response = await fetch(ep, {
             method: 'POST',
@@ -332,7 +389,7 @@ export class Node implements INode {
 
     async insertAdjDatastream(systemId: string): Promise<string> {
         let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/${systemId}/datastreams`;
-        console.log("[ADJ] Inserting Adjudication Datastream: ", ep, this);
+        // console.log("[ADJ] Inserting Adjudication Datastream: ", ep, this);
 
         const response = await fetch(ep, {
             method: 'POST',
