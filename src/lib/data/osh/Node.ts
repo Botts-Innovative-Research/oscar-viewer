@@ -314,18 +314,25 @@ export class Node implements INode {
                 videoDatastreams.forEach((videoDatastream: typeof DataStream) => allProcessVideostreamsMap.set(videoDatastream.properties.outputName, videoDatastream));
             }
         }
-
-        // for(const [outputName, datastream] of allProcessVideostreamsMap) {
-            
-        // }
         console.log("All process streams");
         console.log(allProcessVideostreamsMap);
         console.log("All videos map: ");
         console.log(videoDsMap);
 
-        // for (const [laneName, laneEntry] of laneMap) {
+        for (const [videoDs, laneName] of videoDsMap) {
+            const videoStreamUID = videoDs.properties["system@link"].uid;
+            const videoStreamOutputName = videoDs.properties.outputName;
+            const processVideoStreamOutputName = `${videoStreamUID}:${videoStreamOutputName}`;
 
-        // }
+            const processVideoDs = allProcessVideostreamsMap.get(processVideoStreamOutputName);
+            console.log("Process Video Datastream: ", processVideoStreamOutputName);
+
+            if(processVideoDs) {
+                // laneMap.get(laneName).addDatastreams([processVideoDs]);
+                console.log("Added process video datastream to lane: ", laneName);
+                console.log(laneMap);
+            }
+        }
     }
 
     fetchDatasourcesTK() {
@@ -343,9 +350,9 @@ export class Node implements INode {
             let system = systems.find((sys: typeof System) => {
                 return sys.properties.properties.uid.includes("adjudication")
             });
-            console.log("[ADJ-INSERT] systems check", system)
+            // console.log("[ADJ-INSERT] systems check", system)
             if (system) {
-                console.log("[ADJ-INSERT] Found adjudication systems for lane: ", laneEntry, system);
+                // console.log("[ADJ-INSERT] Found adjudication systems for lane: ", laneEntry, system);
                 // check for datastreams
                 let streamCollection: any = await system.searchDataStreams(new DataStreamFilter(), 1000);
                 // if (datastreams.length > 0) {
@@ -375,7 +382,7 @@ export class Node implements INode {
 
     async insertAdjSystem(systemJSON: any): Promise<string> {
         let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/`;
-        console.log("[ADJ] Inserting Adjudication System: ", ep, this);
+        // console.log("[ADJ] Inserting Adjudication System: ", ep, this);
 
         const response = await fetch(ep, {
             method: 'POST',
@@ -398,7 +405,7 @@ export class Node implements INode {
 
     async insertAdjDatastream(systemId: string): Promise<string> {
         let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/${systemId}/datastreams`;
-        console.log("[ADJ] Inserting Adjudication Datastream: ", ep, this);
+        // console.log("[ADJ] Inserting Adjudication Datastream: ", ep, this);
 
         const response = await fetch(ep, {
             method: 'POST',
