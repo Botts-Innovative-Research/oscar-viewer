@@ -47,7 +47,7 @@ interface TableProps {
 export default function Table2({
                                    tableMode,
                                    viewSecondary = false,
-                                   viewMenu = false,
+                                   // viewMenu = false,
                                    viewLane = false,
                                    viewAdjudicated = false,
                                    laneMap
@@ -87,6 +87,7 @@ export default function Table2({
 
     async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<EventTableData[]> {
         let observations: EventTableData[] = [];
+
         while (obsCollection.hasNext()) {
             let obsResults = await obsCollection.nextPage();
             obsResults.map((obs: any) => {
@@ -100,9 +101,10 @@ export default function Table2({
     }
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
-        let newEvent: EventTableData = new EventTableData(randomUUID(), laneEntry.laneName, obs.result, obs.id);
+        let newEvent: EventTableData = new EventTableData(randomUUID(), laneEntry.laneName, obs.result, obs.id, obs.foiId);
         newEvent.setSystemIdx(laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId));
         newEvent.setDataStreamId(obs["datastream@id"]);
+        newEvent.setFoiId(obs["foi@id"]);
         newEvent.setObservationId(obs.id);
 
         return newEvent;
@@ -169,12 +171,10 @@ export default function Table2({
     }, [laneMap]);
 
     useEffect(() => {
-        // console.log("Table Log Updated")
-        // console.log('[EVT] Table Data Updated', tableData)
+
         let filteredData: EventTableData[] = [];
         if (tableMode === 'alarmtable') {
             filteredData = unadjudicatedFilteredList(onlyAlarmingFilteredList(tableData))
-            console.log("[EVT table prevtable Filtered Data", filteredData);
         } else if (tableMode === 'eventlog') {
             if (laneMap.size === 1) {
                 const laneId = Array.from(laneMap.keys())[0];
@@ -183,8 +183,6 @@ export default function Table2({
         }
         // setFilteredTableData(filteredData);
         setFilteredTableData((prevState) => {
-            console.log("EVT table prevtable data", prevState);
-            console.log("EVT table newtable", filteredData)
             return filteredData;
         })
     }, [tableData]);
@@ -268,18 +266,13 @@ export default function Table2({
             headerName: '',
             type: 'actions',
             maxWidth: 50,
+
             getActions: (params) => [
-                <GridActionsCellItem
-                    icon={<NotesRoundedIcon/>}
-                    label="Details"
-                    onClick={() => handleEventPreview()}
-                    showInMenu
-                />,
-                (viewLane ?
+                (selectionModel.includes(params.row.id) ?
                         <GridActionsCellItem
                             icon={<VisibilityRoundedIcon/>}
-                            label="View Lane"
-                            onClick={() => handleLaneView(params.row.laneId)}
+                            label="Details"
+                            onClick={() => handleEventPreview()}
                             showInMenu
                         />
                         : <></>
@@ -288,9 +281,6 @@ export default function Table2({
         },
     ];
 
-    const handleLaneView = (laneName: string) => {
-        router.push(`/lane-view?name=${encodeURIComponent(laneName)}`);
-    };
 
     const handleEventPreview = () =>{
         //should we set the event preview open here using dispatch?
@@ -302,7 +292,6 @@ export default function Table2({
         const excludeFields: string[] = [];
         // Exclude fields based on component parameters
         if (!viewSecondary) excludeFields.push('secondaryInspection');
-        if (!viewMenu) excludeFields.push('Menu');
         if (!viewAdjudicated) excludeFields.push('isAdjudicated');
         // if (!viewAdjudicated) excludeFields.push('adjudicatedCode');
 
@@ -321,6 +310,7 @@ export default function Table2({
             setSelectionModel([]);
             if (onRowSelect) {
                 onRowSelect(null); // Return an empty object when deselected
+
             }
         } else {
             // Otherwise, set the new selection
@@ -379,7 +369,7 @@ export default function Table2({
                             secondaryInspection: viewSecondary,
                             isAdjudicated: viewAdjudicated,
                             // adjudicatedCode: viewAdjudicated,
-                            Menu: viewMenu,
+
                         },
                     },
                     sorting: {

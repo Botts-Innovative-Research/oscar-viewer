@@ -10,7 +10,7 @@ import {colorCodes} from "@/app/_components/event-preview/AdjudicationSelect";
  */
 export interface IEventTableData {
   id: number; // Unique ID for event
-  secondaryInspection?: string;  // Whether or not there has been a secondary inspection performed
+  secondaryInspection?: string;
   laneId: string; // Lane ID
   occupancyId: string;  // Occupancy ID
   startTime: string;  // Start time of occupancy/event
@@ -21,6 +21,7 @@ export interface IEventTableData {
   adjudicatedUser?: string; // User ID that adjudicated event
   adjudicatedCode?: number; // Adjudication code for event
   isAdjudicated?: boolean;
+  foiId: string;
 }
 
 export interface INationalTableData {

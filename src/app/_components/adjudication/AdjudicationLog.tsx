@@ -13,22 +13,41 @@ import {AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/Adjudicati
 
 
 const logColumns: GridColDef<AdjudicationData>[] = [
-    {field: 'secondaryInspectionStatus', headerName: 'Secondary Inspection Status', width: 200},
     {
-        field: 'adjudicationCode', headerName: 'Adjudication Code', width: 400, valueGetter: (value, row) => {
+        field: 'occupancyId',
+        headerName: 'Occupancy ID',
+        width: 200,
+        type: 'string',
+    },
+    {
+        field: 'secondaryInspectionStatus',
+        headerName: 'Secondary Inspection Status',
+        width: 200
+    },
+    {
+        field: 'adjudicationCode',
+        headerName: 'Adjudication Code',
+        width: 400,
+        valueGetter: (value, row) => {
             console.log("ADJDEt - ", row);
             return row.adjudicationCode.label
         }
     },
     {
-        field: 'isotopes', headerName: 'Isotopes', width: 200, valueGetter: (value) => {
-            if (value === "") return "N/A";
+        field: 'isotopes',
+        headerName: 'Isotopes',
+        width: 200,
+        valueGetter: (value) => {
+            if (value === "") return "Unknown";
             else return value;
         }
     },
     {
-        field: 'vehicleId', headerName: 'Vehicle ID', width: 200, valueGetter: (value) => {
-            if (value === "") return "N/A";
+        field: 'vehicleId',
+        headerName: 'Vehicle ID',
+        width: 200,
+        valueGetter: (value) => {
+            if (value === "") return "Unknown";
             else return value;
         }
     },
@@ -119,10 +138,10 @@ export default function AdjudicationLog(props: {
 
     useEffect(() => {
         console.log("[ADJ-Log] Adjudication Log Updated: ", adjLog);
-        let filteredLog = [...adjLog];
-        if (onlySameObs) {
-            filteredLog = adjLog.filter((adjData) => adjData.occupancyId === props.event.occupancyId);
-        }
+        let filteredLog = adjLog.filter((adjData) => props.event.occupancyId.toString() === adjData.occupancyId);
+        // if (onlySameObs) {
+        //     filteredLog = adjLog.filter((adjData) => props.event.occupancyId.toString() === adjData.occupancyId);
+        // }
         setFilteredLog(filteredLog);
     }, [adjLog, onlySameObs]);
 
@@ -144,8 +163,7 @@ export default function AdjudicationLog(props: {
             <Stack spacing={2}>
                 <Stack direction={"column"} spacing={1}>
                     <Typography variant="h5">Logged Adjudications</Typography>
-                    <FormControlLabel control={<Checkbox value={onlySameObs} onClick={toggleOnlySameObs}/>}
-                                      label="Show From Only Same Observation ID"></FormControlLabel>
+                    {/*<FormControlLabel control={<Checkbox value={onlySameObs} onClick={toggleOnlySameObs}/>} label="Show Only Same Occupancy"></FormControlLabel>*/}
 
                 </Stack>
                 <DataGrid

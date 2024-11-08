@@ -49,7 +49,7 @@ export default function LaneViewPage() {
           </Grid>
           <Grid item container spacing={2} sx={{ width: "100%" }}>
             <Paper variant='outlined' sx={{ width: "100%" }}>
-                <Table2 tableMode={'eventlog'} laneMap={newMap} viewLane viewSecondary viewAdjudicated viewMenu/>
+                <Table2 tableMode={'eventlog'} laneMap={newMap} viewLane viewSecondary viewAdjudicated/>
             </Paper>
           </Grid>
         </Stack>

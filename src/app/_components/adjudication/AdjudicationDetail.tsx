@@ -75,6 +75,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const dispatch = useDispatch();
 
+
     //snackbar
     const [adjSnackMsg, setAdjSnackMsg] = useState('');
     const [openSnack, setOpenSnack] = useState(false);
@@ -92,35 +93,28 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     };
 
     const handleAdjudicationSelect = (value: AdjudicationCode) => {
-        console.log(value);
+
         let tAdjData: AdjudicationData = adjData;
         tAdjData.adjudicationCode = AdjudicationCodes.getCodeObjByLabel(value.label);
-        console.log("Updating ADJ code:", tAdjData);
+
         setAdjData(tAdjData);
         setAdjCode(value);
     }
 
     const handleIsotopeSelect = (value: string[]) => {
-        console.log(value);
+
         let valueString = value.join(', ');
         let tAdjData = adjData;
         tAdjData.isotopes = valueString;
-        // setIsotope(value);
-        console.log("[ADJ-D] Isotope: ", valueString);
-
         setIsotope(value);
         setAdjData(tAdjData);
     }
 
     const handleInspectionSelect = (value: string) => {
-        console.log(value);
+
         let tAdjData = adjData;
-
         tAdjData.secondaryInspectionStatus = value;
-
-        console.log("[ADJ-D] Secondary Inspection: ", value);
         setSecondaryInspection(value);
-
         setAdjData(tAdjData);
     }
 
@@ -131,10 +125,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
         tempAdjData.username = currentUser;
 
-        // if (name === 'secondaryInspection') {
-        //     checked ? tempAdjData.secondaryInspectionStatus = "REQUESTED" : tempAdjData.secondaryInspectionStatus = "NONE";
-        //     setSecondaryInspection(checked);
-        // }
         if (name === 'vehicleId') {
             setVehicleId(value);
             tempAdjData.vehicleId = value;
@@ -142,7 +132,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             setFeedback(value)
             tempAdjData.feedback = value;
         }
-        // console.log("[ADJ-D] Adj Data: ", tempAdjData);
+
         setAdjData(tempAdjData);
     }
 
@@ -158,14 +148,20 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     }
 
     const sendAdjudicationData = async () => {
+
+        if(adjData.adjudicationCode === null || !adjData.adjudicationCode || adjData.adjudicationCode === AdjudicationCodes.codes[0]){
+            setAdjSnackMsg("Please selected a valid adjudication code before submitting.");
+            setOpenSnack(true)
+            return;
+        }
         let phenomenonTime = new Date().toISOString();
         let tempAdjData: AdjudicationData = adjData;
+
         console.log("Adj Data to send", tempAdjData);
         tempAdjData.setTime(phenomenonTime);
         // let observation = createAdjudicationObservation(comboData, phenomenonTime);
         let observation = tempAdjData.createAdjudicationObservation();
         console.log("[ADJ] Sending Adjudication Data: ", observation);
-
         // send to server
         let currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
@@ -183,13 +179,13 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 body: observation,
                 mode: "cors"
             });
-            console.log("[ADJ] Response: ", resp);
+
 
             if(resp.ok){
                 setAdjSnackMsg('Adjudication Submitted Successfully')
                 dispatch(updateSelectedEventAdjudication(tempAdjData))
             }else{
-                setAdjSnackMsg('Adjudication Submission Failed. Check connection.')
+                setAdjSnackMsg('Adjudication Submission Failed. Check connection and form then try again.')
             }
         }catch(error){
             setAdjSnackMsg('Adjudication failed to submit.')
@@ -198,11 +194,13 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         // send command
         // we can use endTime as it is the same a resultTime in testing, this may not be true in practice but this is a stop-gap fix anyway
         let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, props.event.dataStreamId, props.event.endTime)
-        console.log('refObservation', refObservation)
-
 
         // guard, maybe add an appropriate snackbar
-        if (!refObservation) return
+        if (!refObservation) {
+            setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
+            setOpenSnack(true);
+            return;
+        }
         await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId,
             generateCommandJSON(refObservation.id, true));
         // dispatch(updateSelectedEventAdjudication(comboData));
@@ -237,7 +235,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 <Box>
                     <Stack direction="row" spacing={1}>
                         <TextField
-                            required
                             label="Username"
                             name="username"
                             value={currentUser}
@@ -256,7 +253,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             </Stack>
 
             <Stack direction={"row"} spacing={2} justifyContent={"start"} alignItems={"center"}>
-                <AdjudicationSelect adjCode={adjudicationCode} onSelect={handleAdjudicationSelect}/>
+                <AdjudicationSelect adjCode={adjudicationCode} onSelect={handleAdjudicationSelect} />
                 <IsotopeSelect isotopeValue={isotope} onSelect={handleIsotopeSelect}/>
             </Stack>
             <TextField

@@ -19,8 +19,9 @@ export default function EventLogPage() {
             <Typography variant="h4">Event Log</Typography>
             <br />
             <Paper variant='outlined' sx={{ height: "100%" }}>
-                {/*<Table tableMode={"eventlog"} />*/}
-                <EventTable eventTable={eventLogData} viewMenu viewLane viewSecondary viewAdjudicated/>
+                <Table tableMode={"eventlog"} />
+
+                {/*<EventTable eventTable={eventLogData} viewMenu viewLane viewSecondary viewAdjudicated/>*/}
             </Paper>
         </Box>
     );

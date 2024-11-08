@@ -37,7 +37,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     const newNodeOpts: NodeOptions = {
         name: "New Node",
         address: "localhost",
-        port: 0,
+        port: 8282,
         oshPathRoot: "/sensorhub",
         sosEndpoint: "/sos",
         csAPIEndpoint: "/api",

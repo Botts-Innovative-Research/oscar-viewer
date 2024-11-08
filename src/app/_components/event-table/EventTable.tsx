@@ -19,14 +19,14 @@ import {useRouter} from "next/navigation";
 
 export default function EventTable(props: {
   viewSecondary?: boolean,  // Show 'Secondary Inspection' column, default FALSE
-  viewMenu?: boolean, // Show three-dot menu button, default FALSE
+  // viewMenu?: boolean, // Show three-dot menu button, default FALSE
   viewLane?: boolean, // Show 'View Lane' option in menu, default FALSE
   viewAdjudicated?: boolean, //shows Adjudicated status in the event log , not shown in the alarm table
   eventTable: EventTableDataCollection,  // StatTable data
 }) {
   const viewAdjudicated = props.viewAdjudicated || false;
   const viewSecondary = props.viewSecondary || false;
-  const viewMenu = props.viewMenu || false;
+  // const viewMenu = props.viewMenu || false;
   const viewLane = props.viewLane || false;
   const eventTable = props.eventTable;
 
@@ -113,14 +113,19 @@ export default function EventTable(props: {
       headerName: '',
       type: 'actions',
       maxWidth: 50,
+
       getActions: (params) => [
-        <GridActionsCellItem
-            icon={<NotesRoundedIcon/>}
-            label="Details"
-            onClick={() => handleEventPreview()}
-            showInMenu
-        />,
-        (viewLane ?
+        (selectionModel.includes(params.row.id) ?
+                <GridActionsCellItem
+                    icon={<VisibilityRoundedIcon/>}
+                    label="Details"
+                    onClick={() => handleEventPreview()}
+                    showInMenu
+                />
+
+                : <></>
+        ),
+        (viewLane && selectionModel.includes(params.row.id)  ?
                 <GridActionsCellItem
                     icon={<VisibilityRoundedIcon/>}
                     label="View Lane"
@@ -130,6 +135,7 @@ export default function EventTable(props: {
                 : <></>
         ),
       ],
+
     },
   ];
 
@@ -147,7 +153,7 @@ export default function EventTable(props: {
     const excludeFields: string[] = [];
     // Exclude fields based on component parameters
     if (!viewSecondary) excludeFields.push('secondaryInspection');
-    if (!viewMenu) excludeFields.push('Menu');
+    // if (!viewMenu) excludeFields.push('Menu');
     if (!viewAdjudicated) excludeFields.push('adjudicatedCode');
 
     return columns
@@ -222,7 +228,7 @@ export default function EventTable(props: {
                 columnVisibilityModel: {
                   secondaryInspection: viewSecondary,
                   adjudicatedCode: viewAdjudicated,
-                  Menu: viewMenu,
+                  // Menu: viewMenu,
                 },
               },
             }}
