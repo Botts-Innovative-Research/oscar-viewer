@@ -211,7 +211,7 @@ export class LaneMapEntry {
 
     findDataStreamByObsProperty(obsProperty: string){
         let stream: typeof DataStream = this.datastreams.find((ds)=> {
-            console.log("FIND ds props", ds)
+            // console.log("FIND ds props", ds)
             let hasProp = ds.properties.observedProperties.some((prop: any)=> prop.definition === obsProperty)
             return hasProp;
         });
