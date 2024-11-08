@@ -75,6 +75,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const dispatch = useDispatch();
 
+
     //snackbar
     const [adjSnackMsg, setAdjSnackMsg] = useState('');
     const [openSnack, setOpenSnack] = useState(false);
@@ -98,6 +99,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         console.log("Updating ADJ code:", tAdjData);
         setAdjData(tAdjData);
         setAdjCode(value);
+
+        console.log('props.event', props.event)
     }
 
     const handleIsotopeSelect = (value: string[]) => {
@@ -158,14 +161,20 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     }
 
     const sendAdjudicationData = async () => {
+
+        if(adjData.adjudicationCode=== null || !adjData.adjudicationCode || adjData.adjudicationCode === AdjudicationCodes.codes[0]){
+            setAdjSnackMsg("Please selected a valid adjudication code before submitting.");
+            setOpenSnack(true)
+            return;
+        }
         let phenomenonTime = new Date().toISOString();
         let tempAdjData: AdjudicationData = adjData;
+
         console.log("Adj Data to send", tempAdjData);
         tempAdjData.setTime(phenomenonTime);
         // let observation = createAdjudicationObservation(comboData, phenomenonTime);
         let observation = tempAdjData.createAdjudicationObservation();
         console.log("[ADJ] Sending Adjudication Data: ", observation);
-
         // send to server
         let currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
@@ -202,7 +211,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
 
         // guard, maybe add an appropriate snackbar
-        if (!refObservation) return
+        if (!refObservation) {
+            setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
+            setOpenSnack(true);
+            return;
+        }
         await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId,
             generateCommandJSON(refObservation.id, true));
         // dispatch(updateSelectedEventAdjudication(comboData));
@@ -237,7 +250,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 <Box>
                     <Stack direction="row" spacing={1}>
                         <TextField
-                            required
                             label="Username"
                             name="username"
                             value={currentUser}
@@ -256,7 +268,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             </Stack>
 
             <Stack direction={"row"} spacing={2} justifyContent={"start"} alignItems={"center"}>
-                <AdjudicationSelect adjCode={adjudicationCode} onSelect={handleAdjudicationSelect}/>
+                <AdjudicationSelect adjCode={adjudicationCode} onSelect={handleAdjudicationSelect} />
                 <IsotopeSelect isotopeValue={isotope} onSelect={handleIsotopeSelect}/>
             </Stack>
             <TextField
