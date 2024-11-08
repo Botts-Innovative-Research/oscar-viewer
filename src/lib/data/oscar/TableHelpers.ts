@@ -3,7 +3,7 @@
  * All Rights Reserved
  */
 
-import {IEventTableData, INationalTableData} from "../../../../types/new-types";
+import {IAlarmTableData, IEventTableData, INationalTableData} from "../../../../types/new-types";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {warn} from "next/dist/build/output/log";
 import System from "osh-js/source/core/sweapi/system/System.js";
@@ -204,6 +204,41 @@ export class NationalTableDataCollection {
     }
 
     addData(data: NationalTableData) {
+        this.data.push(data);
+    }
+
+
+}
+
+
+
+export class AlarmTableData implements IAlarmTableData {
+    id: number; // Unique ID for event
+    laneId: string;
+    status: string;
+    timestamp: string;
+
+
+    constructor(id: number, laneId: string, status: string, timestamp: string) {
+        this.id = id;
+        this.laneId = laneId;
+        this.status = status;
+        this.timestamp = timestamp;
+    }
+}
+
+export class AlarmTableDataCollection {
+    data: AlarmTableData[];
+
+    constructor() {
+        this.data = [];
+    }
+
+    setData(data: AlarmTableData[]) {
+        this.data = data;
+    }
+
+    addData(data: AlarmTableData) {
         this.data.push(data);
     }
 

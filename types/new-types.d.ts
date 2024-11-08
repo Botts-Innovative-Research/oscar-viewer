@@ -35,6 +35,13 @@ export interface INationalTableData {
 }
 
 
+export interface IAlarmTableData {
+  id: number; // Unique ID for event
+  laneId: string;
+  status: string;
+}
+
+
 /**
  * Event type to make request for more details
  * Requires start and end time of event
