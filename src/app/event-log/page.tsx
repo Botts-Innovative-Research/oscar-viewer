@@ -20,6 +20,7 @@ export default function EventLogPage() {
             <br />
             <Paper variant='outlined' sx={{ height: "100%" }}>
                 <Table tableMode={"eventlog"} />
+
                 {/*<EventTable eventTable={eventLogData} viewMenu viewLane viewSecondary viewAdjudicated/>*/}
             </Paper>
         </Box>

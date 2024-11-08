@@ -47,7 +47,7 @@ const logColumns: GridColDef<AdjudicationData>[] = [
         headerName: 'Vehicle ID',
         width: 200,
         valueGetter: (value) => {
-            if (value === "") return "N/A";
+            if (value === "") return "Unknown";
             else return value;
         }
     },

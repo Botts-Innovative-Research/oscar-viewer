@@ -88,6 +88,7 @@ export default function Table({tableMode, laneName}: TableProps) {
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
                     newEvent.setSystemIdx(systemID);
                     newEvent.setDataStreamId(obs["datastream@id"]);
+                    newEvent.setFoiId(obs["foi@id"]);
 
                     newEvent ? allAlarmingEvents.push(newEvent) : null;
 
@@ -100,6 +101,7 @@ export default function Table({tableMode, laneName}: TableProps) {
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
                     newEvent.setSystemIdx(systemID);
                     newEvent.setDataStreamId(obs["datastream@id"]);
+                    newEvent.setFoiId(obs["foi@id"]);
 
                     newEvent ? nonAlarmingEvents.push(newEvent) : null;
 
@@ -124,11 +126,13 @@ export default function Table({tableMode, laneName}: TableProps) {
                 if (value.data.gammaAlarm === true || value.data.neutronAlarm === true) {
 
                     // let newEvent = new EventTableData(idVal.current++, laneName, value.data);
-                    let newEvent = new EventTableData(randomUUID(), laneName, value.data, randomUUID(), );
+                    let newEvent = new EventTableData(randomUUID(), laneName, value.data);
                     let laneEntry = laneMapRef.current.get(laneName);
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
+                    console.log('lane entry', laneEntry)
                     newEvent.setSystemIdx(systemID);
                     newEvent.setDataStreamId(dataStreamId);
+                    // newEvent.setFoiId();
 
                     newEvent ? allAlarmingEvents.push(newEvent) : null;
 
@@ -140,6 +144,7 @@ export default function Table({tableMode, laneName}: TableProps) {
                     const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
                     newEvent.setSystemIdx(systemID);
                     newEvent.setDataStreamId(dataStreamId);
+                    // newEvent.setFoiId();
 
                     newEvent ? nonAlarmingEvents.push(newEvent) : null;
 

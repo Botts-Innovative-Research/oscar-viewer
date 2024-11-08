@@ -87,6 +87,7 @@ export default function Table2({
 
     async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<EventTableData[]> {
         let observations: EventTableData[] = [];
+
         while (obsCollection.hasNext()) {
             let obsResults = await obsCollection.nextPage();
             obsResults.map((obs: any) => {
@@ -100,9 +101,10 @@ export default function Table2({
     }
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
-        let newEvent: EventTableData = new EventTableData(randomUUID(), laneEntry.laneName, obs.result, obs.id);
+        let newEvent: EventTableData = new EventTableData(randomUUID(), laneEntry.laneName, obs.result, obs.id, obs.foiId);
         newEvent.setSystemIdx(laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId));
         newEvent.setDataStreamId(obs["datastream@id"]);
+        newEvent.setFoiId(obs["foi@id"]);
         newEvent.setObservationId(obs.id);
 
         return newEvent;
@@ -169,12 +171,10 @@ export default function Table2({
     }, [laneMap]);
 
     useEffect(() => {
-        // console.log("Table Log Updated")
-        // console.log('[EVT] Table Data Updated', tableData)
+
         let filteredData: EventTableData[] = [];
         if (tableMode === 'alarmtable') {
             filteredData = unadjudicatedFilteredList(onlyAlarmingFilteredList(tableData))
-            console.log("[EVT table prevtable Filtered Data", filteredData);
         } else if (tableMode === 'eventlog') {
             if (laneMap.size === 1) {
                 const laneId = Array.from(laneMap.keys())[0];
@@ -183,8 +183,6 @@ export default function Table2({
         }
         // setFilteredTableData(filteredData);
         setFilteredTableData((prevState) => {
-            console.log("EVT table prevtable data", prevState);
-            console.log("EVT table newtable", filteredData)
             return filteredData;
         })
     }, [tableData]);
