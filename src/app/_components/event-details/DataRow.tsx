@@ -18,8 +18,8 @@ export default function DataRow() {
     const eventPreview = useSelector(selectEventPreview);
     const eventData: IEventTableData | null = eventPreview?.eventData || null;
 
-    console.log('event preeview', eventPreview)
-    console.log('event data', eventData)
+    // console.log('event preeview', eventPreview)
+    // console.log('event data', eventData)
     return (
         <TableContainer>
             <Table sx={{minWidth: 650}} aria-label="simple table">

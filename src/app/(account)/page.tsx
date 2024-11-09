@@ -23,7 +23,7 @@ export default function AccountViewPage() {
         setOpenSnack(true)
         dispatch(setCurrentUser(appUserName));
         console.log("User updated:", appUserName);
-        router.push('/dashboard');
+        router.push('/servers');
     }
 
     const handleCloseSnack = (
