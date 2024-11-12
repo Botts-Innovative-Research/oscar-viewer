@@ -43,7 +43,7 @@ export default function NationalTable(props:{
             field: 'faultAlarmCount',
             headerName: 'Fault Alarms',
             valueFormatter: (value) => {
-                r return typeof value === 'number' ? value : 0;
+                return typeof value === 'number' ? value : 0;
             }
         },
         {
