@@ -20,7 +20,6 @@ export default function Table({tableMode, laneName}: TableProps) {
 
     const [data, setData] = useState<IEventTableData[]>([]); // Data to be displayed, depending on tableMode
     const [eventLog, setEventLog] = useState<IEventTableData[]>([]);
-    const idVal = useRef(1);
 
     let startTime= "2020-01-01T08:13:25.845Z";
 
@@ -114,7 +113,6 @@ export default function Table({tableMode, laneName}: TableProps) {
         occupancyTableDataRef.current = [...allAlarmingEvents, ...occupancyTableDataRef.current];
         setData(occupancyTableDataRef.current);
     }
-
 
 
     function RTMsgHandler(laneName: string, message: any, dataStreamId: string) {

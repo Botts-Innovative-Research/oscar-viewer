@@ -6,6 +6,7 @@ import {useSelector} from "react-redux";
 import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
 import {styled, Theme} from "@mui/material/styles";
 import {selectEventTableDataArray} from "@/lib/state/EventDataSlice";
+import {useEffect, useState} from "react";
 
 
 const StatusTableCell = styled(TableCell)(({theme, status}: { theme: Theme, status: string }) => ({
@@ -18,8 +19,14 @@ export default function DataRow() {
     const eventPreview = useSelector(selectEventPreview);
     const eventData: IEventTableData | null = eventPreview?.eventData || null;
 
-    console.log('event preeview', eventPreview)
-    console.log('event data', eventData)
+    // const [eventData, setEventData] = useState( null);
+    //
+    // useEffect(() => {
+    //     if(eventPreview !== null){
+    //         setEventData(eventPreview.eventData)
+    //     }
+    //
+    // }, [eventPreview]);
     return (
         <TableContainer>
             <Table sx={{minWidth: 650}} aria-label="simple table">

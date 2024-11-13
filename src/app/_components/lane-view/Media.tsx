@@ -148,14 +148,14 @@ export default function Media(props: { laneName: string}) {
     return (
         <Box sx={{flexGrow: 1, overflowX: "auto"}}>
             <Grid container direction="row" spacing={2} justifyContent={"center"} alignItems={"center"}>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} md={6}>
                     <ChartLane  laneName={props.laneName} setChartReady={setChartReady}  datasources={{
                         gamma: gammaDatasources,
                         neutron: neutronDatasources,
                         threshold: thresholdDatasources
                     }}/>
                 </Grid>
-                <Grid item xs>
+                <Grid item xs={12} md={6}>
                     <VideoGrid laneName={props.laneName}/>
                 </Grid>
           </Grid>
