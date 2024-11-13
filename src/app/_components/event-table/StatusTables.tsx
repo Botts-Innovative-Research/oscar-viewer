@@ -176,7 +176,7 @@ export default function StatusTables({laneName}: TableProps){
 
         statusData.setData(sortedData)
         setTableData(statusData);
-       
+
     }, [data]);
 
 

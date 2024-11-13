@@ -30,8 +30,8 @@ export default function LaneViewPage() {
 
 
     const toggleButtons = [
-        <ToggleButton  value={"alarm"} key={"alarm"}>Alarm</ToggleButton>,
-        <ToggleButton  value={"occupancy"} key={"occupancy"}>Occupancy</ToggleButton>
+        <ToggleButton  value={"occupancy"} key={"occupancy"}>Occupancy</ToggleButton>,
+        <ToggleButton  value={"alarm"} key={"alarm"}>Alarm</ToggleButton>
     ];
 
 
@@ -55,16 +55,32 @@ export default function LaneViewPage() {
               <LaneStatus laneName={currentLane}/>
             </Paper>
           </Grid>
+
           <Grid item container spacing={2} sx={{ width: "100%" }}>
             <Paper variant='outlined' sx={{ width: "100%" }}>
               <Media laneName={currentLane}/>
             </Paper>
           </Grid>
+
           <Grid item container spacing={2} sx={{ width: "100%" }}>
-            <Paper variant='outlined' sx={{ width: "100%" }}>
+            <Paper variant='outlined' sx={{ width: "100%" , padding: 2}}>
                 <Grid container direction="column">
-                    <Grid item>
-                        <ToggleButtonGroup size="small" orientation="horizontal" onChange={handleToggle} exclusive value={toggleView}>
+                    <Grid item sx={{ display: "flex", justifyContent: "center", padding: 1 }}>
+                        <ToggleButtonGroup
+                            size="small"
+                            orientation="horizontal"
+                            onChange={handleToggle}
+                            exclusive
+                            value={toggleView}
+                            sx={{
+                                borderRadius: 1,
+                                boxShadow: 1,
+                                '& .MuiToggleButton-root': {
+                                    margin: 0.5,
+                                    padding: "5px",
+                                 },
+                            }}
+                        >
                             {toggleButtons}
                         </ToggleButtonGroup>
                     </Grid>
@@ -75,9 +91,6 @@ export default function LaneViewPage() {
                         <StatusTables laneName={currentLane}/>
                     </Grid>
                 </Grid>
-
-
-
             </Paper>
           </Grid>
         </Stack>

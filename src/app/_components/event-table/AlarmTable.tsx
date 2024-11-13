@@ -1,6 +1,6 @@
 "use client";
 
-import {DataGrid, GridColDef} from "@mui/x-data-grid";
+import {DataGrid, GridCellParams, gridClasses, GridColDef} from "@mui/x-data-grid";
 import {IAlarmTableData, INationalTableData} from "../../../../types/new-types";
 import { Box } from "@mui/material";
 import CustomToolbar from "@/app/_components/CustomToolbar";
@@ -50,6 +50,37 @@ export default function AlarmTable(props:{ alarmData: AlarmTableDataCollection }
               expand: true,
               includeOutliers: true,
               includeHeaders: false,
+            }}
+
+            getCellClassName={(params: GridCellParams<any, any, string>) => {
+                // Assign className for styling to 'Status' column based on value
+                if (params.value === "Alarm")
+                    return "highlightAlarm";
+                else if (params.value === "Scan")
+                    return "highlightScan";
+                else if (params.value === "Tamper")
+                    return "highlightTamper";
+                else
+                    return '';
+
+
+            }}
+            sx={{
+
+                // Assign styling to 'Status' column based on className
+                [`.${gridClasses.cell}.highlightAlarm`]: {
+                    backgroundColor: "error.main",
+                    color: "error.contrastText",
+                },
+                [`.${gridClasses.cell}.highlightScan`]: {
+                    backgroundColor: "info.main",
+                    color: "info.contrastText",
+                },
+                [`.${gridClasses.cell}.highlightTamper`]: {
+                    backgroundColor: "secondary.main",
+                    color: "secondary.contrastText",
+                },
+                border: "none",
             }}
         />
       </Box>
