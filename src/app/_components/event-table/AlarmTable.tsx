@@ -27,25 +27,37 @@ export default function AlarmTable(props:{ alarmData: AlarmTableDataCollection }
           field: 'count1',
           headerName: 'Count 1 (CPS)',
           type: 'number',
-          width: 200
+          width: 200,
+          valueFormatter: (value) => {
+              return typeof value === 'number' ? value : 0;
+          },
       },
       {
           field: 'count2',
           headerName: 'Count 2 (CPS)',
           type: 'number',
-          width: 200
+          width: 200,
+          valueFormatter: (value) => {
+              return typeof value === 'number' ? value : 0;
+          },
       },
       {
           field: 'count3',
           headerName: 'Count 3 (CPS)',
           type: 'number',
-          width: 200
+          width: 200,
+          valueFormatter: (value) => {
+              return typeof value === 'number' ? value : 0;
+          },
       },
       {
           field: 'count4',
           headerName: 'Count 4 (CPS)',
           type: 'number',
-          width: 200
+          width: 200,
+          valueFormatter: (value) => {
+              return typeof value === 'number' ? value : 0;
+          },
       },
       {
           field: 'status',
