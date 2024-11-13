@@ -89,8 +89,7 @@ export default function StatusTables({laneName}: TableProps){
                 if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")) {
                     if(res.result.alarmState === 'Alarm' || res.result.alarmState.includes('Fault')){
 
-                        const date = (new Date(res.timestamp)).toISOString()
-                        console.log('date', date)
+                        const date = (new Date(res.timestamp)).toISOString();
                         let newEvent = new AlarmTableData(randomUUID(), laneName, res.result.alarmState, date)
                         newEvent ? statusEvents.push(newEvent) : null;
                     }
