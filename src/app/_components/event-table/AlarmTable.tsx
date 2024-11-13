@@ -24,6 +24,30 @@ export default function AlarmTable(props:{ alarmData: AlarmTableDataCollection }
           width: 200
       },
       {
+          field: 'count1',
+          headerName: 'Count 1 (CPS)',
+          type: 'number',
+          width: 200
+      },
+      {
+          field: 'count2',
+          headerName: 'Count 2 (CPS)',
+          type: 'number',
+          width: 200
+      },
+      {
+          field: 'count3',
+          headerName: 'Count 3 (CPS)',
+          type: 'number',
+          width: 200
+      },
+      {
+          field: 'count4',
+          headerName: 'Count 4 (CPS)',
+          type: 'number',
+          width: 200
+      },
+      {
           field: 'status',
           headerName: 'Status',
           type: 'string',
@@ -54,10 +78,10 @@ export default function AlarmTable(props:{ alarmData: AlarmTableDataCollection }
 
             getCellClassName={(params: GridCellParams<any, any, string>) => {
                 // Assign className for styling to 'Status' column based on value
-                if (params.value === "Alarm")
-                    return "highlightAlarm";
-                else if (params.value === "Scan")
-                    return "highlightScan";
+                if (params.value === "Gamma Alarm") return "highlightGamma";
+                else if(params.value === "Neutron Alarm") return 'highlightNeutron'
+                else if (params.value === 'Fault - Gamma Low' || params.value === 'Fault - Gamma High' || params.value === 'Fault - Neutron Low')
+                    return "highlightFault";
                 else if (params.value === "Tamper")
                     return "highlightTamper";
                 else
@@ -66,15 +90,18 @@ export default function AlarmTable(props:{ alarmData: AlarmTableDataCollection }
 
             }}
             sx={{
-
                 // Assign styling to 'Status' column based on className
-                [`.${gridClasses.cell}.highlightAlarm`]: {
+                [`.${gridClasses.cell}.highlightGamma`]: {
                     backgroundColor: "error.main",
                     color: "error.contrastText",
                 },
-                [`.${gridClasses.cell}.highlightScan`]: {
+                [`.${gridClasses.cell}.highlightNeutron`]: {
                     backgroundColor: "info.main",
                     color: "info.contrastText",
+                },
+                [`.${gridClasses.cell}.highlightFault`]: {
+                    backgroundColor: "success.main",
+                    color: "success.contrastText",
                 },
                 [`.${gridClasses.cell}.highlightTamper`]: {
                     backgroundColor: "secondary.main",

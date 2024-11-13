@@ -87,20 +87,37 @@ export default function StatusTables({laneName}: TableProps){
             obsRes.forEach((res: any) => {
 
                 if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")) {
-                    if(res.result.alarmState === 'Alarm' || res.result.alarmState.includes('Fault')){
+                    let state = res.result.alarmState;
+                    let count1 = res.result.neutronCount1;
+                    let count2 = res.result.neutronCount2;
+                    let count3 = res.result.neutronCount3;
+                    let count4 = res.result.neutronCount4;
 
+                    if(state === 'Alarm'){
+                        state = 'Neutron Alarm'
+                    }
+                    if(state.includes('Alarm') || state.includes('Fault')){
                         const date = (new Date(res.timestamp)).toISOString();
-                        let newEvent = new AlarmTableData(randomUUID(), laneName, res.result.alarmState, date)
+                        let newEvent = new AlarmTableData(randomUUID(), laneName, count1, count2, count3, count4, state, date)
                         newEvent ? statusEvents.push(newEvent) : null;
                     }
 
                 }
 
                 if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
-                    if(res.result.alarmState === 'Alarm' || res.result.alarmState.includes('Fault')){
+                    let state = res.result.alarmState;
+                    let count1 = res.result.gammaCount1;
+                    let count2 = res.result.gammaCount2;
+                    let count3 = res.result.gammaCount3;
+                    let count4 = res.result.gammaCount4;
 
+                    if(state === 'Alarm'){
+                        state = 'Gamma Alarm'
+                    }
+
+                    if(state.includes('Alarm') || state.includes('Fault')){
                         const date = (new Date(res.timestamp)).toISOString()
-                        let newEvent = new AlarmTableData(randomUUID(), laneName, res.result.alarmState, date)
+                        let newEvent = new AlarmTableData(randomUUID(),laneName, count1, count2, count3, count4,  state, date)
                         newEvent ? statusEvents.push(newEvent) : null;
                     }
 
@@ -109,7 +126,7 @@ export default function StatusTables({laneName}: TableProps){
                 if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status") && res.result.tamperStatus === true) {
                     let state = 'Tamper';
                     const date = (new Date(res.timestamp)).toISOString()
-                    let newEvent = new AlarmTableData(randomUUID(), laneName, state, date)
+                    let newEvent = new AlarmTableData(randomUUID(), laneName,0,0,0,0, state, date)
                     newEvent ? statusEvents.push(newEvent) : null;
                 }
             });
@@ -119,19 +136,44 @@ export default function StatusTables({laneName}: TableProps){
 
     }
 
-    function RTMsgHandler(laneName: string, message: any) {
+    function RTMsgHandler(laneName: string, message: any, type: any) {
         let allEvents: AlarmTableData[] = [];
         console.log('message', message)
         if (message.values) {
             for (let value of message.values) {
                 console.log('value', value.data)
-                let date = (new Date(value.data.timestamp)).toISOString()
-                if(value.data.alarmState === 'Alarm' || value.data.alarmState.includes('Fault')){
-                    let newEvent = new AlarmTableData(randomUUID(), laneName, value.data.alarmState, date);
+                let date = (new Date(value.data.timestamp)).toISOString();
+                let state = value.data.alarmState;
+
+                let count1: number;
+                let count2: number;
+                let count3: number;
+                let count4: number;
+
+                if(state === 'Alarm'){
+                    if(type === 'Neutron'){
+                        state = 'Neutron Alarm'
+                        count1 = value.data.neutronCount1;
+                        count2 = value.data.neutronCount2;
+                        count3 = value.data.neutronCount3;
+                        count4 = value.data.neutronCount4;
+                        console.log('count1', count1)
+                    }else if(type === 'Gamma'){
+                        state = 'Gamma Alarm'
+                        count1 = value.data.gammaCount1;
+                        count2 = value.data.gammaCount2;
+                        count3 = value.data.gammaCount3;
+                        count4 = value.data.gammaCount4;
+                    }
+
+                }
+                if(state.includes('Alarm') || value.data.alarmState.includes('Fault')){
+                    let newEvent = new AlarmTableData(randomUUID(), laneName,count1, count2, count3, count4, state, date);
                     newEvent ? allEvents.push(newEvent) : null;
                 }
+
                 if(value.data.tamperStatus){
-                    let newEvent = new AlarmTableData(randomUUID(), laneName, 'Tamper', date);
+                    let newEvent = new AlarmTableData(randomUUID(), laneName, 0,0,0,0,'Tamper', date);
                     newEvent ? allEvents.push(newEvent) : null;
                 }
             }
@@ -149,13 +191,13 @@ export default function StatusTables({laneName}: TableProps){
             const msgLaneName = laneName;
             // should only be one for now, but this whole process needs revisiting due to codebase changes introduced after initial implemntation
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
-                RTMsgHandler(msgLaneName, message)
+                RTMsgHandler(msgLaneName, message, 'Tamper')
             });
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
-                RTMsgHandler(msgLaneName, message)
+                RTMsgHandler(msgLaneName, message, 'Neutron')
             });
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
-                RTMsgHandler(msgLaneName, message)
+                RTMsgHandler(msgLaneName, message, 'Gamma')
             });
             laneDSColl.connectAllDS();
         }
