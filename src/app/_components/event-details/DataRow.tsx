@@ -17,16 +17,16 @@ const StatusTableCell = styled(TableCell)(({theme, status}: { theme: Theme, stat
 
 export default function DataRow() {
     const eventPreview = useSelector(selectEventPreview);
-    // const eventData: IEventTableData | null = eventPreview?.eventData || null;
+    const eventData: IEventTableData | null = eventPreview?.eventData || null;
 
-    const [eventData, setEventData] = useState( null);
-
-    useEffect(() => {
-        if(eventPreview !== null){
-            setEventData(eventPreview.eventData)
-        }
-
-    }, [eventPreview]);
+    // const [eventData, setEventData] = useState( null);
+    //
+    // useEffect(() => {
+    //     if(eventPreview !== null){
+    //         setEventData(eventPreview.eventData)
+    //     }
+    //
+    // }, [eventPreview]);
     return (
         <TableContainer>
             <Table sx={{minWidth: 650}} aria-label="simple table">
