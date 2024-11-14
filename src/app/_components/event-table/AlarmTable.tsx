@@ -108,12 +108,12 @@ export default function AlarmTable(props:{ alarmData: AlarmTableDataCollection }
                     color: "error.contrastText",
                 },
                 [`.${gridClasses.cell}.highlightNeutron`]: {
-                    backgroundColor: "info.main",
-                    color: "info.contrastText",
+                    backgroundColor: "error.main",
+                    color: "error.contrastText",
                 },
                 [`.${gridClasses.cell}.highlightFault`]: {
-                    backgroundColor: "success.main",
-                    color: "success.contrastText",
+                    backgroundColor: "info.main",
+                    color: "info.contrastText",
                 },
                 [`.${gridClasses.cell}.highlightTamper`]: {
                     backgroundColor: "secondary.main",

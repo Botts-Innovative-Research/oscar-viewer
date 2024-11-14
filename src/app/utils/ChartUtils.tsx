@@ -72,7 +72,6 @@ export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDataso
     if (!thresholdDatasource) return null;
 
     let latestGB: number;
-    let timestamp: any;
 
     let nCurve = new CurveLayer({
         dataSourceIds: [gammaDatasource.id, thresholdDatasource.id],
