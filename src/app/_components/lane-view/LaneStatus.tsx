@@ -81,11 +81,14 @@ export default function LaneStatus(props: LaneStatusProps) {
   }, [dataSourcesByLane]);
 
   function updateStatus(laneName: string, newState: string){
+    setTimeout(() => updateStatus(laneName, newState), 12000)
+
       const newStatus: LaneStatusType ={
         id: idVal.current++,
         name: laneName,
         status: newState
       }
+
       setLaneStatus(newStatus);
   }
 
