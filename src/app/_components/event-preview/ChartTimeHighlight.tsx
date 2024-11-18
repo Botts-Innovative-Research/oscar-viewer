@@ -205,7 +205,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
     useEffect(() => {
         let currTime = props.currentTime;
-        console.log('curr time', currTime)
+        // console.log('curr time', currTime)
         if (currTime?.data !== undefined) {
             let theTime = new Date(currTime.data);
             console.log("Current Time: ", currTime, theTime);
