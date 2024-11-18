@@ -16,6 +16,7 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
 import AdjudicationDetail from "@/app/_components/adjudication/AdjudicationDetail";
+import TimeController from "@/app/_components/TimeController";
 
 /**
  * Expects the following search params:
@@ -211,6 +212,7 @@ export default function EventDetailsPage() {
                                 </Box>
                         </Grid>
                     </Grid>
+                    <TimeController/>
                 </Box>
                     )}
             </Paper>
