@@ -260,8 +260,6 @@ export class Node implements INode {
                 while (datastreams.hasNext()) {
                     const datastreamResults = await datastreams.nextPage();
                     laneEntry.addDatastreams(datastreamResults);
-                    console.log("DS FOR " + laneName);
-                    console.log(datastreamResults)
                 }
             } catch (error) {
                 console.error(`Error fetching datastreams for system ${laneEntry.laneSystem.id}:`, error);
@@ -277,8 +275,6 @@ export class Node implements INode {
 
         const systems = await this.fetchSystemsTK();
         const databaseProcesses = systems.filter((system: any) => system.properties.properties.uid.includes(DATABASE_PROCESS_UID_PREFIX));
-        console.log("DB PROCESSES: ");
-        console.log(databaseProcesses);
 
         const videoDsMap = new Map<typeof DataStream, string>(); // <ds, laneName>
         for(const [laneName, laneEntry] of laneMap) {

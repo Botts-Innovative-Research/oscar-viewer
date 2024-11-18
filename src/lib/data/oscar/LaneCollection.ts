@@ -14,6 +14,7 @@ import {EventType} from "osh-js/source/core/event/EventType";
 
 import {isDynamicUsageError} from "next/dist/export/helpers/is-dynamic-usage-error";
 import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
+import { isVideoDatastream } from "./Utilities";
 
 class ILaneMeta {
     id: string;
@@ -133,7 +134,7 @@ export class LaneMapEntry {
                 endpointUrl: dsObj.networkProperties.endpointUrl,
                 resource: `/datastreams/${dsObj.properties.id}/observations`,
                 tls: dsObj.networkProperties.tls,
-                responseFormat: dsObj.properties.outputName === "video" ? 'application/swe+binary' : 'application/swe+json',
+                responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
                 mode: Mode.REAL_TIME,
                 connectorOpts: {
                     username: this.parentNode.auth.username,
@@ -146,7 +147,7 @@ export class LaneMapEntry {
                 endpointUrl: dsObj.networkProperties.endpointUrl,
                 resource: `/datastreams/${dsObj.properties.id}/observations`,
                 tls: dsObj.networkProperties.tls,
-                responseFormat: dsObj.properties.outputName === "video" ? 'application/swe+binary' : 'application/swe+json',
+                responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
                 mode: Mode.BATCH,
                 connectorOpts: {
                     username: this.parentNode.auth.username,
@@ -172,7 +173,7 @@ export class LaneMapEntry {
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
-            responseFormat: datastream.properties.outputName === "video" ? 'application/swe+binary' : 'application/swe+json',
+            responseFormat: isVideoDatastream(datastream) ? 'application/swe+binary' : 'application/swe+json',
             mode: Mode.REPLAY,
             connectorOpts: {
                 username: this.parentNode.auth.username,
@@ -189,7 +190,7 @@ export class LaneMapEntry {
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
-            responseFormat: datastream.properties.outputName === "video" ? 'application/swe+binary' : 'application/swe+json',
+            responseFormat: isVideoDatastream(datastream) ? 'application/swe+binary' : 'application/swe+json',
             mode: Mode.BATCH,
             connectorOpts: {
                 username: this.parentNode.auth.username,
@@ -237,7 +238,7 @@ export class LaneMapEntry {
         dsMap.set('tamper', []);
         dsMap.set('video', []);
         dsMap.set('gammaTrshld', []);
-
+        
         for (let ds of this.datastreams) {
 
             let idx: number = this.datastreams.indexOf(ds);
@@ -257,7 +258,6 @@ export class LaneMapEntry {
             }
             // if (ds.properties.name.includes('Driver - Gamma Count')) {
             if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
-
                 let gammaArray = dsMap.get('gamma')!;
                 const index = gammaArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
                 if (index !== -1) {
@@ -287,14 +287,9 @@ export class LaneMapEntry {
                 }
             }
             // if (ds.properties.name.includes('Video')) {
-            if(ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/RasterImage") || ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/VideoFrame")){
+            if(isVideoDatastream(ds)){
                 let videoArray = dsMap.get('video')!;
-                const index = videoArray.findIndex(dsItem => dsItem.properties.name === datasourceReplay.properties.name);
-                if (index !== -1) {
-                    videoArray[index] = datasourceReplay;
-                } else {
-                    videoArray.push(datasourceReplay);
-                }
+                videoArray.push(datasourceReplay);
             }
             // if (ds.properties.name.includes('Driver - Gamma Threshold')) {
             if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/threshold")){
