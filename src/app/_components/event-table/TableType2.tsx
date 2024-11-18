@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {useCallback, useEffect, useState} from "react";
@@ -21,6 +21,7 @@ import {
     setEventLogData,
     setSelectedEvent
 } from "@/lib/state/EventDataSlice";
+import {useRouter} from "next/navigation";
 
 
 interface TableProps {
@@ -46,7 +47,7 @@ interface TableProps {
 export default function Table2({
                                    tableMode,
                                    viewSecondary = false,
-                                   viewMenu = false,
+                                   // viewMenu = false,
                                    viewLane = false,
                                    viewAdjudicated = false,
                                    laneMap
@@ -56,6 +57,7 @@ export default function Table2({
     const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
     const [selectionModel, setSelectionModel] = useState([]); // Currently selected row
     const dispatch = useAppDispatch();
+    const router = useRouter();
 
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
@@ -85,6 +87,7 @@ export default function Table2({
 
     async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<EventTableData[]> {
         let observations: EventTableData[] = [];
+
         while (obsCollection.hasNext()) {
             let obsResults = await obsCollection.nextPage();
             obsResults.map((obs: any) => {
@@ -98,9 +101,10 @@ export default function Table2({
     }
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
-        let newEvent: EventTableData = new EventTableData(randomUUID(), laneEntry.laneName, obs.result, obs.id);
+        let newEvent: EventTableData = new EventTableData(randomUUID(), laneEntry.laneName, obs.result, obs.id, obs.foiId);
         newEvent.setSystemIdx(laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId));
         newEvent.setDataStreamId(obs["datastream@id"]);
+        newEvent.setFoiId(obs["foi@id"]);
         newEvent.setObservationId(obs.id);
 
         return newEvent;
@@ -167,12 +171,10 @@ export default function Table2({
     }, [laneMap]);
 
     useEffect(() => {
-        // console.log("Table Log Updated")
-        // console.log('[EVT] Table Data Updated', tableData)
+
         let filteredData: EventTableData[] = [];
         if (tableMode === 'alarmtable') {
             filteredData = unadjudicatedFilteredList(onlyAlarmingFilteredList(tableData))
-            console.log("[EVT table prevtable Filtered Data", filteredData);
         } else if (tableMode === 'eventlog') {
             if (laneMap.size === 1) {
                 const laneId = Array.from(laneMap.keys())[0];
@@ -181,8 +183,6 @@ export default function Table2({
         }
         // setFilteredTableData(filteredData);
         setFilteredTableData((prevState) => {
-            console.log("EVT table prevtable data", prevState);
-            console.log("EVT table newtable", filteredData)
             return filteredData;
         })
     }, [tableData]);
@@ -223,16 +223,15 @@ export default function Table2({
             field: 'maxGamma',
             headerName: 'Max Gamma (cps)',
             valueFormatter: (value) => {
-                // Append units to number value, or return 'N/A'
-                return typeof value === 'number' ? value : 'N/A';
+                return typeof value === 'number' ? value : 0;
             },
         },
         {
             field: 'maxNeutron',
             headerName: 'Max Neutron (cps)',
             valueFormatter: (value) => {
-                // Append units to number value, or return 'N/A'
-                return typeof value === 'number' ? value : 'N/A';
+
+                return typeof value === 'number' ? value : 0;
             },
         },
         {
@@ -241,42 +240,39 @@ export default function Table2({
             type: 'string',
         },
         {
-            field: 'adjudicatedCode',
+            field: 'isAdjudicated',
+            // field: 'adjudicatedCode',
             headerName: 'Adjudicated',
-            valueFormatter: (value) => {
-                const adjCode = {
-                    1: 'Code 1: Contraband Found',
-                    2: 'Code 2: Other',
-                    3: 'Code 3: Medical Isotope Found',
-                    4: 'Code 4: NORM Found',
-                    5: 'Code 5: Declared Shipment of Radioactive Material',
-                    6: 'Code 6: Physical Inspection Negative',
-                    7: 'Code 7: RIID/ASP Indicates Background Only',
-                    8: 'Code 8: Other',
-                    9: 'Code 9: Authorized Test, Maintenance, or Training Activity',
-                    10: 'Code 10: Unauthorized Activity',
-                    11: 'Code 11: Other'
-                };
-                return typeof value === 'number' ? adjCode[value] : 'None';
-            }
+            valueFormatter: (value) => value ? "Yes" : "No",
+            // valueFormatter: (value) => {
+            //     const adjCode = {
+            //         1: 'Code 1: Contraband Found',
+            //         2: 'Code 2: Other',
+            //         3: 'Code 3: Medical Isotope Found',
+            //         4: 'Code 4: NORM Found',
+            //         5: 'Code 5: Declared Shipment of Radioactive Material',
+            //         6: 'Code 6: Physical Inspection Negative',
+            //         7: 'Code 7: RIID/ASP Indicates Background Only',
+            //         8: 'Code 8: Other',
+            //         9: 'Code 9: Authorized Test, Maintenance, or Training Activity',
+            //         10: 'Code 10: Unauthorized Activity',
+            //         11: 'Code 11: Other'
+            //     };
+            //     return typeof value === 'number' ? adjCode[value] : 'None';
+            // }
         },
         {
             field: 'Menu',
             headerName: '',
             type: 'actions',
             maxWidth: 50,
+
             getActions: (params) => [
-                <GridActionsCellItem
-                    icon={<NotesRoundedIcon/>}
-                    label="Details"
-                    onClick={() => console.log(params.id)}
-                    showInMenu
-                />,
-                (viewLane ?
+                (selectionModel.includes(params.row.id) ?
                         <GridActionsCellItem
                             icon={<VisibilityRoundedIcon/>}
-                            label="View Lane"
-                            onClick={() => console.log(params.id)}
+                            label="Details"
+                            onClick={() => handleEventPreview()}
                             showInMenu
                         />
                         : <></>
@@ -285,13 +281,19 @@ export default function Table2({
         },
     ];
 
+
+    const handleEventPreview = () =>{
+        //should we set the event preview open here using dispatch?
+        router.push("/event-details")
+    }
+
     // Manage list of columns in toggle menu
     const getColumnList = () => {
         const excludeFields: string[] = [];
         // Exclude fields based on component parameters
         if (!viewSecondary) excludeFields.push('secondaryInspection');
-        if (!viewMenu) excludeFields.push('Menu');
-        if (!viewAdjudicated) excludeFields.push('adjudicatedCode');
+        if (!viewAdjudicated) excludeFields.push('isAdjudicated');
+        // if (!viewAdjudicated) excludeFields.push('adjudicatedCode');
 
         return columns
             .filter((column) => !excludeFields.includes(column.field))
@@ -308,6 +310,7 @@ export default function Table2({
             setSelectionModel([]);
             if (onRowSelect) {
                 onRowSelect(null); // Return an empty object when deselected
+
             }
         } else {
             // Otherwise, set the new selection
@@ -364,8 +367,9 @@ export default function Table2({
                         // Manage visible columns in table based on component parameters
                         columnVisibilityModel: {
                             secondaryInspection: viewSecondary,
-                            adjudicatedCode: viewAdjudicated,
-                            Menu: viewMenu,
+                            isAdjudicated: viewAdjudicated,
+                            // adjudicatedCode: viewAdjudicated,
+
                         },
                     },
                     sorting: {

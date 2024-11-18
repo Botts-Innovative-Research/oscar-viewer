@@ -52,17 +52,20 @@ export const Slice = createSlice({
             // state.eventLog.set(action.payload.observationId, action.payload);
         },
         updateSelectedEventAdjudication: (state, action: PayloadAction<AdjudicationData>) => {
-            const updatedEvent = {
-                ...state.selectedEvent,
-                adjudicatedData: action.payload
-            };
+            if(state.selectedEvent){
+                const updatedEvent = {
+                    ...state.selectedEvent,
+                    adjudicatedData: action.payload
+                };
 
-            const eventInLogIdx = state.eventLog.findIndex((eventData) => eventData.id === state.selectedEvent.id);
-            if (eventInLogIdx !== -1) {
-                state.eventLog[eventInLogIdx] = updatedEvent;
+                const eventInLogIdx = state.eventLog.findIndex((eventData) => eventData.id === state.selectedEvent.id);
+                if (eventInLogIdx !== -1) {
+                    state.eventLog[eventInLogIdx] = updatedEvent;
+                }
+
+                state.selectedEvent = updatedEvent;
             }
 
-            state.selectedEvent = updatedEvent;
         },
         setHasFetchedInitial: (state, action: PayloadAction<boolean>) => {
             state.hasFetchedInitial = action.payload;

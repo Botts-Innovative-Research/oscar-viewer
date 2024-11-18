@@ -110,43 +110,11 @@ export default function CameraGrid() {
      }
    }, [laneMap, dsVideo]);
 
-  // useEffect(() => {
-  //
-  //   if (videoList == null || videoList.length == 0 && laneMap.size > 0) {
-  //     let videos: LaneWithVideo[] = []
-  //
-  //     laneMap.forEach((value, key) => {
-  //       let ds: LaneMapEntry = value;
-  //
-  //       const videoSources = ds.datasourcesRealtime.filter((item) => item.name.includes('Video') && item.name.includes('Lane'));
-  //
-  //       if (videoSources.length > 0) {
-  //         const existingLane = videos.find((lane)=> lane.laneName === key);
-  //         if(existingLane){
-  //           existingLane.videoSources.push(...videoSources);
-  //         }else{
-  //           const laneWithVideo: LaneWithVideo = {
-  //             laneName: key,
-  //             videoSources: videoSources,
-  //             status: 'none',
-  //           };
-  //           videos.push(laneWithVideo);
-  //         }
-  //
-  //
-  //       }
-  //     });
-  //
-  //     console.log("CamGrid - Videos", videos);
-  //     setVideoList(videos);
-  //   }
-  // }, [laneMap]);
 
 
 
 
   const addSubscriptionCallbacks = useCallback(() => {
-    console.log('callback called')
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
 
       // guard against a lane where there is no video source, so we can avoid an error popup
@@ -217,7 +185,7 @@ export default function CameraGrid() {
   return (
       <>
         {videoList != null && (
-            <Grid container padding={2} justifyContent={"start"} spacing={1}>
+            <Grid container padding={2} justifyContent={"start"} spacing={0}>
 
               {videoList.slice(startItem, endItem).map((lane) => (
                   <VideoStatusWrapper key={lane.laneName} laneName={lane.laneName} status={lane.status}

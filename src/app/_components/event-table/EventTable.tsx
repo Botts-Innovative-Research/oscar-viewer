@@ -14,31 +14,34 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {selectEventPreview, setEventPreview} from "@/lib/state/OSCARClientSlice";
+import {useRouter} from "next/navigation";
 
 
 export default function EventTable(props: {
   viewSecondary?: boolean,  // Show 'Secondary Inspection' column, default FALSE
-  viewMenu?: boolean, // Show three-dot menu button, default FALSE
+  // viewMenu?: boolean, // Show three-dot menu button, default FALSE
   viewLane?: boolean, // Show 'View Lane' option in menu, default FALSE
   viewAdjudicated?: boolean, //shows Adjudicated status in the event log , not shown in the alarm table
   eventTable: EventTableDataCollection,  // StatTable data
 }) {
   const viewAdjudicated = props.viewAdjudicated || false;
   const viewSecondary = props.viewSecondary || false;
-  const viewMenu = props.viewMenu || false;
+  // const viewMenu = props.viewMenu || false;
   const viewLane = props.viewLane || false;
   const eventTable = props.eventTable;
+
   const [selectionModel, setSelectionModel] = useState([]); // Currently selected row
   const laneMapRef = useContext(DataSourceContext).laneMapRef;
-  const dispatch = useAppDispatch();
 
+  const dispatch = useAppDispatch();
+  const router = useRouter();
 
   // Column definition for EventTable
   const columns: GridColDef<IEventTableData>[] = [
     {
       field: 'secondaryInspection',
       headerName: 'Secondary Inspection',
-      type: 'boolean',
+      type: 'string',
     },
     {
       field: 'laneId',
@@ -65,7 +68,7 @@ export default function EventTable(props: {
       headerName: 'Max Gamma (cps)',
       valueFormatter: (value) => {
         // Append units to number value, or return 'N/A'
-        return typeof value === 'number' ? value : 'N/A';
+        return typeof value === 'number' ? value : 0;
       },
     },
     {
@@ -73,7 +76,7 @@ export default function EventTable(props: {
       headerName: 'Max Neutron (cps)',
       valueFormatter: (value) => {
         // Append units to number value, or return 'N/A'
-        return typeof value === 'number' ? value : 'N/A';
+        return typeof value === 'number' ? value : 0;
       },
     },
     {
@@ -82,56 +85,75 @@ export default function EventTable(props: {
       type: 'string',
     },
     {
-      field: 'adjudicatedCode',
+      //TODO: when adjudication is updated to working state chang this back to adjudicatedCode
+      // field: 'adjudicatedCode',
+      field: 'isAdjudicated',
       headerName: 'Adjudicated',
-      valueFormatter: (value) => {
-        const adjCode = {
-          1: 'Code 1: Contraband Found',
-          2: 'Code 2: Other',
-          3: 'Code 3: Medical Isotope Found',
-          4: 'Code 4: NORM Found',
-          5: 'Code 5: Declared Shipment of Radioactive Material',
-          6: 'Code 6: Physical Inspection Negative',
-          7: 'Code 7: RIID/ASP Indicates Background Only',
-          8: 'Code 8: Other',
-          9: 'Code 9: Authorized Test, Maintenance, or Training Activity',
-          10: 'Code 10: Unauthorized Activity',
-          11: 'Code 11: Other'
-        };
-        return typeof value === 'number' ? adjCode[value] : 'None';
-      }
+      type: 'string',
+      valueFormatter: (value) => value ? "Yes" : "No",
+      // valueFormatter: (value) => {
+      //   const adjCode = {
+      //     1: 'Code 1: Contraband Found',
+      //     2: 'Code 2: Other',
+      //     3: 'Code 3: Medical Isotope Found',
+      //     4: 'Code 4: NORM Found',
+      //     5: 'Code 5: Declared Shipment of Radioactive Material',
+      //     6: 'Code 6: Physical Inspection Negative',
+      //     7: 'Code 7: RIID/ASP Indicates Background Only',
+      //     8: 'Code 8: Other',
+      //     9: 'Code 9: Authorized Test, Maintenance, or Training Activity',
+      //     10: 'Code 10: Unauthorized Activity',
+      //     11: 'Code 11: Other'
+      //   };
+      //   return typeof value === 'number' ? adjCode[value] : 'No';
+      // }
     },
     {
       field: 'Menu',
       headerName: '',
       type: 'actions',
       maxWidth: 50,
+
       getActions: (params) => [
-        <GridActionsCellItem
-            icon={<NotesRoundedIcon/>}
-            label="Details"
-            onClick={() => console.log(params.id)}
-            showInMenu
-        />,
-        (viewLane ?
+        (selectionModel.includes(params.row.id) ?
+                <GridActionsCellItem
+                    icon={<VisibilityRoundedIcon/>}
+                    label="Details"
+                    onClick={() => handleEventPreview()}
+                    showInMenu
+                />
+
+                : <></>
+        ),
+        (viewLane && selectionModel.includes(params.row.id)  ?
                 <GridActionsCellItem
                     icon={<VisibilityRoundedIcon/>}
                     label="View Lane"
-                    onClick={() => console.log(params.id)}
+                    onClick={() => handleLaneView(params.row.laneId)}
                     showInMenu
                 />
                 : <></>
         ),
       ],
+
     },
   ];
+
+  const handleLaneView = (laneName: string) => {
+    router.push(`/lane-view?name=${encodeURIComponent(laneName)}`);
+  };
+
+  const handleEventPreview = () =>{
+    //should we set the event preview open here using dispatch?
+    router.push("/event-details")
+  }
 
   // Manage list of columns in toggle menu
   const getColumnList = () => {
     const excludeFields: string[] = [];
     // Exclude fields based on component parameters
     if (!viewSecondary) excludeFields.push('secondaryInspection');
-    if (!viewMenu) excludeFields.push('Menu');
+    // if (!viewMenu) excludeFields.push('Menu');
     if (!viewAdjudicated) excludeFields.push('adjudicatedCode');
 
     return columns
@@ -206,7 +228,7 @@ export default function EventTable(props: {
                 columnVisibilityModel: {
                   secondaryInspection: viewSecondary,
                   adjudicatedCode: viewAdjudicated,
-                  Menu: viewMenu,
+                  // Menu: viewMenu,
                 },
               },
             }}

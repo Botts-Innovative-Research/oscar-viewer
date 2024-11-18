@@ -3,7 +3,7 @@
  * All Rights Reserved
  */
 
-import {IEventTableData, INationalTableData} from "../../../../types/new-types";
+import {IAlarmTableData, IEventTableData, INationalTableData} from "../../../../types/new-types";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {warn} from "next/dist/build/output/log";
 import System from "osh-js/source/core/sweapi/system/System.js";
@@ -13,7 +13,7 @@ import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";
 
 export class EventTableData implements IEventTableData {
     id: number;
-    secondaryInspection?: boolean;
+    secondaryInspection?: string;
     laneId: string;
     occupancyId: string;
     startTime: string;
@@ -27,9 +27,10 @@ export class EventTableData implements IEventTableData {
     systemIdx?: string;
     dataStreamId?: string;
     observationId: string;
-    isAdjudicated:string;
+    isAdjudicated: boolean;
+    foiId: string;
 
-    constructor(id: number, laneId: string, msgValue: any, observationId: string, adjudicatedData: AdjudicationData | null = null) {
+    constructor(id: number, laneId: string, msgValue: any, observationId: string, foiId: string,  adjudicatedData: AdjudicationData | null = null) {
         this.id = id
         this.laneId = laneId
         this.occupancyId = msgValue.occupancyCount;
@@ -47,12 +48,12 @@ export class EventTableData implements IEventTableData {
             this.status = "Neutron";
         } else {
             this.status = "None"
-            // console.warn("No alarm detected for event: ", msgValue);
-            // return null;
         }
         this.adjudicatedData = adjudicatedData ? adjudicatedData : new AdjudicationData("N/A", "N/A", "N/A");
         this.isAdjudicated = msgValue.isAdjudicated;
         this.observationId = observationId;
+        this.secondaryInspection = msgValue.secondaryInspection;
+        this.foiId = foiId;
     }
 
     setAdjudicationData(aData: AdjudicationData) {
@@ -63,6 +64,10 @@ export class EventTableData implements IEventTableData {
     //     this.secondaryInspection = true;
     //     this.adjudicatedData.secondaryInspectionStatus = true
     // }
+
+    setSecondaryInspection(inspection: string){
+        this.secondaryInspection = inspection
+    }
 
     // comparators
     getStartTimeNum(): number {
@@ -85,12 +90,16 @@ export class EventTableData implements IEventTableData {
         this.dataStreamId = dataStreamId;
     }
 
+    setFoiId(foiId: string) {
+        this.foiId = foiId;
+    }
+
     setObservationId(id: string) {
         this.observationId = id;
     }
 
     private hashEntry(){
-        let sTHex = this.startTime.toString(16);
+        // let sTHex = this.startTime.toString(16);
 
     }
 }
@@ -195,6 +204,49 @@ export class NationalTableDataCollection {
     }
 
     addData(data: NationalTableData) {
+        this.data.push(data);
+    }
+
+
+}
+
+
+
+export class AlarmTableData implements IAlarmTableData {
+    id: number; // Unique ID for event
+    laneId: string;
+    count1: number;
+    count2: number;
+    count3: number;
+    count4: number;
+    status: string;
+    timestamp: string;
+
+
+    constructor(id: number, laneId: string, count1: number, count2: number, count3: number, count4: number, status: string, timestamp: string) {
+        this.id = id;
+        this.laneId = laneId;
+        this.count1 = count1;
+        this.count2 = count2;
+        this.count3 = count3;
+        this.count4 = count4;
+        this.status = status;
+        this.timestamp = timestamp;
+    }
+}
+
+export class AlarmTableDataCollection {
+    data: AlarmTableData[];
+
+    constructor() {
+        this.data = [];
+    }
+
+    setData(data: AlarmTableData[]) {
+        this.data = data;
+    }
+
+    addData(data: AlarmTableData) {
         this.data.push(data);
     }
 

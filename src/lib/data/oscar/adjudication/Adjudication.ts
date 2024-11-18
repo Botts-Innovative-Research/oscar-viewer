@@ -1,6 +1,9 @@
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {INode, Node} from "@/lib/data/osh/Node";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
+import eventDataSlice from "@/lib/state/EventDataSlice";
+import { useDispatch } from "react-redux";
+import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
 
 
 export interface IAdjudicationData {
@@ -17,6 +20,7 @@ export interface IAdjudicationData {
     vehicleId?: string
 }
 
+
 export default class AdjudicationData implements IAdjudicationData {
     time: string;
     id: string;
@@ -24,7 +28,8 @@ export default class AdjudicationData implements IAdjudicationData {
     feedback: string
     adjudicationCode: AdjudicationCode
     isotopes: string
-    secondaryInspectionStatus: "NONE" | "REQUESTED" | "COMPLETED"
+    secondaryInspectionStatus: string
+    // secondaryInspectionStatus: "NONE" | "REQUESTED" | "COMPLETED"
     filePaths: string
     occupancyId: string
     alarmingSystemUid: string
@@ -35,6 +40,7 @@ export default class AdjudicationData implements IAdjudicationData {
     //     this.id = randomUUID();
     // }
 
+
     constructor(username: string, occupancyId: string, alarmingSystemUid: string) {
         this.username = username;
         this.occupancyId = occupancyId;
@@ -42,7 +48,13 @@ export default class AdjudicationData implements IAdjudicationData {
         this.adjudicationCode = AdjudicationCodes.getCodeObjByIndex(0);
         this.secondaryInspectionStatus = "NONE";
         this.id = randomUUID();
+        this.feedback= '';
+        this.isotopes= '';
+        this.filePaths= '';
     }
+
+
+
 
     setTime(isoTime: string) {
         this.time = isoTime;
@@ -89,12 +101,12 @@ export default class AdjudicationData implements IAdjudicationData {
                 "username": this.username,
                 "feedback": this.feedback,
                 "adjudicationCode": this.adjudicationCode.label,
-                "isotopes": this.isotopes ? this.isotopes : "",
+                "isotopes": this.isotopes ??  "",
                 "secondaryInspectionStatus": this.secondaryInspectionStatus,
-                "filePaths": this.filePaths? this.filePaths : "",
+                "filePaths": this.filePaths ?? "",
                 "occupancyId": this.occupancyId,
                 "alarmingSystemUid": this.alarmingSystemUid,
-                "vehicleId": this.vehicleId ? this.vehicleId : ""
+                "vehicleId": this.vehicleId ?? ""
             }
         }
         // return obs
@@ -104,6 +116,8 @@ export default class AdjudicationData implements IAdjudicationData {
         return jsonString
     }
 }
+
+
 
 export class AdjudicationCommand {
     setAdjudicated: boolean;
@@ -140,7 +154,7 @@ export function createAdjudicationObservation(data: IAdjudicationData, resultTim
             "filePaths": data.filePaths,
             "occupancyId": data.occupancyId,
             "alarmingSystemUid": data.alarmingSystemUid,
-            "vehicleId": data.vehicleId ? data.vehicleId : ""
+            "vehicleId": data.vehicleId ?? ""
         }
     }
     // return obs
@@ -162,6 +176,8 @@ export async function sendSetAdjudicatedCommand(node: INode, controlStreamId: st
     if (response.ok) {
         let json = await response.json();
         console.log("ADJ Command Response", json)
+
+
     } else {
         console.warn("[ADJ] adj command failed", response)
     }

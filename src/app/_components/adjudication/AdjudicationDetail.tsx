@@ -31,13 +31,14 @@ import AdjudicationData, {
     sendSetAdjudicatedCommand
 } from "@/lib/data/oscar/adjudication/Adjudication";
 import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";
-import {useSelector} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 import {updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
+import SecondaryInspectionSelect from "@/app/_components/adjudication/SecondaryInspectionSelect";
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
 
@@ -57,9 +58,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
     const [comments, setComments] = useState<Comment[]>([]);
+
     const [adjudicationCode, setAdjCode] = useState(AdjudicationCodes.codes[0]);
     const [isotope, setIsotope] = useState<string[]>([]);
-    const [secondaryInspection, setSecondaryInspection] = useState(false);
+    const [secondaryInspection, setSecondaryInspection] = useState('');
+
     const [vehicleId, setVehicleId] = useState<string>("");
     const [feedback, setFeedback] = useState<string>("");
     const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -69,6 +72,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const [shouldFetchLogs, setShouldFetchLogs] = useState<boolean>(false);
     const adjudication = props.event ? new AdjudicationData(currentUser, props.event.occupancyId, props.event.systemIdx) : null;
     const [adjData, setAdjData] = useState<AdjudicationData>(adjudication);
+
+    const dispatch = useDispatch();
 
 
     //snackbar
@@ -88,47 +93,29 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     };
 
     const handleAdjudicationSelect = (value: AdjudicationCode) => {
-        console.log(value);
+
         let tAdjData: AdjudicationData = adjData;
         tAdjData.adjudicationCode = AdjudicationCodes.getCodeObjByLabel(value.label);
-        console.log("Updating ADJ code:", tAdjData);
+
         setAdjData(tAdjData);
         setAdjCode(value);
     }
 
     const handleIsotopeSelect = (value: string[]) => {
-        console.log(value);
+
         let valueString = value.join(', ');
         let tAdjData = adjData;
         tAdjData.isotopes = valueString;
-        // setIsotope(value);
-        console.log("[ADJ-D] Isotope: ", valueString);
-
         setIsotope(value);
         setAdjData(tAdjData);
     }
 
-    const handleSubmit = () => {
-        //require user before allowing submission
-        // const newComment: Comment = {
-        //     user: user,
-        //     vehicleId: vehicleId,
-        //     notes: notes,
-        //     files: uploadedFiles,
-        //     secondaryInspection: secondaryInspection,
-        //     adjudication: adjudicated,
-        //     isotope: isotope
-        // }
-        // setComments([...comments, newComment]);
-        // console.log(newComment)
+    const handleInspectionSelect = (value: string) => {
 
-        // setUser("");
-        // setVehicleId("");
-        // setNotes("");
-        // setUploadedFiles([]);
-        // setAdjudicated("");
-        // setIsotope([]);
-        // setSecondaryInspection(false);
+        let tAdjData = adjData;
+        tAdjData.secondaryInspectionStatus = value;
+        setSecondaryInspection(value);
+        setAdjData(tAdjData);
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,17 +125,14 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
         tempAdjData.username = currentUser;
 
-        if (name === 'secondaryInspection') {
-            checked ? tempAdjData.secondaryInspectionStatus = "REQUESTED" : tempAdjData.secondaryInspectionStatus = "NONE";
-            setSecondaryInspection(checked);
-        } else if (name === 'vehicleId') {
+        if (name === 'vehicleId') {
             setVehicleId(value);
             tempAdjData.vehicleId = value;
         } else if (name === 'notes') {
             setFeedback(value)
             tempAdjData.feedback = value;
         }
-        // console.log("[ADJ-D] Adj Data: ", tempAdjData);
+
         setAdjData(tempAdjData);
     }
 
@@ -157,21 +141,27 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         setVehicleId('')
         setAdjData(adjudication);
         setUploadedFiles([]);
-        setSecondaryInspection(false);
+        setSecondaryInspection('');
         setIsotope([]);
         setAdjCode(AdjudicationCodes.codes[0]);
         setFeedback('')
     }
 
     const sendAdjudicationData = async () => {
+
+        if(adjData.adjudicationCode === null || !adjData.adjudicationCode || adjData.adjudicationCode === AdjudicationCodes.codes[0]){
+            setAdjSnackMsg("Please selected a valid adjudication code before submitting.");
+            setOpenSnack(true)
+            return;
+        }
         let phenomenonTime = new Date().toISOString();
         let tempAdjData: AdjudicationData = adjData;
+
         console.log("Adj Data to send", tempAdjData);
         tempAdjData.setTime(phenomenonTime);
         // let observation = createAdjudicationObservation(comboData, phenomenonTime);
         let observation = tempAdjData.createAdjudicationObservation();
         console.log("[ADJ] Sending Adjudication Data: ", observation);
-
         // send to server
         let currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
@@ -179,6 +169,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         // const adjDSId = props.event.dataStreamId;
         const ep = currLaneEntry.parentNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + adjDsID + "/observations";
 
+        console.log('temp adjudicated dat', tempAdjData)
         try{
             let resp = await fetch(ep, {
                 method: "POST",
@@ -188,12 +179,13 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 body: observation,
                 mode: "cors"
             });
-            console.log("[ADJ] Response: ", resp);
+
 
             if(resp.ok){
                 setAdjSnackMsg('Adjudication Submitted Successfully')
+                dispatch(updateSelectedEventAdjudication(tempAdjData))
             }else{
-                setAdjSnackMsg('Adjudication Submission Failed. Check connection.')
+                setAdjSnackMsg('Adjudication Submission Failed. Check connection and form then try again.')
             }
         }catch(error){
             setAdjSnackMsg('Adjudication failed to submit.')
@@ -204,7 +196,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, props.event.dataStreamId, props.event.endTime)
 
         // guard, maybe add an appropriate snackbar
-        if (!refObservation) return
+        if (!refObservation) {
+            setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
+            setOpenSnack(true);
+            return;
+        }
         await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId,
             generateCommandJSON(refObservation.id, true));
         // dispatch(updateSelectedEventAdjudication(comboData));
@@ -218,10 +214,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         setShouldFetchLogs(false);
     }
 
-    const handleCloseSnack = (
-        event: React.SyntheticEvent | Event,
-        reason?: SnackbarCloseReason,
-    ) => {
+    const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
         if (reason === 'clickaway') {
             return;
         }
@@ -233,8 +226,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         <Stack direction={"column"} p={2} spacing={2}>
             <Typography variant="h4">Adjudication</Typography>
             <Box>
-                <AdjudicationLog comments={comments} event={props.event} shouldFetch={shouldFetchLogs}
-                                 onFetch={onFetchComplete}/>
+                <AdjudicationLog comments={comments} event={props.event} shouldFetch={shouldFetchLogs} onFetch={onFetchComplete}/>
             </Box>
 
             <Typography variant="h5">Adjudication Report Form</Typography>
@@ -243,7 +235,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 <Box>
                     <Stack direction="row" spacing={1}>
                         <TextField
-                            required
                             label="Username"
                             name="username"
                             value={currentUser}
@@ -262,7 +253,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             </Stack>
 
             <Stack direction={"row"} spacing={2} justifyContent={"start"} alignItems={"center"}>
-                <AdjudicationSelect adjCode={adjudicationCode} onSelect={handleAdjudicationSelect}/>
+                <AdjudicationSelect adjCode={adjudicationCode} onSelect={handleAdjudicationSelect} />
                 <IsotopeSelect isotopeValue={isotope} onSelect={handleIsotopeSelect}/>
             </Stack>
             <TextField
@@ -323,8 +314,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     />
                 </Button>
                 <Stack direction={"row"} spacing={2}>
-                    <FormControlLabel control={<Checkbox name="secondaryInspection" checked={secondaryInspection}
-                                                         onChange={handleChange}/>} label="Secondary Inspection"/>
+                    <SecondaryInspectionSelect secondarySelectVal={secondaryInspection} onSelect={handleInspectionSelect}/>
+                    {/*<FormControlLabel control={<Checkbox name="secondaryInspection" checked={secondaryInspection}*/}
+                    {/*                                     onChange={handleChange}/>} label="Secondary Inspection"/>*/}
                     <Button disableElevation variant={"contained"} color={"success"}
                             onClick={sendAdjudicationData}>Submit</Button>
                     <Snackbar

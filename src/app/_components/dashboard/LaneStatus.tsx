@@ -132,9 +132,7 @@ export default function LaneStatus() {
               return {...laneData, isTamper: false, isOnline: true}
 
             }else if (
-                newState === 'Fault - Neutron High' ||
-                newState === 'Fault - Gamma High' ||
-                newState === 'Fault - Gamma Low'
+                newState === 'Fault - Neutron High' || newState === 'Fault - Gamma High' || newState === 'Fault - Gamma Low'
             ) {
               return {...laneData, isFault: true, isOnline: true}
 

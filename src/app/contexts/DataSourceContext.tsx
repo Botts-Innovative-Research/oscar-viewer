@@ -3,8 +3,8 @@
 import React, {createContext, MutableRefObject, ReactNode, useCallback, useEffect, useRef} from "react";
 import {useSelector} from "react-redux";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {INode, Node} from "@/lib/data/osh/Node";
-import {changeConfigNode} from "@/lib/state/OSHSlice";
+import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
+import {changeConfigNode, setNodes} from "@/lib/state/OSHSlice";
 import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARClientSlice";
 import {RootState} from "@/lib/state/Store";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
@@ -30,7 +30,27 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
     const laneMapRef = useRef<Map<string, LaneMapEntry>>(new Map<string, LaneMapEntry>());
 
+    const handleLoadState = async () => {
+
+        let responseJSON = await OSHSliceWriterReader.retrieveLatestConfig(configNode);
+        if (responseJSON) {
+            console.log("Config data retrieved: ", responseJSON);
+
+            let cfgData = responseJSON.result.filedata;
+            let cfgJSON = JSON.parse(cfgData);
+            console.log("Config data parsed: ", cfgJSON);
+
+            let nodes = cfgJSON.nodes.map((opt: NodeOptions) => new Node(opt));
+            dispatch(setNodes(nodes));
+
+        } else {
+            console.log('Failed to load OSCAR State')
+        }
+    }
+
     const InitializeApplication = useCallback(async () => {
+
+
         if (!configNode) {
             // if no default node, then just grab the first node in the list and try to use that
             if (nodes.length > 0) {
@@ -41,6 +61,8 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             }
             console.error("No config node found in state. Cannot initialize application.");
         }
+
+        await handleLoadState()
 
         let filedata = await OSHSliceWriterReader.retrieveLatestConfig(configNode);
 

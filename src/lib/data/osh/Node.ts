@@ -111,21 +111,6 @@ export class Node implements INode {
             : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
     }
 
-    // getSOSEndpoint(noProtocolPrefix: boolean = false) {
-    //     let protocol = this.isSecure ? 'https' : 'http';
-    //     // return `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
-    //     console.log("NODE TEST GET CSAPI ENDPOINT", this);
-    //     return noProtocolPrefix ? `${this.address}:${this.port}${this.oshPathRoot}${this.sosEndpoint}`
-    //         : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.sosEndpoint}`;
-    // }
-    //
-    // getEndpoint(noProtocolPrefix: boolean = false) {
-    //     let protocol = this.isSecure ? 'https' : 'http';
-    //     // return `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
-    //     console.log("NODE TEST GET CSAPI ENDPOINT", this);
-    //     return noProtocolPrefix ? `${this.address}:${this.port}${this.oshPathRoot}/admin`
-    //         : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}/admin`;
-    // }
 
     getConfigEndpoint() {
         // let protocol = this.isSecure ? 'https' : 'http';
@@ -181,7 +166,6 @@ export class Node implements INode {
             const newSystem = new System(system.id, system.properties.uid, system.properties.name, this, null);
             console.log("New System:", newSystem);
             fetchedSystems.push(newSystem);
-            const uidSplit = system.properties.uid.split(":");
             // Test for lane signature in uid
             if (system.properties.uid.includes(SYSTEM_UID_PREFIX)) {
                 console.info("Found System matching lane signature");
@@ -270,7 +254,7 @@ export class Node implements INode {
     }
 
     async fetchDatastreamsTK(laneMap: Map<string, LaneMapEntry>) {
-        for (const [laneName, laneEntry] of laneMap) {
+        for (const [, laneEntry] of laneMap) {
             try {
                 const datastreams = await laneEntry.laneSystem.searchDataStreams(undefined, 100);
                 while (datastreams.hasNext()) {

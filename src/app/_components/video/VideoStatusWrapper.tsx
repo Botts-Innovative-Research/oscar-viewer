@@ -1,7 +1,7 @@
-import {Box, Button, Typography } from "@mui/material";
+import {Box, Button, Tooltip, Typography } from "@mui/material";
 import Grid from "@mui/material/Grid/Grid";
 import Link from "next/link";
-import { PropsWithChildren} from "react";
+import React, { PropsWithChildren} from "react";
 
 interface VideoStatusWrapperProps {
     laneName: string
@@ -11,8 +11,11 @@ interface VideoStatusWrapperProps {
 export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusWrapperProps>) {
 
     return (
+
             <Grid item xs={2} display={"flex"} direction={"column"} alignItems={"center"} justifyContent={"center"} padding={1}
                   sx={{
+                      height: '150px',
+                      width: '200px',
                       "&.MuiGrid-item":
                           {...props.status !== "none" ? {
                                   // Styling for alarm and tamper states
@@ -26,16 +29,24 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
                                   borderWidth: "1px",
                                   borderColor:  "rgba(0, 0, 0, 0.12)",
                               },
-                              margin: "2px",
+                              margin: "0px 0px 4px 0px",
                           },
                   }}
             >
                 {props.children}
 
-                <Link href={{pathname: '/lane-view', query: {name: props.laneName}}} passHref>
-                    <Typography variant="body2" style={{fontSize: 12, textWrap: 'nowrap'}}>{props.laneName}</Typography>
-                </Link>
+                <Tooltip title={props.laneName} arrow placement={"bottom"}>
+                    <Link href={{pathname: '/lane-view', query: {name: props.laneName}}} passHref>
+
+                        <Typography variant="body2" style={{fontSize: 12, textWrap: 'nowrap'}}>{props.laneName.length <= 11 ? props.laneName : (props.laneName.substr(0, 11)) }</Typography>
+
+
+                        {/*<Typography variant="body2" style={{fontSize: 12, textWrap: 'nowrap'}}>{props.laneName}</Typography>*/}
+                    </Link>
+                </Tooltip>
+
             </Grid>
+
 
     )
 }

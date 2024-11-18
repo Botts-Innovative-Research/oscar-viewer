@@ -1,7 +1,7 @@
 "use client";
 
-import {Grid, Paper, Stack, Typography} from "@mui/material";
-import {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
+import {Box, Grid, Paper, Stack, Typography} from "@mui/material";
+import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
 import {SelectedEvent} from "types/new-types";
 import BackButton from "../_components/BackButton";
 import DataRow from "../_components/event-details/DataRow";
@@ -94,7 +94,9 @@ export default function EventDetailsPage() {
                 // endTime: eventPreview.eventData.endTime,
                 endTime: "now",
             });
+            syncRef.current.onTime
             setDataSyncCreated(true);
+            syncRef.current.onTime
         }
     }, [syncRef, dataSyncCreated, datasourcesReady, videoDatasources]);
 
@@ -105,6 +107,8 @@ export default function EventDetailsPage() {
     useEffect(() => {
         createDataSync();
     }, [gammaDatasources, neutronDatasources, thresholdDatasources, occDatasources, syncRef, dataSyncCreated, datasourcesReady]);
+
+
 
     useEffect(() => {
         if (chartReady && videoReady) {
@@ -134,63 +138,91 @@ export default function EventDetailsPage() {
         }
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
 
+    useEffect(() => {
+        const interval = setInterval(async () => {
+
+            let currTime = await syncRef.current?.getCurrentTime();
+            if (currentTime !== undefined) {
+                setCurrentTime(currTime);
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        const interval = setInterval(async () => {
+
+            let currTime = await syncRef.current?.getCurrentTime();
+            if (currentTime !== undefined) {
+                setCurrentTime(currTime);
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     return (
-        <Stack spacing={2} direction={"column"}>
-            <Grid item spacing={2}>
-                <BackButton/>
-            </Grid>
-            <Grid item spacing={2}>
-                <Typography variant="h5">Event Details</Typography>
-            </Grid>
-            <Grid item container spacing={2} sx={{width: "100%"}}>
-                <Paper variant='outlined' sx={{width: "100%"}}>
-                    <DataRow/>
-                </Paper>
+        <Stack spacing={4} direction={"column"} sx={{width: "100%"}}>
+            <Grid container spacing={2} alignItems="center">
+                <Grid item xs={"auto"} >
+                    <BackButton/>
+                </Grid>
+                <Grid item xs>
+                    <Typography variant="h4">Event Details</Typography>
+                </Grid>
             </Grid>
 
-            <Grid item container spacing={2} sx={{width: "100%"}}>
-                <Paper variant='outlined' sx={{width: "100%"}}>
+            <Paper variant='outlined' sx={{ width: '100%'}}>
+                <DataRow/>
+            </Paper>
 
-                    <Grid container direction="row" spacing={2}>
-                        <Grid item xs>
-                            {datasourcesReady && (
-                                <>
+            <Paper variant='outlined' sx={{ width: '100%'}}>
+                {datasourcesReady && (
+                <Box>
+                    <Grid container direction="row" spacing={2} justifyContent={"center"}>
+                        <Grid item xs={12} md={6}>
+                                <Box sx={{margin: 2}}>
                                     <ChartTimeHighlight
                                         datasources={{
-                                            gamma: gammaDatasources[0] ? gammaDatasources[0] : null,
-                                            neutron: neutronDatasources[0] ? neutronDatasources[0] : null,
-                                            threshold: thresholdDatasources[0] ? thresholdDatasources[0] : null
+                                            gamma: gammaDatasources?.[0] ?? null,
+                                            neutron: neutronDatasources?.[0] ?? null,
+                                            threshold: thresholdDatasources?.[0] ?? null
+
                                         }}
                                         setChartReady={setChartReady}
                                         modeType="detail"
                                         currentTime={currentTime}
                                     />
-                                </>
-                            )}
+                                </Box>
+
                         </Grid>
-                        <Grid item xs>
-                            {datasourcesReady && (
-                                <>
+                        <Grid item xs={12} md={6}>
+                                <Box  sx={{
+                                    margin: '10px',
+                                    p: 2,
+                                    border: "1px solid",
+                                    borderColor: "rgba(0, 0, 0, 0.12)",
+                                    borderRadius: 2,
+                                }}>
                                     <LaneVideoPlayback videoDatasources={videoDatasources} setVideoReady={setVideoReady}
                                                        dataSynchronizer={syncRef.current}
                                                        addDataSource={setActiveVideoIDX}/>
-                                </>
-                            )}
+                                </Box>
                         </Grid>
                     </Grid>
-                </Paper>
-            </Grid>
-            <Grid item container spacing={2} sx={{width: "100%"}}>
-                <Paper variant='outlined' sx={{width: "100%"}}>
-                    <MiscTable currentTime={currentTime}/>
-                </Paper>
-            </Grid>
-            <Grid item container spacing={2} sx={{width: "100%"}}>
-                <Paper variant='outlined' sx={{width: "100%"}}>
+                </Box>
+                    )}
+            </Paper>
+
+            <Paper variant='outlined' sx={{width: "100%"}}>
+                <MiscTable currentTime={currentTime}/>
+            </Paper>
+
+            <Paper variant='outlined' sx={{width: "100%"}}>
                     <AdjudicationDetail event={eventPreview.eventData}/>
-                </Paper>
-            </Grid>
+            </Paper>
+
         </Stack>
     );
 }

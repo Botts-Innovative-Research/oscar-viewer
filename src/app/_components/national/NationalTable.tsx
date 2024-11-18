@@ -22,35 +22,35 @@ export default function NationalTable(props:{
             field: 'occupancyCount',
             headerName: 'Occupancy',
             valueFormatter: (value) => {
-                return typeof value === 'number' ? value : 'N/A';
+                return typeof value === 'number' ? value : 0;
             }
         },
         {
             field: 'gammaAlarmCount',
             headerName: 'Gamma Alarms',
             valueFormatter: (value) => {
-                return typeof value === 'number' ? value : 'N/A';
+                return typeof value === 'number' ? value : 0;
             }
         },
         {
             field: 'neutronAlarmCount',
             headerName: 'Neutron Alarms',
             valueFormatter: (value) => {
-                return typeof value === 'number' ? value : 'N/A';
+                return typeof value === 'number' ? value : 0;
             }
         },
         {
             field: 'faultAlarmCount',
             headerName: 'Fault Alarms',
             valueFormatter: (value) => {
-                return typeof value === 'number' ? value : 'N/A';
+                return typeof value === 'number' ? value : 0;
             }
         },
         {
             field: 'tamperAlarmCount',
             headerName: 'Tamper Alarms',
             valueFormatter: (value) => {
-                return typeof value === 'number' ? value : 'N/A';
+                return typeof value === 'number' ? value : 0;
             }
         },
     ]
