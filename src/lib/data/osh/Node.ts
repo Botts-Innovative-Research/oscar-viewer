@@ -328,7 +328,7 @@ export class Node implements INode {
             console.log("Process Video Datastream: ", processVideoStreamOutputName);
 
             if(processVideoDs) {
-                // laneMap.get(laneName).addDatastreams([processVideoDs]);
+                laneMap.get(laneName).addDatastreams([processVideoDs]);
                 console.log("Added process video datastream to lane: ", laneName);
                 console.log(laneMap);
             }
