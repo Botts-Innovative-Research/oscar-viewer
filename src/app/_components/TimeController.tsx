@@ -2,38 +2,121 @@
 
 import { Box, IconButton, Stack, Typography } from "@mui/material";
 import Slider from '@mui/material/Slider';
-import { useState } from "react";
+import React, {useEffect, useRef, useState} from "react";
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 import PauseRoundedIcon from '@mui/icons-material/PauseRounded';
 import FastForwardRoundedIcon from '@mui/icons-material/FastForwardRounded';
+import {API} from "nouislider";
+import {IMasterTime} from "@/lib/data/Models";
+import {useAppSelector} from "@/lib/state/Hooks";
+import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
+import {setInterval} from "next/dist/compiled/@edge-runtime/primitives";
+import {FastRewindRounded} from "@mui/icons-material";
 
-export default function TimeController() {
+
+interface TimeControllerProps {
+  startTime: string;
+  endTime: string;
+}
+
+
+
+export default function TimeController(props: TimeControllerProps) {
 
   // Vars for handling slider/timestamp values
-  const [currentTime, setCurrentTime] = useState(0);
-  const [minTime, setMinTime] = useState(0);
-  const [maxTime, setMaxTime] = useState(12);
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [minTime, setMinTime] = useState<number>(0);
+  const [maxTime, setMaxTime] = useState<number>(0);
 
   // Play/pause toggle state
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Code to handle slider value change
-  const handleChange = () => {};
+  const intervalRef = useRef(0);
 
-  // Code to handle fast forward button
-  const handleFastForward = () => {};
+  // Convert the event preview start and end time to numbers
+  useEffect(() =>{
+    const start = new Date(props.startTime).getTime();
+    const end = new Date(props.endTime).getTime();
+
+    setMinTime(start);
+    setMaxTime(end);
+    setCurrentTime(start);
+
+    console.log('start', start, 'end', end)
+  }, [props.startTime, props.endTime])
+
+  // auto play
+  useEffect(() => {
+    if (isPlaying) {
+      intervalRef.current = window.setInterval(() => {
+        setCurrentTime((prev) => Math.min(prev + 1000, maxTime));
+      }, 1000);
+    } else {
+      if (intervalRef.current !== null) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (intervalRef.current !== null) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isPlaying, maxTime]);
+
+
+
+
+  // Code to handle slider value change
+  const handleChange = (event: Event, newValue: number) => {
+    setCurrentTime(newValue);
+  };
+
+  // Code to handle fast-forward button, jumps 3 seconds til max time is reached
+  const handleFastForward = () => {
+    setCurrentTime((prevState) => Math.min(prevState + 1500, maxTime))
+  };
+
+  const handleFastRewind = () => {
+    setCurrentTime((prevState) => Math.max(minTime, prevState - 1500))
+  };
+
+
+  // this function will take the time convert it to iso string and then returns it with only the time
+  const formatTime = (timestamp: number): string => {
+      const date = new Date(timestamp);
+      return date.toISOString().substr(11, 8);
+  };
+
 
   return (
-    <Box sx={{}}>
+    <Box sx={{
+      padding: 3
+    }}>
       <Stack>
         <Slider
-          defaultValue={currentTime}
-          min={minTime}
-          max={maxTime}
-          onChange={handleChange}
-          valueLabelDisplay="off"
+            aria-label="time-indicator"
+            value={currentTime} //current position of the slider
+            min={minTime} //start time of slider
+            max={maxTime} //end time of event
+            step={1000}
+            // onChange={handleChange}
+            onChangeCommitted={(event, value) => setCurrentTime(value as number)}
+            valueLabelDisplay="off"
+
         />
+
         <Stack direction={"row"} alignItems={"center"} justifyContent={"start"}>
+
+          <IconButton
+              onClick={handleFastRewind}
+          >
+            <FastRewindRounded />
+          </IconButton>
+
+
+
           <IconButton
             onClick={() => setIsPlaying((prevSelected) => !prevSelected)}
           >
@@ -49,8 +132,11 @@ export default function TimeController() {
           >
             <FastForwardRoundedIcon />   
           </IconButton>
+
+
           <Typography variant="body1">
-            {currentTime} / {maxTime}
+            {formatTime(currentTime)} / {formatTime(maxTime)}
+            {/*{new Date(currentTime).toISOString()} / { new Date(maxTime).toISOString()}*/}
           </Typography>
         </Stack>
       </Stack>

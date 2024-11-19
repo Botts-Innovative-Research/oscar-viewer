@@ -211,8 +211,14 @@ export default function EventDetailsPage() {
                                                        addDataSource={setActiveVideoIDX}/>
                                 </Box>
                         </Grid>
+
+
+
                     </Grid>
-                    <TimeController/>
+
+
+                    <TimeController startTime={eventPreview.eventData?.startTime} endTime={eventPreview.eventData?.endTime}/>
+
                 </Box>
                     )}
             </Paper>
