@@ -303,7 +303,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
                 <Grid container direction="column" spacing={2}>
                     <Grid item>
-                        <ToggleButtonGroup size="small" orientation="vertical" onChange={handleToggle} exclusive value={toggleView}>
+                        <ToggleButtonGroup size="small" orientation="horizontal" onChange={handleToggle} exclusive value={toggleView}>
                             {gammaToggleButtons}
                         </ToggleButtonGroup>
                     </Grid>

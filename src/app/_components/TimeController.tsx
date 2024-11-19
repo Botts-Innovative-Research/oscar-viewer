@@ -73,11 +73,12 @@ export default function TimeController(props: TimeControllerProps) {
     setCurrentTime(newValue);
   };
 
-  // Code to handle fast-forward button, jumps 3 seconds til max time is reached
+  // Code to handle fast-forward button, jumps 1.5 seconds til max time is reached
   const handleFastForward = () => {
     setCurrentTime((prevState) => Math.min(prevState + 1500, maxTime))
   };
 
+  // Code to handle fast-rewind button, jumps 1.5 seconds til min time is reached
   const handleFastRewind = () => {
     setCurrentTime((prevState) => Math.max(minTime, prevState - 1500))
   };
@@ -143,3 +144,83 @@ export default function TimeController(props: TimeControllerProps) {
     </Box> 
   )
 }
+
+// FROM NIC
+
+// updatePlaybackStartTime: (state, action: PayloadAction<string>) => {
+//       state.masterTime = new MasterTime({
+//         inPlaybackMode: state.masterTime.inPlaybackMode,
+//         masterTimePeriod: state.masterTime.masterTimePeriod,
+//         playbackTimePeriod: new TimePeriod({
+//           id: DEFAULT_TIME_ID,
+//           beginPosition: action.payload,
+//           endPosition: FUTURE_END_TIME,
+//           isIndeterminateEnd: false,
+//           isIndeterminateStart: false,
+//         }),
+//       });
+//
+//       const updateTimeRange = async function (
+//         dataSynchronizer: DataSynchronizer,
+//         time: IMasterTime,
+//         speed: number
+//       ) {
+//         console.log('New ST = ' + time.playbackTimePeriod.beginPosition);
+//
+//         for (const dataSource of dataSynchronizer.getDataSources()) {
+//           dataSource.setMinTime(time.playbackTimePeriod.beginPosition);
+//         }
+//
+//         await dataSynchronizer.setTimeRange(
+//           time.playbackTimePeriod.beginPosition,
+//           time.playbackTimePeriod.endPosition,
+//           speed,
+//           false
+//         );
+//
+//         console.log('After Set = ' + dataSynchronizer.getStartTimeAsIsoDate());
+//       };
+//
+//       updateTimeRange(
+//         state.dataSynchronizer,
+//         state.masterTime,
+//         state.dataSynchronizerReplaySpeed
+//       ).then();
+//     },
+//
+//     updatePlaybackSpeed: (state, action: PayloadAction<number>) => {
+//       state.dataSynchronizerReplaySpeed = action.payload;
+//
+//       const updateSpeed = async function (
+//         dataSynchronizer: DataSynchronizer,
+//         speed: number
+//       ) {
+//         await dataSynchronizer.setReplaySpeed(speed);
+//       };
+//
+//       updateSpeed(
+//         state.dataSynchronizer,
+//         state.dataSynchronizerReplaySpeed
+//       ).then();
+//     },
+//
+//     startPlayback: (state) => {
+//       state.playbackState = PlaybackState.PLAY;
+//
+//       const start = async function (dataSynchronizer: DataSynchronizer) {
+//         await dataSynchronizer.connect();
+//       };
+//
+//       start(state.dataSynchronizer).then();
+//     },
+//
+//     pausePlayback: (state) => {
+//       state.playbackState = PlaybackState.PAUSE;
+//
+//       const pause = async function (dataSynchronizer: DataSynchronizer) {
+//         await dataSynchronizer.disconnect();
+//       };
+//
+//       pause(state.dataSynchronizer).then();
+//     },
+//   },
