@@ -15,10 +15,9 @@ import {FastRewindRounded} from "@mui/icons-material";
 
 
 interface TimeControllerProps {
-  startTime: string;
-  endTime: string;
+  startTime: string; // start time of occupancy from event details
+  endTime: string; //end time of occupancy from event details
 }
-
 
 
 export default function TimeController(props: TimeControllerProps) {
@@ -42,10 +41,9 @@ export default function TimeController(props: TimeControllerProps) {
     setMaxTime(end);
     setCurrentTime(start);
 
-    console.log('start', start, 'end', end)
   }, [props.startTime, props.endTime])
 
-  // auto play
+  // auto play to move slider automatically when the play button is pressed
   useEffect(() => {
     if (isPlaying) {
       intervalRef.current = window.setInterval(() => {
@@ -58,6 +56,7 @@ export default function TimeController(props: TimeControllerProps) {
       }
     }
 
+
     return () => {
       if (intervalRef.current !== null) {
         clearInterval(intervalRef.current);
@@ -68,7 +67,7 @@ export default function TimeController(props: TimeControllerProps) {
 
 
 
-  // Code to handle slider value change
+  // Code to handle slider value change, updates time shown as slider moves
   const handleChange = (event: Event, newValue: number) => {
     setCurrentTime(newValue);
   };
@@ -84,7 +83,7 @@ export default function TimeController(props: TimeControllerProps) {
   };
 
 
-  // this function will take the time convert it to iso string and then returns it with only the time
+  // this function will take the timestamp convert it to iso string and then returns it with only the time part
   const formatTime = (timestamp: number): string => {
       const date = new Date(timestamp);
       return date.toISOString().substr(11, 8);
@@ -102,8 +101,9 @@ export default function TimeController(props: TimeControllerProps) {
             min={minTime} //start time of slider
             max={maxTime} //end time of event
             step={1000}
-            // onChange={handleChange}
-            onChangeCommitted={(event, value) => setCurrentTime(value as number)}
+            onChange={handleChange}
+            onChangeCommitted={handleChange}
+            // onChangeCommitted={(event, value) => setCurrentTime(value as number)}
             valueLabelDisplay="off"
 
         />

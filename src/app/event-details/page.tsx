@@ -178,48 +178,41 @@ export default function EventDetailsPage() {
                 <DataRow/>
             </Paper>
 
-            <Paper variant='outlined' sx={{ width: '100%'}}>
+            <Paper variant='outlined' sx={{ width: "100%" , padding: 2}}>
                 {datasourcesReady && (
-                <Box>
-                    <Grid container direction="row" spacing={2} justifyContent={"center"}>
-                        <Grid item xs={12} md={6}>
-                                <Box sx={{margin: 2}}>
-                                    <ChartTimeHighlight
-                                        datasources={{
-                                            gamma: gammaDatasources?.[0] ?? null,
-                                            neutron: neutronDatasources?.[0] ?? null,
-                                            threshold: thresholdDatasources?.[0] ?? null
+               <Box>
+                   <Grid container direction="row" spacing={2} justifyContent={"center"}>
+                       <Grid item xs={12} md={6}>
 
-                                        }}
-                                        setChartReady={setChartReady}
-                                        modeType="detail"
-                                        currentTime={currentTime}
-                                    />
-                                </Box>
+                           <ChartTimeHighlight
+                               datasources={{
+                                   gamma: gammaDatasources?.[0] ?? null,
+                                   neutron: neutronDatasources?.[0] ?? null,
+                                   threshold: thresholdDatasources?.[0] ?? null
 
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                                <Box  sx={{
-                                    margin: '10px',
-                                    p: 2,
-                                    border: "1px solid",
-                                    borderColor: "rgba(0, 0, 0, 0.12)",
-                                    borderRadius: 2,
-                                }}>
-                                    <LaneVideoPlayback videoDatasources={videoDatasources} setVideoReady={setVideoReady}
-                                                       dataSynchronizer={syncRef.current}
-                                                       addDataSource={setActiveVideoIDX}/>
-                                </Box>
-                        </Grid>
+                               }}
+                               setChartReady={setChartReady}
+                               modeType="detail"
+                               currentTime={currentTime}
+                           />
+
+
+                       </Grid>
+                       <Grid item xs={12} md={6}>
+                           <LaneVideoPlayback videoDatasources={videoDatasources}
+                                              setVideoReady={setVideoReady}
+                                              dataSynchronizer={syncRef.current}
+                                              addDataSource={setActiveVideoIDX}/>
+                       </Grid>
 
 
 
-                    </Grid>
+                   </Grid>
 
 
-                    <TimeController startTime={eventPreview.eventData?.startTime} endTime={eventPreview.eventData?.endTime}/>
+                   <TimeController startTime={eventPreview.eventData?.startTime} endTime={eventPreview.eventData?.endTime}/>
 
-                </Box>
+               </Box>
                     )}
             </Paper>
 

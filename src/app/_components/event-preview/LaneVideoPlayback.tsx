@@ -68,12 +68,12 @@ export default function LaneVideoPlayback({
             setLocalVideoReady(false);
         }
 
-        // return () => {
-        //     if (videoViewRef.current) {
-        //         videoViewRef.current.destroy();
-        //         videoViewRef.current = undefined;
-        //     }
-        // }
+        return () => {
+            if (videoViewRef.current) {
+                videoViewRef.current.destroy();
+                videoViewRef.current = undefined;
+            }
+        }
     }, [dataSources, selVideoIdx]);
 
     useEffect(() => {
@@ -124,7 +124,7 @@ export default function LaneVideoPlayback({
                     justifyContent={"center"}
                     sx={{ padding: 2, width: '100%', height: '50', border: "solid", borderWidth: '1px', borderColor: "rgba(0, 0, 0, 0.12)"}}
                 >
-                    <Grid item key={dataSources[selVideoIdx].name} id="event-preview-video"></Grid>
+                    <Grid item key={dataSources[selVideoIdx].id} id="event-preview-video"></Grid>
                 </Stack>
 
                 <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === maxPages-1}>

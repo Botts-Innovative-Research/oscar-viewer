@@ -57,7 +57,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         <ToggleButton color= 'secondary' value={"sigma"} key={"sigma"}>NSigma</ToggleButton>
     ];
 
-
+    // resets chart when event preview is closed
     const resetView = useCallback(() => {
         if (!eventPreview.isOpen) {
             setGammaChartView(null);
@@ -68,7 +68,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     }, [eventPreview]);
 
 
-
+    // determines if the charts are ready for rendering and updates
     const checkReadyToRender = useCallback(() => {
         if (chartsReady) {
             setIsReadyToRender(true);
@@ -78,6 +78,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     }, [chartsReady]);
 
 
+    // generates element id for charts based on event status (gamma, neutron, both, or none)
     function updateChartElIds(eventData: EventTableData): string[] {
         let ids: string[] = [];
         let gammaId: string;
@@ -276,6 +277,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     }, [isReadyToRender]);
 
 
+
     function createCurveLayersAndReturn() {
         let tCurve = createThresholdViewCurve(props.datasources.threshold);
         let gCurve = createGammaViewCurve(props.datasources.gamma);
@@ -302,8 +304,21 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             <Box display='flex' alignItems="center">
 
                 <Grid container direction="column" spacing={2}>
-                    <Grid item>
-                        <ToggleButtonGroup size="small" orientation="horizontal" onChange={handleToggle} exclusive value={toggleView}>
+                    <Grid item sx={{ display: "flex", justifyContent: "center", padding: 1 }}>
+                        <ToggleButtonGroup
+                            size="small"
+                            orientation="horizontal"
+                            onChange={handleToggle}
+                            exclusive
+                            value={toggleView}
+                            sx={{
+                                borderRadius: 1,
+                                boxShadow: 1,
+                                '& .MuiToggleButton-root': {
+                                    margin: 0.5,
+                                    padding: "5px",
+                                },
+                            }}>
                             {gammaToggleButtons}
                         </ToggleButtonGroup>
                     </Grid>
@@ -319,10 +334,22 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     } else{
         return (
             <Box display='flex' alignItems="center">
-
-                <Grid container direction="column" spacing={2}>
-                    <Grid item>
-                        <ToggleButtonGroup size="small" orientation="vertical" onChange={handleToggle} exclusive value={toggleView}>
+                <Grid container direction="column">
+                    <Grid item sx={{ display: "flex", justifyContent: "center", padding: 1 }}>
+                        <ToggleButtonGroup
+                            size="small"
+                            orientation="horizontal"
+                            onChange={handleToggle}
+                            exclusive
+                            value={toggleView}
+                            sx={{
+                                borderRadius: 1,
+                                boxShadow: 1,
+                                '& .MuiToggleButton-root': {
+                                    margin: 0.5,
+                                    padding: "5px",
+                                },
+                            }}>
                             {gammaToggleButtons}
                         </ToggleButtonGroup>
                     </Grid>
