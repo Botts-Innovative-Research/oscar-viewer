@@ -6,11 +6,14 @@
 import {useAppDispatch} from "@/lib/state/Hooks";
 import React, {useContext, useEffect, useRef, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import {Grid, Typography} from "@mui/material";
+import {Box, Grid, IconButton, Stack, Typography} from "@mui/material";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import VideoView from "osh-js/source/core/ui/view/video/VideoView";
 import VideoDataLayer from "osh-js/source/core/ui/layer/VideoDataLayer";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
+import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
+import VideoComponent from "@/app/_components/video/VideoComponent";
+import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
 export class LaneVideoPlaybackProps {
     videoDatasources: typeof SweApi[];
@@ -32,12 +35,19 @@ export default function LaneVideoPlayback({
     const [selVideoIdx, setSelVidIdx] = useState<number>(0);
     const [localVideoReady, setLocalVideoReady] = useState<boolean>(false);
 
+    const [maxPages, setMaxPages] = useState(0)
+
     useEffect(() => {
         setDatasources(videoDatasources);
+        setMaxPages(videoDatasources.length)
     }, [videoDatasources]);
+
 
     useEffect(() => {
         if (dataSources[selVideoIdx]) {
+
+            console.log('current source', dataSources[selVideoIdx])
+            console.log('current index', selVideoIdx)
 
             addDataSource(selVideoIdx);
 
@@ -58,12 +68,12 @@ export default function LaneVideoPlayback({
             setLocalVideoReady(false);
         }
 
-        return () => {
-            if (videoViewRef.current) {
-                videoViewRef.current.destroy();
-                videoViewRef.current = undefined;
-            }
-        }
+        // return () => {
+        //     if (videoViewRef.current) {
+        //         videoViewRef.current.destroy();
+        //         videoViewRef.current = undefined;
+        //     }
+        // }
     }, [dataSources, selVideoIdx]);
 
     useEffect(() => {
@@ -72,7 +82,58 @@ export default function LaneVideoPlayback({
     }, [localVideoReady]);
 
 
+
+
+
+    const handleNextPage = () =>{
+
+        setSelVidIdx((prevPage)=> {
+            let nextPage = prevPage + 1
+
+            if(dataSources && dataSources[0] && nextPage <= maxPages - 1){
+                return nextPage;
+            }else{
+                return prevPage;
+            }
+        })
+    }
+
+    const handlePrevPage = () =>{
+        setSelVidIdx((prevPage) => {
+            let currpage = prevPage - 1;
+            return currpage;
+        })
+    }
+
+
     return (
-        <Grid item id="event-preview-video"></Grid>
+        <>
+
+        {dataSources != null && dataSources.length > 0 && (
+
+            <Box sx={{display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center"}}>
+                <IconButton onClick={handlePrevPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === 0}>
+                    <NavigateBeforeIcon/>
+                </IconButton>
+
+                <Stack
+                    margin={0}
+                    spacing={2}
+                    direction="row"
+                    alignContent="center"
+                    justifyContent={"center"}
+                    sx={{ padding: 2, width: '100%', height: '50', border: "solid", borderWidth: '1px', borderColor: "rgba(0, 0, 0, 0.12)"}}
+                >
+                    <Grid item key={dataSources[selVideoIdx].name} id="event-preview-video"></Grid>
+                </Stack>
+
+                <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === maxPages-1}>
+                    <NavigateNextIcon/>
+                </IconButton>
+            </Box>
+
+            )}
+        </>
+
     )
 }
