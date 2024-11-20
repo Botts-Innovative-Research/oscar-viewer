@@ -57,7 +57,7 @@ export default function EventDetailsPage() {
         setCurrentTime(eventPreview.eventData?.startTime);
     }, [eventPreview]);
 
-    useMemo(() => {
+    useEffect(() => {
         // create dsMapRef of eventPreview
         if (eventPreview && dsMapRef.current) {
             dsMapRef.current = laneMapRef.current.get(eventPreview.eventData?.laneId)?.getDatastreamsForEventDetail(eventPreview.eventData?.startTime, eventPreview.eventData?.endTime);
@@ -160,6 +160,21 @@ export default function EventDetailsPage() {
     }, [syncRef.current]);
 
 
+    // function to start the time controller by connecting to time sync
+    const start = async () => {
+        if (syncRef.current && !syncRef.current.isConnected()) {
+            await syncRef.current.connect();
+            console.log("Playback started.");
+        }
+    };
+
+    // function to pause the time controller by disconnecting from the time sync
+    const pause = async () => {
+        if (syncRef.current && syncRef.current.isConnected()) {
+            await syncRef.current.disconnect();
+            console.log("Playback paused.");
+        }
+    };
 
     return (
         <Stack spacing={4} direction={"column"} sx={{width: "100%"}}>
@@ -206,7 +221,7 @@ export default function EventDetailsPage() {
 
 
                    </Grid>
-                   <TimeController syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
+                   <TimeController pause={pause} start={start} syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
 
                </Box>
                     )}
