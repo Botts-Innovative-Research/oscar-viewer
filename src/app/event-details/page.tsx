@@ -162,7 +162,7 @@ export default function EventDetailsPage() {
 
     // function to start the time controller by connecting to time sync
     const start = async () => {
-        if (syncRef.current && !syncRef.current.isConnected()) {
+        if (syncRef.current) {
             await syncRef.current.connect();
             console.log("Playback started.");
         }
