@@ -2,92 +2,112 @@
 
 import { Box, IconButton, Stack, Typography } from "@mui/material";
 import Slider from '@mui/material/Slider';
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 import PauseRoundedIcon from '@mui/icons-material/PauseRounded';
 import FastForwardRoundedIcon from '@mui/icons-material/FastForwardRounded';
 import {API} from "nouislider";
 import {IMasterTime} from "@/lib/data/Models";
-import {useAppSelector} from "@/lib/state/Hooks";
+import {useAppDispatch, useAppSelector} from "@/lib/state/Hooks";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {setInterval} from "next/dist/compiled/@edge-runtime/primitives";
 import {FastRewindRounded} from "@mui/icons-material";
+import {EventType} from "osh-js/source/core/event/EventType";
+import {PlaybackState} from "@/lib/data/Constants";
 
 
 interface TimeControllerProps {
-  startTime: string; // start time of occupancy from event details
-  endTime: string; //end time of occupancy from event details
+  timeSync: typeof DataSynchronizer;
+  startTime: string;
+  endTime: string;
+  syncTime: any
 }
+
 
 
 export default function TimeController(props: TimeControllerProps) {
 
   // Vars for handling slider/timestamp values
-  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [currentTime, setCurrentTime] = useState<number>(props.syncTime);
   const [minTime, setMinTime] = useState<number>(0);
   const [maxTime, setMaxTime] = useState<number>(0);
+  const [ds, setDs] = useState([]);
+  const [replay, setReplay] = useState(null);
 
   // Play/pause toggle state
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
 
-  const intervalRef = useRef(0);
+  // creates a data synchronizer based off of use states
+  const timesync = useMemo(() => {
+    return new DataSynchronizer({
+      dataSources: ds,
+      replaySpeed: replay,
+      startTime: minTime,
+      endTime: maxTime,
+    });
+  }, [ds, replay, minTime, maxTime])
 
-  // Convert the event preview start and end time to numbers
-  useEffect(() =>{
-    const start = new Date(props.startTime).getTime();
-    const end = new Date(props.endTime).getTime();
-
-    setMinTime(start);
-    setMaxTime(end);
-    setCurrentTime(start);
-
-  }, [props.startTime, props.endTime])
-
-  // auto play to move slider automatically when the play button is pressed
+  //
   useEffect(() => {
-    if (isPlaying) {
-      intervalRef.current = window.setInterval(() => {
-        setCurrentTime((prev) => Math.min(prev + 1000, maxTime));
-      }, 1000);
-    } else {
-      if (intervalRef.current !== null) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+    setDs(props.timeSync?.getDataSources());
+    setReplay(props.timeSync?.getReplaySpeed());
+    setMinTime(new Date(props.startTime).getTime());
+    setMaxTime(new Date(props.endTime).getTime());
+
+  }, [props.startTime, props.endTime, props.timeSync]);
+
+
+  useEffect(() => {
+    if(!isPlaying){
+      const timeElement = document.getElementById('Slider');
+      if(timeElement !== null) {
+        timeElement.setAttribute('disable', 'true')
+      }
+    }else{
+      setCurrentTime(props?.syncTime)
+      const timeElement = document.getElementById('Slider');
+      if(timeElement !== null) {
+        timeElement.removeAttribute('disable')
       }
     }
 
-
-    return () => {
-      if (intervalRef.current !== null) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [isPlaying, maxTime]);
+  }, [isPlaying]);
 
 
 
+  //when the user toggles the time controller this is the code to change the time sync
+  const handleChange = async (event: Event, newValue: number) => {
+    // update time sync datasources start time
+    for (const dataSource of timesync.getDataSources()) {
+      dataSource.setMinTime(newValue);
+    }
 
-  // Code to handle slider value change, updates time shown as slider moves
-  const handleChange = (event: Event, newValue: number) => {
+    // update the time sync start time
+    await timesync.setTimeRange(newValue, maxTime, 1.0, true);
+
     setCurrentTime(newValue);
   };
 
-  // Code to handle fast-forward button, jumps 1.5 seconds til max time is reached
-  const handleFastForward = () => {
-    setCurrentTime((prevState) => Math.min(prevState + 1500, maxTime))
-  };
-
-  // Code to handle fast-rewind button, jumps 1.5 seconds til min time is reached
-  const handleFastRewind = () => {
-    setCurrentTime((prevState) => Math.max(minTime, prevState - 1500))
-  };
 
 
   // this function will take the timestamp convert it to iso string and then returns it with only the time part
   const formatTime = (timestamp: number): string => {
-      const date = new Date(timestamp);
-      return date.toISOString().substr(11, 8);
+    const date = new Date(timestamp);
+    return date.toISOString().substr(11, 8);
   };
+
+  // function to start the time controller by connecting to time sync
+  const start = async function () {
+    console.log('play')
+    await timesync.connect();
+  }
+
+  // function to pause the time controller by disconnecting from the time sync
+  const pause = async function () {
+    console.log('pause')
+    await timesync.disconnect()
+  }
+
 
 
   return (
@@ -97,29 +117,27 @@ export default function TimeController(props: TimeControllerProps) {
       <Stack>
         <Slider
             aria-label="time-indicator"
-            value={currentTime} //current position of the slider
+            value={props.syncTime} //current position of the slider
             min={minTime} //start time of slider
             max={maxTime} //end time of event
-            step={1000}
             onChange={handleChange}
-            onChangeCommitted={handleChange}
-            // onChangeCommitted={(event, value) => setCurrentTime(value as number)}
             valueLabelDisplay="off"
-
         />
 
         <Stack direction={"row"} alignItems={"center"} justifyContent={"start"}>
 
-          <IconButton
-              onClick={handleFastRewind}
-          >
-            <FastRewindRounded />
-          </IconButton>
-
-
 
           <IconButton
-            onClick={() => setIsPlaying((prevSelected) => !prevSelected)}
+            onClick={() =>{
+              if(isPlaying){
+                pause();
+              }else{
+                start();
+              }
+
+                setIsPlaying((prevSelected) => !prevSelected)
+              }
+            }
           >
             {isPlaying ? (
               <PauseRoundedIcon />
@@ -128,16 +146,9 @@ export default function TimeController(props: TimeControllerProps) {
               <PlayArrowRoundedIcon />
             )}          
           </IconButton>
-          <IconButton
-            onClick={handleFastForward}
-          >
-            <FastForwardRoundedIcon />   
-          </IconButton>
-
 
           <Typography variant="body1">
-            {formatTime(currentTime)} / {formatTime(maxTime)}
-            {/*{new Date(currentTime).toISOString()} / { new Date(maxTime).toISOString()}*/}
+            {formatTime(props.syncTime)} / {formatTime(maxTime)}
           </Typography>
         </Stack>
       </Stack>
@@ -145,82 +156,3 @@ export default function TimeController(props: TimeControllerProps) {
   )
 }
 
-// FROM NIC
-
-// updatePlaybackStartTime: (state, action: PayloadAction<string>) => {
-//       state.masterTime = new MasterTime({
-//         inPlaybackMode: state.masterTime.inPlaybackMode,
-//         masterTimePeriod: state.masterTime.masterTimePeriod,
-//         playbackTimePeriod: new TimePeriod({
-//           id: DEFAULT_TIME_ID,
-//           beginPosition: action.payload,
-//           endPosition: FUTURE_END_TIME,
-//           isIndeterminateEnd: false,
-//           isIndeterminateStart: false,
-//         }),
-//       });
-//
-//       const updateTimeRange = async function (
-//         dataSynchronizer: DataSynchronizer,
-//         time: IMasterTime,
-//         speed: number
-//       ) {
-//         console.log('New ST = ' + time.playbackTimePeriod.beginPosition);
-//
-//         for (const dataSource of dataSynchronizer.getDataSources()) {
-//           dataSource.setMinTime(time.playbackTimePeriod.beginPosition);
-//         }
-//
-//         await dataSynchronizer.setTimeRange(
-//           time.playbackTimePeriod.beginPosition,
-//           time.playbackTimePeriod.endPosition,
-//           speed,
-//           false
-//         );
-//
-//         console.log('After Set = ' + dataSynchronizer.getStartTimeAsIsoDate());
-//       };
-//
-//       updateTimeRange(
-//         state.dataSynchronizer,
-//         state.masterTime,
-//         state.dataSynchronizerReplaySpeed
-//       ).then();
-//     },
-//
-//     updatePlaybackSpeed: (state, action: PayloadAction<number>) => {
-//       state.dataSynchronizerReplaySpeed = action.payload;
-//
-//       const updateSpeed = async function (
-//         dataSynchronizer: DataSynchronizer,
-//         speed: number
-//       ) {
-//         await dataSynchronizer.setReplaySpeed(speed);
-//       };
-//
-//       updateSpeed(
-//         state.dataSynchronizer,
-//         state.dataSynchronizerReplaySpeed
-//       ).then();
-//     },
-//
-//     startPlayback: (state) => {
-//       state.playbackState = PlaybackState.PLAY;
-//
-//       const start = async function (dataSynchronizer: DataSynchronizer) {
-//         await dataSynchronizer.connect();
-//       };
-//
-//       start(state.dataSynchronizer).then();
-//     },
-//
-//     pausePlayback: (state) => {
-//       state.playbackState = PlaybackState.PAUSE;
-//
-//       const pause = async function (dataSynchronizer: DataSynchronizer) {
-//         await dataSynchronizer.disconnect();
-//       };
-//
-//       pause(state.dataSynchronizer).then();
-//     },
-//   },

@@ -17,6 +17,7 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
 import AdjudicationDetail from "@/app/_components/adjudication/AdjudicationDetail";
 import TimeController from "@/app/_components/TimeController";
+import {EventType} from "osh-js/source/core/event/EventType";
 
 /**
  * Expects the following search params:
@@ -49,6 +50,8 @@ export default function EventDetailsPage() {
     const [thresholdDatasources, setThresholdDS] = useState<typeof SweApi[]>([]);
     const [chartReady, setChartReady] = useState<boolean>(false);
 
+
+    const [syncTime, setSyncTime]= useState(0);
 
     useEffect(() => {
         setCurrentTime(eventPreview.eventData?.startTime);
@@ -92,8 +95,7 @@ export default function EventDetailsPage() {
                 dataSources: videoDatasources,
                 replaySpeed: 1.0,
                 startTime: eventPreview.eventData?.startTime,
-                // endTime: eventPreview.eventData.endTime,
-                endTime: "now",
+                endTime: eventPreview.eventData.endTime,
             });
             syncRef.current.onTime
             setDataSyncCreated(true);
@@ -108,8 +110,6 @@ export default function EventDetailsPage() {
     useEffect(() => {
         createDataSync();
     }, [gammaDatasources, neutronDatasources, thresholdDatasources, occDatasources, syncRef, dataSyncCreated, datasourcesReady]);
-
-
 
     useEffect(() => {
         if (chartReady && videoReady) {
@@ -126,42 +126,40 @@ export default function EventDetailsPage() {
             occDatasources.forEach(ds => {
                 ds.connect();
             });
+
+
             syncRef.current.connect().then(() => {
                 console.log("DataSync Should Be Connected", syncRef.current);
             });
             if (syncRef.current.isConnected()) {
+                // if is true then pause else play
                 console.log("DataSync Connected!!!");
             } else {
                 console.log("DataSync Not Connected... :(");
             }
+
+
         } else {
             console.log("Chart Not Ready, cannot start DataSynchronizer...");
         }
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
 
-    useEffect(() => {
-        const interval = setInterval(async () => {
 
-            let currTime = await syncRef.current?.getCurrentTime();
-            if (currentTime !== undefined) {
-                setCurrentTime(currTime);
-            }
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, []);
 
     useEffect(() => {
-        const interval = setInterval(async () => {
+        if(syncRef.current){
+            syncRef.current.subscribe((message: { type: any; timestamp: any }) => {
+                    if (message.type === EventType.MASTER_TIME) {
+                        setSyncTime(message.timestamp);
+                    }
+                }, [EventType.MASTER_TIME]
+            );
+        }
 
-            let currTime = await syncRef.current?.getCurrentTime();
-            if (currentTime !== undefined) {
-                setCurrentTime(currTime);
-            }
-        }, 1000);
 
-        return () => clearInterval(interval);
-    }, []);
+    }, [syncRef.current]);
+
+
 
     return (
         <Stack spacing={4} direction={"column"} sx={{width: "100%"}}>
@@ -193,9 +191,9 @@ export default function EventDetailsPage() {
                                }}
                                setChartReady={setChartReady}
                                modeType="detail"
-                               currentTime={currentTime}
-                           />
+                               currentTime={syncTime}
 
+                           />
 
                        </Grid>
                        <Grid item xs={12} md={6}>
@@ -208,9 +206,7 @@ export default function EventDetailsPage() {
 
 
                    </Grid>
-
-
-                   <TimeController startTime={eventPreview.eventData?.startTime} endTime={eventPreview.eventData?.endTime}/>
+                   <TimeController syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
 
                </Box>
                     )}

@@ -46,9 +46,6 @@ export default function LaneVideoPlayback({
     useEffect(() => {
         if (dataSources[selVideoIdx]) {
 
-            console.log('current source', dataSources[selVideoIdx])
-            console.log('current index', selVideoIdx)
-
             addDataSource(selVideoIdx);
 
             videoViewRef.current = new VideoView({

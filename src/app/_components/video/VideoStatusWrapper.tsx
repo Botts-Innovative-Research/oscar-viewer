@@ -40,8 +40,6 @@ export default function VideoStatusWrapper(props: PropsWithChildren<VideoStatusW
 
                         <Typography variant="body2" style={{fontSize: 12, textWrap: 'nowrap'}}>{props.laneName.length <= 11 ? props.laneName : (props.laneName.substr(0, 11)) }</Typography>
 
-
-                        {/*<Typography variant="body2" style={{fontSize: 12, textWrap: 'nowrap'}}>{props.laneName}</Typography>*/}
                     </Link>
                 </Tooltip>
 
