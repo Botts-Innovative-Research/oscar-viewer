@@ -20,7 +20,9 @@ interface TimeControllerProps {
   timeSync: typeof DataSynchronizer;
   startTime: string;
   endTime: string;
-  syncTime: any
+  syncTime: any;
+  pause: Function;
+  start: Function;
 }
 
 
@@ -58,21 +60,22 @@ export default function TimeController(props: TimeControllerProps) {
 
 
   useEffect(() => {
-    if(!isPlaying){
-      const timeElement = document.getElementById('Slider');
-      if(timeElement !== null) {
-        timeElement.setAttribute('disable', 'true')
-      }
-    }else{
-      setCurrentTime(props?.syncTime)
-      const timeElement = document.getElementById('Slider');
-      if(timeElement !== null) {
-        timeElement.removeAttribute('disable')
+    const timeElement = document.getElementById('Slider');
+    if (timeElement) {
+      if (!isPlaying) {
+        timeElement.setAttribute('disabled', 'true');
+      } else {
+        timeElement.removeAttribute('disabled');
       }
     }
+    setCurrentTime(props.syncTime);
 
   }, [isPlaying]);
 
+  useEffect(() => {
+    console.log('syncTime updated:', props.syncTime);
+    setCurrentTime(props.syncTime);
+  }, [props.syncTime]);
 
 
   //when the user toggles the time controller this is the code to change the time sync
@@ -96,17 +99,7 @@ export default function TimeController(props: TimeControllerProps) {
     return date.toISOString().substr(11, 8);
   };
 
-  // function to start the time controller by connecting to time sync
-  const start = async function () {
-    console.log('play')
-    await timesync.connect();
-  }
 
-  // function to pause the time controller by disconnecting from the time sync
-  const pause = async function () {
-    console.log('pause')
-    await timesync.disconnect()
-  }
 
 
 
@@ -117,7 +110,7 @@ export default function TimeController(props: TimeControllerProps) {
       <Stack>
         <Slider
             aria-label="time-indicator"
-            value={props.syncTime} //current position of the slider
+            value={currentTime} //current position of the slider
             min={minTime} //start time of slider
             max={maxTime} //end time of event
             onChange={handleChange}
@@ -130,12 +123,12 @@ export default function TimeController(props: TimeControllerProps) {
           <IconButton
             onClick={() =>{
               if(isPlaying){
-                pause();
+                props.pause();
               }else{
-                start();
+                props.start();
               }
 
-                setIsPlaying((prevSelected) => !prevSelected)
+                setIsPlaying(!isPlaying)
               }
             }
           >
