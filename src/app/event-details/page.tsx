@@ -16,6 +16,8 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
 import AdjudicationDetail from "@/app/_components/adjudication/AdjudicationDetail";
+import TimeController from "@/app/_components/TimeController";
+import {EventType} from "osh-js/source/core/event/EventType";
 
 /**
  * Expects the following search params:
@@ -48,6 +50,8 @@ export default function EventDetailsPage() {
     const [thresholdDatasources, setThresholdDS] = useState<typeof SweApi[]>([]);
     const [chartReady, setChartReady] = useState<boolean>(false);
 
+
+    const [syncTime, setSyncTime]= useState(0);
 
     useEffect(() => {
         setCurrentTime(eventPreview.eventData?.startTime);
@@ -91,8 +95,7 @@ export default function EventDetailsPage() {
                 dataSources: videoDatasources,
                 replaySpeed: 1.0,
                 startTime: eventPreview.eventData?.startTime,
-                // endTime: eventPreview.eventData.endTime,
-                endTime: "now",
+                endTime: eventPreview.eventData.endTime,
             });
             syncRef.current.onTime
             setDataSyncCreated(true);
@@ -107,8 +110,6 @@ export default function EventDetailsPage() {
     useEffect(() => {
         createDataSync();
     }, [gammaDatasources, neutronDatasources, thresholdDatasources, occDatasources, syncRef, dataSyncCreated, datasourcesReady]);
-
-
 
     useEffect(() => {
         if (chartReady && videoReady) {
@@ -125,42 +126,40 @@ export default function EventDetailsPage() {
             occDatasources.forEach(ds => {
                 ds.connect();
             });
+
+
             syncRef.current.connect().then(() => {
                 console.log("DataSync Should Be Connected", syncRef.current);
             });
             if (syncRef.current.isConnected()) {
+                // if is true then pause else play
                 console.log("DataSync Connected!!!");
             } else {
                 console.log("DataSync Not Connected... :(");
             }
+
+
         } else {
             console.log("Chart Not Ready, cannot start DataSynchronizer...");
         }
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
 
-    useEffect(() => {
-        const interval = setInterval(async () => {
 
-            let currTime = await syncRef.current?.getCurrentTime();
-            if (currentTime !== undefined) {
-                setCurrentTime(currTime);
-            }
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, []);
 
     useEffect(() => {
-        const interval = setInterval(async () => {
+        if(syncRef.current){
+            syncRef.current.subscribe((message: { type: any; timestamp: any }) => {
+                    if (message.type === EventType.MASTER_TIME) {
+                        setSyncTime(message.timestamp);
+                    }
+                }, [EventType.MASTER_TIME]
+            );
+        }
 
-            let currTime = await syncRef.current?.getCurrentTime();
-            if (currentTime !== undefined) {
-                setCurrentTime(currTime);
-            }
-        }, 1000);
 
-        return () => clearInterval(interval);
-    }, []);
+    }, [syncRef.current]);
+
+
 
     return (
         <Stack spacing={4} direction={"column"} sx={{width: "100%"}}>
@@ -177,41 +176,39 @@ export default function EventDetailsPage() {
                 <DataRow/>
             </Paper>
 
-            <Paper variant='outlined' sx={{ width: '100%'}}>
+            <Paper variant='outlined' sx={{ width: "100%" , padding: 2}}>
                 {datasourcesReady && (
-                <Box>
-                    <Grid container direction="row" spacing={2} justifyContent={"center"}>
-                        <Grid item xs={12} md={6}>
-                                <Box sx={{margin: 2}}>
-                                    <ChartTimeHighlight
-                                        datasources={{
-                                            gamma: gammaDatasources?.[0] ?? null,
-                                            neutron: neutronDatasources?.[0] ?? null,
-                                            threshold: thresholdDatasources?.[0] ?? null
+               <Box>
+                   <Grid container direction="row" spacing={2} justifyContent={"center"}>
+                       <Grid item xs={12} md={6}>
 
-                                        }}
-                                        setChartReady={setChartReady}
-                                        modeType="detail"
-                                        currentTime={currentTime}
-                                    />
-                                </Box>
+                           <ChartTimeHighlight
+                               datasources={{
+                                   gamma: gammaDatasources?.[0] ?? null,
+                                   neutron: neutronDatasources?.[0] ?? null,
+                                   threshold: thresholdDatasources?.[0] ?? null
 
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                                <Box  sx={{
-                                    margin: '10px',
-                                    p: 2,
-                                    border: "1px solid",
-                                    borderColor: "rgba(0, 0, 0, 0.12)",
-                                    borderRadius: 2,
-                                }}>
-                                    <LaneVideoPlayback videoDatasources={videoDatasources} setVideoReady={setVideoReady}
-                                                       dataSynchronizer={syncRef.current}
-                                                       addDataSource={setActiveVideoIDX}/>
-                                </Box>
-                        </Grid>
-                    </Grid>
-                </Box>
+                               }}
+                               setChartReady={setChartReady}
+                               modeType="detail"
+                               currentTime={syncTime}
+
+                           />
+
+                       </Grid>
+                       <Grid item xs={12} md={6}>
+                           <LaneVideoPlayback videoDatasources={videoDatasources}
+                                              setVideoReady={setVideoReady}
+                                              dataSynchronizer={syncRef.current}
+                                              addDataSource={setActiveVideoIDX}/>
+                       </Grid>
+
+
+
+                   </Grid>
+                   <TimeController syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
+
+               </Box>
                     )}
             </Paper>
 

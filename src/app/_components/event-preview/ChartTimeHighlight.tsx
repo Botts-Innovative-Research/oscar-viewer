@@ -42,7 +42,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     const neutronChartViewRef = useRef<HTMLDivElement | null>(null);
 
     const gammaChartBaseId = "chart-view-event-detail-gamma-";
-
     const neutronChartBaseId = "chart-view-event-detail-neutron-";
 
     const [gammaChartView, setGammaChartView] = useState<any>();
@@ -205,16 +204,14 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
     useEffect(() => {
         let currTime = props.currentTime;
-        // console.log('curr time', currTime)
-        if (currTime?.data !== undefined) {
-            let theTime = new Date(currTime.data);
-            console.log("Current Time: ", currTime, theTime);
+        console.log('curr time', currTime)
+        if (currTime) {
             let chartAnnotation = {
                 annotations: {
                     verticalLine: {
                         type: 'line',
-                        xMin: theTime,
-                        xMax: theTime,
+                        xMin: currTime,
+                        xMax: currTime,
                         borderColor: 'yellow',
                         borderWidth: 4,
                         label: {

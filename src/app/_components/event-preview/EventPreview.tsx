@@ -40,6 +40,7 @@ import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
+import {EventType} from "osh-js/source/core/event/EventType";
 
 
 export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTableData | null }) {
@@ -63,6 +64,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     const [thresholdDatasources, setThresholdDS] = useState<typeof SweApi[]>([]);
     const [chartReady, setChartReady] = useState<boolean>(false);
     const [currentTime, setCurrentTime] = useState<number>(0);
+    const [syncTime, setSyncTime] = useState<number>(null);
     const gammaChartRef = useRef<any>();
     const neutronChartRef = useRef<any>();
 
@@ -281,31 +283,30 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
             } else {
                 console.log("DataSync Not Connected... :(");
             }
+
+
         } else {
             // console.log("Chart Not Ready, cannot start DataSynchronizer...");
         }
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
 
-    useEffect(() => {
-        const interval = setInterval(async () => {
-
-            let currTime = await syncRef.current?.getCurrentTime();
-            if (currentTime !== undefined) {
-                setCurrentTime(currTime);
-            }
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, []);
 
     useEffect(() => {
-        console.log("Event Preview Changed", eventPreview);
-    }, [eventPreview]);
 
-    const handleCloseSnack = (
-        event: React.SyntheticEvent | Event,
-        reason?: SnackbarCloseReason,
-    ) => {
+        if(syncRef.current){
+            syncRef.current.subscribe((message: { type: any; timestamp: any }) => {
+                    if (message.type === EventType.MASTER_TIME) {
+                        setSyncTime(message.timestamp);
+                    }
+                }, [EventType.MASTER_TIME]
+            );
+        }
+
+
+    }, [syncRef.current]);
+
+
+    const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
         if (reason === 'clickaway') {
             return;
         }
@@ -339,7 +340,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                         }}
                         setChartReady={setChartReady}
                         modeType="preview"
-                        currentTime={currentTime}
+                        currentTime={syncTime}
                     />
 
                     <LaneVideoPlayback
