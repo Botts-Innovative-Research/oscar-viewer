@@ -2,7 +2,7 @@
 
 import { Box, IconButton, Stack, Typography } from "@mui/material";
 import Slider from '@mui/material/Slider';
-import React, {useEffect, useMemo, useRef, useState} from "react";
+import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 import PauseRoundedIcon from '@mui/icons-material/PauseRounded';
 import FastForwardRoundedIcon from '@mui/icons-material/FastForwardRounded';
@@ -23,6 +23,7 @@ interface TimeControllerProps {
   syncTime: any;
   pause: Function;
   start: Function;
+  handleChange: Function;
 }
 
 
@@ -30,7 +31,7 @@ interface TimeControllerProps {
 export default function TimeController(props: TimeControllerProps) {
 
   // Vars for handling slider/timestamp values
-  const [currentTime, setCurrentTime] = useState<number>(props.syncTime);
+  const [currentTime, setCurrentTime] = useState(props.syncTime);
   const [minTime, setMinTime] = useState<number>(0);
   const [maxTime, setMaxTime] = useState<number>(0);
   const [ds, setDs] = useState([]);
@@ -78,25 +79,13 @@ export default function TimeController(props: TimeControllerProps) {
   }, [props.syncTime]);
 
 
-  //when the user toggles the time controller this is the code to change the time sync
-  const handleChange = async (event: Event, newValue: number) => {
-    // update time sync datasources start time
-    for (const dataSource of timesync.getDataSources()) {
-      dataSource.setMinTime(newValue);
-    }
-
-    // update the time sync start time
-    await timesync.setTimeRange(newValue, maxTime, 1.0, true);
-
-    setCurrentTime(newValue);
-  };
 
 
 
   // this function will take the timestamp convert it to iso string and then returns it with only the time part
   const formatTime = (timestamp: number): string => {
     const date = new Date(timestamp);
-    return date.toLocaleString().substr(11, 9);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
 
@@ -111,6 +100,7 @@ export default function TimeController(props: TimeControllerProps) {
 
 
 
+
   return (
     <Box sx={{
       padding: 3
@@ -121,7 +111,7 @@ export default function TimeController(props: TimeControllerProps) {
             value={currentTime} //current position of the slider
             min={minTime} //start time of slider
             max={maxTime} //end time of event
-            onChange={handleChange}
+            onChange={props.handleChange}
             valueLabelDisplay="off"
         />
 
@@ -149,7 +139,7 @@ export default function TimeController(props: TimeControllerProps) {
           </IconButton>
 
           <Typography variant="body1">
-            {formatTime(props.syncTime)} / {formatTime(maxTime)}
+            {formatTime(currentTime)} / {formatTime(maxTime)}
           </Typography>
         </Stack>
       </Stack>
