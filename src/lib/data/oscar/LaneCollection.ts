@@ -289,7 +289,28 @@ export class LaneMapEntry {
             // if (ds.properties.name.includes('Video')) {
             if(isVideoDatastream(ds)){
                 let videoArray = dsMap.get('video')!;
-                videoArray.push(datasourceReplay);
+                const validInterval = ds.properties.resultTime;
+
+                // Ensure startTime and endTime are within the datastream's valid data time
+                if(validInterval?.length === 2) {
+                    let [validStart, validEnd] = validInterval.map(
+                        (time: string | number | Date) => new Date(time));
+
+                    // Account for ms
+                    validStart.setSeconds(validStart.getSeconds() - 1);
+                    validEnd.setSeconds(validEnd.getSeconds() + 1);
+
+                    const eventStart = new Date(startTime);
+                    const eventEnd = new Date(endTime);
+                    
+                    if(eventStart >= validStart && eventEnd <= validEnd) {
+                        videoArray.push(datasourceReplay);
+                    } else {
+                        console.info("Data within interval not found for datasource ", ds)
+                    }
+                } else {
+                    console.info("No valid time found for datasource ", ds.properties.id);
+                }
             }
             // if (ds.properties.name.includes('Driver - Gamma Threshold')) {
             if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/threshold")){
