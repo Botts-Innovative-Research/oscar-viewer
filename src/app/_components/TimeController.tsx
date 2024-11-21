@@ -96,10 +96,18 @@ export default function TimeController(props: TimeControllerProps) {
   // this function will take the timestamp convert it to iso string and then returns it with only the time part
   const formatTime = (timestamp: number): string => {
     const date = new Date(timestamp);
-    return date.toISOString().substr(11, 8);
+    return date.toLocaleString().substr(11, 9);
   };
 
 
+  // function to change replay speed the time controller
+  const updateReplaySpeed = async () => {
+    let speed = 2.0;
+    if (props.timeSync && props.timeSync.isConnected()) {
+      await props.timeSync.setReplaySpeed(speed);
+      console.log("Replay speed updated.");
+    }
+  };
 
 
 

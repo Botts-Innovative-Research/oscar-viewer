@@ -41,6 +41,7 @@ import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 import {EventType} from "osh-js/source/core/event/EventType";
+import TimeController from "@/app/_components/TimeController";
 
 
 export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTableData | null }) {
@@ -315,6 +316,24 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     };
 
 
+    // function to start the time controller by connecting to time sync
+    const start = async () => {
+        if (syncRef.current) {
+            await syncRef.current.connect();
+            console.log("Playback started.");
+        }
+    };
+
+    // function to pause the time controller by disconnecting from the time sync
+    const pause = async () => {
+        if (syncRef.current && syncRef.current.isConnected()) {
+            await syncRef.current.disconnect();
+            console.log("Playback paused.");
+        }
+    };
+
+
+
     return (
         <Stack p={1} display={"flex"} spacing={1}>
             <Stack direction={"row"} justifyContent={"space-between"} spacing={1}>
@@ -349,6 +368,8 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                         dataSynchronizer={syncRef.current}
                         addDataSource={setActiveVideoIDX}
                     />
+
+                    <TimeController pause={pause} start={start} syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
 
                 </Box>
             )}
