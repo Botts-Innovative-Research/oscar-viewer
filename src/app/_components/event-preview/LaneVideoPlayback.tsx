@@ -20,13 +20,15 @@ export class LaneVideoPlaybackProps {
     setVideoReady: Function;
     dataSynchronizer: typeof DataSynchronizer;
     addDataSource: Function;
+    modeType: string;
 }
 
 export default function LaneVideoPlayback({
                                               videoDatasources,
                                               setVideoReady,
                                               dataSynchronizer,
-                                              addDataSource
+                                              addDataSource,
+                                              modeType
                                           }: LaneVideoPlaybackProps) {
     const dispatch = useAppDispatch();
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
@@ -35,11 +37,19 @@ export default function LaneVideoPlayback({
     const [selVideoIdx, setSelVidIdx] = useState<number>(0);
     const [localVideoReady, setLocalVideoReady] = useState<boolean>(false);
 
-    const [maxPages, setMaxPages] = useState(0)
+    const [maxPages, setMaxPages] = useState(0);
+
+    const [videoSize, setVideoSize] = useState("300px");
 
     useEffect(() => {
         setDatasources(videoDatasources);
         setMaxPages(videoDatasources.length)
+
+        if(modeType === 'detail'){
+            setVideoSize("500px")
+        }else if (modeType=== 'preview'){
+            setVideoSize("300px")
+        }
     }, [videoDatasources]);
 
 
@@ -119,7 +129,7 @@ export default function LaneVideoPlayback({
                     direction="row"
                     alignContent="center"
                     justifyContent={"center"}
-                    sx={{ padding: 2, width: '100%', height: '300px', border: "solid", borderWidth: '1px', borderColor: "rgba(0, 0, 0, 0.12)"}}
+                    sx={{ padding: 2, width: '100%', height: {videoSize}, border: "solid", borderWidth: '1px', borderColor: "rgba(0, 0, 0, 0.12)"}}
                 >
                     <Grid item key={dataSources[selVideoIdx].id} id="event-preview-video"></Grid>
                 </Stack>

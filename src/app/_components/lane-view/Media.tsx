@@ -25,8 +25,6 @@ export default function Media(props: { laneName: string}) {
 
     let datasources: any[]=[];
 
-    let [masterTimeController, setMasterTimeController] = useState<typeof DataSynchronizer>(null);
-
     useEffect(() => {
         datasourceSetup();
 
@@ -83,46 +81,6 @@ export default function Media(props: { laneName: string}) {
     }, [gammaDatasources, thresholdDatasources])
 
 
-    // const [dataSyncCreated, setDataSyncCreated] = useState<boolean>(false);
-    //
-    // const syncRef = useRef<typeof DataSynchronizer>();
-
-    // const createSync = useCallback(()=>{
-    //     if(!dataSyncCreated && !syncRef.current && thresholdDatasources.length > 0){
-    //        let timeController = new DataSynchronizer({
-    //             dataSources: thresholdDatasources,
-    //             replaySpeed: 1.0,
-    //             intervalRate: 5,
-    //             mode: Mode.REAL_TIME,
-    //             startTime: startTime,
-    //         })
-    //         setDataSyncCreated(true);
-    //        setMasterTimeController(timeController)
-    //     }
-    // }, [syncRef, dataSyncCreated, thresholdDatasources])
-
-    // const createSync = useCallback(() => {
-    //     if (!dataSyncCreated && !syncRef.current && datasources.length > 0) {
-    //         console.log('datatta', datasources)
-    //         let timeController = new DataSynchronizer({
-    //             dataSources: datasources,
-    //             replaySpeed: 1.0,
-    //             intervalRate: 5,
-    //             mode: Mode.REAL_TIME,
-    //             startTime: startTime,
-    //         });
-    //         console.log("Data Synchronizer created:", timeController);
-    //         setDataSyncCreated(true);
-    //         setMasterTimeController(timeController);
-    //     }
-    // }, [syncRef, dataSyncCreated, datasources, startTime]);
-
-
-    // useEffect(() => {
-    //     createSync();
-    // }, [gammaDatasources, neutronDatasources, thresholdDatasources, syncRef, dataSyncCreated]);
-
-
 
     useEffect(() => {
 
@@ -137,12 +95,8 @@ export default function Media(props: { laneName: string}) {
             thresholdDatasources.connect()
         }
 
-        // if(masterTimeController != null){
-        //     masterTimeController.connect()
-        //
-        // }
 
-    }, [thresholdDatasources, gammaDatasources, neutronDatasources, masterTimeController]);
+    }, [thresholdDatasources, gammaDatasources, neutronDatasources]);
 
 
     return (
