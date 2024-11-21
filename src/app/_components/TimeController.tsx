@@ -111,7 +111,7 @@ export default function TimeController(props: TimeControllerProps) {
             value={currentTime} //current position of the slider
             min={minTime} //start time of slider
             max={maxTime} //end time of event
-            onChange={props.handleChange}
+            onChangeCommitted={props.handleChange}
             valueLabelDisplay="off"
         />
 
