@@ -28,16 +28,18 @@ export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo)
 
     useEffect(() => {
 
-        if(videoSources.length > 0 && currentPage <= maxPages ){
+        async function tryConnection() {
+            if(videoSources.length > 0 && currentPage <= maxPages ){
+                const currentVideo = videoSources[currentPage];
+                const isConnected = await currentVideo.isConnected();
 
-            const currentVideo = videoSources[currentPage];
-
-            if(currentVideo.isConnected()){
-                currentVideo.disconnect();
+                if(isConnected){
+                    currentVideo.disconnect();
+                }
+                currentVideo.connect();
             }
-            currentVideo.connect()
-
         }
+        tryConnection();
 
     }, [currentPage, videoSources]);
 
