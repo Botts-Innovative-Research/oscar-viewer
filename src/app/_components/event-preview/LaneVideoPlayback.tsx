@@ -119,7 +119,7 @@ export default function LaneVideoPlayback({
                     direction="row"
                     alignContent="center"
                     justifyContent={"center"}
-                    sx={{ padding: 2, width: '100%', height: '50', border: "solid", borderWidth: '1px', borderColor: "rgba(0, 0, 0, 0.12)"}}
+                    sx={{ padding: 2, width: '100%', height: '300px', border: "solid", borderWidth: '1px', borderColor: "rgba(0, 0, 0, 0.12)"}}
                 >
                     <Grid item key={dataSources[selVideoIdx].id} id="event-preview-video"></Grid>
                 </Stack>

@@ -176,6 +176,22 @@ export default function EventDetailsPage() {
         }
     };
 
+
+    // // //when the user toggles the time controller this is the code to change the time sync
+    const handleChange = useCallback( async(event: Event, newValue: number) => {
+        // update time sync datasources start time
+        for (const dataSource of syncRef.current.getDataSources()) {
+            dataSource.setMinTime(newValue);
+        }
+
+        // update the time sync start time
+        await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, 1.0, false);
+
+
+        setSyncTime(newValue);
+
+    },[syncRef.current, eventPreview]);
+
     return (
         <Stack spacing={4} direction={"column"} sx={{width: "100%"}}>
             <Grid container spacing={2} alignItems="center">
@@ -221,7 +237,7 @@ export default function EventDetailsPage() {
 
 
                    </Grid>
-                   <TimeController pause={pause} start={start} syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
+                   <TimeController handleChange={handleChange} pause={pause} start={start} syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
 
                </Box>
                     )}
