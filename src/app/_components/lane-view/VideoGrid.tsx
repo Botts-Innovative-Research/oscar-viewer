@@ -90,14 +90,6 @@ export default function VideoGrid(props: LaneVideoProps) {
 
                         }
                     })
-
-                    // const videoSources = ds.datasourcesRealtime.filter((item) =>
-                    //     item.name.includes('Video') && item.name.includes('Lane')
-                    // );
-                    //
-                    // if (videoSources.length > 0) {
-                    //     videos.push({laneName: key, videoSources});
-                    // }
                 }
             });
             setVideoList(updatedVideos);

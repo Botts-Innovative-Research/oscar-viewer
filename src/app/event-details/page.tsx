@@ -231,7 +231,9 @@ export default function EventDetailsPage() {
                            <LaneVideoPlayback videoDatasources={videoDatasources}
                                               setVideoReady={setVideoReady}
                                               dataSynchronizer={syncRef.current}
-                                              addDataSource={setActiveVideoIDX}/>
+                                              addDataSource={setActiveVideoIDX}
+                                              modeType={"detail"}
+                           />
                        </Grid>
 
 
