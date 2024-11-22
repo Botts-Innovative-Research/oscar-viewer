@@ -60,6 +60,7 @@ export default function StateManager() {
 
     const [loadSnackMsg, setLoadSnackMsg] = useState('');
     const [saveSnackMsg, setSaveSnackMsg] = useState('');
+    const [colorStatus, setColorStatus]= useState('');
 
     useEffect(() => {
         setLoadNodeOpts({...loadNodeOpts, ...defaultNode});
@@ -85,8 +86,10 @@ export default function StateManager() {
             let resp = await OSHSliceWriterReader.sendBlobToServer(defaultNode, dsID, obs);
             if (resp) {
                 setSaveSnackMsg('OSCAR Configuration Saved')
+                setColorStatus('success')
             } else {
                 setSaveSnackMsg('Failed to save OSCAR Configuration')
+                setColorStatus('error')
             }
             setOpenSaveSnack(true)
         }
@@ -99,6 +102,7 @@ export default function StateManager() {
         let responseJSON = await OSHSliceWriterReader.retrieveLatestConfig(targetNode);
         if (responseJSON) {
             setLoadSnackMsg('OSCAR State Loaded')
+            setColorStatus('success')
             console.log("Config data retrieved: ", responseJSON);
 
             let cfgData = responseJSON.result.filedata;
@@ -112,6 +116,7 @@ export default function StateManager() {
 
         } else {
             setLoadSnackMsg('Failed to load OSCAR State')
+            setColorStatus('error')
         }
         setOpenSnack(true)
     }
@@ -229,6 +234,11 @@ export default function StateManager() {
                                             autoHideDuration={5000}
                                             onClose={handleCloseSnack}
                                             message={saveSnackMsg}
+                                            sx={{
+                                                '& .MuiSnackbarContent-root': {
+                                                    backgroundColor: colorStatus === 'success' ? 'green' : 'red',
+                                                },
+                                            }}
                                         />
                                     </Stack>
                                 </CardContent>
@@ -286,6 +296,11 @@ export default function StateManager() {
                                             autoHideDuration={5000}
                                             onClose={handleCloseSnack}
                                             message={loadSnackMsg}
+                                            sx={{
+                                                '& .MuiSnackbarContent-root': {
+                                                    backgroundColor: colorStatus === 'success' ? 'green' : 'red',
+                                                },
+                                            }}
                                         />
                                     </Stack>
                                 </CardContent>

@@ -138,10 +138,10 @@ export default function StatusTables({laneName}: TableProps){
 
     function RTMsgHandler(laneName: string, message: any, type: any) {
         let allEvents: AlarmTableData[] = [];
-        console.log('message', message)
+
         if (message.values) {
             for (let value of message.values) {
-                console.log('value', value.data)
+
                 let date = (new Date(value.data.timestamp)).toISOString();
                 let state = value.data.alarmState;
 
@@ -157,7 +157,7 @@ export default function StatusTables({laneName}: TableProps){
                         count2 = value.data.neutronCount2;
                         count3 = value.data.neutronCount3;
                         count4 = value.data.neutronCount4;
-                        console.log('count1', count1)
+
                     }else if(type === 'Gamma'){
                         state = 'Gamma Alarm'
                         count1 = value.data.gammaCount1;

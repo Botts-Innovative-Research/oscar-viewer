@@ -29,28 +29,20 @@ export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo)
     useEffect(() => {
 
         async function tryConnection() {
-            if(videoSources.length > 0 && currentPage <= maxPages ){
+            if(videoSources.length > 0 && currentPage <= videoSources.length ){
                 const currentVideo = videoSources[currentPage];
                 const isConnected = await currentVideo.isConnected();
 
                 if(isConnected){
                     currentVideo.disconnect();
                 }
+                console.log('Connecting to current video', currentVideo.name)
                 currentVideo.connect();
             }
         }
         tryConnection();
 
     }, [currentPage, videoSources]);
-
-
-    // const handleNextPage = () => {
-    //     setCurrentPage((prevPage) => Math.min(prevPage + 1, maxPages - 1));
-    // };
-    //
-    // const handlePrevPage = () => {
-    //     setCurrentPage((prevPage) => Math.max(prevPage - 1, 0));
-    // };
 
 
     const handleNextPage = () =>{
@@ -78,14 +70,11 @@ export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo)
     //next page -> disconnect from the previous page and connect to the next page if its not connected we can connect it
     async function checkConnection (prevPage: number){
         if(prevPage >= 0){
-            // for (const video of videoList) {
-                const isConnected = await videoSources[prevPage].isConnected();
-                if(isConnected){
-                    console.log('disconnecting', videoSources[prevPage].name)
-                    videoSources[prevPage].disconnect();
-                }
-
-            // }
+            const isConnected = await videoSources[prevPage].isConnected();
+            if(isConnected){
+                console.log('disconnecting', videoSources[prevPage].name)
+                videoSources[prevPage].disconnect();
+            }
         }
     }
     return (
@@ -117,8 +106,8 @@ export default function VideoCarousel({ laneName, videoSources }: LaneWithVideo)
             <Stack direction="column" justifyContent="center">
                 {videoSources.length > 0 && (
                     <VideoComponent
-                        key={`${laneName}-${currentPage}`}
-                        id={`${laneName}-${currentPage}`}
+                        key={laneName}
+                        id={laneName}
                         videoSources={[videoSources[currentPage]]}
                         currentPage={currentPage}
                     />

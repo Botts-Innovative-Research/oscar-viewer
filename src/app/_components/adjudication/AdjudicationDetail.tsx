@@ -78,6 +78,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     //snackbar
     const [adjSnackMsg, setAdjSnackMsg] = useState('');
+    const [colorStatus, setColorStatus] = useState('');
     const [openSnack, setOpenSnack] = useState(false);
 
     /**handle the file uploaded**/
@@ -151,6 +152,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
         if(adjData.adjudicationCode === null || !adjData.adjudicationCode || adjData.adjudicationCode === AdjudicationCodes.codes[0]){
             setAdjSnackMsg("Please selected a valid adjudication code before submitting.");
+            setColorStatus('error');
             setOpenSnack(true)
             return;
         }
@@ -183,12 +185,15 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             if(resp.ok){
                 setAdjSnackMsg('Adjudication Submitted Successfully')
+                setColorStatus('success')
                 dispatch(updateSelectedEventAdjudication(tempAdjData))
             }else{
                 setAdjSnackMsg('Adjudication Submission Failed. Check connection and form then try again.')
+                setColorStatus('error')
             }
         }catch(error){
             setAdjSnackMsg('Adjudication failed to submit.')
+            setColorStatus('error')
         }
 
         // send command
@@ -198,6 +203,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         // guard, maybe add an appropriate snackbar
         if (!refObservation) {
             setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
+            setColorStatus('error')
             setOpenSnack(true);
             return;
         }
@@ -325,6 +331,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                         autoHideDuration={5000}
                         onClose={handleCloseSnack}
                         message={adjSnackMsg}
+                        sx={{
+                            '& .MuiSnackbarContent-root': {
+                                backgroundColor: colorStatus === 'success' ? 'green' : 'red',
+                            },
+                        }}
                     />
                 </Stack>
 
