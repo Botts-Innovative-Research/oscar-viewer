@@ -84,7 +84,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     //snackbar
     const [adjSnackMsg, setAdjSnackMsg] = useState('');
     const [openSnack, setOpenSnack] = useState(false);
-
+    const [colorStatus, setColorStatus] = useState('')
     const handleAdjudicationCode = (value: AdjudicationCode) => {
         console.log("Adjudication Value: ", value);
         let newAdjData: IAdjudicationData = {
@@ -153,6 +153,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
 
             if (resp.ok) {
                 setAdjSnackMsg('Adjudication Submitted Successfully')
+                setColorStatus('success')
                 resetAdjudicationData();
                 dispatch(setEventPreview({
                     isOpen: false,
@@ -161,9 +162,11 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                 dispatch(setShouldForceAlarmTableDeselect(true))
             } else {
                 setAdjSnackMsg('Adjudication Submission Failed. Check your connection.')
+                setColorStatus('error')
             }
         } catch (error) {
             setAdjSnackMsg('Adjudication failed to submit.')
+            setColorStatus('error')
         }
 
         setOpenSnack(true)
@@ -412,6 +415,11 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                         autoHideDuration={5000}
                         onClose={handleCloseSnack}
                         message={adjSnackMsg}
+                        sx={{
+                            '& .MuiSnackbarContent-root': {
+                                backgroundColor: colorStatus === 'success' ? 'green' : 'red',
+                            },
+                        }}
                     />
 
                     <Button onClick={resetAdjudicationData} variant={"contained"} size={"small"} fullWidth={false}

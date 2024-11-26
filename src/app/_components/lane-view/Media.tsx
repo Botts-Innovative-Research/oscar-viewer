@@ -10,6 +10,7 @@ import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import ChartLane from "@/app/_components/lane-view/ChartLane";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {Mode} from "osh-js/source/core/datasource/Mode";
+import {isGammaDatastream, isNeutronDatastream, isThresholdDatastream} from "@/lib/data/oscar/Utilities";
 
 
 export default function Media(props: { laneName: string}) {
@@ -48,17 +49,17 @@ export default function Media(props: { laneName: string}) {
 
                     let laneDSColl = laneDSMap.get(laneid);
 
-                    if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
+                    if(isGammaDatastream(ds)){
                         laneDSColl?.addDS('gammaRT', rtDS);
                         setGammaDS( rtDS);
                     }
 
-                    if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
+                    if(isNeutronDatastream(ds)){
                         laneDSColl?.addDS('neutronRT', rtDS);
                         setNeutronDS(rtDS);
 
                     }
-                    if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/threshold")){
+                    if(isThresholdDatastream(ds)){
                         laneDSColl?.addDS('gammaTrshldRT', rtDS);
                         setThresholdDS(rtDS);
                     }

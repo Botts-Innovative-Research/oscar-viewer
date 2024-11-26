@@ -9,6 +9,7 @@ import {EventTableData, EventTableDataCollection} from "@/lib/data/oscar/TableHe
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
+import {isGammaDatastream, isNeutronDatastream, isOccupancyDatastream} from "@/lib/data/oscar/Utilities";
 
 
 interface TableProps {
@@ -44,19 +45,17 @@ export default function Table({tableMode, laneName}: TableProps) {
                 let laneDSColl = laneDSMap.get(laneid);
 
 
-                if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/pillar-occupancy-count")) {
+                if (isOccupancyDatastream(ds)) {
                     laneDSColl.addDS('occRT', rtDS);
 
                     await fetchObservations(laneid, ds, startTime, "now");
                 }
-                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
-
+                if(isGammaDatastream(ds)){
                     laneDSColl.addDS('gammaRT', rtDS);
                 }
-                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
+                if(isNeutronDatastream(ds)) {
                     laneDSColl.addDS('neutronRT', rtDS);
                 }
-
 
             }
             setDataSourcesByLane(laneDSMap);

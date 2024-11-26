@@ -72,10 +72,59 @@ export function getDatasourcesOfLane(laneDatastreams: Map<string, IDatastream[]>
     return laneDatasources;
 }
 
+
+export function isLocationDatastream(datastream: typeof DataStream): boolean {
+    const SENSOR_LOCATION_DEF = "http://www.opengis.net/def/property/OGC/0/SensorLocation";
+    const LOCATION_VECTOR_DEF = 'http://sensorml.com/ont/swe/property/LocationVector';
+
+    return datastream.properties.observedProperties[0].definition.includes(SENSOR_LOCATION_DEF)
+        || datastream.properties.observedProperties[0].definition.includes(LOCATION_VECTOR_DEF);
+}
+
 export function isVideoDatastream(datastream: typeof DataStream): boolean {
     const RASTER_IMAGE_DEF = "http://sensorml.com/ont/swe/property/RasterImage";
     const VIDEO_FRAME_DEF = "http://sensorml.com/ont/swe/property/VideoFrame";
 
     return datastream.properties.observedProperties[0].definition.includes(RASTER_IMAGE_DEF)
     || datastream.properties.observedProperties[0].definition.includes(VIDEO_FRAME_DEF);
+}
+
+export function isGammaDatastream(datastream: typeof DataStream): boolean {
+    const ALARM_DEF = "http://www.opengis.net/def/alarm";
+    const GAMMA_COUNT_DEF = "http://www.opengis.net/def/gamma-gross-count";
+
+    return datastream.properties.observedProperties[0].definition.includes(ALARM_DEF)
+        && datastream.properties.observedProperties[1].definition.includes(GAMMA_COUNT_DEF);
+}
+
+export function isNeutronDatastream(datastream: typeof DataStream): boolean {
+    const ALARM_DEF = "http://www.opengis.net/def/alarm";
+    const NEUTRON_COUNT_DEF = "http://www.opengis.net/def/neutron-gross-count";
+
+    return datastream.properties.observedProperties[0].definition.includes(ALARM_DEF)
+        && datastream.properties.observedProperties[1].definition.includes(NEUTRON_COUNT_DEF);
+}
+
+export function isTamperDatastream(datastream: typeof DataStream): boolean {
+    const TAMPER_STATUS_DEF = "http://www.opengis.net/def/tamper-status";
+
+    return datastream.properties.observedProperties[0].definition.includes(TAMPER_STATUS_DEF);
+}
+
+export function isOccupancyDatastream(datastream: typeof DataStream): boolean {
+    const OCCUPANCY_PILLAR_DEF = "http://www.opengis.net/def/pillar-occupancy-count";
+
+    return datastream.properties.observedProperties[0].definition.includes(OCCUPANCY_PILLAR_DEF);
+}
+
+export function isConnectionDatastream(datastream: typeof DataStream): boolean {
+    const CONNECTION_DEF ="http://www.opengis.net/def/connection-status";
+
+    return datastream.properties.observedProperties[0].definition.includes(CONNECTION_DEF);
+}
+
+export function isThresholdDatastream(datastream: typeof DataStream): boolean {
+    const THRESHOLD_DEF ="http://www.opengis.net/def/threshold";
+
+    return datastream.properties.observedProperties[0].definition.includes(THRESHOLD_DEF);
 }

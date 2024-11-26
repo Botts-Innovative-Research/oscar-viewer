@@ -97,7 +97,6 @@ export default function VideoGrid(props: LaneVideoProps) {
         }
     }, [laneMap, props.laneName, dsVideo]);
 
-    console.log(videoList)
 
     useEffect(() => {
         if(videoList && videoList.length> 0){
@@ -108,14 +107,22 @@ export default function VideoGrid(props: LaneVideoProps) {
 
     useEffect(() => {
 
-        if(videoList && videoList.length > 0 && currentPage <= maxPages){
-            const currentVideo = videoList[0].videoSources[currentPage];
-            if(currentVideo.isConnected()){
-                currentVideo.disconnect()
+        async function tryConnection(){
+            if(videoList && videoList.length > 0 && currentPage <= videoList.length){
+                const currentVideo = videoList[0].videoSources[currentPage];
+
+                const isConnected = await currentVideo.isConnected();
+                if(isConnected){
+                    currentVideo.disconnect()
+                }
+                console.log('Connecting to current video', currentVideo.name)
+                currentVideo.connect();
             }
-            currentVideo.connect();
         }
-    }, [videoList, currentPage, maxPages]);
+
+        tryConnection();
+
+    }, [videoList, currentPage]);
 
 
     const handleNextPage = () =>{
@@ -153,6 +160,10 @@ export default function VideoGrid(props: LaneVideoProps) {
             }
         }
     }
+
+    useEffect(() => {
+        console.log('video list in video grid', videoList)
+    }, [videoList]);
 
     return (
         <>
