@@ -32,6 +32,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
     const [openSnack, setOpenSnack] = useState(false);
     const[nodeSnackMsg, setNodeSnackMsg] = useState("");
+    const[colorStatus, setColorStatus] = useState("");
 
     const dispatch = useAppDispatch();
     const newNodeOpts: NodeOptions = {
@@ -121,11 +122,14 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
              const response = await fetch(endpoint);
              if (!response.ok) {
                  setNodeSnackMsg(`Connection failed. Unreachable server at ${node.address}.`);
+                 setColorStatus('error')
              } else {
                  setNodeSnackMsg(`Successfully connected to server at ${node.address}`);
+                 setColorStatus('success')
              }
          } catch (error) {
              setNodeSnackMsg('Connection failed. Confirm IP, port, and server availability.');
+             setColorStatus('error')
          }
     }
 
@@ -160,6 +164,11 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                         autoHideDuration={5000}
                         onClose={handleCloseSnack}
                         message={nodeSnackMsg}
+                        sx={{
+                            '& .MuiSnackbarContent-root': {
+                                backgroundColor: colorStatus === 'success' ? 'green' : 'red',
+                            },
+                        }}
                     />
                     <Button variant={"contained"} color={"secondary"}
                             onClick={() => modeChangeCallback(false, null)}>Cancel</Button>

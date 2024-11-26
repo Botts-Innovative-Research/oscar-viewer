@@ -5,6 +5,7 @@ import React, {useCallback, useContext, useEffect, useRef, useState} from 'react
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import LaneItem from './LaneItem';
+import {isGammaDatastream, isNeutronDatastream, isTamperDatastream} from "@/lib/data/oscar/Utilities";
 
 interface LaneStatusProps{
   laneName: string,
@@ -31,14 +32,14 @@ export default function LaneStatus(props: LaneStatusProps) {
           let laneDSColl = laneDSMap.get(laneid);
 
 
-          if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
+          if(isGammaDatastream(ds)){
 
             laneDSColl.addDS('gammaRT', rtDS);
           }
-          if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
+          if(isNeutronDatastream(ds)){
             laneDSColl.addDS('neutronRT', rtDS);
           }
-          if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status")){
+          if(isTamperDatastream(ds)){
             laneDSColl.addDS('tamperRT', rtDS);
           }
 
