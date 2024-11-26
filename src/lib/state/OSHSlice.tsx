@@ -19,14 +19,14 @@ export interface IOSHSlice {
 }
 
 const initialNodeOpts: NodeOptions = {
-    name: "New Node",
+    name: "Local Node",
     address: "127.0.0.1",
     port: 8282,
     oshPathRoot: "/sensorhub",
     sosEndpoint: "/sos",
     csAPIEndpoint: "/api",
     csAPIConfigEndpoint: "/configs",
-    auth: {username: "admin", password: "admin"},
+    auth: {username: "admin", password: "oscar"},
     isSecure: false,
     isDefaultNode: true
 }
