@@ -11,6 +11,12 @@ import DataStream from "osh-js/source/core/sweapi/datastream/DataStream";
 import {useSelector} from "react-redux";
 import  {selectNodes} from "@/lib/state/OSHSlice";
 import {EventTableData, NationalTableData, NationalTableDataCollection} from "@/lib/data/oscar/TableHelpers";
+import {
+    isGammaDatastream,
+    isNeutronDatastream,
+    isOccupancyDatastream,
+    isTamperDatastream
+} from "@/lib/data/oscar/Utilities";
 
 
 export default function StatTable(props: {
@@ -84,19 +90,19 @@ export default function StatTable(props: {
                 let idx: number = lane.datastreams.indexOf(ds);
 
 
-                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
+                if(isNeutronDatastream(ds)){
                     await fetchObservations(lane.parentNode.name, ds, startTime, endTime);
                 }
 
-                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
+                if(isGammaDatastream(ds)){
                     await fetchObservations(lane.parentNode.name, ds, startTime, endTime);
                 }
 
-                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status")){
+                if(isTamperDatastream(ds)){
                     await fetchObservations(lane.parentNode.name, ds, startTime, endTime);
                 }
 
-                if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/pillar-occupancy-count")) {
+                if (isOccupancyDatastream(ds)) {
                     await fetchObservations(lane.parentNode.name, ds, startTime, endTime);
                 }
             }
@@ -120,10 +126,10 @@ export default function StatTable(props: {
 
             obsRes.map((res: any) => {
 
-                if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count") && (res.result.alarmState === 'Alarm')) {
+                if (isNeutronDatastream(ds) && (res.result.alarmState === 'Alarm')) {
                     neutronCount++;
                 }
-                else if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
+                else if(isGammaDatastream(ds)){
                     if(res.result.alarmState === 'Alarm'){
                         gammaCount++;
                     }
@@ -131,10 +137,10 @@ export default function StatTable(props: {
                         faultCount++;
                     }
                 }
-                else if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status") && res.result.tamperStatus === true) {
+                else if (isTamperDatastream(ds) && res.result.tamperStatus === true) {
                     tamperCount++;
                 }
-                else if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/pillar-occupancy-count")) {
+                else if (isOccupancyDatastream(ds)) {
                     if(res.result.gammaAlarm === true || res.result.neutronAlarm === true){
                         occCount++
                     }else if(res.result.gammaAlarm === false || res.result.neutronAlarm === false){

@@ -17,6 +17,7 @@ import {
 } from "@/lib/data/oscar/TableHelpers";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import AlarmTable from "./AlarmTable";
+import {isGammaDatastream, isNeutronDatastream, isTamperDatastream} from "@/lib/data/oscar/Utilities";
 
 interface TableProps {
     laneName?: string;
@@ -50,16 +51,16 @@ export default function StatusTables({laneName}: TableProps){
                 let laneDSColl = laneDSMap.get(laneid);
 
 
-                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
+                if(isGammaDatastream(ds)){
 
                     laneDSColl.addDS('gammaRT', rtDS);
                     await fetchObservations(laneid, ds, startTime, "now");
                 }
-                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
+                if(isNeutronDatastream(ds)){
                     laneDSColl.addDS('neutronRT', rtDS);
                     await fetchObservations(laneid, ds, startTime, "now");
                 }
-                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status")){
+                if(isTamperDatastream(ds)){
                     laneDSColl.addDS('tamperRT', rtDS);
                     await fetchObservations(laneid, ds, startTime, "now");
                 }
@@ -86,7 +87,7 @@ export default function StatusTables({laneName}: TableProps){
 
             obsRes.forEach((res: any) => {
 
-                if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")) {
+                if(isNeutronDatastream(ds)){
                     let state = res.result.alarmState;
                     let count1 = res.result.neutronCount1;
                     let count2 = res.result.neutronCount2;
@@ -104,7 +105,7 @@ export default function StatusTables({laneName}: TableProps){
 
                 }
 
-                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
+                if(isGammaDatastream(ds)){
                     let state = res.result.alarmState;
                     let count1 = res.result.gammaCount1;
                     let count2 = res.result.gammaCount2;
@@ -123,7 +124,7 @@ export default function StatusTables({laneName}: TableProps){
 
                 }
 
-                if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status") && res.result.tamperStatus === true) {
+                if (isTamperDatastream(ds) && res.result.tamperStatus === true) {
                     let state = 'Tamper';
                     const date = (new Date(res.timestamp)).toISOString()
                     let newEvent = new AlarmTableData(randomUUID(), laneName,0,0,0,0, state, date)

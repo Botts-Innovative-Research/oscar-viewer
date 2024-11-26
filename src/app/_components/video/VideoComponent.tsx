@@ -51,6 +51,10 @@ export default function VideoComponent(props: OSHVideoProps) {
 
     }, [videoDataSource]);
 
+    useEffect(() => {
+        console.log('video in component', videoDataSource)
+    }, []);
+
     return (
         <Box id={props.id} style={{ width: "100%", height: '100%'}}/>
     )

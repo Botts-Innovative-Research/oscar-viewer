@@ -14,7 +14,13 @@ import {EventType} from "osh-js/source/core/event/EventType";
 
 import {isDynamicUsageError} from "next/dist/export/helpers/is-dynamic-usage-error";
 import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
-import { isVideoDatastream } from "./Utilities";
+import {
+    isGammaDatastream,
+    isNeutronDatastream,
+    isOccupancyDatastream,
+    isTamperDatastream, isThresholdDatastream,
+    isVideoDatastream
+} from "./Utilities";
 
 class ILaneMeta {
     id: string;
@@ -246,8 +252,7 @@ export class LaneMapEntry {
             let datasourceBatch = this.createBatchSweApiFromDataStream(ds, startTime, endTime);
 
             // move some of this into another function to remove code redundancy
-            // if (ds.properties.name.includes('Driver - Occupancy')) {
-            if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/pillar-occupancy-count")) {
+            if (isOccupancyDatastream(ds)) {
                 let occArray = dsMap.get('occ')!;
                 const index = occArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
                 if (index !== -1) {
@@ -256,8 +261,8 @@ export class LaneMapEntry {
                     occArray.push(datasourceBatch);
                 }
             }
-            // if (ds.properties.name.includes('Driver - Gamma Count')) {
-            if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
+
+            if(isGammaDatastream(ds)){
                 let gammaArray = dsMap.get('gamma')!;
                 const index = gammaArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
                 if (index !== -1) {
@@ -266,8 +271,8 @@ export class LaneMapEntry {
                     gammaArray.push(datasourceBatch);
                 }
             }
-            // if (ds.properties.name.includes('Driver - Neutron Count')) {
-            if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
+
+            if(isNeutronDatastream(ds)){
                 let neutronArray = dsMap.get('neutron')!;
                 const index = neutronArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
                 if (index !== -1) {
@@ -276,8 +281,8 @@ export class LaneMapEntry {
                     neutronArray.push(datasourceBatch);
                 }
             }
-            // if (ds.properties.name.includes('Driver - Tamper')) {
-            if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status")){
+
+            if(isTamperDatastream(ds)){
                 let tamperArray = dsMap.get('tamper')!;
                 const index = tamperArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
                 if (index !== -1) {
@@ -312,8 +317,7 @@ export class LaneMapEntry {
                     console.info("No valid time found for datasource ", ds.properties.id);
                 }
             }
-            // if (ds.properties.name.includes('Driver - Gamma Threshold')) {
-            if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/threshold")){
+            if(isThresholdDatastream(ds)){
                 let gammaTrshldArray = dsMap.get('gammaTrshld')!;
                 const index = gammaTrshldArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
 

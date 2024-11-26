@@ -115,6 +115,7 @@ export default function VideoGrid(props: LaneVideoProps) {
                 if(isConnected){
                     currentVideo.disconnect()
                 }
+                console.log('Connecting to current video', currentVideo.name)
                 currentVideo.connect();
             }
         }
@@ -159,6 +160,10 @@ export default function VideoGrid(props: LaneVideoProps) {
             }
         }
     }
+
+    useEffect(() => {
+        console.log('video list in video grid', videoList)
+    }, [videoList]);
 
     return (
         <>
