@@ -62,9 +62,13 @@ export default function CameraGrid() {
           laneDSColl.addDS('tamperRT', rtDS);
         }
         if(isVideoDatastream(ds)) {
-          console.log("Video DS Found",ds);
-          videoDs.push(ds);
-          laneDSColl.addDS('videoRT', rtDS)
+          const dsSystemId = ds.properties['system@id'];
+          for(let system of lane.systems) {
+            if(system.properties.id === dsSystemId) {
+              videoDs.push(ds);
+              laneDSColl.addDS('videoRT', rtDS)
+            }
+          }
         }
       }
       setDsVideo(videoDs);
