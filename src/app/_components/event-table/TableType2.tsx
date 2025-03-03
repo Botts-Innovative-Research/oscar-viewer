@@ -36,7 +36,7 @@ interface TableProps {
 
 const selectedRowStyles = makeStyles({
     selectedRow: {
-        backgroundColor: '#bcc4ce !important',
+        backgroundColor: 'rgba(33,150,243,0.5) !important',
     },
 });
 
