@@ -156,22 +156,23 @@ export default function LaneStatus() {
 
 
         // dont reorder if state === alarm, bkg, scan or online
-        if(['Alarm', 'Scan', 'Background', 'Clear', 'Online', 'TamperOff', 'Offline'].includes(newState)) {
-          //check if online status and push to front
-          const offlineStatues = updatedList.filter((list) => !list.isOnline);
-          const onlineStatuses = updatedList.filter((list) => list.isOnline);
-
-          return  [...offlineStatues, ...onlineStatuses];
-        }
+        // if(['Alarm', 'Scan', 'Background', 'Clear', 'Online', 'TamperOff', 'Offline', 'Tamper', 'Fault'].includes(newState)) {
+        //   //check if online status and push to front
+        //   const offlineStatues = updatedList.filter((list) => !list.isOnline);
+        //   const onlineStatuses = updatedList.filter((list) => list.isOnline);
+        //
+        //   return  [...offlineStatues, ...onlineStatuses];
+        // }
         // put offline, fault, tamper at the top of the list
-        const updatedLane = updatedList.find((data) => data.name === laneName);
-
+        // const updatedLane = updatedList.find((data) => data.name === laneName);
+        //
         setTimeout(() => updateStatus(laneName, 'Clear'), 15000);
-        const filteredStatuses = updatedList.filter((list) => list.name !== laneName);
-        const offlineStatuses = filteredStatuses.filter((list) => !list.isOnline);
-        const onlineStatuses = filteredStatuses.filter((list) => list.isOnline);
+        // const filteredStatuses = updatedList.filter((list) => list.name !== laneName);
+        const offlineStatuses = updatedList.filter((list) => !list.isOnline);
+        const onlineStatuses = updatedList.filter((list) => list.isOnline);
 
-        return [updatedLane, ...offlineStatuses, ...onlineStatuses]
+        return [...offlineStatuses, ...onlineStatuses]
+
 
       }else{
         const newLane: LaneStatusProps= {
