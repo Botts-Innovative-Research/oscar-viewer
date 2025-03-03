@@ -29,7 +29,7 @@ export default function LaneStatusItem(props: {
                    display: 'flex',
                    alignItems: 'center',
                    backgroundColor: (props.isTamper ? "secondaryHighlight" : props.isFault ? "info" : "inherit")
-               }}
+        }}
         >
             <Tooltip title={props.name} arrow placement="bottom">
                 <Stack direction={"row"} spacing={1} sx={{ alignItems: 'left' }}>
