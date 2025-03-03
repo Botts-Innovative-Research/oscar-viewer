@@ -1,7 +1,6 @@
 "use client";
 
 import {Grid, Paper} from "@mui/material";
-import CameraGrid from "../_components/dashboard/CameraGrid";
 import LaneStatus from "../_components/dashboard/LaneStatus";
 
 import {useMemo} from "react";
@@ -25,12 +24,7 @@ export default function DashboardPage() {
     return (
         <Grid container spacing={2} direction={"column"}>
             <Grid item container spacing={2} style={{flexBasis: '33.33%', flexGrow: 0, flexShrink: 0}}>
-                <Grid item xs={8}>
-                    <Paper variant='outlined' sx={{height: "100%"}}>
-                        <CameraGrid/>
-                    </Paper>
-                </Grid>
-                <Grid item xs={4}>
+                <Grid item xs={12}>
                     <Paper variant='outlined' sx={{height: "100%"}}>
                         <LaneStatus/>
                     </Paper>

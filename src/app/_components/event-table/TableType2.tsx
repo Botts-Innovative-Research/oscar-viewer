@@ -22,6 +22,7 @@ import {
     setSelectedEvent
 } from "@/lib/state/EventDataSlice";
 import {useRouter} from "next/navigation";
+import {makeStyles} from "@mui/styles";
 
 
 interface TableProps {
@@ -32,6 +33,12 @@ interface TableProps {
     viewAdjudicated?: boolean;
     laneMap: Map<string, LaneMapEntry>
 }
+
+const selectedRowStyles = makeStyles({
+    selectedRow: {
+        backgroundColor: '#bcc4ce !important',
+    },
+});
 
 /**
  * Gathers occupancy data both historical and real-time and creates TableEventData entries, which are passed into
@@ -58,6 +65,7 @@ export default function Table2({
     const [selectionModel, setSelectionModel] = useState([]); // Currently selected row
     const dispatch = useAppDispatch();
     const router = useRouter();
+    const classes = selectedRowStyles();
 
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
@@ -350,6 +358,9 @@ export default function Table2({
         }
     }
 
+
+
+
     return (
         <Box sx={{height: 800, width: '100%'}}>
             <DataGrid
@@ -410,6 +421,9 @@ export default function Table2({
 
 
                 }}
+                getRowClassName={(params) =>
+                    params.row.id == selectionModel[0] ? classes.selectedRow : ''
+                }
                 sx={{
 
                     // Assign styling to 'Status' column based on className
@@ -441,7 +455,9 @@ export default function Table2({
 
                     border: "none",
                 }}
+
             />
+
         </Box>
     )
 }
