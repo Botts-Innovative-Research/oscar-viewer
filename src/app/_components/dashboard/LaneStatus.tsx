@@ -137,12 +137,12 @@ export default function LaneStatus() {
 
               return {...laneData, isTamper: false, isOnline: true}
 
-            }else if (
-                newState === 'Fault - Neutron High' || newState === 'Fault - Gamma High' || newState === 'Fault - Gamma Low'
-            ) {
+            }else if (newState === 'Fault - Neutron High' || newState === 'Fault - Gamma High' || newState === 'Fault - Gamma Low') {
               return {...laneData, isFault: true, isOnline: true}
 
-            }else if (newState === 'Clear'|| newState === 'Online'|| alarmStates.includes(newState)) {
+            }else if (newState === 'Clear') {
+              return {...laneData, isFault: false }
+            } else if (newState === 'Online'|| alarmStates.includes(newState)) {
 
               return {...laneData, isFault: false, isOnline: true}
 
@@ -166,12 +166,16 @@ export default function LaneStatus() {
         // put offline, fault, tamper at the top of the list
         // const updatedLane = updatedList.find((data) => data.name === laneName);
         //
+
+        // we still want to clear alarming states like fault after a certain time...
         setTimeout(() => updateStatus(laneName, 'Clear'), 15000);
         // const filteredStatuses = updatedList.filter((list) => list.name !== laneName);
-        const offlineStatuses = updatedList.filter((list) => !list.isOnline);
-        const onlineStatuses = updatedList.filter((list) => list.isOnline);
+        // const offlineStatuses = updatedList.filter((list) => !list.isOnline);
+        // const onlineStatuses = updatedList.filter((list) => list.isOnline);
+        //
+        // return [...offlineStatuses, ...onlineStatuses]
 
-        return [...offlineStatuses, ...onlineStatuses]
+        return [...updatedList];
 
 
       }else{
