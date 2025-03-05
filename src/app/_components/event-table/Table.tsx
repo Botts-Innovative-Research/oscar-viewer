@@ -77,33 +77,19 @@ export default function Table({tableMode, laneName}: TableProps) {
             allResults.push(...obsRes);
             obsRes.map((obs: any) => {
 
-                if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
-                    console.log("ADJ obs ", obs)
+                const isAlarming = obs.result.gammaAlarm || obs.result.neutronAlarm;
 
-                    // let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
-                    let newEvent = new EventTableData(randomUUID(), laneName, obs.result);
-                    let laneEntry = laneMapRef.current.get(laneName);
-                    const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
-                    newEvent.setSystemIdx(systemID);
-                    newEvent.setDataStreamId(obs["datastream@id"]);
-                    newEvent.setFoiId(obs["foi@id"]);
 
-                    newEvent ? allAlarmingEvents.push(newEvent) : null;
+                const newEvent = new EventTableData(randomUUID(), laneName, obs.result);
 
-                }
-                else {
+                const laneEntry = laneMapRef.current.get(laneName);
+                const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
 
-                    // let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
-                    let newEvent = new EventTableData(randomUUID(), laneName, obs.result);
-                    let laneEntry = laneMapRef.current.get(laneName);
-                    const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
-                    newEvent.setSystemIdx(systemID);
-                    newEvent.setDataStreamId(obs["datastream@id"]);
-                    newEvent.setFoiId(obs["foi@id"]);
+                newEvent.setSystemIdx(systemID);
+                newEvent.setDataStreamId(obs["datastream@id"]);
+                newEvent.setFoiId(obs["foi@id"]);
 
-                    newEvent ? nonAlarmingEvents.push(newEvent) : null;
-
-                }
+                isAlarming ? allAlarmingEvents.push(newEvent) : nonAlarmingEvents.push(newEvent);
 
             });
         }
@@ -119,33 +105,17 @@ export default function Table({tableMode, laneName}: TableProps) {
         let nonAlarmingEvents: EventTableData[] = [];
         if (message.values) {
             for (let value of message.values) {
+                const isAlarming = value.result.gammaAlarm || value.result.neutronAlarm;
 
-                if (value.data.gammaAlarm === true || value.data.neutronAlarm === true) {
+                const newEvent = new EventTableData(randomUUID(), laneName, value.data);
+                const laneEntry = laneMapRef.current.get(laneName);
 
-                    // let newEvent = new EventTableData(idVal.current++, laneName, value.data);
-                    let newEvent = new EventTableData(randomUUID(), laneName, value.data);
-                    let laneEntry = laneMapRef.current.get(laneName);
-                    const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
-                    console.log('lane entry', laneEntry)
-                    newEvent.setSystemIdx(systemID);
-                    newEvent.setDataStreamId(dataStreamId);
-                    // newEvent.setFoiId();
+                const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
+                newEvent.setSystemIdx(systemID);
+                newEvent.setDataStreamId(dataStreamId);
 
-                    newEvent ? allAlarmingEvents.push(newEvent) : null;
+                isAlarming ? allAlarmingEvents.push(newEvent) : nonAlarmingEvents.push(newEvent);
 
-                }
-                else {
-                    // let newEvent = new EventTableData(idVal.current++, laneName, value.data);
-                    let newEvent = new EventTableData(randomUUID(), laneName, value.data);
-                    let laneEntry = laneMapRef.current.get(laneName);
-                    const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
-                    newEvent.setSystemIdx(systemID);
-                    newEvent.setDataStreamId(dataStreamId);
-                    // newEvent.setFoiId();
-
-                    newEvent ? nonAlarmingEvents.push(newEvent) : null;
-
-                }
             }
 
             eventLogTableData.current = [...allAlarmingEvents, ...nonAlarmingEvents, ...eventLogTableData.current];

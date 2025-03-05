@@ -2,18 +2,11 @@
 
 import { Box, IconButton, Stack, Typography } from "@mui/material";
 import Slider from '@mui/material/Slider';
-import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import React, { useEffect, useMemo, useState} from "react";
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 import PauseRoundedIcon from '@mui/icons-material/PauseRounded';
-import FastForwardRoundedIcon from '@mui/icons-material/FastForwardRounded';
-import {API} from "nouislider";
-import {IMasterTime} from "@/lib/data/Models";
-import {useAppDispatch, useAppSelector} from "@/lib/state/Hooks";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
-import {setInterval} from "next/dist/compiled/@edge-runtime/primitives";
-import {FastRewindRounded} from "@mui/icons-material";
-import {EventType} from "osh-js/source/core/event/EventType";
-import {PlaybackState} from "@/lib/data/Constants";
+
 
 
 interface TimeControllerProps {
@@ -50,7 +43,7 @@ export default function TimeController(props: TimeControllerProps) {
     });
   }, [ds, replay, minTime, maxTime])
 
-  //
+
   useEffect(() => {
     setDs(props.timeSync?.getDataSources());
     setReplay(props.timeSync?.getReplaySpeed());
@@ -74,10 +67,9 @@ export default function TimeController(props: TimeControllerProps) {
   }, [isPlaying]);
 
   useEffect(() => {
-    console.log('syncTime updated:', props.syncTime);
+    // console.log('syncTime updated:', props.syncTime);
     setCurrentTime(props.syncTime);
   }, [props.syncTime]);
-
 
 
 
@@ -90,13 +82,13 @@ export default function TimeController(props: TimeControllerProps) {
 
 
   // function to change replay speed the time controller
-  const updateReplaySpeed = async () => {
-    let speed = 2.0;
-    if (props.timeSync && props.timeSync.isConnected()) {
-      await props.timeSync.setReplaySpeed(speed);
-      console.log("Replay speed updated.");
-    }
-  };
+  // const updateReplaySpeed = async () => {
+  //   let speed = 2.0;
+  //   if (props.timeSync && props.timeSync.isConnected()) {
+  //     await props.timeSync.setReplaySpeed(speed);
+  //     console.log("Replay speed updated.");
+  //   }
+  // };
 
 
 

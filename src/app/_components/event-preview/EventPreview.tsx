@@ -389,7 +389,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                         modeType={"preview"}
                     />
 
-                    <TimeController handleChange={handleChange} pause={pause} start={start} syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
+                    {/*<TimeController handleChange={handleChange} pause={pause} start={start} syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>*/}
 
                 </Box>
             )}
