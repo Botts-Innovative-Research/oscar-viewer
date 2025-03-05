@@ -56,12 +56,20 @@ export default function EventTable(props: {
     {
       field: 'startTime',
       headerName: 'Start Time',
-      type: 'string',
+      valueFormatter:(value) =>{
+        const dateTime = (new Date(value)).toLocaleString();
+        return dateTime;
+      }
+      // type: 'string',
     },
     {
       field: 'endTime',
       headerName: 'End Time',
-      type: 'string',
+      valueFormatter:(value) =>{
+        const dateTime = (new Date(value)).toLocaleString();
+        return dateTime;
+      }
+      // type: 'string',
     },
     {
       field: 'maxGamma',
