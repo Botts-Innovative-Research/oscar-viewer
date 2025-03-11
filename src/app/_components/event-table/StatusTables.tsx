@@ -1,85 +1,32 @@
 "use client"
 
-import {useCallback, useContext, useEffect, useRef, useState} from "react";
-import {IAlarmTableData, INationalTableData} from "../../../../types/new-types";
-import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
-import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-
+import {useCallback, useEffect, useRef, useState} from "react";
+import {IAlarmTableData} from "../../../../types/new-types";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream";
-import {useSelector} from "react-redux";
-import  {selectNodes} from "@/lib/state/OSHSlice";
+
 import {
     AlarmTableData,
     AlarmTableDataCollection,
-    EventTableData,
-    EventTableDataCollection
 } from "@/lib/data/oscar/TableHelpers";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import AlarmTable from "./AlarmTable";
 import {isGammaDatastream, isNeutronDatastream, isTamperDatastream} from "@/lib/data/oscar/Utilities";
 
-interface TableProps {
-    laneName?: string;
-}
+// ,
 
-
-export default function StatusTables({laneName}: TableProps){
+export default function StatusTables(props: {dataSourcesByLane: any}){
 
     const [data, setData] = useState<IAlarmTableData[]>([]);
-
-    let startTime= "2020-01-01T08:13:25.845Z";
-
-    const {laneMapRef} = useContext(DataSourceContext);
-    const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
     const [tableData, setTableData] = useState<AlarmTableDataCollection>(new AlarmTableDataCollection());
-
-
     const tableRef = useRef<AlarmTableData[]>([]);
-
-
-    const datasourceSetup = useCallback(async () => {
-
-        let laneDSMap = new Map<string, LaneDSColl>();
-
-        for (let [laneid, lane] of laneMapRef.current.entries()) {
-            laneDSMap.set(laneid, new LaneDSColl());
-            for (let ds of lane.datastreams) {
-
-                let idx: number = lane.datastreams.indexOf(ds);
-                let rtDS = lane.datasourcesRealtime[idx];
-                let laneDSColl = laneDSMap.get(laneid);
-
-
-                if(isGammaDatastream(ds)){
-
-                    laneDSColl.addDS('gammaRT', rtDS);
-                    await fetchObservations(laneid, ds, startTime, "now");
-                }
-                if(isNeutronDatastream(ds)){
-                    laneDSColl.addDS('neutronRT', rtDS);
-                    await fetchObservations(laneid, ds, startTime, "now");
-                }
-                if(isTamperDatastream(ds)){
-                    laneDSColl.addDS('tamperRT', rtDS);
-                    await fetchObservations(laneid, ds, startTime, "now");
-                }
-
-            }
-            setDataSourcesByLane(laneDSMap);
-        }
-    }, [laneMapRef.current]);
-
-    useEffect(() => {
-        datasourceSetup();
-    }, [laneMapRef.current]);
 
 
     async function fetchObservations(laneName: string, ds: typeof DataStream, timeStart: string, timeEnd: string) {
         let allResults: any[] = [];
 
         let statusEvents: AlarmTableData[] =[];
-        let initialRes = await ds.searchObservations(new ObservationFilter({ resultTime: `${timeStart}/${timeEnd}` }), 25000);
+        let initialRes = await ds.searchObservations(new ObservationFilter({ resultTime: `${timeStart}/${timeEnd}` }), 100);
 
         while (initialRes.hasNext()) {
             let obsRes = await initialRes.nextPage();
@@ -98,7 +45,7 @@ export default function StatusTables({laneName}: TableProps){
                         state = 'Neutron Alarm'
                     }
                     if(state.includes('Alarm') || state.includes('Fault')){
-                        const date = (new Date(res.timestamp)).toISOString();
+                        const date = (new Date(res.timestamp)).toLocaleString();
                         let newEvent = new AlarmTableData(randomUUID(), laneName, count1, count2, count3, count4, state, date)
                         newEvent ? statusEvents.push(newEvent) : null;
                     }
@@ -117,7 +64,7 @@ export default function StatusTables({laneName}: TableProps){
                     }
 
                     if(state.includes('Alarm') || state.includes('Fault')){
-                        const date = (new Date(res.timestamp)).toISOString()
+                        const date = (new Date(res.timestamp)).toLocaleString()
                         let newEvent = new AlarmTableData(randomUUID(),laneName, count1, count2, count3, count4,  state, date)
                         newEvent ? statusEvents.push(newEvent) : null;
                     }
@@ -126,7 +73,7 @@ export default function StatusTables({laneName}: TableProps){
 
                 if (isTamperDatastream(ds) && res.result.tamperStatus === true) {
                     let state = 'Tamper';
-                    const date = (new Date(res.timestamp)).toISOString()
+                    const date = (new Date(res.timestamp)).toLocaleString();
                     let newEvent = new AlarmTableData(randomUUID(), laneName,0,0,0,0, state, date)
                     newEvent ? statusEvents.push(newEvent) : null;
                 }
@@ -134,8 +81,8 @@ export default function StatusTables({laneName}: TableProps){
         }
         tableRef.current = [...statusEvents, ...tableRef.current];
         setData(tableRef.current);
-
     }
+
 
     function RTMsgHandler(laneName: string, message: any, type: any) {
         let allEvents: AlarmTableData[] = [];
@@ -143,13 +90,10 @@ export default function StatusTables({laneName}: TableProps){
         if (message.values) {
             for (let value of message.values) {
 
-                let date = (new Date(value.data.timestamp)).toISOString();
-                let state = value.data.alarmState;
 
-                let count1: number;
-                let count2: number;
-                let count3: number;
-                let count4: number;
+                // handle alarms
+                let state = value.data.alarmState;
+                let count1 = 0, count2 = 0, count3 = 0, count4 = 0;
 
                 if(state === 'Alarm'){
                     if(type === 'Neutron'){
@@ -166,17 +110,13 @@ export default function StatusTables({laneName}: TableProps){
                         count3 = value.data.gammaCount3;
                         count4 = value.data.gammaCount4;
                     }
+                    const newEvent = new AlarmTableData(randomUUID(), laneName, count1, count2, count3, count4, state, value.data.timestamp);
+                    allEvents.push(newEvent);
+                } else if(state.includes('Fault')){
+                    let newEvent = new AlarmTableData(randomUUID(), laneName, count1, count2, count3, count4, state, value.data.timestamp);
+                    allEvents.push(newEvent);
+                }
 
-                }
-                if(state.includes('Alarm') || value.data.alarmState.includes('Fault')){
-                    let newEvent = new AlarmTableData(randomUUID(), laneName,count1, count2, count3, count4, state, date);
-                    newEvent ? allEvents.push(newEvent) : null;
-                }
-
-                if(value.data.tamperStatus){
-                    let newEvent = new AlarmTableData(randomUUID(), laneName, 0,0,0,0,'Tamper', date);
-                    newEvent ? allEvents.push(newEvent) : null;
-                }
             }
 
             tableRef.current = [...allEvents, ...tableRef.current];
@@ -185,37 +125,55 @@ export default function StatusTables({laneName}: TableProps){
         }
     }
 
+    function TamperMsgHandler(laneName:string, message: any){
+        let tamperEvents: AlarmTableData[] = [];
 
+
+        if (message.values) {
+            for (let value of message.values) {
+
+                //handle tamper
+                const status = value.data.tamperStatus;
+
+                const newEvent = new AlarmTableData(randomUUID(), laneName, 0, 0, 0, 0, 'Tamper', value.data.timestamp);
+
+                status ? tamperEvents.push(newEvent) : '';
+            }
+
+            tableRef.current = [...tamperEvents, ...tableRef.current];
+
+            setData(tableRef.current)
+        }
+
+    }
 
     const addSubscriptionCallbacks = useCallback(() => {
-        for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
-            const msgLaneName = laneName;
+        for (let [laneName, laneDSColl] of props.dataSourcesByLane.entries()) {
+
             // should only be one for now, but this whole process needs revisiting due to codebase changes introduced after initial implemntation
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
-                RTMsgHandler(msgLaneName, message, 'Tamper')
+                TamperMsgHandler(laneName, message);
             });
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
-                RTMsgHandler(msgLaneName, message, 'Neutron')
+                RTMsgHandler(laneName, message, 'Neutron')
             });
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
-                RTMsgHandler(msgLaneName, message, 'Gamma')
+                RTMsgHandler(laneName, message, 'Gamma')
             });
+
             laneDSColl.connectAllDS();
         }
-    }, [dataSourcesByLane]);
+    }, [props.dataSourcesByLane]);
 
     useEffect(() => {
         addSubscriptionCallbacks();
-    }, [dataSourcesByLane]);
+    }, [props.dataSourcesByLane]);
+
 
     useEffect(() => {
         let statusData = new AlarmTableDataCollection();
         statusData.setData(tableRef.current);
-
-        const filteredData = [...statusData.data].filter((data) => data.laneId === laneName)
-
-        const sortedData = [...filteredData].sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-
+        const sortedData = [...statusData.data].sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
         statusData.setData(sortedData)
         setTableData(statusData);
 
@@ -226,5 +184,8 @@ export default function StatusTables({laneName}: TableProps){
         <AlarmTable alarmData={tableData}/>
     )
 }
+
+
+
 
 

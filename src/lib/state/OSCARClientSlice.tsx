@@ -4,6 +4,7 @@ import {LaneMapEntry, LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import {RootState} from "@/lib/state/Store";
 
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
+import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 
 enableMapSet();
 
@@ -23,7 +24,23 @@ export interface IOSCARClientState {
     alertTimeoutSeconds: number,
     laneMap: Map<string, LaneMapEntry>,
     shouldForceAlarmTableDeselect: boolean,
+
+    eventDetailsState: {
+        eventData: EventTableData | null,
+        // laneName: string | null;
+        // startTime: string | null;
+        // endTime: string | null;
+        gamma: any[];
+        neutron: any[];
+        threshold: any[];
+        video: any[];
+        occ: any[],
+        dsReady: boolean
+    }
 }
+
+
+
 
 const initialState: IOSCARClientState = {
     currentUser: 'testuser',
@@ -40,7 +57,21 @@ const initialState: IOSCARClientState = {
     alertTimeoutSeconds: 10,
     laneMap: new Map<string, LaneMapEntry>(),
     shouldForceAlarmTableDeselect: false,
+    eventDetailsState: {
+        eventData: null,
+        // laneName: null,
+        // startTime: null,
+        // endTime: null,
+        gamma: [],
+        neutron: [],
+        threshold: [],
+        video: [],
+        occ: [],
+        dsReady: false
+    }
+
 }
+
 
 
 export const Slice = createSlice({
@@ -80,7 +111,7 @@ export const Slice = createSlice({
             state.alertTimeoutSeconds = action.payload;
         },
         setLaneMap: (state, action: PayloadAction<Map<string, LaneMapEntry>>) => {
-            state.laneMap = action.payload;
+            state.laneMap = (action.payload);
         },
         setShouldForceAlarmTableDeselect: (state, action: PayloadAction<boolean>) => {
             console.log(`Setting shouldForceAlarmTableDeselect to ${action.payload}`);
@@ -88,7 +119,22 @@ export const Slice = createSlice({
         },
         toggleShouldForceAlarmTableDeselect: (state) => {
             state.shouldForceAlarmTableDeselect = !state.shouldForceAlarmTableDeselect;
+        },
+        setEventDetails: (state, action: PayloadAction<{
+            eventData: EventTableData | null,
+            // laneName: string | null;
+            // startTime: string | null;
+            // endTime: string | null;
+            gamma: any[];
+            neutron: any[];
+            threshold: any[];
+            video: any[];
+            occ: any[];
+            dsReady: boolean;
+        }>) =>{
+            state.eventDetailsState = action.payload;
         }
+
     }
 })
 
@@ -103,7 +149,8 @@ export const {
     setAlertTimeoutSeconds,
     setLaneMap,
     setShouldForceAlarmTableDeselect,
-    toggleShouldForceAlarmTableDeselect
+    toggleShouldForceAlarmTableDeselect,
+    setEventDetails
 } = Slice.actions;
 
 export const selectCurrentUser = (state: RootState) => state.oscarClientSlice.currentUser;
@@ -119,6 +166,8 @@ export const selectEventPreview = (state: RootState) => state.oscarClientSlice.e
 export const selectLaneView = (state: RootState) => state.oscarClientSlice.laneView;
 export const selectLaneMap = (state: RootState) => state.oscarClientSlice.laneMap;
 export const selectShouldForceAlarmTableDeselect = (state: RootState) => state.oscarClientSlice.shouldForceAlarmTableDeselect;
+
+export const selectEventDetails= (state: RootState) => state.oscarClientSlice.eventDetailsState;
 
 
 // Compound Selectors
@@ -148,6 +197,11 @@ export const selectDatastreamsOfLane = (laneId: string) => createSelector(
         return datastreamsArr;
     });
 */
+
+
+
+
+
 
 
 export default Slice.reducer;

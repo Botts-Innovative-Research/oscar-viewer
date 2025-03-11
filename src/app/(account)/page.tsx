@@ -42,8 +42,8 @@ export default function AccountViewPage() {
         <Container sx={{width: "40%"}}>
             <Stack spacing={2} alignItems={"center"}>
                 <Typography variant="h4">Login</Typography>
-                <TextField fullWidth id="username" placeholder="Username" variant="outlined" onChange={onChangeUserName}/>
-                <TextField fullWidth id="password" placeholder="Password" variant="outlined" type="password"/>
+                <TextField autoComplete="new-username" fullWidth id="username" placeholder="Username" variant="outlined" onChange={onChangeUserName}/>
+                <TextField autoComplete="new-password" fullWidth id="password" placeholder="Password" variant="outlined" type="password"/>
                 <Button fullWidth variant="contained" color="success" onClick={onClickLogin}>Login</Button>
                 <Snackbar
                     open={openSnack}

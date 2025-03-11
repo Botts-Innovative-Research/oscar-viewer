@@ -1,14 +1,13 @@
 "use client";
 
 import {Box, Grid, Paper, Stack, Typography} from "@mui/material";
-import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
-import {SelectedEvent} from "types/new-types";
+import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import BackButton from "../_components/BackButton";
 import DataRow from "../_components/event-details/DataRow";
 
 import MiscTable from "../_components/event-details/MiscTable";
-import {useSelector} from "react-redux";
-import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
+import {useDispatch, useSelector} from "react-redux";
+import {selectEventDetails, selectEventPreview, setEventDetails} from "@/lib/state/OSCARClientSlice";
 import ChartTimeHighlight from "../_components/event-preview/ChartTimeHighlight";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
@@ -18,6 +17,7 @@ import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback
 import AdjudicationDetail from "@/app/_components/adjudication/AdjudicationDetail";
 import TimeController from "@/app/_components/TimeController";
 import {EventType} from "osh-js/source/core/event/EventType";
+import {useSearchParams} from "next/navigation";
 
 /**
  * Expects the following search params:
@@ -28,8 +28,18 @@ import {EventType} from "osh-js/source/core/event/EventType";
  */
 
 export default function EventDetailsPage() {
-    const laneMapRef = useContext(DataSourceContext).laneMapRef;
+
+    const dispatch = useDispatch();
+    const eventDetails = useSelector(selectEventDetails);
     const eventPreview = useSelector(selectEventPreview);
+
+    // const searchParams = useSearchParams();
+    // const currentLane = searchParams.get("laneName");
+    // const occupancyStartTime = searchParams.get("startTime");
+    // const occupancyEndTime = searchParams.get("endTime")
+
+    const laneMapRef = useContext(DataSourceContext).laneMapRef;
+
     const syncRef = useRef<typeof DataSynchronizer>();
     const [currentTime, setCurrentTime] = useState<string>("");
     const dsMapRef = useRef<Map<string, typeof SweApi[]>>();
@@ -54,65 +64,94 @@ export default function EventDetailsPage() {
     const [syncTime, setSyncTime]= useState(0);
 
     useEffect(() => {
-        setCurrentTime(eventPreview.eventData?.startTime);
-    }, [eventPreview]);
+        setCurrentTime(eventDetails.eventData?.startTime);
+    }, [eventDetails]);
 
     useEffect(() => {
         // create dsMapRef of eventPreview
-        if (eventPreview && dsMapRef.current) {
-            dsMapRef.current = laneMapRef.current.get(eventPreview.eventData?.laneId)?.getDatastreamsForEventDetail(eventPreview.eventData?.startTime, eventPreview.eventData?.endTime);
-            console.log("EventPreview DS Map", dsMapRef.current);
+        if (dsMapRef.current) {
+            // dsMapRef.current = laneMapRef.current.get(eventDetails.laneName)?.getDatastreamsForEventDetail(eventDetails.startTime, eventDetails.endTime);
+            dsMapRef.current = laneMapRef.current.get(eventDetails.eventData?.laneId)?.getDatastreamsForEventDetail(eventDetails.eventData?.startTime, eventDetails.eventData?.endTime);
+            console.log("EventPreview DS Map", laneMapRef.current.get(eventDetails.eventData?.laneId)?.getDatastreamsForEventDetail(eventDetails.eventData?.startTime, eventDetails.eventData?.endTime));
             setLocalDSMap(dsMapRef.current);
         }
-    }, [eventPreview]);
+    }, [eventDetails]);
+
 
     const collectDataSources = useCallback(() => {
-        let currentLane = eventPreview.eventData?.laneId;
+        let currentLane = eventDetails.eventData?.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
 
+        if (!currLaneEntry) {
+            console.error("LaneMapEntry not found for:", currentLane);
+            return;
+        }
         console.log("Collecting DataSources...", currLaneEntry, currentLane);
+
 
         let tempDSMap = new Map<string, typeof SweApi[]>();
         if (currLaneEntry) {
-            let datasources = currLaneEntry?.getDatastreamsForEventDetail(eventPreview.eventData?.startTime, eventPreview.eventData?.endTime);
+            let datasources = currLaneEntry?.getDatastreamsForEventDetail(eventDetails.eventData?.startTime, eventDetails.eventData?.endTime);
             console.log("DataSources", datasources);
-            setLocalDSMap(datasources);
+            // setLocalDSMap(datasources);
             tempDSMap = datasources;
         }
         console.log("LocalDSMap", localDSMap);
 
-        setGammaDS(tempDSMap.get("gamma"));
-        setNeutronDS(tempDSMap.get("neutron"));
-        setThresholdDS(tempDSMap.get("gammaTrshld"));
-        setVideoDatasources(tempDSMap.get("video"));
+        const updatedGamma = tempDSMap.get("gamma") || [];
+        const updatedNeutron = tempDSMap.get("neutron") || [];
+        const updatedThreshold = tempDSMap.get("gammaTrshld") || [];
+        const updatedVideo = tempDSMap.get("video") || [];
+        const updatedOcc = tempDSMap.get("occ") || [];
+
+        setGammaDS(updatedGamma);
+        setNeutronDS(updatedNeutron);
+        setThresholdDS(updatedThreshold);
+        setVideoDatasources(updatedVideo);
+        setOccDS(updatedOcc);
         setDatasourcesReady(true);
 
-    }, [eventPreview, laneMapRef]);
+        dispatch(setEventDetails({
+            eventData: eventPreview.eventData,
+            gamma: updatedGamma,
+            neutron: updatedNeutron,
+            threshold: updatedThreshold,
+            video: updatedVideo,
+            occ: updatedOcc,
+            dsReady: true
+        }));
+
+    }, [eventPreview, laneMapRef, dispatch, eventDetails]);
 
     const createDataSync = useCallback(() => {
-        if (!syncRef.current && !dataSyncCreated && videoDatasources.length > 0) {
+        if (!syncRef.current && !dataSyncCreated &&  videoDatasources.length > 0) { //!videoDatasources &&
             syncRef.current = new DataSynchronizer({
                 dataSources: videoDatasources,
                 replaySpeed: 1.0,
-                startTime: eventPreview.eventData?.startTime,
-                endTime: eventPreview.eventData.endTime,
+                startTime: eventDetails.eventData?.startTime,
+                endTime: eventDetails.eventData?.endTime,
             });
             syncRef.current.onTime
             setDataSyncCreated(true);
-            syncRef.current.onTime
         }
-    }, [syncRef, dataSyncCreated, datasourcesReady, videoDatasources]);
+    }, [syncRef, dataSyncCreated, datasourcesReady, videoDatasources, eventDetails]);
 
     useEffect(() => {
-        collectDataSources();
+        if (eventPreview.eventData?.laneId && laneMapRef.current) {
+            collectDataSources();
+            console.log('Datasources collected', eventPreview.eventData?.laneId)
+        }
     }, [eventPreview, laneMapRef]);
+
+
 
     useEffect(() => {
         createDataSync();
-    }, [gammaDatasources, neutronDatasources, thresholdDatasources, occDatasources, syncRef, dataSyncCreated, datasourcesReady]);
+    }, [gammaDatasources, neutronDatasources, thresholdDatasources, occDatasources, syncRef, dataSyncCreated, datasourcesReady, eventDetails, eventPreview]);
 
     useEffect(() => {
         if (chartReady && videoReady) {
+
             console.log("Chart Ready, Starting DataSync");
             gammaDatasources.forEach(ds => {
                 ds.connect();
@@ -128,21 +167,21 @@ export default function EventDetailsPage() {
             });
 
 
-            syncRef.current.connect().then(() => {
+            syncRef.current?.connect().then(() => {
                 console.log("DataSync Should Be Connected", syncRef.current);
             });
-            if (syncRef.current.isConnected()) {
+
+            if (syncRef.current?.isConnected()) {
                 // if is true then pause else play
                 console.log("DataSync Connected!!!");
             } else {
                 console.log("DataSync Not Connected... :(");
             }
 
-
         } else {
             console.log("Chart Not Ready, cannot start DataSynchronizer...");
         }
-    }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
+    }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady, gammaDatasources, neutronDatasources, thresholdDatasources, occDatasources, eventDetails, dispatch ]);
 
 
 
@@ -155,9 +194,14 @@ export default function EventDetailsPage() {
                 }, [EventType.MASTER_TIME]
             );
         }
-
-
     }, [syncRef.current]);
+
+    useEffect(()=>{
+        if(gammaDatasources.length> 0 && neutronDatasources.length> 0 && thresholdDatasources.length > 0 && !datasourcesReady){
+            setDatasourcesReady(true);
+        }
+    },[gammaDatasources, neutronDatasources, thresholdDatasources, eventDetails, datasourcesReady])
+
 
 
     // function to start the time controller by connecting to time sync
@@ -185,12 +229,13 @@ export default function EventDetailsPage() {
         }
 
         // update the time sync start time
-        await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, 1.0, false);
-
+        await syncRef.current.setTimeRange(newValue, eventDetails.eventData?.endTime, 1.0, false);
 
         setSyncTime(newValue);
 
-    },[syncRef.current, eventPreview]);
+    },[syncRef.current, eventDetails]);
+
+
 
     return (
         <Stack spacing={4} direction={"column"} sx={{width: "100%"}}>
@@ -209,40 +254,41 @@ export default function EventDetailsPage() {
 
             <Paper variant='outlined' sx={{ width: "100%" , padding: 2}}>
                 {datasourcesReady && (
-               <Box>
-                   <Grid container direction="row" spacing={2} justifyContent={"center"}>
-                       <Grid item xs={12} md={6}>
+                    <Box>
+                        <Grid container direction="row" spacing={2} justifyContent={"center"}>
+                            <Grid item xs={12} md={6}>
 
-                           <ChartTimeHighlight
-                               datasources={{
-                                   gamma: gammaDatasources?.[0] ?? null,
-                                   neutron: neutronDatasources?.[0] ?? null,
-                                   threshold: thresholdDatasources?.[0] ?? null
+                                <ChartTimeHighlight
+                                    datasources={{
+                                        gamma: gammaDatasources?.[0] ?? null,
+                                        neutron: neutronDatasources?.[0] ?? null,
+                                        threshold: thresholdDatasources?.[0] ?? null
 
-                               }}
-                               setChartReady={setChartReady}
-                               modeType="detail"
-                               currentTime={syncTime}
+                                    }}
+                                    setChartReady={setChartReady}
+                                    modeType="detail"
+                                    currentTime={syncTime}
 
-                           />
+                                />
 
-                       </Grid>
-                       <Grid item xs={12} md={6}>
-                           <LaneVideoPlayback videoDatasources={videoDatasources}
-                                              setVideoReady={setVideoReady}
-                                              dataSynchronizer={syncRef.current}
-                                              addDataSource={setActiveVideoIDX}
-                                              modeType={"detail"}
-                           />
-                       </Grid>
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <LaneVideoPlayback
+                                    videoDatasources={videoDatasources}
+                                    setVideoReady={setVideoReady}
+                                    dataSynchronizer={syncRef.current}
+                                    addDataSource={setActiveVideoIDX}
+                                    modeType={"detail"}
+                                />
+                            </Grid>
 
 
 
-                   </Grid>
-                   <TimeController handleChange={handleChange} pause={pause} start={start} syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
+                        </Grid>
+                        <TimeController handleChange={handleChange} pause={pause} start={start} syncTime={syncTime} timeSync={syncRef.current} startTime={eventDetails.eventData.startTime} endTime={eventDetails.eventData.endTime}/>
 
-               </Box>
-                    )}
+                    </Box>
+                )}
             </Paper>
 
             <Paper variant='outlined' sx={{width: "100%"}}>
@@ -250,7 +296,7 @@ export default function EventDetailsPage() {
             </Paper>
 
             <Paper variant='outlined' sx={{width: "100%"}}>
-                    <AdjudicationDetail event={eventPreview.eventData}/>
+                <AdjudicationDetail event={eventDetails.eventData}/>
             </Paper>
 
         </Stack>

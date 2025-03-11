@@ -30,8 +30,7 @@ export default function LaneVideoPlayback({
                                               addDataSource,
                                               modeType
                                           }: LaneVideoPlaybackProps) {
-    const dispatch = useAppDispatch();
-    const laneMapRef = useContext(DataSourceContext).laneMapRef;
+
     const [dataSources, setDatasources] = useState<typeof SweApi[]>([]);
     const videoViewRef = useRef<typeof VideoView>();
     const [selVideoIdx, setSelVidIdx] = useState<number>(0);
@@ -42,19 +41,21 @@ export default function LaneVideoPlayback({
     const [videoSize, setVideoSize] = useState("300px");
 
     useEffect(() => {
-        setDatasources(videoDatasources);
-        setMaxPages(videoDatasources.length)
+        if (videoDatasources && videoDatasources?.length > 0) {
+            setDatasources(videoDatasources);
+            setMaxPages(videoDatasources?.length);
+        }
 
         if(modeType === 'detail'){
-            setVideoSize("500px")
+            setVideoSize("450px")
         }else if (modeType=== 'preview'){
-            setVideoSize("300px")
+            setVideoSize("250px")
         }
     }, [videoDatasources]);
 
 
     useEffect(() => {
-        if (dataSources[selVideoIdx]) {
+        if (dataSources.length > 0 && dataSources[selVideoIdx]) {
 
             addDataSource(selVideoIdx);
 
@@ -95,20 +96,15 @@ export default function LaneVideoPlayback({
     const handleNextPage = () =>{
 
         setSelVidIdx((prevPage)=> {
+            if (dataSources.length === 0) return 0;
             let nextPage = prevPage + 1
-
-            if(dataSources && dataSources[0] && nextPage <= maxPages - 1){
-                return nextPage;
-            }else{
-                return prevPage;
-            }
+            return nextPage < maxPages ? nextPage : prevPage;
         })
     }
 
     const handlePrevPage = () =>{
         setSelVidIdx((prevPage) => {
-            let currpage = prevPage - 1;
-            return currpage;
+            return prevPage > 0 ? prevPage -1 : prevPage;
         })
     }
 
@@ -116,7 +112,7 @@ export default function LaneVideoPlayback({
     return (
         <>
 
-        {dataSources != null && dataSources.length > 0 && (
+        {dataSources != null && dataSources?.length > 0 && (
 
             <Box sx={{display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center"}}>
                 <IconButton onClick={handlePrevPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === 0}>
@@ -129,9 +125,28 @@ export default function LaneVideoPlayback({
                     direction="row"
                     alignContent="center"
                     justifyContent={"center"}
-                    sx={{ padding: 2, width: '100%', height: {videoSize}, border: "solid", borderWidth: '1px', borderColor: "rgba(0, 0, 0, 0.12)"}}
+                    sx={{
+                        padding: 2,
+                        width: "100%",
+                        height: videoSize,
+                        border: "solid",
+                        borderWidth: '1px',
+                        borderColor: "rgba(0, 0, 0, 0.12)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+
+                    }}
                 >
-                    <Grid item key={dataSources[selVideoIdx].id} id="event-preview-video"></Grid>
+                    <Grid item key={dataSources[selVideoIdx].id} id="event-preview-video"
+                          sx={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "contain",
+                              overflow: "hidden"
+                    }}>
+
+                    </Grid>
                 </Stack>
 
                 <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === maxPages-1}>
