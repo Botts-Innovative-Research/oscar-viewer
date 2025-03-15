@@ -29,6 +29,7 @@ import {Button, Menu, MenuItem, Stack} from '@mui/material';
 import {useEffect, useState} from 'react';
 import Link from 'next/link';
 import {Label, SaveRounded} from "@mui/icons-material";
+import AlarmAudio from "@/app/_components/AlarmAudio";
 
 const drawerWidth = 240;
 
@@ -231,7 +232,9 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
           horizontal: 'right',
         }}
       >
-        <MenuItem>Temp Item</MenuItem>
+        <MenuItem>
+          <AlarmAudio/>
+        </MenuItem>
       </Menu>
       <Drawer variant="permanent" open={drawerOpen}>
         <DrawerHeader>
