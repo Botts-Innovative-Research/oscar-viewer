@@ -145,7 +145,6 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }, [InitializeApplication]);
 
     return (<>
-        <AlarmAudio/>
         <DataSourceContext.Provider value={{laneMapRef}}>
             {children}
         </DataSourceContext.Provider>
