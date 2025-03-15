@@ -13,7 +13,7 @@ import CustomToolbar from "@/app/_components/CustomToolbar";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {selectEventPreview, setEventPreview} from "@/lib/state/OSCARClientSlice";
+import {selectEventPreview, setEventPreview} from "@/lib/state/EventPreviewSlice";
 import {useRouter} from "next/navigation";
 
 

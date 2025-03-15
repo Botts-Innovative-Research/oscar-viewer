@@ -6,13 +6,11 @@
 import {
     Box,
     Button,
-    Grid,
     IconButton,
     Snackbar,
     SnackbarCloseReason,
     Stack,
     TextField,
-    ToggleButton, ToggleButtonGroup,
     Typography
 } from "@mui/material";
 import OpenInFullRoundedIcon from "@mui/icons-material/OpenInFullRounded";
@@ -21,11 +19,12 @@ import React, {useCallback, useContext, useEffect, useRef, useState} from "react
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
 import {
-    selectCurrentUser,
-    selectEventDetails, setEventDetails,
+    selectEventPreview,
     setEventPreview,
     setShouldForceAlarmTableDeselect
-} from "@/lib/state/OSCARClientSlice";
+} from "@/lib/state/EventPreviewSlice";
+
+import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/navigation";
 import ChartTimeHighlight from "@/app/_components/event-preview/ChartTimeHighlight";
@@ -33,9 +32,8 @@ import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {EventTableData} from "@/lib/data/oscar/TableHelpers";
+
 import AdjudicationData, {
-    createAdjudicationObservation,
     findObservationIdBySamplingTime,
     generateCommandJSON,
     IAdjudicationData,
@@ -47,22 +45,20 @@ import {updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 import {EventType} from "osh-js/source/core/event/EventType";
 import TimeController from "@/app/_components/TimeController";
+import {setEventData} from "@/lib/state/EventDetailsSlice";
 
 
 
-export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTableData | null }) {
 
+export function EventPreview() {
     const dispatch = useAppDispatch();
-    const eventDetails = useSelector(selectEventDetails);
-    // const eventPreview = useSelector(selectEventPreview);
-
-
     const router = useRouter();
+    const eventPreview = useSelector(selectEventPreview);
+
+    const prevEventIdRef = useRef<string | null>(null);
 
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
 
-
-    const dsMapRef = useRef<Map<string, typeof SweApi[]>>();
     const [localDSMap, setLocalDSMap] = useState<Map<string, typeof SweApi[]>>(new Map<string, typeof SweApi[]>());
     const [dataSyncReady, setDataSyncReady] = useState<boolean>(false);
     const [datasourcesReady, setDatasourcesReady] = useState<boolean>(false);
@@ -99,6 +95,10 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     const [openSnack, setOpenSnack] = useState(false);
     const [colorStatus, setColorStatus] = useState('')
 
+
+    if (!eventPreview.isOpen || !eventPreview.eventData) {
+        return null;
+    }
 
     const handleAdjudicationCode = (value: AdjudicationCode) => {
         console.log("Adjudication Value: ", value);
@@ -201,28 +201,20 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     }
 
     const handleCloseRounded = () => {
-        console.log("Close Rounded");
-        //set event preview to empty
+
+        cleanupResources();
+        
         dispatch(setEventPreview({
             isOpen: false,
             eventData: null
         }));
-        //remove occupancy selection
-        dispatch(setShouldForceAlarmTableDeselect(true));
 
-        //clear event details
-        dispatch(setEventDetails({
-            eventData: null,
-            gamma: [],
-            neutron: [],
-            threshold: [],
-            video: [],
-            occ: [],
-            dsReady: false
-        }));
+        dispatch(setShouldForceAlarmTableDeselect(true))
     }
 
     const handleExpand = () => {
+        dispatch(setEventData(eventPreview?.eventData));
+
         router.push("/event-details");
     }
 
@@ -232,34 +224,68 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         });
     }
 
-    useEffect(() => {
-        // create dsMapRef of eventPreview
-        if (dsMapRef.current) {
-            // dsMapRef.current = laneMapRef.current.get(eventDetails.laneName)?.getDatastreamsForEventDetail(eventDetails.startTime, eventDetails.endTime);
-            dsMapRef.current = laneMapRef.current.get(eventDetails.eventData?.laneId)?.getDatastreamsForEventDetail(eventDetails.eventData?.startTime, eventDetails.eventData?.endTime);
-            console.log("EventPreview DS Map", laneMapRef.current.get(eventDetails.eventData?.laneId)?.getDatastreamsForEventDetail(eventDetails.eventData?.startTime, eventDetails.eventData?.endTime));
-            setLocalDSMap(dsMapRef.current);
+    function setChartRef(type: string, ref: any) {
+        if (type === "gamma") {
+            gammaChartRef.current = ref;
+        } else if (type === "neutron") {
+            neutronChartRef.current = ref;
         }
-    }, [eventDetails]);
+
+    }
+
+    const cleanupResources = () => {
+        disconnectDSArray(gammaDatasources);
+        disconnectDSArray(neutronDatasources);
+        disconnectDSArray(thresholdDatasources);
+        disconnectDSArray(occDatasources);
+        
+        if (syncRef.current?.isConnected()) {
+            syncRef.current.disconnect();
+        }
+
+        setDatasourcesReady(false);
+        setDataSyncCreated(false);
+        setChartReady(false);
+        setVideoReady(false);
+        setSyncTime(null);
+        syncRef.current = null;
+    };
+
+    useEffect(() => {
+        if (eventPreview.eventData?.occupancyId !== prevEventIdRef.current) {
+           
+            if (prevEventIdRef.current) {
+                cleanupResources();
+            }
+            
+            
+            prevEventIdRef.current = eventPreview.eventData?.occupancyId;
+            if (eventPreview.eventData?.laneId && laneMapRef.current) {
+                collectDataSources();
+            }
+        }
+    }, [eventPreview.eventData?.occupancyId]);
 
     const collectDataSources = useCallback(() => {
-        let currentLane = eventDetails.eventData?.laneId;
-        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+        if (!eventPreview.eventData?.laneId || !laneMapRef.current) return;
 
+        let currentLane = eventPreview.eventData.laneId;
+        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
         if (!currLaneEntry) {
             console.error("LaneMapEntry not found for:", currentLane);
             return;
         }
+
         console.log("Collecting DataSources...", currLaneEntry, currentLane);
 
-
         let tempDSMap = new Map<string, typeof SweApi[]>();
-        if (currLaneEntry) {
-            let datasources = currLaneEntry?.getDatastreamsForEventDetail(eventDetails.eventData?.startTime, eventDetails.eventData?.endTime);
-            console.log("DataSources", datasources);
-            // setLocalDSMap(datasources);
-            tempDSMap = datasources;
-        }
+
+        let datasources = currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
+        console.log("DataSources", datasources);
+
+        setLocalDSMap(datasources);
+        tempDSMap = datasources;
+
         console.log("LocalDSMap", localDSMap);
 
         const updatedGamma = tempDSMap.get("gamma") || [];
@@ -276,18 +302,9 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         setDatasourcesReady(true);
 
 
-        dispatch(setEventDetails({
-            eventData: eventPreview.eventData,
-            gamma: updatedGamma,
-            neutron: updatedNeutron,
-            threshold: updatedThreshold,
-            video: updatedVideo,
-            occ: updatedOcc,
-            dsReady: true
-        }));
 
+    }, [eventPreview, laneMapRef]);
 
-    }, [eventPreview, laneMapRef, dispatch, eventDetails]);
 
 
     const createDataSync = useCallback(() => {
@@ -295,25 +312,25 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
             syncRef.current = new DataSynchronizer({
                 dataSources: videoDatasources,
                 replaySpeed: 1.0,
-                startTime: eventDetails.eventData?.startTime,
-                endTime: eventDetails.eventData?.endTime,
-                // endTime: "now",
+                startTime: eventPreview.eventData.startTime,
+                // endTime: eventPreview.eventData.endTime,
+                endTime: "now",
             });
             syncRef.current.onTime
             setDataSyncCreated(true);
         }
-    }, [syncRef, dataSyncCreated, datasourcesReady, videoDatasources, eventDetails]);
+    }, [syncRef, dataSyncCreated, datasourcesReady, videoDatasources]);
 
     useEffect(() => {
-        if(eventPreview.eventData?.laneId, laneMapRef.current){
+        if (eventPreview.eventData?.laneId && laneMapRef.current) {
             collectDataSources();
             console.log('Datasources collected', eventPreview.eventData?.laneId)
         }
-    }, [eventPreview, laneMapRef]);
+    }, [eventPreview.eventData, laneMapRef.current]);
 
     useEffect(() => {
         createDataSync();
-    }, [gammaDatasources, neutronDatasources, thresholdDatasources, occDatasources, syncRef, dataSyncCreated, datasourcesReady, eventDetails, eventPreview]);
+    }, [videoDatasources, syncRef, dataSyncCreated, datasourcesReady]);
 
 
     useEffect(() => {
@@ -344,10 +361,11 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         } else {
             console.log("Chart Not Ready, cannot start DataSynchronizer...");
         }
-    }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady, gammaDatasources, neutronDatasources, thresholdDatasources, occDatasources, eventDetails, dispatch]);
+    }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
 
 
     useEffect(() => {
+
         if(syncRef.current){
             syncRef.current.subscribe((message: { type: any; timestamp: any }) => {
                     if (message.type === EventType.MASTER_TIME) {
@@ -356,13 +374,16 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                 }, [EventType.MASTER_TIME]
             );
         }
+
+
     }, [syncRef.current]);
 
 
-    const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
+    const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason) => {
         if (reason === 'clickaway') {
             return;
         }
+
         setOpenSnack(false);
     };
 
@@ -383,9 +404,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         }
     };
 
-
-
-    //when the user toggles the time controller this is the code to change the time sync
+    // when the user toggles the time controller this is the code to change the time sync
     const handleChange = useCallback( async(event: Event, newValue: number) => {
         // update time sync datasources start time
         for (const dataSource of syncRef.current.getDataSources()) {
@@ -393,27 +412,19 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         }
 
         // update the time sync start time
-        await syncRef.current.setTimeRange(newValue, eventDetails.eventData?.endTime, 1.0, false);
+        await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, 1.0, false);
+
 
         setSyncTime(newValue);
 
-    },[syncRef.current, eventDetails]);
+    },[syncRef.current, eventPreview]);
 
-
-    useEffect(() => {
-        return () => {
-            disconnectDSArray(gammaDatasources);
-            disconnectDSArray(neutronDatasources);
-            disconnectDSArray(thresholdDatasources);
-            disconnectDSArray(occDatasources);
-        };
-    }, []);
 
     return (
         <Stack p={1} display={"flex"} spacing={1}>
             <Stack direction={"row"} justifyContent={"space-between"} spacing={1}>
                 <Stack direction={"row"} spacing={1} alignItems={"center"}>
-                    <Typography variant="h6">Occupancy ID: {eventDetails.eventData.occupancyId}</Typography>
+                    <Typography variant="h6">Occupancy ID: {eventPreview.eventData.occupancyId}</Typography>
                     <IconButton onClick={handleExpand} aria-label="expand">
                         <OpenInFullRoundedIcon fontSize="small"/>
                     </IconButton>
@@ -428,13 +439,14 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                 <Box>
                     <ChartTimeHighlight
                         datasources={{
-                            gamma: gammaDatasources[0] ?? null,
-                            neutron: neutronDatasources[0] ?? null,
-                            threshold: thresholdDatasources[0] ?? null,
+                            gamma: gammaDatasources[0],
+                            neutron: neutronDatasources[0],
+                            threshold: thresholdDatasources[0]
                         }}
                         setChartReady={setChartReady}
                         modeType="preview"
                         currentTime={syncTime}
+                        eventData={eventPreview.eventData}
                     />
 
                     <LaneVideoPlayback
@@ -445,8 +457,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                         modeType={"preview"}
                     />
 
-                    <TimeController handleChange={handleChange} pause={pause} start={start} syncTime={syncTime} timeSync={syncRef.current} startTime={eventDetails.eventData.startTime} endTime={eventDetails.eventData.endTime}/>
-
+                    <TimeController handleChange={handleChange} pause={pause} start={start} syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
                 </Box>
             )}
 

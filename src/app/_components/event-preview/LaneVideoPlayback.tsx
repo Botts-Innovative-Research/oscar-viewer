@@ -3,16 +3,13 @@
  * All Rights Reserved
  */
 
-import {useAppDispatch} from "@/lib/state/Hooks";
-import React, {useContext, useEffect, useRef, useState} from "react";
-import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import {Box, Grid, IconButton, Stack, Typography} from "@mui/material";
+import React, { useEffect, useRef, useState} from "react";
+import {Box, Grid, IconButton, Stack} from "@mui/material";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import VideoView from "osh-js/source/core/ui/view/video/VideoView";
 import VideoDataLayer from "osh-js/source/core/ui/layer/VideoDataLayer";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
-import VideoComponent from "@/app/_components/video/VideoComponent";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
 export class LaneVideoPlaybackProps {

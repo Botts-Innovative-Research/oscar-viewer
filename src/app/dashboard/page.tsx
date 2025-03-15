@@ -7,7 +7,7 @@ import {useCallback, useContext, useEffect, useMemo, useState} from "react";
 import dynamic from "next/dynamic";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
-import {selectLaneMap} from "@/lib/state/OSCARClientSlice";
+import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import Table2 from "@/app/_components/event-table/TableType2";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import {

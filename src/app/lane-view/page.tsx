@@ -8,10 +8,9 @@ import Media from "../_components/lane-view/Media";
 import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import Table2 from "@/app/_components/event-table/TableType2";
 import {useSelector} from "react-redux";
-import {selectLaneMap} from "@/lib/state/OSCARClientSlice";
+import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {RootState} from "@/lib/state/Store";
-import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
-import AlarmTable from "@/app/_components/event-table/AlarmTable";
+import React, {useCallback, useContext, useEffect, useState} from "react";
 import StatusTables from "@/app/_components/event-table/StatusTables";
 import {
     isGammaDatastream,
@@ -37,8 +36,6 @@ export default function LaneViewPage() {
 
     const {laneMapRef} = useContext(DataSourceContext);
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
-
-    // const [filteredLaneMap, setFilteredLaneMap] = useState<Map<string, LaneMapEntry>>(null);
 
     const [toggleView, setToggleView] = useState("occupancy");
 
@@ -122,7 +119,10 @@ export default function LaneViewPage() {
             thresholdDatasources.connect()
         }
 
-    }, [thresholdDatasources, gammaDatasources, neutronDatasources]);
+        if(tamperDatasources){
+            tamperDatasources.connect();
+        }
+    }, [thresholdDatasources, gammaDatasources, neutronDatasources, tamperDatasources]);
 
 
     return (

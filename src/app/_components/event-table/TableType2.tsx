@@ -5,14 +5,13 @@ import {useCallback, useEffect, useState} from "react";
 import {Box} from "@mui/material";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
-import {setEventPreview} from "@/lib/state/OSCARClientSlice";
+import {clearEventPreview, selectSelectedEventId, setEventPreview} from "@/lib/state/EventPreviewSlice";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataGrid, GridActionsCellItem, GridCellParams, gridClasses, GridColDef} from "@mui/x-data-grid";
 import CustomToolbar from "@/app/_components/CustomToolbar";
-import NotesRoundedIcon from "@mui/icons-material/NotesRounded";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {
@@ -138,8 +137,16 @@ export default function Table2({
         dispatch(setEventLogData(allFetchedResults))
     }
 
+    const convertToMap = (obj: any) =>{
+        if(!obj) return new Map();
+        if(obj instanceof Map) return obj;
+        return new Map(Object.entries(obj));
+    }
+
     function doStream(laneMap: Map<string, LaneMapEntry>) {
-        laneMap.forEach((entry) => {
+        const laneMapToMap = convertToMap(laneMap);
+
+        laneMapToMap.forEach((entry) => {
             streamObservations(entry);
         })
     }
@@ -342,6 +349,9 @@ export default function Table2({
 
     function onRowSelect(event: EventTableData) {
         if (event) {
+            dispatch(setSelectedEvent(null));
+
+
             dispatch(setEventPreview({
                 isOpen: false,
                 eventData: null,
@@ -365,8 +375,6 @@ export default function Table2({
             dispatch(setSelectedEvent(null));
         }
     }
-
-
 
 
     return (
@@ -429,9 +437,11 @@ export default function Table2({
 
 
                 }}
+
                 getRowClassName={(params) =>
                     params.row.id == selectionModel[0] ? classes.selectedRow : ''
                 }
+
                 sx={{
 
                     // Assign styling to 'Status' column based on className

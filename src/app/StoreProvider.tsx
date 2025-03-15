@@ -4,7 +4,7 @@
  */
 
 'use client'
-import {useRef} from 'react';
+import {useEffect, useRef} from 'react';
 import {Provider} from 'react-redux';
 import {store, persistor} from "@/lib/state/Store";
 import { PersistGate } from 'redux-persist/integration/react';
@@ -17,9 +17,14 @@ export default function StoreProvider({children,}: {
     // if (!storeRef.current) {
     //     storeRef.current = makeStore
     // }
+
+    useEffect(() => {
+        console.log("Persistor state after rehydration:", persistor.getState());
+    }, []);
+
     return (
         <Provider store={store}>
-            <PersistGate loading={<p>Loading...</p>} persistor={persistor}>
+            <PersistGate loading={null} persistor={persistor}>
                 {children}
             </PersistGate>
         </Provider>

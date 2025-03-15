@@ -12,14 +12,14 @@ export default function RootLayout({children,}: {
         <html lang="en">
         <body>
         <Providers>
+            <StoreProvider>
                 <CssBaseline/>
-                <StoreProvider>
-                    <DataSourceProvider>
-                        <Navbar>
-                            {children}
-                        </Navbar>
-                    </DataSourceProvider>
-                </StoreProvider>
+                <DataSourceProvider>
+                    <Navbar>
+                        {children}
+                    </Navbar>
+                </DataSourceProvider>
+            </StoreProvider>
         </Providers>
         </body>
     </html>

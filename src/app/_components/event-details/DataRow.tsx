@@ -1,12 +1,10 @@
 "use client";
 
-import {IEventTableData, SelectedEvent} from "../../../../types/new-types";
+import {IEventTableData} from "../../../../types/new-types";
 import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from "@mui/material";
 import {useSelector} from "react-redux";
-import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
+import {selectEventPreview} from "@/lib/state/EventPreviewSlice";
 import {styled, Theme} from "@mui/material/styles";
-import {selectEventTableDataArray} from "@/lib/state/EventDataSlice";
-import {useEffect, useState} from "react";
 
 
 const StatusTableCell = styled(TableCell)(({theme, status}: { theme: Theme, status: string }) => ({
@@ -55,7 +53,9 @@ export default function DataRow() {
                             <TableCell>{eventData.endTime}</TableCell>
                             <TableCell>{eventData.maxGamma}</TableCell>
                             <TableCell>{eventData.maxNeutron}</TableCell>
-                            <StatusTableCell status = {eventData.status}>{eventData.status}</StatusTableCell>
+                            <StatusTableCell status={eventData?.status || 'Unknown'}>
+                                {eventData?.status || 'Unknown'}
+                            </StatusTableCell>
                             <TableCell>{eventData.isAdjudicated ? "Yes" : "No"}</TableCell>
                         </TableRow>
                     ) : (

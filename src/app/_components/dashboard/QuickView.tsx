@@ -1,24 +1,27 @@
 "use client";
 
-import {Box, Typography} from '@mui/material';
-import {SelectedEvent} from '../../../../types/new-types';
-
-import {useSelector} from "react-redux";
-import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
-import {EventPreview} from "@/app/_components/event-preview/EventPreview";
+import { Box } from '@mui/material';
+import { useSelector } from "react-redux";
+import {selectEventPreview} from "@/lib/state/EventPreviewSlice";
+import { EventPreview } from "@/app/_components/event-preview/EventPreview";
 import MapComponent from '../maps/MapComponent';
-
+import { useEffect, useState } from "react";
 
 export default function QuickView() {
     const eventPreview = useSelector(selectEventPreview);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const handleSelectedMarker = (event: SelectedEvent) => {
-        console.log(event);
-    };
+    useEffect(() => {
+        setIsLoading(false);
+    }, []);
+
+    if (isLoading) {
+        return <Box>Loading...</Box>;
+    }
 
     return (
         <Box style={{width: '100%', height: '300', padding: 10, overflow: 'hidden'}}>
-            {eventPreview.isOpen ? (<EventPreview key={eventPreview.eventData.id} isOpen={eventPreview.isOpen} eventData={eventPreview.eventData}/>) : (<MapComponent/>)}
+            {eventPreview.isOpen && eventPreview.eventData ? <EventPreview /> : <MapComponent/>}
         </Box>
     );
 }

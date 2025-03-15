@@ -137,26 +137,19 @@
 
 "use client";
 
-import {Box, Card, Grid, IconButton, Pagination, Stack, Typography } from '@mui/material';
-import {useCallback, useContext, useEffect, useRef, useState} from 'react';
+import {Box, IconButton, Stack } from '@mui/material';
+import {useCallback, useContext, useEffect, useState} from 'react';
 import "../../style/cameragrid.css";
 import { useSelector } from 'react-redux';
-import { LaneDSColl, LaneMapEntry, LaneMeta } from '@/lib/data/oscar/LaneCollection';
-import CameraGridVideo from '../video/VideoComponent';
-import { selectDatastreams } from '@/lib/state/OSHSlice';
-import { selectLaneMap, selectLanes } from '@/lib/state/OSCARClientSlice';
+import { LaneDSColl, LaneMapEntry } from '@/lib/data/oscar/LaneCollection';
+import { selectLaneMap } from '@/lib/state/OSCARLaneSlice';
 import { RootState } from '@/lib/state/Store';
 import VideoComponent from '../video/VideoComponent';
-import VideoStatusWrapper from '../video/VideoStatusWrapper';
-import {EventType} from 'osh-js/source/core/event/EventType';
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
-import { Protocols } from "@/lib/data/Constants";
-import {Mode} from 'osh-js/source/core/datasource/Mode';
 import {DataSourceContext} from '../../contexts/DataSourceContext';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
-import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
+
 
 interface LaneVideoProps{
     laneName: string

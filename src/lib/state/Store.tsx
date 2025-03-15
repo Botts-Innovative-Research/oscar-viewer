@@ -12,11 +12,15 @@ import AppReducer from './Slice';
 import OSHReducer from './OSHSlice';
 import EventDataReducer from './EventDataSlice';
 import OSCARClientReducer from "@/lib/state/OSCARClientSlice";
+import OSCARLaneReducer from "@/lib/state/OSCARLaneSlice";
+import EventDetailsReducer from "@/lib/state/EventDetailsSlice";
+import EventPreviewReducer from "@/lib/state/EventPreviewSlice";
 
 const persistConfig ={
     key: 'root',
     storage,
-    whitelist: ['oscarClientSlice'],
+    whitelist: ['oscarClientSlice', 'eventPreview', 'eventData', 'laneSlice', 'eventDetails'],
+    version: 1
 }
 
 const rootReducer = combineReducers({
@@ -24,6 +28,9 @@ const rootReducer = combineReducers({
     appState: AppReducer,
     oshSlice: OSHReducer,
     eventLogSlice: EventDataReducer,
+    laneSlice: OSCARLaneReducer,
+    eventDetails: EventDetailsReducer,
+    eventPreview: EventPreviewReducer
 });
 
 
@@ -34,17 +41,18 @@ export const store = configureStore({
     reducer: persistedReducer,
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
-            serializableCheck: {
-                ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+            serializableCheck: false,
+                // {
+                // ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
                 // ignoredPaths: ["oscarClientSlice.eventDetailsState", "oscarClientSlice.eventPreview"],
-            },
+            // },
         }),
 });
 
 
 export const persistor = persistStore(store);
 
-// export type AppStore = typeof store
+export type AppStore = typeof store
 // // Infer the `RootState` and `AppDispatch` types from the store itself
 export type RootState = ReturnType<typeof store.getState>
 // // Inferred type: {posts: PostsState, comments: CommentsState, users: UsersState}
