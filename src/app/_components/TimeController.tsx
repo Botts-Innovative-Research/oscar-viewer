@@ -2,7 +2,7 @@
 
 import { Box, IconButton, Stack, Typography } from "@mui/material";
 import Slider from '@mui/material/Slider';
-import React, { useEffect, useMemo, useState} from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 import PauseRoundedIcon from '@mui/icons-material/PauseRounded';
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
@@ -16,7 +16,7 @@ interface TimeControllerProps {
   syncTime: any;
   pause: Function;
   start: Function;
-  handleChange: Function;
+  handleChange: (event: Event, newValue: number) => void;
 }
 
 
@@ -29,6 +29,8 @@ export default function TimeController(props: TimeControllerProps) {
   const [maxTime, setMaxTime] = useState<number>(0);
   const [ds, setDs] = useState([]);
   const [replay, setReplay] = useState(null);
+
+  const isDragging = useRef(false);
 
   // Play/pause toggle state
   const [isPlaying, setIsPlaying] = useState(true);
@@ -52,26 +54,23 @@ export default function TimeController(props: TimeControllerProps) {
 
   }, [props.startTime, props.endTime, props.timeSync]);
 
-
   useEffect(() => {
-    const timeElement = document.getElementById('Slider');
-    if (timeElement) {
-      if (!isPlaying) {
-        timeElement.setAttribute('disabled', 'true');
-      } else {
-        timeElement.removeAttribute('disabled');
-      }
-    }
-    setCurrentTime(props.syncTime);
-
-  }, [isPlaying]);
-
-  useEffect(() => {
-    // console.log('syncTime updated:', props.syncTime);
     setCurrentTime(props.syncTime);
   }, [props.syncTime]);
 
 
+  // useEffect(() => {
+  //   const timeElement = document.getElementById('Slider');
+  //   if (timeElement) {
+  //     if (!isPlaying) {
+  //       timeElement.setAttribute('disabled', 'true');
+  //     } else {
+  //       timeElement.removeAttribute('disabled');
+  //     }
+  //   }
+  //   setCurrentTime(props.syncTime);
+  //
+  // }, [isPlaying]);
 
 
   // this function will take the timestamp convert it to iso string and then returns it with only the time part
@@ -90,8 +89,18 @@ export default function TimeController(props: TimeControllerProps) {
   //   }
   // };
 
+  const handleSliderChange= (_event: Event, newValue: number)=>{
+    isDragging.current =  true;
+    setCurrentTime(newValue);
+  }
 
-
+  const handleSliderChangeCommitted = async (event: Event, newValue: number) => {
+    isDragging.current = false;
+    await props.pause();
+    setIsPlaying(false);
+    props.handleChange(event, newValue);
+    setIsPlaying(true);
+  };
 
   return (
     <Box sx={{
@@ -103,7 +112,8 @@ export default function TimeController(props: TimeControllerProps) {
             value={currentTime} //current position of the slider
             min={minTime} //start time of slider
             max={maxTime} //end time of event
-            onChangeCommitted={props.handleChange}
+            onChange={handleSliderChange}
+            onChangeCommitted={handleSliderChangeCommitted}
             valueLabelDisplay="off"
         />
 
@@ -111,23 +121,18 @@ export default function TimeController(props: TimeControllerProps) {
 
 
           <IconButton
-            onClick={() =>{
+            onClick={async() =>{
               if(isPlaying){
-                props.pause();
+                await props.pause();
               }else{
-                props.start();
+                await props.start();
               }
 
                 setIsPlaying(!isPlaying)
               }
             }
           >
-            {isPlaying ? (
-              <PauseRoundedIcon />
-
-            ) : (
-              <PlayArrowRoundedIcon />
-            )}          
+            {isPlaying ? (<PauseRoundedIcon />) : (<PlayArrowRoundedIcon />)}
           </IconButton>
 
           <Typography variant="body1">

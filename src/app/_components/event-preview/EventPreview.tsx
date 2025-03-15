@@ -339,7 +339,8 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
 
     // // //when the user toggles the time controller this is the code to change the time sync
     const handleChange = useCallback( async(event: Event, newValue: number) => {
-        // update time sync datasources start time
+
+        // update time sync to datasources start time
         for (const dataSource of syncRef.current.getDataSources()) {
             dataSource.setMinTime(newValue);
         }
@@ -347,7 +348,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         // update the time sync start time
         await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, 1.0, false);
 
-
+        //set the synctime state
         setSyncTime(newValue);
 
     },[syncRef.current, eventPreview]);
@@ -389,7 +390,15 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                         modeType={"preview"}
                     />
 
-                    {/*<TimeController handleChange={handleChange} pause={pause} start={start} syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>*/}
+                    <TimeController
+                        handleChange={handleChange}
+                        pause={pause}
+                        start={start}
+                        syncTime={syncTime}
+                        timeSync={syncRef.current}
+                        startTime={eventPreview.eventData.startTime}
+                        endTime={eventPreview.eventData.endTime}
+                    />
 
                 </Box>
             )}
