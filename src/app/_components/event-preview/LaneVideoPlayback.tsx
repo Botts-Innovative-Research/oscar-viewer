@@ -39,16 +39,16 @@ export default function LaneVideoPlayback({
 
     const [maxPages, setMaxPages] = useState(0);
 
-    const [videoSize, setVideoSize] = useState("300px");
+    const [videoSize, setVideoSize] = useState("250px");
 
     useEffect(() => {
         setDatasources(videoDatasources);
         setMaxPages(videoDatasources.length)
 
         if(modeType === 'detail'){
-            setVideoSize("500px")
+            setVideoSize("450px")
         }else if (modeType=== 'preview'){
-            setVideoSize("300px")
+            setVideoSize("250px")
         }
     }, [videoDatasources]);
 
@@ -129,9 +129,28 @@ export default function LaneVideoPlayback({
                     direction="row"
                     alignContent="center"
                     justifyContent={"center"}
-                    sx={{ padding: 2, width: '100%', height: {videoSize}, border: "solid", borderWidth: '1px', borderColor: "rgba(0, 0, 0, 0.12)"}}
+                    sx={{
+                        padding: 2,
+                        width: "100%",
+                        height: videoSize,
+                        border: "solid",
+                        borderWidth: '1px',
+                        borderColor: "rgba(0, 0, 0, 0.12)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+
+                    }}
                 >
-                    <Grid item key={dataSources[selVideoIdx].id} id="event-preview-video"></Grid>
+                    <Grid item key={dataSources[selVideoIdx].id} id="event-preview-video"
+                          sx={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "contain",
+                              overflow: "hidden"
+                          }}>
+
+                    </Grid>
                 </Stack>
 
                 <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === maxPages-1}>
