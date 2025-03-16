@@ -118,21 +118,21 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             let elementIds: any[] = updateChartElIds(props.eventData);
             let layers = createCurveLayersAndReturn();
 
-            if (gammaChartViewRef.current && layers.gamma) {
+            if (gammaChartViewRef.current  ) {
 
                 let gammaChartElt = document.createElement("div");
                 gammaChartElt.id =  elementIds.find(id=> id.includes('gamma'));
                 gammaChartViewRef.current?.appendChild(gammaChartElt);
 
-                let gammaLayers: any[] = [];
-                if(layers.gamma) gammaLayers.push(layers.gamma)
-                if(layers.threshold) gammaLayers.push(layers.threshold)
+                // let gammaLayers: any[] = [];
+                // if(layers.gamma) gammaLayers.push(layers.gamma)
+                // if(layers.threshold) gammaLayers.push(layers.threshold)
 
 
-                if(gammaLayers.length > 0){
+                if(layers.threshold && layers.gamma){
                     const newGammaChart = new ChartJsView({
                         container:  gammaChartElt.id,
-                        layers: gammaLayers,
+                        layers: [layers.gamma, layers.threshold],
                         css: "chart-view-event-detail",
                         type: 'line',
                         options: {
@@ -181,14 +181,15 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 let nsigmaChartElt = document.createElement("div");
                 nsigmaChartElt.id = elementIds.find(id => id.includes('nsigma'));
                 nSigmaChartViewRef.current?.appendChild(nsigmaChartElt);
-                let nsigmaLayers: any[] = [];
-                if(layers.nsigma) nsigmaLayers.push(layers.nsigma)
-                if(layers.threshNsigma) nsigmaLayers.push(layers.threshNsigma)
+                
+                // let nsigmaLayers: any[] = [];
+                // if(layers.nsigma) nsigmaLayers.push(layers.nsigma)
+                // if(layers.threshNsigma) nsigmaLayers.push(layers.threshNsigma)
 
-                if(nsigmaLayers.length > 0) {
+                if(layers.threshNsigma && layers.nsigma) {
                     const newNsigmaChart = new ChartJsView({
                         container: nsigmaChartElt.id,
-                        layers: nsigmaLayers,
+                        layers: [layers.nsigma, layers.threshNsigma],
                         css: "chart-view-event-detail",
                         type: 'line',
                         options: {

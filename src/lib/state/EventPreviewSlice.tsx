@@ -1,6 +1,16 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "@/lib/state/Store";
 import { EventTableData } from "@/lib/data/oscar/TableHelpers";
+import storage from "redux-persist/es/storage";
+import {persistReducer} from "redux-persist";
+
+
+// const persistConfig = {
+//     key: 'eventPreview',
+//     storage,
+//     whitelist: ['eventPreview', 'shouldForceAlarmTableDeselect', 'selectedRowId']
+// };
+
 
 export interface IEventPreviewState {
     eventPreview: {
@@ -8,6 +18,7 @@ export interface IEventPreviewState {
         eventData: EventTableData | null;
     };
     shouldForceAlarmTableDeselect: boolean;
+    selectedRowId: any | null;
 }
 
 const initState: IEventPreviewState = {
@@ -16,6 +27,7 @@ const initState: IEventPreviewState = {
         eventData: null,
     },
     shouldForceAlarmTableDeselect: false,
+    selectedRowId: null
 };
 
 export const Slice = createSlice({
@@ -49,6 +61,9 @@ export const Slice = createSlice({
         toggleShouldForceAlarmTableDeselect: (state) => {
             state.shouldForceAlarmTableDeselect = !state.shouldForceAlarmTableDeselect;
         },
+        setSelectedRowId: (state, action: PayloadAction<any | null>) =>{
+            state.selectedRowId = action.payload;
+        }
     },
 });
 
@@ -59,9 +74,14 @@ export const {
     clearEventPreview,
     setShouldForceAlarmTableDeselect,
     toggleShouldForceAlarmTableDeselect,
+    setSelectedRowId
 } = Slice.actions;
 
 export const selectEventPreview = (state: RootState) => state.eventPreview.eventPreview;
 export const selectShouldForceAlarmTableDeselect = (state: RootState) => state.eventPreview.shouldForceAlarmTableDeselect;
+export const selectSelectedRowId = (state: RootState) => state.eventPreview.selectedRowId;
 
 export default Slice.reducer;
+
+
+// export default persistReducer(persistConfig, Slice.reducer);

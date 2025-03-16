@@ -5,7 +5,7 @@ import {useCallback, useEffect, useState} from "react";
 import {Box} from "@mui/material";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
-import {clearEventPreview, selectSelectedEventId, setEventPreview} from "@/lib/state/EventPreviewSlice";
+import {setEventPreview, setSelectedRowId, selectSelectedRowId} from "@/lib/state/EventPreviewSlice";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
@@ -30,7 +30,7 @@ interface TableProps {
     viewMenu?: boolean;
     viewLane?: boolean;
     viewAdjudicated?: boolean;
-    laneMap: Map<string, LaneMapEntry>
+    laneMap: Map<string, LaneMapEntry>;
 }
 
 const selectedRowStyles = makeStyles({
@@ -56,7 +56,8 @@ export default function Table2({
                                    // viewMenu = false,
                                    viewLane = false,
                                    viewAdjudicated = false,
-                                   laneMap
+                                   laneMap,
+
                                }: TableProps) {
 
     const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
@@ -66,6 +67,14 @@ export default function Table2({
     const router = useRouter();
     const classes = selectedRowStyles();
 
+    const selectedRowId = useSelector(selectSelectedRowId);
+
+    useEffect(() => {
+        if (!selectedRowId) {
+            setSelectionModel([]);
+        }
+    }, [selectedRowId]);
+
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
         let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty("http://www.opengis.net/def/pillar-occupancy-count");
@@ -74,8 +83,7 @@ export default function Table2({
             return;
         }
         let obsCollection = await occDS.searchObservations(observationFilter, 250000);
-        let observations = await handleObservations(obsCollection, laneEntry, false);
-        return observations;
+        return await handleObservations(obsCollection, laneEntry, false);
     }
 
     async function streamObservations(laneEntry: LaneMapEntry) {
@@ -92,6 +100,8 @@ export default function Table2({
         })
     }
 
+
+    // @ts-ignore
     async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<EventTableData[]> {
         let observations: EventTableData[] = [];
 
@@ -153,26 +163,24 @@ export default function Table2({
 
     function unadjudicatedFilteredList(tableData: EventTableData[]) {
         if (!tableData) return [];
-        let filtered = tableData.filter((entry) => {
+        return tableData.filter((entry) => {
             if (entry.isAdjudicated) return false;
             return entry.adjudicatedData.getCodeValue() === 0;
 
         })
 
-        return filtered
     }
 
     function onlyAlarmingFilteredList(tableData: EventTableData[]) {
         if (!tableData) return [];
-        let filtered = tableData.filter((entry: EventTableData) => entry.status !== 'None')
+        return  tableData.filter((entry: EventTableData) => entry.status !== 'None')
 
-        return filtered
     }
 
     function onlyLaneFilteredList(tableData: EventTableData[], laneId: string) {
         if (!tableData) return [];
-        let filtered = tableData.filter((entry: EventTableData) => entry.laneId == laneId)
-        return filtered
+        return tableData.filter((entry: EventTableData) => entry.laneId == laneId)
+
     }
 
 
@@ -181,7 +189,7 @@ export default function Table2({
     }, [laneMap]);
 
     const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
-        doFetch(laneMap);
+        await doFetch(laneMap);
         doStream(laneMap);
     }, [laneMap]);
 
@@ -228,8 +236,7 @@ export default function Table2({
             field: 'startTime',
             headerName: 'Start Time',
             valueFormatter:(value) =>{
-                const dateTime = (new Date(value)).toLocaleString();
-                return dateTime;
+                return (new Date(value)).toLocaleString();
             }
             // type: 'string',
         },
@@ -237,8 +244,7 @@ export default function Table2({
             field: 'endTime',
             headerName: 'End Time',
             valueFormatter:(value) =>{
-                const dateTime = (new Date(value)).toLocaleString();
-                return dateTime;
+                return (new Date(value)).toLocaleString();
             }
             // type: 'string',
         },
@@ -267,22 +273,6 @@ export default function Table2({
             // field: 'adjudicatedCode',
             headerName: 'Adjudicated',
             valueFormatter: (value) => value ? "Yes" : "No",
-            // valueFormatter: (value) => {
-            //     const adjCode = {
-            //         1: 'Code 1: Contraband Found',
-            //         2: 'Code 2: Other',
-            //         3: 'Code 3: Medical Isotope Found',
-            //         4: 'Code 4: NORM Found',
-            //         5: 'Code 5: Declared Shipment of Radioactive Material',
-            //         6: 'Code 6: Physical Inspection Negative',
-            //         7: 'Code 7: RIID/ASP Indicates Background Only',
-            //         8: 'Code 8: Other',
-            //         9: 'Code 9: Authorized Test, Maintenance, or Training Activity',
-            //         10: 'Code 10: Unauthorized Activity',
-            //         11: 'Code 11: Other'
-            //     };
-            //     return typeof value === 'number' ? adjCode[value] : 'None';
-            // }
         },
         {
             field: 'Menu',
@@ -323,58 +313,59 @@ export default function Table2({
             .map((column) => column.field);
     }
 
+
+
     // Handle currently selected row
     const handleRowSelection = (selection: any[]) => {
-
         const selectedId = selection[0]; // Get the first selected ID
 
         if (selectionModel[0] === selectedId) {
             // If the same row is selected, clear the selection
-            setSelectionModel([]);
+            setSelectionModel([]); //clear highlight
             if (onRowSelect) {
-                onRowSelect(null); // Return an empty object when deselected
+                onRowSelect(null); // clear event preview
 
             }
         } else {
             // Otherwise, set the new selection
-            setSelectionModel([selectedId]);
+            // onRowSelect(null); //clear out previous view
 
-            // Find the selected row's eventTable
+            // Then set new selection
+            setSelectionModel([selectedId]); // Highlight new row
+
+            // Find and set new row data
             const selectedRow = tableData.find((row) => row.id === selectedId);
-            if (selectedRow && onRowSelect) {
-                onRowSelect(selectedRow); // Return start and end time to parent function
+            if (selectedRow) {
+                onRowSelect(selectedRow); // Show event preview for new row
             }
+
         }
     };
 
+
     function onRowSelect(event: EventTableData) {
         if (event) {
-            dispatch(setSelectedEvent(null));
+            dispatch(setEventPreview({isOpen: false, eventData: null}));
 
-
-            dispatch(setEventPreview({
-                isOpen: false,
-                eventData: null,
-            }));
-
+            // Set new event preview
             let selectedEventPreview = {
                 isOpen: true,
-                eventData: event,
+                eventData: event
             };
 
-            dispatch(setEventPreview({
-                isOpen: true,
-                eventData: event,
-            }));
+            dispatch(setSelectedRowId(event.id));
+            dispatch(setEventPreview(selectedEventPreview));
             dispatch(setSelectedEvent(selectedEventPreview.eventData));
+
+
         } else {
-            dispatch(setEventPreview({
-                isOpen: false,
-                eventData: null,
-            }));
+            // Clear event preview
+            dispatch(setEventPreview({isOpen: false, eventData: null}));
             dispatch(setSelectedEvent(null));
+            dispatch(setSelectedRowId(null));
         }
     }
+
 
 
     return (

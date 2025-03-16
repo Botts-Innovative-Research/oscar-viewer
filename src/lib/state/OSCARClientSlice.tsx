@@ -1,10 +1,17 @@
 import {createSlice, PayloadAction} from "@reduxjs/toolkit";
 import {enableMapSet} from "immer";
 import {RootState} from "@/lib/state/Store";
-import storage from 'redux-persist/lib/storage';
+import storage from 'redux-persist/es/storage';
 import { persistReducer } from 'redux-persist';
 
 enableMapSet();
+
+// const persistConfig = {
+//     key: 'oscarClientSlice',
+//     storage,
+//     whitelist: ['alarmAudioVolume', 'currentUser', 'alertTimeoutSeconds', 'quickActions'],
+//   };
+
 
 export interface IOSCARClientState {
     currentUser: string,
@@ -46,11 +53,6 @@ export const Slice = createSlice({
     }
 })
 
-const persistConfig = {
-    key: 'oscarClientSlice',
-    storage,
-    whitelist: ['alarmAudioVolume', 'currentUser', 'alertTimeoutSeconds', 'quickActions'], 
-  };
 
 export const {
     setCurrentUser,
@@ -64,5 +66,6 @@ export const selectCurrentUser = (state: RootState) => state.oscarClientSlice.cu
 
 export const selectAlarmAudioVolume = (state: RootState) => state.oscarClientSlice.alarmAudioVolume;
 
+export default Slice.reducer;
 
-export default persistReducer(persistConfig, Slice.reducer);
+// export default persistReducer(persistConfig, Slice.reducer);

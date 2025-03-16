@@ -10,8 +10,17 @@ import {RootState} from "@/lib/state/Store";
 
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
+import {persistReducer} from "redux-persist";
+import storage from "redux-persist/es/storage";
 
 enableMapSet();
+
+// const persistConfig = {
+//     key: 'eventLogSlice',
+//     storage,
+//     whitelist: ['eventLog', 'selectedEvent', 'hasFetchedInitial']
+// };
+
 
 export interface IEventDataState {
     // eventLog: Map<string, EventTableData>,
@@ -104,3 +113,4 @@ export const selectAlarmingAndNonAdjudicatedData = (state: RootState) => {
 }
 
 export default Slice.reducer
+// export default persistReducer(persistConfig, Slice.reducer);

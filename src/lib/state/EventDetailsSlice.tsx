@@ -4,11 +4,11 @@ import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {persistReducer} from "redux-persist";
 import storage from "redux-persist/es/storage";
 
-const persistConfig = {
-    key: 'eventDetails',
-    storage,
-    whitelist: ['eventData', 'datasources', 'status']
-};
+// const persistConfig = {
+//     key: 'eventDetails',
+//     storage,
+//     whitelist: ['eventData', 'datasources', 'status']
+// };
 
 export interface EventDetailsState {
     eventData: EventTableData | null,
@@ -86,6 +86,6 @@ export const selectEventData = (state: RootState) => state.eventDetails.eventDat
 export const selectEventDatasources = (state: RootState) => state.eventDetails.datasources;
 export const selectEventStatus = (state: RootState) => state.eventDetails.status;
 
-// export default Slice.reducer;
+export default Slice.reducer;
 
-export default persistReducer(persistConfig, Slice.reducer);
+// export default persistReducer(persistConfig, Slice.reducer);

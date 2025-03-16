@@ -21,6 +21,7 @@ import {useSelector} from "react-redux";
 import {
     selectEventPreview,
     setEventPreview,
+    setSelectedRowId,
     setShouldForceAlarmTableDeselect
 } from "@/lib/state/EventPreviewSlice";
 
@@ -146,6 +147,7 @@ export function EventPreview() {
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
         const adjDsID = currLaneEntry.parentNode.laneAdjMap.get(currentLane);
         const ep = currLaneEntry.parentNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + adjDsID + "/observations";
+
         try {
             let resp = await fetch(ep, {
                 method: "POST",
@@ -210,6 +212,8 @@ export function EventPreview() {
         }));
 
         dispatch(setShouldForceAlarmTableDeselect(true))
+
+        dispatch(setSelectedRowId(null));
     }
 
     const handleExpand = () => {
