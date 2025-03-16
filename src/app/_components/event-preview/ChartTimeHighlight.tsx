@@ -299,8 +299,21 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             <Box display='flex' alignItems="center">
 
                 <Grid container direction="column" spacing={2}>
-                    <Grid item>
-                        <ToggleButtonGroup size="small" orientation="vertical" onChange={handleToggle} exclusive value={toggleView}>
+                    <Grid item style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+                        <ToggleButtonGroup
+                            size="small"
+                            orientation="horizontal"
+                            onChange={handleToggle}
+                            exclusive
+                            value={toggleView}
+                            sx={{
+                                boxShadow: 1,
+                                '& .MuiToggleButton-root': {
+                                    margin: 0.5,
+                                    padding: "5px",
+                                },
+                            }}
+                        >
                             {gammaToggleButtons}
                         </ToggleButtonGroup>
                     </Grid>
@@ -318,8 +331,21 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             <Box display='flex' alignItems="center">
 
                 <Grid container direction="column" spacing={2}>
-                    <Grid item>
-                        <ToggleButtonGroup size="small" orientation="vertical" onChange={handleToggle} exclusive value={toggleView}>
+                    <Grid item style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+                        <ToggleButtonGroup
+                            size="small"
+                            orientation="horizontal"
+                            onChange={handleToggle}
+                            exclusive
+                            value={toggleView}
+                            sx={{
+                                boxShadow: 1,
+                                '& .MuiToggleButton-root': {
+                                    margin: 0.5,
+                                    padding: "5px",
+                                },
+                            }}
+                        >
                             {gammaToggleButtons}
                         </ToggleButtonGroup>
                     </Grid>

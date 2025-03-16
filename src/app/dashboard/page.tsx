@@ -24,15 +24,12 @@ export default function DashboardPage() {
     return (
         <Grid container spacing={2} direction={"column"}>
             <Grid item container spacing={2} style={{flexBasis: '33.33%', flexGrow: 0, flexShrink: 0}}>
-                <Grid item xs={12}>
-                    <Paper variant='outlined' sx={{height: "100%"}}>
+                <Grid item xs={8} sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+                    <Paper variant='outlined' sx={{height: "auto", minHeight: 200, padding: 1}}>
                         <LaneStatus/>
                     </Paper>
-                </Grid>
-            </Grid>
-            <Grid item container spacing={2} style={{flexBasis: '66.66%', flexGrow: 0, flexShrink: 0}}>
-                <Grid item xs={8}>
-                    <Paper variant='outlined' sx={{height: "100%"}}>
+
+                    <Paper variant='outlined' sx={{flexGrow: 1, padding: 2, overflow: "hidden"}}>
                         <Table2 tableMode={'alarmtable'} laneMap={laneMap}/>
                     </Paper>
                 </Grid>
@@ -42,6 +39,7 @@ export default function DashboardPage() {
                     </Paper>
                 </Grid>
             </Grid>
+
         </Grid>
     );
 }
