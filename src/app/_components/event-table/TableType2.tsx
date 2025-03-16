@@ -378,7 +378,7 @@ export default function Table2({
 
 
     return (
-        <Box sx={{height: 800, width: '100%'}}>
+        <Box sx={{flex: 1, width: '100%'}}>
             <DataGrid
                 rows={filteredTableData}
                 columns={columns}
@@ -387,7 +387,7 @@ export default function Table2({
                 initialState={{
                     pagination: {
                         paginationModel: {
-                            pageSize: 20,
+                            pageSize: 15,
                         },
                     },
                     columns: {

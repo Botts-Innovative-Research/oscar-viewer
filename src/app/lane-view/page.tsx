@@ -159,12 +159,11 @@ export default function LaneViewPage() {
                             exclusive
                             value={toggleView}
                             sx={{
-                                borderRadius: 1,
                                 boxShadow: 1,
                                 '& .MuiToggleButton-root': {
                                     margin: 0.5,
                                     padding: "5px",
-                                 },
+                                },
                             }}
                         >
                             {toggleButtons}
