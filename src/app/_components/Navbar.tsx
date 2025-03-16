@@ -25,7 +25,7 @@ import CloudRoundedIcon from '@mui/icons-material/CloudRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
 import MediationIcon from '@mui/icons-material/Mediation';
-import {Button, Menu, MenuItem, Stack} from '@mui/material';
+import {Button, Menu, MenuItem, Stack, Tooltip} from '@mui/material';
 import {useEffect, useState} from 'react';
 import Link from 'next/link';
 import {Label, SaveRounded} from "@mui/icons-material";
@@ -205,13 +205,15 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
             <Typography variant="h6" noWrap component="div">
               OSCAR
             </Typography>
-            <IconButton
-              color="inherit"
-              aria-label="open notifications"
-              onClick={handleMenuOpen}
-            >
-              <NotificationsRoundedIcon />
-            </IconButton>
+            <Tooltip title={'Alarm Volume'} arrow placement="top">
+              <IconButton
+                color="inherit"
+                aria-label="open notifications"
+                onClick={handleMenuOpen}
+              >
+                <NotificationsRoundedIcon />
+              </IconButton>
+            </Tooltip>
           </Stack>
         </Toolbar>
       </AppBar>
