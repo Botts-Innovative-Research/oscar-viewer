@@ -37,7 +37,7 @@ export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
         hidden: false,
         xLabel: 'Time',
         yLabel: 'CPS',
-        order: 1,
+        order: 2,
         fill: 1,
         maxValues: 50,
 
@@ -62,6 +62,7 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
         order: 1,
         fill: 1,
         maxValues: 50,
+
     });
 
     return gCurve;
@@ -99,7 +100,7 @@ export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDataso
         visible: true,
         hidden: false,
         fill: 1,
-        order: 1,
+        order: 0,
         maxValues: 50,
     });
 

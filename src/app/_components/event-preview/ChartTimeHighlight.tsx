@@ -188,7 +188,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
             }
 
-
             if(nSigmaChartViewRef.current){
 
                 let existingChild = nSigmaChartViewRef.current.firstChild;
@@ -207,18 +206,32 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 if(layers.threshNsigma && layers.nsigma) {
                     const newNsigmaChart = new ChartJsView({
                         container: nsigmaChartElt.id,
-                        layers: [layers.nsigma, layers.threshNsigma],
+                        layers: [layers?.nsigma, layers?.threshNsigma],
                         css: "chart-view-event-detail",
                         type: 'line',
                         options: {
-                            stacked: true,
+                            // stacked: true,
                             scales: {
-                                x: {title: {display: true, text: 'Time', padding: 5}, type: 'time'},
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Time',
+                                        padding: 5
+                                    },
+                                    type: 'time',
+                                    stacked: true,
+                                },
                                 y: {
                                     type: 'linear',
                                     position: 'left',
-                                    title: {display: true, text: 'Nσ', padding: 15},
-                                    beginAtZero: false
+                                    title: {
+                                        display: true,
+                                        text: 'Nσ',
+                                        padding: 15
+                                    },
+                                    beginAtZero: false,
+                                    stacked: true,
+
                                 }
                             }
                         }
@@ -227,6 +240,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
                     setGammaNsigmaChartView(newNsigmaChart);
                     console.log('nsigma chart created', newNsigmaChart)
+
                 }
 
 
@@ -258,9 +272,9 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 }
             };
 
-            console.log("Annotating Charts", gammaChartView, neutronChartView, nsigmaChartView);
+            // console.log("Annotating Charts", gammaChartView, neutronChartView, nsigmaChartView);
             if (gammaChartView) {
-                console.log("Annotating Gamma Chart", gammaChartView);
+                // console.log("Annotating Gamma Chart", gammaChartView);
                 const gchart = gammaChartView.chart;
                 gchart.options.plugins.annotation = chartAnnotation;
 
@@ -275,26 +289,38 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             }
 
             if (neutronChartView) {
-                console.log("Annotating Neutron Chart", neutronChartView);
+                // console.log("Annotating Neutron Chart", neutronChartView);
                 const nchart = neutronChartView.chart;
                 nchart.options.plugins.annotation = chartAnnotation;
                 nchart.update();
             }
 
 
+            gammaChartView?.chart.update();
+            neutronChartView?.chart.update();
+            nsigmaChartView?.chart.update();
         }
     }, [props.currentTime, gammaChartView, nsigmaChartView, neutronChartView]);
 
     useEffect(() => {
-        if (toggleView === 'cps' && gammaChartView) {
-            gammaChartView.chart.update();
-            console.log("CPS chart updated", gammaChartView);
-        }
-        if (toggleView === 'sigma' && nsigmaChartView) {
-            nsigmaChartView.chart.update();
-            console.log("NSigma chart updated", nsigmaChartView);
-        }
+        // if (toggleView === 'cps' && gammaChartView) {
+        //     gammaChartView.chart.update();
+        //     console.log("CPS chart updated", gammaChartView);
+        // }
+        // if (toggleView === 'sigma' && nsigmaChartView) {
+        //     nsigmaChartView.chart.update();
+        //     console.log("NSigma chart updated", nsigmaChartView);
+        // }
+
+        if(gammaChartView) gammaChartView?.chart.update();
+        console.log("CPS chart updated", gammaChartView);
+
+        if(nsigmaChartView) nsigmaChartView?.chart.update();
+        console.log("NSigma chart updated", nsigmaChartView);
+
     }, [toggleView, gammaChartView, nsigmaChartView]);
+
+
 
 
     useEffect(() => {

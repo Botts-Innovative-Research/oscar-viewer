@@ -5,7 +5,12 @@ import {useCallback, useEffect, useState} from "react";
 import {Box} from "@mui/material";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
-import {setEventPreview, setSelectedRowId, selectSelectedRowId} from "@/lib/state/EventPreviewSlice";
+import {
+    setEventPreview,
+    setSelectedRowId,
+    selectSelectedRowId,
+    selectEventPreview
+} from "@/lib/state/EventPreviewSlice";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
@@ -303,7 +308,6 @@ export default function Table2({
             ],
         },
     ];
-
 
 
     const handleEventPreview = () =>{
