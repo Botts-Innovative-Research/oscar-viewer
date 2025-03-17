@@ -16,15 +16,15 @@ interface TimeControllerProps {
   syncTime: any;
   pause: Function;
   start: Function;
-  handleChange: (event: Event, newValue: number) => void;
+  handleChange: (event: Event, newValue: number, isPlaying: boolean) => void;
 }
 
 
 
-export default function TimeController(props: TimeControllerProps) {
+export default function TimeController({timeSync, syncTime, startTime, endTime, pause, start, handleChange}: TimeControllerProps) {
 
   // Vars for handling slider/timestamp values
-  const [currentTime, setCurrentTime] = useState(props.syncTime);
+  const [currentTime, setCurrentTime] = useState(syncTime);
   const [minTime, setMinTime] = useState<number>(0);
   const [maxTime, setMaxTime] = useState<number>(0);
   const [ds, setDs] = useState([]);
@@ -47,16 +47,16 @@ export default function TimeController(props: TimeControllerProps) {
 
 
   useEffect(() => {
-    setDs(props.timeSync?.getDataSources());
-    setReplay(props.timeSync?.getReplaySpeed());
-    setMinTime(new Date(props.startTime).getTime());
-    setMaxTime(new Date(props.endTime).getTime());
+    setDs(timeSync?.getDataSources());
+    setReplay(timeSync?.getReplaySpeed());
+    setMinTime(new Date(startTime).getTime());
+    setMaxTime(new Date(endTime).getTime());
 
-  }, [props.startTime, props.endTime, props.timeSync]);
+  }, [startTime, endTime, timeSync]);
 
   useEffect(() => {
-    setCurrentTime(props.syncTime);
-  }, [props.syncTime]);
+    setCurrentTime(syncTime);
+  }, [syncTime]);
 
 
   // useEffect(() => {
@@ -92,55 +92,51 @@ export default function TimeController(props: TimeControllerProps) {
   const handleSliderChange= (_event: Event, newValue: number)=>{
     isDragging.current =  true;
     setCurrentTime(newValue);
+
   }
 
   const handleSliderChangeCommitted = async (event: Event, newValue: number) => {
     isDragging.current = false;
-    await props.pause();
-    setIsPlaying(false);
-    props.handleChange(event, newValue);
-    setIsPlaying(true);
+    await pause();
+
+    handleChange(event, newValue, isPlaying);
+
   };
 
   return (
-    <Box sx={{
-      padding: 3
-    }}>
-      <Stack>
-        <Slider
-            aria-label="time-indicator"
-            value={currentTime} //current position of the slider
-            min={minTime} //start time of slider
-            max={maxTime} //end time of event
-            onChange={handleSliderChange}
-            onChangeCommitted={handleSliderChangeCommitted}
-            valueLabelDisplay="off"
-        />
+      <Box sx={{
+        padding: 3
+      }}>
+        <Stack>
+          <Slider
+              aria-label="time-indicator"
+              value={currentTime} //current position of the slider
+              min={minTime} //start time of slider
+              max={maxTime} //end time of event
+              onChange={handleSliderChange}
+              onChangeCommitted={handleSliderChangeCommitted}
+              valueLabelDisplay="off"
+          />
 
-        <Stack direction={"row"} alignItems={"center"} justifyContent={"start"}>
+          <Stack direction={"row"} alignItems={"center"} justifyContent={"start"}>
 
 
-          <IconButton
-            onClick={async() =>{
-              if(isPlaying){
-                await props.pause();
-              }else{
-                await props.start();
-              }
+            <IconButton
+                onClick={async() =>{
+                  isPlaying ? await pause() : await start();
 
-                setIsPlaying(!isPlaying)
-              }
-            }
-          >
-            {isPlaying ? (<PauseRoundedIcon />) : (<PlayArrowRoundedIcon />)}
-          </IconButton>
+                  setIsPlaying(!isPlaying)
+                }
+                }
+            >
+              {isPlaying ? (<PauseRoundedIcon />) : (<PlayArrowRoundedIcon />)}
+            </IconButton>
 
-          <Typography variant="body1">
-            {formatTime(currentTime)} / {formatTime(maxTime)}
-          </Typography>
+            <Typography variant="body1">
+              {formatTime(currentTime)} / {formatTime(maxTime)}
+            </Typography>
+          </Stack>
         </Stack>
-      </Stack>
-    </Box> 
+      </Box>
   )
 }
-

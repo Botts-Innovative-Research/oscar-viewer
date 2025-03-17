@@ -321,7 +321,9 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     // function to start the time controller by connecting to time sync
     const start = async () => {
         if (syncRef.current) {
+            syncRef.current.setReplaySpeed(1.0);
             await syncRef.current.connect();
+
             console.log("Playback started.");
         }
     };
@@ -329,25 +331,27 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     // function to pause the time controller by disconnecting from the time sync
     const pause = async () => {
         if (syncRef.current && syncRef.current.isConnected()) {
+            syncRef.current.setReplaySpeed(0.0);
+
             await syncRef.current.disconnect();
+
             console.log("Playback paused.");
         }
+
     };
 
+    // when the user toggles the time controller this is the code to change the time sync
+    const handleChange = useCallback( async(event: Event, newValue: number, isPlaying: boolean) => {
 
-
-    // // //when the user toggles the time controller this is the code to change the time sync
-    const handleChange = useCallback( async(event: Event, newValue: number) => {
-
-        // update time sync to datasources start time
+        // update time sync datasources start time
         for (const dataSource of syncRef.current.getDataSources()) {
             dataSource.setMinTime(newValue);
         }
 
         // update the time sync start time
-        await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, 1.0, false);
+        // await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, 0.0, false);
+        await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, (isPlaying ? 1.0 : 0.0), false);
 
-        //set the synctime state
         setSyncTime(newValue);
 
     },[syncRef.current, eventPreview]);
