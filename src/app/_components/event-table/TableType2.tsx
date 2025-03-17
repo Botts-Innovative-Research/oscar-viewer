@@ -25,7 +25,7 @@ import {makeStyles} from "@mui/styles";
 
 
 interface TableProps {
-    tableMode: "eventlog" | "alarmtable";
+    tableMode: "eventlog" | "alarmtable" | "eventLogPerLane";
     viewSecondary?: boolean;
     viewMenu?: boolean;
     viewLane?: boolean;
@@ -203,6 +203,11 @@ export default function Table2({
                 const laneId = Array.from(laneMap.keys())[0];
                 filteredData = onlyLaneFilteredList(tableData, laneId)
             }
+        }else if(tableMode === 'eventLogPerLane'){
+            if (laneMap.size === 1) {
+                const laneId = Array.from(laneMap.keys())[0];
+                filteredData = onlyLaneFilteredList(tableData, laneId)
+            }
         }
         // setFilteredTableData(filteredData);
         setFilteredTableData((prevState) => {
@@ -221,78 +226,84 @@ export default function Table2({
             field: 'secondaryInspection',
             headerName: 'Secondary Inspection',
             type: 'boolean',
+            minWidth: 125,
+            flex: 1,
         },
         {
             field: 'laneId',
             headerName: 'Lane ID',
             type: 'string',
+            minWidth: 100,
+            flex: 1,
         },
         {
             field: 'occupancyId',
             headerName: 'Occupancy ID',
             type: 'string',
+            minWidth: 125,
+            flex: 1.5,
         },
         {
             field: 'startTime',
             headerName: 'Start Time',
-            valueFormatter:(value) =>{
-                return (new Date(value)).toLocaleString();
-            }
-            // type: 'string',
+            valueFormatter: (value) => (new Date(value)).toLocaleString(),
+            minWidth: 200,
+            flex: 2,
         },
         {
             field: 'endTime',
             headerName: 'End Time',
-            valueFormatter:(value) =>{
-                return (new Date(value)).toLocaleString();
-            }
-            // type: 'string',
+            valueFormatter: (value) => (new Date(value)).toLocaleString(),
+            minWidth: 200,
+            flex: 2,
         },
         {
             field: 'maxGamma',
             headerName: 'Max Gamma (cps)',
-            valueFormatter: (value) => {
-                return typeof value === 'number' ? value : 0;
-            },
+            valueFormatter: (value) => (typeof value === 'number' ? value : 0),
+            minWidth: 150,
+            flex: 1.2,
         },
         {
             field: 'maxNeutron',
             headerName: 'Max Neutron (cps)',
-            valueFormatter: (value) => {
-
-                return typeof value === 'number' ? value : 0;
-            },
+            valueFormatter: (value) => (typeof value === 'number' ? value : 0),
+            minWidth: 150,
+            flex: 1.2,
         },
         {
             field: 'status',
             headerName: 'Status',
             type: 'string',
+            minWidth: 125,
+            flex: 1.2,
         },
         {
             field: 'isAdjudicated',
-            // field: 'adjudicatedCode',
             headerName: 'Adjudicated',
             valueFormatter: (value) => value ? "Yes" : "No",
+            minWidth: 100,
+            flex: 1,
         },
         {
             field: 'Menu',
             headerName: '',
             type: 'actions',
-            maxWidth: 50,
-
+            minWidth: 50,
+            flex: 0.5,
             getActions: (params) => [
-                (selectionModel.includes(params.row.id) ?
-                        <GridActionsCellItem
-                            icon={<VisibilityRoundedIcon/>}
-                            label="Details"
-                            onClick={() => handleEventPreview()}
-                            showInMenu
-                        />
-                        : <></>
-                ),
+                selectionModel.includes(params.row.id) ? (
+                    <GridActionsCellItem
+                        icon={<VisibilityRoundedIcon />}
+                        label="Details"
+                        onClick={() => handleEventPreview()}
+                        showInMenu
+                    />
+                ) : <></>,
             ],
         },
     ];
+
 
 
     const handleEventPreview = () =>{
@@ -322,49 +333,28 @@ export default function Table2({
         if (selectionModel[0] === selectedId) {
             // If the same row is selected, clear the selection
             setSelectionModel([]); //clear highlight
-            if (onRowSelect) {
-                onRowSelect(null); // clear event preview
 
-            }
+            dispatch(setSelectedRowId(null));
+            dispatch(setEventPreview({isOpen: false, eventData: null}));
+
         } else {
             // Otherwise, set the new selection
-            // onRowSelect(null); //clear out previous view
 
-            // Then set new selection
-            setSelectionModel([selectedId]); // Highlight new row
+            dispatch(setSelectedRowId(null));
+            dispatch(setEventPreview({isOpen: false, eventData: null}));
 
-            // Find and set new row data
-            const selectedRow = tableData.find((row) => row.id === selectedId);
-            if (selectedRow) {
-                onRowSelect(selectedRow); // Show event preview for new row
-            }
+            setTimeout(() =>{
+                setSelectionModel([selectedId]); // Highlight new row
 
+                // Find and set new row data
+                const selectedRow = tableData.find((row) => row.id === selectedId);
+                if (selectedRow) {
+                    dispatch(setSelectedRowId(selectedId));
+                    dispatch(setEventPreview({ isOpen: true, eventData: selectedRow }));
+                }
+            }, 10)
         }
     };
-
-
-    function onRowSelect(event: EventTableData) {
-        if (event) {
-            dispatch(setEventPreview({isOpen: false, eventData: null}));
-
-            // Set new event preview
-            let selectedEventPreview = {
-                isOpen: true,
-                eventData: event
-            };
-
-            dispatch(setSelectedRowId(event.id));
-            dispatch(setEventPreview(selectedEventPreview));
-            dispatch(setSelectedEvent(selectedEventPreview.eventData));
-
-
-        } else {
-            // Clear event preview
-            dispatch(setEventPreview({isOpen: false, eventData: null}));
-            dispatch(setSelectedEvent(null));
-            dispatch(setSelectedRowId(null));
-        }
-    }
 
 
 

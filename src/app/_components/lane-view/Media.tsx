@@ -13,14 +13,17 @@ export default function Media(props: { laneName: string, gammaDs: any, neutronDs
         <Box sx={{flexGrow: 1, overflowX: "auto"}}>
             <Grid container direction="row" spacing={2} justifyContent={"center"} alignItems={"center"}>
                 <Grid item xs={12} md={6}>
-                    <ChartLane  laneName={props.laneName} setChartReady={() => chartReady}  datasources={{
+                    <ChartLane
+                        laneName={props.laneName} setChartReady={setChartReady}
+                                datasources={{
                         gamma: props.gammaDs,
                         neutron: props.neutronDs,
                         threshold: props.thresholdDs
                     }}/>
                 </Grid>
                 <Grid item xs={12} md={6}>
-                    <VideoGrid laneName={props.laneName}/>
+                    <VideoGrid  laneName={props.laneName}/>
+                    {/*<VideoGrid laneName={props.laneName}/>*/}
                 </Grid>
           </Grid>
         </Box>

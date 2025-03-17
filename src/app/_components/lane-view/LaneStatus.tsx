@@ -5,14 +5,18 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import LaneItem from './LaneItem';
+import {selectLastLaneStatus, setLastLaneStatus} from "@/lib/state/LaneViewSlice";
+import {useAppDispatch} from "@/lib/state/Hooks";
+import {useSelector} from "react-redux";
 
 interface LaneStatusProps{
   dataSourcesByLane: Map<string, LaneDSColl>;
 }
 export default function LaneStatus(props: LaneStatusProps) {
-
+  const dispatch = useAppDispatch();
+  const lastLaneStatus = useSelector(selectLastLaneStatus);
   const idVal = useRef(1);
-  const [laneStatus, setLaneStatus] = useState<LaneStatusType>();
+  const [laneStatus, setLaneStatus] = useState<LaneStatusType>(lastLaneStatus);
 
 //todo: add in a historic request so initial lanestatus is not null
 
@@ -50,7 +54,10 @@ export default function LaneStatus(props: LaneStatusProps) {
     // set timer between each set status to just prevent flickering of status
     setTimeout(() => {
       setLaneStatus(newStatus);
+
+      dispatch(setLastLaneStatus(newStatus))
     }, 10000);
+
   }
 
   return (

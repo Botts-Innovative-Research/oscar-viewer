@@ -13,14 +13,14 @@ import {randomUUID} from "osh-js/source/core/utils/Utils";
 import AlarmTable from "./AlarmTable";
 import {isGammaDatastream, isNeutronDatastream, isTamperDatastream} from "@/lib/data/oscar/Utilities";
 
-// ,
-
 export default function StatusTables(props: {dataSourcesByLane: any}){
 
     const [data, setData] = useState<IAlarmTableData[]>([]);
     const [tableData, setTableData] = useState<AlarmTableDataCollection>(new AlarmTableDataCollection());
     const tableRef = useRef<AlarmTableData[]>([]);
 
+
+    console.log("ds by lane", props.dataSourcesByLane)
 
     async function fetchObservations(laneName: string, ds: typeof DataStream, timeStart: string, timeEnd: string) {
         let allResults: any[] = [];
@@ -165,6 +165,9 @@ export default function StatusTables(props: {dataSourcesByLane: any}){
         }
     }, [props.dataSourcesByLane]);
 
+    useEffect(() => {
+
+    }, []);
     useEffect(() => {
         addSubscriptionCallbacks();
     }, [props.dataSourcesByLane]);

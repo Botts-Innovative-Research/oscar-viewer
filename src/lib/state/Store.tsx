@@ -15,11 +15,12 @@ import OSCARClientReducer from "@/lib/state/OSCARClientSlice";
 import OSCARLaneReducer from "@/lib/state/OSCARLaneSlice";
 import EventDetailsReducer from "@/lib/state/EventDetailsSlice";
 import EventPreviewReducer from "@/lib/state/EventPreviewSlice";
+import LaneViewReducer from "@/lib/state/LaneViewSlice";
 
 const persistConfig ={
     key: 'root',
     storage,
-    whitelist: ['oscarClientSlice', 'eventPreview', 'eventData', 'laneSlice', 'eventDetails'],
+    whitelist: ['oscarClientSlice', 'eventPreview', 'eventData', 'laneSlice', 'eventDetails', 'laneView'],
     version: 1
 }
 
@@ -30,7 +31,8 @@ const rootReducer = combineReducers({
     eventLogSlice: EventDataReducer,
     laneSlice: OSCARLaneReducer,
     eventDetails: EventDetailsReducer,
-    eventPreview: EventPreviewReducer
+    eventPreview: EventPreviewReducer,
+    laneView: LaneViewReducer,
 });
 
 

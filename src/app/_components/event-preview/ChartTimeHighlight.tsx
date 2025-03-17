@@ -119,10 +119,16 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             let layers = createCurveLayersAndReturn();
 
             if (gammaChartViewRef.current  ) {
+                let existingChild = gammaChartViewRef.current.firstChild;
 
                 let gammaChartElt = document.createElement("div");
                 gammaChartElt.id =  elementIds.find(id=> id.includes('gamma'));
+
                 gammaChartViewRef.current?.appendChild(gammaChartElt);
+
+                // if(existingChild){
+                //     gammaChartViewRef.current.replaceChild(gammaChartElt, existingChild);
+                // }
 
                 // let gammaLayers: any[] = [];
                 // if(layers.gamma) gammaLayers.push(layers.gamma)
@@ -152,10 +158,17 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
 
             if (neutronChartViewRef.current && layers.neutron) {
+                let existingChild = neutronChartViewRef.current.firstChild;
+
 
                 let neutronChartElt = document.createElement("div");
                 neutronChartElt.id = elementIds.find(id => id.includes("neutron"));
                 neutronChartViewRef.current?.appendChild(neutronChartElt);
+
+
+                // if(existingChild){
+                //     neutronChartViewRef.current.replaceChild(neutronChartElt, existingChild);
+                // }
 
                 const newNeutronChart = new ChartJsView({
                     container:  neutronChartElt.id,
@@ -178,10 +191,15 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
             if(nSigmaChartViewRef.current){
 
+                let existingChild = nSigmaChartViewRef.current.firstChild;
+
                 let nsigmaChartElt = document.createElement("div");
                 nsigmaChartElt.id = elementIds.find(id => id.includes('nsigma'));
                 nSigmaChartViewRef.current?.appendChild(nsigmaChartElt);
-                
+
+                // if(existingChild){
+                //     nSigmaChartViewRef.current.replaceChild(nsigmaChartElt, existingChild);
+                // }
                 // let nsigmaLayers: any[] = [];
                 // if(layers.nsigma) nsigmaLayers.push(layers.nsigma)
                 // if(layers.threshNsigma) nsigmaLayers.push(layers.threshNsigma)

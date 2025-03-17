@@ -139,7 +139,7 @@ export default function EventDetailsPage() {
             syncRef.current.onTime
             setDataSyncCreated(true);
         }
-    }, [syncRef, dataSyncCreated, videoDatasources]);
+    }, [syncRef, dataSyncCreated, videoDatasources, datasourcesReady]);
 
 
 

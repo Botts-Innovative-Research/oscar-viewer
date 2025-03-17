@@ -16,42 +16,54 @@ export default function NationalTable(props:{
         {
             field: 'site',
             headerName: 'Site Name',
-            type: 'string'
+            type: 'string',
+            minWidth: 150,
+            flex: 1,
         },
         {
             field: 'occupancyCount',
             headerName: 'Occupancy',
             valueFormatter: (value) => {
                 return typeof value === 'number' ? value : 0;
-            }
+            },
+            minWidth: 150,
+            flex: 1,
         },
         {
             field: 'gammaAlarmCount',
             headerName: 'Gamma Alarms',
             valueFormatter: (value) => {
                 return typeof value === 'number' ? value : 0;
-            }
+            },
+            minWidth: 150,
+            flex: 1,
         },
         {
             field: 'neutronAlarmCount',
             headerName: 'Neutron Alarms',
             valueFormatter: (value) => {
                 return typeof value === 'number' ? value : 0;
-            }
+            },
+            minWidth: 150,
+            flex: 1,
         },
         {
             field: 'faultAlarmCount',
             headerName: 'Fault Alarms',
             valueFormatter: (value) => {
                 return typeof value === 'number' ? value : 0;
-            }
+            },
+            minWidth: 150,
+            flex: 1,
         },
         {
             field: 'tamperAlarmCount',
             headerName: 'Tamper Alarms',
             valueFormatter: (value) => {
                 return typeof value === 'number' ? value : 0;
-            }
+            },
+            minWidth: 150,
+            flex: 1,
         },
     ]
     return(

@@ -38,7 +38,7 @@ export default function LaneVideoPlayback({
     const [videoSize, setVideoSize] = useState("300px");
 
     useEffect(() => {
-        if (videoDatasources && videoDatasources?.length > 0) {
+        if (videoDatasources.length > 0 && videoDatasources) {
             setDatasources(videoDatasources);
             setMaxPages(videoDatasources?.length);
         }
@@ -48,7 +48,7 @@ export default function LaneVideoPlayback({
         }else if (modeType=== 'preview'){
             setVideoSize("250px")
         }
-    }, [videoDatasources]);
+    }, [videoDatasources, modeType]);
 
 
     useEffect(() => {

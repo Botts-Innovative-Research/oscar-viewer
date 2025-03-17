@@ -79,7 +79,6 @@ export function EventPreview() {
     const gammaChartRef = useRef<any>();
     const neutronChartRef = useRef<any>();
 
-
     // Video Specifics
     const [videoReady, setVideoReady] = useState<boolean>(false);
     const [videoDatasources, setVideoDatasources] = useState<typeof SweApi[]>([]);
@@ -97,9 +96,9 @@ export function EventPreview() {
     const [colorStatus, setColorStatus] = useState('')
 
 
-    if (!eventPreview.isOpen || !eventPreview.eventData) {
-        return null;
-    }
+    // if (!eventPreview.isOpen || !eventPreview.eventData) {
+    //     return null;
+    // }
 
     const handleAdjudicationCode = (value: AdjudicationCode) => {
         console.log("Adjudication Value: ", value);
@@ -304,8 +303,6 @@ export function EventPreview() {
         setVideoDatasources(updatedVideo);
         setOccDS(updatedOcc);
         setDatasourcesReady(true);
-
-
 
     }, [eventPreview, laneMapRef]);
 

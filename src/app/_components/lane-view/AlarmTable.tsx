@@ -29,7 +29,8 @@ export default function AlarmTable(props:{ alarmData: AlarmTableDataCollection }
           field: 'laneId',
           headerName: 'Lane ID',
           type: 'string',
-          width: 200
+          minWidth: 100,
+          flex: 1,
       },
       {
           field: 'timestamp',
@@ -39,13 +40,15 @@ export default function AlarmTable(props:{ alarmData: AlarmTableDataCollection }
               const dateTime = (new Date(value)).toLocaleString();
               return dateTime;
           },
-          width: 200
+          minWidth: 200,
+          flex: 2,
       },
       {
           field: 'count1',
           headerName: 'Count 1 (CPS)',
           type: 'number',
-          width: 200,
+          minWidth: 200,
+          flex: 2,
           valueFormatter: (value) => {
               return typeof value === 'number' ? value : 0;
           },
@@ -54,7 +57,8 @@ export default function AlarmTable(props:{ alarmData: AlarmTableDataCollection }
           field: 'count2',
           headerName: 'Count 2 (CPS)',
           type: 'number',
-          width: 200,
+          minWidth: 150,
+          flex: 1.2,
           valueFormatter: (value) => {
               return typeof value === 'number' ? value : 0;
           },
@@ -63,7 +67,8 @@ export default function AlarmTable(props:{ alarmData: AlarmTableDataCollection }
           field: 'count3',
           headerName: 'Count 3 (CPS)',
           type: 'number',
-          width: 200,
+          minWidth: 150,
+          flex: 1.2,
           valueFormatter: (value) => {
               return typeof value === 'number' ? value : 0;
           },
@@ -72,7 +77,8 @@ export default function AlarmTable(props:{ alarmData: AlarmTableDataCollection }
           field: 'count4',
           headerName: 'Count 4 (CPS)',
           type: 'number',
-          width: 200,
+          minWidth: 150,
+          flex: 1.2,
           valueFormatter: (value) => {
               return typeof value === 'number' ? value : 0;
           },
@@ -81,7 +87,8 @@ export default function AlarmTable(props:{ alarmData: AlarmTableDataCollection }
           field: 'status',
           headerName: 'Status',
           type: 'string',
-          width: 200
+          minWidth: 150,
+          flex: 1.2,
       },
   ]
   return(
