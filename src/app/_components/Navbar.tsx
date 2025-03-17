@@ -24,19 +24,21 @@ import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
 import CloudRoundedIcon from '@mui/icons-material/CloudRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
+import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
+
 import MediationIcon from '@mui/icons-material/Mediation';
 import {Button, Menu, MenuItem, Stack, Tooltip} from '@mui/material';
 import {useEffect, useState} from 'react';
 import Link from 'next/link';
 import {Label, SaveRounded} from "@mui/icons-material";
 import AlarmAudio from "@/app/_components/AlarmAudio";
+import {selectAlarmAudioVolume} from "@/lib/state/OSCARClientSlice";
+import {useSelector} from "react-redux";
 
 const drawerWidth = 240;
 
 const openedMixin = (theme: Theme): CSSObject => ({
   width: drawerWidth,
-
-
   transition: theme.transitions.create('width', {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.enteringScreen,
@@ -109,6 +111,9 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null); // Anchor element for notification menu
   const menuOpen = Boolean(anchorEl); // Open state for notification menu
   const [drawerOpen, setDrawerOpen] = useState(false);  // Open state for navigation drawer
+
+
+  const savedVolume = useSelector(selectAlarmAudioVolume);
 
   // Handle opening menu
   const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -211,7 +216,7 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
                 aria-label="open notifications"
                 onClick={handleMenuOpen}
               >
-                <NotificationsRoundedIcon />
+                {savedVolume === 0 ? <NotificationsOffIcon/> : <NotificationsRoundedIcon/>}
               </IconButton>
             </Tooltip>
           </Stack>

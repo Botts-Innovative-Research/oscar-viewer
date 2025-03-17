@@ -30,6 +30,8 @@ export default function AlarmAudio() {
     const [volumeValue, setVolumeValue] = useState(savedVolume)
 
 
+    console.log("alarm aduio", volumeValue, savedVolume);
+
     useEffect(() => {
         document.body.addEventListener("click", function() {
             if(alarmAudio == undefined || alarmAudio == null) {
@@ -46,7 +48,7 @@ export default function AlarmAudio() {
     const handleVolumeChange =(event: Event, newValue: number| number[]) =>{
         const volume = newValue as number;
         setVolumeValue(volume);
-        dispatch(setAlarmAudioVolume(volumeValue));
+        dispatch(setAlarmAudioVolume(volume));
     }
 
     useEffect(() => {
