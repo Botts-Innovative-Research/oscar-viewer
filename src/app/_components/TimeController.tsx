@@ -2,7 +2,7 @@
 
 import { Box, IconButton, Stack, Typography } from "@mui/material";
 import Slider from '@mui/material/Slider';
-import React, { useEffect, useMemo, useState} from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 import PauseRoundedIcon from '@mui/icons-material/PauseRounded';
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
@@ -16,19 +16,21 @@ interface TimeControllerProps {
   syncTime: any;
   pause: Function;
   start: Function;
-  handleChange: Function;
+  handleChange: (event: Event, newValue: number, isPlaying: boolean) => void;
 }
 
 
 
-export default function TimeController(props: TimeControllerProps) {
+export default function TimeController({timeSync, syncTime, startTime, endTime, pause, start, handleChange}: TimeControllerProps) {
 
   // Vars for handling slider/timestamp values
-  const [currentTime, setCurrentTime] = useState(props.syncTime);
+  const [currentTime, setCurrentTime] = useState(syncTime);
   const [minTime, setMinTime] = useState<number>(0);
   const [maxTime, setMaxTime] = useState<number>(0);
   const [ds, setDs] = useState([]);
   const [replay, setReplay] = useState(null);
+
+  const isDragging = useRef(false);
 
   // Play/pause toggle state
   const [isPlaying, setIsPlaying] = useState(true);
@@ -45,33 +47,30 @@ export default function TimeController(props: TimeControllerProps) {
 
 
   useEffect(() => {
-    setDs(props.timeSync?.getDataSources());
-    setReplay(props.timeSync?.getReplaySpeed());
-    setMinTime(new Date(props.startTime).getTime());
-    setMaxTime(new Date(props.endTime).getTime());
+    setDs(timeSync?.getDataSources());
+    setReplay(timeSync?.getReplaySpeed());
+    setMinTime(new Date(startTime).getTime());
+    setMaxTime(new Date(endTime).getTime());
 
-  }, [props.startTime, props.endTime, props.timeSync]);
-
-
-  useEffect(() => {
-    const timeElement = document.getElementById('Slider');
-    if (timeElement) {
-      if (!isPlaying) {
-        timeElement.setAttribute('disabled', 'true');
-      } else {
-        timeElement.removeAttribute('disabled');
-      }
-    }
-    setCurrentTime(props.syncTime);
-
-  }, [isPlaying]);
+  }, [startTime, endTime, timeSync]);
 
   useEffect(() => {
-    // console.log('syncTime updated:', props.syncTime);
-    setCurrentTime(props.syncTime);
-  }, [props.syncTime]);
+    setCurrentTime(syncTime);
+  }, [syncTime]);
 
 
+  // useEffect(() => {
+  //   const timeElement = document.getElementById('Slider');
+  //   if (timeElement) {
+  //     if (!isPlaying) {
+  //       timeElement.setAttribute('disabled', 'true');
+  //     } else {
+  //       timeElement.removeAttribute('disabled');
+  //     }
+  //   }
+  //   setCurrentTime(props.syncTime);
+  //
+  // }, [isPlaying]);
 
 
   // this function will take the timestamp convert it to iso string and then returns it with only the time part
@@ -90,52 +89,54 @@ export default function TimeController(props: TimeControllerProps) {
   //   }
   // };
 
+  const handleSliderChange= (_event: Event, newValue: number)=>{
+    isDragging.current =  true;
+    setCurrentTime(newValue);
 
+  }
 
+  const handleSliderChangeCommitted = async (event: Event, newValue: number) => {
+    isDragging.current = false;
+    await pause();
+
+    handleChange(event, newValue, isPlaying);
+
+  };
 
   return (
-    <Box sx={{
-      padding: 3
-    }}>
-      <Stack>
-        <Slider
-            aria-label="time-indicator"
-            value={currentTime} //current position of the slider
-            min={minTime} //start time of slider
-            max={maxTime} //end time of event
-            onChangeCommitted={props.handleChange}
-            valueLabelDisplay="off"
-        />
+      <Box sx={{
+        padding: 3
+      }}>
+        <Stack>
+          <Slider
+              aria-label="time-indicator"
+              value={currentTime} //current position of the slider
+              min={minTime} //start time of slider
+              max={maxTime} //end time of event
+              onChange={handleSliderChange}
+              onChangeCommitted={handleSliderChangeCommitted}
+              valueLabelDisplay="off"
+          />
 
-        <Stack direction={"row"} alignItems={"center"} justifyContent={"start"}>
+          <Stack direction={"row"} alignItems={"center"} justifyContent={"start"}>
 
 
-          <IconButton
-            onClick={() =>{
-              if(isPlaying){
-                props.pause();
-              }else{
-                props.start();
-              }
+            <IconButton
+                onClick={async() =>{
+                  isPlaying ? await pause() : await start();
 
-                setIsPlaying(!isPlaying)
-              }
+                  setIsPlaying(!isPlaying)
+                }
             }
-          >
-            {isPlaying ? (
-              <PauseRoundedIcon />
+            >
+              {isPlaying ? (<PauseRoundedIcon />) : (<PlayArrowRoundedIcon />)}
+            </IconButton>
 
-            ) : (
-              <PlayArrowRoundedIcon />
-            )}          
-          </IconButton>
-
-          <Typography variant="body1">
-            {formatTime(currentTime)} / {formatTime(maxTime)}
-          </Typography>
+            <Typography variant="body1">
+              {formatTime(currentTime)} / {formatTime(maxTime)}
+            </Typography>
+          </Stack>
         </Stack>
-      </Stack>
-    </Box> 
+      </Box>
   )
 }
-
