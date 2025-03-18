@@ -11,6 +11,7 @@ import VideoDataLayer from "osh-js/source/core/ui/layer/VideoDataLayer";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
+import '../../../Styles.css';
 
 export class LaneVideoPlaybackProps {
     videoDatasources: typeof SweApi[];
@@ -46,7 +47,7 @@ export default function LaneVideoPlayback({
         if(modeType === 'detail'){
             setVideoSize("450px")
         }else if (modeType=== 'preview'){
-            setVideoSize("250px")
+            setVideoSize("275px")
         }
     }, [videoDatasources, modeType]);
 
@@ -109,50 +110,55 @@ export default function LaneVideoPlayback({
     return (
         <>
 
-        {dataSources != null && dataSources?.length > 0 && (
+            {dataSources != null && dataSources?.length > 0 && (
 
-            <Box sx={{display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center"}}>
-                <IconButton onClick={handlePrevPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === 0}>
-                    <NavigateBeforeIcon/>
-                </IconButton>
+                <Box sx={{
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    alignItems: "center",
+                }}>
+                    <IconButton onClick={handlePrevPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === 0}>
+                        <NavigateBeforeIcon/>
+                    </IconButton>
 
-                <Stack
-                    margin={0}
-                    spacing={2}
-                    direction="row"
-                    alignContent="center"
-                    justifyContent={"center"}
-                    sx={{
-                        padding: 2,
-                        width: "100%",
-                        height: videoSize,
-                        border: "solid",
-                        borderWidth: '1px',
-                        borderColor: "rgba(0, 0, 0, 0.12)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
 
-                    }}
-                >
-                    <Grid item key={dataSources[selVideoIdx].id} id="event-preview-video"
-                          sx={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "contain",
-                              overflow: "hidden"
-                    }}>
+                    <Stack
+                        margin={0}
+                        spacing={2}
+                        direction="row"
+                        alignContent="center"
+                        justifyContent="center"
+                        sx={{
+                            width: "100%",
+                            height: "videoSize",
+                            maxWidth: "100%",
+                            maxHeight: videoSize,
+                            alignItems: "center",
+                            border: "1px solid rgba(0,0,0,0.12)",
+                            padding: 1
+                        }}
+                    >
+                        <Box
+                            key={dataSources[selVideoIdx].id}
+                            id="event-preview-video"
+                            sx={{
+                                width: "100%",
+                                height: "100%",
+                            }}
+                        />
+                    </Stack>
 
-                    </Grid>
-                </Stack>
 
-                <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === maxPages-1}>
-                    <NavigateNextIcon/>
-                </IconButton>
-            </Box>
+
+                    <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === maxPages-1}>
+                        <NavigateNextIcon/>
+                    </IconButton>
+                </Box>
 
             )}
         </>
 
     )
 }
+

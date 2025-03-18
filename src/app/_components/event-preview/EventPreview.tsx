@@ -42,7 +42,7 @@ import AdjudicationData, {
 } from "@/lib/data/oscar/adjudication/Adjudication";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
-import {updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
+import {setSelectedEvent, updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 import {EventType} from "osh-js/source/core/event/EventType";
 import TimeController from "@/app/_components/TimeController";
@@ -219,6 +219,9 @@ export function EventPreview() {
 
     const handleExpand = () => {
         dispatch(setEventData(eventPreview.eventData));
+        dispatch(setSelectedRowId(eventPreview.eventData.id))
+        dispatch(setSelectedEvent(eventPreview.eventData));
+        dispatch(setShouldForceAlarmTableDeselect(false))
 
         router.push("/event-details");
     }
@@ -308,7 +311,6 @@ export function EventPreview() {
     }, [eventPreview, laneMapRef]);
 
 
-
     const createDataSync = useCallback(() => {
         if (!syncRef.current && !dataSyncCreated && videoDatasources.length > 0) {
             syncRef.current = new DataSynchronizer({
@@ -367,7 +369,6 @@ export function EventPreview() {
 
 
     useEffect(() => {
-
         if(syncRef.current){
             syncRef.current.subscribe((message: { type: any; timestamp: any }) => {
                     if (message.type === EventType.MASTER_TIME) {
@@ -376,7 +377,6 @@ export function EventPreview() {
                 }, [EventType.MASTER_TIME]
             );
         }
-
 
     }, [syncRef.current]);
 
@@ -392,8 +392,10 @@ export function EventPreview() {
 
     // function to start the time controller by connecting to time sync
     const start = async () => {
-        if (syncRef.current) {
-            syncRef.current.setReplaySpeed(1.0);
+        if (syncRef.current && !await syncRef.current.isConnected()) {
+
+            await syncRef.current.setReplaySpeed(1.0);
+
             await syncRef.current.connect();
 
             console.log("Playback started.");
@@ -402,8 +404,8 @@ export function EventPreview() {
 
     // function to pause the time controller by disconnecting from the time sync
     const pause = async () => {
-        if (syncRef.current && syncRef.current.isConnected()) {
-            syncRef.current.setReplaySpeed(0.0);
+        if (syncRef.current && await syncRef.current.isConnected()) {
+            await syncRef.current.setReplaySpeed(0.0);
 
             await syncRef.current.disconnect();
 

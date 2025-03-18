@@ -20,7 +20,7 @@ import LaneViewReducer from "@/lib/state/LaneViewSlice";
 const persistConfig ={
     key: 'root',
     storage,
-    whitelist: ['oscarClientSlice', 'eventPreview', 'eventData', 'laneSlice', 'eventDetails', 'laneView'],
+    whitelist: ['oscarClientSlice', 'eventPreview', 'eventData', 'laneSlice', 'eventDetails', 'laneView', 'eventLogSlice', 'selectedRowId'],
     version: 1
 }
 

@@ -124,7 +124,6 @@ export default function TimeController({timeSync, syncTime, startTime, endTime, 
             <IconButton
                 onClick={async() =>{
                   isPlaying ? await pause() : await start();
-
                   setIsPlaying(!isPlaying)
                 }
             }

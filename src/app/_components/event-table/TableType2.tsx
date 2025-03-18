@@ -21,7 +21,7 @@ import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {
     addEventToLog,
-    selectEventTableDataArray,
+    selectEventTableDataArray, selectSelectedEvent,
     setEventLogData,
     setSelectedEvent
 } from "@/lib/state/EventDataSlice";
@@ -71,14 +71,10 @@ export default function Table2({
     const dispatch = useAppDispatch();
     const router = useRouter();
     const classes = selectedRowStyles();
-
     const selectedRowId = useSelector(selectSelectedRowId);
 
-    useEffect(() => {
-        if (!selectedRowId) {
-            setSelectionModel([]);
-        }
-    }, [selectedRowId]);
+    const eventPreview = useSelector(selectEventPreview)
+    const selectedEvent = useSelector(selectSelectedEvent)
 
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
@@ -144,6 +140,7 @@ export default function Table2({
                 await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
                 let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
                 allFetchedResults = [...allFetchedResults, ...fetchedResults];
+
             })();
             promiseGroup.push(promise);
         });
@@ -170,7 +167,7 @@ export default function Table2({
         if (!tableData) return [];
         return tableData.filter((entry) => {
             if (entry.isAdjudicated) return false;
-            return entry.adjudicatedData.getCodeValue() === 0;
+            return entry.adjudicatedData.adjudicationCode.code === 0;
 
         })
 
@@ -199,7 +196,6 @@ export default function Table2({
     }, [laneMap]);
 
     useEffect(() => {
-
         let filteredData: EventTableData[] = [];
         if (tableMode === 'alarmtable') {
             filteredData = unadjudicatedFilteredList(onlyAlarmingFilteredList(tableData))
@@ -220,6 +216,17 @@ export default function Table2({
         })
     }, [tableData]);
 
+    // useEffect(() => {
+    //     if (eventPreview.isOpen && eventPreview.eventData) {
+    //         setSelectionModel([selectedRowId]);
+    //     } else {
+    //         setSelectionModel([]);
+    //     }
+    // }, [eventPreview.isOpen, eventPreview.eventData]);
+
+    // useEffect(() => {
+    //     eventPreview.isOpen ? setSelectionModel([selectedRowId]) : setSelectionModel([]);
+    // }, []);
 
     //------------------------------------------------------------------------------------------------------------------
     // Data Grid Setup and Related
@@ -331,36 +338,46 @@ export default function Table2({
 
 
     // Handle currently selected row
+    // const handleRowSelection = (selection: any[]) => {
+    //     const selectedId = selection[0]; // Get the first selected ID
+    //     console.log("ROW SELECTED ID: ", selectedId)
     const handleRowSelection = (selection: any[]) => {
-        const selectedId = selection[0]; // Get the first selected ID
+
+        // console.log("Selection Model", selectionModel);
+        // console.log("Row Selected from Rehydrate", selectedRowId)
+        //
+        // const selectedId = (eventPreview.isOpen) ? selectedRowId : selection[0];
+        const selectedId = selection[0];
+
 
         if (selectionModel[0] === selectedId) {
-            // If the same row is selected, clear the selection
-            setSelectionModel([]); //clear highlight
+            setSelectionModel([]);
 
+            dispatch(setSelectedEvent(null));
             dispatch(setSelectedRowId(null));
             dispatch(setEventPreview({isOpen: false, eventData: null}));
-
         } else {
-            // Otherwise, set the new selection
+            setSelectionModel([selectedId]);
 
+            dispatch(setSelectedEvent(null));
             dispatch(setSelectedRowId(null));
             dispatch(setEventPreview({isOpen: false, eventData: null}));
 
             setTimeout(() =>{
-                setSelectionModel([selectedId]); // Highlight new row
 
-                // Find and set new row data
+                setSelectionModel([selectedId]); // Highlight new row
+                dispatch(setSelectedRowId(selectedId));
+
+
                 const selectedRow = tableData.find((row) => row.id === selectedId);
                 if (selectedRow) {
-                    dispatch(setSelectedRowId(selectedId));
                     dispatch(setEventPreview({ isOpen: true, eventData: selectedRow }));
+                    dispatch(setSelectedEvent(selectedRow));
                 }
             }, 10)
+
         }
     };
-
-
 
     return (
         <Box sx={{flex: 1, width: '100%'}}>
@@ -464,3 +481,16 @@ export default function Table2({
         </Box>
     )
 }
+
+
+
+
+// useEffect(() => {
+//     console.log("SELECTED ROW ID", selectedRowId)
+//     console.log("SELECTION MODEL", selectionModel)
+//
+//     if (!selectedRowId && !eventPreview.isOpen) {
+//         setSelectionModel([]);
+//     }
+//
+// }, [selectedRowId]);
