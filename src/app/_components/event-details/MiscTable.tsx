@@ -8,6 +8,7 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 import {selectEventData} from "@/lib/state/EventDetailsSlice";
 
+// export default function MiscTable() {
 export default function MiscTable({currentTime}: {currentTime: string}) {
 
   const laneMapRef = useContext(DataSourceContext).laneMapRef;
@@ -15,13 +16,15 @@ export default function MiscTable({currentTime}: {currentTime: string}) {
 
   const [speedVal, setSpeedval] = useState<string>("N/A");
 
+  // console.log("currentTime", currentTime)
   const checkForSpeed = useCallback(async () => {
     if (eventData) {
-      let lme = laneMapRef.current.get(eventData?.laneId);
+      console.log("CHECKING FOR SPEED EVENT DATA IS NOT NULL", eventData)
+      let lme = laneMapRef.current.get(eventData.laneId);
 
       let speedDS = lme.datastreams.find(ds => ds.properties.observedProperties[0].definition.includes('http://www.opengis.net/def/speed-time'));
 
-      let initialRes = await speedDS.searchObservations(new ObservationFilter({ resultTime: `${eventData?.startTime}/${eventData?.endTime}` }), 25000);
+      let initialRes = await speedDS.searchObservations(new ObservationFilter({ resultTime: `${eventData?.startTime}/${eventData?.endTime}`}), 25000);
 
       while(initialRes.hasNext()){
         let speedArr = await initialRes.nextPage();
@@ -30,21 +33,17 @@ export default function MiscTable({currentTime}: {currentTime: string}) {
 
         speed = speedArr.find((sobs: any) => sobs.resultTime === currentTime)?.result.speedKPH || "N/A";
 
-
         setSpeedval(speed);
         return speed;
       }
-
-
-
     }
-  }, [currentTime]);
+  }, [eventData, currentTime]);
 
   useEffect(() => {
     if(eventData){
       checkForSpeed();
     }
-  }, [checkForSpeed, eventData]);
+  }, [eventData, laneMapRef]);
 
   return (
       <Box>
