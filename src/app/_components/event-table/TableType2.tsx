@@ -73,8 +73,6 @@ export default function Table2({
     const classes = selectedRowStyles();
     const selectedRowId = useSelector(selectSelectedRowId);
 
-    const eventPreview = useSelector(selectEventPreview)
-    const selectedEvent = useSelector(selectSelectedEvent)
 
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
@@ -441,7 +439,8 @@ export default function Table2({
                 }}
 
                 getRowClassName={(params) =>
-                    params.row.id == selectionModel[0] ? classes.selectedRow : ''
+                    params.row.id == selectedRowId ? classes.selectedRow : ''
+                    // params.row.id == selectionModel[0] ? classes.selectedRow : ''
                 }
 
                 sx={{

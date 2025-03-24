@@ -6,10 +6,12 @@ import {useSelector} from "react-redux";
 import {useCallback, useContext, useEffect, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
-import {selectEventData} from "@/lib/state/EventDetailsSlice";
+import {selectEventData, setSpeed} from "@/lib/state/EventDetailsSlice";
+import {useAppDispatch} from "@/lib/state/Hooks";
 
 // export default function MiscTable() {
 export default function MiscTable({currentTime}: {currentTime: string}) {
+  const dispatch = useAppDispatch();
 
   const laneMapRef = useContext(DataSourceContext).laneMapRef;
   const eventData = useSelector(selectEventData);
@@ -34,6 +36,7 @@ export default function MiscTable({currentTime}: {currentTime: string}) {
         speed = speedArr.find((sobs: any) => sobs.resultTime === currentTime)?.result.speedKPH || "N/A";
 
         setSpeedval(speed);
+        dispatch(setSpeed(speed));
         return speed;
       }
     }

@@ -4,15 +4,10 @@ import {RootState} from "@/lib/state/Store";
 import {enableMapSet} from "immer";
 import storage from "redux-persist/es/storage";
 import {persistReducer} from "redux-persist";
+import{createTransform} from "redux-persist";
 
 enableMapSet();
 
-
-// const persistConfig = {
-//     key: 'laneSlice',
-//     storage,
-//     whitelist: ['lanes', 'laneMap']
-// };
 
 export interface IOSCARLaneSlice{
     lanes: LaneMeta[],
@@ -56,4 +51,3 @@ export const selectLaneById = (laneId: string) => (state: RootState) => {
 };
 
 export default Slice.reducer;
-// export default persistReducer(persistConfig, Slice.reducer);

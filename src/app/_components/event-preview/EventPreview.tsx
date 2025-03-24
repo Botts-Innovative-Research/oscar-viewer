@@ -46,7 +46,7 @@ import {setSelectedEvent, updateSelectedEventAdjudication} from "@/lib/state/Eve
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 import {EventType} from "osh-js/source/core/event/EventType";
 import TimeController from "@/app/_components/TimeController";
-import {setEventData} from "@/lib/state/EventDetailsSlice";
+import {setDatasources, setEventData} from "@/lib/state/EventDetailsSlice";
 
 
 
@@ -205,7 +205,7 @@ export function EventPreview() {
 
     const handleCloseRounded = () => {
 
-        cleanupResources();
+        // cleanupResources();
         
         dispatch(setEventPreview({
             isOpen: false,
@@ -219,6 +219,14 @@ export function EventPreview() {
 
     const handleExpand = () => {
         dispatch(setEventData(eventPreview.eventData));
+        // dispatch(setDatasources({
+        //     gamma: gammaDatasources,
+        //     threshold: thresholdDatasources,
+        //     neutron: neutronDatasources,
+        //     video: videoDatasources,
+        //     occ: occDatasources
+        // }));
+
         dispatch(setSelectedRowId(eventPreview.eventData.id))
         dispatch(setSelectedEvent(eventPreview.eventData));
         dispatch(setShouldForceAlarmTableDeselect(false))
@@ -268,7 +276,10 @@ export function EventPreview() {
             
             prevEventIdRef.current = eventPreview.eventData?.occupancyId;
             if (eventPreview.eventData?.laneId && laneMapRef.current) {
+
                 collectDataSources();
+                dispatch(setEventData(eventPreview.eventData));
+
             }
         }
     }, [eventPreview.eventData?.occupancyId]);
@@ -308,6 +319,14 @@ export function EventPreview() {
         setOccDS(updatedOcc);
         setDatasourcesReady(true);
 
+        dispatch(setDatasources({
+            gamma:  updatedGamma,
+            threshold: updatedThreshold,
+            neutron: updatedNeutron,
+            video: updatedVideo,
+            occ: updatedOcc
+        }));
+
     }, [eventPreview, laneMapRef]);
 
 
@@ -322,6 +341,8 @@ export function EventPreview() {
             });
             syncRef.current.onTime
             setDataSyncCreated(true);
+
+            // dispatch(setDataSync(syncRef.current));
         }
     }, [syncRef, dataSyncCreated, datasourcesReady, videoDatasources]);
 

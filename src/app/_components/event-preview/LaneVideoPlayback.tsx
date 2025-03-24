@@ -88,9 +88,6 @@ export default function LaneVideoPlayback({
     }, [localVideoReady]);
 
 
-
-
-
     const handleNextPage = () =>{
 
         setSelVidIdx((prevPage)=> {
@@ -132,11 +129,10 @@ export default function LaneVideoPlayback({
                         sx={{
                             width: "100%",
                             height: "videoSize",
-                            maxWidth: "100%",
-                            maxHeight: videoSize,
                             alignItems: "center",
                             border: "1px solid rgba(0,0,0,0.12)",
-                            padding: 1
+                            padding: 1,
+                            display: "flex"
                         }}
                     >
                         <Box

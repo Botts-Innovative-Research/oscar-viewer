@@ -1,39 +1,20 @@
 import {createSlice, PayloadAction} from "@reduxjs/toolkit";
 import {RootState} from "@/lib/state/Store";
+import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 
 
 export interface LaneViewState {
-    datasources: {
-        gamma: any[];
-        neutron: any[];
-        threshold: any[];
-        video: any[];
-        occ: any[],
-    },
-    currentLane: string;
-    status: {
-        datasourcesReady: boolean;
-    };
+    currentLane: string | null;
     lastLaneStatus: {
-        id: number;
-        name: string,
-        status: string
+        id: number | null;
+        name: string | null;
+        status: string | null;
     }
 
 }
 
 const initialState: LaneViewState = {
-    datasources: {
-        gamma: [],
-        neutron: [],
-        threshold: [],
-        video: [],
-        occ: []
-    },
     currentLane: null,
-    status: {
-        datasourcesReady: false
-    },
     lastLaneStatus: {
         id: null,
         name: null,
@@ -45,28 +26,13 @@ export const Slice = createSlice({
     name: 'laneView',
     initialState: initialState,
     reducers: {
-        setDatasources: (state, action: PayloadAction<{
-            gamma?: any[];
-            neutron?: any[];
-            threshold?: any[];
-            video?: any[];
-            occ?: any[];
-        }>) => {
-            state.datasources = {
-                ...state.datasources,
-                ...action.payload
-            };
-        },
-        setDatasourcesReady: (state, action: PayloadAction<boolean>) => {
-            state.status.datasourcesReady = action.payload;
-        },
         setCurrentLane: (state, action: PayloadAction<string>) =>{
             state.currentLane = action.payload;
         },
         setLastLaneStatus: (state, action: PayloadAction<{
-            id?: null;
-            name?: null;
-            status?: null;
+            id?: number | null;
+            name?: string | null;
+            status?: string | null;
         }>) =>{
             state.lastLaneStatus = {
                 ...state.lastLaneStatus,
@@ -78,8 +44,6 @@ export const Slice = createSlice({
 
 export const{
     setCurrentLane,
-    setDatasources,
-    setDatasourcesReady,
     setLastLaneStatus,
 } = Slice.actions;
 

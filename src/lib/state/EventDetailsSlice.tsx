@@ -1,27 +1,21 @@
 import {createSlice, PayloadAction} from "@reduxjs/toolkit";
 import {RootState} from "@/lib/state/Store";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
-import {persistReducer} from "redux-persist";
-import storage from "redux-persist/es/storage";
-
-// const persistConfig = {
-//     key: 'eventDetails',
-//     storage,
-//     whitelist: ['eventData', 'datasources', 'status']
-// };
+import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 
 export interface EventDetailsState {
     eventData: EventTableData | null,
     datasources: {
-        gamma: any[];
-        neutron: any[];
-        threshold: any[];
-        video: any[];
-        occ: any[],
+        gamma: typeof SweApi[];
+        neutron: typeof SweApi[];
+        threshold: typeof SweApi[];
+        video: typeof SweApi[];
+        occ: typeof SweApi[];
     },
     status: {
         datasourcesReady: boolean;
-    };
+    }
+    speed: string;
 }
 
 
@@ -36,7 +30,8 @@ const initialState: EventDetailsState ={
     },
     status: {
         datasourcesReady: false
-    }
+    },
+    speed: null
 }
 
 export const Slice = createSlice({
@@ -47,11 +42,11 @@ export const Slice = createSlice({
             state.eventData = action.payload;
         },
         setDatasources: (state, action: PayloadAction<{
-            gamma?: any[];
-            neutron?: any[];
-            threshold?: any[];
-            video?: any[];
-            occ?: any[];
+            gamma?: typeof SweApi[];
+            neutron?: typeof SweApi[];
+            threshold?: typeof SweApi[];
+            video?: typeof SweApi[];
+            occ?: typeof SweApi[];
         }>) => {
             state.datasources = {
                 ...state.datasources,
@@ -61,17 +56,9 @@ export const Slice = createSlice({
         setDatasourcesReady: (state, action: PayloadAction<boolean>) => {
             state.status.datasourcesReady = action.payload;
         },
-        clearEventDetails: (state) => {
-            state.eventData = null;
-            state.datasources = {
-                gamma: [],
-                neutron: [],
-                threshold: [],
-                video: [],
-                occ: []
-            };
-            state.status.datasourcesReady = false;
-        }
+        setSpeed: (state, action: PayloadAction<string>) =>{
+            state.speed = action.payload;
+        },
     }
 })
 
@@ -79,13 +66,13 @@ export const{
     setEventData,
     setDatasources,
     setDatasourcesReady,
-    clearEventDetails
+    setSpeed,
 } = Slice.actions;
 
 export const selectEventData = (state: RootState) => state.eventDetails.eventData;
 export const selectEventDatasources = (state: RootState) => state.eventDetails.datasources;
 export const selectEventStatus = (state: RootState) => state.eventDetails.status;
+export const selectSpeed = (state: RootState) => state.eventDetails.speed;
 
 export default Slice.reducer;
 
-// export default persistReducer(persistConfig, Slice.reducer);

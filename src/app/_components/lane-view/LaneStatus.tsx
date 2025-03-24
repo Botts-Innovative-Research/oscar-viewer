@@ -16,9 +16,16 @@ export default function LaneStatus(props: LaneStatusProps) {
   const dispatch = useAppDispatch();
   const lastLaneStatus = useSelector(selectLastLaneStatus);
   const idVal = useRef(1);
-  const [laneStatus, setLaneStatus] = useState<LaneStatusType>(lastLaneStatus);
+  const [laneStatus, setLaneStatus] = useState<LaneStatusType>();
+  // const [laneStatus, setLaneStatus] = useState<LaneStatusType | null>(lastLaneStatus ?? null);
 
-//todo: add in a historic request so initial lanestatus is not null
+//todo: add in a historic request so initial lane status is not null
+
+  useEffect(() => {
+    console.log('last lane status', lastLaneStatus)
+    if(lastLaneStatus.status != null)
+      setLaneStatus(lastLaneStatus ?? null);
+  }, [lastLaneStatus]);
 
   const addSubscriptionCallbacks = useCallback(() => {
     for (let [laneName, laneDSColl] of props.dataSourcesByLane.entries()) {
@@ -54,10 +61,8 @@ export default function LaneStatus(props: LaneStatusProps) {
     // set timer between each set status to just prevent flickering of status
     setTimeout(() => {
       setLaneStatus(newStatus);
-
-      dispatch(setLastLaneStatus(newStatus))
     }, 10000);
-
+    dispatch(setLastLaneStatus(newStatus))
   }
 
   return (

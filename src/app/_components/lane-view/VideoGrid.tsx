@@ -361,6 +361,9 @@ export default function VideoGrid(props: LaneVideoProps) {
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
     const [dsVideo, setDsVideo] = useState([]);
 
+    useEffect(() => {
+        console.log("lanemap:" ,laneMap)
+    }, [laneMap]);
 
     const datasourceSetup = useCallback(async () => {
 
@@ -393,6 +396,7 @@ export default function VideoGrid(props: LaneVideoProps) {
         if(videoList == null || videoList.length == 0 && laneMap.size > 0) {
             let updatedVideos: LaneWithVideo[] = []
 
+            console.log('lane map video grid', laneMap)
             laneMap.forEach((value, key) => {
                 if (key === props.laneName) {
                     let ds: LaneMapEntry = laneMap.get(key);
@@ -434,14 +438,14 @@ export default function VideoGrid(props: LaneVideoProps) {
 
                 const isConnected = await currentVideo.isConnected();
                 if(isConnected){
-                    currentVideo.disconnect()
+                    await currentVideo.disconnect()
                 }
-                console.log('Connecting to current video', currentVideo.name)
-                currentVideo.connect();
+                await currentVideo.connect();
+                console.log('Videostream Connected: ', currentVideo.name)
             }
         }
 
-        tryConnection();
+        tryConnection().then(r => console.log("Connecting....."));
 
     }, [videoList, currentPage]);
 
@@ -475,7 +479,7 @@ export default function VideoGrid(props: LaneVideoProps) {
                 const isConnected = await video.videoSources[prevPage].isConnected();
                 if(isConnected){
                     console.log('disconnecting', video.videoSources[prevPage].name)
-                    video.videoSources[prevPage].disconnect();
+                    await video.videoSources[prevPage].disconnect();
                 }
 
             }

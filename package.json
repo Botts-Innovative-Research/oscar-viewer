@@ -62,6 +62,7 @@
     "chartjs-plugin-annotation": "^3.0.1",
     "dayjs": "^1.11.13",
     "file-loader": "^6.2.0",
+    "flatted": "^3.3.3",
     "html-plugin": "^0.1.0",
     "html-webpack-tags-plugin": "^3.0.2",
     "https-browserify": "^1.0.0",

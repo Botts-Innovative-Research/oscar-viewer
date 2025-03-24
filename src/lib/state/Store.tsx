@@ -3,11 +3,10 @@
  * All Rights Reserved
  */
 
-import { configureStore, combineReducers } from "@reduxjs/toolkit";
+import {configureStore, combineReducers, createStore} from "@reduxjs/toolkit";
 import storage from "redux-persist/lib/storage";
-import { persistStore, persistReducer } from "redux-persist";
+import { persistStore, persistReducer, createTransform } from "redux-persist";
 import { FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from "redux-persist";
-
 import AppReducer from './Slice';
 import OSHReducer from './OSHSlice';
 import EventDataReducer from './EventDataSlice';
@@ -16,12 +15,14 @@ import OSCARLaneReducer from "@/lib/state/OSCARLaneSlice";
 import EventDetailsReducer from "@/lib/state/EventDetailsSlice";
 import EventPreviewReducer from "@/lib/state/EventPreviewSlice";
 import LaneViewReducer from "@/lib/state/LaneViewSlice";
+// import laneMapTransform from "@/lib/state/LaneMapTransform";
 
 const persistConfig ={
     key: 'root',
     storage,
-    whitelist: ['oscarClientSlice', 'eventPreview', 'eventData', 'laneSlice', 'eventDetails', 'laneView', 'eventLogSlice', 'selectedRowId'],
-    version: 1
+    whitelist: ['oscarClientSlice', 'eventPreview', 'laneSlice', 'laneView', 'eventLogSlice', "eventDetails"],
+    version: 1,
+    // transforms: [laneMapTransform]
 }
 
 const rootReducer = combineReducers({
@@ -30,9 +31,9 @@ const rootReducer = combineReducers({
     oshSlice: OSHReducer,
     eventLogSlice: EventDataReducer,
     laneSlice: OSCARLaneReducer,
-    eventDetails: EventDetailsReducer,
     eventPreview: EventPreviewReducer,
     laneView: LaneViewReducer,
+    eventDetails: EventDetailsReducer
 });
 
 
@@ -43,16 +44,17 @@ export const store = configureStore({
     reducer: persistedReducer,
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
-            serializableCheck: false,
-                // {
-                // ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
-                // ignoredPaths: ["oscarClientSlice.eventDetailsState", "oscarClientSlice.eventPreview"],
-            // },
+            serializableCheck: {
+                ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER]
+            }
         }),
 });
 
-
 export const persistor = persistStore(store);
+
+
+//if you make changes to the slices call this function
+// persistor.purge();
 
 export type AppStore = typeof store
 // // Infer the `RootState` and `AppDispatch` types from the store itself

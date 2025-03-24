@@ -27,12 +27,15 @@ import VideoGrid from "@/app/_components/lane-view/VideoGrid";
 
 
 export default function LaneViewPage() {
+    const dispatch = useAppDispatch();
 
     const laneMap = useSelector((state: RootState) => selectLaneMap(state))
     const {laneMapRef} = useContext(DataSourceContext);
 
     const searchParams = useSearchParams();
-    const currentLane = searchParams.get("name");
+    const searchLane = searchParams.get("name");
+
+    const currentLane = searchLane ?? useSelector((state: RootState) => state.laneView.currentLane);
 
     const [gammaDatasources, setGammaDS] = useState(null);
     const [neutronDatasources, setNeutronDS] = useState(null);
@@ -40,7 +43,6 @@ export default function LaneViewPage() {
     const [videoDatasources, setVideoDS] = useState(null);
     const [tamperDatasources, setTamperDS] = useState(null);
     const [chartReady, setChartReady] = useState<boolean>(false);
-
 
 
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
@@ -53,23 +55,30 @@ export default function LaneViewPage() {
         <ToggleButton  value={"alarm"} key={"alarm"}>Alarm</ToggleButton>
     ];
 
+    useEffect(() => {
+        if (searchLane) {
+            dispatch(setCurrentLane(searchLane));
+        }
+    }, [searchLane]);
 
     const handleToggle = (event: React.MouseEvent<HTMLElement>, newView: string) =>{
         setToggleView(newView);
     }
 
-    const datasourceSetup = useCallback(async () => {
+    const datasourceSetup = useCallback(() => {
         // @ts-ignore
-        let laneDSMap = new Map<string, LaneDSColl>();
+        const laneDSMap = new Map<string, LaneDSColl>();
 
         for (let [laneid, lane] of laneMapRef.current.entries()) {
 
             if(laneid === currentLane){
-                laneDSMap.set(laneid, new LaneDSColl());
-                for (let ds of lane.datastreams) {
 
-                    let idx: number = lane.datastreams.indexOf(ds);
-                    let rtDS = lane.datasourcesRealtime[idx];
+                const laneDSColl = new LaneDSColl();
+                laneDSMap.set(laneid, laneDSColl);
+
+                lane.datastreams.forEach((ds, idx) => {
+
+                    const rtDS = lane.datasourcesRealtime[idx];
 
                     rtDS.properties.startTime = new Date().toISOString();
                     rtDS.properties.endTime = "2055-01-01T08:13:25.845Z"
@@ -99,16 +108,18 @@ export default function LaneViewPage() {
                         setVideoDS(rtDS);
                     }
 
-                }
+                });
             }
+
             setDataSourcesByLane(laneDSMap);
         }
     }, [laneMapRef.current]);
 
 
     useEffect(() => {
-        datasourceSetup();
-    }, [laneMapRef.current]);
+        if(laneMapRef?.current && currentLane)
+            datasourceSetup();
+    }, [laneMapRef.current, currentLane]);
 
 
 
@@ -164,7 +175,7 @@ export default function LaneViewPage() {
                                 }}/>
                         </Grid>
                         <Grid item xs={12} md={6}>
-                            {/*<VideoGrid  laneName={currentLane}/>*/}
+                            <VideoGrid  laneName={currentLane}/>
                         </Grid>
                     </Grid>
                 </Box>
