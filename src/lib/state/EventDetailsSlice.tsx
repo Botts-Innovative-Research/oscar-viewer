@@ -5,13 +5,13 @@ import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 
 export interface EventDetailsState {
     eventData: EventTableData | null,
-    datasources: {
-        gamma: typeof SweApi[];
-        neutron: typeof SweApi[];
-        threshold: typeof SweApi[];
-        video: typeof SweApi[];
-        occ: typeof SweApi[];
-    },
+    // datasources: {
+    //     gamma: typeof SweApi[];
+    //     neutron: typeof SweApi[];
+    //     threshold: typeof SweApi[];
+    //     video: typeof SweApi[];
+    //     occ: typeof SweApi[];
+    // },
     status: {
         datasourcesReady: boolean;
     }
@@ -21,13 +21,13 @@ export interface EventDetailsState {
 
 const initialState: EventDetailsState ={
     eventData: null,
-    datasources: {
-        gamma: [],
-        neutron: [],
-        threshold: [],
-        video: [],
-        occ: []
-    },
+    // datasources: {
+    //     gamma: [],
+    //     neutron: [],
+    //     threshold: [],
+    //     video: [],
+    //     occ: []
+    // },
     status: {
         datasourcesReady: false
     },
@@ -41,18 +41,18 @@ export const Slice = createSlice({
         setEventData: (state, action: PayloadAction<EventTableData>) => {
             state.eventData = action.payload;
         },
-        setDatasources: (state, action: PayloadAction<{
-            gamma?: typeof SweApi[];
-            neutron?: typeof SweApi[];
-            threshold?: typeof SweApi[];
-            video?: typeof SweApi[];
-            occ?: typeof SweApi[];
-        }>) => {
-            state.datasources = {
-                ...state.datasources,
-                ...action.payload
-            };
-        },
+        // setDatasources: (state, action: PayloadAction<{
+        //     gamma?: typeof SweApi[];
+        //     neutron?: typeof SweApi[];
+        //     threshold?: typeof SweApi[];
+        //     video?: typeof SweApi[];
+        //     occ?: typeof SweApi[];
+        // }>) => {
+        //     state.datasources = {
+        //         ...state.datasources,
+        //         ...action.payload
+        //     };
+        // },
         setDatasourcesReady: (state, action: PayloadAction<boolean>) => {
             state.status.datasourcesReady = action.payload;
         },
@@ -64,13 +64,13 @@ export const Slice = createSlice({
 
 export const{
     setEventData,
-    setDatasources,
+    // setDatasources,
     setDatasourcesReady,
     setSpeed,
 } = Slice.actions;
 
 export const selectEventData = (state: RootState) => state.eventDetails.eventData;
-export const selectEventDatasources = (state: RootState) => state.eventDetails.datasources;
+// export const selectEventDatasources = (state: RootState) => state.eventDetails.datasources;
 export const selectEventStatus = (state: RootState) => state.eventDetails.status;
 export const selectSpeed = (state: RootState) => state.eventDetails.speed;
 

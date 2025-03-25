@@ -7,16 +7,17 @@ import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/navigation";
 
 export default function AccountViewPage() {
-    const [appUserName, setAppUserName] = useState<string>("");
     const dispatch = useAppDispatch();
-    const router = useRouter();
 
+    const [appUserName, setAppUserName] = useState<string>("");
+    const router = useRouter();
     const [openSnack, setOpenSnack] = useState(false);
     const[volumeSnackMsg, setVolumeSnackMsg] = useState("Alarms will trigger audible sound in client. Be cautious of volume levels.");
 
     const onChangeUserName = (event: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value} = event.target;
         setAppUserName(value);
+        dispatch(setCurrentUser(value));
     }
 
     const onClickLogin = () => {
@@ -26,10 +27,7 @@ export default function AccountViewPage() {
         router.push('/dashboard');
     }
 
-    const handleCloseSnack = (
-        event: React.SyntheticEvent | Event,
-        reason?: SnackbarCloseReason,
-    ) => {
+    const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
         if (reason === 'clickaway') {
             return;
         }

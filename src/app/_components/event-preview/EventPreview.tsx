@@ -46,7 +46,7 @@ import {setSelectedEvent, updateSelectedEventAdjudication} from "@/lib/state/Eve
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 import {EventType} from "osh-js/source/core/event/EventType";
 import TimeController from "@/app/_components/TimeController";
-import {setDatasources, setEventData} from "@/lib/state/EventDetailsSlice";
+import {setEventData} from "@/lib/state/EventDetailsSlice";
 
 
 
@@ -94,11 +94,6 @@ export function EventPreview() {
     const [adjSnackMsg, setAdjSnackMsg] = useState('');
     const [openSnack, setOpenSnack] = useState(false);
     const [colorStatus, setColorStatus] = useState('')
-
-
-    // if (!eventPreview.isOpen || !eventPreview.eventData) {
-    //     return null;
-    // }
 
 
 
@@ -319,13 +314,6 @@ export function EventPreview() {
         setOccDS(updatedOcc);
         setDatasourcesReady(true);
 
-        dispatch(setDatasources({
-            gamma:  updatedGamma,
-            threshold: updatedThreshold,
-            neutron: updatedNeutron,
-            video: updatedVideo,
-            occ: updatedOcc
-        }));
 
     }, [eventPreview, laneMapRef]);
 
@@ -412,23 +400,22 @@ export function EventPreview() {
 
 
     // function to start the time controller by connecting to time sync
-    const start = async () => {
-        if (syncRef.current && !await syncRef.current.isConnected()) {
-
+    const play = async () => {
+        if (syncRef.current ) { //&& !await syncRef.current.isConnected()
+            // if(!syncRef.current.isConnected) await syncRef.current.connect();
             await syncRef.current.setReplaySpeed(1.0);
 
-            await syncRef.current.connect();
-
             console.log("Playback started.");
+            await syncRef.current.connect();
         }
     };
 
     // function to pause the time controller by disconnecting from the time sync
     const pause = async () => {
-        if (syncRef.current && await syncRef.current.isConnected()) {
+        if (syncRef.current) {  //&& await syncRef.current.isConnected()
+             // await syncRef.current.connect();
             await syncRef.current.setReplaySpeed(0.0);
 
-            await syncRef.current.disconnect();
 
             console.log("Playback paused.");
         }
@@ -446,7 +433,6 @@ export function EventPreview() {
         // update the time sync start time
         // await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, 0.0, false);
         await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, (isPlaying ? 1.0 : 0.0), false);
-
         setSyncTime(newValue);
 
     },[syncRef.current, eventPreview]);
@@ -489,7 +475,7 @@ export function EventPreview() {
                         modeType={"preview"}
                     />
 
-                    <TimeController handleChange={handleChange} pause={pause} start={start} syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
+                    <TimeController handleChange={handleChange} pause={pause} play={play} syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
                 </Box>
             )}
 

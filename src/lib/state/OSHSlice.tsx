@@ -10,17 +10,8 @@ import {RootState} from "../Store";
 // @ts-ignore
 import {INode} from "@/app/data/osh/Node";
 import {Node, NodeOptions} from "@/lib/data/osh/Node";
-import {persistReducer} from "redux-persist";
-import storage from "redux-persist/es/storage";
 
 enableMapSet();
-
-// const persistConfig = {
-//     key: 'oshSlice',
-//     storage,
-//     whitelist: ['nodes', 'configNode']
-// };
-
 
 export interface IOSHSlice {
     nodes: INode[],
@@ -95,5 +86,3 @@ export const selectDatastreams = (state: RootState) => state.oshSlice.dataStream
 export const selectDefaultNode = (state: RootState) => state.oshSlice.nodes.find((node: INode) => node.isDefaultNode);
 
 export default Slice.reducer;
-
-// export default persistReducer(persistConfig, Slice.reducer);

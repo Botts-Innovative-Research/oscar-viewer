@@ -22,7 +22,6 @@ const persistConfig ={
     storage,
     whitelist: ['oscarClientSlice', 'eventPreview', 'laneSlice', 'laneView', 'eventLogSlice', "eventDetails"],
     version: 1,
-    // transforms: [laneMapTransform]
 }
 
 const rootReducer = combineReducers({

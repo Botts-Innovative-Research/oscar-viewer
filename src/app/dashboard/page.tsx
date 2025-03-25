@@ -7,7 +7,7 @@ import {useCallback, useContext, useEffect, useMemo, useState} from "react";
 import dynamic from "next/dynamic";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
-import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
+import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
 import Table2 from "@/app/_components/event-table/TableType2";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import {
@@ -17,18 +17,20 @@ import {
     isTamperDatastream,
 } from "@/lib/data/oscar/Utilities";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import {useAppDispatch} from "@/lib/state/Hooks";
 
 export default function DashboardPage() {
     const laneMap = useSelector((state: RootState) => selectLaneMap(state))
 
     const {laneMapRef} = useContext(DataSourceContext);
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
+    const dispatch = useAppDispatch();
 
 
     const QuickView = useMemo(() => dynamic(
         () => import('@/app/_components/dashboard/QuickView'),
         {
-            loading: () => <p> loading... </p>,
+            loading: () => <p> Loading Preview... </p>,
             ssr: false
         }
     ), [])
@@ -65,6 +67,7 @@ export default function DashboardPage() {
                 }
             }
             setDataSourcesByLane(laneDSMap);
+            dispatch(setLaneMap(laneMap))
         }
     }, [laneMapRef.current]);
 

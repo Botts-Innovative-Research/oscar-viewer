@@ -70,24 +70,27 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
 
 // get latest gamma background from threshold datasource to calc nsigma for chart
 export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDatasource: any) {
+    console.log("thresh ds", thresholdDatasource)
+    console.log("gamma ds", gammaDatasource)
     if (!thresholdDatasource) return null;
 
     let latestGB: number;
+
+    // let gammaGrossCount: any[] = [];
 
     let nCurve = new CurveLayer({
         dataSourceIds: [gammaDatasource.id, thresholdDatasource.id],
         getValues: (rec: any, timestamp: any) => {
 
-            if(rec.latestGammaBackground){
-                latestGB = rec.latestGammaBackground;
-                timestamp = rec.timestamp
-            }
+            console.log("NSIGMA RECORD", rec)
+            if(rec.latestGammaBackground) latestGB = rec?.latestGammaBackground;
 
 
-            if(rec.gammaGrossCount && latestGB !== undefined){
+            console.log('latest gb', latestGB)
+            if(rec.gammaGrossCount && latestGB){
                 let nSigmaValue: number = (rec?.gammaGrossCount - latestGB) / Math.sqrt(latestGB)
 
-                return {x: rec?.timestamp || timestamp, y: nSigmaValue}
+                return {x: timestamp, y: nSigmaValue}
             }
 
         },

@@ -6,22 +6,23 @@ import {useSelector} from "react-redux";
 import {useCallback, useContext, useEffect, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
-import {selectEventData, setSpeed} from "@/lib/state/EventDetailsSlice";
+import {selectEventData, selectSpeed, setSpeed} from "@/lib/state/EventDetailsSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
 
 // export default function MiscTable() {
 export default function MiscTable({currentTime}: {currentTime: string}) {
   const dispatch = useAppDispatch();
 
+  const savedSpeed = useSelector(selectSpeed)
+
   const laneMapRef = useContext(DataSourceContext).laneMapRef;
   const eventData = useSelector(selectEventData);
 
-  const [speedVal, setSpeedval] = useState<string>("N/A");
+  const [speedVal, setSpeedval] = useState<string>(savedSpeed); //maybe put savedSpeed here instead
 
   // console.log("currentTime", currentTime)
   const checkForSpeed = useCallback(async () => {
     if (eventData) {
-      console.log("CHECKING FOR SPEED EVENT DATA IS NOT NULL", eventData)
       let lme = laneMapRef.current.get(eventData.laneId);
 
       let speedDS = lme.datastreams.find(ds => ds.properties.observedProperties[0].definition.includes('http://www.opengis.net/def/speed-time'));
@@ -33,7 +34,7 @@ export default function MiscTable({currentTime}: {currentTime: string}) {
         // make CSAPI request for speed in different output
         let speed = "N/A";
 
-        speed = speedArr.find((sobs: any) => sobs.resultTime === currentTime)?.result.speedKPH || "N/A";
+        speed = speedArr.find((sobs: any) => sobs.resultTime === currentTime)?.result.speedKPH || 'N/A';
 
         setSpeedval(speed);
         dispatch(setSpeed(speed));
@@ -43,7 +44,7 @@ export default function MiscTable({currentTime}: {currentTime: string}) {
   }, [eventData, currentTime]);
 
   useEffect(() => {
-    if(eventData){
+    if(eventData && laneMapRef.current){
       checkForSpeed();
     }
   }, [eventData, laneMapRef]);

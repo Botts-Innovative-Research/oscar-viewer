@@ -30,7 +30,7 @@ export default function AlarmAudio() {
     const [volumeValue, setVolumeValue] = useState(savedVolume)
 
 
-    console.log("alarm aduio", volumeValue, savedVolume);
+    console.log("alarm audio", volumeValue, savedVolume);
 
     useEffect(() => {
         document.body.addEventListener("click", function() {
