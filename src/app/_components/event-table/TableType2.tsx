@@ -66,7 +66,9 @@ export default function Table2({
                                }: TableProps) {
 
     const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
+
     const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
+
     const [selectionModel, setSelectionModel] = useState([]); // Currently selected row
     const dispatch = useAppDispatch();
     const router = useRouter();
@@ -86,7 +88,6 @@ export default function Table2({
     }
 
     async function streamObservations(laneEntry: LaneMapEntry) {
-
         let futureTime = new Date();
         futureTime.setFullYear(futureTime.getFullYear() + 1);
         let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty("http://www.opengis.net/def/pillar-occupancy-count");

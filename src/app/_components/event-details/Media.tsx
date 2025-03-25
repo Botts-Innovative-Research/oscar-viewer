@@ -68,12 +68,11 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
         if (chartReady && videoReady) {
             console.log("Chart Ready, Starting DataSync");
 
-            if(datasources.gamma)
-                datasources?.gamma.connect()
-            if(datasources.neutron)
-                datasources?.neutron.connect()
-            if(datasources.threshold)
-                datasources?.threshold.connect()
+            if(datasources.gamma) datasources?.gamma.connect()
+
+            if(datasources.neutron) datasources?.neutron.connect()
+
+            if(datasources.threshold) datasources?.threshold.connect()
 
 
             syncRef.current?.connect().then(() => {

@@ -5,13 +5,12 @@ import BackButton from "../_components/BackButton";
 import {useSearchParams} from 'next/navigation'
 import LaneStatus from "../_components/lane-view/LaneStatus";
 import Media from "../_components/lane-view/Media";
-import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import Table2 from "@/app/_components/event-table/TableType2";
 import {useSelector} from "react-redux";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {RootState} from "@/lib/state/Store";
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
-import StatusTables from "@/app/_components/lane-view/StatusTables";
 import {
     isGammaDatastream,
     isNeutronDatastream,
@@ -20,15 +19,16 @@ import {
 } from "@/lib/data/oscar/Utilities";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {setCurrentLane} from "@/lib/state/LaneViewSlice";
-import ChartLane from "@/app/_components/lane-view/ChartLane";
-import VideoGrid from "@/app/_components/lane-view/VideoGrid";
+import {selectLastToggleState, setCurrentLane, setToggleState} from "@/lib/state/LaneViewSlice";
+import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import LaneStatusTable from "../_components/lane-view/LaneStatusTable";
 
 
 
 export default function LaneViewPage() {
     const dispatch = useAppDispatch();
 
+    const savedToggleState = useSelector(selectLastToggleState)
     const laneMap = useSelector((state: RootState) => selectLaneMap(state))
     const {laneMapRef} = useContext(DataSourceContext);
 
@@ -37,22 +37,21 @@ export default function LaneViewPage() {
 
     const currentLane = searchLane ?? useSelector((state: RootState) => state.laneView.currentLane);
 
-    const [gammaDatasources, setGammaDS] = useState(null);
-    const [neutronDatasources, setNeutronDS] = useState(null);
-    const [thresholdDatasources, setThresholdDS] = useState(null);
-    const [videoDatasources, setVideoDS] = useState(null);
-    const [tamperDatasources, setTamperDS] = useState(null);
-    const [chartReady, setChartReady] = useState<boolean>(false);
+    const [gammaDatasources, setGammaDS] =  useState<typeof SweApi>();
+    const [neutronDatasources, setNeutronDS] =  useState<typeof SweApi>();
+    const [thresholdDatasources, setThresholdDS] = useState<typeof SweApi>();
+    const [videoDatasources, setVideoDS] =  useState<typeof SweApi[]>([]);
+    const [tamperDatasources, setTamperDS] =  useState<typeof SweApi>();
 
 
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
 
-    const [toggleView, setToggleView] = useState("occupancy");
+    const [toggleView, setToggleView] = useState(savedToggleState);
 
 
     const toggleButtons = [
-        <ToggleButton  value={"occupancy"} key={"occupancy"}>Occupancy</ToggleButton>,
-        <ToggleButton  value={"alarm"} key={"alarm"}>Alarm</ToggleButton>
+        <ToggleButton value={"occupancy"} key={"occupancy"}>Occupancy</ToggleButton>,
+        <ToggleButton value={"alarm"} key={"alarm"}>Alarm</ToggleButton>
     ];
 
     useEffect(() => {
@@ -63,18 +62,21 @@ export default function LaneViewPage() {
 
     const handleToggle = (event: React.MouseEvent<HTMLElement>, newView: string) =>{
         setToggleView(newView);
+        dispatch(setToggleState(newView))
     }
 
-    const datasourceSetup = useCallback(() => {
+    const collectDataSources = useCallback(() => {
         // @ts-ignore
         const laneDSMap = new Map<string, LaneDSColl>();
 
+        const updatedVideo: typeof SweApi[] = [];
         for (let [laneid, lane] of laneMapRef.current.entries()) {
 
             if(laneid === currentLane){
 
                 const laneDSColl = new LaneDSColl();
                 laneDSMap.set(laneid, laneDSColl);
+
 
                 lane.datastreams.forEach((ds, idx) => {
 
@@ -105,12 +107,14 @@ export default function LaneViewPage() {
 
                     if(isVideoDatastream(ds)) {
                         laneDSColl?.addDS('videoRT', rtDS);
-                        setVideoDS(rtDS);
+                        updatedVideo.push(rtDS)
+
                     }
 
                 });
             }
 
+            setVideoDS(updatedVideo);
             setDataSourcesByLane(laneDSMap);
         }
     }, [laneMapRef.current]);
@@ -118,30 +122,9 @@ export default function LaneViewPage() {
 
     useEffect(() => {
         if(laneMapRef?.current && currentLane)
-            datasourceSetup();
+            collectDataSources();
+        console.log("lane view collected datasources")
     }, [laneMapRef.current, currentLane]);
-
-
-
-    useEffect(() => {
-        if(neutronDatasources){
-            neutronDatasources.connect()
-        }
-
-        if(gammaDatasources){
-            gammaDatasources.connect()
-        }
-        if(thresholdDatasources){
-            thresholdDatasources.connect()
-        }
-
-        if(tamperDatasources){
-            tamperDatasources.connect();
-        }
-    }, [thresholdDatasources, gammaDatasources, neutronDatasources, tamperDatasources]);
-
-
-    console.log("ds",dataSourcesByLane);
 
     return (
         <Stack spacing={2} direction={"column"}>
@@ -161,27 +144,17 @@ export default function LaneViewPage() {
           </Grid>
 
           <Grid item container spacing={2} sx={{ width: "100%" }}>
-            <Paper variant='outlined' sx={{ width: "100%" }}>
+              <Media
+                  datasources={{
+                      gamma: gammaDatasources,
+                      neutron: neutronDatasources,
+                      threshold: thresholdDatasources,
+                      video: videoDatasources
+                  }}
 
-                <Box sx={{flexGrow: 1, overflowX: "auto"}}>
-                    <Grid container direction="row" spacing={2} justifyContent={"center"} alignItems={"center"}>
-                        <Grid item xs={12} md={6}>
-                            <ChartLane
-                                laneName={currentLane} setChartReady={setChartReady}
-                                datasources={{
-                                    gamma: gammaDatasources,
-                                    neutron: neutronDatasources,
-                                    threshold: thresholdDatasources
-                                }}/>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <VideoGrid  laneName={currentLane}/>
-                        </Grid>
-                    </Grid>
-                </Box>
+                  currentLane={currentLane}
+              />
 
-              {/*<Media laneName={currentLane} gammaDs={gammaDatasources} neutronDs={neutronDatasources} thresholdDs={thresholdDatasources} videoDs={videoDatasources}/>*/}
-            </Paper>
           </Grid>
 
           <Grid item container spacing={2} sx={{ width: "100%" }}>
@@ -209,7 +182,7 @@ export default function LaneViewPage() {
                         <Table2 tableMode={'eventLogPerLane'} laneMap={laneMap} viewLane viewSecondary viewAdjudicated/>
                     </Grid>
                     <Grid item sx={{ width: "100%", display: toggleView === 'alarm' ? 'block' : 'none' }}>
-                        <StatusTables dataSourcesByLane={dataSourcesByLane} />
+                        <LaneStatusTable laneMap={laneMap}/>
                     </Grid>
                 </Grid>
             </Paper>
@@ -217,3 +190,4 @@ export default function LaneViewPage() {
         </Stack>
   );
 }
+

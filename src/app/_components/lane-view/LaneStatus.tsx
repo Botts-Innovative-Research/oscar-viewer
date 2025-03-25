@@ -22,7 +22,6 @@ export default function LaneStatus(props: LaneStatusProps) {
 //todo: add in a historic request so initial lane status is not null
 
   useEffect(() => {
-    console.log('last lane status', lastLaneStatus)
     if(lastLaneStatus.status != null)
       setLaneStatus(lastLaneStatus ?? null);
   }, [lastLaneStatus]);

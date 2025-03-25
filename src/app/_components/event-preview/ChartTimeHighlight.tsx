@@ -363,7 +363,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     } else{
         return (
             <Box display='flex' alignItems="center">
-
                 <Grid container direction="column" spacing={2}>
                     <Grid item style={{ display: "flex", justifyContent: "center", width: "100%" }}>
                         <ToggleButtonGroup

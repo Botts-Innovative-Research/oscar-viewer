@@ -8,7 +8,7 @@ import {createSlice, PayloadAction} from "@reduxjs/toolkit";
 import {enableMapSet} from "immer";
 import {RootState} from "@/lib/state/Store";
 
-import {EventTableData} from "@/lib/data/oscar/TableHelpers";
+import {AlarmTableData, EventTableData} from "@/lib/data/oscar/TableHelpers";
 import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
 
 
@@ -19,14 +19,16 @@ export interface IEventDataState {
     // eventLog: Map<string, EventTableData>,
     eventLog: EventTableData[],
     selectedEvent: EventTableData | null,
-    hasFetchedInitial: boolean
+    hasFetchedInitial: boolean,
+    laneViewLog: AlarmTableData[]
 }
 
 const initialState: IEventDataState = {
     // eventLog: new Map(),
     eventLog: [],
     selectedEvent: null,
-    hasFetchedInitial: false
+    hasFetchedInitial: false,
+    laneViewLog: []
 }
 
 export const Slice = createSlice({
@@ -72,6 +74,17 @@ export const Slice = createSlice({
         setHasFetchedInitial: (state, action: PayloadAction<boolean>) => {
             state.hasFetchedInitial = action.payload;
         },
+        setLaneViewLogData: (state, action: PayloadAction<AlarmTableData[]>) => {
+            state.laneViewLog = action.payload;
+        },
+        addEventToLaneViewLog: (state, action: PayloadAction<AlarmTableData>) => {
+            let checkEntry = state.laneViewLog.some((event: any) =>( event.id === action.payload.id && event.laneName === action.payload.laneId))
+            console.log("Lane View Log for Statuses: ", checkEntry, action.payload.laneId)
+
+            let laneLog = [];
+            laneLog.push(action.payload);
+            state.laneViewLog = laneLog;
+        },
     }
 })
 
@@ -80,9 +93,12 @@ export const {
     setSelectedEvent,
     addEventToLog,
     updateSelectedEventAdjudication,
-    setHasFetchedInitial
+    setHasFetchedInitial,
+    setLaneViewLogData,
+    addEventToLaneViewLog,
 } = Slice.actions
 
+export const selectLaneViewLog = (state: RootState) => state.eventLogSlice.laneViewLog;
 export const selectEventTableData = (state: RootState) => state.eventLogSlice.eventLog;
 // export const selectEventTableDataArray = (state: RootState) => Array.from(state.eventLogSlice.eventLog.values());
 export const selectEventTableDataArray = (state: RootState) => state.eventLogSlice.eventLog;

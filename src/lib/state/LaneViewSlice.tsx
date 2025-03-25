@@ -9,7 +9,8 @@ export interface LaneViewState {
         id: number | null;
         name: string | null;
         status: string | null;
-    }
+    },
+    toggleState: string
 
 }
 
@@ -19,7 +20,8 @@ const initialState: LaneViewState = {
         id: null,
         name: null,
         status: null,
-    }
+    },
+    toggleState: "occupancy"
 }
 
 export const Slice = createSlice({
@@ -38,17 +40,22 @@ export const Slice = createSlice({
                 ...state.lastLaneStatus,
                 ...action.payload
             }
-        }
+        },
+        setToggleState: (state, action: PayloadAction<string>) =>{
+            state.toggleState = action.payload;
+        },
     }
 })
 
 export const{
     setCurrentLane,
     setLastLaneStatus,
+    setToggleState
 } = Slice.actions;
 
 export const selectCurrentLane = (state: RootState) => state.laneView.currentLane;
 export const selectLastLaneStatus = (state: RootState) => state.laneView.lastLaneStatus;
+export const selectLastToggleState = (state: RootState) => state.laneView.toggleState;
 
 
 export default Slice.reducer;

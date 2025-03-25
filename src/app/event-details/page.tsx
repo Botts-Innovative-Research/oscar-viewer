@@ -64,7 +64,8 @@ export default function EventDetailsPage() {
 
         console.log("Collecting DataSources...", currLaneEntry, currentLane);
 
-        let tempDSMap = new Map<string, typeof SweApi[]>();
+        // @ts-ignore
+        let tempDSMap: Map<string, SweApi[]>;
 
         let datasources = currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
         console.log("MY DATASOURCES ", datasources);
@@ -92,8 +93,6 @@ export default function EventDetailsPage() {
 
 
     useEffect(() => {
-        console.log('state', store.getState())
-        console.log('lanemapref', laneMapRef)
         if(laneMapRef.current && eventPreview)
             collectDataSources();
     }, [eventPreview, laneMapRef.current]);

@@ -1,31 +1,54 @@
 "use client";
 
-import {Box, Grid } from "@mui/material";
+import {Box, Grid, Paper} from "@mui/material";
 import VideoGrid from "./VideoGrid";
-import {useState} from "react";
+import React, {useEffect, useState} from "react";
 import ChartLane from "@/app/_components/lane-view/ChartLane";
 
-export default function Media(props: { laneName: string, gammaDs: any, neutronDs: any, thresholdDs: any, videoDs: any}) {
+export default function Media({datasources, currentLane}: {datasources: any, currentLane: string}) {
 
     const [chartReady, setChartReady] = useState<boolean>(false);
 
+
+    useEffect(() => {
+        console.log("lane view chart ready: ", datasources)
+        if(chartReady){
+            if(datasources.neutron){
+                datasources?.neutron.connect()
+            }
+
+            if(datasources.gamma){
+                datasources?.gamma.connect()
+            }
+            if(datasources.threshold){
+                datasources?.threshold.connect()
+            }
+        }else{
+            console.log("Lane View: Charts not ready.")
+        }
+
+    }, [datasources, chartReady]);
+
     return (
-        <Box sx={{flexGrow: 1, overflowX: "auto"}}>
-            <Grid container direction="row" spacing={2} justifyContent={"center"} alignItems={"center"}>
-                <Grid item xs={12} md={6}>
-                    <ChartLane
-                        laneName={props.laneName} setChartReady={setChartReady}
-                                datasources={{
-                        gamma: props.gammaDs,
-                        neutron: props.neutronDs,
-                        threshold: props.thresholdDs
-                    }}/>
+        <Paper variant='outlined' sx={{ width: "100%" }}>
+            <Box sx={{flexGrow: 1, overflowX: "auto"}}>
+                <Grid container direction="row" spacing={2} justifyContent={"center"} alignItems={"center"}>
+                    <Grid item xs={12} md={6}>
+                        <ChartLane
+                            laneName={currentLane}
+                            setChartReady={setChartReady}
+                            datasources={{
+                                gamma: datasources.gamma,
+                                neutron: datasources.neutron,
+                                threshold: datasources.threshold,
+                            }}
+                        />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                        <VideoGrid videoDataSources={datasources.video}/>
+                    </Grid>
                 </Grid>
-                <Grid item xs={12} md={6}>
-                    <VideoGrid  laneName={props.laneName}/>
-                    {/*<VideoGrid laneName={props.laneName}/>*/}
-                </Grid>
-          </Grid>
-        </Box>
+            </Box>
+        </Paper>
   );
 }
