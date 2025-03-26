@@ -65,15 +65,15 @@ export default function Table2({
 
                                }: TableProps) {
 
-    const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
-
-    const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
-
+    const selectedRowId = useSelector(selectSelectedRowId);
     const [selectionModel, setSelectionModel] = useState([]); // Currently selected row
+
+
+    const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
+    const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
     const dispatch = useAppDispatch();
     const router = useRouter();
     const classes = selectedRowStyles();
-    const selectedRowId = useSelector(selectSelectedRowId);
 
 
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
@@ -88,6 +88,7 @@ export default function Table2({
     }
 
     async function streamObservations(laneEntry: LaneMapEntry) {
+
         let futureTime = new Date();
         futureTime.setFullYear(futureTime.getFullYear() + 1);
         let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty("http://www.opengis.net/def/pillar-occupancy-count");
@@ -215,18 +216,6 @@ export default function Table2({
         })
     }, [tableData]);
 
-    // useEffect(() => {
-    //     if (eventPreview.isOpen && eventPreview.eventData) {
-    //         setSelectionModel([selectedRowId]);
-    //     } else {
-    //         setSelectionModel([]);
-    //     }
-    // }, [eventPreview.isOpen, eventPreview.eventData]);
-
-    // useEffect(() => {
-    //     eventPreview.isOpen ? setSelectionModel([selectedRowId]) : setSelectionModel([]);
-    // }, []);
-
     //------------------------------------------------------------------------------------------------------------------
     // Data Grid Setup and Related
     //------------------------------------------------------------------------------------------------------------------
@@ -314,6 +303,11 @@ export default function Table2({
             ],
         },
     ];
+    // useEffect(() => {
+    //     if (selectedRowId && tableData.some(row => row.id === selectedRowId)) {
+    //         setSelectionModel([selectedRowId]);
+    //     }
+    // }, [selectedRowId, tableData]);
 
 
     const handleEventPreview = () =>{
@@ -335,11 +329,40 @@ export default function Table2({
     }
 
 
-
     // Handle currently selected row
     // const handleRowSelection = (selection: any[]) => {
-    //     const selectedId = selection[0]; // Get the first selected ID
-    //     console.log("ROW SELECTED ID: ", selectedId)
+    //     const selectedId = selection[0];
+    //
+    //
+    //     if (selectionModel === selectedId) {
+    //         console.log('CLOSING EVENT PREVIEW BECAUSE IDS MATCH', selectedId)
+    //         setSelectionModel([]);
+    //
+    //         dispatch(setSelectedEvent(null));
+    //         dispatch(setSelectedRowId(null));
+    //         dispatch(setEventPreview({isOpen: false, eventData: null}));
+    //     } else {
+    //         setSelectionModel([selectedId]);
+    //         // dispatch(setSelectedRowId(selectedId));
+    //
+    //         dispatch(setEventPreview({isOpen: false, eventData: null}));
+    //
+    //         setTimeout(() =>{
+    //
+    //             setSelectionModel([selectedId]); // Highlight new row
+    //             dispatch(setSelectedRowId(selectedId));
+    //
+    //
+    //             const selectedRow = tableData.find((row) => row.id === selectedId);
+    //             if (selectedRow) {
+    //                 dispatch(setEventPreview({ isOpen: true, eventData: selectedRow }));
+    //                 dispatch(setSelectedEvent(selectedRow));
+    //             }
+    //         }, 10)
+    //
+    //     }
+    // };
+
     const handleRowSelection = (selection: any[]) => {
 
         // console.log("Selection Model", selectionModel);
@@ -348,6 +371,7 @@ export default function Table2({
         // const selectedId = (eventPreview.isOpen) ? selectedRowId : selection[0];
         const selectedId = selection[0];
 
+        console.log("HAndle row selection: ", selection);
 
         if (selectionModel[0] === selectedId) {
             setSelectionModel([]);
@@ -362,6 +386,7 @@ export default function Table2({
             dispatch(setSelectedRowId(null));
             dispatch(setEventPreview({isOpen: false, eventData: null}));
 
+            // set a timeout to allow the previous rows event preview to be cleared.
             setTimeout(() =>{
 
                 setSelectionModel([selectedId]); // Highlight new row
@@ -373,10 +398,12 @@ export default function Table2({
                     dispatch(setEventPreview({ isOpen: true, eventData: selectedRow }));
                     dispatch(setSelectedEvent(selectedRow));
                 }
-            }, 10)
+            }, 5)
 
         }
     };
+
+
 
     return (
         <Box sx={{flex: 1, width: '100%'}}>
@@ -481,16 +508,3 @@ export default function Table2({
         </Box>
     )
 }
-
-
-
-
-// useEffect(() => {
-//     console.log("SELECTED ROW ID", selectedRowId)
-//     console.log("SELECTION MODEL", selectionModel)
-//
-//     if (!selectedRowId && !eventPreview.isOpen) {
-//         setSelectionModel([]);
-//     }
-//
-// }, [selectedRowId]);

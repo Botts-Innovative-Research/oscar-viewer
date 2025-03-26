@@ -3,6 +3,8 @@
  * All Rights Reserved
  */
 
+'use client'
+
 import {
     Box,
     Button,
@@ -46,7 +48,8 @@ import {setSelectedEvent, updateSelectedEventAdjudication} from "@/lib/state/Eve
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 import {EventType} from "osh-js/source/core/event/EventType";
 import TimeController from "@/app/_components/TimeController";
-import {setEventData} from "@/lib/state/EventDetailsSlice";
+import { setEventData } from "@/lib/state/EventDetailsSlice";
+
 
 
 
@@ -214,13 +217,6 @@ export function EventPreview() {
 
     const handleExpand = () => {
         dispatch(setEventData(eventPreview.eventData));
-        // dispatch(setDatasources({
-        //     gamma: gammaDatasources,
-        //     threshold: thresholdDatasources,
-        //     neutron: neutronDatasources,
-        //     video: videoDatasources,
-        //     occ: occDatasources
-        // }));
 
         dispatch(setSelectedRowId(eventPreview.eventData.id))
         dispatch(setSelectedEvent(eventPreview.eventData));

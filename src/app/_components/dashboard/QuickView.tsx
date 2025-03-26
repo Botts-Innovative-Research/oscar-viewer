@@ -1,6 +1,6 @@
 "use client";
 
-import { Box } from '@mui/material';
+import { Box, Grid, Paper } from '@mui/material';
 import { useSelector } from "react-redux";
 import {selectEventPreview} from "@/lib/state/EventPreviewSlice";
 import { EventPreview } from "@/app/_components/event-preview/EventPreview";
@@ -16,7 +16,13 @@ export default function QuickView() {
     }, []);
 
     if (isLoading) {
-        return <Box>Loading...</Box>;
+        return (
+            <Grid item xs={4}>
+                <Paper variant='outlined' sx={{height: "100%"}}>
+                    <Box>Loading...</Box>
+                </Paper>
+            </Grid>
+        )
     }
 
     return (

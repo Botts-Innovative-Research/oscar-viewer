@@ -18,6 +18,7 @@ import {
 } from "@/lib/data/oscar/Utilities";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useAppDispatch} from "@/lib/state/Hooks";
+import LoadingPreview from "../_components/skeleton/LoadingPreview";
 
 export default function DashboardPage() {
     const laneMap = useSelector((state: RootState) => selectLaneMap(state))
@@ -30,7 +31,7 @@ export default function DashboardPage() {
     const QuickView = useMemo(() => dynamic(
         () => import('@/app/_components/dashboard/QuickView'),
         {
-            loading: () => <p> Loading Preview... </p>,
+            loading: () => <LoadingPreview/>,
             ssr: false
         }
     ), [])

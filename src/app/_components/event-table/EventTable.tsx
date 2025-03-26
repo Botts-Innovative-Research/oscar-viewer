@@ -15,7 +15,13 @@ import {useSelector} from "react-redux";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {selectEventPreview, setEventPreview} from "@/lib/state/EventPreviewSlice";
 import {useRouter} from "next/navigation";
+import {makeStyles} from "@mui/styles";
 
+const selectedRowStyles = makeStyles({
+  selectedRow: {
+    backgroundColor: 'rgba(33,150,243,0.5) !important',
+  },
+});
 
 export default function EventTable(props: {
   viewSecondary?: boolean,  // Show 'Secondary Inspection' column, default FALSE
@@ -24,6 +30,9 @@ export default function EventTable(props: {
   viewAdjudicated?: boolean, //shows Adjudicated status in the event log , not shown in the alarm table
   eventTable: EventTableDataCollection,  // StatTable data
 }) {
+
+  const classes = selectedRowStyles();
+
   const viewAdjudicated = props.viewAdjudicated || false;
   const viewSecondary = props.viewSecondary || false;
   // const viewMenu = props.viewMenu || false;
@@ -124,7 +133,7 @@ export default function EventTable(props: {
       headerName: '',
       type: 'actions',
       maxWidth: 50,
-      FLEX: 0.5,
+      flex: 0.5,
 
       getActions: (params) => [
         (selectionModel.includes(params.row.id) ?
@@ -229,6 +238,10 @@ export default function EventTable(props: {
             columns={columns}
             onRowSelectionModelChange={handleRowSelection}
             rowSelectionModel={selectionModel}
+            getRowClassName={(params) =>
+                params.row.id == selectionModel[0] ? classes.selectedRow : ''
+              // params.row.id == selectionModel[0] ? classes.selectedRow : ''
+            }
             initialState={{
               pagination: {
                 paginationModel: {

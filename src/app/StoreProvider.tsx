@@ -4,10 +4,11 @@
  */
 
 'use client'
-import {useEffect, useRef} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Provider} from 'react-redux';
 import {store, persistor} from "@/lib/state/Store";
 import { PersistGate } from 'redux-persist/integration/react';
+import LoadingDashboard from "@/app/_components/skeleton/LoadingDashboard";
 
 
 export default function StoreProvider({children,}: {
@@ -24,9 +25,10 @@ export default function StoreProvider({children,}: {
 
     return (
         <Provider store={store}>
-            <PersistGate loading={<div>Loading...</div>} persistor={persistor}>
+            <PersistGate loading={<p>Loading....</p>} persistor={persistor}>
                 {children}
             </PersistGate>
         </Provider>
     );
 }
+
