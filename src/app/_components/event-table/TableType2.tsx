@@ -74,8 +74,10 @@ export default function Table2({
                                }: TableProps) {
 
     const selectedRowId = useSelector(selectSelectedRowId);
-    const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([]); // Currently selected row
 
+    const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([selectedRowId]); // Currently selected row
+
+    console.log("SELECTED MODEL ID: ", selectionModel, selectedRowId);
 
     const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
     const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
@@ -312,11 +314,16 @@ export default function Table2({
         },
     ];
 
-    useEffect(() => {
-        if (selectedRowId && tableData.some(row => row.id === selectedRowId)) {
-            setSelectionModel([selectedRowId]);
-        }
-    }, [selectedRowId, tableData]);
+
+
+        useEffect(() => {
+            if (!selectedRowId) {
+                setSelectionModel([]);
+            } else if (tableData.some(row => row.id === selectedRowId)) {
+                setSelectionModel([selectedRowId]);
+            }
+        }, [selectedRowId, tableData]);
+
 
 
     const handleEventPreview = () =>{
@@ -381,8 +388,8 @@ export default function Table2({
                 rows={filteredTableData}
                 columns={columns}
                 onRowClick={handleRowSelection}
+                onRowSelectionModelChange={setSelectionModel}
                 rowSelectionModel={selectionModel}
-
                 initialState={{
                     pagination: {
                         paginationModel: {

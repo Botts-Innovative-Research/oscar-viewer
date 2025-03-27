@@ -213,6 +213,7 @@ export function EventPreview() {
         dispatch(setShouldForceAlarmTableDeselect(true))
 
         dispatch(setSelectedRowId(null));
+
     }
 
     const handleExpand = () => {
