@@ -35,6 +35,7 @@ export class ChartInterceptProps {
 export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
     const [chartsReady, setChartsReady] = useState<boolean>(false);
+    const [dataReady, setDataReady] = useState<boolean>(false);
     const [isReadyToRender, setIsReadyToRender] = useState<boolean>(false);
 
     const gammaChartViewRef = useRef<HTMLDivElement | null>(null);
@@ -55,17 +56,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         <ToggleButton color= 'error' value={"cps"} key={"cps"}>CPS</ToggleButton>,
         <ToggleButton color= 'secondary' value={"sigma"} key={"sigma"}>NSigma</ToggleButton>
     ];
-
-
-    // const resetView = useCallback(() => {
-    //     if (!eventPreview.isOpen) {
-    //         setGammaChartView(null);
-    //         setGammaNsigmaChartView(null);
-    //         setNeutronChartView(null);
-    //         setIsReadyToRender(false);
-    //     }
-    // }, [eventPreview]);
-
 
 
     const checkReadyToRender = useCallback(() => {
@@ -113,186 +103,87 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
 
     useEffect(() => {
-        if (props.eventData) {
-            console.log('event data', props.eventData)
-            let elementIds: any[] = updateChartElIds(props.eventData);
-            let layers = createCurveLayersAndReturn();
 
+        if(!props.eventData) return;
 
-            if (gammaChartViewRef.current) {
-                // if (gammaChartViewRef.current && valid_gamma_layer && valid_threshold_layer) {
+        // console.log("Ready to create charts: ", props.eventData);
 
-                let gammaChartElt = document.createElement("div");
-                gammaChartElt.id =  elementIds.find(id=> id.includes('gamma'));
+        let elementIds: any[] = updateChartElIds(props.eventData);
+        let layers = createCurveLayersAndReturn();
 
-                gammaChartViewRef.current?.appendChild(gammaChartElt);
+        console.log("curveeee", layers)
 
-                // if(layers.threshold && layers.gamma){
-                const newGammaChart = new ChartJsView({
-                    container:  gammaChartElt.id,
-                    layers: [layers.gamma, layers.threshold],
-                    css: "chart-view-event-detail",
-                    type: 'line',
-                    options: {
-                        scales: {
-                            x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
-                            y: { type: 'linear', position: 'left', title: { display: true, text: 'CPS', padding: 15 }, beginAtZero: false }
-                        }
+        if (gammaChartViewRef.current) {
+            let gammaChartElt = document.createElement("div");
+            gammaChartElt.id =  elementIds.find(id=> id.includes('gamma'));
+            gammaChartViewRef.current?.appendChild(gammaChartElt);
+
+            const newGammaChart = new ChartJsView({
+                container:  gammaChartElt.id,
+                layers: [layers.gamma, layers.threshold],
+                css: "chart-view-event-detail",
+                type: 'line',
+                options: {
+                    scales: {
+                        x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
+                        y: { type: 'linear', position: 'left', title: { display: true, text: 'CPS', padding: 15 }, beginAtZero: false }
                     }
-                })
-
-                //Set all charts
-                setGammaChartView(newGammaChart);
-                console.log('gamma chart created', newGammaChart)
-                // }
-
-            }
-
-
-            if (neutronChartViewRef.current) {
-                let neutronChartElt = document.createElement("div");
-                neutronChartElt.id = elementIds.find(id => id.includes("neutron"));
-                neutronChartViewRef.current?.appendChild(neutronChartElt);
-
-                const newNeutronChart = new ChartJsView({
-                    container:  neutronChartElt.id,
-                    layers: [layers.neutron],
-                    css: "chart-view-event-detail",
-                    type: 'line',
-                    options: {
-                        scales: {
-                            x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
-                            y: { type: 'linear', position: 'left', title: { display: true, text: 'CPS', padding: 15 }, beginAtZero: false }
-                        }
-                    }
-                });
-
-                setNeutronChartView(newNeutronChart)
-                console.log('neutron chart created', newNeutronChart)
-
-            }
-
-            // if(nSigmaChartViewRef.current){
-            //     if(layers.nsigma.data.length == 0) {
-            //         console.log("nsigma layer is empty: ", layers.nsigma.data.length)
-            //         layers.nsigma = createNSigmaCalcViewCurve(props.datasources.threshold, props.datasources.gamma);
-            //
-            //         let nsigmaChartElt = document.createElement("div");
-            //         nsigmaChartElt.id = elementIds.find(id => id.includes('nsigma'));
-            //         nSigmaChartViewRef.current?.appendChild(nsigmaChartElt);
-            //
-            //         // if(layers.threshNsigma && layers.nsigma) {
-            //         const newNsigmaChart = new ChartJsView({
-            //             container: nsigmaChartElt.id,
-            //             layers: [layers.nsigma, layers.threshNsigma],
-            //             css: "chart-view-event-detail",
-            //             type: 'line',
-            //             options: {
-            //                 // stacked: true,
-            //                 scales: {
-            //                     x: {
-            //                         title: {display: true, text: 'Time', padding: 5},
-            //                         type: 'time',
-            //                         stacked: true,
-            //                     },
-            //                     y: {
-            //                         type: 'linear',
-            //                         position: 'left',
-            //                         title: {display: true, text: 'Nσ', padding: 15},
-            //                         beginAtZero: false,
-            //                         stacked: true,
-            //                     }
-            //                 }
-            //             }
-            //         });
-            //
-            //
-            //         setGammaNsigmaChartView(newNsigmaChart);
-            //         console.log('nsigma chart created because nsgima was null', newNsigmaChart)
-            //
-            //     }else{
-            //
-            //     }
-            //
-            //     // let nsigmaChartElt = document.createElement("div");
-            //     // nsigmaChartElt.id = elementIds.find(id => id.includes('nsigma'));
-            //     // nSigmaChartViewRef.current?.appendChild(nsigmaChartElt);
-            //     //
-            //     // // if(layers.threshNsigma && layers.nsigma) {
-            //     // const newNsigmaChart = new ChartJsView({
-            //     //     container: nsigmaChartElt.id,
-            //     //     layers: [layers.nsigma, layers.threshNsigma],
-            //     //     css: "chart-view-event-detail",
-            //     //     type: 'line',
-            //     //     options: {
-            //     //         // stacked: true,
-            //     //         scales: {
-            //     //             x: {
-            //     //                 title: {display: true, text: 'Time', padding: 5},
-            //     //                 type: 'time',
-            //     //                 stacked: true,
-            //     //             },
-            //     //             y: {
-            //     //                 type: 'linear',
-            //     //                 position: 'left',
-            //     //                 title: {display: true, text: 'Nσ', padding: 15},
-            //     //                 beginAtZero: false,
-            //     //                 stacked: true,
-            //     //             }
-            //     //         }
-            //     //     }
-            //     // });
-            //     //
-            //     //
-            //     // setGammaNsigmaChartView(newNsigmaChart);
-            //     // console.log('nsigma chart created', newNsigmaChart)
-            // }
-
-            if (nSigmaChartViewRef.current) {
-                if (layers.nsigma.data.length === 0) {
-                    console.log("Initial nsigma layer empty. Attempting to recalculate the curve layer.");
-                    layers.nsigma = createNSigmaCalcViewCurve(props.datasources.threshold, props.datasources.gamma);
                 }
+            })
 
-                if (layers.nsigma.data.length > 0) {
-                    const nsigmaChartElt = document.createElement("div");
-                    nsigmaChartElt.id = elementIds.find(id => id.includes('nsigma'));
-                    nSigmaChartViewRef.current?.appendChild(nsigmaChartElt);
-
-                    const newNsigmaChart = new ChartJsView({
-                        container: nsigmaChartElt.id,
-                        layers: [layers.nsigma, layers.threshNsigma],
-                        css: "chart-view-event-detail",
-                        type: 'line',
-                        options: {
-                            scales: {
-                                x: {
-                                    title: { display: true, text: 'Time', padding: 5 },
-                                    type: 'time',
-                                    stacked: true,
-                                },
-                                y: {
-                                    type: 'linear',
-                                    position: 'left',
-                                    title: { display: true, text: 'Nσ', padding: 15 },
-                                    beginAtZero: false,
-                                    stacked: true,
-                                }
-                            }
-                        }
-                    });
-
-                    setGammaNsigmaChartView(newNsigmaChart);
-                    console.log('nsigma chart created', newNsigmaChart);
-                } else {
-                    console.warn("Nsigma chart not created: no data available.");
-                }
-            }
-            console.log("curvelayersreturn: ", layers)
-
-            setChartsReady(true)
+            setGammaChartView(newGammaChart);
+            console.log('gamma chart created', newGammaChart)
 
         }
+
+
+        if (neutronChartViewRef.current) {
+            let neutronChartElt = document.createElement("div");
+            neutronChartElt.id = elementIds.find(id => id.includes("neutron"));
+            neutronChartViewRef.current?.appendChild(neutronChartElt);
+
+            const newNeutronChart = new ChartJsView({
+                container:  neutronChartElt.id,
+                layers: [layers.neutron],
+                css: "chart-view-event-detail",
+                type: 'line',
+                options: {
+                    scales: {
+                        x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
+                        y: { type: 'linear', position: 'left', title: { display: true, text: 'CPS', padding: 15 }, beginAtZero: false }
+                    }
+                }
+            });
+
+            setNeutronChartView(newNeutronChart)
+            console.log('neutron chart created', newNeutronChart)
+
+        }
+
+        if(nSigmaChartViewRef.current){
+            let nsigmaChartElt = document.createElement("div");
+            nsigmaChartElt.id = elementIds.find(id => id.includes('nsigma'));
+            nSigmaChartViewRef.current?.appendChild(nsigmaChartElt);
+
+
+            const newNsigmaChart = new ChartJsView({
+                container: nsigmaChartElt.id,
+                layers: [layers.nsigma, layers.threshNsigma],
+                css: "chart-view-event-detail",
+                type: 'line',
+                options: {
+                    scales: {
+                        x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
+                        y: { type: 'linear', position: 'left', title: { display: true, text: 'Nσ', padding: 15 }, beginAtZero: false }
+                    }
+                }
+            });
+
+            setGammaNsigmaChartView(newNsigmaChart);
+        }
+
+
+        setChartsReady(true)
 
     }, [props.eventData]);
 
@@ -328,7 +219,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             }
 
             if (nsigmaChartView) {
-                console.log("Annotating Nsigma Chart", nsigmaChartView);
+                // console.log("Annotating Nsigma Chart", nsigmaChartView);
                 const nSigmachart = nsigmaChartView.chart;
                 nSigmachart.options.plugins.annotation = chartAnnotation;
                 nSigmachart.update();
@@ -349,20 +240,12 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     }, [props.currentTime, gammaChartView, nsigmaChartView, neutronChartView]);
 
     useEffect(() => {
-        // if (toggleView === 'cps' && gammaChartView) {
-        //     gammaChartView.chart.update();
-        //     console.log("CPS chart updated", gammaChartView);
-        // }
-        // if (toggleView === 'sigma' && nsigmaChartView) {
-        //     nsigmaChartView.chart.update();
-        //     console.log("NSigma chart updated", nsigmaChartView);
-        // }
 
         if(gammaChartView) gammaChartView?.chart.update();
-        console.log("CPS chart updated", gammaChartView);
+        // console.log("CPS chart updated", gammaChartView);
 
         if(nsigmaChartView) nsigmaChartView?.chart.update();
-        console.log("NSigma chart updated", nsigmaChartView);
+        // console.log("NSigma chart updated", nsigmaChartView);
 
     }, [toggleView, gammaChartView, nsigmaChartView]);
 
@@ -381,21 +264,35 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     }, [isReadyToRender]);
 
 
-    function createCurveLayersAndReturn() {
-        let tCurve = createThresholdViewCurve(props.datasources.threshold);
-        let gCurve = createGammaViewCurve(props.datasources.gamma);
-        let nCurve = createNeutronViewCurve(props.datasources.neutron);
-        let nsigmaCurve = createNSigmaCalcViewCurve(props.datasources.threshold, props.datasources.gamma);
-        let threshSigmaCurve = createThreshSigmaViewCurve(props.datasources.threshold);
+    const createCurveLayersAndReturn = () => {
+        if (!props.eventData || !props.datasources) return null;
 
-        return {
+        const { threshold, gamma, neutron } = props.datasources;
+        if (!threshold || !gamma || !neutron) return null;
+
+        const tCurve = createThresholdViewCurve(threshold);
+        const gCurve = createGammaViewCurve(gamma);
+        const nCurve = createNeutronViewCurve(neutron);
+        const nsigmaCurve = createNSigmaCalcViewCurve(threshold, gamma);
+        const threshSigmaCurve = createThreshSigmaViewCurve(threshold);
+
+        const result = {
             gamma: gCurve,
             neutron: nCurve,
             threshold: tCurve,
-            nsigma: nsigmaCurve,
-            threshNsigma: threshSigmaCurve
+            threshNsigma: threshSigmaCurve,
+            nsigma: nsigmaCurve
+        };
+
+        if (nsigmaCurve?.data?.length > 0) {
+            console.warn("we dont have nsigma data")
+
+            result.nsigma = createNSigmaCalcViewCurve(threshold, gamma);
         }
-    }
+
+        return result;
+    };
+
 
     // switch between cps and sigma chart
     const handleToggle= (event: React.MouseEvent<HTMLElement>, newView: string) =>{
