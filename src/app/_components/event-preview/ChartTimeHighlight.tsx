@@ -172,113 +172,122 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
             }
 
-            if(nSigmaChartViewRef.current){
-                if(layers.nsigma.data.length == 0) {
-                    console.log("nsigma layer is empty: ", layers.nsigma.data.length)
+            // if(nSigmaChartViewRef.current){
+            //     if(layers.nsigma.data.length == 0) {
+            //         console.log("nsigma layer is empty: ", layers.nsigma.data.length)
+            //         layers.nsigma = createNSigmaCalcViewCurve(props.datasources.threshold, props.datasources.gamma);
+            //
+            //         let nsigmaChartElt = document.createElement("div");
+            //         nsigmaChartElt.id = elementIds.find(id => id.includes('nsigma'));
+            //         nSigmaChartViewRef.current?.appendChild(nsigmaChartElt);
+            //
+            //         // if(layers.threshNsigma && layers.nsigma) {
+            //         const newNsigmaChart = new ChartJsView({
+            //             container: nsigmaChartElt.id,
+            //             layers: [layers.nsigma, layers.threshNsigma],
+            //             css: "chart-view-event-detail",
+            //             type: 'line',
+            //             options: {
+            //                 // stacked: true,
+            //                 scales: {
+            //                     x: {
+            //                         title: {display: true, text: 'Time', padding: 5},
+            //                         type: 'time',
+            //                         stacked: true,
+            //                     },
+            //                     y: {
+            //                         type: 'linear',
+            //                         position: 'left',
+            //                         title: {display: true, text: 'Nσ', padding: 15},
+            //                         beginAtZero: false,
+            //                         stacked: true,
+            //                     }
+            //                 }
+            //             }
+            //         });
+            //
+            //
+            //         setGammaNsigmaChartView(newNsigmaChart);
+            //         console.log('nsigma chart created because nsgima was null', newNsigmaChart)
+            //
+            //     }else{
+            //
+            //     }
+            //
+            //     // let nsigmaChartElt = document.createElement("div");
+            //     // nsigmaChartElt.id = elementIds.find(id => id.includes('nsigma'));
+            //     // nSigmaChartViewRef.current?.appendChild(nsigmaChartElt);
+            //     //
+            //     // // if(layers.threshNsigma && layers.nsigma) {
+            //     // const newNsigmaChart = new ChartJsView({
+            //     //     container: nsigmaChartElt.id,
+            //     //     layers: [layers.nsigma, layers.threshNsigma],
+            //     //     css: "chart-view-event-detail",
+            //     //     type: 'line',
+            //     //     options: {
+            //     //         // stacked: true,
+            //     //         scales: {
+            //     //             x: {
+            //     //                 title: {display: true, text: 'Time', padding: 5},
+            //     //                 type: 'time',
+            //     //                 stacked: true,
+            //     //             },
+            //     //             y: {
+            //     //                 type: 'linear',
+            //     //                 position: 'left',
+            //     //                 title: {display: true, text: 'Nσ', padding: 15},
+            //     //                 beginAtZero: false,
+            //     //                 stacked: true,
+            //     //             }
+            //     //         }
+            //     //     }
+            //     // });
+            //     //
+            //     //
+            //     // setGammaNsigmaChartView(newNsigmaChart);
+            //     // console.log('nsigma chart created', newNsigmaChart)
+            // }
+
+            if (nSigmaChartViewRef.current) {
+                if (layers.nsigma.data.length === 0) {
+                    console.log("Initial nsigma layer empty. Attempting to recalculate the curve layer.");
                     layers.nsigma = createNSigmaCalcViewCurve(props.datasources.threshold, props.datasources.gamma);
-
-                    let nsigmaChartElt = document.createElement("div");
-                    nsigmaChartElt.id = elementIds.find(id => id.includes('nsigma'));
-                    nSigmaChartViewRef.current?.appendChild(nsigmaChartElt);
-
-                    // if(layers.threshNsigma && layers.nsigma) {
-                    const newNsigmaChart = new ChartJsView({
-                        container: nsigmaChartElt.id,
-                        layers: [layers.nsigma, layers.threshNsigma],
-                        css: "chart-view-event-detail",
-                        type: 'line',
-                        options: {
-                            // stacked: true,
-                            scales: {
-                                x: {
-                                    title: {display: true, text: 'Time', padding: 5},
-                                    type: 'time',
-                                    stacked: true,
-                                },
-                                y: {
-                                    type: 'linear',
-                                    position: 'left',
-                                    title: {display: true, text: 'Nσ', padding: 15},
-                                    beginAtZero: false,
-                                    stacked: true,
-                                }
-                            }
-                        }
-                    });
-
-
-                    setGammaNsigmaChartView(newNsigmaChart);
-                    console.log('nsigma chart created because nsgima was null', newNsigmaChart)
-
-                }else{
-                    let nsigmaChartElt = document.createElement("div");
-                    nsigmaChartElt.id = elementIds.find(id => id.includes('nsigma'));
-                    nSigmaChartViewRef.current?.appendChild(nsigmaChartElt);
-
-                    // if(layers.threshNsigma && layers.nsigma) {
-                    const newNsigmaChart = new ChartJsView({
-                        container: nsigmaChartElt.id,
-                        layers: [layers.nsigma, layers.threshNsigma],
-                        css: "chart-view-event-detail",
-                        type: 'line',
-                        options: {
-                            // stacked: true,
-                            scales: {
-                                x: {
-                                    title: {display: true, text: 'Time', padding: 5},
-                                    type: 'time',
-                                    stacked: true,
-                                },
-                                y: {
-                                    type: 'linear',
-                                    position: 'left',
-                                    title: {display: true, text: 'Nσ', padding: 15},
-                                    beginAtZero: false,
-                                    stacked: true,
-                                }
-                            }
-                        }
-                    });
-
-
-                    setGammaNsigmaChartView(newNsigmaChart);
-                    console.log('nsigma chart created', newNsigmaChart)
                 }
 
-                // let nsigmaChartElt = document.createElement("div");
-                // nsigmaChartElt.id = elementIds.find(id => id.includes('nsigma'));
-                // nSigmaChartViewRef.current?.appendChild(nsigmaChartElt);
-                //
-                // // if(layers.threshNsigma && layers.nsigma) {
-                // const newNsigmaChart = new ChartJsView({
-                //     container: nsigmaChartElt.id,
-                //     layers: [layers.nsigma, layers.threshNsigma],
-                //     css: "chart-view-event-detail",
-                //     type: 'line',
-                //     options: {
-                //         // stacked: true,
-                //         scales: {
-                //             x: {
-                //                 title: {display: true, text: 'Time', padding: 5},
-                //                 type: 'time',
-                //                 stacked: true,
-                //             },
-                //             y: {
-                //                 type: 'linear',
-                //                 position: 'left',
-                //                 title: {display: true, text: 'Nσ', padding: 15},
-                //                 beginAtZero: false,
-                //                 stacked: true,
-                //             }
-                //         }
-                //     }
-                // });
-                //
-                //
-                // setGammaNsigmaChartView(newNsigmaChart);
-                // console.log('nsigma chart created', newNsigmaChart)
-            }
+                if (layers.nsigma.data.length > 0) {
+                    const nsigmaChartElt = document.createElement("div");
+                    nsigmaChartElt.id = elementIds.find(id => id.includes('nsigma'));
+                    nSigmaChartViewRef.current?.appendChild(nsigmaChartElt);
 
+                    const newNsigmaChart = new ChartJsView({
+                        container: nsigmaChartElt.id,
+                        layers: [layers.nsigma, layers.threshNsigma],
+                        css: "chart-view-event-detail",
+                        type: 'line',
+                        options: {
+                            scales: {
+                                x: {
+                                    title: { display: true, text: 'Time', padding: 5 },
+                                    type: 'time',
+                                    stacked: true,
+                                },
+                                y: {
+                                    type: 'linear',
+                                    position: 'left',
+                                    title: { display: true, text: 'Nσ', padding: 15 },
+                                    beginAtZero: false,
+                                    stacked: true,
+                                }
+                            }
+                        }
+                    });
+
+                    setGammaNsigmaChartView(newNsigmaChart);
+                    console.log('nsigma chart created', newNsigmaChart);
+                } else {
+                    console.warn("Nsigma chart not created: no data available.");
+                }
+            }
             console.log("curvelayersreturn: ", layers)
 
             setChartsReady(true)
