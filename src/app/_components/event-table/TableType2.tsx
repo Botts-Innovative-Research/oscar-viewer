@@ -15,7 +15,15 @@ import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
-import {DataGrid, GridActionsCellItem, GridCellParams, gridClasses, GridColDef} from "@mui/x-data-grid";
+import {
+    DataGrid,
+    GridActionsCellItem, GridCallbackDetails,
+    GridCellParams,
+    gridClasses,
+    GridColDef, GridRowId,
+    GridRowParams,
+    GridRowSelectionModel, MuiEvent
+} from "@mui/x-data-grid";
 import CustomToolbar from "@/app/_components/CustomToolbar";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import {useAppDispatch} from "@/lib/state/Hooks";
@@ -66,7 +74,7 @@ export default function Table2({
                                }: TableProps) {
 
     const selectedRowId = useSelector(selectSelectedRowId);
-    const [selectionModel, setSelectionModel] = useState([]); // Currently selected row
+    const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([]); // Currently selected row
 
 
     const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
@@ -137,7 +145,7 @@ export default function Table2({
             let promise = (async () => {
                 let startTimeForObs = new Date();
                 startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
-                await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
+                // await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
                 let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
                 allFetchedResults = [...allFetchedResults, ...fetchedResults];
 
@@ -188,7 +196,7 @@ export default function Table2({
 
     useEffect(() => {
         dataStreamSetup(laneMap);
-    }, [laneMap]);
+    }, []);
 
     const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
         await doFetch(laneMap);
@@ -303,11 +311,12 @@ export default function Table2({
             ],
         },
     ];
-    // useEffect(() => {
-    //     if (selectedRowId && tableData.some(row => row.id === selectedRowId)) {
-    //         setSelectionModel([selectedRowId]);
-    //     }
-    // }, [selectedRowId, tableData]);
+
+    useEffect(() => {
+        if (selectedRowId && tableData.some(row => row.id === selectedRowId)) {
+            setSelectionModel([selectedRowId]);
+        }
+    }, [selectedRowId, tableData]);
 
 
     const handleEventPreview = () =>{
@@ -329,49 +338,9 @@ export default function Table2({
     }
 
 
-    // Handle currently selected row
-    // const handleRowSelection = (selection: any[]) => {
-    //     const selectedId = selection[0];
-    //
-    //
-    //     if (selectionModel === selectedId) {
-    //         console.log('CLOSING EVENT PREVIEW BECAUSE IDS MATCH', selectedId)
-    //         setSelectionModel([]);
-    //
-    //         dispatch(setSelectedEvent(null));
-    //         dispatch(setSelectedRowId(null));
-    //         dispatch(setEventPreview({isOpen: false, eventData: null}));
-    //     } else {
-    //         setSelectionModel([selectedId]);
-    //         // dispatch(setSelectedRowId(selectedId));
-    //
-    //         dispatch(setEventPreview({isOpen: false, eventData: null}));
-    //
-    //         setTimeout(() =>{
-    //
-    //             setSelectionModel([selectedId]); // Highlight new row
-    //             dispatch(setSelectedRowId(selectedId));
-    //
-    //
-    //             const selectedRow = tableData.find((row) => row.id === selectedId);
-    //             if (selectedRow) {
-    //                 dispatch(setEventPreview({ isOpen: true, eventData: selectedRow }));
-    //                 dispatch(setSelectedEvent(selectedRow));
-    //             }
-    //         }, 10)
-    //
-    //     }
-    // };
+    const handleRowSelection = (params: GridRowParams, event: MuiEvent, details: GridCallbackDetails) => {
 
-    const handleRowSelection = (selection: any[]) => {
-
-        // console.log("Selection Model", selectionModel);
-        // console.log("Row Selected from Rehydrate", selectedRowId)
-        //
-        // const selectedId = (eventPreview.isOpen) ? selectedRowId : selection[0];
-        const selectedId = selection[0];
-
-        console.log("HAndle row selection: ", selection);
+        const selectedId = params.row.id;
 
         if (selectionModel[0] === selectedId) {
             setSelectionModel([]);
@@ -405,13 +374,15 @@ export default function Table2({
 
 
 
+
     return (
         <Box sx={{flex: 1, width: '100%'}}>
             <DataGrid
                 rows={filteredTableData}
                 columns={columns}
-                onRowSelectionModelChange={handleRowSelection}
+                onRowClick={handleRowSelection}
                 rowSelectionModel={selectionModel}
+
                 initialState={{
                     pagination: {
                         paginationModel: {
