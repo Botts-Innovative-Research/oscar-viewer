@@ -340,32 +340,12 @@ export default function Table2({
     }
 
 
-    // useEffect(() => {
-    //
-    //     console.log("row exists selction id: ", selectionModel[0])
-    //     // we need to verify that the row selected still exists in the table (because of adjudication)
-    //     const rowExists = filteredTableData.some((row: any) => {
-    //         console.log("Selected vs RowID: ", selectionModel[0], row);
-    //
-    //         return row.id === selectionModel[0];
-    //     });
-    //
-    //     console.log("ROW EXISTS: ", rowExists, selectionModel[0])
-    //
-    //     if(!rowExists) {
-    //
-    //         setSelectionModel([]);
-    //
-    //         dispatch(setSelectedEvent(null));
-    //         dispatch(setSelectedRowId(null));
-    //         dispatch(setEventPreview({isOpen: false, eventData: null}));
-    //     }else{
-    //         setSelectionModel([selectedRowId])
-    //
-    //     }
-    //
-    //
-    // }, [selectionModel]);
+    useEffect(() => {
+        if(!selectedRowId){
+            setSelectionModel([])
+        }
+    }, [selectedRowId]);
+
 
     console.log("selected row id vs selection model", selectedRowId, selectionModel[0])
     const handleRowSelection = (params: GridRowParams) => {

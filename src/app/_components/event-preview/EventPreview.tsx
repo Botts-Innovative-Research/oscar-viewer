@@ -173,11 +173,8 @@ export function EventPreview() {
                 setAdjSnackMsg('Adjudication Submitted Successfully')
                 setColorStatus('success')
                 resetAdjudicationData();
-                dispatch(setEventPreview({
-                    isOpen: false,
-                    eventData: null
-                }));
-                dispatch(setShouldForceAlarmTableDeselect(true))
+                handleCloseRounded();
+
             } else {
                 setAdjSnackMsg('Adjudication Submission Failed. Check your connection.')
                 setColorStatus('error')
@@ -204,16 +201,13 @@ export function EventPreview() {
     const handleCloseRounded = () => {
 
         console.log("closed event preview: ", eventPreview.isOpen)
-        // cleanupResources();
-        
+
         dispatch(setEventPreview({
             isOpen: false,
             eventData: null
         }));
-
         dispatch(setShouldForceAlarmTableDeselect(true))
-
-        dispatch(setSelectedRowId(null));
+        dispatch(setSelectedRowId(null))
 
     }
 

@@ -1,8 +1,7 @@
 import { selectEventTableDataArray } from "@/lib/state/EventDataSlice";
 import { RootState } from "@/lib/state/Store";
-import {PropsWithChildren, useEffect, useRef, useState} from "react";
+import { useEffect, useRef, useState} from "react";
 import {useDispatch, useSelector} from "react-redux";
-import { useSelector } from "react-redux";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import {Slider, Stack} from "@mui/material";
