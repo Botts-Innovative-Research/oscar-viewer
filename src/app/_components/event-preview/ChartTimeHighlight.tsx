@@ -226,7 +226,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
     useEffect(() => {
         let currTime = props.currentTime;
-        console.log('curr time', currTime)
+        // console.log('curr time', currTime)
         if (currTime) {
             let chartAnnotation = {
                 annotations: {

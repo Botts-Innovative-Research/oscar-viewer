@@ -1,7 +1,7 @@
 "use client"
 
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {useCallback, useEffect, useState} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 import {Box} from "@mui/material";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
@@ -46,11 +46,6 @@ interface TableProps {
     laneMap: Map<string, LaneMapEntry>;
 }
 
-const selectedRowStyles = makeStyles({
-    selectedRow: {
-        backgroundColor: 'rgba(33,150,243,0.5) !important',
-    },
-});
 
 /**
  * Gathers occupancy data both historical and real-time and creates TableEventData entries, which are passed into
@@ -77,14 +72,10 @@ export default function Table2({
 
     const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([selectedRowId]); // Currently selected row
 
-    console.log("SELECTED MODEL ID: ", selectionModel, selectedRowId);
-
     const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
     const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
     const dispatch = useAppDispatch();
     const router = useRouter();
-    const classes = selectedRowStyles();
-
 
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
@@ -111,6 +102,20 @@ export default function Table2({
         })
     }
 
+    function prngFromStr(obs: any, laneName: string): number {
+        const baseId = `${obs.result?.occupancyCount}${laneName}${obs.result?.startTime}${obs.result?.endTime}`;
+        console.log("base id: ", baseId)
+        return hashString(baseId);
+    }
+
+    function hashString(str: any) {
+        let hash = 5381;
+        for (let i = 0; i < str.length; i++) {
+            hash = (hash * 33) ^ str.charCodeAt(i);
+        }
+        return (hash >>> 0) / 4294967296;
+    }
+
 
     // @ts-ignore
     async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<EventTableData[]> {
@@ -129,12 +134,14 @@ export default function Table2({
     }
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
-        let newEvent: EventTableData = new EventTableData(randomUUID(), laneEntry.laneName, obs.result, obs.id, obs.foiId);
+        const id = prngFromStr(obs, laneEntry.laneName);
+        let newEvent: EventTableData = new EventTableData(id, laneEntry.laneName, obs.result, obs.id, obs.foiId);
         newEvent.setSystemIdx(laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId));
         newEvent.setDataStreamId(obs["datastream@id"]);
         newEvent.setFoiId(obs["foi@id"]);
         newEvent.setObservationId(obs.id);
 
+        console.log("new event", newEvent)
         return newEvent;
     }
 
@@ -256,28 +263,28 @@ export default function Table2({
         {
             field: 'startTime',
             headerName: 'Start Time',
-            valueFormatter: (value) => (new Date(value)).toLocaleString(),
+            valueFormatter: (params) => (new Date(params)).toLocaleString(),
             minWidth: 200,
             flex: 2,
         },
         {
             field: 'endTime',
             headerName: 'End Time',
-            valueFormatter: (value) => (new Date(value)).toLocaleString(),
+            valueFormatter: (params) => (new Date(params)).toLocaleString(),
             minWidth: 200,
             flex: 2,
         },
         {
             field: 'maxGamma',
             headerName: 'Max Gamma (cps)',
-            valueFormatter: (value) => (typeof value === 'number' ? value : 0),
+            valueFormatter: (params) => (typeof params === 'number' ? params : 0),
             minWidth: 150,
             flex: 1.2,
         },
         {
             field: 'maxNeutron',
             headerName: 'Max Neutron (cps)',
-            valueFormatter: (value) => (typeof value === 'number' ? value : 0),
+            valueFormatter: (params) => (typeof params === 'number' ? params : 0),
             minWidth: 150,
             flex: 1.2,
         },
@@ -291,7 +298,7 @@ export default function Table2({
         {
             field: 'isAdjudicated',
             headerName: 'Adjudicated',
-            valueFormatter: (value) => value ? "Yes" : "No",
+            valueFormatter: (params) => params ? "Yes" : "No",
             minWidth: 100,
             flex: 1,
         },
@@ -314,18 +321,6 @@ export default function Table2({
         },
     ];
 
-
-
-        useEffect(() => {
-            if (!selectedRowId) {
-                setSelectionModel([]);
-            } else if (tableData.some(row => row.id === selectedRowId)) {
-                setSelectionModel([selectedRowId]);
-            }
-        }, [selectedRowId, tableData]);
-
-
-
     const handleEventPreview = () =>{
         //should we set the event preview open here using dispatch?
         router.push("/event-details")
@@ -345,41 +340,64 @@ export default function Table2({
     }
 
 
-    const handleRowSelection = (params: GridRowParams, event: MuiEvent, details: GridCallbackDetails) => {
+    // useEffect(() => {
+    //
+    //     console.log("row exists selction id: ", selectionModel[0])
+    //     // we need to verify that the row selected still exists in the table (because of adjudication)
+    //     const rowExists = filteredTableData.some((row: any) => {
+    //         console.log("Selected vs RowID: ", selectionModel[0], row);
+    //
+    //         return row.id === selectionModel[0];
+    //     });
+    //
+    //     console.log("ROW EXISTS: ", rowExists, selectionModel[0])
+    //
+    //     if(!rowExists) {
+    //
+    //         setSelectionModel([]);
+    //
+    //         dispatch(setSelectedEvent(null));
+    //         dispatch(setSelectedRowId(null));
+    //         dispatch(setEventPreview({isOpen: false, eventData: null}));
+    //     }else{
+    //         setSelectionModel([selectedRowId])
+    //
+    //     }
+    //
+    //
+    // }, [selectionModel]);
+
+    console.log("selected row id vs selection model", selectedRowId, selectionModel[0])
+    const handleRowSelection = (params: GridRowParams) => {
 
         const selectedId = params.row.id;
 
-        if (selectionModel[0] === selectedId) {
+        if (selectedRowId === selectedId) {
+            console.log("CLEARING SELECTION")
             setSelectionModel([]);
 
             dispatch(setSelectedEvent(null));
             dispatch(setSelectedRowId(null));
             dispatch(setEventPreview({isOpen: false, eventData: null}));
         } else {
-            setSelectionModel([selectedId]);
 
-            dispatch(setSelectedEvent(null));
-            dispatch(setSelectedRowId(null));
-            dispatch(setEventPreview({isOpen: false, eventData: null}));
+            dispatch(setEventPreview({isOpen: false, eventData: null})); //clear before setting new data
 
-            // set a timeout to allow the previous rows event preview to be cleared.
+            setSelectionModel([selectedId]); // Highlight new row
+            dispatch(setSelectedRowId(selectedId));
+
             setTimeout(() =>{
+                const selectedRow = filteredTableData.find((row) => row.id === selectedId);
+                if(!selectedRow) return;
 
-                setSelectionModel([selectedId]); // Highlight new row
-                dispatch(setSelectedRowId(selectedId));
+                dispatch(setEventPreview({ isOpen: true, eventData: selectedRow }));
+                dispatch(setSelectedEvent(selectedRow));
+            }, 10)
 
 
-                const selectedRow = tableData.find((row) => row.id === selectedId);
-                if (selectedRow) {
-                    dispatch(setEventPreview({ isOpen: true, eventData: selectedRow }));
-                    dispatch(setSelectedEvent(selectedRow));
-                }
-            }, 5)
 
         }
     };
-
-
 
 
     return (
@@ -388,7 +406,7 @@ export default function Table2({
                 rows={filteredTableData}
                 columns={columns}
                 onRowClick={handleRowSelection}
-                onRowSelectionModelChange={setSelectionModel}
+
                 rowSelectionModel={selectionModel}
                 initialState={{
                     pagination: {
@@ -416,7 +434,6 @@ export default function Table2({
                         getTogglableColumns: getColumnList,
                     }
                 }}
-                autosizeOnMount
                 autosizeOptions={{
                     expand: true,
                     includeOutliers: true,
@@ -445,11 +462,17 @@ export default function Table2({
                 }}
 
                 getRowClassName={(params) =>
-                    params.row.id == selectedRowId ? classes.selectedRow : ''
-                    // params.row.id == selectionModel[0] ? classes.selectedRow : ''
+                    selectionModel.includes(params.row.id) ? 'selected-row' : ''
                 }
 
                 sx={{
+                    '& .MuiDataGrid-row:hover': {
+                        backgroundColor: 'rgba(33,150,243,0.5)',
+                    },
+                    // assign color styling to selected row
+                    [`.${gridClasses.row}.selected-row`]: {
+                        backgroundColor: 'rgba(33,150,243,0.5)',
+                    },
 
                     // Assign styling to 'Status' column based on className
                     [`.${gridClasses.cell}.highlightGamma`]: {
@@ -479,6 +502,8 @@ export default function Table2({
                     },
 
                     border: "none",
+
+
                 }}
 
             />

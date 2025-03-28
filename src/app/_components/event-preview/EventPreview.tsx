@@ -203,6 +203,7 @@ export function EventPreview() {
 
     const handleCloseRounded = () => {
 
+        console.log("closed event preview: ", eventPreview.isOpen)
         // cleanupResources();
         
         dispatch(setEventPreview({
@@ -217,11 +218,13 @@ export function EventPreview() {
     }
 
     const handleExpand = () => {
+        console.log("opened event detail: ", eventPreview.isOpen)
+
         dispatch(setEventData(eventPreview.eventData));
 
         dispatch(setSelectedRowId(eventPreview.eventData.id))
         dispatch(setSelectedEvent(eventPreview.eventData));
-        dispatch(setShouldForceAlarmTableDeselect(false))
+        // dispatch(setShouldForceAlarmTableDeselect(false))
 
         router.push("/event-details");
     }

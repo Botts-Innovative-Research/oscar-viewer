@@ -111,7 +111,7 @@ export default function LaneVideoPlayback({
 
                 <Box sx={{
                     display: "flex",
-                    flexDirection: "row",
+                    flexWrap: "nowrap",
                     justifyContent: "center",
                     alignItems: "center",
                 }}>
@@ -132,7 +132,6 @@ export default function LaneVideoPlayback({
                             alignItems: "center",
                             border: "1px solid rgba(0,0,0,0.12)",
                             padding: 1,
-                            display: "flex"
                         }}
                     >
                         <Box

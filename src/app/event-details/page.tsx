@@ -24,7 +24,7 @@ import {useAppDispatch} from "@/lib/state/Hooks";
 import {useSearchParams} from "next/navigation";
 import Media from "@/app/_components/event-details/Media";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {selectEventPreview} from "@/lib/state/EventPreviewSlice";
+import {selectEventPreview, setSelectedRowId} from "@/lib/state/EventPreviewSlice";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";
 
@@ -69,7 +69,6 @@ export default function EventDetailsPage() {
 
         let datasources = currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
         console.log("MY DATASOURCES ", datasources);
-
         setLocalDSMap(datasources);
         tempDSMap = datasources;
 
