@@ -2,12 +2,14 @@ import { selectEventTableDataArray } from "@/lib/state/EventDataSlice";
 import { RootState } from "@/lib/state/Store";
 import {PropsWithChildren, useEffect, useRef, useState} from "react";
 import {useDispatch, useSelector} from "react-redux";
+import { useSelector } from "react-redux";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import {Slider, Stack} from "@mui/material";
 import {VolumeDown, VolumeUp} from "@mui/icons-material";
 import * as React from "react";
 import {selectAlarmAudioVolume, setAlarmAudioVolume} from "@/lib/state/OSCARClientSlice";
+
 
 let alarmAudio: HTMLAudioElement = null;
 
