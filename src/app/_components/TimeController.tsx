@@ -15,13 +15,13 @@ interface TimeControllerProps {
   endTime: string;
   syncTime: any;
   pause: Function;
-  start: Function;
+  play: Function;
   handleChange: (event: Event, newValue: number, isPlaying: boolean) => void;
 }
 
 
 
-export default function TimeController({timeSync, syncTime, startTime, endTime, pause, start, handleChange}: TimeControllerProps) {
+export default function TimeController({timeSync, syncTime, startTime, endTime, pause, play, handleChange}: TimeControllerProps) {
 
   // Vars for handling slider/timestamp values
   const [currentTime, setCurrentTime] = useState(syncTime);
@@ -30,7 +30,7 @@ export default function TimeController({timeSync, syncTime, startTime, endTime, 
   const [ds, setDs] = useState([]);
   const [replay, setReplay] = useState(null);
 
-  const isDragging = useRef(false);
+  // const isDragging = useRef(false);
 
   // Play/pause toggle state
   const [isPlaying, setIsPlaying] = useState(true);
@@ -59,20 +59,6 @@ export default function TimeController({timeSync, syncTime, startTime, endTime, 
   }, [syncTime]);
 
 
-  // useEffect(() => {
-  //   const timeElement = document.getElementById('Slider');
-  //   if (timeElement) {
-  //     if (!isPlaying) {
-  //       timeElement.setAttribute('disabled', 'true');
-  //     } else {
-  //       timeElement.removeAttribute('disabled');
-  //     }
-  //   }
-  //   setCurrentTime(props.syncTime);
-  //
-  // }, [isPlaying]);
-
-
   // this function will take the timestamp convert it to iso string and then returns it with only the time part
   const formatTime = (timestamp: number): string => {
     const date = new Date(timestamp);
@@ -80,24 +66,12 @@ export default function TimeController({timeSync, syncTime, startTime, endTime, 
   };
 
 
-  // function to change replay speed the time controller
-  // const updateReplaySpeed = async () => {
-  //   let speed = 2.0;
-  //   if (props.timeSync && props.timeSync.isConnected()) {
-  //     await props.timeSync.setReplaySpeed(speed);
-  //     console.log("Replay speed updated.");
-  //   }
-  // };
-
   const handleSliderChange= (_event: Event, newValue: number)=>{
-    isDragging.current =  true;
     setCurrentTime(newValue);
-
   }
 
   const handleSliderChangeCommitted = async (event: Event, newValue: number) => {
-    isDragging.current = false;
-    await pause();
+    // await pause();
 
     handleChange(event, newValue, isPlaying);
 
@@ -123,11 +97,20 @@ export default function TimeController({timeSync, syncTime, startTime, endTime, 
 
             <IconButton
                 onClick={async() =>{
-                  isPlaying ? await pause() : await start();
+                  // isPlaying ? await pause() : await start();
+                  // setIsPlaying(!isPlaying)
 
-                  setIsPlaying(!isPlaying)
+                    if (isPlaying) {
+                      await pause();
+                      setIsPlaying(false);
+                    } else {
+                      await play();
+                      setIsPlaying(true);
+                    }
+
+
                 }
-                }
+            }
             >
               {isPlaying ? (<PauseRoundedIcon />) : (<PlayArrowRoundedIcon />)}
             </IconButton>

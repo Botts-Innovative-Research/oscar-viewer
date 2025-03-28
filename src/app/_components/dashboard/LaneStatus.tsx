@@ -2,16 +2,8 @@
 
 import {Box, Grid, List, Stack, Typography } from '@mui/material';
 import LaneStatusItem from './LaneStatusItem';
-import React, {useCallback, useContext, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import Link from "next/link";
-import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
-import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import {
-  isConnectionDatastream,
-  isGammaDatastream,
-  isNeutronDatastream,
-  isTamperDatastream
-} from "@/lib/data/oscar/Utilities";
 
 interface LaneStatusProps{
   id: number;
@@ -21,76 +13,32 @@ interface LaneStatusProps{
   isFault: boolean;
 }
 
+// Generate 50 mock lanes
+// const generateMockLanes = (): LaneStatusProps[] => {
+//   const areas = ['North', 'South', 'East', 'West', 'Central'];
+//   return Array.from({ length: 50 }, (_, index) => ({
+//     id: index + 1,
+//     name: `${areas[Math.floor(Math.random() * areas.length)]} Lane ${index + 1}`,
+//     isOnline: Math.random() > 0.1, // 90% chance of being online
+//     isTamper: Math.random() > 0.9, // 10% chance of tamper
+//     isFault: Math.random() > 0.95, // 5% chance of fault
+//   }));
+// };
 
-export default function LaneStatus() {
+export default function LaneStatus(props: {dataSourcesByLane: any}) {
   const idVal = useRef(1);
   const [statusList, setStatusList] = useState<LaneStatusProps[]>([]);
-
-  const {laneMapRef} = useContext(DataSourceContext);
-  const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
+  // const [statusList, setStatusList] = useState<LaneStatusProps[]>(generateMockLanes());
 
   let timersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   let alarmStates= ['Alarm', 'Scan', 'Background']
 
-  const datasourceSetup = useCallback(async () => {
-
-    let laneDSMap = new Map<string, LaneDSColl>();
-    let newStatusList: LaneStatusProps[] = [];
-
-    for (let [laneid, lane] of laneMapRef.current.entries()) {
-      laneDSMap.set(laneid, new LaneDSColl());
-      for (let ds of lane.datastreams) {
-
-        let idx: number = lane.datastreams.indexOf(ds);
-        let rtDS = lane.datasourcesRealtime[idx];
-        let laneDSColl = laneDSMap.get(laneid);
-
-        if(isGammaDatastream(ds)){
-          laneDSColl.addDS('gammaRT', rtDS);
-        }
-        if(isNeutronDatastream(ds)){
-          laneDSColl.addDS('neutronRT', rtDS);
-        }
-        if(isTamperDatastream(ds)){
-          laneDSColl.addDS('tamperRT', rtDS);
-        }
-        if(isConnectionDatastream(ds)){
-          laneDSColl.addDS('connectionRT', rtDS);
-        }
-
-      }
-
-      newStatusList.push({
-        id: idVal.current++,
-        name: laneid,
-        isOnline: false,
-        isTamper: false,
-        isFault: false,
-      });
-
-      setStatusList(prevState => [...newStatusList,
-        ...prevState.filter(item => !newStatusList.some(newItem => newItem.name === item.name))]);
-
-      setDataSourcesByLane(laneDSMap);
-
-    }
-  }, [laneMapRef.current]);
-
-  useEffect(() => {
-    datasourceSetup();
-  }, [laneMapRef.current]);
-
 
   const addSubscriptionCallbacks = useCallback(() => {
-    for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
+    for (let [laneName, laneDSColl] of props.dataSourcesByLane.entries()) {
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('connectionRT', (message: any) => {
         const connectedState = message.values[0].data.isConnected;
-        if (connectedState) {
-          updateStatus(laneName, 'Online');
-        } else {
-          updateStatus(laneName, 'Offline')
-        }
-
+        updateStatus(laneName, (connectedState ? 'Online': 'Offline'));
       });
 
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
@@ -104,20 +52,41 @@ export default function LaneStatus() {
       });
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
         const state = message.values[0].data.tamperStatus;
-        if (state) {
-          updateStatus(laneName, 'Tamper');
-        } else {
-          updateStatus(laneName, 'TamperOff')
-        }
+        updateStatus(laneName, (state ? 'Tamper': 'TamperOff'));
       });
 
       laneDSColl.connectAllDS();
     }
-  }, [dataSourcesByLane]);
+  }, [props.dataSourcesByLane]);
 
   useEffect(() => {
     addSubscriptionCallbacks();
-  }, [dataSourcesByLane]);
+  }, [props.dataSourcesByLane]);
+
+
+    // Add some simulated random updates for demo purposes
+    // useEffect(() => {
+    //   const interval = setInterval(() => {
+    //     setStatusList(prevList => {
+    //       const updatedList = [...prevList];
+    //       const randomIndex = Math.floor(Math.random() * updatedList.length);
+    //       const randomChange = Math.random();
+    //
+    //       // Randomly change one of the states
+    //       if (randomChange < 0.33) {
+    //         updatedList[randomIndex].isOnline = !updatedList[randomIndex].isOnline;
+    //       } else if (randomChange < 0.66) {
+    //         updatedList[randomIndex].isTamper = !updatedList[randomIndex].isTamper;
+    //       } else {
+    //         updatedList[randomIndex].isFault = !updatedList[randomIndex].isFault;
+    //       }
+    //
+    //       return updatedList;
+    //     });
+    //   }, 3000); // Update every 3 seconds
+    //
+    //   return () => clearInterval(interval);
+    // }, []);
 
   function updateStatus(laneName: string, newState: string) {
 
@@ -142,6 +111,7 @@ export default function LaneStatus() {
 
             }else if (newState === 'Clear') {
               return {...laneData, isFault: false }
+
             } else if (newState === 'Online'|| alarmStates.includes(newState)) {
 
               return {...laneData, isFault: false, isOnline: true}
@@ -155,25 +125,8 @@ export default function LaneStatus() {
         });
 
 
-        // dont reorder if state === alarm, bkg, scan or online
-        // if(['Alarm', 'Scan', 'Background', 'Clear', 'Online', 'TamperOff', 'Offline', 'Tamper', 'Fault'].includes(newState)) {
-        //   //check if online status and push to front
-        //   const offlineStatues = updatedList.filter((list) => !list.isOnline);
-        //   const onlineStatuses = updatedList.filter((list) => list.isOnline);
-        //
-        //   return  [...offlineStatues, ...onlineStatuses];
-        // }
-        // put offline, fault, tamper at the top of the list
-        // const updatedLane = updatedList.find((data) => data.name === laneName);
-        //
-
         // we still want to clear alarming states like fault after a certain time...
         setTimeout(() => updateStatus(laneName, 'Clear'), 15000);
-        // const filteredStatuses = updatedList.filter((list) => list.name !== laneName);
-        // const offlineStatuses = updatedList.filter((list) => !list.isOnline);
-        // const onlineStatuses = updatedList.filter((list) => list.isOnline);
-        //
-        // return [...offlineStatuses, ...onlineStatuses]
 
         return [...updatedList];
 
@@ -196,11 +149,11 @@ export default function LaneStatus() {
       <Stack padding={2} justifyContent={"start"} spacing={1}>
         <Typography variant="h6">Lane Status</Typography>
         <>
-          <Box sx={{overflowY: "auto", maxHeight: 120,  flexGrow: 1}}>
+          <Box sx={{overflowY: "auto", maxHeight: 225,  flexGrow: 1}}>
             {(
-                <Grid container columns={{sm: 12, md: 24, lg:36, xl:48}} spacing={1} >
+                <Grid container columns={{sm: 12, md: 24, lg: 36, xl: 48}} spacing={1}>
                   {statusList.map((item) => (
-                      <Grid  key={item.id} item xs={12}>
+                      <Grid key={item.id} item sm={8} md={6} lg={6} xl={6}>
                         <Link href={{
                           pathname: '/lane-view',
                           query: {
@@ -208,6 +161,7 @@ export default function LaneStatus() {
                           }
                         }}
                               passHref
+                              style={{textDecoration: 'none'}}
 
                         >
 

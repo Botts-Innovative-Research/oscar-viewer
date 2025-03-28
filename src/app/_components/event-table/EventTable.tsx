@@ -13,9 +13,15 @@ import CustomToolbar from "@/app/_components/CustomToolbar";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {selectEventPreview, setEventPreview} from "@/lib/state/OSCARClientSlice";
+import {selectEventPreview, setEventPreview} from "@/lib/state/EventPreviewSlice";
 import {useRouter} from "next/navigation";
+import {makeStyles} from "@mui/styles";
 
+const selectedRowStyles = makeStyles({
+  selectedRow: {
+    backgroundColor: 'rgba(33,150,243,0.5) !important',
+  },
+});
 
 export default function EventTable(props: {
   viewSecondary?: boolean,  // Show 'Secondary Inspection' column, default FALSE
@@ -24,6 +30,9 @@ export default function EventTable(props: {
   viewAdjudicated?: boolean, //shows Adjudicated status in the event log , not shown in the alarm table
   eventTable: EventTableDataCollection,  // StatTable data
 }) {
+
+  const classes = selectedRowStyles();
+
   const viewAdjudicated = props.viewAdjudicated || false;
   const viewSecondary = props.viewSecondary || false;
   // const viewMenu = props.viewMenu || false;
@@ -42,33 +51,42 @@ export default function EventTable(props: {
       field: 'secondaryInspection',
       headerName: 'Secondary Inspection',
       type: 'string',
+      minWidth: 125,
+      flex: 1,
     },
     {
       field: 'laneId',
       headerName: 'Lane ID',
       type: 'string',
+      minWidth: 100,
+      flex: 1,
     },
     {
       field: 'occupancyId',
       headerName: 'Occupancy ID',
       type: 'string',
+      minWidth: 125,
+      flex: 1,
     },
     {
       field: 'startTime',
       headerName: 'Start Time',
       valueFormatter:(value) =>{
-        const dateTime = (new Date(value)).toLocaleString();
-        return dateTime;
-      }
+       return  (new Date(value)).toLocaleString();
+      },
+      minWidth: 200,
+      flex: 2,
       // type: 'string',
     },
     {
       field: 'endTime',
       headerName: 'End Time',
       valueFormatter:(value) =>{
-        const dateTime = (new Date(value)).toLocaleString();
-        return dateTime;
-      }
+        return (new Date(value)).toLocaleString();
+
+      },
+      minWidth: 200,
+      flex: 2,
       // type: 'string',
     },
     {
@@ -78,6 +96,8 @@ export default function EventTable(props: {
         // Append units to number value, or return 'N/A'
         return typeof value === 'number' ? value : 0;
       },
+      minWidth: 150,
+      flex: 1.2,
     },
     {
       field: 'maxNeutron',
@@ -86,12 +106,17 @@ export default function EventTable(props: {
         // Append units to number value, or return 'N/A'
         return typeof value === 'number' ? value : 0;
       },
+      minWidth: 150,
+      flex: 1.2,
     },
     {
       field: 'status',
       headerName: 'Status',
       type: 'string',
+      minWidth: 125,
+      flex: 1.2,
     },
+
     {
       //TODO: when adjudication is updated to working state chang this back to adjudicatedCode
       // field: 'adjudicatedCode',
@@ -99,28 +124,16 @@ export default function EventTable(props: {
       headerName: 'Adjudicated',
       type: 'string',
       valueFormatter: (value) => value ? "Yes" : "No",
-      // valueFormatter: (value) => {
-      //   const adjCode = {
-      //     1: 'Code 1: Contraband Found',
-      //     2: 'Code 2: Other',
-      //     3: 'Code 3: Medical Isotope Found',
-      //     4: 'Code 4: NORM Found',
-      //     5: 'Code 5: Declared Shipment of Radioactive Material',
-      //     6: 'Code 6: Physical Inspection Negative',
-      //     7: 'Code 7: RIID/ASP Indicates Background Only',
-      //     8: 'Code 8: Other',
-      //     9: 'Code 9: Authorized Test, Maintenance, or Training Activity',
-      //     10: 'Code 10: Unauthorized Activity',
-      //     11: 'Code 11: Other'
-      //   };
-      //   return typeof value === 'number' ? adjCode[value] : 'No';
-      // }
+      minWidth: 100,
+      flex: 1,
+
     },
     {
       field: 'Menu',
       headerName: '',
       type: 'actions',
       maxWidth: 50,
+      flex: 0.5,
 
       getActions: (params) => [
         (selectionModel.includes(params.row.id) ?
@@ -225,6 +238,10 @@ export default function EventTable(props: {
             columns={columns}
             onRowSelectionModelChange={handleRowSelection}
             rowSelectionModel={selectionModel}
+            getRowClassName={(params) =>
+                params.row.id == selectionModel[0] ? classes.selectedRow : ''
+              // params.row.id == selectionModel[0] ? classes.selectedRow : ''
+            }
             initialState={{
               pagination: {
                 paginationModel: {

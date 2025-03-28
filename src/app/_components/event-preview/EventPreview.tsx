@@ -3,10 +3,11 @@
  * All Rights Reserved
  */
 
+'use client'
+
 import {
     Box,
     Button,
-    Grid,
     IconButton,
     Snackbar,
     SnackbarCloseReason,
@@ -19,7 +20,14 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
-import {selectCurrentUser, setEventPreview, setShouldForceAlarmTableDeselect} from "@/lib/state/OSCARClientSlice";
+import {
+    selectEventPreview,
+    setEventPreview,
+    setSelectedRowId,
+    setShouldForceAlarmTableDeselect
+} from "@/lib/state/EventPreviewSlice";
+
+import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/navigation";
 import ChartTimeHighlight from "@/app/_components/event-preview/ChartTimeHighlight";
@@ -27,9 +35,8 @@ import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {EventTableData} from "@/lib/data/oscar/TableHelpers";
+
 import AdjudicationData, {
-    createAdjudicationObservation,
     findObservationIdBySamplingTime,
     generateCommandJSON,
     IAdjudicationData,
@@ -37,18 +44,25 @@ import AdjudicationData, {
 } from "@/lib/data/oscar/adjudication/Adjudication";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
-import {updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
+import {setSelectedEvent, updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 import {EventType} from "osh-js/source/core/event/EventType";
 import TimeController from "@/app/_components/TimeController";
+import { setEventData } from "@/lib/state/EventDetailsSlice";
 
 
-export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTableData | null }) {
+
+
+
+export function EventPreview() {
     const dispatch = useAppDispatch();
     const router = useRouter();
+    const eventPreview = useSelector(selectEventPreview);
+
+    const prevEventIdRef = useRef<string | null>(null);
+
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
-    // const eventPreview = useSelector(selectEventPreview);
-    const dsMapRef = useRef<Map<string, typeof SweApi[]>>();
+
     const [localDSMap, setLocalDSMap] = useState<Map<string, typeof SweApi[]>>(new Map<string, typeof SweApi[]>());
     const [dataSyncReady, setDataSyncReady] = useState<boolean>(false);
     const [datasourcesReady, setDatasourcesReady] = useState<boolean>(false);
@@ -68,7 +82,6 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     const gammaChartRef = useRef<any>();
     const neutronChartRef = useRef<any>();
 
-
     // Video Specifics
     const [videoReady, setVideoReady] = useState<boolean>(false);
     const [videoDatasources, setVideoDatasources] = useState<typeof SweApi[]>([]);
@@ -84,6 +97,9 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     const [adjSnackMsg, setAdjSnackMsg] = useState('');
     const [openSnack, setOpenSnack] = useState(false);
     const [colorStatus, setColorStatus] = useState('')
+
+
+
     const handleAdjudicationCode = (value: AdjudicationCode) => {
         console.log("Adjudication Value: ", value);
         let newAdjData: IAdjudicationData = {
@@ -107,11 +123,13 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         setAdjFormData(newAdjData);
         setAdjudication(adjudicationData);
     }
+
     const handleNotes = (event: React.ChangeEvent<HTMLInputElement>) => {
         let notesValues = event.target.value;
         console.log("[ADJ] Notes: ", notesValues);
         setNotes(notesValues);
     }
+
     const sendAdjudicationData = async () => {
         let phenomenonTime = new Date().toISOString();
         // let comboData = adjFormData;
@@ -128,6 +146,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
         const adjDsID = currLaneEntry.parentNode.laneAdjMap.get(currentLane);
         const ep = currLaneEntry.parentNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + adjDsID + "/observations";
+
         try {
             let resp = await fetch(ep, {
                 method: "POST",
@@ -183,15 +202,30 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     }
 
     const handleCloseRounded = () => {
-        console.log("Close Rounded");
+
+        console.log("closed event preview: ", eventPreview.isOpen)
+        // cleanupResources();
+        
         dispatch(setEventPreview({
             isOpen: false,
             eventData: null
         }));
+
         dispatch(setShouldForceAlarmTableDeselect(true))
+
+        dispatch(setSelectedRowId(null));
+
     }
 
     const handleExpand = () => {
+        console.log("opened event detail: ", eventPreview.isOpen)
+
+        dispatch(setEventData(eventPreview.eventData));
+
+        dispatch(setSelectedRowId(eventPreview.eventData.id))
+        dispatch(setSelectedEvent(eventPreview.eventData));
+        // dispatch(setShouldForceAlarmTableDeselect(false))
+
         router.push("/event-details");
     }
 
@@ -210,35 +244,79 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
 
     }
 
-
-    const collectDataSources = useCallback(() => {
-
+    const cleanupResources = () => {
         disconnectDSArray(gammaDatasources);
         disconnectDSArray(neutronDatasources);
         disconnectDSArray(thresholdDatasources);
         disconnectDSArray(occDatasources);
+        
+        if (syncRef.current?.isConnected()) {
+            syncRef.current.disconnect();
+        }
+
+        setDatasourcesReady(false);
+        setDataSyncCreated(false);
+        setChartReady(false);
+        setVideoReady(false);
+        setSyncTime(null);
+        syncRef.current = null;
+    };
+
+    useEffect(() => {
+        if (eventPreview.eventData?.occupancyId !== prevEventIdRef.current) {
+           
+            if (prevEventIdRef.current) {
+                cleanupResources();
+            }
+            
+            prevEventIdRef.current = eventPreview.eventData?.occupancyId;
+            if (eventPreview.eventData?.laneId && laneMapRef.current) {
+
+                collectDataSources();
+                dispatch(setEventData(eventPreview.eventData));
+
+            }
+        }
+    }, [eventPreview.eventData?.occupancyId]);
+
+    const collectDataSources = useCallback(() => {
+        if (!eventPreview.eventData?.laneId || !laneMapRef.current) return;
 
         let currentLane = eventPreview.eventData.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+        if (!currLaneEntry) {
+            console.error("LaneMapEntry not found for:", currentLane);
+            return;
+        }
 
         console.log("Collecting DataSources...", currLaneEntry, currentLane);
 
         let tempDSMap = new Map<string, typeof SweApi[]>();
-        if (currLaneEntry) {
-            let datasources = currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
-            console.log("DataSources", datasources);
-            setLocalDSMap(datasources);
-            tempDSMap = datasources;
-        }
+
+        let datasources = currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
+        console.log("DataSources", datasources);
+
+        setLocalDSMap(datasources);
+        tempDSMap = datasources;
+
         console.log("LocalDSMap", localDSMap);
 
-        setGammaDS(tempDSMap.get("gamma"));
-        setNeutronDS(tempDSMap.get("neutron"));
-        setThresholdDS(tempDSMap.get("gammaTrshld"));
-        setVideoDatasources(tempDSMap.get("video"));
+        const updatedGamma = tempDSMap.get("gamma") || [];
+        const updatedNeutron = tempDSMap.get("neutron") || [];
+        const updatedThreshold = tempDSMap.get("gammaTrshld") || [];
+        const updatedVideo = tempDSMap.get("video") || [];
+        const updatedOcc = tempDSMap.get("occ") || [];
+
+        setGammaDS(updatedGamma);
+        setNeutronDS(updatedNeutron);
+        setThresholdDS(updatedThreshold);
+        setVideoDatasources(updatedVideo);
+        setOccDS(updatedOcc);
         setDatasourcesReady(true);
 
+
     }, [eventPreview, laneMapRef]);
+
 
     const createDataSync = useCallback(() => {
         if (!syncRef.current && !dataSyncCreated && videoDatasources.length > 0) {
@@ -251,16 +329,21 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
             });
             syncRef.current.onTime
             setDataSyncCreated(true);
+
+            // dispatch(setDataSync(syncRef.current));
         }
     }, [syncRef, dataSyncCreated, datasourcesReady, videoDatasources]);
 
     useEffect(() => {
-        collectDataSources();
-    }, [eventPreview, laneMapRef]);
+        if (eventPreview.eventData?.laneId && laneMapRef.current) {
+            collectDataSources();
+            console.log('Datasources collected', eventPreview.eventData?.laneId)
+        }
+    }, [eventPreview.eventData, laneMapRef.current]);
 
     useEffect(() => {
         createDataSync();
-    }, [gammaDatasources, neutronDatasources, thresholdDatasources, occDatasources, syncRef, dataSyncCreated, datasourcesReady]);
+    }, [videoDatasources, syncRef, dataSyncCreated, datasourcesReady]);
 
 
     useEffect(() => {
@@ -289,13 +372,12 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
 
 
         } else {
-            // console.log("Chart Not Ready, cannot start DataSynchronizer...");
+            console.log("Chart Not Ready, cannot start DataSynchronizer...");
         }
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
 
 
     useEffect(() => {
-
         if(syncRef.current){
             syncRef.current.subscribe((message: { type: any; timestamp: any }) => {
                     if (message.type === EventType.MASTER_TIME) {
@@ -305,11 +387,10 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
             );
         }
 
-
     }, [syncRef.current]);
 
 
-    const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
+    const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason) => {
         if (reason === 'clickaway') {
             return;
         }
@@ -319,21 +400,22 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
 
 
     // function to start the time controller by connecting to time sync
-    const start = async () => {
-        if (syncRef.current) {
-            syncRef.current.setReplaySpeed(1.0);
-            await syncRef.current.connect();
+    const play = async () => {
+        if (syncRef.current ) { //&& !await syncRef.current.isConnected()
+            // if(!syncRef.current.isConnected) await syncRef.current.connect();
+            await syncRef.current.setReplaySpeed(1.0);
 
             console.log("Playback started.");
+            await syncRef.current.connect();
         }
     };
 
     // function to pause the time controller by disconnecting from the time sync
     const pause = async () => {
-        if (syncRef.current && syncRef.current.isConnected()) {
-            syncRef.current.setReplaySpeed(0.0);
+        if (syncRef.current) {  //&& await syncRef.current.isConnected()
+             // await syncRef.current.connect();
+            await syncRef.current.setReplaySpeed(0.0);
 
-            await syncRef.current.disconnect();
 
             console.log("Playback paused.");
         }
@@ -351,7 +433,6 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         // update the time sync start time
         // await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, 0.0, false);
         await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, (isPlaying ? 1.0 : 0.0), false);
-
         setSyncTime(newValue);
 
     },[syncRef.current, eventPreview]);
@@ -383,6 +464,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                         setChartReady={setChartReady}
                         modeType="preview"
                         currentTime={syncTime}
+                        eventData={eventPreview.eventData}
                     />
 
                     <LaneVideoPlayback
@@ -393,16 +475,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                         modeType={"preview"}
                     />
 
-                    <TimeController
-                        handleChange={handleChange}
-                        pause={pause}
-                        start={start}
-                        syncTime={syncTime}
-                        timeSync={syncRef.current}
-                        startTime={eventPreview.eventData.startTime}
-                        endTime={eventPreview.eventData.endTime}
-                    />
-
+                    <TimeController handleChange={handleChange} pause={pause} play={play} syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
                 </Box>
             )}
 
