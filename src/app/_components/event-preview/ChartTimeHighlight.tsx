@@ -284,10 +284,11 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             nsigma: nsigmaCurve
         };
 
-        if (nsigmaCurve?.data?.length > 0) {
+        if (nsigmaCurve.data.length > 0) {
             console.warn("we dont have nsigma data")
 
             result.nsigma = createNSigmaCalcViewCurve(threshold, gamma);
+            console.log("result.nsigma", result.nsigma)
         }
 
         return result;
