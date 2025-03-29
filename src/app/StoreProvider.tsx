@@ -9,6 +9,8 @@ import {Provider} from 'react-redux';
 import {store, persistor} from "@/lib/state/Store";
 import { PersistGate } from 'redux-persist/integration/react';
 import LoadingDashboard from "@/app/_components/skeleton/LoadingDashboard";
+import CircularProgress from '@mui/material/CircularProgress';
+import Box from '@mui/material/Box';
 
 
 export default function StoreProvider({children,}: {
@@ -25,7 +27,7 @@ export default function StoreProvider({children,}: {
 
     return (
         <Provider store={store}>
-            <PersistGate loading={<p>Loading....</p>} persistor={persistor}>
+            <PersistGate loading={<Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center', minHeight: '100vh'}}><CircularProgress/></Box>} persistor={persistor}>
                 {children}
             </PersistGate>
         </Provider>

@@ -72,7 +72,7 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
 export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDatasource: any) {
     console.log("thresh ds", thresholdDatasource)
     console.log("gamma ds", gammaDatasource)
-    if (!thresholdDatasource) return null;
+    if (!thresholdDatasource  || !gammaDatasource) return null;
 
     let latestGB: number;
 
