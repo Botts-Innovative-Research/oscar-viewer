@@ -3,7 +3,7 @@
 import {Grid, Paper} from "@mui/material";
 import LaneStatus from "../_components/dashboard/LaneStatus";
 
-import {useCallback, useContext, useEffect, useMemo, useState} from "react";
+import React, {useCallback, useContext, useEffect, useMemo, useState} from "react";
 import dynamic from "next/dynamic";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
@@ -18,7 +18,8 @@ import {
 } from "@/lib/data/oscar/Utilities";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import LoadingPreview from "../_components/skeleton/LoadingPreview";
+import CircularProgress from "@mui/material/CircularProgress";
+import Box from "@mui/material/Box";
 
 export default function DashboardPage() {
     const laneMap = useSelector((state: RootState) => selectLaneMap(state))
@@ -31,7 +32,7 @@ export default function DashboardPage() {
     const QuickView = useMemo(() => dynamic(
         () => import('@/app/_components/dashboard/QuickView'),
         {
-            loading: () => <LoadingPreview/>,
+            loading: () => <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center', minHeight: '100vh'}}><CircularProgress/></Box>,
             ssr: false
         }
     ), [])

@@ -55,7 +55,7 @@ export const persistor = persistStore(store);
 
 
 //if you make changes to the slices call this function
-// persistor.purge();
+persistor.purge();
 
 export type AppStore = typeof store
 // // Infer the `RootState` and `AppDispatch` types from the store itself
