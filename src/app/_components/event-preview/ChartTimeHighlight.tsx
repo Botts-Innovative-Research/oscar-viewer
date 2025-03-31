@@ -6,9 +6,6 @@
 
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import {Box, Grid, ToggleButton, ToggleButtonGroup, Typography} from "@mui/material";
-import {useSelector} from "react-redux";
-import {RootState} from "@/lib/state/Store";
-import {selectEventPreview} from "@/lib/state/EventPreviewSlice";
 import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView.js";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import annotationPlugin from 'chartjs-plugin-annotation';
@@ -57,17 +54,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     ];
 
 
-    // const resetView = useCallback(() => {
-    //     if (!eventPreview.isOpen) {
-    //         setGammaChartView(null);
-    //         setGammaNsigmaChartView(null);
-    //         setNeutronChartView(null);
-    //         setIsReadyToRender(false);
-    //     }
-    // }, [eventPreview]);
-
-
-
     const checkReadyToRender = useCallback(() => {
         if (chartsReady) {
             setIsReadyToRender(true);
@@ -94,11 +80,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 ids.push(neutronId);
                 break;
             case "Gamma & Neutron":
-                gammaId = gammaChartBaseId + eventData.id + "-" + props.modeType;
-                nsigmaId = "chart-view-event-detail-nsigma-" + eventData.id + "-" + props.modeType;
-                neutronId = neutronChartBaseId + eventData.id + "-" + props.modeType;
-                ids.push(gammaId, neutronId, nsigmaId);
-                break;
             case "None":
                 gammaId = gammaChartBaseId + eventData.id + "-" + props.modeType;
                 nsigmaId = "chart-view-event-detail-nsigma-" + eventData.id + "-" + props.modeType;
@@ -315,20 +296,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
         return result;
 
-        //
-        // let tCurve = createThresholdViewCurve(props.datasources.threshold);
-        // let gCurve = createGammaViewCurve(props.datasources.gamma);
-        // let nCurve = createNeutronViewCurve(props.datasources.neutron);
-        // let nsigmaCurve = createNSigmaCalcViewCurve(props.datasources.threshold, props.datasources.gamma);
-        // let threshSigmaCurve = createThreshSigmaViewCurve(props.datasources.threshold);
-        //
-        // return {
-        //     gamma: gCurve,
-        //     neutron: nCurve,
-        //     threshold: tCurve,
-        //     nsigma: nsigmaCurve,
-        //     threshNsigma: threshSigmaCurve
-        // }
     }
 
     // switch between cps and sigma chart
