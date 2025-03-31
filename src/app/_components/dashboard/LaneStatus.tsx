@@ -1,6 +1,6 @@
 "use client";
 
-import {Box, Grid, List, Stack, Typography } from '@mui/material';
+import {Box, Grid, Stack, Typography } from '@mui/material';
 import LaneStatusItem from './LaneStatusItem';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import Link from "next/link";
@@ -149,11 +149,11 @@ export default function LaneStatus(props: {dataSourcesByLane: any}) {
       <Stack padding={2} justifyContent={"start"} spacing={1}>
         <Typography variant="h6">Lane Status</Typography>
         <>
-          <Box sx={{overflowY: "auto", maxHeight: 225,  flexGrow: 1}}>
+          <Box sx={{overflowY: "auto", maxHeight: 275,  flexGrow: 1}}>
             {(
                 <Grid container columns={{sm: 12, md: 24, lg: 36, xl: 48}} spacing={1}>
                   {statusList.map((item) => (
-                      <Grid key={item.id} item sm={8} md={6} lg={6} xl={6}>
+                      <Grid key={item.id} item sm={8} md={8} lg={8} xl={6}>
                         <Link href={{
                           pathname: '/lane-view',
                           query: {

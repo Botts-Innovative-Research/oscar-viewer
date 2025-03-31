@@ -447,9 +447,9 @@ export default function Table2({
                 }
 
                 sx={{
-                    '& .MuiDataGrid-row:hover': {
-                        backgroundColor: 'rgba(33,150,243,0.5)',
-                    },
+                    // '& .MuiDataGrid-row:hover': {
+                    //     backgroundColor: 'rgba(33,150,243,0.5)',
+                    // },
                     // assign color styling to selected row
                     [`.${gridClasses.row}.selected-row`]: {
                         backgroundColor: 'rgba(33,150,243,0.5)',

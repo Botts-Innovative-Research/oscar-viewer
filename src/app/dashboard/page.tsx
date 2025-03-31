@@ -83,7 +83,7 @@ export default function DashboardPage() {
         <Grid container spacing={2} direction={"column"}>
             <Grid item container spacing={2} style={{flexBasis: '33.33%', flexGrow: 0, flexShrink: 0}}>
                 <Grid item xs={8} sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                    <Paper variant='outlined' sx={{height: "auto", minHeight: 225, padding: 1}}>
+                    <Paper variant='outlined' sx={{height: "auto", minHeight: 275, padding: 1}}>
                         <LaneStatus dataSourcesByLane={dataSourcesByLane}/>
                     </Paper>
 
