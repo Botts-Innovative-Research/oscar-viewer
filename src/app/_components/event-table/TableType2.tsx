@@ -135,6 +135,7 @@ export default function Table2({
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
         const id = prngFromStr(obs, laneEntry.laneName);
+        // console.log("obs id", obs.id)
         let newEvent: EventTableData = new EventTableData(id, laneEntry.laneName, obs.result, obs.id, obs.foiId);
         newEvent.setSystemIdx(laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId));
         newEvent.setDataStreamId(obs["datastream@id"]);

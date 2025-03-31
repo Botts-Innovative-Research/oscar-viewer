@@ -25,7 +25,8 @@ export default function StoreProvider({children,}: {
     }, []);
 
     return (
-        <Provider store={storeRef.current}>
+        // <Provider store={storeRef.current}>
+        <Provider store={store}>
             <PersistGate loading={<Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center', minHeight: '100vh'}}><CircularProgress/></Box>} persistor={persistor}>
                 {children}
             </PersistGate>
