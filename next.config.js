@@ -5,6 +5,8 @@
 module.exports = {
     distDir: 'web',
     output: 'export',
+    trailingSlash: true,
+
     webpack: (config, { isServer }) => {
         config.resolve.fallback = {
             ...config.resolve.fallback,
