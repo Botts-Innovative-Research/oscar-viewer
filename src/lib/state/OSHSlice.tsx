@@ -26,7 +26,7 @@ const initialNodeOpts: NodeOptions = {
     sosEndpoint: "/sos",
     csAPIEndpoint: "/api",
     csAPIConfigEndpoint: "/configs",
-    auth: {username: "admin", password: "admin"},
+    auth: {username: "admin", password: "oscar"},
     isSecure: false,
     isDefaultNode: true
 }

@@ -6,6 +6,12 @@ import React, {useCallback, useContext, useEffect, useRef, useState} from 'react
 import Link from "next/link";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import {
+  isConnectionDatastream,
+  isGammaDatastream,
+  isNeutronDatastream,
+  isTamperDatastream
+} from "@/lib/data/oscar/Utilities";
 
 interface LaneStatusProps{
   id: number;
@@ -39,16 +45,16 @@ export default function LaneStatus() {
         let rtDS = lane.datasourcesRealtime[idx];
         let laneDSColl = laneDSMap.get(laneid);
 
-        if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
+        if(isGammaDatastream(ds)){
           laneDSColl.addDS('gammaRT', rtDS);
         }
-        if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
+        if(isNeutronDatastream(ds)){
           laneDSColl.addDS('neutronRT', rtDS);
         }
-        if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status")){
+        if(isTamperDatastream(ds)){
           laneDSColl.addDS('tamperRT', rtDS);
         }
-        if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/connection-status")){
+        if(isConnectionDatastream(ds)){
           laneDSColl.addDS('connectionRT', rtDS);
         }
 
@@ -131,14 +137,12 @@ export default function LaneStatus() {
 
               return {...laneData, isTamper: false, isOnline: true}
 
-            }else if (
-                newState === 'Fault - Neutron High' ||
-                newState === 'Fault - Gamma High' ||
-                newState === 'Fault - Gamma Low'
-            ) {
+            }else if (newState === 'Fault - Neutron High' || newState === 'Fault - Gamma High' || newState === 'Fault - Gamma Low') {
               return {...laneData, isFault: true, isOnline: true}
 
-            }else if (newState === 'Clear'|| newState === 'Online'|| alarmStates.includes(newState)) {
+            }else if (newState === 'Clear') {
+              return {...laneData, isFault: false }
+            } else if (newState === 'Online'|| alarmStates.includes(newState)) {
 
               return {...laneData, isFault: false, isOnline: true}
 
@@ -152,22 +156,27 @@ export default function LaneStatus() {
 
 
         // dont reorder if state === alarm, bkg, scan or online
-        if(['Alarm', 'Scan', 'Background', 'Clear', 'Online', 'TamperOff', 'Offline'].includes(newState)) {
-          //check if online status and push to front
-          const offlineStatues = updatedList.filter((list) => !list.isOnline);
-          const onlineStatuses = updatedList.filter((list) => list.isOnline);
-
-          return  [...offlineStatues, ...onlineStatuses];
-        }
+        // if(['Alarm', 'Scan', 'Background', 'Clear', 'Online', 'TamperOff', 'Offline', 'Tamper', 'Fault'].includes(newState)) {
+        //   //check if online status and push to front
+        //   const offlineStatues = updatedList.filter((list) => !list.isOnline);
+        //   const onlineStatuses = updatedList.filter((list) => list.isOnline);
+        //
+        //   return  [...offlineStatues, ...onlineStatuses];
+        // }
         // put offline, fault, tamper at the top of the list
-        const updatedLane = updatedList.find((data) => data.name === laneName);
+        // const updatedLane = updatedList.find((data) => data.name === laneName);
+        //
 
+        // we still want to clear alarming states like fault after a certain time...
         setTimeout(() => updateStatus(laneName, 'Clear'), 15000);
-        const filteredStatuses = updatedList.filter((list) => list.name !== laneName);
-        const offlineStatuses = filteredStatuses.filter((list) => !list.isOnline);
-        const onlineStatuses = filteredStatuses.filter((list) => list.isOnline);
+        // const filteredStatuses = updatedList.filter((list) => list.name !== laneName);
+        // const offlineStatuses = updatedList.filter((list) => !list.isOnline);
+        // const onlineStatuses = updatedList.filter((list) => list.isOnline);
+        //
+        // return [...offlineStatuses, ...onlineStatuses]
 
-        return [updatedLane, ...offlineStatuses, ...onlineStatuses]
+        return [...updatedList];
+
 
       }else{
         const newLane: LaneStatusProps= {

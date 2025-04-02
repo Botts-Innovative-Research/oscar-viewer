@@ -12,6 +12,12 @@ import VideoStatusWrapper from '../video/VideoStatusWrapper';
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
 import VideoCarousel from "@/app/_components/video/VideoCarousel";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import {
+  isGammaDatastream,
+  isNeutronDatastream,
+  isTamperDatastream,
+  isVideoDatastream
+} from '@/lib/data/oscar/Utilities';
 
 
 interface LaneWithVideo {
@@ -51,19 +57,23 @@ export default function CameraGrid() {
         let rtDS = lane.datasourcesRealtime[idx];
         let laneDSColl = laneDSMap.get(laneid);
 
-        if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
+        if(isGammaDatastream(ds)){
           laneDSColl.addDS('gammaRT', rtDS);
         }
-        if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
+        if(isNeutronDatastream(ds)){
           laneDSColl.addDS('neutronRT', rtDS);
         }
-        if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status")){
+        if(isTamperDatastream(ds)){
           laneDSColl.addDS('tamperRT', rtDS);
         }
-        if(ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/RasterImage") || ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/VideoFrame")){
-          console.log("Video DS Found",ds);
-          videoDs.push(ds);
-          laneDSColl.addDS('videoRT', rtDS)
+        if(isVideoDatastream(ds)) {
+          const dsSystemId = ds.properties['system@id'];
+          for(let system of lane.systems) {
+            if(system.properties.id === dsSystemId) {
+              videoDs.push(ds);
+              laneDSColl.addDS('videoRT', rtDS)
+            }
+          }
         }
       }
       setDsVideo(videoDs);
@@ -109,43 +119,11 @@ export default function CameraGrid() {
      }
    }, [laneMap, dsVideo]);
 
-  // useEffect(() => {
-  //
-  //   if (videoList == null || videoList.length == 0 && laneMap.size > 0) {
-  //     let videos: LaneWithVideo[] = []
-  //
-  //     laneMap.forEach((value, key) => {
-  //       let ds: LaneMapEntry = value;
-  //
-  //       const videoSources = ds.datasourcesRealtime.filter((item) => item.name.includes('Video') && item.name.includes('Lane'));
-  //
-  //       if (videoSources.length > 0) {
-  //         const existingLane = videos.find((lane)=> lane.laneName === key);
-  //         if(existingLane){
-  //           existingLane.videoSources.push(...videoSources);
-  //         }else{
-  //           const laneWithVideo: LaneWithVideo = {
-  //             laneName: key,
-  //             videoSources: videoSources,
-  //             status: 'none',
-  //           };
-  //           videos.push(laneWithVideo);
-  //         }
-  //
-  //
-  //       }
-  //     });
-  //
-  //     console.log("CamGrid - Videos", videos);
-  //     setVideoList(videos);
-  //   }
-  // }, [laneMap]);
 
 
 
 
   const addSubscriptionCallbacks = useCallback(() => {
-    console.log('callback called')
     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
 
       // guard against a lane where there is no video source, so we can avoid an error popup
@@ -181,7 +159,9 @@ export default function CameraGrid() {
     // if (videoList !== null && videoList.length > 0) {
       addSubscriptionCallbacks();
     // }
-  }, [dataSourcesByLane, videoList]);
+
+    console.log('video liss', videoList)
+  }, [dataSourcesByLane]);
 
 
 
@@ -201,8 +181,9 @@ export default function CameraGrid() {
       }
 
       return updatedList;
-    })
+    });
   };
+
 
 
   // Handle camera grid pages
@@ -212,6 +193,9 @@ export default function CameraGrid() {
     setEndItem(maxItems * (value - 1) + maxItems); // Set endItem to offset by maxItems
   };
 
+  useEffect(() => {
+    console.log('video list in camera grid', videoList)
+  }, [videoList]);
 
   return (
       <>

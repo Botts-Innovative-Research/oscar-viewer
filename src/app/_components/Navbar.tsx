@@ -25,10 +25,11 @@ import CloudRoundedIcon from '@mui/icons-material/CloudRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
 import MediationIcon from '@mui/icons-material/Mediation';
-import {Button, Menu, MenuItem, Stack} from '@mui/material';
+import {Button, Menu, MenuItem, Slider, Stack} from '@mui/material';
 import {useEffect, useState} from 'react';
 import Link from 'next/link';
-import {Label, SaveRounded} from "@mui/icons-material";
+import {Label, SaveRounded, VolumeDown, VolumeUp} from "@mui/icons-material";
+import AlarmAudio from "@/app/_components/AlarmAudio";
 
 const drawerWidth = 240;
 
@@ -173,6 +174,8 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
   ]
 
 
+
+
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
@@ -231,7 +234,11 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
           horizontal: 'right',
         }}
       >
-        <MenuItem>Temp Item</MenuItem>
+        <MenuItem>
+          <AlarmAudio/>
+
+
+        </MenuItem>
       </Menu>
       <Drawer variant="permanent" open={drawerOpen}>
         <DrawerHeader>

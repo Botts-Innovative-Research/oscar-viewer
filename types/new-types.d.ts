@@ -10,7 +10,7 @@ import {colorCodes} from "@/app/_components/event-preview/AdjudicationSelect";
  */
 export interface IEventTableData {
   id: number; // Unique ID for event
-  secondaryInspection?: boolean;  // Whether or not there has been a secondary inspection performed
+  secondaryInspection?: string;
   laneId: string; // Lane ID
   occupancyId: string;  // Occupancy ID
   startTime: string;  // Start time of occupancy/event
@@ -20,6 +20,8 @@ export interface IEventTableData {
   status: string; // Alarm status -> enum?
   adjudicatedUser?: string; // User ID that adjudicated event
   adjudicatedCode?: number; // Adjudication code for event
+  isAdjudicated?: boolean;
+  foiId: string;
 }
 
 export interface INationalTableData {
@@ -30,6 +32,13 @@ export interface INationalTableData {
   neutronAlarmCount: number;
   faultAlarmCount: number;
   tamperAlarmCount: number;
+}
+
+
+export interface IAlarmTableData {
+  id: number; // Unique ID for event
+  laneId: string;
+  status: string;
 }
 
 

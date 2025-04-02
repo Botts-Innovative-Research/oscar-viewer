@@ -20,6 +20,7 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
+import { isVideoDatastream } from '@/lib/data/oscar/Utilities';
 
 interface LaneVideoProps{
     laneName: string
@@ -53,7 +54,7 @@ export default function VideoGrid(props: LaneVideoProps) {
                 let rtDS = lane.datasourcesRealtime[idx];
                 let laneDSColl = laneDSMap.get(laneid);
 
-                if(ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/RasterImage") || ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/VideoFrame")){
+                if(isVideoDatastream(ds)) {
                     console.log("Video DS Found",ds);
                     videoDs.push(rtDS);
                 }
@@ -89,14 +90,6 @@ export default function VideoGrid(props: LaneVideoProps) {
 
                         }
                     })
-
-                    // const videoSources = ds.datasourcesRealtime.filter((item) =>
-                    //     item.name.includes('Video') && item.name.includes('Lane')
-                    // );
-                    //
-                    // if (videoSources.length > 0) {
-                    //     videos.push({laneName: key, videoSources});
-                    // }
                 }
             });
             setVideoList(updatedVideos);
@@ -104,7 +97,6 @@ export default function VideoGrid(props: LaneVideoProps) {
         }
     }, [laneMap, props.laneName, dsVideo]);
 
-    console.log(videoList)
 
     useEffect(() => {
         if(videoList && videoList.length> 0){
@@ -115,14 +107,22 @@ export default function VideoGrid(props: LaneVideoProps) {
 
     useEffect(() => {
 
-        if(videoList && videoList.length > 0 && currentPage <= maxPages){
-            const currentVideo = videoList[0].videoSources[currentPage];
-            if(currentVideo.isConnected()){
-                currentVideo.disconnect()
+        async function tryConnection(){
+            if(videoList && videoList.length > 0 && currentPage <= videoList.length){
+                const currentVideo = videoList[0].videoSources[currentPage];
+
+                const isConnected = await currentVideo.isConnected();
+                if(isConnected){
+                    currentVideo.disconnect()
+                }
+                console.log('Connecting to current video', currentVideo.name)
+                currentVideo.connect();
             }
-            currentVideo.connect();
         }
-    }, [videoList, currentPage, maxPages]);
+
+        tryConnection();
+
+    }, [videoList, currentPage]);
 
 
     const handleNextPage = () =>{
@@ -160,6 +160,10 @@ export default function VideoGrid(props: LaneVideoProps) {
             }
         }
     }
+
+    useEffect(() => {
+        console.log('video list in video grid', videoList)
+    }, [videoList]);
 
     return (
         <>

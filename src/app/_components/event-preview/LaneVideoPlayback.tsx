@@ -6,24 +6,29 @@
 import {useAppDispatch} from "@/lib/state/Hooks";
 import React, {useContext, useEffect, useRef, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import {Typography} from "@mui/material";
+import {Box, Grid, IconButton, Stack, Typography} from "@mui/material";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import VideoView from "osh-js/source/core/ui/view/video/VideoView";
 import VideoDataLayer from "osh-js/source/core/ui/layer/VideoDataLayer";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
+import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
+import VideoComponent from "@/app/_components/video/VideoComponent";
+import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
 export class LaneVideoPlaybackProps {
     videoDatasources: typeof SweApi[];
     setVideoReady: Function;
     dataSynchronizer: typeof DataSynchronizer;
     addDataSource: Function;
+    modeType: string;
 }
 
 export default function LaneVideoPlayback({
                                               videoDatasources,
                                               setVideoReady,
                                               dataSynchronizer,
-                                              addDataSource
+                                              addDataSource,
+                                              modeType
                                           }: LaneVideoPlaybackProps) {
     const dispatch = useAppDispatch();
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
@@ -32,9 +37,21 @@ export default function LaneVideoPlayback({
     const [selVideoIdx, setSelVidIdx] = useState<number>(0);
     const [localVideoReady, setLocalVideoReady] = useState<boolean>(false);
 
+    const [maxPages, setMaxPages] = useState(0);
+
+    const [videoSize, setVideoSize] = useState("250px");
+
     useEffect(() => {
         setDatasources(videoDatasources);
+        setMaxPages(videoDatasources.length)
+
+        if(modeType === 'detail'){
+            setVideoSize("450px")
+        }else if (modeType=== 'preview'){
+            setVideoSize("250px")
+        }
     }, [videoDatasources]);
+
 
     useEffect(() => {
         if (dataSources[selVideoIdx]) {
@@ -72,9 +89,77 @@ export default function LaneVideoPlayback({
     }, [localVideoReady]);
 
 
+
+
+
+    const handleNextPage = () =>{
+
+        setSelVidIdx((prevPage)=> {
+            let nextPage = prevPage + 1
+
+            if(dataSources && dataSources[0] && nextPage <= maxPages - 1){
+                return nextPage;
+            }else{
+                return prevPage;
+            }
+        })
+    }
+
+    const handlePrevPage = () =>{
+        setSelVidIdx((prevPage) => {
+            let currpage = prevPage - 1;
+            return currpage;
+        })
+    }
+
+
     return (
-        <div>
-            <div id="event-preview-video"></div>
-        </div>
+        <>
+
+        {dataSources != null && dataSources.length > 0 && (
+
+            <Box sx={{display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center"}}>
+                <IconButton onClick={handlePrevPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === 0}>
+                    <NavigateBeforeIcon/>
+                </IconButton>
+
+                <Stack
+                    margin={0}
+                    spacing={2}
+                    direction="row"
+                    alignContent="center"
+                    justifyContent={"center"}
+                    sx={{
+                        padding: 2,
+                        width: "100%",
+                        height: videoSize,
+                        border: "solid",
+                        borderWidth: '1px',
+                        borderColor: "rgba(0, 0, 0, 0.12)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+
+                    }}
+                >
+                    <Grid item key={dataSources[selVideoIdx].id} id="event-preview-video"
+                          sx={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "contain",
+                              overflow: "hidden"
+                          }}>
+
+                    </Grid>
+                </Stack>
+
+                <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === maxPages-1}>
+                    <NavigateNextIcon/>
+                </IconButton>
+            </Box>
+
+            )}
+        </>
+
     )
 }

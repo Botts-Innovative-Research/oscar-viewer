@@ -3,7 +3,17 @@
  * All Rights Reserved
  */
 
-import {Button, IconButton, Snackbar, SnackbarCloseReason, Stack, TextField, Typography} from "@mui/material";
+import {
+    Box,
+    Button,
+    Grid,
+    IconButton,
+    Snackbar,
+    SnackbarCloseReason,
+    Stack,
+    TextField,
+    Typography
+} from "@mui/material";
 import OpenInFullRoundedIcon from "@mui/icons-material/OpenInFullRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
@@ -29,6 +39,8 @@ import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
+import {EventType} from "osh-js/source/core/event/EventType";
+import TimeController from "@/app/_components/TimeController";
 
 
 export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTableData | null }) {
@@ -52,6 +64,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     const [thresholdDatasources, setThresholdDS] = useState<typeof SweApi[]>([]);
     const [chartReady, setChartReady] = useState<boolean>(false);
     const [currentTime, setCurrentTime] = useState<number>(0);
+    const [syncTime, setSyncTime] = useState<number>(null);
     const gammaChartRef = useRef<any>();
     const neutronChartRef = useRef<any>();
 
@@ -70,7 +83,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
     //snackbar
     const [adjSnackMsg, setAdjSnackMsg] = useState('');
     const [openSnack, setOpenSnack] = useState(false);
-
+    const [colorStatus, setColorStatus] = useState('')
     const handleAdjudicationCode = (value: AdjudicationCode) => {
         console.log("Adjudication Value: ", value);
         let newAdjData: IAdjudicationData = {
@@ -139,6 +152,7 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
 
             if (resp.ok) {
                 setAdjSnackMsg('Adjudication Submitted Successfully')
+                setColorStatus('success')
                 resetAdjudicationData();
                 dispatch(setEventPreview({
                     isOpen: false,
@@ -147,9 +161,11 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                 dispatch(setShouldForceAlarmTableDeselect(true))
             } else {
                 setAdjSnackMsg('Adjudication Submission Failed. Check your connection.')
+                setColorStatus('error')
             }
         } catch (error) {
             setAdjSnackMsg('Adjudication failed to submit.')
+            setColorStatus('error')
         }
 
         setOpenSnack(true)
@@ -270,32 +286,30 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
             } else {
                 console.log("DataSync Not Connected... :(");
             }
+
+
         } else {
             // console.log("Chart Not Ready, cannot start DataSynchronizer...");
         }
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
 
-    useEffect(() => {
-        const interval = setInterval(async () => {
-
-            let currTime = await syncRef.current.getCurrentTime();
-
-            if (currentTime !== undefined) {
-                setCurrentTime(currTime);
-            }
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, []);
 
     useEffect(() => {
-        console.log("Event Preview Changed", eventPreview);
-    }, [eventPreview]);
 
-    const handleCloseSnack = (
-        event: React.SyntheticEvent | Event,
-        reason?: SnackbarCloseReason,
-    ) => {
+        if(syncRef.current){
+            syncRef.current.subscribe((message: { type: any; timestamp: any }) => {
+                    if (message.type === EventType.MASTER_TIME) {
+                        setSyncTime(message.timestamp);
+                    }
+                }, [EventType.MASTER_TIME]
+            );
+        }
+
+
+    }, [syncRef.current]);
+
+
+    const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
         if (reason === 'clickaway') {
             return;
         }
@@ -303,8 +317,48 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
         setOpenSnack(false);
     };
 
+
+    // function to start the time controller by connecting to time sync
+    const start = async () => {
+        if (syncRef.current) {
+            syncRef.current.setReplaySpeed(1.0);
+            await syncRef.current.connect();
+
+            console.log("Playback started.");
+        }
+    };
+
+    // function to pause the time controller by disconnecting from the time sync
+    const pause = async () => {
+        if (syncRef.current && syncRef.current.isConnected()) {
+            syncRef.current.setReplaySpeed(0.0);
+
+            await syncRef.current.disconnect();
+
+            console.log("Playback paused.");
+        }
+
+    };
+
+    // when the user toggles the time controller this is the code to change the time sync
+    const handleChange = useCallback( async(event: Event, newValue: number, isPlaying: boolean) => {
+
+        // update time sync datasources start time
+        for (const dataSource of syncRef.current.getDataSources()) {
+            dataSource.setMinTime(newValue);
+        }
+
+        // update the time sync start time
+        // await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, 0.0, false);
+        await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, (isPlaying ? 1.0 : 0.0), false);
+
+        setSyncTime(newValue);
+
+    },[syncRef.current, eventPreview]);
+
+
     return (
-        <Stack p={1} display={"flex"}>
+        <Stack p={1} display={"flex"} spacing={1}>
             <Stack direction={"row"} justifyContent={"space-between"} spacing={1}>
                 <Stack direction={"row"} spacing={1} alignItems={"center"}>
                     <Typography variant="h6">Occupancy ID: {eventPreview.eventData.occupancyId}</Typography>
@@ -316,11 +370,10 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                     <CloseRoundedIcon fontSize="small"/>
                 </IconButton>
             </Stack>
-            {/*<ChartTimeHighlight gammaDatasources={gammaDatasources} neutronDatasources={neutronDatasources}*/}
-            {/*                    thresholdDatasources={thresholdDatasources} occDatasources={occDatasources}*/}
-            {/*                    setChartReady={setChartReady} modeType="preview" currentTime={currentTime}/>*/}
+
+
             {datasourcesReady && (
-                <>
+                <Box>
                     <ChartTimeHighlight
                         datasources={{
                             gamma: gammaDatasources[0],
@@ -329,16 +382,31 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                         }}
                         setChartReady={setChartReady}
                         modeType="preview"
-                        currentTime={currentTime}
+                        currentTime={syncTime}
                     />
+
                     <LaneVideoPlayback
                         videoDatasources={videoDatasources}
                         setVideoReady={setVideoReady}
                         dataSynchronizer={syncRef.current}
                         addDataSource={setActiveVideoIDX}
+                        modeType={"preview"}
                     />
-                </>
+
+                    <TimeController
+                        handleChange={handleChange}
+                        pause={pause}
+                        start={start}
+                        syncTime={syncTime}
+                        timeSync={syncRef.current}
+                        startTime={eventPreview.eventData.startTime}
+                        endTime={eventPreview.eventData.endTime}
+                    />
+
+                </Box>
             )}
+
+
             <Stack spacing={2}>
                 <AdjudicationSelect adjCode={adjudicationCode} onSelect={handleAdjudicationCode}/>
                 <TextField
@@ -359,6 +427,11 @@ export function EventPreview(eventPreview: { isOpen: boolean, eventData: EventTa
                         autoHideDuration={5000}
                         onClose={handleCloseSnack}
                         message={adjSnackMsg}
+                        sx={{
+                            '& .MuiSnackbarContent-root': {
+                                backgroundColor: colorStatus === 'success' ? 'green' : 'red',
+                            },
+                        }}
                     />
 
                     <Button onClick={resetAdjudicationData} variant={"contained"} size={"small"} fullWidth={false}

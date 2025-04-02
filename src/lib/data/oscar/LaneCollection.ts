@@ -11,8 +11,16 @@ import DataStreams from "osh-js/source/core/sweapi/datastream/DataStreams.js";
 import {INode} from "@/lib/data/osh/Node";
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
-import {AdjudicationData} from "@/lib/data/oscar/TableHelpers";
+
 import {isDynamicUsageError} from "next/dist/export/helpers/is-dynamic-usage-error";
+import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
+import {
+    isGammaDatastream,
+    isNeutronDatastream,
+    isOccupancyDatastream,
+    isTamperDatastream, isThresholdDatastream,
+    isVideoDatastream
+} from "./Utilities";
 
 class ILaneMeta {
     id: string;
@@ -132,7 +140,7 @@ export class LaneMapEntry {
                 endpointUrl: dsObj.networkProperties.endpointUrl,
                 resource: `/datastreams/${dsObj.properties.id}/observations`,
                 tls: dsObj.networkProperties.tls,
-                responseFormat: dsObj.properties.outputName === "video" ? 'application/swe+binary' : 'application/swe+json',
+                responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
                 mode: Mode.REAL_TIME,
                 connectorOpts: {
                     username: this.parentNode.auth.username,
@@ -145,7 +153,7 @@ export class LaneMapEntry {
                 endpointUrl: dsObj.networkProperties.endpointUrl,
                 resource: `/datastreams/${dsObj.properties.id}/observations`,
                 tls: dsObj.networkProperties.tls,
-                responseFormat: dsObj.properties.outputName === "video" ? 'application/swe+binary' : 'application/swe+json',
+                responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
                 mode: Mode.BATCH,
                 connectorOpts: {
                     username: this.parentNode.auth.username,
@@ -171,7 +179,7 @@ export class LaneMapEntry {
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
-            responseFormat: datastream.properties.outputName === "video" ? 'application/swe+binary' : 'application/swe+json',
+            responseFormat: isVideoDatastream(datastream) ? 'application/swe+binary' : 'application/swe+json',
             mode: Mode.REPLAY,
             connectorOpts: {
                 username: this.parentNode.auth.username,
@@ -188,7 +196,7 @@ export class LaneMapEntry {
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
-            responseFormat: datastream.properties.outputName === "video" ? 'application/swe+binary' : 'application/swe+json',
+            responseFormat: isVideoDatastream(datastream) ? 'application/swe+binary' : 'application/swe+json',
             mode: Mode.BATCH,
             connectorOpts: {
                 username: this.parentNode.auth.username,
@@ -211,8 +219,9 @@ export class LaneMapEntry {
 
     findDataStreamByObsProperty(obsProperty: string){
         let stream: typeof DataStream = this.datastreams.find((ds)=> {
-            console.log("FIND ds props", ds)
+            // console.log("FIND ds props", ds)
             let hasProp = ds.properties.observedProperties.some((prop: any)=> prop.definition === obsProperty)
+
             return hasProp;
         });
         return stream;
@@ -235,7 +244,7 @@ export class LaneMapEntry {
         dsMap.set('tamper', []);
         dsMap.set('video', []);
         dsMap.set('gammaTrshld', []);
-
+        
         for (let ds of this.datastreams) {
 
             let idx: number = this.datastreams.indexOf(ds);
@@ -243,8 +252,7 @@ export class LaneMapEntry {
             let datasourceBatch = this.createBatchSweApiFromDataStream(ds, startTime, endTime);
 
             // move some of this into another function to remove code redundancy
-            if (ds.properties.name.includes('Driver - Occupancy')) {
-            // if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/pillar-occupancy-count")) {
+            if (isOccupancyDatastream(ds)) {
                 let occArray = dsMap.get('occ')!;
                 const index = occArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
                 if (index !== -1) {
@@ -253,9 +261,8 @@ export class LaneMapEntry {
                     occArray.push(datasourceBatch);
                 }
             }
-            if (ds.properties.name.includes('Driver - Gamma Count')) {
-            // if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
 
+            if(isGammaDatastream(ds)){
                 let gammaArray = dsMap.get('gamma')!;
                 const index = gammaArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
                 if (index !== -1) {
@@ -264,8 +271,8 @@ export class LaneMapEntry {
                     gammaArray.push(datasourceBatch);
                 }
             }
-            if (ds.properties.name.includes('Driver - Neutron Count')) {
-            // if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
+
+            if(isNeutronDatastream(ds)){
                 let neutronArray = dsMap.get('neutron')!;
                 const index = neutronArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
                 if (index !== -1) {
@@ -274,8 +281,8 @@ export class LaneMapEntry {
                     neutronArray.push(datasourceBatch);
                 }
             }
-            if (ds.properties.name.includes('Driver - Tamper')) {
-            // if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status")){
+
+            if(isTamperDatastream(ds)){
                 let tamperArray = dsMap.get('tamper')!;
                 const index = tamperArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
                 if (index !== -1) {
@@ -284,18 +291,33 @@ export class LaneMapEntry {
                     tamperArray.push(datasourceBatch);
                 }
             }
-            if (ds.properties.name.includes('Video')) {
-            // if(ds.properties.observedProperties[0].definition.includes("http://sensorml.com/ont/swe/property/RasterImage")){
+            // if (ds.properties.name.includes('Video')) {
+            if(isVideoDatastream(ds)){
                 let videoArray = dsMap.get('video')!;
-                const index = videoArray.findIndex(dsItem => dsItem.properties.name === datasourceReplay.properties.name);
-                if (index !== -1) {
-                    videoArray[index] = datasourceReplay;
+                const validInterval = ds.properties.resultTime;
+
+                // Ensure startTime and endTime are within the datastream's valid data time
+                if(validInterval?.length === 2) {
+                    let [validStart, validEnd] = validInterval.map(
+                        (time: string | number | Date) => new Date(time));
+
+                    // Account for ms
+                    validStart.setSeconds(validStart.getSeconds() - 1);
+                    validEnd.setSeconds(validEnd.getSeconds() + 1);
+
+                    const eventStart = new Date(startTime);
+                    const eventEnd = new Date(endTime);
+                    
+                    if(eventStart >= validStart && eventEnd <= validEnd) {
+                        videoArray.push(datasourceReplay);
+                    } else {
+                        console.info("Data within interval not found for datasource ", ds)
+                    }
                 } else {
-                    videoArray.push(datasourceReplay);
+                    console.info("No valid time found for datasource ", ds.properties.id);
                 }
             }
-            if (ds.properties.name.includes('Driver - Gamma Threshold')) {
-            // if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/threshold")){
+            if(isThresholdDatastream(ds)){
                 let gammaTrshldArray = dsMap.get('gammaTrshld')!;
                 const index = gammaTrshldArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
 
@@ -360,6 +382,9 @@ export class LaneDSColl {
     gammaTrshldRT: typeof SweApi[];
     connectionRT: typeof SweApi[];
     videoRT: typeof SweApi[];
+    adjRT: typeof SweApi[];
+    adjBatch: typeof SweApi[];
+
 
     constructor() {
         this.occRT = [];
@@ -376,6 +401,8 @@ export class LaneDSColl {
         this.gammaTrshldRT = [];
         this.connectionRT = [];
         this.videoRT = [];
+        this.adjRT = [];
+        this.adjBatch = [];
     }
 
     getDSArray(propName: string): typeof SweApi[] {
@@ -414,6 +441,10 @@ export class LaneDSColl {
         for (let ds of this.gammaTrshldBatch) {
             ds.subscribe(handler, [EventType.DATA]);
         }
+        for (let ds of this.adjBatch) {
+            ds.subscribe(handler, [EventType.DATA]);
+        }
+
     }
 
     addSubscribeHandlerToAllRTDS(handler: Function) {
@@ -439,6 +470,9 @@ export class LaneDSColl {
             ds.subscribe(handler, [EventType.DATA]);
         }
         for (let ds of this.videoRT) {
+            ds.subscribe(handler, [EventType.DATA]);
+        }
+        for (let ds of this.adjRT) {
             ds.subscribe(handler, [EventType.DATA]);
         }
     }
@@ -494,6 +528,6 @@ export class LaneDSColl {
         for (let ds of this.videoRT) {
             ds.connect();
         }
-        console.info("Connecting all datasources of:", this);
+        // console.info("Connecting all datasources of:", this);
     }
 }

@@ -1,12 +1,17 @@
 import { selectEventTableDataArray } from "@/lib/state/EventDataSlice";
 import { RootState } from "@/lib/state/Store";
-import { PropsWithChildren, useEffect, useRef } from "react";
+import {PropsWithChildren, useEffect, useRef, useState} from "react";
 import { useSelector } from "react-redux";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import {Slider, Stack} from "@mui/material";
+import {VolumeDown, VolumeUp} from "@mui/icons-material";
+import * as React from "react";
 
 let alarmAudio: HTMLAudioElement = null;
 
 export function getAlarmAudio() {
-    if(alarmAudio == undefined || alarmAudio == null) {
+    if(alarmAudio === null) {
         alarmAudio = new Audio('/alarm_sound.wav');
     }
     return alarmAudio;
@@ -16,7 +21,11 @@ export async function playAudio(audio: HTMLAudioElement) {
     audio.play();
 }
 
-export default function AlarmAudio(props: PropsWithChildren) {
+export default function AlarmAudio() {
+    const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
+    const isLoaded = useRef(false);
+    const [volumeValue, setVolumeValue] = useState(30);
+
 
     useEffect(() => {
         document.body.addEventListener("click", function() {
@@ -27,8 +36,10 @@ export default function AlarmAudio(props: PropsWithChildren) {
         });
     }, []);
 
-    const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
-    const isLoaded = useRef(false);
+
+    const handleVolumeChange =(event: Event, newValue: number| number[]) =>{
+        setVolumeValue(newValue as number);
+    }
 
     useEffect(() => {
         if(tableData != undefined && tableData.length > 0) {
@@ -36,14 +47,32 @@ export default function AlarmAudio(props: PropsWithChildren) {
         }
         if(isLoaded.current) {
             const audio = getAlarmAudio();
-            if(tableData[tableData.length-1].status != 'None') {
+            if(tableData.length > 0 && tableData[tableData.length-1].status != 'None') {
                 console.log("Playing alarm audio")
                 audio.play();
+
             }
+            audio.volume = volumeValue/100;
         }
-    }, [tableData]);
+    }, [tableData, volumeValue]);
     
-    return (<>
-    {props.children}
-    </>);
+    return (
+        <Box sx={{width: 200, padding: 1}}>
+            <Typography variant="body2" gutterBottom>
+                Alarm Volume
+            </Typography>
+
+            <Stack spacing={2} direction="row" sx={{alignItems: 'center', mb: 1}}>
+                <VolumeDown/>
+                <Slider
+                    aria-label="Volume"
+                        value={volumeValue}
+                        onChange={handleVolumeChange}
+                        valueLabelDisplay="auto"
+                        min={0}
+                        max={100}/>
+                <VolumeUp/>
+            </Stack>
+        </Box>
+    );
 }

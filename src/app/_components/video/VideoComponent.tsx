@@ -20,7 +20,7 @@ export default function VideoComponent(props: OSHVideoProps) {
     const [videoDataSource, setVideoDataSource] = useState(props.videoSources[0]);
 
     useEffect(() => {
-        setVideoDataSource(props.videoSources[props.currentPage])
+        setVideoDataSource(props.videoSources[props.currentPage]);
     }, [props.currentPage]);
 
     useEffect(() => {
@@ -38,12 +38,24 @@ export default function VideoComponent(props: OSHVideoProps) {
                     getTimestamp: (rec: any) => rec.timestamp,
                 })]
             });
+            console.log('Video View created', view)
             setVideoView(view);
             hasRendered.current = true;
         }
+
+        return () => {
+            if (videoView) {
+                videoView.destroy();
+            }
+        };
+
     }, [videoDataSource]);
 
+    useEffect(() => {
+        console.log('video in component', videoDataSource)
+    }, []);
+
     return (
-        <Box id={props.id} style={{ width: "100%", height: "100%"}}/>
+        <Box id={props.id} style={{ width: "100%", height: '100%'}}/>
     )
 }

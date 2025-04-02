@@ -10,6 +10,7 @@ import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import ChartLane from "@/app/_components/lane-view/ChartLane";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {Mode} from "osh-js/source/core/datasource/Mode";
+import {isGammaDatastream, isNeutronDatastream, isThresholdDatastream} from "@/lib/data/oscar/Utilities";
 
 
 export default function Media(props: { laneName: string}) {
@@ -24,8 +25,6 @@ export default function Media(props: { laneName: string}) {
     let startTime = new Date().toISOString()
 
     let datasources: any[]=[];
-
-    let [masterTimeController, setMasterTimeController] = useState<typeof DataSynchronizer>(null);
 
     useEffect(() => {
         datasourceSetup();
@@ -50,17 +49,17 @@ export default function Media(props: { laneName: string}) {
 
                     let laneDSColl = laneDSMap.get(laneid);
 
-                    if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
+                    if(isGammaDatastream(ds)){
                         laneDSColl?.addDS('gammaRT', rtDS);
                         setGammaDS( rtDS);
                     }
 
-                    if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
+                    if(isNeutronDatastream(ds)){
                         laneDSColl?.addDS('neutronRT', rtDS);
                         setNeutronDS(rtDS);
 
                     }
-                    if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/threshold")){
+                    if(isThresholdDatastream(ds)){
                         laneDSColl?.addDS('gammaTrshldRT', rtDS);
                         setThresholdDS(rtDS);
                     }
@@ -83,46 +82,6 @@ export default function Media(props: { laneName: string}) {
     }, [gammaDatasources, thresholdDatasources])
 
 
-    // const [dataSyncCreated, setDataSyncCreated] = useState<boolean>(false);
-    //
-    // const syncRef = useRef<typeof DataSynchronizer>();
-
-    // const createSync = useCallback(()=>{
-    //     if(!dataSyncCreated && !syncRef.current && thresholdDatasources.length > 0){
-    //        let timeController = new DataSynchronizer({
-    //             dataSources: thresholdDatasources,
-    //             replaySpeed: 1.0,
-    //             intervalRate: 5,
-    //             mode: Mode.REAL_TIME,
-    //             startTime: startTime,
-    //         })
-    //         setDataSyncCreated(true);
-    //        setMasterTimeController(timeController)
-    //     }
-    // }, [syncRef, dataSyncCreated, thresholdDatasources])
-
-    // const createSync = useCallback(() => {
-    //     if (!dataSyncCreated && !syncRef.current && datasources.length > 0) {
-    //         console.log('datatta', datasources)
-    //         let timeController = new DataSynchronizer({
-    //             dataSources: datasources,
-    //             replaySpeed: 1.0,
-    //             intervalRate: 5,
-    //             mode: Mode.REAL_TIME,
-    //             startTime: startTime,
-    //         });
-    //         console.log("Data Synchronizer created:", timeController);
-    //         setDataSyncCreated(true);
-    //         setMasterTimeController(timeController);
-    //     }
-    // }, [syncRef, dataSyncCreated, datasources, startTime]);
-
-
-    // useEffect(() => {
-    //     createSync();
-    // }, [gammaDatasources, neutronDatasources, thresholdDatasources, syncRef, dataSyncCreated]);
-
-
 
     useEffect(() => {
 
@@ -137,25 +96,21 @@ export default function Media(props: { laneName: string}) {
             thresholdDatasources.connect()
         }
 
-        // if(masterTimeController != null){
-        //     masterTimeController.connect()
-        //
-        // }
 
-    }, [thresholdDatasources, gammaDatasources, neutronDatasources, masterTimeController]);
+    }, [thresholdDatasources, gammaDatasources, neutronDatasources]);
 
 
     return (
         <Box sx={{flexGrow: 1, overflowX: "auto"}}>
             <Grid container direction="row" spacing={2} justifyContent={"center"} alignItems={"center"}>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} md={6}>
                     <ChartLane  laneName={props.laneName} setChartReady={setChartReady}  datasources={{
                         gamma: gammaDatasources,
                         neutron: neutronDatasources,
                         threshold: thresholdDatasources
                     }}/>
                 </Grid>
-                <Grid item xs>
+                <Grid item xs={12} md={6}>
                     <VideoGrid laneName={props.laneName}/>
                 </Grid>
           </Grid>

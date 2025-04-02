@@ -20,8 +20,6 @@ export default function MiscTable({currentTime}: {currentTime: string}) {
   const checkForSpeed = useCallback(async () => {
     if (eventData) {
       let lme = laneMapRef.current.get(eventData?.laneId);
-      console.log("Speed LaneMapEntry: ", lme, eventPreview);
-      console.log("Speed Current Time", currentTime);
 
       let speedDS = lme.datastreams.find(ds => ds.properties.outputName === "speed");
       let speedRes = await speedDS.searchObservations(new ObservationFilter(
@@ -31,10 +29,9 @@ export default function MiscTable({currentTime}: {currentTime: string}) {
 
       // make CSAPI request for speed in different output
       let speed = "N/A";
-      console.log("Speed not implemented yet", speedDS);
       if (speedArr.length > 0) {
         speed = speedArr.find(obs => obs.resultTime === currentTime)?.result.speedKPH || "N/A";
-        console.log("Speed: ", speed, speedArr, currentTime);
+
       }
       setSpeedval(speed);
       return speed;

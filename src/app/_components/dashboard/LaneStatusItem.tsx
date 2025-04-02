@@ -17,22 +17,23 @@ export default function LaneStatusItem(props: {
     isOnline: boolean;
     isTamper: boolean;
     isFault: boolean;
+    // alarmType: string;
 
 }) {
     return (
         <Paper key={props.id} variant='outlined'
                sx={{ cursor: 'pointer',
                    padding: 1,
-                   height: 25,
-                   justifyContent: 'left',
+                   height: 30,
                    display: 'flex',
                    alignItems: 'center',
-                   backgroundColor: (props.isTamper ? "secondaryHighlight" : props.isFault ? "info" : "inherit")}}
+                   backgroundColor: (props.isTamper ? "secondaryHighlight" : props.isFault ? "info" : "inherit")
+               }}
         >
             <Tooltip title={props.name} arrow placement="bottom">
-                <Stack direction={"row"} spacing={1} sx={{ alignItems: 'left' }}>
+                <Stack direction={"row"} spacing={1} sx={{ alignItems: 'center', justifyContent: 'flex-start', width: '100%'}}>
 
-                    <Typography variant="body1" style={{fontSize: 12, textWrap: 'nowrap'}}>{props.name.length <= 11 ? props.name : (props.name.substr(0, 11)) }</Typography>
+                    <Typography variant="body1" style={{fontSize: 12, textWrap: 'nowrap'}}>{props.name.length <= 15 ? props.name : (props.name.substr(0, 15)) }</Typography>
 
                     {props.isFault &&
                         <Tooltip title={'Fault'} arrow placement="top">
@@ -45,17 +46,16 @@ export default function LaneStatusItem(props: {
                             <TamperIcon fontSize="small" sx={{color: "#FFFFFF" }}/>
                         </Tooltip>
                     }
-                    {!props.isTamper && !props.isFault && props.isOnline && (
-                        <Tooltip title={'All Clear'} arrow placement="top">
+                    {/*{!props.isTamper && !props.isFault && props.isOnline && (*/}
+                    {props.isOnline ? (
+                        <Tooltip title="Online" arrow placement="top">
                             <CheckCircleIcon fontSize="small" color="success"/>
                         </Tooltip>
-                    )}
-
-                    {!props.isOnline &&
-                        <Tooltip title={'Offline'} arrow placement="top">
+                    ) : (
+                        <Tooltip title="Offline" arrow placement="top">
                             <OfflineIcon fontSize="small" color="error"/>
                         </Tooltip>
-                    }
+                    )}
 
                 </Stack>
             </Tooltip>

@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {IEventTableData} from "../../../../types/new-types";
 import {useCallback, useContext, useEffect, useRef, useState} from "react";
@@ -9,6 +9,7 @@ import {EventTableData, EventTableDataCollection} from "@/lib/data/oscar/TableHe
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
+import {isGammaDatastream, isNeutronDatastream, isOccupancyDatastream} from "@/lib/data/oscar/Utilities";
 
 
 interface TableProps {
@@ -20,7 +21,6 @@ export default function Table({tableMode, laneName}: TableProps) {
 
     const [data, setData] = useState<IEventTableData[]>([]); // Data to be displayed, depending on tableMode
     const [eventLog, setEventLog] = useState<IEventTableData[]>([]);
-    const idVal = useRef(1);
 
     let startTime= "2020-01-01T08:13:25.845Z";
 
@@ -45,21 +45,18 @@ export default function Table({tableMode, laneName}: TableProps) {
                 let laneDSColl = laneDSMap.get(laneid);
 
 
-                if (ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/pillar-occupancy-count")) {
+                if (isOccupancyDatastream(ds)) {
                     laneDSColl.addDS('occRT', rtDS);
 
                     await fetchObservations(laneid, ds, startTime, "now");
                 }
-                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/gamma-gross-count")){
-
+                if(isGammaDatastream(ds)){
                     laneDSColl.addDS('gammaRT', rtDS);
                 }
-                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/alarm") && ds.properties.observedProperties[1].definition.includes("http://www.opengis.net/def/neutron-gross-count")){
+                if(isNeutronDatastream(ds)) {
                     laneDSColl.addDS('neutronRT', rtDS);
                 }
-                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/tamper-status")){
-                    laneDSColl.addDS('tamperRT', rtDS);
-                }
+
             }
             setDataSourcesByLane(laneDSMap);
         }
@@ -80,31 +77,19 @@ export default function Table({tableMode, laneName}: TableProps) {
             allResults.push(...obsRes);
             obsRes.map((obs: any) => {
 
-                if (obs.result.gammaAlarm === true || obs.result.neutronAlarm === true) {
-                    // console.log("ADJ obs ", obs)
+                const isAlarming = obs.result.gammaAlarm || obs.result.neutronAlarm;
 
-                    // let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
-                    let newEvent = new EventTableData(randomUUID(), laneName, obs.result);
-                    let laneEntry = laneMapRef.current.get(laneName);
-                    const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
-                    newEvent.setSystemIdx(systemID);
-                    newEvent.setDataStreamId(obs["datastream@id"]);
 
-                    newEvent ? allAlarmingEvents.push(newEvent) : null;
+                const newEvent = new EventTableData(randomUUID(), laneName, obs.result);
 
-                }
-                else {
+                const laneEntry = laneMapRef.current.get(laneName);
+                const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
 
-                    // let newEvent = new EventTableData(idVal.current++, laneName, obs.result);
-                    let newEvent = new EventTableData(randomUUID(), laneName, obs.result);
-                    let laneEntry = laneMapRef.current.get(laneName);
-                    const systemID = laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId);
-                    newEvent.setSystemIdx(systemID);
-                    newEvent.setDataStreamId(obs["datastream@id"]);
+                newEvent.setSystemIdx(systemID);
+                newEvent.setDataStreamId(obs["datastream@id"]);
+                newEvent.setFoiId(obs["foi@id"]);
 
-                    newEvent ? nonAlarmingEvents.push(newEvent) : null;
-
-                }
+                isAlarming ? allAlarmingEvents.push(newEvent) : nonAlarmingEvents.push(newEvent);
 
             });
         }
@@ -115,36 +100,22 @@ export default function Table({tableMode, laneName}: TableProps) {
     }
 
 
-
     function RTMsgHandler(laneName: string, message: any, dataStreamId: string) {
         let allAlarmingEvents: EventTableData[] = [];
         let nonAlarmingEvents: EventTableData[] = [];
         if (message.values) {
             for (let value of message.values) {
+                const isAlarming = value.result.gammaAlarm || value.result.neutronAlarm;
 
-                if (value.data.gammaAlarm === true || value.data.neutronAlarm === true) {
+                const newEvent = new EventTableData(randomUUID(), laneName, value.data);
+                const laneEntry = laneMapRef.current.get(laneName);
 
-                    // let newEvent = new EventTableData(idVal.current++, laneName, value.data);
-                    let newEvent = new EventTableData(randomUUID(), laneName, value.data);
-                    let laneEntry = laneMapRef.current.get(laneName);
-                    const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
-                    newEvent.setSystemIdx(systemID);
-                    newEvent.setDataStreamId(dataStreamId);
+                const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
+                newEvent.setSystemIdx(systemID);
+                newEvent.setDataStreamId(dataStreamId);
 
-                    newEvent ? allAlarmingEvents.push(newEvent) : null;
+                isAlarming ? allAlarmingEvents.push(newEvent) : nonAlarmingEvents.push(newEvent);
 
-                }
-                else {
-                    // let newEvent = new EventTableData(idVal.current++, laneName, value.data);
-                    let newEvent = new EventTableData(randomUUID(), laneName, value.data);
-                    let laneEntry = laneMapRef.current.get(laneName);
-                    const systemID = laneEntry.lookupSystemIdFromDataStreamId(value.data.datastreamId);
-                    newEvent.setSystemIdx(systemID);
-                    newEvent.setDataStreamId(dataStreamId);
-
-                    newEvent ? nonAlarmingEvents.push(newEvent) : null;
-
-                }
             }
 
             eventLogTableData.current = [...allAlarmingEvents, ...nonAlarmingEvents, ...eventLogTableData.current];
@@ -158,8 +129,8 @@ export default function Table({tableMode, laneName}: TableProps) {
         for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
             const msgLaneName = laneName;
             // should only be one for now, but this whole process needs revisiting due to codebase changes introduced after initial implemntation
-            let laneEntryDS = laneMapRef.current.get(laneName).datastreams.filter((ds: typeof DataStream) => ds.properties.name.includes("Occupancy"))[0];
-            let dsId = laneEntryDS.properties.id
+            let laneEntryDS = laneMapRef.current.get(laneName).datastreams.filter((ds: typeof DataStream) => ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/pillar-occupancy-count"))[0];
+            let dsId = laneEntryDS.properties?.id
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('occRT', (message: any) => {
                 RTMsgHandler(msgLaneName, message, dsId)
             });
@@ -207,7 +178,7 @@ export default function Table({tableMode, laneName}: TableProps) {
         )
     } else if (tableMode == "eventlog") {
         return (
-            <EventTable eventTable={tableData} viewMenu viewLane viewSecondary viewAdjudicated/>
+            <EventTable eventTable={tableData} viewLane viewSecondary viewAdjudicated/>
         )
     } else if (tableMode == "laneview") {
         return (
