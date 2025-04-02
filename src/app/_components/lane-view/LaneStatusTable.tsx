@@ -165,6 +165,7 @@ export default function StatusTables({laneMap}: TableProps){
 
     },[tableData])
 
+    const locale = navigator.language || 'en-US';
 
     const columns: GridColDef<AlarmTableData>[] = [
         {
@@ -176,13 +177,18 @@ export default function StatusTables({laneMap}: TableProps){
         },
         {
             field: 'timestamp',
-            headerName: 'Time',
-            valueFormatter: (value) => {
-                const dateTime = (new Date(value)).toLocaleString();
-                return dateTime;
-            },
+            headerName: 'Timestamp',
+            valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric'
+            }),
             minWidth: 200,
-            flex: 1,
+            flex: 2,
+
         },
         {
             field: 'count1',

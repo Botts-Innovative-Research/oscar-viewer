@@ -73,7 +73,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             case "Gamma":
                 gammaId = gammaChartBaseId + eventData.id + "-" + props.modeType;
                 nsigmaId = "chart-view-event-detail-nsigma-" + eventData.id + "-" + props.modeType;
-                ids.push(gammaId,nsigmaId);
+                ids.push(gammaId, nsigmaId);
                 break;
             case "Neutron":
                 neutronId = neutronChartBaseId + eventData.id + "-" + props.modeType;
@@ -97,10 +97,21 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         if (props.eventData) {
             console.log('event data', props.eventData)
             let elementIds: any[] = updateChartElIds(props.eventData);
+            console.log("elementIds", elementIds);
+
             let layers = createCurveLayersAndReturn();
             console.log("curvelayersreturn: ", layers)
 
-            if (gammaChartViewRef.current) {
+
+            let gammaLayers: any[] = [];
+            if(layers.gamma ){
+                gammaLayers.push(layers.gamma)
+            }
+            if(layers.threshold){
+                gammaLayers.push(layers.threshold)
+            }
+
+            if (gammaChartViewRef.current && gammaLayers) {
 
                 let gammaChartElt = document.createElement("div");
                 gammaChartElt.id =  elementIds.find(id=> id.includes('gamma'));
@@ -109,7 +120,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
                 const newGammaChart = new ChartJsView({
                     container:  gammaChartElt.id,
-                    layers: [layers.gamma, layers.threshold],
+                    layers: gammaLayers,
                     css: "chart-view-event-detail",
                     type: 'line',
                     options: {
@@ -125,14 +136,14 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 console.log('gamma chart created', newGammaChart);
             }
 
-            if (neutronChartViewRef.current) {
+            if (neutronChartViewRef.current && layers.neutron) {
                 let neutronChartElt = document.createElement("div");
                 neutronChartElt.id = elementIds.find(id => id.includes("neutron"));
                 neutronChartViewRef.current?.appendChild(neutronChartElt);
 
                 const newNeutronChart = new ChartJsView({
                     container:  neutronChartElt.id,
-                    layers: [layers.neutron],
+                    layers: [layers?.neutron],
                     css: "chart-view-event-detail",
                     type: 'line',
                     options: {
@@ -148,14 +159,14 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
             }
 
-            if(nSigmaChartViewRef.current){
+            if(nSigmaChartViewRef.current && (layers.nsigma || layers.threshNsigma)){
                 let nsigmaChartElt = document.createElement("div");
                 nsigmaChartElt.id = elementIds.find(id => id.includes('nsigma'));
                 nSigmaChartViewRef.current?.appendChild(nsigmaChartElt);
 
                 const newNsigmaChart = new ChartJsView({
                     container: nsigmaChartElt.id,
-                    layers: [layers.nsigma, layers.threshNsigma],
+                    layers: [layers?.nsigma, layers?.threshNsigma],
                     css: "chart-view-event-detail",
                     type: 'line',
                     options: {
@@ -175,7 +186,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                         }
                     }
                 });
-
 
                 setGammaNsigmaChartView(newNsigmaChart);
                 console.log('nsigma chart created', newNsigmaChart)
@@ -267,16 +277,11 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
 
     function createCurveLayersAndReturn() {
-        if (!props.eventData || !props.datasources) return null;
-
-        const { threshold, gamma, neutron } = props.datasources;
-        if (!threshold || !gamma || !neutron) return null;
-
-        const tCurve = createThresholdViewCurve(threshold);
-        const gCurve = createGammaViewCurve(gamma);
-        const nCurve = createNeutronViewCurve(neutron);
-        const nsigmaCurve = createNSigmaCalcViewCurve(threshold, gamma);
-        const threshSigmaCurve = createThreshSigmaViewCurve(threshold);
+        const tCurve = createThresholdViewCurve(props.datasources.threshold);
+        const gCurve = createGammaViewCurve(props.datasources.gamma);
+        const nCurve = createNeutronViewCurve(props.datasources.neutron);
+        const nsigmaCurve = createNSigmaCalcViewCurve(props.datasources.threshold, props.datasources.gamma);
+        const threshSigmaCurve = createThreshSigmaViewCurve(props.datasources.threshold);
 
         const result = {
             gamma: gCurve,
@@ -286,11 +291,11 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             nsigma: nsigmaCurve
         };
 
-        if (nsigmaCurve.data.length == 0) {
+        if (nsigmaCurve?.data.length === 0 ) {
             console.warn("we dont have nsigma data")
 
 
-            result.nsigma = createNSigmaCalcViewCurve(threshold, gamma);
+            result.nsigma = createNSigmaCalcViewCurve(props.datasources.threshold, props.datasources.gamma);
             console.log("result.nsigma", result.nsigma)
         }
 

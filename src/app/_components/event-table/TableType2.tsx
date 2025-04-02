@@ -238,6 +238,8 @@ export default function Table2({
     // Data Grid Setup and Related
     //------------------------------------------------------------------------------------------------------------------
 
+    const locale = navigator.language || 'en-US';
+
     // Column definition for EventTable
     const columns: GridColDef<EventTableData>[] = [
         {
@@ -264,14 +266,28 @@ export default function Table2({
         {
             field: 'startTime',
             headerName: 'Start Time',
-            valueFormatter: (params) => (new Date(params)).toLocaleString(),
+            valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric'
+            }),
             minWidth: 200,
             flex: 2,
         },
         {
             field: 'endTime',
             headerName: 'End Time',
-            valueFormatter: (params) => (new Date(params)).toLocaleString(),
+            valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric'
+            }),
             minWidth: 200,
             flex: 2,
         },

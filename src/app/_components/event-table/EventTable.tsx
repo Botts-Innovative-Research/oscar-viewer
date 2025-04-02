@@ -16,6 +16,7 @@ import {useAppDispatch} from "@/lib/state/Hooks";
 import {selectEventPreview, setEventPreview} from "@/lib/state/EventPreviewSlice";
 import {useRouter} from "next/navigation";
 import {makeStyles} from "@mui/styles";
+import { locale } from 'dayjs';
 
 const selectedRowStyles = makeStyles({
   selectedRow: {
@@ -45,6 +46,8 @@ export default function EventTable(props: {
   const dispatch = useAppDispatch();
   const router = useRouter();
 
+  const locale = navigator.language || 'en-US';
+
   // Column definition for EventTable
   const columns: GridColDef<IEventTableData>[] = [
     {
@@ -71,9 +74,14 @@ export default function EventTable(props: {
     {
       field: 'startTime',
       headerName: 'Start Time',
-      valueFormatter:(value) =>{
-       return  (new Date(value)).toLocaleString();
-      },
+      valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric'
+      }),
       minWidth: 200,
       flex: 2,
       // type: 'string',
@@ -81,10 +89,14 @@ export default function EventTable(props: {
     {
       field: 'endTime',
       headerName: 'End Time',
-      valueFormatter:(value) =>{
-        return (new Date(value)).toLocaleString();
-
-      },
+      valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric'
+      }),
       minWidth: 200,
       flex: 2,
       // type: 'string',
