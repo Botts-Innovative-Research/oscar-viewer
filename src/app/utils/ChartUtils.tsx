@@ -28,7 +28,7 @@ export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
 
     let thresholdCurve = new CurveLayer({
         dataSourceIds: [thresholdDatasource.id],
-        getValues: (rec: any) => ({x: rec.timestamp, y: rec.threshold}),
+        getValues: (rec: any) => ({x: rec?.timestamp, y: rec?.threshold}),
         name: "Threshold",
         backgroundColor: "rgba(194, 160, 201, 0.3)",
         lineColor: '#9b27b0',
@@ -37,7 +37,7 @@ export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
         hidden: false,
         xLabel: 'Time',
         yLabel: 'CPS',
-        order: 1,
+        order: 2,
         fill: 1,
         maxValues: 50,
 
@@ -50,7 +50,7 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
 
     let gCurve = new CurveLayer({
         dataSourceIds: [gammaDatasource.id],
-        getValues: (rec: any) => ({ x: rec.timestamp, y: rec.gammaGrossCount}),
+        getValues: (rec: any) => ({ x: rec?.timestamp, y: rec?.gammaGrossCount}),
         name: "Gamma",
         borderWidth: 1.5,
         backgroundColor: "rgba(245, 166, 160, 0.1)",
@@ -62,6 +62,7 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
         order: 1,
         fill: 1,
         maxValues: 50,
+
     });
 
     return gCurve;
@@ -69,24 +70,27 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
 
 // get latest gamma background from threshold datasource to calc nsigma for chart
 export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDatasource: any) {
-    if (!thresholdDatasource) return null;
+    console.log("thresh ds", thresholdDatasource)
+    console.log("gamma ds", gammaDatasource)
+    if (!thresholdDatasource  || !gammaDatasource) return null;
 
     let latestGB: number;
+
+    // let gammaGrossCount: any[] = [];
 
     let nCurve = new CurveLayer({
         dataSourceIds: [gammaDatasource.id, thresholdDatasource.id],
         getValues: (rec: any, timestamp: any) => {
 
-            if(rec.latestGammaBackground){
-                latestGB = rec.latestGammaBackground;
-                timestamp = rec.timestamp
-            }
+            console.log("NSIGMA RECORD", rec)
+            if(rec.latestGammaBackground) latestGB = rec?.latestGammaBackground;
 
 
-            if(rec.gammaGrossCount && latestGB !== undefined){
-                let nSigmaValue: number = (rec.gammaGrossCount - latestGB) / Math.sqrt(latestGB)
+            console.log('latest gb', latestGB)
+            if(rec.gammaGrossCount && latestGB){
+                let nSigmaValue: number = (rec?.gammaGrossCount - latestGB) / Math.sqrt(latestGB)
 
-                return {x: rec.timestamp || timestamp, y: nSigmaValue}
+                return {x: timestamp, y: nSigmaValue}
             }
 
         },
@@ -99,7 +103,7 @@ export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDataso
         visible: true,
         hidden: false,
         fill: 1,
-        order: 1,
+        order: 0,
         maxValues: 50,
     });
 
@@ -113,7 +117,7 @@ export  function createThreshSigmaViewCurve(thresholdDatasource: { id: any; }) {
 
     let gCurve = new CurveLayer({
         dataSourceIds: [thresholdDatasource.id],
-        getValues: (rec: any) => ({ x: rec.timestamp, y: rec.nSigma}),
+        getValues: (rec: any) => ({ x: rec?.timestamp, y: rec?.nSigma}),
         name: "Threshold",
         borderWidth: 1.5,
         backgroundColor: "rgba(194, 160, 201, 0.3)",

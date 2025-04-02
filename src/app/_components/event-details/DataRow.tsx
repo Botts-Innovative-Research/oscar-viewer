@@ -1,12 +1,9 @@
 "use client";
 
-import {IEventTableData, SelectedEvent} from "../../../../types/new-types";
 import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from "@mui/material";
 import {useSelector} from "react-redux";
-import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
 import {styled, Theme} from "@mui/material/styles";
-import {selectEventTableDataArray} from "@/lib/state/EventDataSlice";
-import {useEffect, useState} from "react";
+import {selectEventData} from "@/lib/state/EventDetailsSlice";
 
 
 const StatusTableCell = styled(TableCell)(({theme, status}: { theme: Theme, status: string }) => ({
@@ -16,17 +13,8 @@ const StatusTableCell = styled(TableCell)(({theme, status}: { theme: Theme, stat
 
 
 export default function DataRow() {
-    const eventPreview = useSelector(selectEventPreview);
-    const eventData: IEventTableData | null = eventPreview?.eventData || null;
+    const eventData = useSelector(selectEventData);
 
-    // const [eventData, setEventData] = useState( null);
-    //
-    // useEffect(() => {
-    //     if(eventPreview !== null){
-    //         setEventData(eventPreview.eventData)
-    //     }
-    //
-    // }, [eventPreview]);
     return (
         <TableContainer>
             <Table sx={{minWidth: 650}} aria-label="simple table">
@@ -48,14 +36,16 @@ export default function DataRow() {
                     {eventData ? (
                         <TableRow key={eventData.id}
                                   sx={{'&:last-child td, &:last-child th': {border: 0, textAlign: "center"}}}>
-                            <TableCell>{eventData.secondaryInspection}</TableCell>
-                            <TableCell>{eventData.laneId}</TableCell>
-                            <TableCell>{eventData.occupancyId}</TableCell>
-                            <TableCell>{eventData.startTime}</TableCell>
-                            <TableCell>{eventData.endTime}</TableCell>
-                            <TableCell>{eventData.maxGamma}</TableCell>
-                            <TableCell>{eventData.maxNeutron}</TableCell>
-                            <StatusTableCell status = {eventData.status}>{eventData.status}</StatusTableCell>
+                            <TableCell>{eventData?.secondaryInspection}</TableCell>
+                            <TableCell>{eventData?.laneId}</TableCell>
+                            <TableCell>{eventData?.occupancyId}</TableCell>
+                            <TableCell>{eventData?.startTime}</TableCell>
+                            <TableCell>{eventData?.endTime}</TableCell>
+                            <TableCell>{eventData?.maxGamma}</TableCell>
+                            <TableCell>{eventData?.maxNeutron}</TableCell>
+                            <StatusTableCell status={eventData?.status || 'Unknown'}>
+                                {eventData?.status || 'Unknown'}
+                            </StatusTableCell>
                             <TableCell>{eventData.isAdjudicated ? "Yes" : "No"}</TableCell>
                         </TableRow>
                     ) : (

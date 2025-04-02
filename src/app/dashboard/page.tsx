@@ -3,43 +3,103 @@
 import {Grid, Paper} from "@mui/material";
 import LaneStatus from "../_components/dashboard/LaneStatus";
 
-import {useMemo} from "react";
+import React, {useCallback, useContext, useEffect, useMemo, useState} from "react";
 import dynamic from "next/dynamic";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
-import {selectLaneMap} from "@/lib/state/OSCARClientSlice";
+import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
 import Table2 from "@/app/_components/event-table/TableType2";
+import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
+import {
+    isConnectionDatastream,
+    isGammaDatastream,
+    isNeutronDatastream,
+    isTamperDatastream,
+} from "@/lib/data/oscar/Utilities";
+import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import {useAppDispatch} from "@/lib/state/Hooks";
+import CircularProgress from "@mui/material/CircularProgress";
+import Box from "@mui/material/Box";
 
 export default function DashboardPage() {
     const laneMap = useSelector((state: RootState) => selectLaneMap(state))
 
+    const {laneMapRef} = useContext(DataSourceContext);
+    const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
+    const dispatch = useAppDispatch();
+
+
     const QuickView = useMemo(() => dynamic(
         () => import('@/app/_components/dashboard/QuickView'),
         {
-            loading: () => <p> loading... </p>,
+            loading: () => <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center', minHeight: '100vh'}}><CircularProgress/></Box>,
             ssr: false
         }
     ), [])
+
+
+    const datasourceSetup = useCallback(async () => {
+        // @ts-ignore
+        let laneDSMap = new Map<string, LaneDSColl>();
+
+        for (let [laneid, lane] of laneMapRef.current.entries()) {
+
+            laneDSMap.set(laneid, new LaneDSColl());
+            for (let ds of lane.datastreams) {
+
+                let idx: number = lane.datastreams.indexOf(ds);
+                let rtDS = lane.datasourcesRealtime[idx];
+
+                rtDS.properties.startTime = new Date().toISOString();
+                rtDS.properties.endTime = "2055-01-01T08:13:25.845Z"
+
+                let laneDSColl = laneDSMap.get(laneid);
+
+                if(isGammaDatastream(ds)){
+                    laneDSColl.addDS('gammaRT', rtDS);
+                }
+                if(isNeutronDatastream(ds)){
+                    laneDSColl.addDS('neutronRT', rtDS);
+                }
+                if(isTamperDatastream(ds)){
+                    laneDSColl.addDS('tamperRT', rtDS);
+                }
+                if(isConnectionDatastream(ds)){
+                    laneDSColl.addDS('connectionRT', rtDS);
+                }
+            }
+            setDataSourcesByLane(laneDSMap);
+            dispatch(setLaneMap(laneMap))
+        }
+    }, [laneMapRef.current]);
+
+    useEffect(() => {
+        datasourceSetup();
+    }, [laneMapRef.current]);
+
+
 
     return (
         <Grid container spacing={2} direction={"column"}>
             <Grid item container spacing={2} style={{flexBasis: '33.33%', flexGrow: 0, flexShrink: 0}}>
                 <Grid item xs={8} sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                    <Paper variant='outlined' sx={{height: "auto", minHeight: 200, padding: 1}}>
-                        <LaneStatus/>
+                    <Paper variant='outlined' sx={{height: "auto", minHeight: 275, padding: 1}}>
+                        <LaneStatus dataSourcesByLane={dataSourcesByLane}/>
                     </Paper>
+
 
                     <Paper variant='outlined' sx={{flexGrow: 1, padding: 2, overflow: "hidden"}}>
                         <Table2 tableMode={'alarmtable'} laneMap={laneMap}/>
                     </Paper>
                 </Grid>
+
                 <Grid item xs={4}>
                     <Paper variant='outlined' sx={{height: "100%"}}>
                         <QuickView/>
                     </Paper>
                 </Grid>
-            </Grid>
 
+            </Grid>
         </Grid>
     );
 }

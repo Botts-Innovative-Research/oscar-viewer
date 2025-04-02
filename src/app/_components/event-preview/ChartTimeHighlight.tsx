@@ -6,9 +6,6 @@
 
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import {Box, Grid, ToggleButton, ToggleButtonGroup, Typography} from "@mui/material";
-import {useSelector} from "react-redux";
-import {RootState} from "@/lib/state/Store";
-import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
 import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView.js";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import annotationPlugin from 'chartjs-plugin-annotation';
@@ -29,10 +26,10 @@ export class ChartInterceptProps {
     modeType: string;
     currentTime: any;
     datasources: { gamma: typeof SweApi, neutron: typeof SweApi, threshold: typeof SweApi };
+    eventData: EventTableData;
 }
 
 export default function ChartTimeHighlight(props: ChartInterceptProps) {
-    const eventPreview = useSelector((state: RootState) => selectEventPreview(state));
 
     const [chartsReady, setChartsReady] = useState<boolean>(false);
     const [isReadyToRender, setIsReadyToRender] = useState<boolean>(false);
@@ -55,17 +52,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         <ToggleButton color= 'error' value={"cps"} key={"cps"}>CPS</ToggleButton>,
         <ToggleButton color= 'secondary' value={"sigma"} key={"sigma"}>NSigma</ToggleButton>
     ];
-
-
-    const resetView = useCallback(() => {
-        if (!eventPreview.isOpen) {
-            setGammaChartView(null);
-            setGammaNsigmaChartView(null);
-            setNeutronChartView(null);
-            setIsReadyToRender(false);
-        }
-    }, [eventPreview]);
-
 
 
     const checkReadyToRender = useCallback(() => {
@@ -94,11 +80,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 ids.push(neutronId);
                 break;
             case "Gamma & Neutron":
-                gammaId = gammaChartBaseId + eventData.id + "-" + props.modeType;
-                nsigmaId = "chart-view-event-detail-nsigma-" + eventData.id + "-" + props.modeType;
-                neutronId = neutronChartBaseId + eventData.id + "-" + props.modeType;
-                ids.push(gammaId, neutronId, nsigmaId);
-                break;
             case "None":
                 gammaId = gammaChartBaseId + eventData.id + "-" + props.modeType;
                 nsigmaId = "chart-view-event-detail-nsigma-" + eventData.id + "-" + props.modeType;
@@ -113,72 +94,84 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
 
     useEffect(() => {
-        if (eventPreview.eventData) {
-
-            let elementIds: any[] = updateChartElIds(eventPreview.eventData);
+        if (props.eventData) {
+            console.log('event data', props.eventData)
+            let elementIds: any[] = updateChartElIds(props.eventData);
             let layers = createCurveLayersAndReturn();
+            console.log("curvelayersreturn: ", layers)
 
-            //set up all refs
-            let gammaChartElt = document.createElement("div");
-            gammaChartElt.id =  elementIds.find(id=> id.includes('gamma'));
-            gammaChartViewRef.current?.appendChild(gammaChartElt);
+            if (gammaChartViewRef.current) {
 
-            let nsigmaChartElt = document.createElement("div");
-            nsigmaChartElt.id = elementIds.find(id => id.includes('nsigma'));
-            nSigmaChartViewRef.current?.appendChild(nsigmaChartElt);
+                let gammaChartElt = document.createElement("div");
+                gammaChartElt.id =  elementIds.find(id=> id.includes('gamma'));
 
-            let neutronChartElt = document.createElement("div");
-            neutronChartElt.id = elementIds.find(id => id.includes("neutron"));
-            neutronChartViewRef.current?.appendChild(neutronChartElt);
+                gammaChartViewRef.current?.appendChild(gammaChartElt);
 
-            let gammaLayers: any[] = [];
-            if(layers.gamma ){
-                gammaLayers.push(layers.gamma)
-            }
-            if(layers.threshold){
-                gammaLayers.push(layers.threshold)
-            }
-            //create all charts
-            const newGammaChart = new ChartJsView({
-                container:  gammaChartElt.id,
-                layers: gammaLayers,
-                css: "chart-view-event-detail",
-                type: 'line',
-                options: {
-                    scales: {
-                        x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
-                        y: { type: 'linear', position: 'left', title: { display: true, text: 'CPS', padding: 15 }, beginAtZero: false }
+                const newGammaChart = new ChartJsView({
+                    container:  gammaChartElt.id,
+                    layers: [layers.gamma, layers.threshold],
+                    css: "chart-view-event-detail",
+                    type: 'line',
+                    options: {
+                        scales: {
+                            x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
+                            y: { type: 'linear', position: 'left', title: { display: true, text: 'CPS', padding: 15 }, beginAtZero: false }
+                        }
                     }
-                }
-            })
+                })
 
+                //Set all charts
+                setGammaChartView(newGammaChart);
+                console.log('gamma chart created', newGammaChart);
+            }
 
+            if (neutronChartViewRef.current) {
+                let neutronChartElt = document.createElement("div");
+                neutronChartElt.id = elementIds.find(id => id.includes("neutron"));
+                neutronChartViewRef.current?.appendChild(neutronChartElt);
 
-            const newNeutronChart = new ChartJsView({
-                container:  neutronChartElt.id,
-                layers: [layers.neutron],
-                css: "chart-view-event-detail",
-                type: 'line',
-                options: {
-
-                    scales: {
-                        x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
-                        y: { type: 'linear', position: 'left', title: { display: true, text: 'CPS', padding: 15 }, beginAtZero: false }
+                const newNeutronChart = new ChartJsView({
+                    container:  neutronChartElt.id,
+                    layers: [layers.neutron],
+                    css: "chart-view-event-detail",
+                    type: 'line',
+                    options: {
+                        scales: {
+                            x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
+                            y: { type: 'linear', position: 'left', title: { display: true, text: 'CPS', padding: 15 }, beginAtZero: false }
+                        }
                     }
-                }
-            });
+                });
 
-            if(layers.nsigma || layers.threshNsigma){
+                setNeutronChartView(newNeutronChart)
+                console.log('neutron chart created', newNeutronChart)
+
+            }
+
+            if(nSigmaChartViewRef.current){
+                let nsigmaChartElt = document.createElement("div");
+                nsigmaChartElt.id = elementIds.find(id => id.includes('nsigma'));
+                nSigmaChartViewRef.current?.appendChild(nsigmaChartElt);
+
                 const newNsigmaChart = new ChartJsView({
                     container: nsigmaChartElt.id,
                     layers: [layers.nsigma, layers.threshNsigma],
                     css: "chart-view-event-detail",
                     type: 'line',
                     options: {
-                        stacked: true,
                         scales: {
-                            x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
-                            y: { type: 'linear', position: 'left', title: { display: true, text: 'Nσ', padding: 15 }, beginAtZero: false }
+                            x: {
+                                title: {display: true, text: 'Time', padding: 5},
+                                type: 'time',
+                                stacked: true,
+                            },
+                            y: {
+                                type: 'linear',
+                                position: 'left',
+                                title: {display: true, text: 'Nσ', padding: 15},
+                                beginAtZero: false,
+                                stacked: true,
+                            }
                         }
                     }
                 });
@@ -189,22 +182,16 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
             }
 
+            setChartsReady(true)
 
-            //Set all charts
-            setGammaChartView(newGammaChart);
-            console.log('gamma chart created', newGammaChart)
-
-            setNeutronChartView(newNeutronChart)
-            console.log('neutron chart created', newNeutronChart)
-
-            setChartsReady(true);
         }
 
-    }, [eventPreview]);
+    }, [props.eventData]);
+
 
     useEffect(() => {
         let currTime = props.currentTime;
-        console.log('curr time', currTime)
+        // console.log('curr time', currTime)
         if (currTime) {
             let chartAnnotation = {
                 annotations: {
@@ -246,19 +233,25 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             }
 
 
+            gammaChartView?.chart.update();
+            neutronChartView?.chart.update();
+            nsigmaChartView?.chart.update();
         }
     }, [props.currentTime, gammaChartView, nsigmaChartView, neutronChartView]);
 
     useEffect(() => {
-        if (toggleView === 'cps' && gammaChartView) {
-            gammaChartView.chart.update();
-            console.log("CPS chart updated", gammaChartView);
-        }
-        if (toggleView === 'sigma' && nsigmaChartView) {
-            nsigmaChartView.chart.update();
-            console.log("NSigma chart updated", nsigmaChartView);
-        }
+
+        if(gammaChartView) gammaChartView?.chart.update();
+
+        console.log("CPS chart updated", gammaChartView);
+
+        if(nsigmaChartView) nsigmaChartView?.chart.update();
+
+        console.log("NSigma chart updated", nsigmaChartView);
+
     }, [toggleView, gammaChartView, nsigmaChartView]);
+
+
 
 
     useEffect(() => {
@@ -274,19 +267,35 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
 
     function createCurveLayersAndReturn() {
-        let tCurve = createThresholdViewCurve(props.datasources.threshold);
-        let gCurve = createGammaViewCurve(props.datasources.gamma);
-        let nCurve = createNeutronViewCurve(props.datasources.neutron);
-        let nsigmaCurve = createNSigmaCalcViewCurve(props.datasources.threshold, props.datasources.gamma);
-        let threshSigmaCurve = createThreshSigmaViewCurve(props.datasources.threshold);
+        if (!props.eventData || !props.datasources) return null;
 
-        return {
+        const { threshold, gamma, neutron } = props.datasources;
+        if (!threshold || !gamma || !neutron) return null;
+
+        const tCurve = createThresholdViewCurve(threshold);
+        const gCurve = createGammaViewCurve(gamma);
+        const nCurve = createNeutronViewCurve(neutron);
+        const nsigmaCurve = createNSigmaCalcViewCurve(threshold, gamma);
+        const threshSigmaCurve = createThreshSigmaViewCurve(threshold);
+
+        const result = {
             gamma: gCurve,
             neutron: nCurve,
             threshold: tCurve,
-            nsigma: nsigmaCurve,
-            threshNsigma: threshSigmaCurve
+            threshNsigma: threshSigmaCurve,
+            nsigma: nsigmaCurve
+        };
+
+        if (nsigmaCurve.data.length == 0) {
+            console.warn("we dont have nsigma data")
+
+
+            result.nsigma = createNSigmaCalcViewCurve(threshold, gamma);
+            console.log("result.nsigma", result.nsigma)
         }
+
+        return result;
+
     }
 
     // switch between cps and sigma chart
@@ -294,7 +303,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         setToggleView(newView);
     }
 
-    if (eventPreview.eventData?.status === "Gamma") {
+    if (props.eventData?.status === "Gamma" && isReadyToRender) {
         return (
             <Box display='flex' alignItems="center">
 
@@ -322,14 +331,13 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 </Grid>
             </Box>
         );
-    } else if (eventPreview.eventData?.status === "Neutron") {
+    } else if (props.eventData?.status === "Neutron") {
         return (
             <Grid item xs  sx={{width: "100%"}} ref={neutronChartViewRef}></Grid>
         );
     } else{
         return (
             <Box display='flex' alignItems="center">
-
                 <Grid container direction="column" spacing={2}>
                     <Grid item style={{ display: "flex", justifyContent: "center", width: "100%" }}>
                         <ToggleButtonGroup

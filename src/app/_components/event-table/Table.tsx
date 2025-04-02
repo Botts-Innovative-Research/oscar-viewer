@@ -10,6 +10,7 @@ import ObservationFilter from "osh-js/source/core/sweapi/observation/Observation
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {isGammaDatastream, isNeutronDatastream, isOccupancyDatastream} from "@/lib/data/oscar/Utilities";
+import {makeStyles} from "@mui/styles";
 
 
 interface TableProps {
@@ -23,7 +24,6 @@ export default function Table({tableMode, laneName}: TableProps) {
     const [eventLog, setEventLog] = useState<IEventTableData[]>([]);
 
     let startTime= "2020-01-01T08:13:25.845Z";
-
     // Test global integrations
     const {laneMapRef} = useContext(DataSourceContext);
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
