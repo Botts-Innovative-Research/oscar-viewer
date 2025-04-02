@@ -241,13 +241,18 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
     useEffect(() => {
 
-        if(gammaChartView) gammaChartView?.chart.update();
+        if(gammaChartView) {
+            gammaChartView?.chart.update();
+            console.log("CPS chart updated", gammaChartView);
+        }
 
-        console.log("CPS chart updated", gammaChartView);
 
-        if(nsigmaChartView) nsigmaChartView?.chart.update();
+        if(nsigmaChartView) {
+            nsigmaChartView?.chart.update();
+            console.log("NSigma chart updated", nsigmaChartView);
 
-        console.log("NSigma chart updated", nsigmaChartView);
+        }
+
 
     }, [toggleView, gammaChartView, nsigmaChartView]);
 
@@ -269,8 +274,8 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     function createCurveLayersAndReturn() {
         if (!props.eventData || !props.datasources) return null;
 
-        const { threshold, gamma, neutron } = props.datasources;
-        if (!threshold || !gamma || !neutron) return null;
+        const { gamma, neutron, threshold } = props.datasources;
+        if (!gamma || !neutron || !threshold) return null;
 
         const tCurve = createThresholdViewCurve(threshold);
         const gCurve = createGammaViewCurve(gamma);
@@ -288,7 +293,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
         if (nsigmaCurve.data.length == 0) {
             console.warn("we dont have nsigma data")
-
 
             result.nsigma = createNSigmaCalcViewCurve(threshold, gamma);
             console.log("result.nsigma", result.nsigma)
