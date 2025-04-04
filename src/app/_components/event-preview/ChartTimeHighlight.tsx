@@ -92,6 +92,20 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         return ids;
     }
 
+    const [layers, setLayers] = useState({
+        gamma: null,
+        neutron: null,
+        threshold: null,
+        threshNsigma: null,
+        nsigma: null
+    });
+
+
+    useEffect(() => {
+        let layers = createCurveLayersAndReturn();
+        console.log("curvelayersreturn: ", layers)
+        setLayers(layers);
+    }, []);
 
     useEffect(() => {
         if (props.eventData) {
@@ -99,42 +113,42 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             let elementIds: any[] = updateChartElIds(props.eventData);
             console.log("elementIds", elementIds);
 
-            let layers = createCurveLayersAndReturn();
-            console.log("curvelayersreturn: ", layers)
 
+            if(layers.gamma){
+                let gammaLayers: any[] = [];
+                if(layers?.gamma ){
+                    gammaLayers.push(layers.gamma)
+                }
+                if(layers?.threshold){
+                    gammaLayers.push(layers.threshold)
+                }
 
-            let gammaLayers: any[] = [];
-            if(layers.gamma ){
-                gammaLayers.push(layers.gamma)
-            }
-            if(layers.threshold){
-                gammaLayers.push(layers.threshold)
-            }
+                if (gammaChartViewRef.current && gammaLayers) {
 
-            if (gammaChartViewRef.current && gammaLayers) {
+                    let gammaChartElt = document.createElement("div");
+                    gammaChartElt.id =  elementIds.find(id=> id.includes('gamma'));
 
-                let gammaChartElt = document.createElement("div");
-                gammaChartElt.id =  elementIds.find(id=> id.includes('gamma'));
+                    gammaChartViewRef.current?.appendChild(gammaChartElt);
 
-                gammaChartViewRef.current?.appendChild(gammaChartElt);
-
-                const newGammaChart = new ChartJsView({
-                    container:  gammaChartElt.id,
-                    layers: gammaLayers,
-                    css: "chart-view-event-detail",
-                    type: 'line',
-                    options: {
-                        scales: {
-                            x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
-                            y: { type: 'linear', position: 'left', title: { display: true, text: 'CPS', padding: 15 }, beginAtZero: false }
+                    const newGammaChart = new ChartJsView({
+                        container:  gammaChartElt.id,
+                        layers: gammaLayers,
+                        css: "chart-view-event-detail",
+                        type: 'line',
+                        options: {
+                            scales: {
+                                x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
+                                y: { type: 'linear', position: 'left', title: { display: true, text: 'CPS', padding: 15 }, beginAtZero: false }
+                            }
                         }
-                    }
-                })
+                    })
 
-                //Set all charts
-                setGammaChartView(newGammaChart);
-                console.log('gamma chart created', newGammaChart);
+                    //Set all charts
+                    setGammaChartView(newGammaChart);
+                    console.log('gamma chart created', newGammaChart);
+                }
             }
+
 
             if (neutronChartViewRef.current && layers.neutron) {
                 let neutronChartElt = document.createElement("div");
@@ -159,7 +173,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
             }
 
-            if(nSigmaChartViewRef.current && (layers.nsigma || layers.threshNsigma)){
+            if(nSigmaChartViewRef.current && (layers.nsigma && layers.threshNsigma)){
                 let nsigmaChartElt = document.createElement("div");
                 nsigmaChartElt.id = elementIds.find(id => id.includes('nsigma'));
                 nSigmaChartViewRef.current?.appendChild(nsigmaChartElt);
@@ -196,7 +210,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
         }
 
-    }, [props.eventData]);
+    }, [props.eventData, layers]);
 
 
     useEffect(() => {
@@ -251,13 +265,16 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
     useEffect(() => {
 
-        if(gammaChartView) gammaChartView?.chart.update();
+        if(gammaChartView) {
+            gammaChartView?.chart.update();
+            console.log("CPS chart updated", gammaChartView);
+        }
 
-        console.log("CPS chart updated", gammaChartView);
+        if(nsigmaChartView) {
+            nsigmaChartView?.chart.update();
+            console.log("NSigma chart updated", nsigmaChartView);
+        }
 
-        if(nsigmaChartView) nsigmaChartView?.chart.update();
-
-        console.log("NSigma chart updated", nsigmaChartView);
 
     }, [toggleView, gammaChartView, nsigmaChartView]);
 
@@ -291,9 +308,8 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             nsigma: nsigmaCurve
         };
 
-        if (nsigmaCurve?.data.length === 0 ) {
+        if (nsigmaCurve?.data.length === 0) {
             console.warn("we dont have nsigma data")
-
 
             result.nsigma = createNSigmaCalcViewCurve(props.datasources.threshold, props.datasources.gamma);
             console.log("result.nsigma", result.nsigma)

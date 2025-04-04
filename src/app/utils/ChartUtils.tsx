@@ -76,14 +76,13 @@ export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDataso
 
     let latestGB: number;
 
-    // let gammaGrossCount: any[] = [];
 
     let nCurve = new CurveLayer({
-        dataSourceIds: [gammaDatasource.id, thresholdDatasource.id],
+        dataSourceIds: [gammaDatasource?.id, thresholdDatasource?.id],
         getValues: (rec: any, timestamp: any) => {
 
             console.log("NSIGMA RECORD", rec)
-            if(rec.latestGammaBackground) latestGB = rec?.latestGammaBackground;
+            if(rec?.latestGammaBackground) latestGB = rec?.latestGammaBackground;
 
 
             console.log('latest gb', latestGB)
