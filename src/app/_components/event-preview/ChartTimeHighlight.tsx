@@ -102,10 +102,12 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
 
     useEffect(() => {
+        if(!props.eventData || !props.datasources?.gamma || !props.datasources?.neutron || !props.datasources?.threshold) return;
+
         let layers = createCurveLayersAndReturn();
         console.log("curvelayersreturn: ", layers)
         setLayers(layers);
-    }, []);
+    }, [props.eventData]);
 
     useEffect(() => {
         if (props.eventData) {
@@ -173,37 +175,41 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
             }
 
-            if(nSigmaChartViewRef.current && (layers.nsigma && layers.threshNsigma)){
-                let nsigmaChartElt = document.createElement("div");
-                nsigmaChartElt.id = elementIds.find(id => id.includes('nsigma'));
-                nSigmaChartViewRef.current?.appendChild(nsigmaChartElt);
+            if(layers.nsigma && layers.threshNsigma){
+                if(nSigmaChartViewRef.current){
+                    let nsigmaChartElt = document.createElement("div");
+                    nsigmaChartElt.id = elementIds.find(id => id.includes('nsigma'));
+                    nSigmaChartViewRef.current?.appendChild(nsigmaChartElt);
 
-                const newNsigmaChart = new ChartJsView({
-                    container: nsigmaChartElt.id,
-                    layers: [layers?.nsigma, layers?.threshNsigma],
-                    css: "chart-view-event-detail",
-                    type: 'line',
-                    options: {
-                        scales: {
-                            x: {
-                                title: {display: true, text: 'Time', padding: 5},
-                                type: 'time',
-                                stacked: true,
-                            },
-                            y: {
-                                type: 'linear',
-                                position: 'left',
-                                title: {display: true, text: 'Nσ', padding: 15},
-                                beginAtZero: false,
-                                stacked: true,
+                    const newNsigmaChart = new ChartJsView({
+                        container: nsigmaChartElt.id,
+                        layers: [layers?.nsigma, layers?.threshNsigma],
+                        css: "chart-view-event-detail",
+                        type: 'line',
+                        options: {
+                            scales: {
+                                x: {
+                                    title: {display: true, text: 'Time', padding: 5},
+                                    type: 'time',
+                                    stacked: true,
+                                },
+                                y: {
+                                    type: 'linear',
+                                    position: 'left',
+                                    title: {display: true, text: 'Nσ', padding: 15},
+                                    beginAtZero: false,
+                                    stacked: true,
+                                }
                             }
                         }
-                    }
-                });
+                    });
 
-                setGammaNsigmaChartView(newNsigmaChart);
-                console.log('nsigma chart created', newNsigmaChart)
+                    setGammaNsigmaChartView(newNsigmaChart);
+                    console.log('nsigma chart created', newNsigmaChart)
 
+                }
+            }else{
+                console.warn("Skipping nsigma Chart because data is empty.")
             }
 
             setChartsReady(true)
@@ -307,13 +313,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             threshNsigma: threshSigmaCurve,
             nsigma: nsigmaCurve
         };
-
-        if (nsigmaCurve?.data.length === 0) {
-            console.warn("we dont have nsigma data")
-
-            result.nsigma = createNSigmaCalcViewCurve(props.datasources.threshold, props.datasources.gamma);
-            console.log("result.nsigma", result.nsigma)
-        }
 
         return result;
 
