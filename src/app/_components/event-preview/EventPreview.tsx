@@ -52,8 +52,6 @@ import { setEventData } from "@/lib/state/EventDetailsSlice";
 
 
 
-
-
 export function EventPreview() {
     const dispatch = useAppDispatch();
     const router = useRouter();
@@ -450,6 +448,7 @@ export function EventPreview() {
             {datasourcesReady && (
                 <Box>
                     <ChartTimeHighlight
+                        // key={eventPreview.eventData.id + "-preview"}
                         datasources={{
                             gamma: gammaDatasources[0],
                             neutron: neutronDatasources[0],

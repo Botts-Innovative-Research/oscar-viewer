@@ -4,11 +4,8 @@ import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback
 import TimeController from "@/app/_components/TimeController";
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
-import {store} from "@/lib/state/Store";
-import { setEventData} from "@/lib/state/EventDetailsSlice";
 import {EventType} from "osh-js/source/core/event/EventType";
-import {useAppDispatch} from "@/lib/state/Hooks";
+import {event} from "next/dist/build/output/log";
 
 
 export default function Media({eventData, datasources}: {eventData: any, datasources: any}){
@@ -150,6 +147,7 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
                     <Grid container direction="row" spacing={2} justifyContent={"center"}>
                         <Grid item xs={12} md={6}>
                             <ChartTimeHighlight
+                                // key={eventData.id + "-detail"}
                                 datasources={{
                                     gamma:  datasources.gamma,
                                     neutron:  datasources.neutron,

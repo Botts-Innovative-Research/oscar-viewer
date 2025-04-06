@@ -1,4 +1,5 @@
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
+import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView";
 
 
 export  function createNeutronViewCurve(neutronDatasource: { id: any; }) {
@@ -78,11 +79,11 @@ export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDataso
         dataSourceIds: [gammaDatasource?.id, thresholdDatasource?.id],
         getValues: (rec: any, timestamp: any) => {
 
-            console.log("NSIGMA RECORD", rec)
+            // console.log("NSIGMA RECORD", rec)
             if(rec?.latestGammaBackground) latestGB = rec?.latestGammaBackground;
 
 
-            console.log('latest gb', latestGB)
+            // console.log('latest gb', latestGB)
             if(rec.gammaGrossCount && latestGB){
                 let nSigmaValue: number = (rec?.gammaGrossCount - latestGB) / Math.sqrt(latestGB)
 
@@ -91,7 +92,7 @@ export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDataso
 
         },
         name: "Gamma",
-        borderWith: 1.5,
+        borderWidth: 1.5,
         backgroundColor: "rgba(245, 166, 160, 0.1)",
         lineColor: "#f44336",
         xLabel: 'Time',
@@ -128,4 +129,20 @@ export  function createThreshSigmaViewCurve(thresholdDatasource: { id: any; }) {
     });
 
     return gCurve;
+}
+
+
+export async function createChart(container: any, layers: any, yAxis: string){
+    return new ChartJsView({
+        container:  container.id,
+        layers: layers,
+        css: "chart-view-event-detail",
+        type: 'line',
+        options: {
+            scales: {
+                x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time'},
+                y: { type: 'linear', position: 'left', title: { display: true, text: yAxis, padding: 15 }, beginAtZero: false }
+            }
+        }
+    });
 }
