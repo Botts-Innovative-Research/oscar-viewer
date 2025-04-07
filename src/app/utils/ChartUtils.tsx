@@ -75,36 +75,52 @@ export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDataso
 
     let latestGB: number;
 
-    let nCurve = new CurveLayer({
-        dataSourceIds: [gammaDatasource?.id, thresholdDatasource?.id],
-        getValues: (rec: any, timestamp: any) => {
+    const createCurve = () =>{
+        let nCurve = new CurveLayer({
+            dataSourceIds: [gammaDatasource?.id, thresholdDatasource?.id],
+            getValues: (rec: any, timestamp: any) => {
 
-            // console.log("NSIGMA RECORD", rec)
-            if(rec?.latestGammaBackground) latestGB = rec?.latestGammaBackground;
+                if(rec?.latestGammaBackground) {
+                    latestGB = rec?.latestGammaBackground;
+                }
 
+                if(rec.gammaGrossCount && latestGB){
+                    let nSigmaValue: number = (rec?.gammaGrossCount - latestGB) / Math.sqrt(latestGB)
 
-            // console.log('latest gb', latestGB)
-            if(rec.gammaGrossCount && latestGB){
-                let nSigmaValue: number = (rec?.gammaGrossCount - latestGB) / Math.sqrt(latestGB)
+                    return {x: timestamp, y: nSigmaValue}
+                }
 
-                return {x: timestamp, y: nSigmaValue}
-            }
+            },
+            name: "Gamma",
+            borderWidth: 1.5,
+            backgroundColor: "rgba(245, 166, 160, 0.1)",
+            lineColor: "#f44336",
+            xLabel: 'Time',
+            yLabel: 'Nσ',
+            visible: true,
+            hidden: false,
+            fill: 1,
+            order: 0,
+            maxValues: 50,
+        });
+        return nCurve;
+    }
 
-        },
-        name: "Gamma",
-        borderWidth: 1.5,
-        backgroundColor: "rgba(245, 166, 160, 0.1)",
-        lineColor: "#f44336",
-        xLabel: 'Time',
-        yLabel: 'Nσ',
-        visible: true,
-        hidden: false,
-        fill: 1,
-        order: 0,
-        maxValues: 50,
-    });
+    let curve = createCurve();
 
-    return nCurve;
+    // let numAttempts = 0;
+    // if(curve.data.length == 0){
+    //     const interval = setInterval(()=>{
+    //         curve = createCurve();
+    //
+    //         if(curve.data.length > 0 || numAttempts > 3){
+    //             clearInterval(interval);
+    //         }
+    //     }, 1000);
+    //     numAttempts++;
+    // }
+
+    return curve;
 }
 
 
@@ -129,20 +145,4 @@ export  function createThreshSigmaViewCurve(thresholdDatasource: { id: any; }) {
     });
 
     return gCurve;
-}
-
-
-export async function createChart(container: any, layers: any, yAxis: string){
-    return new ChartJsView({
-        container:  container.id,
-        layers: layers,
-        css: "chart-view-event-detail",
-        type: 'line',
-        options: {
-            scales: {
-                x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time'},
-                y: { type: 'linear', position: 'left', title: { display: true, text: yAxis, padding: 15 }, beginAtZero: false }
-            }
-        }
-    });
 }
