@@ -13,6 +13,10 @@ import Media from "@/app/_components/event-details/Media";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {selectEventPreview, setSelectedRowId} from "@/lib/state/EventPreviewSlice";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import DataStreams from "osh-js/source/core/sweapi/datastream/DataStreams";
+import {getObservations} from "@/app/utils/ChartUtils";
+import {RootState} from "@/lib/state/Store";
+import {selectNodes} from "@/lib/state/OSHSlice";
 
 
 
@@ -83,7 +87,8 @@ export default function EventDetailsPage() {
             collectDataSources();
     }, [eventPreview, laneMapRef.current]);
 
-    console.log("jack data", gammaDatasources, neutronDatasources, thresholdDatasources)
+
+
 
     return (
         <Stack spacing={4} direction={"column"} sx={{width: "100%"}}>

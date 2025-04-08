@@ -46,7 +46,7 @@ export interface INode {
 
     fetchLaneSystemsAndSubsystems(): Promise<Map<string, LaneMapEntry>>,
 
-    fetchDatastreamsTK(laneMap: Map<string, LaneMapEntry>): void,
+    fetchDatastreamsTK(laneMap: Map<string, LaneMapEntry>): Promise<any[]>,
 
     fetchProcessVideoDatastreams(laneMap: Map<string, LaneMapEntry>): void
 
@@ -173,7 +173,7 @@ export class Node implements INode {
                 // Fetch subsystems
                 const subsystems = await newSystem.fetchSubsystems();
                 fetchedSystems.push(...subsystems);
-                let systemIds = subsystems.map(subsystem => subsystem.id);
+                let systemIds = subsystems.map((subsystem: any) => subsystem.id);
                 systemIds.unshift(newSystem.id);
                 // Create a new LaneMeta object
                 let newLaneMeta = new LaneMeta(newLaneName, systemIds);
@@ -254,13 +254,18 @@ export class Node implements INode {
     }
 
     async fetchDatastreamsTK(laneMap: Map<string, LaneMapEntry>) {
+        let availableDatastreams = [];
         for (const [, laneEntry] of laneMap) {
             try {
                 const datastreams = await laneEntry.laneSystem.searchDataStreams(undefined, 100);
                 while (datastreams.hasNext()) {
                     const datastreamResults = await datastreams.nextPage();
                     laneEntry.addDatastreams(datastreamResults);
+                    availableDatastreams.push(...datastreamResults)
                 }
+
+                if(availableDatastreams.length > 0)
+                    return availableDatastreams;
             } catch (error) {
                 console.error(`Error fetching datastreams for system ${laneEntry.laneSystem.id}:`, error);
             }

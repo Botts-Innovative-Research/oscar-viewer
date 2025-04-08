@@ -6,6 +6,12 @@ import React, {useCallback, useEffect, useRef, useState} from "react";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {EventType} from "osh-js/source/core/event/EventType";
 import {event} from "next/dist/build/output/log";
+import DataStreams from "osh-js/source/core/sweapi/datastream/DataStreams";
+import {getObservations} from "@/app/utils/ChartUtils";
+import {useSelector} from "react-redux";
+import {RootState} from "@/lib/state/Store";
+import {selectNodes} from "@/lib/state/OSHSlice";
+import CircularProgress from "@mui/material/CircularProgress";
 
 
 export default function Media({eventData, datasources}: {eventData: any, datasources: any}){
@@ -25,6 +31,11 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
     const [chartReady, setChartReady] = useState<boolean>(false);
 
     const [syncTime, setSyncTime]= useState(0);
+
+
+    const nodes =  useSelector((state: RootState) => selectNodes(state));
+    const [latestGB, setLatestGB] = useState<number>();
+
 
 
     const createDataSync = useCallback(() => {
@@ -101,6 +112,35 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
     }, [syncRef.current]);
 
 
+    useEffect(() => {
+        if(datasources.threshold)
+            getDatastreamForGB();
+
+    }, [datasources.threshold]);
+
+    async function getDatastreamForGB(){
+        let networkProperties = {
+            endpointUrl: `${nodes[0]?.address}:` + `${nodes[0]?.port}` + `${nodes[0]?.oshPathRoot}` + `${nodes[0]?.csAPIEndpoint}`,
+            tls: nodes.isSecure,
+            connectorOpts: {
+                username: nodes[0].auth?.username,
+                password: nodes[0].auth?.password
+            }
+        }
+
+        console.log("datastream id: ", datasources.threshold.properties.resource.split("/")[2]);
+
+        let dsId = datasources.threshold.properties.resource.split("/")[2];
+
+        let dsApi = new DataStreams(networkProperties);
+        let datastream = await dsApi.getDataStreamById(dsId);
+
+        const latestGB = await getObservations(eventData.startTime, eventData.endTime, datastream);
+        console.log("LATEST GBBBBB: ", latestGB);
+        setLatestGB(latestGB);
+    }
+
+
     // function to start the time controller by connecting to time sync
     const play = async () => {
         if (syncRef.current ) { //&& !await syncRef.current.isConnected()
@@ -142,7 +182,7 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
 
     return (
         <Paper variant='outlined' sx={{ width: "100%" , padding: 2}}>
-            {datasourcesReady && (
+            {datasourcesReady && latestGB ? (
                 <Box>
                     <Grid container direction="row" spacing={2} justifyContent={"center"}>
                         <Grid item xs={12} md={6}>
@@ -157,6 +197,7 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
                                 modeType="detail"
                                 currentTime={syncTime}
                                 eventData={eventData}
+                                latestGB={latestGB}
                             />
 
                         </Grid>
@@ -174,7 +215,9 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
 
                     <TimeController handleChange={handleChange} pause={pause} play={play} syncTime={syncTime} timeSync={syncRef.current} startTime={eventData?.startTime} endTime={eventData?.endTime}/>
                 </Box>
-            )}
+            ):
+                <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}><CircularProgress/></Box>
+            }
         </Paper>
     )
 }

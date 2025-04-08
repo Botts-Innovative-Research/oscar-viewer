@@ -15,8 +15,15 @@ import {
     createGammaViewCurve,
     createNeutronViewCurve,
     createNSigmaCalcViewCurve,
-    createThresholdViewCurve, createThreshSigmaViewCurve
+    createThresholdViewCurve, createThreshSigmaViewCurve, getObservations
 } from "@/app/utils/ChartUtils";
+import {useSelector} from "react-redux";
+import {RootState} from "@/lib/state/Store";
+import {selectDatastreams, selectNodes} from "@/lib/state/OSHSlice";
+import getDataStreamById from "osh-js/source/core/sweapi/datastream/DataStreams";
+import DataStreamFilter from "osh-js/source/core/sweapi/datastream/DataStreamFilter.js";
+import { Datastream } from "@/lib/data/osh/Datastreams";
+import DataStreams from "osh-js/source/core/sweapi/datastream/DataStreams";
 
 type CurveLayers = {
     neutron: any;
@@ -40,6 +47,7 @@ export class ChartInterceptProps {
     currentTime: any;
     datasources: { gamma: typeof SweApi, neutron: typeof SweApi, threshold: typeof SweApi };
     eventData: EventTableData;
+    latestGB: number;
 }
 
 export default function ChartTimeHighlight(props: ChartInterceptProps) {
@@ -77,14 +85,14 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     }, [chartsReady]);
 
     useEffect(() => {
-        if (!props.eventData || !props.datasources?.gamma || !props.datasources?.neutron || !props.datasources?.threshold) return;
+        if (!props.eventData || !props.datasources?.gamma || !props.datasources?.neutron || !props.datasources?.threshold || !props.latestGB) return;
 
         const init = async () => {
             const layers = await createCurveLayers();
             setLayers(layers)
         };
 
-        init();
+        init().then(r => console.log("Curve Layers Created"));
     }, [props.eventData]);
 
     useEffect(() => {
@@ -92,11 +100,42 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
         const elementIds = updateChartElIds(props.eventData);
         renderCharts(layers, elementIds);
+
+
     }, [layers, props.eventData]);
 
 
     useEffect(() => {
-        let currTime = props.currentTime;
+        if(chartViews){
+            annotateCharts(props.currentTime);
+        }
+    }, [props.currentTime, chartViews]);
+
+    useEffect(() => {
+        checkReadyToRender();
+    }, [chartsReady]);
+
+    useEffect(() => {
+        if (isReadyToRender) {
+            console.log("Chart is ready to render");
+            props.setChartReady(true);
+        }
+    }, [isReadyToRender]);
+
+    useEffect(() => {
+        if(chartViews?.gamma) {
+            chartViews?.gamma?.chart.update();
+            console.log("CPS chart updated",  chartViews.gamma);
+        }
+
+        if(chartViews?.nsigma) {
+            chartViews?.nsigma?.chart.update();
+            console.log("NSigma chart updated", chartViews.nsigma);
+        }
+    }, [toggleView, chartViews]);
+
+
+    function annotateCharts(currTime: any){
         // console.log('curr time', currTime)
         if (currTime) {
             let chartAnnotation = {
@@ -141,34 +180,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             chartViews?.nsigma?.chart.update();
             chartViews?.neutron?.chart.update();
         }
-    }, [props.currentTime, chartViews]);
-
-    useEffect(() => {
-        checkReadyToRender();
-    }, [chartsReady]);
-
-    useEffect(() => {
-        if (isReadyToRender) {
-            console.log("Chart is ready to render");
-            props.setChartReady(true);
-        }
-    }, [isReadyToRender]);
-
-    useEffect(() => {
-
-        if(chartViews?.gamma) {
-            chartViews?.gamma?.chart.update();
-            console.log("CPS chart updated",  chartViews.gamma);
-        }
-
-        if(chartViews?.nsigma) {
-            chartViews?.nsigma?.chart.update();
-            console.log("NSigma chart updated", chartViews.nsigma);
-        }
-
-
-    }, [toggleView, chartViews]);
-
+    }
 
     function updateChartElIds(eventData: EventTableData): string[] {
         let ids: string[] = [];
@@ -198,25 +210,47 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         }
         return ids;
     }
+    // const nodes =  useSelector((state: RootState) => selectNodes(state));
 
+    async function createCurveLayers() {
 
-    function createCurveLayers() {
-        return Promise.all([
+        // let networkProperties = {
+        //     endpointUrl: `${nodes[0]?.address}:` + `${nodes[0]?.port}` + `${nodes[0]?.oshPathRoot}` + `${nodes[0]?.csAPIEndpoint}`,
+        //     tls: nodes.isSecure,
+        //     connectorOpts: {
+        //         username: nodes[0].auth?.username,
+        //         password: nodes[0].auth?.password
+        //     }
+        // }
+        //
+        // console.log("datastream id: ", props.datasources.threshold.properties.resource.split("/")[2]);
+        //
+        // let dsId = props.datasources.threshold.properties.resource.split("/")[2];
+        //
+        // let dsApi = new DataStreams(networkProperties);
+        // let datastream = await dsApi.getDataStreamById(dsId);
+        //
+        // const latestGB = await getObservations(props.eventData.startTime, props.eventData.endTime, datastream);
+        // console.log("LATEST GBBBBB: ", latestGB);
+        // // setLatestGB(latestGB);
+
+        let result = await Promise.all([
             createNeutronViewCurve(props.datasources.neutron),
             createGammaViewCurve(props.datasources.gamma),
             createThresholdViewCurve(props.datasources.threshold),
             createThreshSigmaViewCurve(props.datasources.threshold),
-            createNSigmaCalcViewCurve(props.datasources.threshold, props.datasources.gamma)
-        ]).then(([neutron, gamma, threshold, threshNsigma, nsigma]) => {
+            createNSigmaCalcViewCurve(props.datasources.gamma, props.latestGB)
+        ]);
 
-            return {
-                neutron,
-                gamma,
-                threshold,
-                threshNsigma,
-                nsigma
-            };
-        });
+        console.log("RESULT", result)
+        const [neutron, gamma, threshold, threshNsigma, nsigma] = result;
+        return {
+            neutron,
+            gamma,
+            threshold,
+            threshNsigma,
+            nsigma
+        };
     }
 
     const renderCharts = (layers: CurveLayers, elementIds: string[]) => {
@@ -224,7 +258,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         console.log("CHART LAYERS: ", layers);
 
         if (layers.gamma && gammaChartViewRef.current) {
-            // do this bc aspect has gamma but not threshold :D
+            // do this bc aspect has gamma but not threshold datasource
             const gammaLayers: any[] = [];
 
             if(layers?.gamma) gammaLayers.push(layers.gamma);
