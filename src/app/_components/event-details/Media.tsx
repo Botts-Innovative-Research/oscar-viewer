@@ -115,35 +115,6 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
     }, [syncRef.current]);
 
 
-    // useEffect(() => {
-    //     if(datasources.threshold)
-    //         getDatastreamForGB();
-    //
-    // }, [datasources.threshold]);
-
-    // async function getDatastreamForGB(){
-    //     let networkProperties = {
-    //         endpointUrl: `${nodes[0]?.address}:` + `${nodes[0]?.port}` + `${nodes[0]?.oshPathRoot}` + `${nodes[0]?.csAPIEndpoint}`,
-    //         tls: nodes.isSecure,
-    //         connectorOpts: {
-    //             username: nodes[0].auth?.username,
-    //             password: nodes[0].auth?.password
-    //         }
-    //     }
-    //
-    //     console.log("datastream id: ", datasources.threshold.properties.resource.split("/")[2]);
-    //
-    //     let dsId = datasources.threshold.properties.resource.split("/")[2];
-    //
-    //     let dsApi = new DataStreams(networkProperties);
-    //     let datastream = await dsApi.getDataStreamById(dsId);
-    //
-    //     const latestGB = await getObservations(eventData.startTime, eventData.endTime, datastream);
-    //     console.log("LATEST GBBBBB: ", latestGB);
-    //     setLatestGB(latestGB);
-    // }
-
-
     // function to start the time controller by connecting to time sync
     const play = async () => {
         if (syncRef.current ) { //&& !await syncRef.current.isConnected()

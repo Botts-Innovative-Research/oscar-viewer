@@ -407,30 +407,13 @@ export default function Table2({
             console.log("data thresh: ", datastreams)
             let gammaThreshDs = datastreams.find((ds: any) => ds.properties["system@id"] == eventData.systemIdx)
             console.log("gammathreshds", gammaThreshDs)
-            // if(datastreams) {
-            //     let latestGB = await getObservations(eventData.startTime, eventData.endTime, datastreams[0]);
-            //     console.log("latestGB:", latestGB);
-            //
-            //     dispatch(setLatestGB(latestGB));
-            // }
-
             if(gammaThreshDs){
                 let latestGB = await getObservations(eventData.startTime, eventData.endTime, gammaThreshDs);
                 dispatch(setLatestGB(latestGB));
             }
         }
 
-        
-        // let allDatastream;
-        // for (const x of laneMap.values())
-        // //     allDatastream = x.datstream
-        // console.log(allDatastreams)
-        // let threshDs = allDatastream.find((ds: any) =>{
-        //     ds.properties.observedProperties[0].definition == "http://www.opengis.net/def/threshold"
-        // })
 
-
-        // const latestGB = await getObservations(eventData.startTime, eventData.endTime, datastream);
 
     }
 
