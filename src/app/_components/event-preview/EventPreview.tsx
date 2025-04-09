@@ -22,6 +22,7 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
 import {
     selectEventPreview,
+    selectLatestGB,
     setEventPreview,
     setSelectedRowId,
     setShouldForceAlarmTableDeselect
@@ -101,6 +102,8 @@ export function EventPreview() {
     const [openSnack, setOpenSnack] = useState(false);
     const [colorStatus, setColorStatus] = useState('')
 
+    let latestGB = useSelector((state: RootState) => selectLatestGB(state));
+    console.log("chart latestGB", latestGB);
 
 
     const handleAdjudicationCode = (value: AdjudicationCode) => {
@@ -397,41 +400,9 @@ export function EventPreview() {
     };
 
 
-    const nodes =  useSelector((state: RootState) => selectNodes(state));
-    const [latestGB, setLatestGB] = useState<number>();
-
-    useEffect(() => {
-        if(thresholdDatasources.length > 0)
-            getDatastreamForGB();
-
-    }, [thresholdDatasources]);
-
-    async function getDatastreamForGB(){
-        let networkProperties = {
-            endpointUrl: `${nodes[0]?.address}:` + `${nodes[0]?.port}` + `${nodes[0]?.oshPathRoot}` + `${nodes[0]?.csAPIEndpoint}`,
-            tls: nodes.isSecure,
-            connectorOpts: {
-                username: nodes[0].auth?.username,
-                password: nodes[0].auth?.password
-            }
-        }
-
-        console.log("datastream id: ", thresholdDatasources[0].properties.resource.split("/")[2]);
-
-        let dsId = thresholdDatasources[0].properties.resource.split("/")[2];
-
-        let dsApi = new DataStreams(networkProperties);
-        let datastream = await dsApi.getDataStreamById(dsId);
-
-        const latestGB = await getObservations(eventPreview.eventData.startTime, eventPreview.eventData.endTime, datastream);
-        console.log("LATEST GBBBBB: ", latestGB);
-        setLatestGB(latestGB);
-    }
-
     // function to start the time controller by connecting to time sync
     const play = async () => {
-        if (syncRef.current ) { //&& !await syncRef.current.isConnected()
-            // if(!syncRef.current.isConnected) await syncRef.current.connect();
+        if (syncRef.current ) {
             await syncRef.current.setReplaySpeed(1.0);
 
             console.log("Playback started.");
@@ -441,11 +412,8 @@ export function EventPreview() {
 
     // function to pause the time controller by disconnecting from the time sync
     const pause = async () => {
-        if (syncRef.current) {  //&& await syncRef.current.isConnected()
-             // await syncRef.current.connect();
+        if (syncRef.current) {
             await syncRef.current.setReplaySpeed(0.0);
-
-
             console.log("Playback paused.");
         }
 

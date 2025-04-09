@@ -14,7 +14,7 @@ import {
     isConnectionDatastream,
     isGammaDatastream,
     isNeutronDatastream,
-    isTamperDatastream,
+    isTamperDatastream, isThresholdDatastream,
 } from "@/lib/data/oscar/Utilities";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useAppDispatch} from "@/lib/state/Hooks";
@@ -66,6 +66,10 @@ export default function DashboardPage() {
                 }
                 if(isConnectionDatastream(ds)){
                     laneDSColl.addDS('connectionRT', rtDS);
+                }
+
+                if(isThresholdDatastream(ds)){
+                    laneDSColl.addDS('gammaTrshldRT', rtDS);
                 }
             }
             setDataSourcesByLane(laneDSMap);

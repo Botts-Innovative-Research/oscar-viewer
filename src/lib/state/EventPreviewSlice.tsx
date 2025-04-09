@@ -9,7 +9,8 @@ export interface IEventPreviewState {
     };
     shouldForceAlarmTableDeselect: boolean;
     selectedRowId: any | null;
-}
+    latestGB: number;
+}3
 
 const initState: IEventPreviewState = {
     eventPreview: {
@@ -17,7 +18,8 @@ const initState: IEventPreviewState = {
         eventData: null,
     },
     shouldForceAlarmTableDeselect: false,
-    selectedRowId: null
+    selectedRowId: null,
+    latestGB: null,
 };
 
 export const Slice = createSlice({
@@ -53,6 +55,9 @@ export const Slice = createSlice({
         },
         setSelectedRowId: (state, action: PayloadAction<any | null>) =>{
             state.selectedRowId = action.payload;
+        },
+        setLatestGB: (state, action: PayloadAction<number>) =>{
+            state.latestGB = action.payload;
         }
     },
 });
@@ -64,11 +69,13 @@ export const {
     clearEventPreview,
     setShouldForceAlarmTableDeselect,
     toggleShouldForceAlarmTableDeselect,
-    setSelectedRowId
+    setSelectedRowId,
+    setLatestGB
 } = Slice.actions;
 
 export const selectEventPreview = (state: RootState) => state.eventPreview.eventPreview;
 export const selectShouldForceAlarmTableDeselect = (state: RootState) => state.eventPreview.shouldForceAlarmTableDeselect;
 export const selectSelectedRowId = (state: RootState) => state.eventPreview.selectedRowId;
+export const selectLatestGB = (state: RootState) => state.eventPreview.latestGB;
 
 export default Slice.reducer;

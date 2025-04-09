@@ -85,6 +85,8 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     }, [chartsReady]);
 
     useEffect(() => {
+
+        console.log("latestGB in charts", props.latestGB)
         if (!props.eventData || !props.datasources?.gamma || !props.datasources?.neutron || !props.datasources?.threshold || !props.latestGB) return;
 
         const init = async () => {
@@ -210,29 +212,8 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         }
         return ids;
     }
-    // const nodes =  useSelector((state: RootState) => selectNodes(state));
 
     async function createCurveLayers() {
-
-        // let networkProperties = {
-        //     endpointUrl: `${nodes[0]?.address}:` + `${nodes[0]?.port}` + `${nodes[0]?.oshPathRoot}` + `${nodes[0]?.csAPIEndpoint}`,
-        //     tls: nodes.isSecure,
-        //     connectorOpts: {
-        //         username: nodes[0].auth?.username,
-        //         password: nodes[0].auth?.password
-        //     }
-        // }
-        //
-        // console.log("datastream id: ", props.datasources.threshold.properties.resource.split("/")[2]);
-        //
-        // let dsId = props.datasources.threshold.properties.resource.split("/")[2];
-        //
-        // let dsApi = new DataStreams(networkProperties);
-        // let datastream = await dsApi.getDataStreamById(dsId);
-        //
-        // const latestGB = await getObservations(props.eventData.startTime, props.eventData.endTime, datastream);
-        // console.log("LATEST GBBBBB: ", latestGB);
-        // // setLatestGB(latestGB);
 
         let result = await Promise.all([
             createNeutronViewCurve(props.datasources.neutron),

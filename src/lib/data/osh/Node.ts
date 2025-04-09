@@ -264,8 +264,12 @@ export class Node implements INode {
                     availableDatastreams.push(...datastreamResults)
                 }
 
-                if(availableDatastreams.length > 0)
+                if(availableDatastreams.length > 0) {
                     return availableDatastreams;
+                }
+                else {
+                    throw new Error("No datastreams found, check endpoint properties");
+                }
             } catch (error) {
                 console.error(`Error fetching datastreams for system ${laneEntry.laneSystem.id}:`, error);
             }
