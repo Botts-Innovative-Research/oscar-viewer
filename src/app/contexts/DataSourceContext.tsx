@@ -85,11 +85,11 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         console.log("Received new nodes, updating state\nNodes:");
         console.log(nodes);
         let allLanes: Map<string, LaneMapEntry> = new Map();
-        let allDatastreams: any[];
+        // let allDatastreams: any[];
         await Promise.all(nodes.map(async (node: INode) => {
             console.log("Fetching lanes from node ", node);
             let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
-            allDatastreams = await node.fetchDatastreamsTK(nodeLaneMap);
+            await node.fetchDatastreamsTK(nodeLaneMap);
             await node.fetchProcessVideoDatastreams(nodeLaneMap);
             for (let mapEntry of nodeLaneMap.values()) {
                 mapEntry.addDefaultSWEAPIs();
@@ -114,7 +114,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         }
         console.log("[ADJ] Adjudication Systems Map:", adjMap);
 
-        dispatch(setDatastreams(allDatastreams));
+        // dispatch(setDatastreams(allDatastreams));
         dispatch(setLaneMap(allLanes));
         laneMapRef.current = allLanes;
         console.log("LaneMapRef for Table:", laneMapRef);
