@@ -1,32 +1,23 @@
 "use client";
 
-import {Box, Grid, Paper, Stack, Typography} from "@mui/material";
+import {Grid, Paper, Stack, Typography} from "@mui/material";
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import BackButton from "../_components/BackButton";
 import DataRow from "../_components/event-details/DataRow";
 
 import MiscTable from "../_components/event-details/MiscTable";
-import {useDispatch, useSelector} from "react-redux";
-import {
-    selectEventData,
-} from '@/lib/state/EventDetailsSlice';
-
-import ChartTimeHighlight from "../_components/event-preview/ChartTimeHighlight";
-import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
+import {useSelector} from "react-redux";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
-import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
 import AdjudicationDetail from "@/app/_components/adjudication/AdjudicationDetail";
-import TimeController from "@/app/_components/TimeController";
-import {EventType} from "osh-js/source/core/event/EventType";
-
-import {store} from "@/lib/state/Store";
-import {useAppDispatch} from "@/lib/state/Hooks";
-import {useSearchParams} from "next/navigation";
 import Media from "@/app/_components/event-details/Media";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {selectEventPreview, setSelectedRowId} from "@/lib/state/EventPreviewSlice";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";
+import DataStreams from "osh-js/source/core/sweapi/datastream/DataStreams";
+import {getObservations} from "@/app/utils/ChartUtils";
+import {RootState} from "@/lib/state/Store";
+import {selectNodes} from "@/lib/state/OSHSlice";
+
 
 
 
@@ -96,7 +87,8 @@ export default function EventDetailsPage() {
             collectDataSources();
     }, [eventPreview, laneMapRef.current]);
 
-    console.log("jack data", gammaDatasources, neutronDatasources, thresholdDatasources)
+
+
 
     return (
         <Stack spacing={4} direction={"column"} sx={{width: "100%"}}>
@@ -124,7 +116,6 @@ export default function EventDetailsPage() {
                 />
 
             }
-
 
             <Paper variant='outlined' sx={{width: "100%"}}>
                 <MiscTable currentTime={eventPreview.eventData?.startTime}/>

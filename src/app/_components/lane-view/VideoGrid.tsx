@@ -329,12 +329,9 @@
 
 "use client";
 
-import {Box, Card, Grid, IconButton, Stack } from '@mui/material';
+import {Box, IconButton, Stack } from '@mui/material';
 import { useEffect, useRef, useState} from 'react';
 import "../../style/cameragrid.css";
-import { useSelector } from 'react-redux';
-import { selectLaneMap, selectLanes } from '@/lib/state/OSCARLaneSlice';
-import { RootState } from '@/lib/state/Store';
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
@@ -414,25 +411,9 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
             disconnectLastVideo(prevPage)
             return nextPage < maxPages ? nextPage : prevPage;
         })
-        // setSelVidIdx((prevPage)=> {
-        //     let nextPage = prevPage + 1
-        //     if(dataSources && dataSources[0] && nextPage <= maxPages-1){
-        //         checkConnection(prevPage);
-        //         return nextPage;
-        //     }else{
-        //         return prevPage;
-        //     }
-        // })
     }
 
     const handlePrevPage = () =>{
-        // setSelVidIdx((prevPage) => {
-        //     let currpage = prevPage - 1;
-        //     disconnectLastVideo(prevPage);
-        //     return currpage;
-        //
-        // })
-
         setSelVidIdx((prevPage) => {
             disconnectLastVideo(prevPage)
             return prevPage > 0 ? prevPage -1 : prevPage;

@@ -22,6 +22,7 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
 import {
     selectEventPreview,
+    selectLatestGB,
     setEventPreview,
     setSelectedRowId,
     setShouldForceAlarmTableDeselect
@@ -49,8 +50,11 @@ import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelec
 import {EventType} from "osh-js/source/core/event/EventType";
 import TimeController from "@/app/_components/TimeController";
 import { setEventData } from "@/lib/state/EventDetailsSlice";
-
-
+import DataStreams from "osh-js/source/core/sweapi/datastream/DataStreams";
+import {getObservations} from "@/app/utils/ChartUtils";
+import {RootState} from "@/lib/state/Store";
+import {selectNodes} from "@/lib/state/OSHSlice";
+import CircularProgress from "@mui/material/CircularProgress";
 
 
 
@@ -98,6 +102,8 @@ export function EventPreview() {
     const [openSnack, setOpenSnack] = useState(false);
     const [colorStatus, setColorStatus] = useState('')
 
+    let latestGB = useSelector((state: RootState) => selectLatestGB(state));
+    console.log("chart latestGB", latestGB);
 
 
     const handleAdjudicationCode = (value: AdjudicationCode) => {
@@ -243,7 +249,7 @@ export function EventPreview() {
         disconnectDSArray(neutronDatasources);
         disconnectDSArray(thresholdDatasources);
         disconnectDSArray(occDatasources);
-        
+
         if (syncRef.current?.isConnected()) {
             syncRef.current.disconnect();
         }
@@ -258,11 +264,11 @@ export function EventPreview() {
 
     useEffect(() => {
         if (eventPreview.eventData?.occupancyId !== prevEventIdRef.current) {
-           
+
             if (prevEventIdRef.current) {
                 cleanupResources();
             }
-            
+
             prevEventIdRef.current = eventPreview.eventData?.occupancyId;
             if (eventPreview.eventData?.laneId && laneMapRef.current) {
 
@@ -308,7 +314,6 @@ export function EventPreview() {
         setOccDS(updatedOcc);
         setDatasourcesReady(true);
 
-
     }, [eventPreview, laneMapRef]);
 
 
@@ -332,12 +337,14 @@ export function EventPreview() {
         if (eventPreview.eventData?.laneId && laneMapRef.current) {
             collectDataSources();
             console.log('Datasources collected', eventPreview.eventData?.laneId)
+
         }
     }, [eventPreview.eventData, laneMapRef.current]);
 
     useEffect(() => {
         createDataSync();
     }, [videoDatasources, syncRef, dataSyncCreated, datasourcesReady]);
+
 
 
     useEffect(() => {
@@ -395,8 +402,7 @@ export function EventPreview() {
 
     // function to start the time controller by connecting to time sync
     const play = async () => {
-        if (syncRef.current ) { //&& !await syncRef.current.isConnected()
-            // if(!syncRef.current.isConnected) await syncRef.current.connect();
+        if (syncRef.current ) {
             await syncRef.current.setReplaySpeed(1.0);
 
             console.log("Playback started.");
@@ -406,11 +412,8 @@ export function EventPreview() {
 
     // function to pause the time controller by disconnecting from the time sync
     const pause = async () => {
-        if (syncRef.current) {  //&& await syncRef.current.isConnected()
-             // await syncRef.current.connect();
+        if (syncRef.current) {
             await syncRef.current.setReplaySpeed(0.0);
-
-
             console.log("Playback paused.");
         }
 
@@ -446,33 +449,34 @@ export function EventPreview() {
                 </IconButton>
             </Stack>
 
+            {(datasourcesReady && latestGB) ? (
+                    <Box>
+                        <ChartTimeHighlight
+                            datasources={{
+                                gamma: gammaDatasources[0],
+                                neutron: neutronDatasources[0],
+                                threshold: thresholdDatasources[0]
+                            }}
+                            setChartReady={setChartReady}
+                            modeType="preview"
+                            currentTime={syncTime}
+                            eventData={eventPreview.eventData}
+                            latestGB={latestGB}
+                        />
 
-            {datasourcesReady && (
-                <Box>
-                    <ChartTimeHighlight
-                        datasources={{
-                            gamma: gammaDatasources[0],
-                            neutron: neutronDatasources[0],
-                            threshold: thresholdDatasources[0]
-                        }}
-                        setChartReady={setChartReady}
-                        modeType="preview"
-                        currentTime={syncTime}
-                        eventData={eventPreview.eventData}
-                    />
+                        <LaneVideoPlayback
+                            videoDatasources={videoDatasources}
+                            setVideoReady={setVideoReady}
+                            dataSynchronizer={syncRef.current}
+                            addDataSource={setActiveVideoIDX}
+                            modeType={"preview"}
+                        />
+                        <TimeController handleChange={handleChange} pause={pause} play={play} syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
+                    </Box>
+            ) :
 
-                    <LaneVideoPlayback
-                        videoDatasources={videoDatasources}
-                        setVideoReady={setVideoReady}
-                        dataSynchronizer={syncRef.current}
-                        addDataSource={setActiveVideoIDX}
-                        modeType={"preview"}
-                    />
-
-                    <TimeController handleChange={handleChange} pause={pause} play={play} syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
-                </Box>
-            )}
-
+                <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}><CircularProgress/></Box>
+            }
 
             <Stack spacing={2}>
                 <AdjudicationSelect adjCode={adjudicationCode} onSelect={handleAdjudicationCode}/>

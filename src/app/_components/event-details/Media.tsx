@@ -4,11 +4,15 @@ import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback
 import TimeController from "@/app/_components/TimeController";
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
-import {store} from "@/lib/state/Store";
-import { setEventData} from "@/lib/state/EventDetailsSlice";
 import {EventType} from "osh-js/source/core/event/EventType";
-import {useAppDispatch} from "@/lib/state/Hooks";
+import {event} from "next/dist/build/output/log";
+import DataStreams from "osh-js/source/core/sweapi/datastream/DataStreams";
+import {getObservations} from "@/app/utils/ChartUtils";
+import {useSelector} from "react-redux";
+import {RootState} from "@/lib/state/Store";
+import {selectNodes} from "@/lib/state/OSHSlice";
+import CircularProgress from "@mui/material/CircularProgress";
+import {selectLatestGB} from "@/lib/state/EventPreviewSlice";
 
 
 export default function Media({eventData, datasources}: {eventData: any, datasources: any}){
@@ -28,6 +32,13 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
     const [chartReady, setChartReady] = useState<boolean>(false);
 
     const [syncTime, setSyncTime]= useState(0);
+
+    let latestGB = useSelector((state: RootState) => selectLatestGB(state));
+    console.log("chart latestGB", latestGB);
+
+    // const nodes =  useSelector((state: RootState) => selectNodes(state));
+    // const [latestGB, setLatestGB] = useState<number>();
+
 
 
     const createDataSync = useCallback(() => {
@@ -145,11 +156,12 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
 
     return (
         <Paper variant='outlined' sx={{ width: "100%" , padding: 2}}>
-            {datasourcesReady && (
+            {datasourcesReady && latestGB ? (
                 <Box>
                     <Grid container direction="row" spacing={2} justifyContent={"center"}>
                         <Grid item xs={12} md={6}>
                             <ChartTimeHighlight
+                                // key={eventData.id + "-detail"}
                                 datasources={{
                                     gamma:  datasources.gamma,
                                     neutron:  datasources.neutron,
@@ -159,6 +171,7 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
                                 modeType="detail"
                                 currentTime={syncTime}
                                 eventData={eventData}
+                                latestGB={latestGB}
                             />
 
                         </Grid>
@@ -176,7 +189,9 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
 
                     <TimeController handleChange={handleChange} pause={pause} play={play} syncTime={syncTime} timeSync={syncRef.current} startTime={eventData?.startTime} endTime={eventData?.endTime}/>
                 </Box>
-            )}
+            ):
+                <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}><CircularProgress/></Box>
+            }
         </Paper>
     )
 }

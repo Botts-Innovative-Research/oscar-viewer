@@ -9,7 +9,7 @@ import {
     setEventPreview,
     setSelectedRowId,
     selectSelectedRowId,
-    selectEventPreview
+    selectEventPreview, setLatestGB
 } from "@/lib/state/EventPreviewSlice";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
@@ -35,6 +35,9 @@ import {
 } from "@/lib/state/EventDataSlice";
 import {useRouter} from "next/navigation";
 import {makeStyles} from "@mui/styles";
+import {getObservations} from "@/app/utils/ChartUtils";
+import { selectDatastreams } from "@/lib/state/OSHSlice";
+import {isThresholdDatastream} from "@/lib/data/oscar/Utilities";
 
 
 interface TableProps {
@@ -104,7 +107,6 @@ export default function Table2({
 
     function prngFromStr(obs: any, laneName: string): number {
         const baseId = `${obs.result?.occupancyCount}${laneName}${obs.result?.startTime}${obs.result?.endTime}`;
-        console.log("base id: ", baseId)
         return hashString(baseId);
     }
 
@@ -373,6 +375,7 @@ export default function Table2({
             console.log("CLEARING SELECTION")
             setSelectionModel([]);
 
+            dispatch(setLatestGB(null));
             dispatch(setSelectedEvent(null));
             dispatch(setSelectedRowId(null));
             dispatch(setEventPreview({isOpen: false, eventData: null}));
@@ -387,15 +390,32 @@ export default function Table2({
                 const selectedRow = filteredTableData.find((row) => row.id === selectedId);
                 if(!selectedRow) return;
 
+                getLatestGB(selectedRow)
                 dispatch(setEventPreview({ isOpen: true, eventData: selectedRow }));
                 dispatch(setSelectedEvent(selectedRow));
             }, 10)
-
-
-
         }
     };
 
+
+    async function getLatestGB(eventData: any){
+        console.log("lanemap in table 2", laneMap)
+
+        for (const lane of laneMap.values()){
+            console.log("VALUES",lane)
+            let datastreams = lane.datastreams.filter((ds: any) => isThresholdDatastream(ds));
+            console.log("data thresh: ", datastreams)
+            let gammaThreshDs = datastreams.find((ds: any) => ds.properties["system@id"] == eventData.systemIdx)
+            console.log("gammathreshds", gammaThreshDs)
+            if(gammaThreshDs){
+                let latestGB = await getObservations(eventData.startTime, eventData.endTime, gammaThreshDs);
+                dispatch(setLatestGB(latestGB));
+            }
+        }
+
+
+
+    }
 
     return (
         <Box sx={{flex: 1, width: '100%'}}>

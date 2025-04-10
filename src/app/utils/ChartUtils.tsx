@@ -1,5 +1,11 @@
+import {selectDatastreams, selectNodes} from "@/lib/state/OSHSlice";
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
-
+import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView";
+import {useSelector} from "react-redux";
+import {RootState} from "@/lib/state/Store";
+import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
+import getDataStreamById from "osh-js/source/core/sweapi/datastream/DataStreams";
+import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 
 export  function createNeutronViewCurve(neutronDatasource: { id: any; }) {
     if (!neutronDatasource) return null;
@@ -69,33 +75,26 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
 }
 
 // get latest gamma background from threshold datasource to calc nsigma for chart
-export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDatasource: any) {
-    console.log("thresh ds", thresholdDatasource)
-    console.log("gamma ds", gammaDatasource)
-    if (!thresholdDatasource  || !gammaDatasource) return null;
-
-    let latestGB: number;
-
-    // let gammaGrossCount: any[] = [];
+export function createNSigmaCalcViewCurve(gammaDatasource: any, latestGB: number) {
+    if (!gammaDatasource) {
+        console.log("datasources are null")
+        return null;
+    }
 
     let nCurve = new CurveLayer({
-        dataSourceIds: [gammaDatasource.id, thresholdDatasource.id],
-        getValues: (rec: any, timestamp: any) => {
+        dataSourceIds: [gammaDatasource.id],
+        getValues: (rec: any) => {
 
-            console.log("NSIGMA RECORD", rec)
-            if(rec.latestGammaBackground) latestGB = rec?.latestGammaBackground;
+            if(rec.gammaGrossCount && latestGB != null){
 
-
-            console.log('latest gb', latestGB)
-            if(rec.gammaGrossCount && latestGB){
                 let nSigmaValue: number = (rec?.gammaGrossCount - latestGB) / Math.sqrt(latestGB)
 
-                return {x: timestamp, y: nSigmaValue}
+                return {x: rec?.timestamp, y: nSigmaValue}
             }
 
         },
-        name: "Gamma",
-        borderWith: 1.5,
+        name: "Gamma Nσ",
+        borderWidth: 1.5,
         backgroundColor: "rgba(245, 166, 160, 0.1)",
         lineColor: "#f44336",
         xLabel: 'Time',
@@ -106,9 +105,28 @@ export  function createNSigmaCalcViewCurve(thresholdDatasource: any, gammaDataso
         order: 0,
         maxValues: 50,
     });
-
     return nCurve;
 }
+
+
+export async function getObservations(startTime: any, endTime: any, datastream: any){
+
+    let lastestGammaBackground: number;
+
+    let res = await datastream.searchObservations(new ObservationFilter(startTime, endTime, 1));
+    while(res.hasNext()){
+        let newObs = await res.nextPage();
+
+        newObs.map((ob: any) =>{
+            const lastGB = ob.result.latestGammaBackground;
+
+            if(lastGB != null)
+                lastestGammaBackground = lastGB;
+        })
+    }
+    return lastestGammaBackground;
+}
+
 
 
 
@@ -133,3 +151,5 @@ export  function createThreshSigmaViewCurve(thresholdDatasource: { id: any; }) {
 
     return gCurve;
 }
+
+
