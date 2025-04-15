@@ -39,7 +39,7 @@ export default function LaneStatus(props: LaneStatusProps) {
 
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
         const state = message.values[0].data.tamperStatus;
-        updateStatus(laneName, (state ? 'Tamper' : 'Clear'));
+        updateStatus(laneName, (state ? 'Tamper' : 'Tamper Off'));
 
       });
 
