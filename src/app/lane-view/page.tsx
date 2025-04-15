@@ -32,11 +32,12 @@ export default function LaneViewPage() {
     const laneMap = useSelector((state: RootState) => selectLaneMap(state))
     const {laneMapRef} = useContext(DataSourceContext);
 
-    const searchParams = useSearchParams();
-    const searchLane = searchParams.get("name");
+    // const searchParams = useSearchParams();
+    // const searchLane = searchParams.get("name");
 
-    const currentLane = searchLane ?? useSelector((state: RootState) => state.laneView.currentLane);
+    const currentLane = useSelector((state: RootState) => state.laneView.currentLane);
 
+    console.log("current lane", currentLane)
     const [gammaDatasources, setGammaDS] =  useState<typeof SweApi>();
     const [neutronDatasources, setNeutronDS] =  useState<typeof SweApi>();
     const [thresholdDatasources, setThresholdDS] = useState<typeof SweApi>();
@@ -54,110 +55,75 @@ export default function LaneViewPage() {
         <ToggleButton value={"alarm"} key={"alarm"}>Alarm</ToggleButton>
     ];
 
-    useEffect(() => {
-        if (searchLane) {
-            dispatch(setCurrentLane(searchLane));
-        }
-    }, [searchLane]);
+    // useEffect(() => {
+    //     if (searchLane) {
+    //         console.log("setting current lane", searchLane)
+    //         dispatch(setCurrentLane(searchLane));
+    //     }
+    // }, [searchLane]);
 
     const handleToggle = (event: React.MouseEvent<HTMLElement>, newView: string) =>{
         setToggleView(newView);
         dispatch(setToggleState(newView))
     }
 
-    const collectDataSources = useCallback(() => {
+    const collectDataSources = useCallback(async() => {
         // @ts-ignore
         const laneDSMap = new Map<string, LaneDSColl>();
 
         const updatedVideo: typeof SweApi[] = [];
 
-        for (let [laneid, lane] of laneMapRef.current.entries()) {
-
-            if(laneid === currentLane){
-
-                console.log(currentLane)
-
-                laneDSMap.set(laneid,new LaneDSColl());
-
-                for( let ds of lane.datastreams){
-                    let idx: number = lane.datastreams.indexOf(ds);
-                    let rtDS = lane.datasourcesRealtime[idx];
-                    let laneDSColl = laneDSMap.get(laneid);
+        const lane = laneMapRef.current.get(currentLane);
+        console.log("kalyns lane", lane)
+        if(!lane) return;
 
 
-                    if(isGammaDatastream(ds)){
-                        laneDSColl.addDS('gammaRT', rtDS);
-                        setGammaDS(rtDS)
-                    }
-                    if(isNeutronDatastream(ds)){
-                        laneDSColl.addDS('neutronRT', rtDS);
-                        setNeutronDS(rtDS);
-                    }
-                    if(isTamperDatastream(ds)){
-                        laneDSColl.addDS('tamperRT', rtDS);
-                        setTamperDS(rtDS)
+        laneDSMap.set(currentLane, new LaneDSColl());
 
-                    }
-                    if(isThresholdDatastream(ds)){
-                        laneDSColl?.addDS('gammaTrshldRT', rtDS);
-                        setThresholdDS(rtDS);
-                    }
+        for(let i = 0; i< lane.datastreams.length; i++) {
+            const ds = lane.datastreams[i]
+            let rtDS = lane.datasourcesRealtime[i];
+            let laneDSColl = laneDSMap.get(currentLane);
 
-                    if(isVideoDatastream(ds)) {
-                        laneDSColl?.addDS('videoRT', rtDS);
-                        updatedVideo.push(rtDS)
+            if (isGammaDatastream(ds)) {
+                laneDSColl.addDS('gammaRT', rtDS);
+                setGammaDS(rtDS)
+            }
+            if (isNeutronDatastream(ds)) {
+                laneDSColl.addDS('neutronRT', rtDS);
+                setNeutronDS(rtDS);
+            }
+            if (isTamperDatastream(ds)) {
+                laneDSColl.addDS('tamperRT', rtDS);
+                setTamperDS(rtDS)
 
-                    }
-
-                }
-                //
-                // lane.datastreams.forEach((ds, idx) => {
-                //
-                //     const rtDS = lane.datasourcesRealtime[idx];
-                //
-                //     rtDS.properties.startTime = new Date().toISOString();
-                //     rtDS.properties.endTime = "2055-01-01T08:13:25.845Z"
-                //
-                //     let laneDSColl = laneDSMap.get(laneid);
-                //
-                //     if(isGammaDatastream(ds)){
-                //         laneDSColl.addDS('gammaRT', rtDS);
-                //         setGammaDS(rtDS)
-                //     }
-                //     if(isNeutronDatastream(ds)){
-                //         laneDSColl.addDS('neutronRT', rtDS);
-                //         setNeutronDS(rtDS);
-                //     }
-                //     if(isTamperDatastream(ds)){
-                //         laneDSColl.addDS('tamperRT', rtDS);
-                //         setTamperDS(rtDS)
-                //
-                //     }
-                //     if(isThresholdDatastream(ds)){
-                //         laneDSColl?.addDS('gammaTrshldRT', rtDS);
-                //         setThresholdDS(rtDS);
-                //     }
-                //
-                //     if(isVideoDatastream(ds)) {
-                //         laneDSColl?.addDS('videoRT', rtDS);
-                //         updatedVideo.push(rtDS)
-                //
-                //     }
-                // });
+            }
+            if (isThresholdDatastream(ds)) {
+                laneDSColl?.addDS('gammaTrshldRT', rtDS);
+                setThresholdDS(rtDS);
             }
 
-            setVideoDS(updatedVideo);
-            setDataSourcesByLane(laneDSMap);
-            console.log("laneds map", laneDSMap)
+            if (isVideoDatastream(ds)) {
+                laneDSColl?.addDS('videoRT', rtDS);
+                updatedVideo.push(rtDS)
+
+            }
         }
-    }, [laneMapRef.current, currentLane]);
+
+        console.log("kalyn",laneDSMap)
+
+
+        setVideoDS(updatedVideo);
+        setDataSourcesByLane(laneDSMap);
+
+    }, [laneMapRef]);
 
 
     useEffect(() => {
         if(laneMapRef?.current && currentLane)
             collectDataSources();
         console.log("lane view collected datasources")
-    }, [laneMapRef.current, currentLane]);
+    }, [laneMapRef, currentLane]);
 
     return (
         <Stack spacing={2} direction={"column"}>
