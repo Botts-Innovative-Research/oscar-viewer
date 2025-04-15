@@ -70,22 +70,20 @@ export default function LaneViewPage() {
         const laneDSMap = new Map<string, LaneDSColl>();
 
         const updatedVideo: typeof SweApi[] = [];
+
         for (let [laneid, lane] of laneMapRef.current.entries()) {
 
             if(laneid === currentLane){
 
-                const laneDSColl = new LaneDSColl();
-                laneDSMap.set(laneid, laneDSColl);
+                console.log(currentLane)
 
+                laneDSMap.set(laneid,new LaneDSColl());
 
-                lane.datastreams.forEach((ds, idx) => {
-
-                    const rtDS = lane.datasourcesRealtime[idx];
-
-                    rtDS.properties.startTime = new Date().toISOString();
-                    rtDS.properties.endTime = "2055-01-01T08:13:25.845Z"
-
+                for( let ds of lane.datastreams){
+                    let idx: number = lane.datastreams.indexOf(ds);
+                    let rtDS = lane.datasourcesRealtime[idx];
                     let laneDSColl = laneDSMap.get(laneid);
+
 
                     if(isGammaDatastream(ds)){
                         laneDSColl.addDS('gammaRT', rtDS);
@@ -111,13 +109,48 @@ export default function LaneViewPage() {
 
                     }
 
-                });
+                }
+                //
+                // lane.datastreams.forEach((ds, idx) => {
+                //
+                //     const rtDS = lane.datasourcesRealtime[idx];
+                //
+                //     rtDS.properties.startTime = new Date().toISOString();
+                //     rtDS.properties.endTime = "2055-01-01T08:13:25.845Z"
+                //
+                //     let laneDSColl = laneDSMap.get(laneid);
+                //
+                //     if(isGammaDatastream(ds)){
+                //         laneDSColl.addDS('gammaRT', rtDS);
+                //         setGammaDS(rtDS)
+                //     }
+                //     if(isNeutronDatastream(ds)){
+                //         laneDSColl.addDS('neutronRT', rtDS);
+                //         setNeutronDS(rtDS);
+                //     }
+                //     if(isTamperDatastream(ds)){
+                //         laneDSColl.addDS('tamperRT', rtDS);
+                //         setTamperDS(rtDS)
+                //
+                //     }
+                //     if(isThresholdDatastream(ds)){
+                //         laneDSColl?.addDS('gammaTrshldRT', rtDS);
+                //         setThresholdDS(rtDS);
+                //     }
+                //
+                //     if(isVideoDatastream(ds)) {
+                //         laneDSColl?.addDS('videoRT', rtDS);
+                //         updatedVideo.push(rtDS)
+                //
+                //     }
+                // });
             }
 
             setVideoDS(updatedVideo);
             setDataSourcesByLane(laneDSMap);
+            console.log("laneds map", laneDSMap)
         }
-    }, [laneMapRef.current]);
+    }, [laneMapRef.current, currentLane]);
 
 
     useEffect(() => {
