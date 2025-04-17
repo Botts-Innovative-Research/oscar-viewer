@@ -14,14 +14,13 @@ interface LaneStatusProps{
 }
 export default function LaneStatus(props: LaneStatusProps) {
   const dispatch = useAppDispatch();
-  const lastLaneStatus = useSelector(selectLastLaneStatus);
+  // const lastLaneStatus = useSelector(selectLastLaneStatus);
   const idVal = useRef(1);
   const [laneStatus, setLaneStatus] = useState<LaneStatusType>();
   // const [laneStatus, setLaneStatus] = useState<LaneStatusType | null>(lastLaneStatus ?? null);
 
 //todo: add in a historic request so initial lane status is not null
 
-  console.log("lanes", props.dataSourcesByLane);
   // useEffect(() => {
   //   if(lastLaneStatus.status != null)
   //     setLaneStatus(lastLaneStatus ?? null);
@@ -49,6 +48,7 @@ export default function LaneStatus(props: LaneStatusProps) {
   }, [props.dataSourcesByLane]);
 
   useEffect(() => {
+    console.log('kalyn michelle,', props.dataSourcesByLane)
     addSubscriptionCallbacks();
   }, [props.dataSourcesByLane]);
 
@@ -58,6 +58,7 @@ export default function LaneStatus(props: LaneStatusProps) {
       name: laneName,
       status: newState
     }
+    // console.log("new status", newStatus)
     // set timer between each set status to just prevent flickering of status
     setTimeout(() => {
       setLaneStatus(newStatus);
