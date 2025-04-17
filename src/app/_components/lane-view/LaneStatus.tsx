@@ -21,10 +21,11 @@ export default function LaneStatus(props: LaneStatusProps) {
 
 //todo: add in a historic request so initial lane status is not null
 
-  useEffect(() => {
-    if(lastLaneStatus.status != null)
-      setLaneStatus(lastLaneStatus ?? null);
-  }, [lastLaneStatus]);
+  console.log("lanes", props.dataSourcesByLane);
+  // useEffect(() => {
+  //   if(lastLaneStatus.status != null)
+  //     setLaneStatus(lastLaneStatus ?? null);
+  // }, [lastLaneStatus]);
 
   const addSubscriptionCallbacks = useCallback(() => {
     for (let [laneName, laneDSColl] of props.dataSourcesByLane.entries()) {
