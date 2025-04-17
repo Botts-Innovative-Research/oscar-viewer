@@ -7,7 +7,8 @@ import { setCurrentLane } from '@/lib/state/LaneViewSlice';
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/navigation";
 
-interface LaneStatusProps{
+
+export interface LaneStatusProps{
   id: number;
   name: string;
   isOnline: boolean;
@@ -15,29 +16,21 @@ interface LaneStatusProps{
   isFault: boolean;
 }
 
-// Generate 50 mock lanes
-// const generateMockLanes = (): LaneStatusProps[] => {
-//   const areas = ['North', 'South', 'East', 'West', 'Central'];
-//   return Array.from({ length: 50 }, (_, index) => ({
-//     id: index + 1,
-//     name: `${areas[Math.floor(Math.random() * areas.length)]} Lane ${index + 1}`,
-//     isOnline: Math.random() > 0.1, // 90% chance of being online
-//     isTamper: Math.random() > 0.9, // 10% chance of tamper
-//     isFault: Math.random() > 0.95, // 5% chance of fault
-//   }));
-// };
-
-export default function LaneStatus(props: {dataSourcesByLane: any}) {
+export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes: any[]}) {
   const idVal = useRef(1);
   const [statusList, setStatusList] = useState<LaneStatusProps[]>([]);
-  // const [statusList, setStatusList] = useState<LaneStatusProps[]>(generateMockLanes());
 
   let timersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   let alarmStates= ['Alarm', 'Scan', 'Background']
 
 
+  useEffect(() => {
+    setStatusList(props.initialLanes);
+  }, [props.initialLanes]);
+
   const addSubscriptionCallbacks = useCallback(() => {
     for (let [laneName, laneDSColl] of props.dataSourcesByLane.entries()) {
+      console.log("lane name", laneName)
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('connectionRT', (message: any) => {
         const connectedState = message.values[0].data.isConnected;
         updateStatus(laneName, (connectedState ? 'Online': 'Offline'));
@@ -66,30 +59,6 @@ export default function LaneStatus(props: {dataSourcesByLane: any}) {
     addSubscriptionCallbacks();
   }, [props.dataSourcesByLane]);
 
-
-    // Add some simulated random updates for demo purposes
-    // useEffect(() => {
-    //   const interval = setInterval(() => {
-    //     setStatusList(prevList => {
-    //       const updatedList = [...prevList];
-    //       const randomIndex = Math.floor(Math.random() * updatedList.length);
-    //       const randomChange = Math.random();
-    //
-    //       // Randomly change one of the states
-    //       if (randomChange < 0.33) {
-    //         updatedList[randomIndex].isOnline = !updatedList[randomIndex].isOnline;
-    //       } else if (randomChange < 0.66) {
-    //         updatedList[randomIndex].isTamper = !updatedList[randomIndex].isTamper;
-    //       } else {
-    //         updatedList[randomIndex].isFault = !updatedList[randomIndex].isFault;
-    //       }
-    //
-    //       return updatedList;
-    //     });
-    //   }, 3000); // Update every 3 seconds
-    //
-    //   return () => clearInterval(interval);
-    // }, []);
 
   function updateStatus(laneName: string, newState: string) {
 
@@ -138,7 +107,7 @@ export default function LaneStatus(props: {dataSourcesByLane: any}) {
         const newLane: LaneStatusProps= {
           id: idVal.current++,
           name: laneName,
-          isOnline: true,
+          isOnline: newState  === 'Online',
           isTamper: newState === 'Tamper',
           isFault: newState.includes('Fault'),
         }
@@ -165,16 +134,6 @@ export default function LaneStatus(props: {dataSourcesByLane: any}) {
                 <Grid container columns={{sm: 12, md: 24, lg: 36, xl: 48}} spacing={1}>
                   {statusList.map((item) => (
                       <Grid key={item.id} item sm={8} md={8} lg={8} xl={6}>
-                        {/*<Link href={{*/}
-                        {/*  pathname: '/lane-view',*/}
-                        {/*  query: {*/}
-                        {/*    name: item.name,*/}
-                        {/*  }*/}
-                        {/*}}*/}
-                        {/*      passHref*/}
-                        {/*      style={{textDecoration: 'none'}}*/}
-
-                        {/*>*/}
                         <div key={item.id} onClick={() => handleLaneView(item.name)}>
                           <LaneStatusItem
                               key={item.id}
@@ -185,10 +144,6 @@ export default function LaneStatus(props: {dataSourcesByLane: any}) {
                               isTamper={item.isTamper}
                           />
                         </div>
-
-
-
-                        {/*</Link>*/}
                       </Grid>
                   ))}
                 </Grid>

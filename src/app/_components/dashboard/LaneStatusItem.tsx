@@ -19,11 +19,6 @@ export default function LaneStatusItem(props: {
 
 }) {
 
-    const iconCount = (props.isTamper ? 1 : 0) + (props.isFault ? 1 : 0) + 1;
-    const maxChars = iconCount >= 3 ? 10 : iconCount === 2 ? 12 : 15;
-    const displayName = props.name.length <= maxChars ? props.name : props.name.substr(0, maxChars) + '…';
-
-
     return (
         <Paper key={props.id} variant='outlined'
                sx={{ cursor: 'pointer',
@@ -37,22 +32,7 @@ export default function LaneStatusItem(props: {
             <Tooltip title={props.name} arrow placement="bottom">
                 <Stack direction={"row"} spacing={1} sx={{ alignItems: 'center', justifyContent: 'flex-start', width: '100%'}}>
 
-                    {/*<Typography variant="body1"  style={{*/}
-                    {/*    fontSize: 12,*/}
-                    {/*    whiteSpace: 'nowrap',*/}
-                    {/*    overflow: 'hidden',*/}
-                    {/*    textOverflow: 'ellipsis',*/}
-                    {/*    maxWidth: 100*/}
-                    {/*}}>{props.name}</Typography>*/}
-
-                    <Typography variant="body1"  style={{
-                        fontSize: 12,
-                        whiteSpace: 'nowrap',
-                        maxWidth: 100,
-                        textOverflow: 'ellipsis',
-                        overflow: 'hidden'
-                    }}>{displayName}</Typography>
-                    {/*<Typography variant="body1" style={{fontSize: 12, textWrap: 'nowrap',  }}>{props.name.length <= 15 ? props.name : (props.name.substr(0, 15)) }</Typography>*/}
+                    <Typography variant="body1" style={{fontSize: 12, textWrap: 'nowrap',  }}>{props.name.length <= 15 ? props.name : (props.name.substr(0, 15)) }</Typography>
 
                     {props.isFault &&
                         <Tooltip title={'Fault'} arrow placement="top">

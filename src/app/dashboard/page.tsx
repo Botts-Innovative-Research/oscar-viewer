@@ -1,9 +1,9 @@
 "use client";
 
 import {Grid, Paper} from "@mui/material";
-import LaneStatus from "../_components/dashboard/LaneStatus";
+import LaneStatus, { LaneStatusProps } from "../_components/dashboard/LaneStatus";
 
-import React, {useCallback, useContext, useEffect, useMemo, useState} from "react";
+import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
 import dynamic from "next/dynamic";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
@@ -27,7 +27,8 @@ export default function DashboardPage() {
     const {laneMapRef} = useContext(DataSourceContext);
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
     const dispatch = useAppDispatch();
-
+    const [statusList, setStatusList] = useState<LaneStatusProps[]>([]);
+    const idVal = useRef(1);
 
     const QuickView = useMemo(() => dynamic(
         () => import('@/app/_components/dashboard/QuickView'),
@@ -38,9 +39,12 @@ export default function DashboardPage() {
     ), [])
 
 
+
     const datasourceSetup = useCallback(async () => {
         // @ts-ignore
         let laneDSMap = new Map<string, LaneDSColl>();
+
+        let newStatusList: LaneStatusProps[] = [];
 
         for (let [laneid, lane] of laneMapRef.current.entries()) {
 
@@ -72,9 +76,23 @@ export default function DashboardPage() {
                     laneDSColl.addDS('gammaTrshldRT', rtDS);
                 }
             }
+
+            newStatusList.push({
+                id: idVal.current++,
+                name: laneid,
+                isOnline: false,
+                isTamper: false,
+                isFault: false,
+            });
+
+
+            console.log("new status list", newStatusList)
             setDataSourcesByLane(laneDSMap);
             dispatch(setLaneMap(laneMap))
         }
+        setStatusList(prevState => [...newStatusList,
+            ...prevState.filter(item => !newStatusList.some(newItem => newItem.name === item.name))]);
+
     }, [laneMapRef.current]);
 
     useEffect(() => {
@@ -88,7 +106,7 @@ export default function DashboardPage() {
             <Grid item container spacing={2} style={{flexBasis: '33.33%', flexGrow: 0, flexShrink: 0}}>
                 <Grid item xs={8} sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
                     <Paper variant='outlined' sx={{height: "auto", minHeight: 275, padding: 1}}>
-                        <LaneStatus dataSourcesByLane={dataSourcesByLane}/>
+                        <LaneStatus dataSourcesByLane={dataSourcesByLane} initialLanes={statusList}/>
                     </Paper>
 
 
