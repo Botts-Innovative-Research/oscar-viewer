@@ -108,7 +108,6 @@ export default function StatusTables({laneMap}: TableProps){
                 await fetchObservations(entry, startTimeForObs.toISOString(), 'now', observedProperty)
 
                 let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now', observedProperty)
-                console.log("fetchedResults:::", fetchedResults)
                 allFetchedResults = [...allFetchedResults, ...fetchedResults];
 
             })();
@@ -158,9 +157,6 @@ export default function StatusTables({laneMap}: TableProps){
         setFilteredTableData((prevState) => {
             return filteredData;
         })
-
-        console.log("filtered Data: ", filteredData)
-
 
     },[tableData])
 
@@ -255,7 +251,7 @@ export default function StatusTables({laneMap}: TableProps){
                 initialState={{
                     pagination: {
                         paginationModel: {
-                            pageSize: 20,
+                            pageSize: 15,
                         },
                     },
                     sorting: {
@@ -263,7 +259,7 @@ export default function StatusTables({laneMap}: TableProps){
                     },
 
                 }}
-                pageSizeOptions={[20]}
+                pageSizeOptions={[15]}
                 slots={{toolbar: CustomToolbar}}
                 autosizeOnMount
                 autosizeOptions={{

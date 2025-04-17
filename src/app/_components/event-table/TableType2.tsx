@@ -1,48 +1,45 @@
 "use client"
 
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {useCallback, useEffect, useRef, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {Box} from "@mui/material";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {
     setEventPreview,
     setSelectedRowId,
-    selectSelectedRowId,
-    selectEventPreview, setLatestGB
+    selectSelectedRowId, setLatestGB
 } from "@/lib/state/EventPreviewSlice";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
-import {randomUUID} from "osh-js/source/core/utils/Utils";
-import {EventTableData} from "@/lib/data/oscar/TableHelpers";
+import {AlarmTableData, EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {
     DataGrid,
-    GridActionsCellItem, GridCallbackDetails,
+    GridActionsCellItem,
     GridCellParams,
     gridClasses,
-    GridColDef, GridRowId,
+    GridColDef,
     GridRowParams,
-    GridRowSelectionModel, MuiEvent
+    GridRowSelectionModel
 } from "@mui/x-data-grid";
 import CustomToolbar from "@/app/_components/CustomToolbar";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {
     addEventToLog,
-    selectEventTableDataArray, selectSelectedEvent,
+    selectEventTableDataArray,
     setEventLogData,
     setSelectedEvent
 } from "@/lib/state/EventDataSlice";
 import {useRouter} from "next/navigation";
-import {makeStyles} from "@mui/styles";
 import {getObservations} from "@/app/utils/ChartUtils";
-import { selectDatastreams } from "@/lib/state/OSHSlice";
 import {isThresholdDatastream} from "@/lib/data/oscar/Utilities";
 
 
 interface TableProps {
-    tableMode: "eventlog" | "alarmtable" | "eventLogPerLane";
+    tableMode: "eventlog" | "alarmtable" | "lanelog";
     viewSecondary?: boolean;
+    currentLane?: string;
     viewMenu?: boolean;
     viewLane?: boolean;
     viewAdjudicated?: boolean;
@@ -68,6 +65,7 @@ export default function Table2({
                                    viewLane = false,
                                    viewAdjudicated = false,
                                    laneMap,
+                                    currentLane
 
                                }: TableProps) {
 
@@ -144,7 +142,6 @@ export default function Table2({
         newEvent.setFoiId(obs["foi@id"]);
         newEvent.setObservationId(obs.id);
 
-        console.log("new event", newEvent)
         return newEvent;
     }
 
@@ -200,9 +197,20 @@ export default function Table2({
     }
 
     function onlyLaneFilteredList(tableData: EventTableData[], laneId: string) {
-        if (!tableData) return [];
-        return tableData.filter((entry: EventTableData) => entry.laneId == laneId)
 
+        console.log("table data", tableData, laneId)
+
+        if (!tableData) return [];
+        const laneData = tableData.filter((entry: EventTableData) => entry.laneId == laneId);
+        console.log("filtered lane", laneData);
+        return laneData;
+    }
+
+    function laneEventList(tableData: EventTableData[]){
+        let filteredData: EventTableData[] = [];
+
+        filteredData = tableData.filter((entry: EventTableData) => entry.laneId == currentLane)
+        return filteredData;
     }
 
 
@@ -224,11 +232,9 @@ export default function Table2({
                 const laneId = Array.from(laneMap.keys())[0];
                 filteredData = onlyLaneFilteredList(tableData, laneId)
             }
-        }else if(tableMode === 'eventLogPerLane'){
-            if (laneMap.size === 1) {
-                const laneId = Array.from(laneMap.keys())[0];
-                filteredData = onlyLaneFilteredList(tableData, laneId)
-            }
+        }else if(tableMode === 'lanelog'){
+
+            filteredData = laneEventList(tableData);
         }
         // setFilteredTableData(filteredData);
         setFilteredTableData((prevState) => {
@@ -399,22 +405,15 @@ export default function Table2({
 
 
     async function getLatestGB(eventData: any){
-        console.log("lanemap in table 2", laneMap)
 
         for (const lane of laneMap.values()){
-            console.log("VALUES",lane)
             let datastreams = lane.datastreams.filter((ds: any) => isThresholdDatastream(ds));
-            console.log("data thresh: ", datastreams)
             let gammaThreshDs = datastreams.find((ds: any) => ds.properties["system@id"] == eventData.systemIdx)
-            console.log("gammathreshds", gammaThreshDs)
             if(gammaThreshDs){
                 let latestGB = await getObservations(eventData.startTime, eventData.endTime, gammaThreshDs);
                 dispatch(setLatestGB(latestGB));
             }
         }
-
-
-
     }
 
     return (

@@ -160,7 +160,7 @@ export default function LaneViewPage() {
                             </ToggleButtonGroup>
                         </Grid>
                         <Grid item sx={{ width: "100%", display: toggleView === 'occupancy' ? 'block' : 'none' }}>
-                            <Table2 tableMode={'eventLogPerLane'} laneMap={laneMap} viewLane viewSecondary viewAdjudicated/>
+                            <Table2 tableMode={'lanelog'} laneMap={laneMap} viewLane viewSecondary viewAdjudicated currentLane={currentLane}/>
                         </Grid>
                         <Grid item sx={{ width: "100%", display: toggleView === 'alarm' ? 'block' : 'none' }}>
                             <LaneStatusTable laneMap={laneMap}/>
