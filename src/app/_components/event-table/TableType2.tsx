@@ -144,7 +144,6 @@ export default function Table2({
         newEvent.setFoiId(obs["foi@id"]);
         newEvent.setObservationId(obs.id);
 
-        console.log("new event", newEvent)
         return newEvent;
     }
 

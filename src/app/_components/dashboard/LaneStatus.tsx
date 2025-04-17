@@ -3,7 +3,9 @@
 import {Box, Grid, Stack, Typography } from '@mui/material';
 import LaneStatusItem from './LaneStatusItem';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import Link from "next/link";
+import { setCurrentLane } from '@/lib/state/LaneViewSlice';
+import {useAppDispatch} from "@/lib/state/Hooks";
+import {useRouter} from "next/navigation";
 
 interface LaneStatusProps{
   id: number;
@@ -60,6 +62,7 @@ export default function LaneStatus(props: {dataSourcesByLane: any}) {
   }, [props.dataSourcesByLane]);
 
   useEffect(() => {
+    console.log("datasources lane", props.dataSourcesByLane)
     addSubscriptionCallbacks();
   }, [props.dataSourcesByLane]);
 
@@ -144,6 +147,14 @@ export default function LaneStatus(props: {dataSourcesByLane: any}) {
     });
   }
 
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+
+  const handleLaneView = (laneName: string) =>{
+    dispatch(setCurrentLane(laneName));
+
+    router.push("/lane-view");
+  }
 
   return (
       <Stack padding={2} justifyContent={"start"} spacing={1}>
@@ -154,17 +165,17 @@ export default function LaneStatus(props: {dataSourcesByLane: any}) {
                 <Grid container columns={{sm: 12, md: 24, lg: 36, xl: 48}} spacing={1}>
                   {statusList.map((item) => (
                       <Grid key={item.id} item sm={8} md={8} lg={8} xl={6}>
-                        <Link href={{
-                          pathname: '/lane-view',
-                          query: {
-                            name: item.name,
-                          }
-                        }}
-                              passHref
-                              style={{textDecoration: 'none'}}
+                        {/*<Link href={{*/}
+                        {/*  pathname: '/lane-view',*/}
+                        {/*  query: {*/}
+                        {/*    name: item.name,*/}
+                        {/*  }*/}
+                        {/*}}*/}
+                        {/*      passHref*/}
+                        {/*      style={{textDecoration: 'none'}}*/}
 
-                        >
-
+                        {/*>*/}
+                        <div key={item.id} onClick={() => handleLaneView(item.name)}>
                           <LaneStatusItem
                               key={item.id}
                               id={item.id}
@@ -173,8 +184,11 @@ export default function LaneStatus(props: {dataSourcesByLane: any}) {
                               isFault={item.isFault}
                               isTamper={item.isTamper}
                           />
+                        </div>
 
-                        </Link>
+
+
+                        {/*</Link>*/}
                       </Grid>
                   ))}
                 </Grid>

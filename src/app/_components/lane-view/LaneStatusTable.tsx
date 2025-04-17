@@ -84,7 +84,6 @@ export default function StatusTables({laneMap}: TableProps){
     }
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): AlarmTableData {
-        console.log("event status observaton", obs)
         let newEvent: AlarmTableData = new AlarmTableData(
             randomUUID(),
             laneEntry.laneName,
