@@ -31,6 +31,7 @@ export default function TimeController({timeSync, syncTime, startTime, endTime, 
 
     const [isScrubbing, setIsScrubbing] = useState(false);
     const [isPlaying, setIsPlaying] = useState(true);
+    const scrubTimeoutRef = useRef(null);
 
 
     useEffect(() => {
@@ -51,7 +52,6 @@ export default function TimeController({timeSync, syncTime, startTime, endTime, 
     };
 
 
-    const scrubTimeoutRef = useRef(null);
 
     const handleSliderChange = (event: Event, value: number | number[])=>{
         const newTime = value as number;
@@ -66,7 +66,7 @@ export default function TimeController({timeSync, syncTime, startTime, endTime, 
         scrubTimeoutRef.current = setTimeout(() =>{
             handleCommitChange(event, newTime, isPlaying);
             // timeSync.setTimeRange(value, maxTime, isPlaying, true);
-        }, 100)
+        }, 150)
 
     }
 
@@ -95,13 +95,13 @@ export default function TimeController({timeSync, syncTime, startTime, endTime, 
         }}>
         <Stack>
           <Slider
-              aria-labelledby="continuous-slider"
+              aria-labelledby="time-indicator"
               value={currentTime} //current position of the slider
-              // step={1}
+              step={0.1}
               min={minTime} //start time of slider
               max={maxTime} //end time of event
               onChange={handleSliderChange} //slider as it is dragged
-              onChangeCommitted={handleSliderCommitted} //updates when drops the slider
+              onChangeCommitted={handleSliderCommitted} //updates when release the slider
               valueLabelDisplay="off"
           />
           <Stack direction={"row"} alignItems={"center"} justifyContent={"start"}>
