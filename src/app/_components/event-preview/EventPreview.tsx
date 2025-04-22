@@ -7,7 +7,7 @@
 
 import {
     Box,
-    Button,
+    Button, debounce,
     IconButton,
     Snackbar,
     SnackbarCloseReason,
@@ -17,7 +17,7 @@ import {
 } from "@mui/material";
 import OpenInFullRoundedIcon from "@mui/icons-material/OpenInFullRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
+import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
 import {
@@ -325,6 +325,7 @@ export function EventPreview() {
                 startTime: eventPreview.eventData.startTime,
                 // endTime: eventPreview.eventData.endTime,
                 endTime: "now",
+                reconnect: true
             });
             syncRef.current.onTime
             setDataSyncCreated(true);
@@ -381,10 +382,9 @@ export function EventPreview() {
     useEffect(() => {
         if(syncRef.current){
             syncRef.current.subscribe((message: { type: any; timestamp: any }) => {
-                    if (message.type === EventType.MASTER_TIME) {
-                        setSyncTime(message.timestamp);
-                    }
-                }, [EventType.MASTER_TIME]
+                if (message.type === EventType.MASTER_TIME) {
+                    setSyncTime(message.timestamp);
+                }}, [EventType.MASTER_TIME]
             );
         }
 
@@ -402,37 +402,45 @@ export function EventPreview() {
 
     // function to start the time controller by connecting to time sync
     const play = async () => {
-        if (syncRef.current ) {
-            await syncRef.current.setReplaySpeed(1.0);
-
+        if (syncRef.current) {
+            // await syncRef.current.setReconnect(true);
+            // await syncRef.current.setReplaySpeed(1.0);
+            await syncRef.current.setTimeRange(syncTime, eventPreview.eventData.endTime, 1.0, false);
+            //
             console.log("Playback started.");
-            await syncRef.current.connect();
+            // await syncRef.current.connect();
         }
     };
 
     // function to pause the time controller by disconnecting from the time sync
     const pause = async () => {
         if (syncRef.current) {
+
+            // await syncRef.current.setTimeRange(syncTime, eventPreview.eventData.endTime, 0.0, true);
             await syncRef.current.setReplaySpeed(0.0);
+            // await syncRef.current.connect();
+            // await syncRef.current.setReconnect(true);
+
             console.log("Playback paused.");
+
         }
 
     };
 
     // when the user toggles the time controller this is the code to change the time sync
-    const handleChange = useCallback( async(event: Event, newValue: number, isPlaying: boolean) => {
+    const handleCommitChange = useCallback( async(event: Event, newValue: number, isPlaying: boolean) => {
 
         // update time sync datasources start time
-        for (const dataSource of syncRef.current.getDataSources()) {
-            dataSource.setMinTime(newValue);
-        }
+        // for (const dataSource of syncRef.current.getDataSources()) {
+        //     dataSource.setMinTime(newValue);
+        //     dataSource.setMaxTime(eventPreview.eventData.endTime)
+        // }
 
         // update the time sync start time
-        // await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, 0.0, false);
-        await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, (isPlaying ? 1.0 : 0.0), false);
+        await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, (isPlaying ? 1.0 : 0.0), true);
         setSyncTime(newValue);
 
-    },[syncRef.current, eventPreview]);
+    },[syncRef, eventPreview.eventData.endTime]);
 
 
     return (
@@ -471,7 +479,7 @@ export function EventPreview() {
                             addDataSource={setActiveVideoIDX}
                             modeType={"preview"}
                         />
-                        <TimeController handleChange={handleChange} pause={pause} play={play} syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
+                        <TimeController  handleCommitChange={handleCommitChange} pause={pause} play={play} syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
                     </Box>
             ) :
 

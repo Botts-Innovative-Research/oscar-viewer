@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useRef, useState} from "react";
-import {Box, Grid, IconButton, Stack} from "@mui/material";
+import {Box, Grid, IconButton, Paper, Stack} from "@mui/material";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import VideoView from "osh-js/source/core/ui/view/video/VideoView";
 import VideoDataLayer from "osh-js/source/core/ui/layer/VideoDataLayer";
@@ -12,6 +12,7 @@ import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import '../../../Styles.css';
+import {EventType} from "osh-js/source/core/event/EventType";
 
 export class LaneVideoPlaybackProps {
     videoDatasources: typeof SweApi[];
@@ -36,7 +37,9 @@ export default function LaneVideoPlayback({
 
     const [maxPages, setMaxPages] = useState(0);
 
-    const [videoSize, setVideoSize] = useState("300px");
+    const [videoWidth, setVideoWidth] = useState("275px");
+    const [videoHeight, setVideoHeight] = useState("350px");
+    const [currentTime, setCurrentTime] = useState<number | null>(null);
 
     useEffect(() => {
         if (videoDatasources.length > 0 && videoDatasources) {
@@ -45,9 +48,11 @@ export default function LaneVideoPlayback({
         }
 
         if(modeType === 'detail'){
-            setVideoSize("450px")
+            setVideoHeight("450px")
+            setVideoWidth("500px")
         }else if (modeType=== 'preview'){
-            setVideoSize("275px")
+            setVideoHeight("275px")
+            setVideoWidth("350px")
         }
     }, [videoDatasources, modeType]);
 
@@ -119,38 +124,36 @@ export default function LaneVideoPlayback({
                         <NavigateBeforeIcon/>
                     </IconButton>
 
-
                     <Stack
                         margin={0}
                         spacing={2}
                         direction="row"
                         alignContent="center"
                         justifyContent="center"
+
                         sx={{
-                            width: "100%",
-                            height: "videoSize",
+                            height: videoHeight,
+                            width: videoWidth,
                             alignItems: "center",
                             border: "1px solid rgba(0,0,0,0.12)",
                             padding: 1,
+                            flexShrink: 0
                         }}
                     >
-                        <Box
+                        <Paper
                             key={dataSources[selVideoIdx].id}
                             id="event-preview-video"
                             sx={{
                                 width: "100%",
                                 height: "100%",
                             }}
-                        />
+                        ></Paper>
                     </Stack>
-
-
 
                     <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === maxPages-1}>
                         <NavigateNextIcon/>
                     </IconButton>
                 </Box>
-
             )}
         </>
 

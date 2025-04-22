@@ -36,10 +36,6 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
     let latestGB = useSelector((state: RootState) => selectLatestGB(state));
     console.log("chart latestGB", latestGB);
 
-    // const nodes =  useSelector((state: RootState) => selectNodes(state));
-    // const [latestGB, setLatestGB] = useState<number>();
-
-
 
     const createDataSync = useCallback(() => {
         if (!syncRef.current && !dataSyncCreated && datasources?.video.length > 0) {
@@ -121,7 +117,6 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
 
             await syncRef.current.setReplaySpeed(1.0);
 
-
             console.log("Playback started.");
             await syncRef.current.connect();
 
@@ -187,7 +182,7 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
 
                     </Grid>
 
-                    <TimeController handleChange={handleChange} pause={pause} play={play} syncTime={syncTime} timeSync={syncRef.current} startTime={eventData?.startTime} endTime={eventData?.endTime}/>
+                    <TimeController handleCommitChange={handleChange} pause={pause} play={play} syncTime={syncTime} timeSync={syncRef.current} startTime={eventData?.startTime} endTime={eventData?.endTime}/>
                 </Box>
             ):
                 <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}><CircularProgress/></Box>
