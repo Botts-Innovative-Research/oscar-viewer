@@ -330,7 +330,6 @@ export function EventPreview() {
             syncRef.current.onTime
             setDataSyncCreated(true);
 
-            // dispatch(setDataSync(syncRef.current));
         }
     }, [syncRef, dataSyncCreated, datasourcesReady, videoDatasources]);
 
@@ -403,26 +402,20 @@ export function EventPreview() {
     // function to start the time controller by connecting to time sync
     const play = async () => {
         if (syncRef.current) {
-            // await syncRef.current.setReconnect(true);
-            // await syncRef.current.setReplaySpeed(1.0);
-            await syncRef.current.setTimeRange(syncTime, eventPreview.eventData.endTime, 1.0, false);
-            //
             console.log("Playback started.");
-            // await syncRef.current.connect();
+            await syncRef.current.setReplaySpeed(1.0);
+            await syncRef.current.connect();
         }
     };
 
     // function to pause the time controller by disconnecting from the time sync
     const pause = async () => {
         if (syncRef.current) {
-
-            // await syncRef.current.setTimeRange(syncTime, eventPreview.eventData.endTime, 0.0, true);
             await syncRef.current.setReplaySpeed(0.0);
-            // await syncRef.current.connect();
-            // await syncRef.current.setReconnect(true);
+
+            // await syncRef.current.disconnect();
 
             console.log("Playback paused.");
-
         }
 
     };
@@ -430,14 +423,9 @@ export function EventPreview() {
     // when the user toggles the time controller this is the code to change the time sync
     const handleCommitChange = useCallback( async(event: Event, newValue: number, isPlaying: boolean) => {
 
-        // update time sync datasources start time
-        // for (const dataSource of syncRef.current.getDataSources()) {
-        //     dataSource.setMinTime(newValue);
-        //     dataSource.setMaxTime(eventPreview.eventData.endTime)
-        // }
-
+        await syncRef.current.dataSynchronizerReplay.setStartTime(newValue, false);
         // update the time sync start time
-        await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, (isPlaying ? 1.0 : 0.0), true);
+        // await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, (isPlaying ? 1.0 : 0.0), true);
         setSyncTime(newValue);
 
     },[syncRef, eventPreview.eventData.endTime]);
@@ -479,9 +467,9 @@ export function EventPreview() {
                             addDataSource={setActiveVideoIDX}
                             modeType={"preview"}
                         />
-                        <TimeController  handleCommitChange={handleCommitChange} pause={pause} play={play} syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
+                        <TimeController handleCommitChange={handleCommitChange} pause={pause} play={play} syncTime={syncTime}  startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
                     </Box>
-            ) :
+                ) :
 
                 <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}><CircularProgress/></Box>
             }

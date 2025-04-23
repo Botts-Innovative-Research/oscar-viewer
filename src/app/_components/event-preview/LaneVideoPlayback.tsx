@@ -72,6 +72,8 @@ export default function LaneVideoPlayback({
                     getTimestamp: (rec: any) => rec.timestamp,
                 })]
             });
+
+            console.log("HELOOOOOPOO", videoViewRef)
             setVideoReady(true);
             setLocalVideoReady(true);
         } else {

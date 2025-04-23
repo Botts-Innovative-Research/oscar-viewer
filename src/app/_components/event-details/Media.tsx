@@ -17,7 +17,7 @@ import {selectLatestGB} from "@/lib/state/EventPreviewSlice";
 
 export default function Media({eventData, datasources}: {eventData: any, datasources: any}){
 
-    const syncRef = useRef<typeof DataSynchronizer>();
+    const masterTimeController = useRef<typeof DataSynchronizer>();
     const [currentTime, setCurrentTime] = useState<string>("");
     const [dataSyncCreated, setDataSyncCreated] = useState<boolean>(false);
     const [dataSyncReady, setDataSyncReady] = useState<boolean>(false);
@@ -38,25 +38,25 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
 
 
     const createDataSync = useCallback(() => {
-        if (!syncRef.current && !dataSyncCreated && datasources?.video.length > 0) {
+        if (!masterTimeController.current && !dataSyncCreated && datasources?.video.length > 0) {
 
             console.log("VIDEO DS: ", datasources.video)
 
             const videoDS = datasources.video;
             // const isSweApiInstance = videoDS[0] instanceof SweApi;
 
-            syncRef.current = new DataSynchronizer({
+            masterTimeController.current = new DataSynchronizer({
                 dataSources: videoDS,
                 replaySpeed: 1.0,
                 startTime: eventData?.startTime,
                 endTime: eventData?.endTime,
             });
 
-            syncRef.current.onTime
+            masterTimeController.current.onTime
             setDataSyncCreated(true);
             setDataSyncReady(true);
         }
-    }, [chartReady, syncRef, dataSyncCreated, datasources, datasourcesReady, eventData]);
+    }, [chartReady, masterTimeController, dataSyncCreated, datasources, datasourcesReady, eventData]);
 
 
     useEffect(() => {
@@ -82,11 +82,11 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
             if(datasources.threshold) datasources?.threshold.connect()
 
 
-            syncRef.current?.connect().then(() => {
-                console.log("DataSync Should Be Connected", syncRef.current);
+            masterTimeController.current?.connect().then(() => {
+                console.log("DataSync Should Be Connected", masterTimeController.current);
             });
 
-            if (syncRef.current?.isConnected()) {
+            if (masterTimeController.current?.isConnected()) {
                 // if is true then pause else play
                 console.log("DataSync Connected!!!");
             } else {
@@ -96,39 +96,39 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
         } else {
             console.log("Chart Not Ready, cannot start DataSynchronizer...");
         }
-    }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady, datasources]);
+    }, [chartReady, masterTimeController, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady, datasources]);
 
 
     useEffect(() => {
-        if(syncRef.current){
-            syncRef.current.subscribe((message: { type: any; timestamp: any }) => {
+        if(masterTimeController.current){
+            masterTimeController.current.subscribe((message: { type: any; timestamp: any }) => {
                     if (message.type === EventType.MASTER_TIME) {
                         setSyncTime(message.timestamp);
                     }
                 }, [EventType.MASTER_TIME]
             );
         }
-    }, [syncRef.current]);
+    }, [masterTimeController.current]);
 
 
     // function to start the time controller by connecting to time sync
     const play = async () => {
-        if (syncRef.current ) { //&& !await syncRef.current.isConnected()
+        if (masterTimeController.current ) { //&& !await masterTimeController.current.isConnected()
 
-            await syncRef.current.setReplaySpeed(1.0);
+            await masterTimeController.current.setReplaySpeed(1.0);
 
             console.log("Playback started.");
-            await syncRef.current.connect();
+            await masterTimeController.current.connect();
 
         }
     };
 
     // function to pause the time controller by disconnecting from the time sync
     const pause = async () => {
-        if (syncRef.current && await syncRef.current.isConnected()) {
-            await syncRef.current.setReplaySpeed(0.0);
+        if (masterTimeController.current && await masterTimeController.current.isConnected()) {
+            await masterTimeController.current.setReplaySpeed(0.0);
 
-            // syncRef.current.disconnect();
+            // masterTimeController.current.disconnect();
 
             console.log("Playback paused.");
         }
@@ -138,16 +138,16 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
     //when the user toggles the time controller this is the code to change the time sync
     const handleChange = useCallback( async(event: Event, newValue: number, isPlaying: boolean) => {
         // update time sync datasources start time
-        for (const dataSource of syncRef.current.getDataSources()) {
+        for (const dataSource of masterTimeController.current.getDataSources()) {
             dataSource.setMinTime(newValue);
         }
 
         // update the time sync start time
-        await syncRef.current.setTimeRange(newValue, eventData?.endTime, (isPlaying ? 1.0 : 0.0), false);
+        await masterTimeController.current.setTimeRange(newValue, eventData?.endTime, (isPlaying ? 1.0 : 0.0), false);
 
         setSyncTime(newValue);
 
-    },[syncRef, eventData]);
+    },[masterTimeController, eventData]);
 
     return (
         <Paper variant='outlined' sx={{ width: "100%" , padding: 2}}>
@@ -174,7 +174,7 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
                             <LaneVideoPlayback
                                 videoDatasources={datasources.video}
                                 setVideoReady={setVideoReady}
-                                dataSynchronizer={syncRef.current}
+                                dataSynchronizer={masterTimeController.current}
                                 addDataSource={setActiveVideoIDX}
                                 modeType={"detail"}
                             />
@@ -182,7 +182,7 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
 
                     </Grid>
 
-                    <TimeController handleCommitChange={handleChange} pause={pause} play={play} syncTime={syncTime} timeSync={syncRef.current} startTime={eventData?.startTime} endTime={eventData?.endTime}/>
+                    <TimeController handleCommitChange={handleChange} pause={pause} play={play} syncTime={syncTime} startTime={eventData?.startTime} endTime={eventData?.endTime}/>
                 </Box>
             ):
                 <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}><CircularProgress/></Box>

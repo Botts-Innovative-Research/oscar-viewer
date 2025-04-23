@@ -10,38 +10,34 @@ import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 
 
 interface TimeControllerProps {
-  timeSync: typeof DataSynchronizer;
   startTime: string;
   endTime: string;
   syncTime: any;
   pause: Function;
   play: Function;
-  handleCommitChange: (event: Event, newValue: number, isPlaying: boolean) => void;
-  // debouncedSetTime: (newValue: number) => void;
+  handleCommitChange: (event: Event, newValue: number | number[], isPlaying: boolean) => void;
 }
 
+export default function TimeController({syncTime, startTime, endTime, pause, play, handleCommitChange}: TimeControllerProps) {
+
+    const [isPlaying, setIsPlaying] = useState(true);
+    const [isScrubbing, setIsScrubbing] = useState(false);
 
 
-export default function TimeController({timeSync, syncTime, startTime, endTime, pause, play, handleCommitChange}: TimeControllerProps) {
-
-
-    const [currentTime, setCurrentTime] = useState(syncTime);
     const [minTime, setMinTime] = useState<number>(new Date(startTime).getTime());
     const [maxTime, setMaxTime] = useState<number>(new Date(endTime).getTime());
-
-    const [isScrubbing, setIsScrubbing] = useState(false);
-    const [isPlaying, setIsPlaying] = useState(true);
-    const scrubTimeoutRef = useRef(null);
-
+    const [currentTime, setCurrentTime]= useState(syncTime);
 
     useEffect(() => {
         setMinTime(new Date(startTime).getTime());
         setMaxTime(new Date(endTime).getTime());
     }, [startTime, endTime]);
 
+
     useEffect(() => {
         if(!isScrubbing)
             setCurrentTime(syncTime);
+
     }, [syncTime, isScrubbing]);
 
 
@@ -52,67 +48,52 @@ export default function TimeController({timeSync, syncTime, startTime, endTime, 
     };
 
 
-
-    const handleSliderChange = (event: Event, value: number | number[])=>{
-        const newTime = value as number;
+    const handleSliderChange = (_: Event, newValue: number)=>{
+        const value = Array.isArray(newValue) ? newValue[0] : newValue;
         setIsScrubbing(true);
-        setCurrentTime(newTime);
-
-
-        if (scrubTimeoutRef.current) {
-            clearTimeout(scrubTimeoutRef.current);
-        }
-
-        scrubTimeoutRef.current = setTimeout(() =>{
-            handleCommitChange(event, newTime, isPlaying);
-            // timeSync.setTimeRange(value, maxTime, isPlaying, true);
-        }, 150)
+        setCurrentTime(value);
 
     }
 
-    const handleSliderCommitted = async(event: Event, value: number | number[])=>{
+    const handleSliderCommitted = (event: Event, value: number | number[])=>{
         setIsScrubbing(false);
-
-        if (scrubTimeoutRef.current) {
-            clearTimeout(scrubTimeoutRef.current);
-            scrubTimeoutRef.current = null;
-        }
-
         handleCommitChange(event, value as number, isPlaying);
+
     }
 
-    const handlePlaying = async ()=> {
+
+    const handlePlaying =  ()=> {
         if (isPlaying) {
-            await pause();
+            pause();
         } else {
-            await play();
+            play();
         }
         setIsPlaying(!isPlaying);
     }
+
+
     return (
-        <Box sx={{
-        padding: 3
-        }}>
-        <Stack>
-          <Slider
-              aria-labelledby="time-indicator"
-              value={currentTime} //current position of the slider
-              step={0.1}
-              min={minTime} //start time of slider
-              max={maxTime} //end time of event
-              onChange={handleSliderChange} //slider as it is dragged
-              onChangeCommitted={handleSliderCommitted} //updates when release the slider
-              valueLabelDisplay="off"
-          />
-          <Stack direction={"row"} alignItems={"center"} justifyContent={"start"}>
-            <IconButton onClick={handlePlaying}>
-              {isPlaying ? (<PauseRoundedIcon />) : (<PlayArrowRoundedIcon />)}
-            </IconButton>
-            <Typography variant="body1">
-              {formatTime(currentTime)} / {formatTime(maxTime)}
-            </Typography>
-          </Stack>
-        </Stack>
+        <Box sx={{padding: 3}}>
+            <Stack>
+                <Slider
+                    aria-labelledby="time-indicator"
+                    value={currentTime} //current position of the slider
+                    // step={1}
+                    min={minTime} //start time of slider
+                    max={maxTime} //end time of event
+                    onChange={handleSliderChange} //slider as it is dragged
+                    onChangeCommitted={handleSliderCommitted} //updates when release the slider
+                    valueLabelDisplay="off"
+                />
+                <Stack direction={"row"} alignItems={"center"} justifyContent={"start"}>
+                    <IconButton onClick={handlePlaying}>
+                        {isPlaying ? (<PauseRoundedIcon />) : (<PlayArrowRoundedIcon />)}
+                    </IconButton>
+                    <Typography variant="body1">
+                        {formatTime(currentTime)} / {formatTime(maxTime)}
+                    </Typography>
+                </Stack>
+            </Stack>
         </Box>
     )
 }
