@@ -5,8 +5,6 @@ import Slider from '@mui/material/Slider';
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 import PauseRoundedIcon from '@mui/icons-material/PauseRounded';
-import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
-
 
 
 interface TimeControllerProps {
@@ -52,15 +50,13 @@ export default function TimeController({syncTime, startTime, endTime, pause, pla
         const value = Array.isArray(newValue) ? newValue[0] : newValue;
         setIsScrubbing(true);
         setCurrentTime(value);
-
+        // updateFrameImage();
     }
 
     const handleSliderCommitted = (event: Event, value: number | number[])=>{
         setIsScrubbing(false);
         handleCommitChange(event, value as number, isPlaying);
-
     }
-
 
     const handlePlaying =  ()=> {
         if (isPlaying) {

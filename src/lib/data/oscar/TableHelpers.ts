@@ -24,7 +24,7 @@ export class EventTableData implements IEventTableData {
     pillarOccupancy?: number;
     status: string;
     adjudicatedData: AdjudicationData;
-    systemIdx?: string;
+    systemIdx?: string; //rpm system id
     dataStreamId?: string;
     observationId: string;
     isAdjudicated: boolean;

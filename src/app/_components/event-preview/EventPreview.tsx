@@ -55,6 +55,8 @@ import {getObservations} from "@/app/utils/ChartUtils";
 import {RootState} from "@/lib/state/Store";
 import {selectNodes} from "@/lib/state/OSHSlice";
 import CircularProgress from "@mui/material/CircularProgress";
+import {isVideoDatastream} from "@/lib/data/oscar/Utilities";
+import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 
 
 
@@ -398,22 +400,33 @@ export function EventPreview() {
         setOpenSnack(false);
     };
 
+    const [frameSrc, setFrameSrc]= useState();
+
 
     // function to start the time controller by connecting to time sync
     const play = async () => {
         if (syncRef.current) {
             console.log("Playback started.");
-            await syncRef.current.setReplaySpeed(1.0);
-            await syncRef.current.connect();
+
+            var img = document.getElementsByClassName("video-mjpeg");
+
+            syncRef.current.connect().finally(() => {
+                if(img.length > 0) {
+                    img[0].src = frameSrc;
+                }
+            });
         }
     };
 
     // function to pause the time controller by disconnecting from the time sync
     const pause = async () => {
         if (syncRef.current) {
-            await syncRef.current.setReplaySpeed(0.0);
+            // await syncRef.current.setReplaySpeed(0.0);
 
-            // await syncRef.current.disconnect();
+            await syncRef.current.disconnect();
+
+            var img = document.getElementsByClassName("video-mjpeg");
+            setFrameSrc(img[0].src)
 
             console.log("Playback paused.");
         }
@@ -423,12 +436,72 @@ export function EventPreview() {
     // when the user toggles the time controller this is the code to change the time sync
     const handleCommitChange = useCallback( async(event: Event, newValue: number, isPlaying: boolean) => {
 
-        await syncRef.current.dataSynchronizerReplay.setStartTime(newValue, false);
+        // await syncRef.current.dataSynchronizerReplay.setStartTime(newValue, false);
         // update the time sync start time
         // await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, (isPlaying ? 1.0 : 0.0), true);
+        // var img = document.getElementsByClassName("video-mjpeg");
+        // setFrameSrc(img[0].src)
+
+        await fetchImgBlob(newValue);
+        await syncRef.current.dataSynchronizerReplay.setStartTime(newValue, false);
         setSyncTime(newValue);
 
+
+
+
+
     },[syncRef, eventPreview.eventData.endTime]);
+
+
+    // const updateFrameImage = () =>{
+    //     console.log("new image loading....")
+    //     var img = document.getElementsByClassName("video-mjpeg");
+    //     setFrameSrc(img[0].src)
+    //
+    // }
+
+    const fetchImgBlob = async(newVal: any)=>{
+
+        for (const lane of laneMapRef.current.values()){
+
+
+            console.log("lane", lane)
+            console.log("lane id", eventPreview.eventData.laneId)
+            let datastreams = lane.datastreams.filter((ds: any) => isVideoDatastream(ds));
+
+            console.log("datstreams", datastreams)
+            let myVideoDs = datastreams.find((ds: any) => {
+                console.log(ds)
+                return ds.properties["system@id"] == eventPreview.eventData.systemIdx
+            });
+
+            console.log(myVideoDs)
+            if(myVideoDs){
+                await fetchFrameCreateBlob(newVal, eventPreview.eventData.endTime, myVideoDs);
+            }
+
+        }
+
+    }
+
+    async function fetchFrameCreateBlob(startTime: any, endTime: any, datastream: any){
+
+        let obs = await datastream.searchObservations(new ObservationFilter({ format: 'application/swe+binary', resultTime: `${startTime}/${endTime}`}),1);
+
+        debugger
+        const obsPage = await obs.nextPage();
+
+        let imgBlob = new Blob([obsPage[0].img.data]);
+        let url = window.URL.createObjectURL(imgBlob);
+
+        console.log("url", url)
+        var imgTag = document.getElementsByClassName("video-mjpeg");
+        // let oldBlobURL = imgTag.src;
+        console.log("image tag", imgTag)
+        imgTag.src = url;
+
+    }
+
 
 
     return (
