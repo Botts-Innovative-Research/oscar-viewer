@@ -20,6 +20,8 @@ export class LaneVideoPlaybackProps {
     dataSynchronizer: typeof DataSynchronizer;
     addDataSource: Function;
     modeType: string;
+
+    onSelectedVideoIdxChange?: (index: number) =>void;
 }
 
 export default function LaneVideoPlayback({
@@ -27,7 +29,8 @@ export default function LaneVideoPlayback({
                                               setVideoReady,
                                               dataSynchronizer,
                                               addDataSource,
-                                              modeType
+                                              modeType,
+                                              onSelectedVideoIdxChange,
                                           }: LaneVideoPlaybackProps) {
 
     const [dataSources, setDatasources] = useState<typeof SweApi[]>([]);
@@ -111,7 +114,7 @@ export default function LaneVideoPlayback({
         tryConnection().then(r => console.log("Connecting....."));
 
     }, [dataSources, selVideoIdx]);
-    
+
 
     const handleNextPage = () =>{
 
@@ -119,14 +122,19 @@ export default function LaneVideoPlayback({
             if (dataSources.length === 0) return 0;
             let nextPage = prevPage + 1
             disconnectLastVideo(prevPage)
-            return nextPage < maxPages ? nextPage : prevPage;
+            const page = nextPage < maxPages ? nextPage : prevPage;
+            onSelectedVideoIdxChange(page);
+            return page;
         })
     }
 
     const handlePrevPage = () =>{
         setSelVidIdx((prevPage) => {
             disconnectLastVideo(prevPage)
-            return prevPage > 0 ? prevPage -1 : prevPage;
+            const page = prevPage > 0 ? prevPage -1 : prevPage;
+
+            onSelectedVideoIdxChange(page);
+            return page;
         })
     }
 

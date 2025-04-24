@@ -400,7 +400,11 @@ export function EventPreview() {
         setOpenSnack(false);
     };
 
+
     const [frameSrc, setFrameSrc]= useState();
+    const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
+
+
 
 
     // function to start the time controller by connecting to time sync
@@ -411,6 +415,7 @@ export function EventPreview() {
             var img = document.getElementsByClassName("video-mjpeg");
 
             syncRef.current.connect().finally(() => {
+
                 if(img.length > 0) {
                     img[0].src = frameSrc;
                 }
@@ -426,7 +431,13 @@ export function EventPreview() {
             await syncRef.current.disconnect();
 
             var img = document.getElementsByClassName("video-mjpeg");
-            setFrameSrc(img[0].src)
+            console.log("img.src", img)
+            // if (img.src.length > 1){
+            //     setFrameSrc(img.src)
+            // }else{
+                setFrameSrc(img[0].src)
+            // }
+
 
             console.log("Playback paused.");
         }
@@ -469,9 +480,16 @@ export function EventPreview() {
         }
     }
 
-    async function fetchFrameCreateBlob(startTime: any, endTime: any, datastream: any){
+    async function fetchFrameCreateBlob(startTime: any, endTime: any, datastreams: any){
 
-        let obs = await datastream[1].searchObservations(new ObservationFilter({ format: 'application/swe+binary', resultTime: `${new Date(startTime).toISOString()}/${endTime}`}),1);
+        console.log("selectedVideoIndex", selectedVideoIndex)
+        let dsId = syncRef.current.dataSynchronizer.dataSources[selectedVideoIndex].name.split("-")[1]
+        console.log("sync ds id", dsId);
+
+
+        let currentVideoDs = datastreams.filter((ds: any) => ds.properties.id === dsId);
+        console.log("currentVIDEODS", currentVideoDs)
+        let obs = await currentVideoDs[0].searchObservations(new ObservationFilter({ format: 'application/swe+binary', resultTime: `${new Date(startTime).toISOString()}/${endTime}`}),1);
 
         const obsPage = await obs.nextPage();
 
@@ -480,12 +498,15 @@ export function EventPreview() {
 
         console.log("url", url)
         var img = document.getElementsByClassName("video-mjpeg");
-        console.log("image tag", img)
+
         img[0].src = url;
 
     }
 
-
+    const handleUpdatingPage =(page: number)=>{
+        console.log("help", page)
+        setSelectedVideoIndex(page);
+    }
 
     return (
         <Stack p={1} display={"flex"} spacing={1}>
@@ -522,6 +543,7 @@ export function EventPreview() {
                             dataSynchronizer={syncRef.current}
                             addDataSource={setActiveVideoIDX}
                             modeType={"preview"}
+                            onSelectedVideoIdxChange={handleUpdatingPage}
                         />
                         <TimeController handleCommitChange={handleCommitChange} pause={pause} play={play} syncTime={syncTime}  startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
                     </Box>
