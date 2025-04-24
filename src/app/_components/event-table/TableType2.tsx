@@ -147,11 +147,13 @@ export default function Table2({
     }
 
     async function doFetch(laneMap: Map<string, LaneMapEntry>) {
+        console.log("fetching lane map observations")
         let allFetchedResults: EventTableData[] = [];
         let promiseGroup: Promise<void>[] = [];
 
+        const laneMapToMap = convertToMap(laneMap);
         // createDatastreams(laneMap)
-        laneMap.forEach((entry: LaneMapEntry, laneName: string) => {
+        laneMapToMap.forEach((entry: LaneMapEntry, laneName: string) => {
             let promise = (async () => {
                 let startTimeForObs = new Date();
                 startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
@@ -216,11 +218,11 @@ export default function Table2({
 
 
     useEffect(() => {
+        console.log("laneMap changed size", laneMap)
         dataStreamSetup(laneMap);
-    }, []);
+    }, [laneMap, laneMap.size]);
 
     const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
-        console.log("lane map", laneMap)
         await doFetch(laneMap);
         doStream(laneMap);
     }, [laneMap]);
