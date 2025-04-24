@@ -238,10 +238,7 @@ export default function Table2({
 
             filteredData = laneEventList(tableData);
         }
-        // setFilteredTableData(filteredData);
-        setFilteredTableData((prevState) => {
-            return filteredData;
-        })
+        setFilteredTableData(filteredData);
     }, [tableData]);
 
     //------------------------------------------------------------------------------------------------------------------
