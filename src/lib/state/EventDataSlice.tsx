@@ -46,7 +46,6 @@ export const Slice = createSlice({
         },
         addEventToLog: (state, action: PayloadAction<EventTableData>) => {
             let checkForEntry = state.eventLog.some((evtData)=> evtData.observationId === action.payload.observationId);
-            console.log("evt table, entry found status:", checkForEntry, action.payload.observationId);
             // if (state.eventLog.some((data) => data.observationId === action.payload.observationId)) return;
             console.log("EVT table Adding to Event Log", action.payload);
             let currentLog = [];
