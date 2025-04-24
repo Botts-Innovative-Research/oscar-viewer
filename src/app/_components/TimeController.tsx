@@ -39,11 +39,6 @@ export default function TimeController({syncTime, startTime, endTime, pause, pla
     }, [syncTime, isScrubbing]);
 
 
-      // this function will take the timestamp convert it to iso string and then returns it with only the time part
-    const formatTime = (timestamp: number): string => {
-        const date = new Date(timestamp);
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    };
 
 
     const handleSliderChange = (_: Event, newValue: number)=>{
@@ -93,3 +88,9 @@ export default function TimeController({syncTime, startTime, endTime, pause, pla
         </Box>
     )
 }
+
+// this function will take the timestamp convert it to iso string and then returns it with only the time part
+export const formatTime = (timestamp: number): string => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+};

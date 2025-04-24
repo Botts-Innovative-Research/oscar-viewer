@@ -35,7 +35,7 @@ export default function LaneVideoPlayback({
     const [selVideoIdx, setSelVidIdx] = useState<number>(0);
     const [localVideoReady, setLocalVideoReady] = useState<boolean>(false);
 
-    const [maxPages, setMaxPages] = useState(0);
+    const [maxPages, setMaxPages] = useState(videoDatasources?.length);
 
     const [videoWidth, setVideoWidth] = useState("275px");
     const [videoHeight, setVideoHeight] = useState("350px");
@@ -43,6 +43,7 @@ export default function LaneVideoPlayback({
 
     useEffect(() => {
         if (videoDatasources.length > 0 && videoDatasources) {
+            console.log("video ds length", videoDatasources.length)
             setDatasources(videoDatasources);
             setMaxPages(videoDatasources?.length);
         }
@@ -73,7 +74,6 @@ export default function LaneVideoPlayback({
                 })]
             });
 
-            console.log("HELOOOOOPOO", videoViewRef)
             setVideoReady(true);
             setLocalVideoReady(true);
         } else {
@@ -94,22 +94,51 @@ export default function LaneVideoPlayback({
         console.log("LaneVideoPlayback Synchro: ", dataSynchronizer);
     }, [localVideoReady]);
 
+    useEffect(() => {
+        async function tryConnection(){
+            if(dataSources && dataSources.length > 0 && selVideoIdx <= dataSources.length){
+                const currentVideo = dataSources[selVideoIdx];
+
+                const isConnected = await currentVideo.isConnected();
+                if(isConnected){
+                    await currentVideo.disconnect()
+                }
+                await currentVideo.connect();
+                console.log('Videostream Connected: ', currentVideo.name)
+            }
+        }
+
+        tryConnection().then(r => console.log("Connecting....."));
+
+    }, [dataSources, selVideoIdx]);
+    
 
     const handleNextPage = () =>{
 
         setSelVidIdx((prevPage)=> {
             if (dataSources.length === 0) return 0;
             let nextPage = prevPage + 1
+            disconnectLastVideo(prevPage)
             return nextPage < maxPages ? nextPage : prevPage;
         })
     }
 
     const handlePrevPage = () =>{
         setSelVidIdx((prevPage) => {
+            disconnectLastVideo(prevPage)
             return prevPage > 0 ? prevPage -1 : prevPage;
         })
     }
 
+    async function disconnectLastVideo (prevPage: number){
+        if(prevPage >= 0){
+            const isConnected = await dataSources[prevPage].isConnected();
+            if(isConnected){
+                console.log('disconnecting', dataSources[prevPage].name)
+                await dataSources[prevPage].disconnect();
+            }
+        }
+    }
 
     return (
         <>

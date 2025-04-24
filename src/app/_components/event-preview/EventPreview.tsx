@@ -48,7 +48,7 @@ import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {setSelectedEvent, updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 import {EventType} from "osh-js/source/core/event/EventType";
-import TimeController from "@/app/_components/TimeController";
+import TimeController, {formatTime} from "@/app/_components/TimeController";
 import { setEventData } from "@/lib/state/EventDetailsSlice";
 import DataStreams from "osh-js/source/core/sweapi/datastream/DataStreams";
 import {getObservations} from "@/app/utils/ChartUtils";
@@ -339,12 +339,12 @@ export function EventPreview() {
         if (eventPreview.eventData?.laneId && laneMapRef.current) {
             collectDataSources();
             console.log('Datasources collected', eventPreview.eventData?.laneId)
-
         }
     }, [eventPreview.eventData, laneMapRef.current]);
 
     useEffect(() => {
         createDataSync();
+        console.log("videodatasources", videoDatasources.length)
     }, [videoDatasources, syncRef, dataSyncCreated, datasourcesReady]);
 
 
@@ -442,63 +442,46 @@ export function EventPreview() {
         // var img = document.getElementsByClassName("video-mjpeg");
         // setFrameSrc(img[0].src)
 
-        await fetchImgBlob(newValue);
-        await syncRef.current.dataSynchronizerReplay.setStartTime(newValue, false);
+        await syncRef.current.dataSynchronizerReplay.setStartTime(newValue, false).finally(() => {
+            fetchImgBlob(newValue);
+        });
+        // await syncRef.current.dataSynchronizerReplay.setStartTime(newValue, false);
         setSyncTime(newValue);
 
 
 
-
+        // await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, isPlaying? 1.0 : 0.0, true).finally(() => {
+        //     fetchImgBlob(newValue);
+        // });
 
     },[syncRef, eventPreview.eventData.endTime]);
 
-
-    // const updateFrameImage = () =>{
-    //     console.log("new image loading....")
-    //     var img = document.getElementsByClassName("video-mjpeg");
-    //     setFrameSrc(img[0].src)
-    //
-    // }
 
     const fetchImgBlob = async(newVal: any)=>{
 
         for (const lane of laneMapRef.current.values()){
 
+            if(lane.laneName === eventPreview.eventData.laneId){
+                let datastreams = lane.datastreams.filter((ds: any) => isVideoDatastream(ds));
 
-            console.log("lane", lane)
-            console.log("lane id", eventPreview.eventData.laneId)
-            let datastreams = lane.datastreams.filter((ds: any) => isVideoDatastream(ds));
-
-            console.log("datstreams", datastreams)
-            let myVideoDs = datastreams.find((ds: any) => {
-                console.log(ds)
-                return ds.properties["system@id"] == eventPreview.eventData.systemIdx
-            });
-
-            console.log(myVideoDs)
-            if(myVideoDs){
-                await fetchFrameCreateBlob(newVal, eventPreview.eventData.endTime, myVideoDs);
+                await fetchFrameCreateBlob(newVal, eventPreview.eventData.endTime, datastreams);
             }
-
         }
-
     }
 
     async function fetchFrameCreateBlob(startTime: any, endTime: any, datastream: any){
 
-        let obs = await datastream.searchObservations(new ObservationFilter({ format: 'application/swe+binary', resultTime: `${startTime}/${endTime}`}),1);
+        let obs = await datastream[1].searchObservations(new ObservationFilter({ format: 'application/swe+binary', resultTime: `${new Date(startTime).toISOString()}/${endTime}`}),1);
 
-        debugger
         const obsPage = await obs.nextPage();
 
         let imgBlob = new Blob([obsPage[0].img.data]);
         let url = window.URL.createObjectURL(imgBlob);
 
         console.log("url", url)
-        var imgTag = document.getElementsByClassName("video-mjpeg");
-        // let oldBlobURL = imgTag.src;
-        console.log("image tag", imgTag)
-        imgTag.src = url;
+        var img = document.getElementsByClassName("video-mjpeg");
+        console.log("image tag", img)
+        img[0].src = url;
 
     }
 
