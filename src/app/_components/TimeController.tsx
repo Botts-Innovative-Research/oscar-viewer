@@ -35,17 +35,13 @@ export default function TimeController({syncTime, startTime, endTime, pause, pla
     useEffect(() => {
         if(!isScrubbing)
             setCurrentTime(syncTime);
-
     }, [syncTime, isScrubbing]);
-
-
 
 
     const handleSliderChange = (_: Event, newValue: number)=>{
         const value = Array.isArray(newValue) ? newValue[0] : newValue;
         setIsScrubbing(true);
         setCurrentTime(value);
-        // updateFrameImage();
     }
 
     const handleSliderCommitted = (event: Event, value: number | number[])=>{
