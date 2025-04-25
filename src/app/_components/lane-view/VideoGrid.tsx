@@ -349,7 +349,7 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
 
 
     useEffect(() => {
-        console.log("JACKS:::: Video", videoDataSources)
+        console.log("Video", videoDataSources)
         if(videoDataSources.length > 0 && videoDataSources){
             setDatasources(videoDataSources);
             setMaxPages(videoDataSources.length);

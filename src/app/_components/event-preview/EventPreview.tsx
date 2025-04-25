@@ -7,7 +7,7 @@
 
 import {
     Box,
-    Button,
+    Button, debounce,
     IconButton,
     Snackbar,
     SnackbarCloseReason,
@@ -17,7 +17,7 @@ import {
 } from "@mui/material";
 import OpenInFullRoundedIcon from "@mui/icons-material/OpenInFullRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
+import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
 import {
@@ -48,13 +48,15 @@ import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {setSelectedEvent, updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 import {EventType} from "osh-js/source/core/event/EventType";
-import TimeController from "@/app/_components/TimeController";
+import TimeController, {formatTime} from "@/app/_components/TimeController";
 import { setEventData } from "@/lib/state/EventDetailsSlice";
 import DataStreams from "osh-js/source/core/sweapi/datastream/DataStreams";
 import {getObservations} from "@/app/utils/ChartUtils";
 import {RootState} from "@/lib/state/Store";
 import {selectNodes} from "@/lib/state/OSHSlice";
 import CircularProgress from "@mui/material/CircularProgress";
+import {isVideoDatastream} from "@/lib/data/oscar/Utilities";
+import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 
 
 
@@ -85,6 +87,11 @@ export function EventPreview() {
     const [syncTime, setSyncTime] = useState<number>(null);
     const gammaChartRef = useRef<any>();
     const neutronChartRef = useRef<any>();
+
+
+    const [frameSrc, setFrameSrc]= useState();
+    const selectedIndex = useRef<number>(0)
+
 
     // Video Specifics
     const [videoReady, setVideoReady] = useState<boolean>(false);
@@ -325,11 +332,11 @@ export function EventPreview() {
                 startTime: eventPreview.eventData.startTime,
                 // endTime: eventPreview.eventData.endTime,
                 endTime: "now",
+                reconnect: true
             });
             syncRef.current.onTime
             setDataSyncCreated(true);
 
-            // dispatch(setDataSync(syncRef.current));
         }
     }, [syncRef, dataSyncCreated, datasourcesReady, videoDatasources]);
 
@@ -337,12 +344,12 @@ export function EventPreview() {
         if (eventPreview.eventData?.laneId && laneMapRef.current) {
             collectDataSources();
             console.log('Datasources collected', eventPreview.eventData?.laneId)
-
         }
     }, [eventPreview.eventData, laneMapRef.current]);
 
     useEffect(() => {
         createDataSync();
+        console.log("videodatasources", videoDatasources.length)
     }, [videoDatasources, syncRef, dataSyncCreated, datasourcesReady]);
 
 
@@ -381,10 +388,9 @@ export function EventPreview() {
     useEffect(() => {
         if(syncRef.current){
             syncRef.current.subscribe((message: { type: any; timestamp: any }) => {
-                    if (message.type === EventType.MASTER_TIME) {
-                        setSyncTime(message.timestamp);
-                    }
-                }, [EventType.MASTER_TIME]
+                if (message.type === EventType.MASTER_TIME) {
+                    setSyncTime(message.timestamp);
+                }}, [EventType.MASTER_TIME]
             );
         }
 
@@ -402,38 +408,86 @@ export function EventPreview() {
 
     // function to start the time controller by connecting to time sync
     const play = async () => {
-        if (syncRef.current ) {
-            await syncRef.current.setReplaySpeed(1.0);
-
+        if (syncRef.current) {
             console.log("Playback started.");
-            await syncRef.current.connect();
+
+            var img = document.getElementsByClassName("video-mjpeg");
+
+            syncRef.current.connect().finally(() => {
+
+                if(img.length > 0) {
+                    img[0].src = frameSrc;
+                }
+            });
         }
     };
 
     // function to pause the time controller by disconnecting from the time sync
     const pause = async () => {
         if (syncRef.current) {
-            await syncRef.current.setReplaySpeed(0.0);
+
+            // await syncRef.current.setReplaySpeed(0.0);
             console.log("Playback paused.");
+
+            await syncRef.current.disconnect();
+
+            var img = document.getElementsByClassName("video-mjpeg");
+
+            setFrameSrc(img[0].src)
         }
 
     };
 
     // when the user toggles the time controller this is the code to change the time sync
-    const handleChange = useCallback( async(event: Event, newValue: number, isPlaying: boolean) => {
+    const handleCommitChange = useCallback( async(event: Event, newValue: number) => {
 
-        // update time sync datasources start time
-        for (const dataSource of syncRef.current.getDataSources()) {
-            dataSource.setMinTime(newValue);
-        }
-
-        // update the time sync start time
-        // await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, 0.0, false);
-        await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, (isPlaying ? 1.0 : 0.0), false);
+        // await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, 0.0, true);
         setSyncTime(newValue);
 
-    },[syncRef.current, eventPreview]);
+        await syncRef.current.dataSynchronizerReplay.setStartTime(newValue, false).finally(() => {
+            fetchImgBlob(newValue);
+        });
 
+    },[syncRef, eventPreview.eventData.endTime]);
+
+
+
+
+    const fetchImgBlob = async(newVal: any)=>{
+
+        for (const lane of laneMapRef.current.values()){
+
+            if(lane.laneName === eventPreview.eventData.laneId){
+                let datastreams = lane.datastreams.filter((ds: any) => isVideoDatastream(ds));
+
+                await fetchFrameCreateBlob(newVal, eventPreview.eventData.endTime, datastreams);
+            }
+        }
+    }
+
+    async function fetchFrameCreateBlob(startTime: any, endTime: any, datastreams: any){
+
+        let dsId = syncRef.current.dataSynchronizer.dataSources[selectedIndex.current].name.split("-")[1]
+        console.log("sync ds id", dsId);
+
+
+        let currentVideoDs = datastreams.filter((ds: any) => ds.properties.id === dsId);
+        let obs = await currentVideoDs[0].searchObservations(new ObservationFilter({ format: 'application/swe+binary', resultTime: `${new Date(startTime).toISOString()}/${endTime}`}),1);
+
+        const obsPage = await obs.nextPage();
+
+        let imgBlob = new Blob([obsPage[0].img.data]);
+        let url = window.URL.createObjectURL(imgBlob);
+
+        var img = document.getElementsByClassName("video-mjpeg");
+
+        img[0].src = url;
+
+    }
+
+    const handleUpdatingPage = (page: number)=>{
+        selectedIndex.current = page;
+    }
 
     return (
         <Stack p={1} display={"flex"} spacing={1}>
@@ -449,7 +503,7 @@ export function EventPreview() {
                 </IconButton>
             </Stack>
 
-            {(datasourcesReady && latestGB) ? (
+            {(datasourcesReady && latestGB && syncRef.current) ? (
                     <Box>
                         <ChartTimeHighlight
                             datasources={{
@@ -465,15 +519,14 @@ export function EventPreview() {
                         />
 
                         <LaneVideoPlayback
-                            videoDatasources={videoDatasources}
                             setVideoReady={setVideoReady}
                             dataSynchronizer={syncRef.current}
-                            addDataSource={setActiveVideoIDX}
                             modeType={"preview"}
+                            onSelectedVideoIdxChange={handleUpdatingPage}
                         />
-                        <TimeController handleChange={handleChange} pause={pause} play={play} syncTime={syncTime} timeSync={syncRef.current} startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
+                        <TimeController handleCommitChange={handleCommitChange} pause={pause} play={play} syncTime={syncTime}  startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
                     </Box>
-            ) :
+                ) :
 
                 <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}><CircularProgress/></Box>
             }

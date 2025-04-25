@@ -2,7 +2,7 @@ import {Box, Grid, Paper} from "@mui/material";
 import ChartTimeHighlight from "@/app/_components/event-preview/ChartTimeHighlight";
 import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
 import TimeController from "@/app/_components/TimeController";
-import React, {useCallback, useEffect, useRef, useState} from "react";
+import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {EventType} from "osh-js/source/core/event/EventType";
 import {event} from "next/dist/build/output/log";
@@ -13,11 +13,14 @@ import {RootState} from "@/lib/state/Store";
 import {selectNodes} from "@/lib/state/OSHSlice";
 import CircularProgress from "@mui/material/CircularProgress";
 import {selectLatestGB} from "@/lib/state/EventPreviewSlice";
+import {isVideoDatastream} from "@/lib/data/oscar/Utilities";
+import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
+import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 
 
-export default function Media({eventData, datasources}: {eventData: any, datasources: any}){
+export default function Media({eventData, datasources, laneMap}: {eventData: any, datasources: any, laneMap: any}){
 
-    const syncRef = useRef<typeof DataSynchronizer>();
+    const masterTimeController = useRef<typeof DataSynchronizer>();
     const [currentTime, setCurrentTime] = useState<string>("");
     const [dataSyncCreated, setDataSyncCreated] = useState<boolean>(false);
     const [dataSyncReady, setDataSyncReady] = useState<boolean>(false);
@@ -34,38 +37,33 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
     const [syncTime, setSyncTime]= useState(0);
 
     let latestGB = useSelector((state: RootState) => selectLatestGB(state));
-    console.log("chart latestGB", latestGB);
 
-    // const nodes =  useSelector((state: RootState) => selectNodes(state));
-    // const [latestGB, setLatestGB] = useState<number>();
+    const [frameSrc, setFrameSrc]= useState();
 
+    const selectedIndex = useRef<number>(0)
 
 
     const createDataSync = useCallback(() => {
-        if (!syncRef.current && !dataSyncCreated && datasources?.video.length > 0) {
-
-            console.log("VIDEO DS: ", datasources.video)
+        if (!masterTimeController.current && !dataSyncCreated && datasources?.video.length > 0) {
 
             const videoDS = datasources.video;
-            // const isSweApiInstance = videoDS[0] instanceof SweApi;
 
-            syncRef.current = new DataSynchronizer({
+            masterTimeController.current = new DataSynchronizer({
                 dataSources: videoDS,
                 replaySpeed: 1.0,
                 startTime: eventData?.startTime,
                 endTime: eventData?.endTime,
             });
 
-            syncRef.current.onTime
+            masterTimeController.current.onTime
             setDataSyncCreated(true);
             setDataSyncReady(true);
         }
-    }, [chartReady, syncRef, dataSyncCreated, datasources, datasourcesReady, eventData]);
+    }, [chartReady, masterTimeController, dataSyncCreated, datasources, datasourcesReady, eventData]);
 
 
     useEffect(() => {
         if(eventData && datasources){
-            console.log("EVENT DATA", eventData, "datasources", datasources)
             createDataSync();
             setCurrentTime(eventData?.startTime);
 
@@ -75,7 +73,6 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
     }, [datasources, eventData]);
 
     useEffect(() => {
-        console.log('dssss', datasources)
         if (chartReady && videoReady) {
             console.log("Chart Ready, Starting DataSync");
 
@@ -86,11 +83,11 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
             if(datasources.threshold) datasources?.threshold.connect()
 
 
-            syncRef.current?.connect().then(() => {
-                console.log("DataSync Should Be Connected", syncRef.current);
+            masterTimeController.current?.connect().then(() => {
+                console.log("DataSync Should Be Connected", masterTimeController.current);
             });
 
-            if (syncRef.current?.isConnected()) {
+            if (masterTimeController.current?.isConnected()) {
                 // if is true then pause else play
                 console.log("DataSync Connected!!!");
             } else {
@@ -100,59 +97,100 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
         } else {
             console.log("Chart Not Ready, cannot start DataSynchronizer...");
         }
-    }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady, datasources]);
+    }, [chartReady, masterTimeController, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady, datasources]);
 
 
     useEffect(() => {
-        if(syncRef.current){
-            syncRef.current.subscribe((message: { type: any; timestamp: any }) => {
+        if(masterTimeController.current){
+            masterTimeController.current.subscribe((message: { type: any; timestamp: any }) => {
                     if (message.type === EventType.MASTER_TIME) {
                         setSyncTime(message.timestamp);
                     }
                 }, [EventType.MASTER_TIME]
             );
         }
-    }, [syncRef.current]);
+    }, [masterTimeController.current]);
 
 
     // function to start the time controller by connecting to time sync
     const play = async () => {
-        if (syncRef.current ) { //&& !await syncRef.current.isConnected()
+        if (masterTimeController.current ) {
 
-            await syncRef.current.setReplaySpeed(1.0);
+            var img = document.getElementsByClassName("video-mjpeg");
 
-
-            console.log("Playback started.");
-            await syncRef.current.connect();
-
+            masterTimeController.current.connect().finally(()=>{
+                if(img.length > 0) {
+                    img[0].src = frameSrc;
+                }
+            })
         }
     };
 
     // function to pause the time controller by disconnecting from the time sync
     const pause = async () => {
-        if (syncRef.current && await syncRef.current.isConnected()) {
-            await syncRef.current.setReplaySpeed(0.0);
+        if (masterTimeController.current && await masterTimeController.current.isConnected()) {
 
-            // syncRef.current.disconnect();
 
             console.log("Playback paused.");
+
+            await masterTimeController.current.disconnect();
+
+            var img = document.getElementsByClassName("video-mjpeg");
+
+            setFrameSrc(img[0].src)
         }
     };
 
 
     //when the user toggles the time controller this is the code to change the time sync
-    const handleChange = useCallback( async(event: Event, newValue: number, isPlaying: boolean) => {
-        // update time sync datasources start time
-        for (const dataSource of syncRef.current.getDataSources()) {
-            dataSource.setMinTime(newValue);
-        }
-
-        // update the time sync start time
-        await syncRef.current.setTimeRange(newValue, eventData?.endTime, (isPlaying ? 1.0 : 0.0), false);
+    const handleChange = useCallback( async(event: Event, newValue: number) => {
 
         setSyncTime(newValue);
 
-    },[syncRef, eventData]);
+        await masterTimeController.current.dataSynchronizerReplay.setStartTime(newValue, false).finally(() => {
+            fetchImgBlob(newValue);
+        });
+
+
+    },[masterTimeController, eventData]);
+
+
+    const fetchImgBlob = async(newVal: any)=>{
+
+        console.log(laneMap)
+        for (const lane of laneMap.values()){
+
+            if(lane.laneName === eventData.laneId){
+                let datastreams = lane.datastreams.filter((ds: any) => isVideoDatastream(ds));
+
+                await fetchFrameCreateBlob(newVal, eventData.endTime, datastreams);
+            }
+        }
+    }
+
+
+    async function fetchFrameCreateBlob(startTime: any, endTime: any, datastreams: any){
+
+        let dsId = masterTimeController.current.dataSynchronizer.dataSources[selectedIndex.current].name.split("-")[1]
+
+
+        let currentVideoDs = datastreams.filter((ds: any) => ds.properties.id === dsId);
+        let obs = await currentVideoDs[0].searchObservations(new ObservationFilter({ format: 'application/swe+binary', resultTime: `${new Date(startTime).toISOString()}/${endTime}`}),1);
+
+        const obsPage = await obs.nextPage();
+
+        let imgBlob = new Blob([obsPage[0].img.data]);
+        let url = window.URL.createObjectURL(imgBlob);
+
+        var img = document.getElementsByClassName("video-mjpeg");
+
+        img[0].src = url;
+
+    }
+
+    const handleUpdatingPage = (page: number)=>{
+        selectedIndex.current = page;
+    }
 
     return (
         <Paper variant='outlined' sx={{ width: "100%" , padding: 2}}>
@@ -177,17 +215,16 @@ export default function Media({eventData, datasources}: {eventData: any, datasou
                         </Grid>
                         <Grid item xs={12} md={6}>
                             <LaneVideoPlayback
-                                videoDatasources={datasources.video}
                                 setVideoReady={setVideoReady}
-                                dataSynchronizer={syncRef.current}
-                                addDataSource={setActiveVideoIDX}
+                                dataSynchronizer={masterTimeController.current}
                                 modeType={"detail"}
+                                onSelectedVideoIdxChange={handleUpdatingPage}
                             />
                         </Grid>
 
                     </Grid>
 
-                    <TimeController handleChange={handleChange} pause={pause} play={play} syncTime={syncTime} timeSync={syncRef.current} startTime={eventData?.startTime} endTime={eventData?.endTime}/>
+                    <TimeController handleCommitChange={handleChange} pause={pause} play={play} syncTime={syncTime} startTime={eventData?.startTime} endTime={eventData?.endTime}/>
                 </Box>
             ):
                 <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}><CircularProgress/></Box>

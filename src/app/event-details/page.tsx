@@ -13,10 +13,7 @@ import Media from "@/app/_components/event-details/Media";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {selectEventPreview, setSelectedRowId} from "@/lib/state/EventPreviewSlice";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import DataStreams from "osh-js/source/core/sweapi/datastream/DataStreams";
-import {getObservations} from "@/app/utils/ChartUtils";
-import {RootState} from "@/lib/state/Store";
-import {selectNodes} from "@/lib/state/OSHSlice";
+
 
 
 
@@ -105,7 +102,7 @@ export default function EventDetailsPage() {
                 <DataRow/>
             </Paper>
 
-            { (gammaDatasources.length > 0 || neutronDatasources.length > 0 || thresholdDatasources.length > 0) &&
+            { (gammaDatasources.length > 0 || neutronDatasources.length > 0 || thresholdDatasources.length > 0) && laneMapRef &&
 
                 <Media eventData={eventPreview.eventData}  datasources={{
                     gamma: gammaDatasources?.[0],
@@ -113,6 +110,7 @@ export default function EventDetailsPage() {
                     threshold: thresholdDatasources?.[0],
                     video: videoDatasources
                 }}
+                       laneMap={laneMapRef.current}
                 />
 
             }

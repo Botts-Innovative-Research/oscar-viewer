@@ -113,7 +113,7 @@ export async function getObservations(startTime: any, endTime: any, datastream: 
 
     let lastestGammaBackground: number;
 
-    let res = await datastream.searchObservations(new ObservationFilter(startTime, endTime, 1));
+    let res = await datastream.searchObservations(new ObservationFilter({resultTime: `${startTime}/${endTime}`}),1);
     while(res.hasNext()){
         let newObs = await res.nextPage();
 

@@ -73,7 +73,7 @@
     "nouislider": "^15.6.1",
     "ol": "^10.1.0",
     "ol-layerswitcher": "^4.1.2",
-    "osh-js": "git+https@github.com:opensensorhub/osh-js.git#mcs_baseline",
+    "osh-js": "git+https@github.com:opensensorhub/osh-js.git#dev",
     "patch-package": "^6.5.0",
     "path-browserify": "^1.0.1",
     "react": "^18.3.1",

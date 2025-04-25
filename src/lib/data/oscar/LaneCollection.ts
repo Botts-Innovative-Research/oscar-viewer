@@ -250,6 +250,7 @@ export class LaneMapEntry {
             let datasourceReplay = this.createReplaySweApiFromDataStream(ds, startTime, endTime);
             let datasourceBatch = this.createBatchSweApiFromDataStream(ds, startTime, endTime);
 
+            console.log("datasourceBatch", ds)
             // move some of this into another function to remove code redundancy
             if (isOccupancyDatastream(ds)) {
                 let occArray = dsMap.get('occ')!;
@@ -293,7 +294,7 @@ export class LaneMapEntry {
             // if (ds.properties.name.includes('Video')) {
             if(isVideoDatastream(ds)){
                 let videoArray = dsMap.get('video')!;
-                const index = videoArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
+                const index = videoArray.findIndex(dsItem => dsItem.properties.id === datasourceBatch.properties.id);
 
                 if (index !== -1) {
                     videoArray[index] = datasourceBatch;
