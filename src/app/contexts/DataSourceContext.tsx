@@ -92,7 +92,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             await node.fetchDatastreamsTK(nodeLaneMap);
             await node.fetchProcessVideoDatastreams(nodeLaneMap);
             for (let mapEntry of nodeLaneMap.values()) {
-                mapEntry.addDefaultSWEAPIs();
+                mapEntry.addDefaultConSysApis();
             }
             let nodeControlStreams = await node.fetchControlStreams()
 

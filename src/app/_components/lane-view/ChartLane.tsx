@@ -2,7 +2,7 @@
 
 
 import {Box, Grid} from "@mui/material";
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource";
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
 import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView";
@@ -15,7 +15,7 @@ import {
 
 export class ChartInterceptProps {
     laneName: string;
-    datasources: { gamma: typeof SweApi, neutron: typeof SweApi, threshold: typeof SweApi };
+    datasources: { gamma: typeof ConSysApi, neutron: typeof ConSysApi, threshold: typeof ConSysApi };
     setChartReady: Function;
 }
 

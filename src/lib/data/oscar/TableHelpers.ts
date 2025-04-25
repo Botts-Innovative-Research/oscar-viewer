@@ -6,7 +6,7 @@
 import {IAlarmTableData, IEventTableData, INationalTableData} from "../../../../types/new-types";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {warn} from "next/dist/build/output/log";
-import System from "osh-js/source/core/sweapi/system/System.js";
+import System from "osh-js/source/core/ConSysApi/system/System.js";
 import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
 import {AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";

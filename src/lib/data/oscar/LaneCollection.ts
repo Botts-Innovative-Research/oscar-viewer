@@ -3,11 +3,11 @@
  * All Rights Reserved
  */
 
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
-import System from "osh-js/source/core/sweapi/system/System.js";
-import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
-import DataStreams from "osh-js/source/core/sweapi/datastream/DataStreams.js";
+import System from "osh-js/source/core/ConSysApi/system/System.js";
+import DataStream from "osh-js/source/core/ConSysApi/datastream/DataStream.js";
+import DataStreams from "osh-js/source/core/ConSysApi/datastream/DataStreams.js";
 import {INode} from "@/lib/data/osh/Node";
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
@@ -126,7 +126,7 @@ export class LaneMapEntry {
         }
     }
 
-    addDefaultSWEAPIs() {
+    addDefaultConSysApis() {
         // TODO: Verify that this doesn't negatively impact the app's visual usage
         this.resetDatasources();
 
@@ -135,7 +135,7 @@ export class LaneMapEntry {
 
         for (let dsObj of this.datastreams) {
 
-            let dsRT = new SweApi(`rtds - ${dsObj.properties.name}`, {
+            let dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
                 protocol: dsObj.networkProperties.streamProtocol,
                 endpointUrl: dsObj.networkProperties.endpointUrl,
                 resource: `/datastreams/${dsObj.properties.id}/observations`,
@@ -148,7 +148,7 @@ export class LaneMapEntry {
                 }
             });
 
-            let dsBatch = new SweApi(`batchds - ${dsObj.properties.name}`, {
+            let dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
                 protocol: dsObj.networkProperties.streamProtocol,
                 endpointUrl: dsObj.networkProperties.endpointUrl,
                 resource: `/datastreams/${dsObj.properties.id}/observations`,
@@ -173,8 +173,8 @@ export class LaneMapEntry {
         this.datasourcesBatch = batchArray;
     }
 
-    createReplaySweApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
-        return new SweApi(`rtds-${datastream.properties.id}`, {
+    createReplayConSysApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
+        return new ConSysApi(`rtds-${datastream.properties.id}`, {
             protocol: datastream.networkProperties.streamProtocol,
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
@@ -190,8 +190,8 @@ export class LaneMapEntry {
         });
     }
 
-    createBatchSweApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
-        return new SweApi(`batchds-${datastream.properties.id}`, {
+    createBatchConSysApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
+        return new ConSysApi(`batchds-${datastream.properties.id}`, {
             protocol: datastream.networkProperties.streamProtocol,
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
@@ -232,11 +232,11 @@ export class LaneMapEntry {
      *
      * @param {number} startTime - The start time of the range for datastreams.
      * @param {number} endTime - The end time of the range for datastreams.
-     * @return {Map<string, typeof SweApi[]>} A map categorizing the replayed datastreams by their event detail types.
+     * @return {Map<string, typeof ConSysApi[]>} A map categorizing the replayed datastreams by their event detail types.
      */
-    getDatastreamsForEventDetail(startTime: string, endTime: string): Map<string, typeof SweApi[]> {
+    getDatastreamsForEventDetail(startTime: string, endTime: string): Map<string, typeof ConSysApi[]> {
 
-        let dsMap: Map<string, typeof SweApi[]> = new Map();
+        let dsMap: Map<string, typeof ConSysApi[]> = new Map();
         dsMap.set('occ', []);
         dsMap.set('gamma', []);
         dsMap.set('neutron', []);
@@ -247,8 +247,8 @@ export class LaneMapEntry {
         for (let ds of this.datastreams) {
 
             let idx: number = this.datastreams.indexOf(ds);
-            let datasourceReplay = this.createReplaySweApiFromDataStream(ds, startTime, endTime);
-            let datasourceBatch = this.createBatchSweApiFromDataStream(ds, startTime, endTime);
+            let datasourceReplay = this.createReplayConSysApiFromDataStream(ds, startTime, endTime);
+            let datasourceBatch = this.createBatchConSysApiFromDataStream(ds, startTime, endTime);
 
             console.log("datasourceBatch", ds)
             // move some of this into another function to remove code redundancy
@@ -375,22 +375,22 @@ export class LaneMapEntry {
 }
 
 export class LaneDSColl {
-    occRT: typeof SweApi[];
-    occBatch: typeof SweApi[];
-    gammaRT: typeof SweApi[];
-    gammaBatch: typeof SweApi[];
-    neutronRT: typeof SweApi[];
-    neutronBatch: typeof SweApi[];
-    tamperRT: typeof SweApi[];
-    tamperBatch: typeof SweApi[];
-    locRT: typeof SweApi[];
-    locBatch: typeof SweApi[];
-    gammaTrshldBatch: typeof SweApi[];
-    gammaTrshldRT: typeof SweApi[];
-    connectionRT: typeof SweApi[];
-    videoRT: typeof SweApi[];
-    adjRT: typeof SweApi[];
-    adjBatch: typeof SweApi[];
+    occRT: typeof ConSysApi[];
+    occBatch: typeof ConSysApi[];
+    gammaRT: typeof ConSysApi[];
+    gammaBatch: typeof ConSysApi[];
+    neutronRT: typeof ConSysApi[];
+    neutronBatch: typeof ConSysApi[];
+    tamperRT: typeof ConSysApi[];
+    tamperBatch: typeof ConSysApi[];
+    locRT: typeof ConSysApi[];
+    locBatch: typeof ConSysApi[];
+    gammaTrshldBatch: typeof ConSysApi[];
+    gammaTrshldRT: typeof ConSysApi[];
+    connectionRT: typeof ConSysApi[];
+    videoRT: typeof ConSysApi[];
+    adjRT: typeof ConSysApi[];
+    adjBatch: typeof ConSysApi[];
 
 
     constructor() {
@@ -412,12 +412,12 @@ export class LaneDSColl {
         this.adjBatch = [];
     }
 
-    getDSArray(propName: string): typeof SweApi[] {
+    getDSArray(propName: string): typeof ConSysApi[] {
         // @ts-ignore
         return this[propName];
     }
 
-    addDS(propName: string, ds: typeof SweApi) {
+    addDS(propName: string, ds: typeof ConSysApi) {
         let dsArr = this.getDSArray(propName);
         if (dsArr.some((d) => d.name == ds.name)) {
             return;
@@ -484,10 +484,10 @@ export class LaneDSColl {
         }
     }
 
-    [key: string]: typeof SweApi[] | Function;
+    [key: string]: typeof ConSysApi[] | Function;
 
     addSubscribeHandlerToALLDSMatchingName(dsCollName: string, handler: Function) {
-        for (let ds of this[dsCollName] as typeof SweApi[]) {
+        for (let ds of this[dsCollName] as typeof ConSysApi[]) {
             ds.subscribe(handler, [EventType.DATA]);
         }
     }

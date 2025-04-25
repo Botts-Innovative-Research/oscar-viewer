@@ -5,11 +5,11 @@
 
 import {IOSHSlice} from "@/lib/state/OSHSlice";
 
-import SystemFilter from "osh-js/source/core/sweapi/system/SystemFilter.js";
-import Systems from "osh-js/source/core/sweapi/system/Systems.js";
+import SystemFilter from "osh-js/source/core/ConSysApi/system/SystemFilter.js";
+import Systems from "osh-js/source/core/ConSysApi/system/Systems.js";
 import {INode, Node} from "@/lib/data/osh/Node";
-import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
-import System from "osh-js/source/core/sweapi/system/System.js";
+import DataStream from "osh-js/source/core/ConSysApi/datastream/DataStream.js";
+import System from "osh-js/source/core/ConSysApi/system/System.js";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import OSCARClientSlice, {IOSCARClientState} from "@/lib/state/OSCARClientSlice";
 

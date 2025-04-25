@@ -6,7 +6,7 @@ import React, {useCallback, useContext, useEffect, useRef, useState} from "react
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {EventType} from "osh-js/source/core/event/EventType";
 import {event} from "next/dist/build/output/log";
-import DataStreams from "osh-js/source/core/sweapi/datastream/DataStreams";
+import DataStreams from "osh-js/source/core/ConSysApi/datastream/DataStreams";
 import {getObservations} from "@/app/utils/ChartUtils";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
@@ -14,7 +14,7 @@ import {selectNodes} from "@/lib/state/OSHSlice";
 import CircularProgress from "@mui/material/CircularProgress";
 import {selectLatestGB} from "@/lib/state/EventPreviewSlice";
 import {isVideoDatastream} from "@/lib/data/oscar/Utilities";
-import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
+import ObservationFilter from "osh-js/source/core/ConSysApi/observation/ObservationFilter";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 
 

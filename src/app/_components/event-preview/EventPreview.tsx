@@ -7,7 +7,7 @@
 
 import {
     Box,
-    Button, debounce,
+    Button,
     IconButton,
     Snackbar,
     SnackbarCloseReason,
@@ -33,14 +33,14 @@ import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/navigation";
 import ChartTimeHighlight from "@/app/_components/event-preview/ChartTimeHighlight";
 import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 
 import AdjudicationData, {
-    findObservationIdBySamplingTime,
+    fetchOccupancyObservation,
     generateCommandJSON,
-    IAdjudicationData,
+    IAdjudicationData, sendAdjudication,
     sendSetAdjudicatedCommand
 } from "@/lib/data/oscar/adjudication/Adjudication";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
@@ -50,14 +50,10 @@ import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelec
 import {EventType} from "osh-js/source/core/event/EventType";
 import TimeController, {formatTime} from "@/app/_components/TimeController";
 import { setEventData } from "@/lib/state/EventDetailsSlice";
-import DataStreams from "osh-js/source/core/sweapi/datastream/DataStreams";
-import {getObservations} from "@/app/utils/ChartUtils";
 import {RootState} from "@/lib/state/Store";
-import {selectNodes} from "@/lib/state/OSHSlice";
 import CircularProgress from "@mui/material/CircularProgress";
 import {isVideoDatastream} from "@/lib/data/oscar/Utilities";
-import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
-
+import ObservationFilter from "osh-js/source/core/ConSysApi/observation/ObservationFilter";
 
 
 export function EventPreview() {
@@ -69,7 +65,7 @@ export function EventPreview() {
 
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
 
-    const [localDSMap, setLocalDSMap] = useState<Map<string, typeof SweApi[]>>(new Map<string, typeof SweApi[]>());
+    const [localDSMap, setLocalDSMap] = useState<Map<string, typeof ConSysApi[]>>(new Map<string, typeof ConSysApi[]>());
     const [dataSyncReady, setDataSyncReady] = useState<boolean>(false);
     const [datasourcesReady, setDatasourcesReady] = useState<boolean>(false);
     const syncRef = useRef<typeof DataSynchronizer>();
@@ -78,24 +74,21 @@ export function EventPreview() {
 
 
     // Chart Specifics
-    const [gammaDatasources, setGammaDS] = useState<typeof SweApi[]>([]);
-    const [neutronDatasources, setNeutronDS] = useState<typeof SweApi[]>([]);
-    const [occDatasources, setOccDS] = useState<typeof SweApi[]>([]);
-    const [thresholdDatasources, setThresholdDS] = useState<typeof SweApi[]>([]);
+    const [gammaDatasources, setGammaDS] = useState<typeof ConSysApi[]>([]);
+    const [neutronDatasources, setNeutronDS] = useState<typeof ConSysApi[]>([]);
+    const [occDatasources, setOccDS] = useState<typeof ConSysApi[]>([]);
+    const [thresholdDatasources, setThresholdDS] = useState<typeof ConSysApi[]>([]);
     const [chartReady, setChartReady] = useState<boolean>(false);
-    const [currentTime, setCurrentTime] = useState<number>(0);
     const [syncTime, setSyncTime] = useState<number>(null);
     const gammaChartRef = useRef<any>();
     const neutronChartRef = useRef<any>();
 
-
     const [frameSrc, setFrameSrc]= useState();
     const selectedIndex = useRef<number>(0)
 
-
     // Video Specifics
     const [videoReady, setVideoReady] = useState<boolean>(false);
-    const [videoDatasources, setVideoDatasources] = useState<typeof SweApi[]>([]);
+    const [videoDatasources, setVideoDatasources] = useState<typeof ConSysApi[]>([]);
     const [activeVideoIDX, setActiveVideoIDX] = useState<number>(0);
 
     // Adjudication Specifics
@@ -110,7 +103,6 @@ export function EventPreview() {
     const [colorStatus, setColorStatus] = useState('')
 
     let latestGB = useSelector((state: RootState) => selectLatestGB(state));
-    console.log("chart latestGB", latestGB);
 
 
     const handleAdjudicationCode = (value: AdjudicationCode) => {
@@ -144,60 +136,64 @@ export function EventPreview() {
     }
 
     const sendAdjudicationData = async () => {
-        let phenomenonTime = new Date().toISOString();
-        // let comboData = adjFormData;
-        let comboData = adjudication;
-        // comboData.feedback = notes;
+        const phenomenonTime = new Date().toISOString();
+        const comboData = adjudication;
+
         comboData.setFeedback(notes);
-        // comboData.time = phenomenonTime;
         comboData.setTime(phenomenonTime);
-        // let observation = createAdjudicationObservation(comboData, phenomenonTime);
+
         let observation = comboData.createAdjudicationObservation();
         console.log("[ADJ] Sending Adjudication Data: ", observation);
+
         // send to server
-        let currentLane = eventPreview.eventData.laneId;
+        const currentLane = eventPreview.eventData.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
         const adjDsID = currLaneEntry.parentNode.laneAdjMap.get(currentLane);
-        const ep = currLaneEntry.parentNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + adjDsID + "/observations";
+        const endpoint = currLaneEntry.parentNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + adjDsID + "/observations";
 
+
+        await submitAdjudication(endpoint, observation, currLaneEntry, comboData, eventPreview)
+    }
+
+    const submitAdjudication = async(endpoint: string, observation: any, currLaneEntry: LaneMapEntry, comboData: any, eventPreview: any) =>{
         try {
-            let resp = await fetch(ep, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                // body: JSON.stringify(observation),
-                body: observation,
-                mode: "cors"
-            });
+            const resp= await sendAdjudication(endpoint, observation);
+
+            if(resp.ok){
+                setAdjSnackMsg('Adjudication Submitted Successfully')
+                setColorStatus('success')
+
+            }else{
+                setAdjSnackMsg('Adjudication Submission Failed. Check connection and form then try again.')
+                setColorStatus('error')
+            }
+
             console.log("[ADJ] Response: ", resp);
 
             // send command
             // we can use endTime as it is the same a resultTime in testing, this may not be true in practice but this is a stop-gap fix anyway
-            let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, eventPreview.eventData.dataStreamId, eventPreview.eventData.endTime)
+            let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == eventPreview.eventData.dataStreamId );
+            let occupancyObservation = await fetchOccupancyObservation(ds, eventPreview.eventData.startTime, eventPreview.eventData.endTime)
 
-            // guard, maybe add an appropriate snackbar
-            if (!refObservation) return
-            await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId,
-                generateCommandJSON(refObservation.id, true));
+
+            if (!occupancyObservation) {
+                setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
+                setColorStatus('error')
+                setOpenSnack(true);
+                return;
+            }
+
+            await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId, generateCommandJSON(occupancyObservation[0].id, true));
             dispatch(updateSelectedEventAdjudication(comboData));
 
-            if (resp.ok) {
-                setAdjSnackMsg('Adjudication Submitted Successfully')
-                setColorStatus('success')
-                resetAdjudicationData();
-                handleCloseRounded();
-
-            } else {
-                setAdjSnackMsg('Adjudication Submission Failed. Check your connection.')
-                setColorStatus('error')
-            }
         } catch (error) {
             setAdjSnackMsg('Adjudication failed to submit.')
             setColorStatus('error')
+        }finally{
+            setOpenSnack(true)
+            resetAdjudicationData();
+            handleCloseRounded();
         }
-
-        setOpenSnack(true)
     }
 
     const resetAdjudicationData = () => {
@@ -236,7 +232,7 @@ export function EventPreview() {
         router.push("/event-details");
     }
 
-    function disconnectDSArray(dsArray: typeof SweApi[]) {
+    function disconnectDSArray(dsArray: typeof ConSysApi[]) {
         dsArray.forEach(ds => {
             ds.disconnect();
         });
@@ -298,7 +294,7 @@ export function EventPreview() {
 
         console.log("Collecting DataSources...", currLaneEntry, currentLane);
 
-        let tempDSMap = new Map<string, typeof SweApi[]>();
+        let tempDSMap = new Map<string, typeof ConSysApi[]>();
 
         let datasources = currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
         console.log("DataSources", datasources);

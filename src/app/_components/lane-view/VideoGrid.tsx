@@ -5,7 +5,7 @@
 // // import "../../style/cameragrid.css";
 // //
 // // import VideoComponent from '../video/VideoComponent';
-// // import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
+// // import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource"
 // // import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 // // import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 // // import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
@@ -145,7 +145,7 @@
 // import { selectLaneMap } from '@/lib/state/OSCARLaneSlice';
 // import { RootState } from '@/lib/state/Store';
 // import VideoComponent from '../video/VideoComponent';
-// import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
+// import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource"
 // import {DataSourceContext} from '../../contexts/DataSourceContext';
 // import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 // import NavigateNextIcon from '@mui/icons-material/NavigateNext';
@@ -156,7 +156,7 @@
 // }
 // interface LaneWithVideo {
 //     laneName: string,
-//     videoSources: typeof SweApi[]
+//     videoSources: typeof ConSysApi[]
 // }
 // export default function VideoGrid(props: LaneVideoProps) {
 //
@@ -332,16 +332,16 @@
 import {Box, IconButton, Stack } from '@mui/material';
 import { useEffect, useRef, useState} from 'react';
 import "../../style/cameragrid.css";
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
+import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource"
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import VideoView from "osh-js/source/core/ui/view/video/VideoView";
 import VideoDataLayer from "osh-js/source/core/ui/layer/VideoDataLayer";
 
 
-export default function VideoGrid({videoDataSources}: {videoDataSources: typeof SweApi[]}) {
+export default function VideoGrid({videoDataSources}: {videoDataSources: typeof ConSysApi[]}) {
 
-    const [dataSources, setDatasources] = useState<typeof SweApi[]>([]);
+    const [dataSources, setDatasources] = useState<typeof ConSysApi[]>([]);
 
     const videoViewRef = useRef<typeof VideoView>();
     const [selVideoIdx, setSelVidIdx] = useState<number>(0);

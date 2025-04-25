@@ -5,7 +5,7 @@
 
 
 // @ts-ignore
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource";
 // @ts-ignore
 import {ITimePeriod} from "@/app/data/Models";
 
@@ -18,7 +18,7 @@ export interface IDatastream {
     phenomenonTime: ITimePeriod,
     tls: boolean,
     playbackMode: string,
-    datasource: typeof SweApi | null,
+    datasource: typeof ConSysApi | null,
 
     equals(other: Datastream): boolean;
     checkIfInObsProperties(propName: string): Promise<boolean>;
@@ -33,7 +33,7 @@ export class Datastream implements IDatastream {
     phenomenonTime: ITimePeriod | null;
     tls: boolean = false;
     playbackMode: string;
-    datasource: typeof SweApi | null = null;
+    datasource: typeof ConSysApi | null = null;
     connectorOpts: { username:string, password:string };
 
     constructor(id: string, name: string, parentSystemId: string, phenomenonTime: ITimePeriod | null, tls: boolean = false, playbackMode: string = 'realTime') {
@@ -53,7 +53,7 @@ export class Datastream implements IDatastream {
         return this.id === other.id;
     }
 
-    generateSweApiObj(timeRange: { start: string, end: string } | null | undefined): typeof SweApi {
+    generateConSysApiObj(timeRange: { start: string, end: string } | null | undefined): typeof ConSysApi {
 
         if (timeRange) {
             this.phenomenonTime.beginPosition = timeRange.start;
@@ -64,7 +64,7 @@ export class Datastream implements IDatastream {
             throw new Error('Phenomenon Time is not set, cannont create SWE API object');
         }
 
-        let sweApi = new SweApi(`${this.id}-datastream`, {
+        let ConSysApi = new ConSysApi(`${this.id}-datastream`, {
             protocol: this.getProtocol(),
             endpointUrl: this.endpointUrl,
             connectorOpts: this.connectorOpts,
@@ -76,8 +76,8 @@ export class Datastream implements IDatastream {
             mode: this.playbackMode
         });
 
-        this.datasource = sweApi;
-        return sweApi;
+        this.datasource = ConSysApi;
+        return ConSysApi;
     }
 
     // TODO: get

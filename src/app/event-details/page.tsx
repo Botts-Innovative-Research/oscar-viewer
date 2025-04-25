@@ -7,7 +7,7 @@ import DataRow from "../_components/event-details/DataRow";
 
 import MiscTable from "../_components/event-details/MiscTable";
 import {useSelector} from "react-redux";
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource";
 import AdjudicationDetail from "@/app/_components/adjudication/AdjudicationDetail";
 import Media from "@/app/_components/event-details/Media";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
@@ -30,14 +30,14 @@ export default function EventDetailsPage() {
 
     const eventPreview = useSelector(selectEventPreview);
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
-    const [localDSMap, setLocalDSMap] = useState<Map<string, typeof SweApi[]>>(new Map<string, typeof SweApi[]>());
+    const [localDSMap, setLocalDSMap] = useState<Map<string, typeof ConSysApi[]>>(new Map<string, typeof ConSysApi[]>());
     const [datasourcesReady, setDatasourcesReady] = useState<boolean>(false);
 
-    const [gammaDatasources, setGammaDS] = useState<typeof SweApi[]>([]);
-    const [neutronDatasources, setNeutronDS] = useState<typeof SweApi[]>([]);
-    const [occDatasources, setOccDS] = useState<typeof SweApi[]>([]);
-    const [thresholdDatasources, setThresholdDS] = useState<typeof SweApi[]>([]);
-    const [videoDatasources, setVideoDatasources] = useState<typeof SweApi[]>([]);
+    const [gammaDatasources, setGammaDS] = useState<typeof ConSysApi[]>([]);
+    const [neutronDatasources, setNeutronDS] = useState<typeof ConSysApi[]>([]);
+    const [occDatasources, setOccDS] = useState<typeof ConSysApi[]>([]);
+    const [thresholdDatasources, setThresholdDS] = useState<typeof ConSysApi[]>([]);
+    const [videoDatasources, setVideoDatasources] = useState<typeof ConSysApi[]>([]);
 
 
     const collectDataSources = useCallback(() => {
@@ -53,7 +53,7 @@ export default function EventDetailsPage() {
         console.log("Collecting DataSources...", currLaneEntry, currentLane);
 
         // @ts-ignore
-        let tempDSMap: Map<string, SweApi[]>;
+        let tempDSMap: Map<string, ConSysApi[]>;
 
         let datasources = currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
         console.log("MY DATASOURCES ", datasources);

@@ -1,7 +1,8 @@
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {INode, Node} from "@/lib/data/osh/Node";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
-
+import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 
 export interface IAdjudicationData {
     time: string,
@@ -38,7 +39,8 @@ export default class AdjudicationData implements IAdjudicationData {
     // }
 
 
-    constructor(username: string, occupancyId: string, alarmingSystemUid: string) {
+    constructor(username: string, occupancyId: string, alarmingSystemUid: string, time: string) {
+        this.time = time;
         this.username = username;
         this.occupancyId = occupancyId;
         this.alarmingSystemUid = alarmingSystemUid;
@@ -114,8 +116,6 @@ export default class AdjudicationData implements IAdjudicationData {
     }
 }
 
-
-
 export class AdjudicationCommand {
     setAdjudicated: boolean;
     observationId: string;
@@ -141,7 +141,7 @@ export function createAdjudicationObservation(data: IAdjudicationData, resultTim
     let obs = {
         "phenomenonTime": resultTime,
         "result": {
-            // "time": new Date(resultTime).getTime(),
+            "time": new Date(resultTime).getTime(),
             // "id": data.id,
             "username": data.username,
             "feedback": data.feedback,
@@ -156,6 +156,19 @@ export function createAdjudicationObservation(data: IAdjudicationData, resultTim
     }
     // return obs
     return JSON.stringify(obs, ['phenomenonTime', 'result', 'time', 'id', 'username', 'feedback', 'adjudicationCode', 'isotopes', 'secondaryInspectionStatus', 'filePaths', 'occupancyId', 'alarmingSystemUid', 'vehicleId'], 2);
+}
+
+export async function sendAdjudication(ep: any, observation: any, ){
+    let resp = await fetch(ep, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: observation,
+        mode: "cors"
+    });
+
+    return resp;
 }
 
 export async function sendSetAdjudicatedCommand(node: INode, controlStreamId: string, command: AdjudicationCommand | string) {
@@ -189,23 +202,11 @@ export function generateCommandJSON(observationId: string, setAdjudicated: boole
     })
 }
 
-export async function findObservationIdBySamplingTime(node: INode, datastreamId: string, samplingTime: string) {
-    let ep = node.getConnectedSystemsEndpoint(false) + `/datastreams/${datastreamId}/observations?` + `resultTime=${samplingTime}`;
-    let response = await fetch(ep, {
-        method: 'GET',
-        headers: {
-            ...node.getBasicAuthHeader(),
-            'Content-Type': 'sml+json'
-        },
-        mode: "cors"
-    })
-    if (response.ok) {
-        // Yes, this IS a sketchy way to do this. Working on a change to Tables that is an actual fix
-        let json = await response.json()
-        console.log("Observations Found", json)
-        return json.items[0]
-    } else {
-        console.log("Response Failed", response)
-        return false
-    }
+export async function fetchOccupancyObservation(ds: typeof DataStream, startTime: any, endTime: any){
+    let initialRes = await ds.searchObservations(new ObservationFilter({resultTime: `${startTime}/${endTime}`}), 1)
+
+    const obsCollection = await initialRes.nextPage();
+    console.log("adjudication obsCollection", obsCollection)
+
+    return obsCollection
 }

@@ -8,13 +8,13 @@ import {LaneMapEntry, LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import {System as OSCARSystem} from "@/lib/data/osh/Systems";
 import {ISystem} from "@/lib/data/osh/Systems";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
-import Systems from "osh-js/source/core/sweapi/system/Systems.js";
-import System from "osh-js/source/core/sweapi/system/System.js";
-import SystemFilter from "osh-js/source/core/sweapi/system/SystemFilter.js";
+import Systems from "osh-js/source/core/ConSysApi/system/Systems.js";
+import System from "osh-js/source/core/ConSysApi/system/System.js";
+import SystemFilter from "osh-js/source/core/ConSysApi/system/SystemFilter.js";
 import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
 import {AdjudicationDatastreamConstant} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
-import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
-import DataStreamFilter from "osh-js/source/core/sweapi/datastream/DataStreamFilter.js";
+import DataStream from "osh-js/source/core/ConSysApi/datastream/DataStream.js";
+import DataStreamFilter from "osh-js/source/core/ConSysApi/datastream/DataStreamFilter.js";
 import { isVideoDatastream } from "../oscar/Utilities";
 
 const SYSTEM_UID_PREFIX = "urn:osh:system:";

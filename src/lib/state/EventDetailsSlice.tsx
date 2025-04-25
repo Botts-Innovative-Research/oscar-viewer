@@ -1,7 +1,7 @@
 import {createSlice, PayloadAction} from "@reduxjs/toolkit";
 import {RootState} from "@/lib/state/Store";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource";
 
 export interface EventDetailsState {
     eventData: EventTableData | null,

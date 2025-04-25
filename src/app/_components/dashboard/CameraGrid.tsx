@@ -9,7 +9,7 @@
 // import {selectLaneMap, selectLanes} from '@/lib/state/OSCARClientSlice';
 // import {RootState} from '@/lib/state/Store';
 // import VideoStatusWrapper from '../video/VideoStatusWrapper';
-// import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
+// import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource"
 // import VideoCarousel from "@/app/_components/video/VideoCarousel";
 // import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 // import {
@@ -22,7 +22,7 @@
 //
 // interface LaneWithVideo {
 //   laneName: string,
-//   videoSources: typeof SweApi[],
+//   videoSources: typeof ConSysApi[],
 //   status: string,
 // }
 //

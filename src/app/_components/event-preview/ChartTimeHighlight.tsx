@@ -7,7 +7,7 @@
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import {Box, Grid, ToggleButton, ToggleButtonGroup} from "@mui/material";
 import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView.js";
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import annotationPlugin from 'chartjs-plugin-annotation';
 import {Chart, registerables} from 'chart.js';
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
@@ -15,15 +15,9 @@ import {
     createGammaViewCurve,
     createNeutronViewCurve,
     createNSigmaCalcViewCurve,
-    createThresholdViewCurve, createThreshSigmaViewCurve, getObservations
+    createThresholdViewCurve, createThreshSigmaViewCurve
 } from "@/app/utils/ChartUtils";
-import {useSelector} from "react-redux";
-import {RootState} from "@/lib/state/Store";
-import {selectDatastreams, selectNodes} from "@/lib/state/OSHSlice";
-import getDataStreamById from "osh-js/source/core/sweapi/datastream/DataStreams";
-import DataStreamFilter from "osh-js/source/core/sweapi/datastream/DataStreamFilter.js";
-import { Datastream } from "@/lib/data/osh/Datastreams";
-import DataStreams from "osh-js/source/core/sweapi/datastream/DataStreams";
+
 
 type CurveLayers = {
     neutron: any;
@@ -45,7 +39,7 @@ export class ChartInterceptProps {
     setChartReady: Function;
     modeType: string;
     currentTime: any;
-    datasources: { gamma: typeof SweApi, neutron: typeof SweApi, threshold: typeof SweApi };
+    datasources: { gamma: typeof ConSysApi, neutron: typeof ConSysApi, threshold: typeof ConSysApi };
     eventData: EventTableData;
     latestGB: number;
 }

@@ -10,8 +10,8 @@ import {
     setSelectedRowId,
     selectSelectedRowId, setLatestGB
 } from "@/lib/state/EventPreviewSlice";
-import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
-import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
+import DataStream from "osh-js/source/core/ConSysApi/datastream/DataStream.js";
+import ObservationFilter from "osh-js/source/core/ConSysApi/observation/ObservationFilter";
 import {AlarmTableData, EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {
     DataGrid,

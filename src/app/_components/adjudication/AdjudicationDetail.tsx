@@ -25,9 +25,10 @@ import React, {ChangeEvent, useContext, useRef, useState} from "react";
 import IsotopeSelect from "./IsotopeSelect";
 import AdjudicationLog from "./AdjudicationLog"
 import AdjudicationData, {
-    findObservationIdBySamplingTime,
+    fetchOccupancyObservation,
+
     generateCommandJSON,
-    IAdjudicationData,
+    IAdjudicationData, sendAdjudication,
     sendSetAdjudicatedCommand
 } from "@/lib/data/oscar/adjudication/Adjudication";
 import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";
@@ -41,20 +42,6 @@ import {updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
 import SecondaryInspectionSelect from "@/app/_components/adjudication/SecondaryInspectionSelect";
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
-
-    const defaultAdjData: IAdjudicationData = {
-        time: "",
-        id: "",
-        username: "",
-        feedback: "",
-        adjudicationCode: AdjudicationCodes.getCodeObjByIndex(0),
-        isotopes: "",
-        secondaryInspectionStatus: "NONE",
-        filePaths: "",
-        occupancyId: "",
-        alarmingSystemUid: "",
-        vehicleId: ""
-    }
 
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
     const [comments, setComments] = useState<Comment[]>([]);
@@ -70,7 +57,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const currentUser = useSelector(selectCurrentUser);
     const [associatedAdjudications, setAssociatedAdjudications] = useState<Comment[]>([]);
     const [shouldFetchLogs, setShouldFetchLogs] = useState<boolean>(false);
-    const adjudication = props.event ? new AdjudicationData(currentUser, props.event.occupancyId, props.event.systemIdx) : null;
+    const adjudication = props.event ? new AdjudicationData(currentUser, props.event.occupancyId, props.event.systemIdx, new Date().toISOString()) : null;
     const [adjData, setAdjData] = useState<AdjudicationData>(adjudication);
 
     const dispatch = useDispatch();
@@ -146,6 +133,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         setIsotope([]);
         setAdjCode(AdjudicationCodes.codes[0]);
         setFeedback('')
+
     }
 
     const sendAdjudicationData = async () => {
@@ -156,32 +144,30 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             setOpenSnack(true)
             return;
         }
+
         let phenomenonTime = new Date().toISOString();
         let tempAdjData: AdjudicationData = adjData;
 
-        console.log("Adj Data to send", tempAdjData);
         tempAdjData.setTime(phenomenonTime);
-        // let observation = createAdjudicationObservation(comboData, phenomenonTime);
+        console.log("tempAdjData", tempAdjData)
+
         let observation = tempAdjData.createAdjudicationObservation();
         console.log("[ADJ] Sending Adjudication Data: ", observation);
+
         // send to server
-        let currentLane = props.event.laneId;
+        const currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
         const adjDsID = currLaneEntry.parentNode.laneAdjMap.get(currentLane);
-        // const adjDSId = props.event.dataStreamId;
-        const ep = currLaneEntry.parentNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + adjDsID + "/observations";
+        const endpoint = currLaneEntry.parentNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + adjDsID + "/observations";
 
-        console.log('temp adjudicated dat', tempAdjData)
+        await submitAdjudication(endpoint, observation, currLaneEntry, tempAdjData)
+    }
+
+
+    const submitAdjudication = async(endpoint: string, observation: any, currLaneEntry: any, tempAdjData: any) => {
+
         try{
-            let resp = await fetch(ep, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: observation,
-                mode: "cors"
-            });
-
+            const resp = await sendAdjudication(endpoint, observation)
 
             if(resp.ok){
                 setAdjSnackMsg('Adjudication Submitted Successfully')
@@ -191,31 +177,34 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 setAdjSnackMsg('Adjudication Submission Failed. Check connection and form then try again.')
                 setColorStatus('error')
             }
+
+            console.log("[ADJ] Response: ", resp);
+
+            let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == props.event.dataStreamId);
+            let occupancyObservation = await fetchOccupancyObservation(ds, props.event.startTime, props.event.endTime)
+
+            if (!occupancyObservation) {
+                setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
+                setColorStatus('error')
+                setOpenSnack(true);
+                return;
+            }
+
+
+            await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId, generateCommandJSON(occupancyObservation[0].id, true));
+            // dispatch(updateSelectedEventAdjudication(comboData));
+
+
         }catch(error){
             setAdjSnackMsg('Adjudication failed to submit.')
             setColorStatus('error')
-        }
-
-        // send command
-        // we can use endTime as it is the same a resultTime in testing, this may not be true in practice but this is a stop-gap fix anyway
-        let refObservation = await findObservationIdBySamplingTime(currLaneEntry.parentNode, props.event.dataStreamId, props.event.endTime)
-
-        // guard, maybe add an appropriate snackbar
-        if (!refObservation) {
-            setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
-            setColorStatus('error')
+        }finally{
+            setShouldFetchLogs(true);
             setOpenSnack(true);
-            return;
+            resetForm();
         }
-        await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId,
-            generateCommandJSON(refObservation.id, true));
-        // dispatch(updateSelectedEventAdjudication(comboData));
 
-        setShouldFetchLogs(true);
-        setOpenSnack(true);
-        resetForm();
     }
-
     function onFetchComplete() {
         setShouldFetchLogs(false);
     }
@@ -343,3 +332,4 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         </Stack>
     );
 }
+

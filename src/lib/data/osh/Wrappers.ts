@@ -4,19 +4,19 @@
  */
 
 // @ts-ignore
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource";
 
-export interface ISweAPIWrapper {
-    sweApi: SweApi,
+export interface IConSysApiWrapper {
+    ConSysApi: ConSysApi,
     datastreamId: string
 }
 
-export class SweAPIWrapper implements ISweAPIWrapper {
-    sweApi: SweApi;
+export class ConSysApiWrapper implements IConSysApiWrapper {
+    ConSysApi: ConSysApi;
     datastreamId: string;
 
-    constructor(sweApi: SweApi, datastreamId: string) {
-        this.sweApi = sweApi;
+    constructor(ConSysApi: ConSysApi, datastreamId: string) {
+        this.ConSysApi = ConSysApi;
         this.datastreamId = datastreamId;
     }
 }
