@@ -13,7 +13,7 @@ interface TimeControllerProps {
   syncTime: any;
   pause: Function;
   play: Function;
-  handleCommitChange: (event: Event, newValue: number | number[], isPlaying: boolean) => void;
+  handleCommitChange: (event: Event, newValue: number | number[]) => void;
 }
 
 export default function TimeController({syncTime, startTime, endTime, pause, play, handleCommitChange}: TimeControllerProps) {
@@ -46,7 +46,7 @@ export default function TimeController({syncTime, startTime, endTime, pause, pla
 
     const handleSliderCommitted = (event: Event, value: number | number[])=>{
         setIsScrubbing(false);
-        handleCommitChange(event, value as number, isPlaying);
+        handleCommitChange(event, value as number);
     }
 
     const handlePlaying =  ()=> {

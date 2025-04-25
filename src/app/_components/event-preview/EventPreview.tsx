@@ -88,6 +88,11 @@ export function EventPreview() {
     const gammaChartRef = useRef<any>();
     const neutronChartRef = useRef<any>();
 
+
+    const [frameSrc, setFrameSrc]= useState();
+    const selectedIndex = useRef<number>(0)
+
+
     // Video Specifics
     const [videoReady, setVideoReady] = useState<boolean>(false);
     const [videoDatasources, setVideoDatasources] = useState<typeof SweApi[]>([]);
@@ -432,45 +437,41 @@ export function EventPreview() {
         }
 
     };
-    const [frameSrc, setFrameSrc]= useState();
-    const [selectedVideoIndex, setSelectedVideoIndex] = useState<number>(0);
 
     // when the user toggles the time controller this is the code to change the time sync
-    const handleCommitChange = useCallback( async(event: Event, newValue: number, isPlaying: boolean) => {
+    const handleCommitChange = useCallback( async(event: Event, newValue: number) => {
 
         // await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, 0.0, true);
         setSyncTime(newValue);
 
         await syncRef.current.dataSynchronizerReplay.setStartTime(newValue, false).finally(() => {
-            fetchImgBlob(newValue, selectedVideoIndex);
+            fetchImgBlob(newValue);
         });
 
-    },[syncRef, eventPreview.eventData.endTime, selectedVideoIndex]);
+    },[syncRef, eventPreview.eventData.endTime]);
 
 
 
 
-    const fetchImgBlob = async(newVal: any, index: number)=>{
+    const fetchImgBlob = async(newVal: any)=>{
 
         for (const lane of laneMapRef.current.values()){
 
             if(lane.laneName === eventPreview.eventData.laneId){
                 let datastreams = lane.datastreams.filter((ds: any) => isVideoDatastream(ds));
 
-                await fetchFrameCreateBlob(newVal, eventPreview.eventData.endTime, datastreams, index);
+                await fetchFrameCreateBlob(newVal, eventPreview.eventData.endTime, datastreams);
             }
         }
     }
 
-    async function fetchFrameCreateBlob(startTime: any, endTime: any, datastreams: any, index: number){
+    async function fetchFrameCreateBlob(startTime: any, endTime: any, datastreams: any){
 
-        console.log("selectedVideoIndex", index)
-        let dsId = syncRef.current.dataSynchronizer.dataSources[index].name.split("-")[1]
+        let dsId = syncRef.current.dataSynchronizer.dataSources[selectedIndex.current].name.split("-")[1]
         console.log("sync ds id", dsId);
 
 
         let currentVideoDs = datastreams.filter((ds: any) => ds.properties.id === dsId);
-        console.log("currentVIDEODS", currentVideoDs)
         let obs = await currentVideoDs[0].searchObservations(new ObservationFilter({ format: 'application/swe+binary', resultTime: `${new Date(startTime).toISOString()}/${endTime}`}),1);
 
         const obsPage = await obs.nextPage();
@@ -478,16 +479,14 @@ export function EventPreview() {
         let imgBlob = new Blob([obsPage[0].img.data]);
         let url = window.URL.createObjectURL(imgBlob);
 
-        console.log("url", url)
         var img = document.getElementsByClassName("video-mjpeg");
 
         img[0].src = url;
 
     }
 
-    const handleUpdatingPage =(page: number)=>{
-        console.log("help", page)
-        setSelectedVideoIndex(page);
+    const handleUpdatingPage = (page: number)=>{
+        selectedIndex.current = page;
     }
 
     return (
