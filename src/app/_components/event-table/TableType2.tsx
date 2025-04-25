@@ -86,6 +86,7 @@ export default function Table2({
             return;
         }
         let obsCollection = await occDS.searchObservations(observationFilter, 15);
+        console.log("obs collection", obsCollection)
         return await handleObservations(obsCollection, laneEntry, false);
     }
 
