@@ -88,6 +88,11 @@ export function EventPreview() {
     const gammaChartRef = useRef<any>();
     const neutronChartRef = useRef<any>();
 
+
+    const [frameSrc, setFrameSrc]= useState();
+    const selectedIndex = useRef<number>(0)
+
+
     // Video Specifics
     const [videoReady, setVideoReady] = useState<boolean>(false);
     const [videoDatasources, setVideoDatasources] = useState<typeof SweApi[]>([]);
@@ -401,12 +406,6 @@ export function EventPreview() {
     };
 
 
-    const [frameSrc, setFrameSrc]= useState();
-    const [selectedVideoIndex, setSelectedVideoIndex] = useState(0);
-
-
-
-
     // function to start the time controller by connecting to time sync
     const play = async () => {
         if (syncRef.current) {
@@ -426,46 +425,32 @@ export function EventPreview() {
     // function to pause the time controller by disconnecting from the time sync
     const pause = async () => {
         if (syncRef.current) {
+
             // await syncRef.current.setReplaySpeed(0.0);
+            console.log("Playback paused.");
 
             await syncRef.current.disconnect();
 
             var img = document.getElementsByClassName("video-mjpeg");
-            console.log("img.src", img)
-            // if (img.src.length > 1){
-            //     setFrameSrc(img.src)
-            // }else{
-                setFrameSrc(img[0].src)
-            // }
 
-
-            console.log("Playback paused.");
+            setFrameSrc(img[0].src)
         }
 
     };
 
     // when the user toggles the time controller this is the code to change the time sync
-    const handleCommitChange = useCallback( async(event: Event, newValue: number, isPlaying: boolean) => {
+    const handleCommitChange = useCallback( async(event: Event, newValue: number) => {
 
-        // await syncRef.current.dataSynchronizerReplay.setStartTime(newValue, false);
-        // update the time sync start time
-        // await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, (isPlaying ? 1.0 : 0.0), true);
-        // var img = document.getElementsByClassName("video-mjpeg");
-        // setFrameSrc(img[0].src)
+        // await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, 0.0, true);
+        setSyncTime(newValue);
 
         await syncRef.current.dataSynchronizerReplay.setStartTime(newValue, false).finally(() => {
             fetchImgBlob(newValue);
         });
-        // await syncRef.current.dataSynchronizerReplay.setStartTime(newValue, false);
-        setSyncTime(newValue);
-
-
-
-        // await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, isPlaying? 1.0 : 0.0, true).finally(() => {
-        //     fetchImgBlob(newValue);
-        // });
 
     },[syncRef, eventPreview.eventData.endTime]);
+
+
 
 
     const fetchImgBlob = async(newVal: any)=>{
@@ -482,13 +467,11 @@ export function EventPreview() {
 
     async function fetchFrameCreateBlob(startTime: any, endTime: any, datastreams: any){
 
-        console.log("selectedVideoIndex", selectedVideoIndex)
-        let dsId = syncRef.current.dataSynchronizer.dataSources[selectedVideoIndex].name.split("-")[1]
+        let dsId = syncRef.current.dataSynchronizer.dataSources[selectedIndex.current].name.split("-")[1]
         console.log("sync ds id", dsId);
 
 
         let currentVideoDs = datastreams.filter((ds: any) => ds.properties.id === dsId);
-        console.log("currentVIDEODS", currentVideoDs)
         let obs = await currentVideoDs[0].searchObservations(new ObservationFilter({ format: 'application/swe+binary', resultTime: `${new Date(startTime).toISOString()}/${endTime}`}),1);
 
         const obsPage = await obs.nextPage();
@@ -496,16 +479,14 @@ export function EventPreview() {
         let imgBlob = new Blob([obsPage[0].img.data]);
         let url = window.URL.createObjectURL(imgBlob);
 
-        console.log("url", url)
         var img = document.getElementsByClassName("video-mjpeg");
 
         img[0].src = url;
 
     }
 
-    const handleUpdatingPage =(page: number)=>{
-        console.log("help", page)
-        setSelectedVideoIndex(page);
+    const handleUpdatingPage = (page: number)=>{
+        selectedIndex.current = page;
     }
 
     return (
@@ -522,7 +503,7 @@ export function EventPreview() {
                 </IconButton>
             </Stack>
 
-            {(datasourcesReady && latestGB) ? (
+            {(datasourcesReady && latestGB && syncRef.current) ? (
                     <Box>
                         <ChartTimeHighlight
                             datasources={{
@@ -538,10 +519,8 @@ export function EventPreview() {
                         />
 
                         <LaneVideoPlayback
-                            videoDatasources={videoDatasources}
                             setVideoReady={setVideoReady}
                             dataSynchronizer={syncRef.current}
-                            addDataSource={setActiveVideoIDX}
                             modeType={"preview"}
                             onSelectedVideoIdxChange={handleUpdatingPage}
                         />
