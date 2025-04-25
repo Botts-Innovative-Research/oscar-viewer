@@ -50,7 +50,7 @@ export default function StatusTables({laneMap}: TableProps){
         if (!obsDS) {
             return;
         }
-        let obsCollection = await obsDS.searchObservations(observationFilter, 250000);
+        let obsCollection = await obsDS.searchObservations(observationFilter, 15);
         return await handleObservations(obsCollection, laneEntry, false);
     }
 
@@ -139,7 +139,6 @@ export default function StatusTables({laneMap}: TableProps){
 
     const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
         if(laneMap){
-            console.log("alarm status lanempa", laneMap)
             await doFetch(laneMap, "http://www.opengis.net/def/alarm");
             await doFetch(laneMap, "http://www.opengis.net/def/tamper");
             doStream(laneMap, "http://www.opengis.net/def/alarm");

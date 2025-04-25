@@ -347,9 +347,11 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
     const [selVideoIdx, setSelVidIdx] = useState<number>(0);
     const [maxPages, setMaxPages] = useState(0)
 
+    const [videoWidth, setVideoWidth] = useState("450px");
+    const [videoHeight, setVideoHeight] = useState("500px");
+
 
     useEffect(() => {
-        console.log("Video", videoDataSources)
         if(videoDataSources.length > 0 && videoDataSources){
             setDatasources(videoDataSources);
             setMaxPages(videoDataSources.length);
@@ -359,7 +361,6 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
 
     useEffect(() => {
         if(dataSources.length > 0){
-            console.log("datasources in lane vide", dataSources)
             videoViewRef.current = new VideoView({
                 container: "lane-view-video",
                 showTime: false,
@@ -448,8 +449,8 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
                        alignContent="center"
                        justifyContent="center"
                        sx={{
-                           width: "100%",
-                           height: "videoSize",
+                           height: videoHeight,
+                           width: videoWidth,
                            alignItems: "center",
                            border: "1px solid rgba(0,0,0,0.12)",
                            padding: 1,

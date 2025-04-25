@@ -85,7 +85,8 @@ export default function Table2({
         if (!occDS) {
             return;
         }
-        let obsCollection = await occDS.searchObservations(observationFilter, 250000);
+        let obsCollection = await occDS.searchObservations(observationFilter, 15);
+        console.log("obs collection", obsCollection)
         return await handleObservations(obsCollection, laneEntry, false);
     }
 
@@ -94,15 +95,16 @@ export default function Table2({
         let futureTime = new Date();
         futureTime.setFullYear(futureTime.getFullYear() + 1);
         let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty("http://www.opengis.net/def/pillar-occupancy-count");
-        occDS.streamObservations(new ObservationFilter({
-            resultTime: `now/${futureTime.toISOString()}`
-        }), (observation: any) => {
+
+        const observationFilter = new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`});
+        occDS.streamObservations(observationFilter, (observation: any) => {
             let resultEvent = eventFromObservation(observation[0], laneEntry);
             dispatch(addEventToLog(resultEvent));
 
         })
     }
 
+    //Pseudorandom number generator from event data
     function prngFromStr(obs: any, laneName: string): number {
         const baseId = `${obs.result?.occupancyCount}${laneName}${obs.result?.startTime}${obs.result?.endTime}`;
         return hashString(baseId);
@@ -146,11 +148,13 @@ export default function Table2({
     }
 
     async function doFetch(laneMap: Map<string, LaneMapEntry>) {
+        console.log("fetching lane map observations")
         let allFetchedResults: EventTableData[] = [];
         let promiseGroup: Promise<void>[] = [];
 
+        const laneMapToMap = convertToMap(laneMap);
         // createDatastreams(laneMap)
-        laneMap.forEach((entry: LaneMapEntry, laneName: string) => {
+        laneMapToMap.forEach((entry: LaneMapEntry, laneName: string) => {
             let promise = (async () => {
                 let startTimeForObs = new Date();
                 startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
@@ -215,8 +219,9 @@ export default function Table2({
 
 
     useEffect(() => {
+        console.log("laneMap changed size", laneMap)
         dataStreamSetup(laneMap);
-    }, []);
+    }, [laneMap, laneMap.size]);
 
     const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
         await doFetch(laneMap);
@@ -236,10 +241,7 @@ export default function Table2({
 
             filteredData = laneEventList(tableData);
         }
-        // setFilteredTableData(filteredData);
-        setFilteredTableData((prevState) => {
-            return filteredData;
-        })
+        setFilteredTableData(filteredData);
     }, [tableData]);
 
     //------------------------------------------------------------------------------------------------------------------
