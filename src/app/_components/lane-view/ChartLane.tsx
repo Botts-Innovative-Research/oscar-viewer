@@ -2,7 +2,7 @@
 
 
 import {Box, Grid} from "@mui/material";
-import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource";
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
 import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView";

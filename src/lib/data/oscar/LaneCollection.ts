@@ -3,16 +3,14 @@
  * All Rights Reserved
  */
 
-import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource";
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
-import System from "osh-js/source/core/ConSysApi/system/System.js";
-import DataStream from "osh-js/source/core/ConSysApi/datastream/DataStream.js";
-import DataStreams from "osh-js/source/core/ConSysApi/datastream/DataStreams.js";
+import System from "osh-js/source/core/consysapi/system/System.js";
+import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
+import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js";
 import {INode} from "@/lib/data/osh/Node";
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
-
-import {isDynamicUsageError} from "next/dist/export/helpers/is-dynamic-usage-error";
 import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
 import {
     isGammaDatastream,
@@ -55,8 +53,9 @@ export class LaneMapEntry {
     parentNode: INode;
     laneSystem: typeof System;
     private adjDs: string;
-    adjControlStreamId: string;
+    // adjControlStreamId: string;
     laneName: string;
+    controlStreams: any[]
 
     constructor(node: INode) {
         this.systems = [];
@@ -65,7 +64,8 @@ export class LaneMapEntry {
         this.datasourcesBatch = [];
         this.datasourcesRealtime = [];
         this.parentNode = node;
-        this.laneName = undefined
+        this.laneName = undefined;
+        this.controlStreams = [];
     }
 
     setLaneSystem(system: typeof System) {
@@ -97,6 +97,10 @@ export class LaneMapEntry {
     }
     setLaneName(name: string){
         this.laneName = name;
+    }
+
+    addControlStreams(controlStreams: any[]){
+        this.controlStreams.push(...controlStreams)
     }
 
     async getAdjudicationDatastream(dsId: string) {
@@ -291,7 +295,6 @@ export class LaneMapEntry {
                     tamperArray.push(datasourceBatch);
                 }
             }
-            // if (ds.properties.name.includes('Video')) {
             if(isVideoDatastream(ds)){
                 let videoArray = dsMap.get('video')!;
                 const index = videoArray.findIndex(dsItem => dsItem.properties.id === datasourceBatch.properties.id);
@@ -301,28 +304,6 @@ export class LaneMapEntry {
                 } else {
                     videoArray.push(datasourceBatch);
                 }
-                // const validInterval = ds.properties.resultTime;
-
-                // Ensure startTime and endTime are within the datastream's valid data time
-                // if(validInterval?.length === 2) {
-                //     let [validStart, validEnd] = validInterval.map(
-                //         (time: string | number | Date) => new Date(time));
-                //
-                //     // Account for ms
-                //     validStart.setSeconds(validStart.getSeconds() - 1);
-                //     validEnd.setSeconds(validEnd.getSeconds() + 1);
-                //
-                //     const eventStart = new Date(startTime);
-                //     const eventEnd = new Date(endTime);
-                //
-                //     if(eventStart >= validStart && eventEnd <= validEnd) {
-                //         videoArray.push(datasourceReplay);
-                //     } else {
-                //         console.info("Data within interval not found for datasource ", ds)
-                //     }
-                // } else {
-                //     console.info("No valid time found for datasource ", ds.properties.id);
-                // }
             }
             if(isThresholdDatastream(ds)){
                 let gammaTrshldArray = dsMap.get('gammaTrshld')!;
@@ -341,12 +322,14 @@ export class LaneMapEntry {
     async insertAdjudicationSystem(laneName: string) {
         console.log("[ADJ] Inserting Adjudication System for lane: ", this);
         let laneId = this.laneSystem.properties.properties.uid.split(":").pop();
+
         let adJSysJSON = {
             "type": "SimpleProcess",
             "uniqueId": `urn:ornl:client:adjudication:${laneId}`,
             "label": `Adjudication System - ${laneName}`,
             "definition": "sosa:System"
         }
+
         console.log("[ADJ] Inserting Adjudication System: ", adJSysJSON);
         let sysId: string = await this.parentNode.insertAdjSystem(adJSysJSON);
         console.log("[ADJ] Inserted Adjudication System: ", sysId);
@@ -369,9 +352,9 @@ export class LaneMapEntry {
         }
     }
 
-    addControlStreamId(id: string) {
-        this.adjControlStreamId = id;
-    }
+    // addControlStreamId(id: string) {
+    //     this.adjControlStreamId = id;
+    // }
 }
 
 export class LaneDSColl {

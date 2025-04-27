@@ -33,7 +33,7 @@ import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/navigation";
 import ChartTimeHighlight from "@/app/_components/event-preview/ChartTimeHighlight";
 import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
-import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource";
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 
@@ -53,7 +53,7 @@ import { setEventData } from "@/lib/state/EventDetailsSlice";
 import {RootState} from "@/lib/state/Store";
 import CircularProgress from "@mui/material/CircularProgress";
 import {isVideoDatastream} from "@/lib/data/oscar/Utilities";
-import ObservationFilter from "osh-js/source/core/ConSysApi/observation/ObservationFilter";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 
 
 export function EventPreview() {
@@ -183,7 +183,7 @@ export function EventPreview() {
                 return;
             }
 
-            await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId, generateCommandJSON(occupancyObservation[0].id, true));
+            await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.controlStreams[0].properties.id, generateCommandJSON(occupancyObservation[0].id, true));
             dispatch(updateSelectedEventAdjudication(comboData));
 
         } catch (error) {

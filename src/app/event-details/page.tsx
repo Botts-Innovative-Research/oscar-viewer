@@ -7,7 +7,7 @@ import DataRow from "../_components/event-details/DataRow";
 
 import MiscTable from "../_components/event-details/MiscTable";
 import {useSelector} from "react-redux";
-import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource";
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import AdjudicationDetail from "@/app/_components/adjudication/AdjudicationDetail";
 import Media from "@/app/_components/event-details/Media";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";

@@ -20,8 +20,7 @@ import React, {useEffect, useState} from "react";
 import {addNode, updateNode} from "@/lib/state/OSHSlice";
 import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
-import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+
 
 export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     isEditNode: boolean,

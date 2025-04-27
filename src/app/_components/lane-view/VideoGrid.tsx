@@ -5,7 +5,7 @@
 // // import "../../style/cameragrid.css";
 // //
 // // import VideoComponent from '../video/VideoComponent';
-// // import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource"
+// // import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource"
 // // import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 // // import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 // // import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
@@ -145,7 +145,7 @@
 // import { selectLaneMap } from '@/lib/state/OSCARLaneSlice';
 // import { RootState } from '@/lib/state/Store';
 // import VideoComponent from '../video/VideoComponent';
-// import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource"
+// import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource"
 // import {DataSourceContext} from '../../contexts/DataSourceContext';
 // import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 // import NavigateNextIcon from '@mui/icons-material/NavigateNext';
@@ -332,7 +332,7 @@
 import {Box, IconButton, Stack } from '@mui/material';
 import { useEffect, useRef, useState} from 'react';
 import "../../style/cameragrid.css";
-import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource"
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource"
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import VideoView from "osh-js/source/core/ui/view/video/VideoView";

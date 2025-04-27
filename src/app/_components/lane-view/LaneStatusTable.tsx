@@ -1,8 +1,8 @@
 "use client"
 
 import {useCallback, useEffect, useRef, useState} from "react";
-import ObservationFilter from "osh-js/source/core/ConSysApi/observation/ObservationFilter";
-import DataStream from "osh-js/source/core/ConSysApi/datastream/DataStream";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
 
 import {AlarmTableData,} from "@/lib/data/oscar/TableHelpers";
 

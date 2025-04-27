@@ -1,6 +1,6 @@
 
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
-import ObservationFilter from "osh-js/source/core/ConSysApi/observation/ObservationFilter";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 
 export  function createNeutronViewCurve(neutronDatasource: { id: any; }) {
     if (!neutronDatasource) return null;

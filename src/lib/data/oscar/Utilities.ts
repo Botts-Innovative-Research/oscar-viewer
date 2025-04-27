@@ -4,8 +4,8 @@
  */
 
 import {IDatastream} from "@/lib/data/osh/Datastreams";
-import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource";
-import DataStream from "osh-js/source/core/ConSysApi/datastream/DataStream";
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
+import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
 import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
 
 /**

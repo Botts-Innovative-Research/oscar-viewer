@@ -19,7 +19,7 @@ import {
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {selectLastToggleState, setToggleState} from "@/lib/state/LaneViewSlice";
-import ConSysApi from "osh-js/source/core/datasource/ConSysApi/ConSysApi.datasource";
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import LaneStatusTable from "../_components/lane-view/LaneStatusTable";
 
 

@@ -1,7 +1,7 @@
 "use client"
 
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {useCallback, useEffect, useState} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 import {Box} from "@mui/material";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
@@ -10,8 +10,9 @@ import {
     setSelectedRowId,
     selectSelectedRowId, setLatestGB
 } from "@/lib/state/EventPreviewSlice";
-import DataStream from "osh-js/source/core/ConSysApi/datastream/DataStream.js";
-import ObservationFilter from "osh-js/source/core/ConSysApi/observation/ObservationFilter";
+import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import Observations from "osh-js/source/core/consysapi/observation/Observations";
 import {AlarmTableData, EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {
     DataGrid,
@@ -34,6 +35,8 @@ import {
 import {useRouter} from "next/navigation";
 import {getObservations} from "@/app/utils/ChartUtils";
 import {isThresholdDatastream} from "@/lib/data/oscar/Utilities";
+import {selectNodes} from "@/lib/state/OSHSlice";
+import SystemFilter from "osh-js/source/core/consysapi/system/SystemFilter";
 
 
 interface TableProps {
@@ -78,17 +81,121 @@ export default function Table2({
     const dispatch = useAppDispatch();
     const router = useRouter();
 
-    async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
-        const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
-        let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty("http://www.opengis.net/def/pillar-occupancy-count");
 
-        if (!occDS) {
-            return;
-        }
-        let obsCollection = await occDS.searchObservations(observationFilter, 15);
-        console.log("obs collection", obsCollection)
-        return await handleObservations(obsCollection, laneEntry, false);
+    const currentTablePage = useRef(0);
+
+    const handlePageChange = (model: any) =>{
+        console.log("PAGE", model.page)
+        currentTablePage.current = model.page;
     }
+
+    const nodes = useSelector(selectNodes);
+
+    async function fetchObservationsByPage(timeStart: string, timeEnd: string){
+
+        const laneMapToMap = convertToMap(laneMap);
+
+
+        let observations: EventTableData[] = [];
+        for (const node of nodes) {
+            console.log("node", node)
+
+            const observations = new Observations({
+                    endpointUrl: `${node.address}:${node.port}${node.oshPathRoot}${node.csAPIEndpoint}`,
+                    tls: node.isSecure,
+                    connectorOpts: node.auth
+                }
+            );
+
+            console.log("observations", observations)
+
+            let searchObservation = await observations.searchObservations(new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`}), 15);
+
+
+            console.log("searchObservations", searchObservation)
+
+            while(searchObservation.hasNext()){
+                let obsResult = await searchObservation.nextPage();
+
+                console.log("obsResult", obsResult)
+
+
+               const laneEntry =  laneMapToMap.forEach((entry: LaneMapEntry, laneName: string) =>{
+                    console.log("entry", entry)
+                })
+                // let result = eventFromObservation(obs, null)
+
+                // console.log("obsResult", obsResult)
+
+            }
+        }
+
+
+    }
+
+    // async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
+    //     const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
+    //     let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty("http://www.opengis.net/def/pillar-occupancy-count");
+    //
+    //     if (!occDS) {
+    //         return;
+    //     }
+    //
+    //     let obsCollection = await occDS.searchObservations(observationFilter, pageSize);
+    //
+    //     console.log("obs collection current page", obsCollection.currentPage)
+    //     // if(obsCollection.currentPage = currentTablePage.current - 1)
+    //     // return await handleObservations(obsCollection, laneEntry, false);
+    // }
+
+
+
+    // here we need to do it by pages and only fetch the next page when clicked only 15 events at a time
+    // @ts-ignore
+    // async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<EventTableData[]> {
+    //     let observations: EventTableData[] = [];
+    //
+    //
+    //     while (obsCollection.hasNext()) {
+    //         let obsResults = await obsCollection.nextPage();
+    //
+    //         console.log("obsResults", obsResults)
+    //         // console.log("ObsResults", obsResults)
+    //         obsResults.map((obs: any) => {
+    //             let result = eventFromObservation(obs, laneEntry);
+    //             observations.push(result);
+    //
+    //             // when fetching, this operation is a bit too costly so we probably want to just set the table with all the results we've collected
+    //             if (addToLog) dispatch(addEventToLog(result));
+    //         })
+    //
+    //
+    //     }
+    //     return observations;
+    // }
+
+    // async function doFetch(laneMap: Map<string, LaneMapEntry>) {
+    //     console.log("fetching lane map observations")
+    //     let allFetchedResults: EventTableData[] = [];
+    //     let promiseGroup: Promise<void>[] = [];
+    //
+    //     const laneMapToMap = convertToMap(laneMap);
+    //     // createDatastreams(laneMap)
+    //     laneMapToMap.forEach((entry: LaneMapEntry, laneName: string) => {
+    //         let promise = (async () => {
+    //             let startTimeForObs = new Date();
+    //             startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
+    //             let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
+    //             allFetchedResults = [...allFetchedResults, ...fetchedResults];
+    //
+    //         })();
+    //         promiseGroup.push(promise);
+    //     });
+    //
+    //     await Promise.all(promiseGroup);
+    //     dispatch(setEventLogData(allFetchedResults))
+    // }
+
 
     async function streamObservations(laneEntry: LaneMapEntry) {
 
@@ -104,36 +211,6 @@ export default function Table2({
         })
     }
 
-    //Pseudorandom number generator from event data
-    function prngFromStr(obs: any, laneName: string): number {
-        const baseId = `${obs.result?.occupancyCount}${laneName}${obs.result?.startTime}${obs.result?.endTime}`;
-        return hashString(baseId);
-    }
-
-    function hashString(str: any) {
-        let hash = 5381;
-        for (let i = 0; i < str.length; i++) {
-            hash = (hash * 33) ^ str.charCodeAt(i);
-        }
-        return (hash >>> 0) / 4294967296;
-    }
-
-
-    // @ts-ignore
-    async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<EventTableData[]> {
-        let observations: EventTableData[] = [];
-
-        while (obsCollection.hasNext()) {
-            let obsResults = await obsCollection.nextPage();
-            obsResults.map((obs: any) => {
-                let result = eventFromObservation(obs, laneEntry);
-                observations.push(result);
-                // when fetching, this operation is a bit too costly so we probably want to just set the table with all the results we've collected
-                if (addToLog) dispatch(addEventToLog(result));
-            })
-        }
-        return observations;
-    }
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
         const id = prngFromStr(obs, laneEntry.laneName);
@@ -147,28 +224,6 @@ export default function Table2({
         return newEvent;
     }
 
-    async function doFetch(laneMap: Map<string, LaneMapEntry>) {
-        console.log("fetching lane map observations")
-        let allFetchedResults: EventTableData[] = [];
-        let promiseGroup: Promise<void>[] = [];
-
-        const laneMapToMap = convertToMap(laneMap);
-        // createDatastreams(laneMap)
-        laneMapToMap.forEach((entry: LaneMapEntry, laneName: string) => {
-            let promise = (async () => {
-                let startTimeForObs = new Date();
-                startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
-                // await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
-                let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
-                allFetchedResults = [...allFetchedResults, ...fetchedResults];
-
-            })();
-            promiseGroup.push(promise);
-        });
-
-        await Promise.all(promiseGroup);
-        dispatch(setEventLogData(allFetchedResults))
-    }
 
     const convertToMap = (obj: any) =>{
         if(!obj) return new Map();
@@ -219,12 +274,14 @@ export default function Table2({
 
 
     useEffect(() => {
-        console.log("laneMap changed size", laneMap)
         dataStreamSetup(laneMap);
     }, [laneMap, laneMap.size]);
 
     const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
-        await doFetch(laneMap);
+        // await doFetch(laneMap);
+        let startTimeForObs = new Date();
+        startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
+        await fetchObservationsByPage(startTimeForObs.toISOString(), 'now')
         doStream(laneMap);
     }, [laneMap]);
 
@@ -243,6 +300,22 @@ export default function Table2({
         }
         setFilteredTableData(filteredData);
     }, [tableData]);
+
+
+    //Pseudorandom number generator from event data
+    function prngFromStr(obs: any, laneName: string): number {
+        const baseId = `${obs.result?.occupancyCount}${laneName}${obs.result?.startTime}${obs.result?.endTime}`;
+        return hashString(baseId);
+    }
+
+    function hashString(str: any) {
+        let hash = 5381;
+        for (let i = 0; i < str.length; i++) {
+            hash = (hash * 33) ^ str.charCodeAt(i);
+        }
+        return (hash >>> 0) / 4294967296;
+    }
+
 
     //------------------------------------------------------------------------------------------------------------------
     // Data Grid Setup and Related
@@ -374,13 +447,11 @@ export default function Table2({
     }, [selectedRowId]);
 
 
-    console.log("selected row id vs selection model", selectedRowId, selectionModel[0])
     const handleRowSelection = (params: GridRowParams) => {
 
         const selectedId = params.row.id;
 
         if (selectedRowId === selectedId) {
-            console.log("CLEARING SELECTION")
             setSelectionModel([]);
 
             dispatch(setLatestGB(null));
@@ -422,13 +493,15 @@ export default function Table2({
         }
     }
 
+
+
     return (
         <Box sx={{flex: 1, width: '100%'}}>
             <DataGrid
                 rows={filteredTableData}
                 columns={columns}
                 onRowClick={handleRowSelection}
-
+                onPaginationModelChange={(model) => handlePageChange(model)}
                 rowSelectionModel={selectionModel}
                 initialState={{
                     pagination: {

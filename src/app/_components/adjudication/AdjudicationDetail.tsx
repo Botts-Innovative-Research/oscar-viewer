@@ -191,7 +191,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             }
 
 
-            await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.adjControlStreamId, generateCommandJSON(occupancyObservation[0].id, true));
+            await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.controlStreams[0].properties.id, generateCommandJSON(occupancyObservation[0].id, true));
             // dispatch(updateSelectedEventAdjudication(comboData));
 
 
