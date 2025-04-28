@@ -132,8 +132,12 @@ export class LaneMapEntry {
     }
 
     addDefaultConSysApis() {
+        console.log("Before Add RT and Batch DS", this)
+
         // TODO: Verify that this doesn't negatively impact the app's visual usage
         this.resetDatasources();
+        console.log("After Reset Add RT and Batch DS", this)
+
 
         let rtArray: any[] = [];
         let batchArray: any[] = [];
@@ -178,6 +182,10 @@ export class LaneMapEntry {
 
         this.datasourcesRealtime = rtArray;
         this.datasourcesBatch = batchArray;
+
+        console.log("After adding RT and Batch DS", this)
+
+
     }
 
     createReplayConSysApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
@@ -411,7 +419,7 @@ export class LaneDSColl {
         this.adjRT = [];
         this.adjBatch = [];
         this.connectionBatch =[];
-        this.connectionRT =[];
+        this.connectionRT = [];
     }
 
     getDSArray(propName: string): typeof ConSysApi[] {
@@ -494,13 +502,10 @@ export class LaneDSColl {
     [key: string]: typeof ConSysApi[] | Function;
 
     addSubscribeHandlerToALLDSMatchingName(dsCollName: string, handler: Function) {
-        console.log("subscribe", dsCollName, handler)
-
-        if(!dsCollName) return;
+        if(!this) return;
 
         for (let ds of this[dsCollName] as typeof ConSysApi[]) {
-            console.log("subscribe ds", ds)
-            console.log("subscribe ds", this)
+
             ds.subscribe(handler, [EventType.DATA]);
         }
     }

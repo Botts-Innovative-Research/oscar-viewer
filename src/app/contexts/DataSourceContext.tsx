@@ -98,11 +98,9 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             await node.fetchControlStreams(nodeLaneMap);
 
 
-            for (let laneEntry of nodeLaneMap.values()) {
-                console.log("lane entryyyyyyyyyyyyy", laneEntry)
-                laneEntry.addDefaultConSysApis();
+            for (let mapEntry of nodeLaneMap.values()) {
+                mapEntry.addDefaultConSysApis();
             }
-
 
 
             console.log("nodelanemap", nodeLaneMap)
