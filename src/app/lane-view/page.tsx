@@ -5,7 +5,7 @@ import BackButton from "../_components/BackButton";
 import LaneStatus from "../_components/lane-view/LaneStatus";
 import Media from "../_components/lane-view/Media";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
-import Table2 from "@/app/_components/event-table/TableType2";
+import EventTable from "@/app/_components/event-table/EventTable";
 import {useSelector} from "react-redux";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {RootState} from "@/lib/state/Store";
@@ -160,7 +160,7 @@ export default function LaneViewPage() {
                             </ToggleButtonGroup>
                         </Grid>
                         <Grid item sx={{ width: "100%", display: toggleView === 'occupancy' ? 'block' : 'none' }}>
-                            <Table2 tableMode={'lanelog'} laneMap={laneMap} viewLane viewSecondary viewAdjudicated currentLane={currentLane}/>
+                            <EventTable tableMode={'lanelog'} laneMap={laneMap} viewLane viewSecondary viewAdjudicated currentLane={currentLane}/>
                         </Grid>
                         <Grid item sx={{ width: "100%", display: toggleView === 'alarm' ? 'block' : 'none' }}>
                             <LaneStatusTable laneMap={laneMap}/>
