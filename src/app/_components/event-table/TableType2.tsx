@@ -135,66 +135,62 @@ export default function Table2({
         }
     }
 
-    // async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
-    //     const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
-    //     let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty("http://www.opengis.net/def/pillar-occupancy-count");
-    //
-    //     if (!occDS) {
-    //         return;
-    //     }
-    //
-    //     let obsCollection = await occDS.searchObservations(observationFilter, pageSize);
-    //
-    //     console.log("obs collection current page", obsCollection.currentPage)
-    //     // if(obsCollection.currentPage = currentTablePage.current - 1)
-    //     // return await handleObservations(obsCollection, laneEntry, false);
-    // }
+    async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
+        const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
+        let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty("http://www.opengis.net/def/pillar-occupancy-count");
+
+        if (!occDS) {
+            return;
+        }
+
+        let obsCollection = await occDS.searchObservations(observationFilter, 15);
+
+        return await handleObservations(obsCollection, laneEntry, false);
+    }
 
     // here we need to do it by pages and only fetch the next page when clicked only 15 events at a time
     // @ts-ignore
-    // async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<EventTableData[]> {
-    //     let observations: EventTableData[] = [];
-    //
-    //
-    //     while (obsCollection.hasNext()) {
-    //         let obsResults = await obsCollection.nextPage();
-    //
-    //         console.log("obsResults", obsResults)
-    //         // console.log("ObsResults", obsResults)
-    //         obsResults.map((obs: any) => {
-    //             let result = eventFromObservation(obs, laneEntry);
-    //             observations.push(result);
-    //
-    //             // when fetching, this operation is a bit too costly so we probably want to just set the table with all the results we've collected
-    //             if (addToLog) dispatch(addEventToLog(result));
-    //         })
-    //
-    //
-    //     }
-    //     return observations;
-    // }
+    async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<EventTableData[]> {
+        let observations: EventTableData[] = [];
 
-    // async function doFetch(laneMap: Map<string, LaneMapEntry>) {
-    //     console.log("fetching lane map observations")
-    //     let allFetchedResults: EventTableData[] = [];
-    //     let promiseGroup: Promise<void>[] = [];
-    //
-    //     const laneMapToMap = convertToMap(laneMap);
-    //     // createDatastreams(laneMap)
-    //     laneMapToMap.forEach((entry: LaneMapEntry, laneName: string) => {
-    //         let promise = (async () => {
-    //             let startTimeForObs = new Date();
-    //             startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
-    //             let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
-    //             allFetchedResults = [...allFetchedResults, ...fetchedResults];
-    //
-    //         })();
-    //         promiseGroup.push(promise);
-    //     });
-    //
-    //     await Promise.all(promiseGroup);
-    //     dispatch(setEventLogData(allFetchedResults))
-    // }
+
+        while (obsCollection.hasNext()) {
+            let obsResults = await obsCollection.nextPage();
+
+            console.log("obsResults", obsResults)
+            // console.log("ObsResults", obsResults)
+            obsResults.map((obs: any) => {
+                let result = eventFromObservation(obs, laneEntry);
+                observations.push(result);
+
+                // when fetching, this operation is a bit too costly so we probably want to just set the table with all the results we've collected
+                if (addToLog) dispatch(addEventToLog(result));
+            })
+
+
+        }
+        return observations;
+    }
+
+    async function doFetch(laneMap: Map<string, LaneMapEntry>) {
+        let allFetchedResults: EventTableData[] = [];
+        let promiseGroup: Promise<void>[] = [];
+
+        // createDatastreams(laneMap)
+        laneMap.forEach((entry: LaneMapEntry, laneName: string) => {
+            let promise = (async () => {
+                let startTimeForObs = new Date();
+                startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
+                await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
+                let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
+                allFetchedResults = [...allFetchedResults, ...fetchedResults];
+            })();
+            promiseGroup.push(promise);
+        });
+
+        await Promise.all(promiseGroup);
+        dispatch(setEventLogData(allFetchedResults))
+    }
 
 
     async function streamObservations(laneEntry: LaneMapEntry) {
@@ -279,10 +275,12 @@ export default function Table2({
 
     const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
         // await doFetch(laneMap);
-        let laneMapEntry = convertToMap(laneMap)
-        let startTimeForObs = new Date();
-        startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
-        await fetchObservationsByPage(startTimeForObs.toISOString(), 'now', laneMapEntry)
+        // let laneMapEntry = convertToMap(laneMap)
+        // let startTimeForObs = new Date();
+        // startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
+        // await fetchObservationsByPage(startTimeForObs.toISOString(), 'now', laneMapEntry)
+
+        doFetch(laneMap);
         doStream(laneMap);
     }, [laneMap]);
 
