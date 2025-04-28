@@ -91,22 +91,28 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         await Promise.all(nodes.map(async (node: INode) => {
             console.log("Fetching lanes from node ", node);
             let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
-
-            console.log("nodeLaneMap", nodeLaneMap)
-            node.fetchDatastreams(nodeLaneMap);
-            node.fetchProcessVideoDatastreams(nodeLaneMap);
+            console.log("Fetching data streams from node ", node);
+            await node.fetchDatastreams(nodeLaneMap);
+            console.log("Fetching process video data streams from node ", node);
+            await node.fetchProcessVideoDatastreams(nodeLaneMap);
+            console.log("Fetching control streams from node ", node);
             await node.fetchControlStreams(nodeLaneMap);
 
 
-            for (let mapEntry of nodeLaneMap.values()) {
-                mapEntry.addDefaultConSysApis();
+            for (const [key, mapEntry] of nodeLaneMap.entries()) {
+                console.log(`[BEFORE] addDefaultConSysApis for ${key}`, mapEntry);
+                try {
+                    mapEntry.addDefaultConSysApis();
+                } catch (e) {
+                    console.error(`[ERROR] addDefaultConSysApis failed for ${key}:`, e);
+                }
+                console.log(`[AFTER] addDefaultConSysApis for ${key}`, mapEntry.datasourcesRealtime, mapEntry.datasourcesBatch);
             }
 
 
             console.log("nodelanemap", nodeLaneMap)
 
-            nodeLaneMap.forEach(async(value, key) =>{
-
+            nodeLaneMap.forEach((value, key) =>{
                 allLanes.set(key,value);
             })
         }));

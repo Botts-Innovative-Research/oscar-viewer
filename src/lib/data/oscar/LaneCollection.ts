@@ -132,60 +132,57 @@ export class LaneMapEntry {
     }
 
     addDefaultConSysApis() {
-        console.log("Before Add RT and Batch DS", this)
-
-        // TODO: Verify that this doesn't negatively impact the app's visual usage
         this.resetDatasources();
-        console.log("After Reset Add RT and Batch DS", this)
-
 
         let rtArray: any[] = [];
         let batchArray: any[] = [];
 
 
-        for(const dsObj of this.datastreams){
+        for (const dsObj of this.datastreams) {
 
-            let dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
-                protocol: dsObj.networkProperties.streamProtocol,
-                endpointUrl: dsObj.networkProperties.endpointUrl,
-                resource: `/datastreams/${dsObj.properties.id}/observations`,
-                tls: dsObj.networkProperties.tls,
-                responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
-                mode: Mode.REAL_TIME,
-                connectorOpts: {
-                    username: this.parentNode.auth.username,
-                    password: this.parentNode.auth.password
-                }
-            });
+            if (!dsObj || !dsObj.networkProperties || !dsObj.properties) {
+                console.warn("Skipping invalid datastream:", dsObj);
+                continue;
+            }
 
-            let dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
-                protocol: dsObj.networkProperties.streamProtocol,
-                endpointUrl: dsObj.networkProperties.endpointUrl,
-                resource: `/datastreams/${dsObj.properties.id}/observations`,
-                tls: dsObj.networkProperties.tls,
-                responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
-                mode: Mode.BATCH,
-                connectorOpts: {
-                    username: this.parentNode.auth.username,
-                    password: this.parentNode.auth.password
-                },
-                startTime: "2020-01-01T08:13:25.845Z",
-                endTime: "2055-01-01T08:13:25.845Z",
-                // endTime: new Date((new Date().getTime() - 1000000)).toISOString()
+            try {
+                const dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
+                    protocol: dsObj.networkProperties.streamProtocol,
+                    endpointUrl: dsObj.networkProperties.endpointUrl,
+                    resource: `/datastreams/${dsObj.properties.id}/observations`,
+                    tls: dsObj.networkProperties.tls,
+                    responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
+                    mode: Mode.REAL_TIME,
+                    connectorOpts: {
+                        username: this.parentNode.auth.username,
+                        password: this.parentNode.auth.password
+                    }
+                });
 
-            });
+                const dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
+                    protocol: dsObj.networkProperties.streamProtocol,
+                    endpointUrl: dsObj.networkProperties.endpointUrl,
+                    resource: `/datastreams/${dsObj.properties.id}/observations`,
+                    tls: dsObj.networkProperties.tls,
+                    responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
+                    mode: Mode.BATCH,
+                    connectorOpts: {
+                        username: this.parentNode.auth.username,
+                        password: this.parentNode.auth.password
+                    },
+                    startTime: "2020-01-01T08:13:25.845Z",
+                    endTime: "2055-01-01T08:13:25.845Z"
+                });
 
-            // this.datasources.push([dsRT, dsBatch]);
-            rtArray.push(dsRT);
-            batchArray.push(dsBatch);
+                rtArray.push(dsRT);
+                batchArray.push(dsBatch);
+            } catch (e) {
+                console.error("[ERROR] Failed to create ConSysApi for datastream:", dsObj, "\nError:", e);
+            }
         }
 
         this.datasourcesRealtime = rtArray;
         this.datasourcesBatch = batchArray;
-
-        console.log("After adding RT and Batch DS", this)
-
-
     }
 
     createReplayConSysApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
