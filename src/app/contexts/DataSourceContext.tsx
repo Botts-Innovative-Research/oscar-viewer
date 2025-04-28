@@ -95,12 +95,14 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             console.log("nodeLaneMap", nodeLaneMap)
             node.fetchDatastreams(nodeLaneMap);
             node.fetchProcessVideoDatastreams(nodeLaneMap);
+            await node.fetchControlStreams(nodeLaneMap);
+
 
             for (let laneEntry of nodeLaneMap.values()) {
+                console.log("lane entryyyyyyyyyyyyy", laneEntry)
                 laneEntry.addDefaultConSysApis();
             }
 
-            await node.fetchControlStreams(nodeLaneMap);
 
 
             console.log("nodelanemap", nodeLaneMap)
@@ -152,6 +154,8 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     useEffect(() => {
         InitializeApplication();
     }, [InitializeApplication]);
+
+
 
     return (
         <>

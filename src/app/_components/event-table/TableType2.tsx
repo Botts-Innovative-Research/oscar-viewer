@@ -11,7 +11,7 @@ import {
     selectSelectedRowId, setLatestGB
 } from "@/lib/state/EventPreviewSlice";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
-import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
 import Observations from "osh-js/source/core/consysapi/observation/Observations";
 import {AlarmTableData, EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {
@@ -36,7 +36,8 @@ import {useRouter} from "next/navigation";
 import {getObservations} from "@/app/utils/ChartUtils";
 import {isThresholdDatastream} from "@/lib/data/oscar/Utilities";
 import {selectNodes} from "@/lib/state/OSHSlice";
-import SystemFilter from "osh-js/source/core/consysapi/system/SystemFilter";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+
 
 
 interface TableProps {
@@ -91,12 +92,8 @@ export default function Table2({
 
     const nodes = useSelector(selectNodes);
 
-    async function fetchObservationsByPage(timeStart: string, timeEnd: string){
+    async function fetchObservationsByPage(timeStart: string, timeEnd: string, laneMap: <string, LaneMapEntry>){
 
-        const laneMapToMap = convertToMap(laneMap);
-
-
-        let observations: EventTableData[] = [];
         for (const node of nodes) {
             console.log("node", node)
 
@@ -109,28 +106,33 @@ export default function Table2({
 
             console.log("observations", observations)
 
-            let searchObservation = await observations.searchObservations(new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`}), 15);
-
+            let searchObservation = await observations.searchObservations(new ObservationFilter({observedProperty: 'http://www.opengis.net/def/pillar-occupancy-count'}), 15);
 
             console.log("searchObservations", searchObservation)
 
-            while(searchObservation.hasNext()){
-                let obsResult = await searchObservation.nextPage();
+            return await handleObservations(searchObservation)
 
-                console.log("obsResult", obsResult)
-
-
-               const laneEntry =  laneMapToMap.forEach((entry: LaneMapEntry, laneName: string) =>{
-                    console.log("entry", entry)
-                })
-                // let result = eventFromObservation(obs, null)
-
-                // console.log("obsResult", obsResult)
-
-            }
         }
 
+    }
 
+    async function handleObservations(searchObservation: any){
+        let observations: EventTableData[] = [];
+
+        while(searchObservation.hasNext()){
+            let obsResult = await searchObservation.nextPage();
+
+
+            obsResult.map((obs: any) =>{
+
+                // let laneEntry = Array.from(laneMap).find(([key, value]: any) =>
+                //     value.datastreams.find((ds: any) => ds.id === obs.id)
+                // );
+                // let result = eventFromObservation(obs, laneEntry);
+                // observations.push(result);
+
+            })
+        }
     }
 
     // async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
@@ -147,8 +149,6 @@ export default function Table2({
     //     // if(obsCollection.currentPage = currentTablePage.current - 1)
     //     // return await handleObservations(obsCollection, laneEntry, false);
     // }
-
-
 
     // here we need to do it by pages and only fetch the next page when clicked only 15 events at a time
     // @ts-ignore
@@ -279,9 +279,10 @@ export default function Table2({
 
     const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
         // await doFetch(laneMap);
+        let laneMapEntry = convertToMap(laneMap)
         let startTimeForObs = new Date();
         startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
-        await fetchObservationsByPage(startTimeForObs.toISOString(), 'now')
+        await fetchObservationsByPage(startTimeForObs.toISOString(), 'now', laneMapEntry)
         doStream(laneMap);
     }, [laneMap]);
 

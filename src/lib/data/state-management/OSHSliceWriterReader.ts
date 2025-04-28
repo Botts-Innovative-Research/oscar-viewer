@@ -140,7 +140,7 @@ export class OSHSliceWriterReader {
             }
         });
 
-        let ep: string = `${node.getConnectedSystemsEndpoint()}/systems`;
+        let ep: string = `${node.getConnectedSystemsEndpoint()}/systems/`;
         console.log("Inserting Config System: ", ep, node);
 
         const response = await fetch(ep, {

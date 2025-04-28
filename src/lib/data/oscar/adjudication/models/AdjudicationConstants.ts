@@ -3,7 +3,8 @@
  * All Rights Reserved
  */
 
-export const AdjudicationDatastreamConstant: any = {
+export const AdjudicationDatastreamConstant: any =
+    {
     "name": "Occupancy Adjudication",
     "outputName": "Adjudication",
     "schema": {

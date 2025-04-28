@@ -115,7 +115,7 @@ export class Node implements INode {
     }
 
     getBasicAuthHeader() {
-        const encoded = Buffer.from(`${this.auth.username}:${this.auth.password}`);
+        const encoded = btoa(`${this.auth.username}:${this.auth.password}`);
         return {"Authorization": `Basic ${encoded}`};
     }
 
@@ -325,18 +325,28 @@ export class Node implements INode {
                 // console.log("[ADJ-INSERT] Found adjudication systems for lane: ", laneEntry, system);
                 // check for datastreams
                 let streamCollection: any = await system.searchDataStreams(new DataStreamFilter(), 1000);
+
+                console.log("stream collection:", streamCollection)
                 // if (datastreams.length > 0) {
                 if (streamCollection.hasNext()) {
                     let datastreams = await streamCollection.nextPage();
-                    console.log("[ADJ-INSERT] Found datastreams for adjudication system: ", datastreams);
-                    adjSysAndDSMap.set(system.properties.id, datastreams[0].properties.id);
-                    laneAdjDsMap.set(laneName, datastreams[0].properties.id);
-                } else {
-                    console.log("[ADJ-INSERT] No datastreams found for adjudication system: ", system);
-                    let dsId = await this.insertAdjDatastream(system.id);
-                    adjSysAndDSMap.set(system.properties.id, dsId);
-                    laneAdjDsMap.set(laneName, dsId);
+                    if (datastreams.length > 0) {
+                        console.log("[ADJ-INSERT] Found datastreams for adjudication system: ", datastreams);
+                        adjSysAndDSMap.set(system.properties.id, datastreams[0].properties.id);
+                        laneAdjDsMap.set(laneName, datastreams[0].properties.id);
+                    } else {
+                        console.log("[ADJ-INSERT] No datastreams found for adjudication system: ", system);
+                        let dsId = await this.insertAdjDatastream(system.properties.id);
+                        adjSysAndDSMap.set(system.properties.id, dsId);
+                        laneAdjDsMap.set(laneName, dsId);
+                    }
                 }
+                // } else {
+                //     console.log("[ADJ-INSERT] No datastreams found for adjudication system: ", system);
+                //     let dsId = await this.insertAdjDatastream(system.properties.id);
+                //     adjSysAndDSMap.set(system.properties.id, dsId);
+                //     laneAdjDsMap.set(laneName, dsId);
+                // }
             } else {
                 console.log(`[ADJ-INSERT] No existing adjudication systems found, creating new system for lane" ${laneName}`);
                 let sysId = await laneEntry.insertAdjudicationSystem(laneName);
@@ -354,7 +364,7 @@ export class Node implements INode {
 
     async insertAdjSystem(systemJSON: any): Promise<string> {
         let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/`;
-        console.log("[ADJ] Inserting Adjudication System: ", ep, this);
+        console.log("[ADJ] Inserting Adjudication System: ", ep, JSON.stringify(systemJSON));
 
         const response = await fetch(ep, {
             method: 'POST',
@@ -367,7 +377,7 @@ export class Node implements INode {
         });
 
         if (response.ok) {
-            console.log("[ADJ] Adj System Inserted: ", response);
+            console.log("[ADJ] Adj System Inserted: ", response.headers.get("Location"));
             let sysId = response.headers.get("Location").split("/").pop();
             return sysId;
         } else {
@@ -376,9 +386,10 @@ export class Node implements INode {
     }
 
     async insertAdjDatastream(systemId: string): Promise<string> {
-        let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/${systemId}/datastreams`;
+        let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/${systemId}/datastreams/`;
         console.log("[ADJ] Inserting Adjudication Datastream: ", ep, this);
 
+        console.log(JSON.stringify(AdjudicationDatastreamConstant))
         const response = await fetch(ep, {
             method: 'POST',
             mode: 'cors',
@@ -390,7 +401,7 @@ export class Node implements INode {
         });
 
         if (response.ok) {
-            console.log("[ADJ] Adj Datastream Inserted: ", response);
+            console.log("[ADJ] Adj Datastream Inserted Response: ", response);
             let dsId = response.headers.get("Location").split("/").pop();
             return dsId;
         } else {
@@ -424,6 +435,9 @@ export class Node implements INode {
     insertSubSystem(systemJSON: any, parentSystemId: string): Promise<string> {
         return Promise.resolve("");
     }
+
+
+
 
 
 

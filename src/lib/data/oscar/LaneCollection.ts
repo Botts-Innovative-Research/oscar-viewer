@@ -134,10 +134,11 @@ export class LaneMapEntry {
         // TODO: Verify that this doesn't negatively impact the app's visual usage
         this.resetDatasources();
 
-        let rtArray = [];
-        let batchArray = [];
+        let rtArray: any[] = [];
+        let batchArray: any[] = [];
 
-        for (let dsObj of this.datastreams) {
+
+        this.datastreams.forEach((dsObj: any) =>{
 
             let dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
                 protocol: dsObj.networkProperties.streamProtocol,
@@ -172,7 +173,8 @@ export class LaneMapEntry {
             // this.datasources.push([dsRT, dsBatch]);
             rtArray.push(dsRT);
             batchArray.push(dsBatch);
-        }
+        });
+
         this.datasourcesRealtime = rtArray;
         this.datasourcesBatch = batchArray;
     }

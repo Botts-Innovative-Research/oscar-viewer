@@ -54,6 +54,8 @@ export default function DashboardPage() {
                 let idx: number = lane.datastreams.indexOf(ds);
                 let rtDS = lane.datasourcesRealtime[idx];
 
+                console.log("rtds in lane", rtDS)
+
                 rtDS.properties.startTime = new Date().toISOString();
                 rtDS.properties.endTime = "2055-01-01T08:13:25.845Z"
 
