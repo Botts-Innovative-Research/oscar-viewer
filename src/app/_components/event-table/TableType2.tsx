@@ -92,7 +92,7 @@ export default function Table2({
 
     const nodes = useSelector(selectNodes);
 
-    async function fetchObservationsByPage(timeStart: string, timeEnd: string, laneMap: <string, LaneMapEntry>){
+    async function fetchObservationsByPage(timeStart: string, timeEnd: string){
 
         for (const node of nodes) {
             console.log("node", node)
@@ -110,13 +110,13 @@ export default function Table2({
 
             console.log("searchObservations", searchObservation)
 
-            return await handleObservations(searchObservation)
+            return await handleFetchedObservations(searchObservation)
 
         }
 
     }
 
-    async function handleObservations(searchObservation: any){
+    async function handleFetchedObservations(searchObservation: any){
         let observations: EventTableData[] = [];
 
         while(searchObservation.hasNext()){
