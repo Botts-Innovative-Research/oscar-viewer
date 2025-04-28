@@ -372,10 +372,12 @@ export class LaneDSColl {
     locBatch: typeof ConSysApi[];
     gammaTrshldBatch: typeof ConSysApi[];
     gammaTrshldRT: typeof ConSysApi[];
-    connectionRT: typeof ConSysApi[];
     videoRT: typeof ConSysApi[];
+    videoBatch: typeof ConSysApi[];
     adjRT: typeof ConSysApi[];
     adjBatch: typeof ConSysApi[];
+    connectionRT: typeof ConSysApi[];
+    connectionBatch: typeof ConSysApi[];
 
 
     constructor() {
@@ -393,8 +395,11 @@ export class LaneDSColl {
         this.gammaTrshldRT = [];
         this.connectionRT = [];
         this.videoRT = [];
+        this.videoBatch = [];
         this.adjRT = [];
         this.adjBatch = [];
+        this.connectionBatch =[];
+        this.connectionRT =[];
     }
 
     getDSArray(propName: string): typeof ConSysApi[] {
@@ -436,7 +441,12 @@ export class LaneDSColl {
         for (let ds of this.adjBatch) {
             ds.subscribe(handler, [EventType.DATA]);
         }
-
+        for (let ds of this.connectionBatch) {
+            ds.subscribe(handler, [EventType.DATA]);
+        }
+        for (let ds of this.videoBatch) {
+            ds.subscribe(handler, [EventType.DATA]);
+        }
     }
 
     addSubscribeHandlerToAllRTDS(handler: Function) {
@@ -465,6 +475,9 @@ export class LaneDSColl {
             ds.subscribe(handler, [EventType.DATA]);
         }
         for (let ds of this.adjRT) {
+            ds.subscribe(handler, [EventType.DATA]);
+        }
+        for (let ds of this.connectionRT) {
             ds.subscribe(handler, [EventType.DATA]);
         }
     }
@@ -517,7 +530,13 @@ export class LaneDSColl {
         for (let ds of this.connectionRT) {
             ds.connect();
         }
+        for (let ds of this.connectionBatch) {
+            ds.connect();
+        }
         for (let ds of this.videoRT) {
+            ds.connect();
+        }
+        for (let ds of this.videoBatch) {
             ds.connect();
         }
         // console.info("Connecting all datasources of:", this);
