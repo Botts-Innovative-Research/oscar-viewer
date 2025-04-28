@@ -8,7 +8,7 @@ import dynamic from "next/dynamic";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
-import Table2 from "@/app/_components/event-table/TableType2";
+import EventTable from "@/app/_components/event-table/EventTable";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import {
     isConnectionDatastream,
@@ -119,7 +119,7 @@ export default function DashboardPage() {
 
 
                     <Paper variant='outlined' sx={{flexGrow: 1, padding: 2, overflow: "hidden"}}>
-                        <Table2 tableMode={'alarmtable'} laneMap={laneMap}/>
+                        <EventTable tableMode={'alarmtable'} laneMap={laneMap}/>
                     </Paper>
                 </Grid>
 
