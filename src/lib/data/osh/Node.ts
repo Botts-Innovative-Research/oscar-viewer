@@ -16,7 +16,7 @@ import Systems from "osh-js/source/core/consysapi/system/Systems.js";
 import SystemFilter from "osh-js/source/core/consysapi/system/SystemFilter.js";
 
 const SYSTEM_UID_PREFIX = "urn:osh:system:";
-const DATABASE_PROCESS_UID_PREFIX = "urn:osh:process:rapiscan:";
+const DATABASE_PROCESS_UID_PREFIX = "urn:osh:process:occupancy:";
 
 export interface INode {
     id: string,
@@ -262,10 +262,6 @@ export class Node implements INode {
 
     async fetchProcessVideoDatastreams(laneMap: Map<string, LaneMapEntry>) {
 
-        // TODO: Check if "urn:osh:process:rapiscan:" exists as a system on node
-        // TODO: Match video datastreams to process datastreams using "<systemUID>:<outputName>"
-        // TODO: Add to list of datastreams
-
         const systems = await this.fetchSystems();
         const databaseProcesses = systems.filter((system: any) => system.properties.properties.uid.includes(DATABASE_PROCESS_UID_PREFIX));
 
@@ -287,10 +283,8 @@ export class Node implements INode {
                 videoDatastreams.forEach((videoDatastream: typeof DataStream) => allProcessVideostreamsMap.set(videoDatastream.properties.outputName, videoDatastream));
             }
         }
-        console.log("All process streams");
-        console.log(allProcessVideostreamsMap);
-        console.log("All videos map: ");
-        console.log(videoDsMap);
+        console.log("All process streams:", allProcessVideostreamsMap);
+        console.log("All videos map: ", videoDsMap);
 
         for (const [videoDs, laneName] of videoDsMap) {
             const videoStreamUID = videoDs.properties["system@link"].uid;
@@ -303,7 +297,7 @@ export class Node implements INode {
             if(processVideoDs) {
                 laneMap.get(laneName).addDatastreams([processVideoDs]);
                 console.log("Added process video datastream to lane: ", laneName);
-                console.log(laneMap);
+
             }
         }
     }
@@ -435,11 +429,4 @@ export class Node implements INode {
     insertSubSystem(systemJSON: any, parentSystemId: string): Promise<string> {
         return Promise.resolve("");
     }
-
-
-
-
-
-
-
 }

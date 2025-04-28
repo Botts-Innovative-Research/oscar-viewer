@@ -13,6 +13,7 @@ import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
 import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
 import {
+    isConnectionDatastream,
     isGammaDatastream,
     isNeutronDatastream,
     isOccupancyDatastream,
@@ -138,7 +139,7 @@ export class LaneMapEntry {
         let batchArray: any[] = [];
 
 
-        this.datastreams.forEach((dsObj: any) =>{
+        for(const dsObj of this.datastreams){
 
             let dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
                 protocol: dsObj.networkProperties.streamProtocol,
@@ -173,7 +174,7 @@ export class LaneMapEntry {
             // this.datasources.push([dsRT, dsBatch]);
             rtArray.push(dsRT);
             batchArray.push(dsBatch);
-        });
+        }
 
         this.datasourcesRealtime = rtArray;
         this.datasourcesBatch = batchArray;
@@ -315,6 +316,17 @@ export class LaneMapEntry {
                     gammaTrshldArray[index] = datasourceBatch;
                 } else {
                     gammaTrshldArray.push(datasourceBatch);
+                }
+            }
+
+            if(isConnectionDatastream(ds)){
+                let connectionArray = dsMap.get('connection')!;
+                const index = connectionArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
+
+                if (index !== -1) {
+                    connectionArray[index] = datasourceBatch;
+                } else {
+                    connectionArray.push(datasourceBatch);
                 }
             }
         }
@@ -477,15 +489,18 @@ export class LaneDSColl {
         for (let ds of this.adjRT) {
             ds.subscribe(handler, [EventType.DATA]);
         }
-        for (let ds of this.connectionRT) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
     }
 
     [key: string]: typeof ConSysApi[] | Function;
 
     addSubscribeHandlerToALLDSMatchingName(dsCollName: string, handler: Function) {
+        console.log("subscribe", dsCollName, handler)
+
+        if(!dsCollName) return;
+
         for (let ds of this[dsCollName] as typeof ConSysApi[]) {
+            console.log("subscribe ds", ds)
+            console.log("subscribe ds", this)
             ds.subscribe(handler, [EventType.DATA]);
         }
     }

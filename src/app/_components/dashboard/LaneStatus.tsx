@@ -55,7 +55,6 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
   }, [props.dataSourcesByLane]);
 
   useEffect(() => {
-    console.log("datasources lane", props.dataSourcesByLane)
     addSubscriptionCallbacks();
   }, [props.dataSourcesByLane]);
 

@@ -128,3 +128,4 @@ export function isThresholdDatastream(datastream: typeof DataStream): boolean {
 
     return datastream.properties.observedProperties[0].definition.includes(THRESHOLD_DEF);
 }
+
