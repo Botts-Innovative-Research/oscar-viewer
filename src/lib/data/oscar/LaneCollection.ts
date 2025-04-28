@@ -255,7 +255,8 @@ export class LaneMapEntry {
         dsMap.set('tamper', []);
         dsMap.set('video', []);
         dsMap.set('gammaTrshld', []);
-        
+        dsMap.set('connection', []);
+
         for (let ds of this.datastreams) {
 
             let idx: number = this.datastreams.indexOf(ds);
@@ -303,6 +304,7 @@ export class LaneMapEntry {
                     tamperArray.push(datasourceBatch);
                 }
             }
+
             if(isVideoDatastream(ds)){
                 let videoArray = dsMap.get('video')!;
                 const index = videoArray.findIndex(dsItem => dsItem.properties.id === datasourceBatch.properties.id);
@@ -313,6 +315,7 @@ export class LaneMapEntry {
                     videoArray.push(datasourceBatch);
                 }
             }
+
             if(isThresholdDatastream(ds)){
                 let gammaTrshldArray = dsMap.get('gammaTrshld')!;
                 const index = gammaTrshldArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
@@ -325,7 +328,10 @@ export class LaneMapEntry {
             }
 
             if(isConnectionDatastream(ds)){
+
+                console.log("dsMap", dsMap)
                 let connectionArray = dsMap.get('connection')!;
+                console.log
                 const index = connectionArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
 
                 if (index !== -1) {
