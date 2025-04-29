@@ -31,7 +31,7 @@ export default function LaneItem(props: {
                         : props.status === ('Fault - Gamma Low') ? 'infoHighlight'
                             : props.status === ('Fault - Neutron Low') ? 'infoHighlight'
                                 : props.status === ('Fault - Gamma High') ? 'infoHighlight'
-                                    : props.status === 'Scan' || props.status === 'Background' ? 'successHighlight'
+                                    : props.status === 'Scan' || props.status === 'Background' || props.status==='Online' ? 'successHighlight'
                                         : 'unknown'
             )
         }}
@@ -40,11 +40,11 @@ export default function LaneItem(props: {
                 <CircleRoundedIcon fontSize="large"
                     color={(
                         props.status === "Alarm" ? "error"
-                            : props.status === 'Tamper' ? "secondary"
+                            : props.status === 'Tamper' || props.status === 'Tamper Off' ? "secondary"
                                 : props.status ==='Fault - Gamma Low' ? 'info'
                                     : props.status === 'Fault - Gamma High' ? 'info'
                                         : props.status === 'Fault - Neutron Low' ? 'info'
-                                            : props.status === 'Scan' || props.status === 'Background' ? 'success'
+                                            : props.status === 'Scan' || props.status === 'Background' || props.status==='Online' ? 'success'
                                                 : 'inherit'
                     )
                     }

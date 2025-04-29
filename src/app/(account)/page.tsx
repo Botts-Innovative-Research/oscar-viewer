@@ -7,16 +7,17 @@ import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/navigation";
 
 export default function AccountViewPage() {
-    const [appUserName, setAppUserName] = useState<string>("");
     const dispatch = useAppDispatch();
-    const router = useRouter();
 
+    const [appUserName, setAppUserName] = useState<string>("");
+    const router = useRouter();
     const [openSnack, setOpenSnack] = useState(false);
     const[volumeSnackMsg, setVolumeSnackMsg] = useState("Alarms will trigger audible sound in client. Be cautious of volume levels.");
 
     const onChangeUserName = (event: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value} = event.target;
         setAppUserName(value);
+        dispatch(setCurrentUser(value));
     }
 
     const onClickLogin = () => {
@@ -26,10 +27,7 @@ export default function AccountViewPage() {
         router.push('/dashboard');
     }
 
-    const handleCloseSnack = (
-        event: React.SyntheticEvent | Event,
-        reason?: SnackbarCloseReason,
-    ) => {
+    const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
         if (reason === 'clickaway') {
             return;
         }
@@ -42,8 +40,8 @@ export default function AccountViewPage() {
         <Container sx={{width: "40%"}}>
             <Stack spacing={2} alignItems={"center"}>
                 <Typography variant="h4">Login</Typography>
-                <TextField fullWidth id="username" placeholder="Username" variant="outlined" onChange={onChangeUserName}/>
-                <TextField fullWidth id="password" placeholder="Password" variant="outlined" type="password"/>
+                <TextField autoComplete="new-username" fullWidth id="username" placeholder="Username" variant="outlined" onChange={onChangeUserName}/>
+                <TextField autoComplete="new-password" fullWidth id="password" placeholder="Password" variant="outlined" type="password"/>
                 <Button fullWidth variant="contained" color="success" onClick={onClickLogin}>Login</Button>
                 <Snackbar
                     open={openSnack}

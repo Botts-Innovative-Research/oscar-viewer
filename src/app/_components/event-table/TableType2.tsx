@@ -5,14 +5,24 @@ import {useCallback, useEffect, useState} from "react";
 import {Box} from "@mui/material";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
-import {setEventPreview} from "@/lib/state/OSCARClientSlice";
+import {
+    setEventPreview,
+    setSelectedRowId,
+    selectSelectedRowId, setLatestGB
+} from "@/lib/state/EventPreviewSlice";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
-import {randomUUID} from "osh-js/source/core/utils/Utils";
-import {EventTableData} from "@/lib/data/oscar/TableHelpers";
-import {DataGrid, GridActionsCellItem, GridCellParams, gridClasses, GridColDef} from "@mui/x-data-grid";
+import {AlarmTableData, EventTableData} from "@/lib/data/oscar/TableHelpers";
+import {
+    DataGrid,
+    GridActionsCellItem,
+    GridCellParams,
+    gridClasses,
+    GridColDef,
+    GridRowParams,
+    GridRowSelectionModel
+} from "@mui/x-data-grid";
 import CustomToolbar from "@/app/_components/CustomToolbar";
-import NotesRoundedIcon from "@mui/icons-material/NotesRounded";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {
@@ -22,23 +32,20 @@ import {
     setSelectedEvent
 } from "@/lib/state/EventDataSlice";
 import {useRouter} from "next/navigation";
-import {makeStyles} from "@mui/styles";
+import {getObservations} from "@/app/utils/ChartUtils";
+import {isThresholdDatastream} from "@/lib/data/oscar/Utilities";
 
 
 interface TableProps {
-    tableMode: "eventlog" | "alarmtable";
+    tableMode: "eventlog" | "alarmtable" | "lanelog";
     viewSecondary?: boolean;
+    currentLane?: string;
     viewMenu?: boolean;
     viewLane?: boolean;
     viewAdjudicated?: boolean;
-    laneMap: Map<string, LaneMapEntry>
+    laneMap: Map<string, LaneMapEntry>;
 }
 
-const selectedRowStyles = makeStyles({
-    selectedRow: {
-        backgroundColor: 'rgba(33,150,243,0.5) !important',
-    },
-});
 
 /**
  * Gathers occupancy data both historical and real-time and creates TableEventData entries, which are passed into
@@ -57,15 +64,19 @@ export default function Table2({
                                    // viewMenu = false,
                                    viewLane = false,
                                    viewAdjudicated = false,
-                                   laneMap
+                                   laneMap,
+                                    currentLane
+
                                }: TableProps) {
+
+    const selectedRowId = useSelector(selectSelectedRowId);
+
+    const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([selectedRowId]); // Currently selected row
 
     const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
     const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
-    const [selectionModel, setSelectionModel] = useState([]); // Currently selected row
     const dispatch = useAppDispatch();
     const router = useRouter();
-    const classes = selectedRowStyles();
 
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
@@ -74,9 +85,9 @@ export default function Table2({
         if (!occDS) {
             return;
         }
-        let obsCollection = await occDS.searchObservations(observationFilter, 250000);
-        let observations = await handleObservations(obsCollection, laneEntry, false);
-        return observations;
+        let obsCollection = await occDS.searchObservations(observationFilter, 15);
+        console.log("obs collection", obsCollection)
+        return await handleObservations(obsCollection, laneEntry, false);
     }
 
     async function streamObservations(laneEntry: LaneMapEntry) {
@@ -84,15 +95,31 @@ export default function Table2({
         let futureTime = new Date();
         futureTime.setFullYear(futureTime.getFullYear() + 1);
         let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty("http://www.opengis.net/def/pillar-occupancy-count");
-        occDS.streamObservations(new ObservationFilter({
-            resultTime: `now/${futureTime.toISOString()}`
-        }), (observation: any) => {
+
+        const observationFilter = new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`});
+        occDS.streamObservations(observationFilter, (observation: any) => {
             let resultEvent = eventFromObservation(observation[0], laneEntry);
             dispatch(addEventToLog(resultEvent));
 
         })
     }
 
+    //Pseudorandom number generator from event data
+    function prngFromStr(obs: any, laneName: string): number {
+        const baseId = `${obs.result?.occupancyCount}${laneName}${obs.result?.startTime}${obs.result?.endTime}`;
+        return hashString(baseId);
+    }
+
+    function hashString(str: any) {
+        let hash = 5381;
+        for (let i = 0; i < str.length; i++) {
+            hash = (hash * 33) ^ str.charCodeAt(i);
+        }
+        return (hash >>> 0) / 4294967296;
+    }
+
+
+    // @ts-ignore
     async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<EventTableData[]> {
         let observations: EventTableData[] = [];
 
@@ -109,7 +136,9 @@ export default function Table2({
     }
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
-        let newEvent: EventTableData = new EventTableData(randomUUID(), laneEntry.laneName, obs.result, obs.id, obs.foiId);
+        const id = prngFromStr(obs, laneEntry.laneName);
+        // console.log("obs id", obs.id)
+        let newEvent: EventTableData = new EventTableData(id, laneEntry.laneName, obs.result, obs.id, obs.foiId);
         newEvent.setSystemIdx(laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId));
         newEvent.setDataStreamId(obs["datastream@id"]);
         newEvent.setFoiId(obs["foi@id"]);
@@ -119,17 +148,20 @@ export default function Table2({
     }
 
     async function doFetch(laneMap: Map<string, LaneMapEntry>) {
+        console.log("fetching lane map observations")
         let allFetchedResults: EventTableData[] = [];
         let promiseGroup: Promise<void>[] = [];
 
+        const laneMapToMap = convertToMap(laneMap);
         // createDatastreams(laneMap)
-        laneMap.forEach((entry: LaneMapEntry, laneName: string) => {
+        laneMapToMap.forEach((entry: LaneMapEntry, laneName: string) => {
             let promise = (async () => {
                 let startTimeForObs = new Date();
                 startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
-                await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
+                // await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
                 let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
                 allFetchedResults = [...allFetchedResults, ...fetchedResults];
+
             })();
             promiseGroup.push(promise);
         });
@@ -138,48 +170,65 @@ export default function Table2({
         dispatch(setEventLogData(allFetchedResults))
     }
 
+    const convertToMap = (obj: any) =>{
+        if(!obj) return new Map();
+        if(obj instanceof Map) return obj;
+        return new Map(Object.entries(obj));
+    }
+
     function doStream(laneMap: Map<string, LaneMapEntry>) {
-        laneMap.forEach((entry) => {
+        const laneMapToMap = convertToMap(laneMap);
+
+        laneMapToMap.forEach((entry) => {
             streamObservations(entry);
         })
     }
 
     function unadjudicatedFilteredList(tableData: EventTableData[]) {
         if (!tableData) return [];
-        let filtered = tableData.filter((entry) => {
+        return tableData.filter((entry) => {
             if (entry.isAdjudicated) return false;
-            return entry.adjudicatedData.getCodeValue() === 0;
+            return entry.adjudicatedData.adjudicationCode.code === 0;
 
         })
 
-        return filtered
     }
 
     function onlyAlarmingFilteredList(tableData: EventTableData[]) {
         if (!tableData) return [];
-        let filtered = tableData.filter((entry: EventTableData) => entry.status !== 'None')
+        return  tableData.filter((entry: EventTableData) => entry.status !== 'None')
 
-        return filtered
     }
 
     function onlyLaneFilteredList(tableData: EventTableData[], laneId: string) {
+
+        console.log("table data", tableData, laneId)
+
         if (!tableData) return [];
-        let filtered = tableData.filter((entry: EventTableData) => entry.laneId == laneId)
-        return filtered
+        const laneData = tableData.filter((entry: EventTableData) => entry.laneId == laneId);
+        console.log("filtered lane", laneData);
+        return laneData;
+    }
+
+    function laneEventList(tableData: EventTableData[]){
+        let filteredData: EventTableData[] = [];
+
+        filteredData = tableData.filter((entry: EventTableData) => entry.laneId == currentLane)
+        return filteredData;
     }
 
 
     useEffect(() => {
+        console.log("laneMap changed size", laneMap)
         dataStreamSetup(laneMap);
-    }, [laneMap]);
+    }, [laneMap, laneMap.size]);
 
     const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
-        doFetch(laneMap);
+        await doFetch(laneMap);
         doStream(laneMap);
     }, [laneMap]);
 
     useEffect(() => {
-
         let filteredData: EventTableData[] = [];
         if (tableMode === 'alarmtable') {
             filteredData = unadjudicatedFilteredList(onlyAlarmingFilteredList(tableData))
@@ -188,17 +237,18 @@ export default function Table2({
                 const laneId = Array.from(laneMap.keys())[0];
                 filteredData = onlyLaneFilteredList(tableData, laneId)
             }
-        }
-        // setFilteredTableData(filteredData);
-        setFilteredTableData((prevState) => {
-            return filteredData;
-        })
-    }, [tableData]);
+        }else if(tableMode === 'lanelog'){
 
+            filteredData = laneEventList(tableData);
+        }
+        setFilteredTableData(filteredData);
+    }, [tableData]);
 
     //------------------------------------------------------------------------------------------------------------------
     // Data Grid Setup and Related
     //------------------------------------------------------------------------------------------------------------------
+
+    const locale = navigator.language || 'en-US';
 
     // Column definition for EventTable
     const columns: GridColDef<EventTableData>[] = [
@@ -206,97 +256,97 @@ export default function Table2({
             field: 'secondaryInspection',
             headerName: 'Secondary Inspection',
             type: 'boolean',
+            minWidth: 125,
+            flex: 1,
         },
         {
             field: 'laneId',
             headerName: 'Lane ID',
             type: 'string',
+            minWidth: 100,
+            flex: 1,
         },
         {
             field: 'occupancyId',
             headerName: 'Occupancy ID',
             type: 'string',
+            minWidth: 125,
+            flex: 1.5,
         },
         {
             field: 'startTime',
             headerName: 'Start Time',
-            valueFormatter:(value) =>{
-                const dateTime = (new Date(value)).toLocaleString();
-                return dateTime;
-            }
-            // type: 'string',
+            valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric'
+            }),
+            minWidth: 200,
+            flex: 2,
         },
         {
             field: 'endTime',
             headerName: 'End Time',
-            valueFormatter:(value) =>{
-                const dateTime = (new Date(value)).toLocaleString();
-                return dateTime;
-            }
-            // type: 'string',
+            valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric'
+            }),
+            minWidth: 200,
+            flex: 2,
         },
         {
             field: 'maxGamma',
             headerName: 'Max Gamma (cps)',
-            valueFormatter: (value) => {
-                return typeof value === 'number' ? value : 0;
-            },
+            valueFormatter: (params) => (typeof params === 'number' ? params : 0),
+            minWidth: 150,
+            flex: 1.2,
         },
         {
             field: 'maxNeutron',
             headerName: 'Max Neutron (cps)',
-            valueFormatter: (value) => {
-
-                return typeof value === 'number' ? value : 0;
-            },
+            valueFormatter: (params) => (typeof params === 'number' ? params : 0),
+            minWidth: 150,
+            flex: 1.2,
         },
         {
             field: 'status',
             headerName: 'Status',
             type: 'string',
+            minWidth: 125,
+            flex: 1.2,
         },
         {
             field: 'isAdjudicated',
-            // field: 'adjudicatedCode',
             headerName: 'Adjudicated',
-            valueFormatter: (value) => value ? "Yes" : "No",
-            // valueFormatter: (value) => {
-            //     const adjCode = {
-            //         1: 'Code 1: Contraband Found',
-            //         2: 'Code 2: Other',
-            //         3: 'Code 3: Medical Isotope Found',
-            //         4: 'Code 4: NORM Found',
-            //         5: 'Code 5: Declared Shipment of Radioactive Material',
-            //         6: 'Code 6: Physical Inspection Negative',
-            //         7: 'Code 7: RIID/ASP Indicates Background Only',
-            //         8: 'Code 8: Other',
-            //         9: 'Code 9: Authorized Test, Maintenance, or Training Activity',
-            //         10: 'Code 10: Unauthorized Activity',
-            //         11: 'Code 11: Other'
-            //     };
-            //     return typeof value === 'number' ? adjCode[value] : 'None';
-            // }
+            valueFormatter: (params) => params ? "Yes" : "No",
+            minWidth: 100,
+            flex: 1,
         },
         {
             field: 'Menu',
             headerName: '',
             type: 'actions',
-            maxWidth: 50,
-
+            minWidth: 50,
+            flex: 0.5,
             getActions: (params) => [
-                (selectionModel.includes(params.row.id) ?
-                        <GridActionsCellItem
-                            icon={<VisibilityRoundedIcon/>}
-                            label="Details"
-                            onClick={() => handleEventPreview()}
-                            showInMenu
-                        />
-                        : <></>
-                ),
+                selectionModel.includes(params.row.id) ? (
+                    <GridActionsCellItem
+                        icon={<VisibilityRoundedIcon />}
+                        label="Details"
+                        onClick={() => handleEventPreview()}
+                        showInMenu
+                    />
+                ) : <></>,
             ],
         },
     ];
-
 
     const handleEventPreview = () =>{
         //should we set the event preview open here using dispatch?
@@ -316,65 +366,69 @@ export default function Table2({
             .map((column) => column.field);
     }
 
-    // Handle currently selected row
-    const handleRowSelection = (selection: any[]) => {
 
-        const selectedId = selection[0]; // Get the first selected ID
+    useEffect(() => {
+        if(!selectedRowId){
+            setSelectionModel([])
+        }
+    }, [selectedRowId]);
 
-        if (selectionModel[0] === selectedId) {
-            // If the same row is selected, clear the selection
+
+    console.log("selected row id vs selection model", selectedRowId, selectionModel[0])
+    const handleRowSelection = (params: GridRowParams) => {
+
+        const selectedId = params.row.id;
+
+        if (selectedRowId === selectedId) {
+            console.log("CLEARING SELECTION")
             setSelectionModel([]);
-            if (onRowSelect) {
-                onRowSelect(null); // Return an empty object when deselected
 
-            }
+            dispatch(setLatestGB(null));
+            dispatch(setSelectedEvent(null));
+            dispatch(setSelectedRowId(null));
+            dispatch(setEventPreview({isOpen: false, eventData: null}));
         } else {
-            // Otherwise, set the new selection
-            setSelectionModel([selectedId]);
 
-            // Find the selected row's eventTable
-            const selectedRow = tableData.find((row) => row.id === selectedId);
-            if (selectedRow && onRowSelect) {
-                onRowSelect(selectedRow); // Return start and end time to parent function
-            }
+            dispatch(setEventPreview({isOpen: false, eventData: null})); //clear before setting new data
+
+            setSelectionModel([selectedId]); // Highlight new row
+            dispatch(setSelectedRowId(selectedId));
+
+            setTimeout(() =>{
+                const selectedRow = filteredTableData.find((row) => row.id === selectedId);
+                if(!selectedRow) return;
+
+                getLatestGB(selectedRow)
+                dispatch(setEventPreview({ isOpen: true, eventData: selectedRow }));
+                dispatch(setSelectedEvent(selectedRow));
+            }, 10)
         }
     };
 
-    function onRowSelect(event: EventTableData) {
-        if (event) {
-            dispatch(setEventPreview({
-                isOpen: false,
-                eventData: null,
-            }));
 
-            let selectedEventPreview = {
-                isOpen: true,
-                eventData: event,
-            };
+    async function getLatestGB(eventData: any){
 
-            dispatch(setEventPreview({
-                isOpen: true,
-                eventData: event,
-            }));
-            dispatch(setSelectedEvent(selectedEventPreview.eventData));
-        } else {
-            dispatch(setEventPreview({
-                isOpen: false,
-                eventData: null,
-            }));
-            dispatch(setSelectedEvent(null));
+        for (const lane of laneMap.values()){
+            let datastreams = lane.datastreams.filter((ds: any) => isThresholdDatastream(ds));
+            let gammaThreshDs = datastreams.find((ds: any) => {
+                console.log("heyy",ds.properties["system@id"] == eventData.systemIdx)
+                return ds.properties["system@id"] == eventData.systemIdx
+            })
+            if(gammaThreshDs){
+                console.log("gamma", gammaThreshDs)
+                let latestGB = await getObservations(eventData.startTime, eventData.endTime, gammaThreshDs);
+                dispatch(setLatestGB(latestGB));
+            }
         }
     }
-
-
-
 
     return (
         <Box sx={{flex: 1, width: '100%'}}>
             <DataGrid
                 rows={filteredTableData}
                 columns={columns}
-                onRowSelectionModelChange={handleRowSelection}
+                onRowClick={handleRowSelection}
+
                 rowSelectionModel={selectionModel}
                 initialState={{
                     pagination: {
@@ -402,7 +456,6 @@ export default function Table2({
                         getTogglableColumns: getColumnList,
                     }
                 }}
-                autosizeOnMount
                 autosizeOptions={{
                     expand: true,
                     includeOutliers: true,
@@ -429,10 +482,19 @@ export default function Table2({
 
 
                 }}
+
                 getRowClassName={(params) =>
-                    params.row.id == selectionModel[0] ? classes.selectedRow : ''
+                    selectionModel.includes(params.row.id) ? 'selected-row' : ''
                 }
+
                 sx={{
+                    // '& .MuiDataGrid-row:hover': {
+                    //     backgroundColor: 'rgba(33,150,243,0.5)',
+                    // },
+                    // assign color styling to selected row
+                    [`.${gridClasses.row}.selected-row`]: {
+                        backgroundColor: 'rgba(33,150,243,0.5)',
+                    },
 
                     // Assign styling to 'Status' column based on className
                     [`.${gridClasses.cell}.highlightGamma`]: {
@@ -462,6 +524,8 @@ export default function Table2({
                     },
 
                     border: "none",
+
+
                 }}
 
             />

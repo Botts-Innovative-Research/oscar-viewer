@@ -4,27 +4,37 @@ import {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {INationalTableData} from "../../../../types/new-types";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import NationalTable from "./NationalTable";
-import {Datastream} from "@/lib/data/osh/Datastreams";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream";
 import {useSelector} from "react-redux";
 import  {selectNodes} from "@/lib/state/OSHSlice";
-import {EventTableData, NationalTableData, NationalTableDataCollection} from "@/lib/data/oscar/TableHelpers";
+import {AlarmTableData, NationalTableDataCollection} from "@/lib/data/oscar/TableHelpers";
 import {
     isGammaDatastream,
     isNeutronDatastream,
     isOccupancyDatastream,
     isTamperDatastream
 } from "@/lib/data/oscar/Utilities";
+import {DataGrid, GridColDef} from "@mui/x-data-grid";
+import {Box} from "@mui/material";
+import CustomToolbar from "@/app/_components/CustomToolbar";
+import {useAppDispatch} from "@/lib/state/Hooks";
+import {RootState} from "@/lib/state/Store";
+import {selectLaneViewLog} from "@/lib/state/EventDataSlice";
+import {selectEndDate, selectStartDate} from "@/lib/state/NationalViewSlice";
 
 
-export default function StatTable(props: {
-    startTime: string
-    endTime: string
-}){
-    const [startTime, setStartTime] = useState("");
-    const [endTime, setEndTime] = useState("");
+export default function StatTable(){
+
+    const dispatch = useAppDispatch();
+    const savedStartDate = useSelector((state: RootState) => selectStartDate(state))
+    const savedEndDate = useSelector((state: RootState) => selectEndDate(state))
+
+    const [filteredTableData, setFilteredTableData] = useState<AlarmTableData[]>([]);
+
+
+    const [startTime, setStartTime] = useState(savedStartDate);
+    const [endTime, setEndTime] = useState(savedEndDate);
 
 
     const {laneMapRef} = useContext(DataSourceContext);
@@ -71,12 +81,10 @@ export default function StatTable(props: {
                 tamperAlarmCount: 0,
             }));
         });
-        setStartTime(props.startTime)
-        setEndTime(props.endTime)
 
         // call the datasources to set up the map of systems and datasources
         datasourceSetup();
-    }, [laneMapRef.current, props.startTime, props.endTime]);
+    }, [laneMapRef.current, startTime, endTime]);
 
 
 
@@ -137,7 +145,7 @@ export default function StatTable(props: {
                         faultCount++;
                     }
                 }
-                else if (isTamperDatastream(ds) && res.result.tamperStatus === true) {
+                else if (isTamperDatastream(ds) && res.result.tamperStatus) {
                     tamperCount++;
                 }
                 else if (isOccupancyDatastream(ds)) {
@@ -177,8 +185,89 @@ export default function StatTable(props: {
     }, [sites]);
 
 
+
+    // -------------------------------------
+
+    const columns: GridColDef<INationalTableData>[] = [
+        {
+            field: 'site',
+            headerName: 'Site Name',
+            type: 'string',
+            minWidth: 150,
+            flex: 1,
+        },
+        {
+            field: 'occupancyCount',
+            headerName: 'Occupancy',
+            valueFormatter: (value) => {
+                return typeof value === 'number' ? value : 0;
+            },
+            minWidth: 150,
+            flex: 1,
+        },
+        {
+            field: 'gammaAlarmCount',
+            headerName: 'Gamma Alarms',
+            valueFormatter: (value) => {
+                return typeof value === 'number' ? value : 0;
+            },
+            minWidth: 150,
+            flex: 1,
+        },
+        {
+            field: 'neutronAlarmCount',
+            headerName: 'Neutron Alarms',
+            valueFormatter: (value) => {
+                return typeof value === 'number' ? value : 0;
+            },
+            minWidth: 150,
+            flex: 1,
+        },
+        {
+            field: 'faultAlarmCount',
+            headerName: 'Fault Alarms',
+            valueFormatter: (value) => {
+                return typeof value === 'number' ? value : 0;
+            },
+            minWidth: 150,
+            flex: 1,
+        },
+        {
+            field: 'tamperAlarmCount',
+            headerName: 'Tamper Alarms',
+            valueFormatter: (value) => {
+                return typeof value === 'number' ? value : 0;
+            },
+            minWidth: 150,
+            flex: 1,
+        },
+    ]
+
+
     return (
-        <NationalTable tableData={natlTableRef.current}/>
+        // <NationalTable tableData={natlTableRef.current}/>
+
+        <Box sx={{height: 800, width: '100%'}}>
+            <DataGrid
+                rows={natlTableRef.current.data}
+                columns={columns}
+                initialState={{
+                    pagination: {
+                        paginationModel: {
+                            pageSize: 20,
+                        },
+                    },
+                }}
+                pageSizeOptions={[20]}
+                slots={{toolbar: CustomToolbar}}
+                autosizeOnMount
+                autosizeOptions={{
+                    expand: true,
+                    includeOutliers: true,
+                    includeHeaders: false,
+                }}
+            />
+        </Box>
     )
 }
 

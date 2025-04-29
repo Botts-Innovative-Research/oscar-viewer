@@ -4,12 +4,11 @@ import React, {createContext, MutableRefObject, ReactNode, useCallback, useEffec
 import {useSelector} from "react-redux";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
-import {changeConfigNode, setNodes} from "@/lib/state/OSHSlice";
-import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARClientSlice";
+import {changeConfigNode, setDatastreams, setNodes} from "@/lib/state/OSHSlice";
+import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {RootState} from "@/lib/state/Store";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
-import AlarmAudio from "../_components/AlarmAudio";
 
 interface IDataSourceContext {
     laneMapRef: MutableRefObject<Map<string, LaneMapEntry>> | undefined
@@ -86,6 +85,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         console.log("Received new nodes, updating state\nNodes:");
         console.log(nodes);
         let allLanes: Map<string, LaneMapEntry> = new Map();
+        // let allDatastreams: any[];
         await Promise.all(nodes.map(async (node: INode) => {
             console.log("Fetching lanes from node ", node);
             let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
@@ -114,6 +114,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         }
         console.log("[ADJ] Adjudication Systems Map:", adjMap);
 
+        // dispatch(setDatastreams(allDatastreams));
         dispatch(setLaneMap(allLanes));
         laneMapRef.current = allLanes;
         console.log("LaneMapRef for Table:", laneMapRef);
@@ -144,10 +145,11 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         InitializeApplication();
     }, [InitializeApplication]);
 
-    return (<>
-        <DataSourceContext.Provider value={{laneMapRef}}>
-            {children}
-        </DataSourceContext.Provider>
+    return (
+        <>
+            <DataSourceContext.Provider value={{laneMapRef}}>
+                {children}
+            </DataSourceContext.Provider>
         </>
     );
 };

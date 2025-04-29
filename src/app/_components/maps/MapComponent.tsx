@@ -10,7 +10,7 @@ import Box from "@mui/material/Box";
 import '../../style/map.css';
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import { LaneWithLocation } from "types/new-types";
-import {selectLaneMap} from "@/lib/state/OSCARClientSlice";
+import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import "leaflet/dist/leaflet.css"
 import {isGammaDatastream, isNeutronDatastream, isTamperDatastream} from "@/lib/data/oscar/Utilities";
 
@@ -29,12 +29,22 @@ export default function MapComponent() {
 
     const [dsLocations, setDsLocations] = useState([]);
 
+    const convertToMap = (obj: any) =>{
+        if(!obj) return new Map();
+        if(obj instanceof Map) return obj;
+        return new Map(Object.entries(obj));
+    }
+
+
     useEffect(() =>{
         if(locationList == null || locationList.length === 0 && laneMap.size > 0) {
             let locations: LaneWithLocation[] = [];
-            laneMap.forEach((value, key) => {
-                if (laneMap.has(key)) {
-                    let ds: LaneMapEntry = laneMap.get(key);
+
+            const laneMapToMap = convertToMap(laneMap);
+
+            laneMapToMap.forEach((value, key) => {
+                if (laneMapToMap.has(key)) {
+                    let ds: LaneMapEntry = laneMapToMap.get(key);
 
                     dsLocations.map((dss) => {
                         const locationSources = ds.datasourcesBatch.filter((item) => (item.properties.resource === ("/datastreams/" + dss.properties.id + "/observations")))
@@ -206,6 +216,6 @@ export default function MapComponent() {
     }
 
     return (
-        <Box id="mapcontainer" style={{width: '100%', height: '900px'}}></Box>
+        <Box id="mapcontainer" style={{width: '100%', height: '1200px'}}></Box>
     );
 }

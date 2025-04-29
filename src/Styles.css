@@ -17,17 +17,12 @@ body {
     height: 100vh
 }
 
-div.video-stream {
-    width: 99%;
-    height: 99%;
-    resize: none;
-    overflow: hidden;
-    margin: auto;
-}
-div.video-stream canvas {
+.video-mjpeg{
     width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
-#video-stream-container {
-    height: calc(100% - 10px);
+.osh-view {
+    width: 100%;
+    height: 100%;
 }
-

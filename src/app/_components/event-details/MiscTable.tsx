@@ -1,46 +1,53 @@
 "use client";
 
-import {SelectedEvent} from "../../../../types/new-types";
 import {Box, Table, TableBody, TableCell, TableContainer, TableRow} from "@mui/material";
 import {useSelector} from "react-redux";
-import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
-import {EventTableData} from "@/lib/data/oscar/TableHelpers";
+
 import {useCallback, useContext, useEffect, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
+import {selectEventData, selectSpeed, setSpeed} from "@/lib/state/EventDetailsSlice";
+import {useAppDispatch} from "@/lib/state/Hooks";
 
+// export default function MiscTable() {
 export default function MiscTable({currentTime}: {currentTime: string}) {
+  const dispatch = useAppDispatch();
+
+  const savedSpeed = useSelector(selectSpeed)
 
   const laneMapRef = useContext(DataSourceContext).laneMapRef;
-  const eventPreview = useSelector(selectEventPreview);
-  const eventData: EventTableData = eventPreview.eventData;
+  const eventData = useSelector(selectEventData);
 
-  const [speedVal, setSpeedval] = useState<string>("N/A");
+  const [speedVal, setSpeedval] = useState<string>(savedSpeed); //maybe put savedSpeed here instead
 
+  // console.log("currentTime", currentTime)
   const checkForSpeed = useCallback(async () => {
     if (eventData) {
-      let lme = laneMapRef.current.get(eventData?.laneId);
+      let lme = laneMapRef.current.get(eventData.laneId);
 
-      let speedDS = lme.datastreams.find(ds => ds.properties.outputName === "speed");
-      let speedRes = await speedDS.searchObservations(new ObservationFilter(
-          {resultTime: `${eventData?.startTime}/${eventData?.endTime}`}
-      ), 10000);
-      let speedArr: any[] = await speedRes.nextPage();
+      let speedDS = lme.datastreams.find(ds => ds.properties.observedProperties[0].definition.includes('http://www.opengis.net/def/speed-time'));
 
-      // make CSAPI request for speed in different output
-      let speed = "N/A";
-      if (speedArr.length > 0) {
-        speed = speedArr.find(obs => obs.resultTime === currentTime)?.result.speedKPH || "N/A";
+      let initialRes = await speedDS.searchObservations(new ObservationFilter({ resultTime: `${eventData?.startTime}/${eventData?.endTime}`}), 25000);
 
+      while(initialRes.hasNext()){
+        let speedArr = await initialRes.nextPage();
+        // make CSAPI request for speed in different output
+        let speed = "N/A";
+
+        speed = speedArr.find((sobs: any) => sobs.resultTime === currentTime)?.result.speedKPH || 'N/A';
+
+        setSpeedval(speed);
+        dispatch(setSpeed(speed));
+        return speed;
       }
-      setSpeedval(speed);
-      return speed;
     }
-  }, [eventPreview, currentTime]);
+  }, [eventData, currentTime]);
 
   useEffect(() => {
-    checkForSpeed();
-  }, [checkForSpeed]);
+    if(eventData && laneMapRef.current){
+      checkForSpeed();
+    }
+  }, [eventData, laneMapRef]);
 
   return (
       <Box>

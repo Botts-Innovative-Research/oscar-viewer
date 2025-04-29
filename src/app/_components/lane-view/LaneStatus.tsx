@@ -1,60 +1,33 @@
 "use client";
 
-import {LaneStatusItem, LaneStatusType} from '../../../../types/new-types';
-import React, {useCallback, useContext, useEffect, useRef, useState} from 'react';
-import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import {LaneStatusType} from '../../../../types/new-types';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
+
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import LaneItem from './LaneItem';
-import {isGammaDatastream, isNeutronDatastream, isTamperDatastream} from "@/lib/data/oscar/Utilities";
+import {selectLastLaneStatus, setLastLaneStatus} from "@/lib/state/LaneViewSlice";
+import {useAppDispatch} from "@/lib/state/Hooks";
+import {useSelector} from "react-redux";
 
 interface LaneStatusProps{
-  laneName: string,
+  dataSourcesByLane: Map<string, LaneDSColl>;
 }
 export default function LaneStatus(props: LaneStatusProps) {
-
+  const dispatch = useAppDispatch();
+  // const lastLaneStatus = useSelector(selectLastLaneStatus);
   const idVal = useRef(1);
-  const {laneMapRef} = useContext(DataSourceContext);
-  const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
   const [laneStatus, setLaneStatus] = useState<LaneStatusType>();
+  // const [laneStatus, setLaneStatus] = useState<LaneStatusType | null>(lastLaneStatus ?? null);
 
-  const datasourceSetup = useCallback(async () => {
-    // @ts-ignore
-    let laneDSMap = new Map<string, LaneDSColl>();
+//todo: add in a historic request so initial lane status is not null
 
-    for (let [laneid, lane] of laneMapRef.current.entries()) {
-
-      if(laneid === props.laneName){
-        laneDSMap.set(laneid, new LaneDSColl());
-        for (let ds of lane.datastreams) {
-
-          let idx: number = lane.datastreams.indexOf(ds);
-          let rtDS = lane.datasourcesRealtime[idx];
-          let laneDSColl = laneDSMap.get(laneid);
-
-
-          if(isGammaDatastream(ds)){
-
-            laneDSColl.addDS('gammaRT', rtDS);
-          }
-          if(isNeutronDatastream(ds)){
-            laneDSColl.addDS('neutronRT', rtDS);
-          }
-          if(isTamperDatastream(ds)){
-            laneDSColl.addDS('tamperRT', rtDS);
-          }
-
-        }
-      }
-      setDataSourcesByLane(laneDSMap);
-    }
-  }, [laneMapRef.current]);
-
-  useEffect(() => {
-    datasourceSetup();
-  }, [laneMapRef.current]);
+  // useEffect(() => {
+  //   if(lastLaneStatus.status != null)
+  //     setLaneStatus(lastLaneStatus ?? null);
+  // }, [lastLaneStatus]);
 
   const addSubscriptionCallbacks = useCallback(() => {
-    for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
+    for (let [laneName, laneDSColl] of props.dataSourcesByLane.entries()) {
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
         const state = message.values[0].data.alarmState;
         updateStatus(laneName, state);
@@ -66,20 +39,18 @@ export default function LaneStatus(props: LaneStatusProps) {
 
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
         const state = message.values[0].data.tamperStatus;
-        if (state) {
-          updateStatus(laneName, 'Tamper');
-        }else{
-          updateStatus(laneName, 'Clear')
-        }
+        updateStatus(laneName, (state ? 'Tamper' : 'Tamper Off'));
+
       });
 
       laneDSColl.connectAllDS();
     }
-  }, [dataSourcesByLane]);
+  }, [props.dataSourcesByLane]);
 
   useEffect(() => {
+    console.log('kalyn michelle,', props.dataSourcesByLane)
     addSubscriptionCallbacks();
-  }, [dataSourcesByLane]);
+  }, [props.dataSourcesByLane]);
 
   function updateStatus(laneName: string, newState: string){
     const newStatus: LaneStatusType ={
@@ -87,10 +58,12 @@ export default function LaneStatus(props: LaneStatusProps) {
       name: laneName,
       status: newState
     }
+    // console.log("new status", newStatus)
     // set timer between each set status to just prevent flickering of status
     setTimeout(() => {
       setLaneStatus(newStatus);
     }, 10000);
+    dispatch(setLastLaneStatus(newStatus))
   }
 
   return (

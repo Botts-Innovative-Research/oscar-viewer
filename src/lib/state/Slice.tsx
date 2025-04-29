@@ -7,8 +7,16 @@ import {createSlice, PayloadAction} from "@reduxjs/toolkit";
 import {enableMapSet} from "immer";
 import {RootState} from "./Store";
 import {START_TIME} from "@/lib/data/Constants";
+import {persistReducer} from "redux-persist";
+import storage from "redux-persist/es/storage";
 
 enableMapSet();
+
+const persistConfig = {
+    key: 'appState',
+    storage,
+    whitelist: ['shouldLoadFromConfig', 'moveHighlighterTimestamp']
+};
 
 export interface IAppSlice {
     shouldLoadFromConfig: boolean;
@@ -33,4 +41,6 @@ export const { setMoveHighlighterTimeStamp } = Slice.actions;
 
 export const selectMoveHighlighterTimeStamp = (state: RootState) => state.appState.moveHighlighterTimestamp
 
-export default Slice.reducer;
+// export default Slice.reducer;
+
+export default persistReducer(persistConfig, Slice.reducer);

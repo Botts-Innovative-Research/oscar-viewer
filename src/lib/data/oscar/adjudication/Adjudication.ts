@@ -1,9 +1,6 @@
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {INode, Node} from "@/lib/data/osh/Node";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
-import eventDataSlice from "@/lib/state/EventDataSlice";
-import { useDispatch } from "react-redux";
-import {selectEventPreview} from "@/lib/state/OSCARClientSlice";
 
 
 export interface IAdjudicationData {

@@ -4,17 +4,16 @@ import Providers from "./providers"
 import StoreProvider from "@/app/StoreProvider";
 import DataSourceProvider from "@/app/contexts/DataSourceContext";
 
-export default function RootLayout({
-                                       children,
-                                   }: {
+
+export default function RootLayout({children,}: {
     children: React.ReactNode
 }) {
     return (
         <html lang="en">
         <body>
         <Providers>
-            <CssBaseline/>
             <StoreProvider>
+                <CssBaseline/>
                 <DataSourceProvider>
                     <Navbar>
                         {children}
@@ -23,6 +22,6 @@ export default function RootLayout({
             </StoreProvider>
         </Providers>
         </body>
-        </html>
-    )
+    </html>
+ )
 }

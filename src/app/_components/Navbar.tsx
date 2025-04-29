@@ -24,19 +24,21 @@ import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
 import CloudRoundedIcon from '@mui/icons-material/CloudRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
+import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
+
 import MediationIcon from '@mui/icons-material/Mediation';
-import {Button, Menu, MenuItem, Slider, Stack} from '@mui/material';
+import {Button, Menu, MenuItem, Stack, Tooltip} from '@mui/material';
 import {useEffect, useState} from 'react';
 import Link from 'next/link';
-import {Label, SaveRounded, VolumeDown, VolumeUp} from "@mui/icons-material";
+import {Label, SaveRounded} from "@mui/icons-material";
 import AlarmAudio from "@/app/_components/AlarmAudio";
+import {selectAlarmAudioVolume} from "@/lib/state/OSCARClientSlice";
+import {useSelector} from "react-redux";
 
 const drawerWidth = 240;
 
 const openedMixin = (theme: Theme): CSSObject => ({
   width: drawerWidth,
-
-
   transition: theme.transitions.create('width', {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.enteringScreen,
@@ -110,6 +112,9 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
   const menuOpen = Boolean(anchorEl); // Open state for notification menu
   const [drawerOpen, setDrawerOpen] = useState(false);  // Open state for navigation drawer
 
+
+  const savedVolume = useSelector(selectAlarmAudioVolume);
+
   // Handle opening menu
   const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -174,8 +179,6 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
   ]
 
 
-
-
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
@@ -207,13 +210,15 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
             <Typography variant="h6" noWrap component="div">
               OSCAR
             </Typography>
-            <IconButton
-              color="inherit"
-              aria-label="open notifications"
-              onClick={handleMenuOpen}
-            >
-              <NotificationsRoundedIcon />
-            </IconButton>
+            <Tooltip title={'Alarm Volume'} arrow placement="top">
+              <IconButton
+                color="inherit"
+                aria-label="open notifications"
+                onClick={handleMenuOpen}
+              >
+                {savedVolume === 0 ? <NotificationsOffIcon/> : <NotificationsRoundedIcon/>}
+              </IconButton>
+            </Tooltip>
           </Stack>
         </Toolbar>
       </AppBar>
@@ -236,8 +241,6 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
       >
         <MenuItem>
           <AlarmAudio/>
-
-
         </MenuItem>
       </Menu>
       <Drawer variant="permanent" open={drawerOpen}>

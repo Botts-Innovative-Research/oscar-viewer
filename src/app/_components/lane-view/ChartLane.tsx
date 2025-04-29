@@ -1,7 +1,7 @@
 "use client"
 
 
-import {Grid} from "@mui/material";
+import {Box, Grid} from "@mui/material";
 import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
@@ -21,9 +21,6 @@ export class ChartInterceptProps {
 
 export default function ChartLane(props: ChartInterceptProps){
 
-
-    const [chartsReady, setChartsReady] = useState<boolean>(false);
-    const [viewReady, setViewReady] = useState<boolean>(false);
     const [isReadyToRender, setIsReadyToRender] = useState<boolean>(false);
 
     const gammaChartBaseId = "chart-view-gamma";
@@ -40,7 +37,6 @@ export default function ChartLane(props: ChartInterceptProps){
 
 
     const createCurveLayers = useCallback(() =>{
-
         if(props.datasources.gamma){
             let gCurve = createGammaViewCurve(props.datasources.gamma);
             setGammaCurve(gCurve);
@@ -63,11 +59,6 @@ export default function ChartLane(props: ChartInterceptProps){
             console.log("Creating Gamma Chart with layers:", { gammaCurve});
 
             const container = document.getElementById(gammaChartID);
-            let layers: any[] =[];
-
-            if (gammaCurve) {
-                layers.push(gammaCurve);
-            }
 
             if (container) {
                 gammaChartViewRef.current = new ChartJsView({
@@ -120,7 +111,6 @@ export default function ChartLane(props: ChartInterceptProps){
                         },
                     },
                 });
-                setViewReady(true);
             }
         }
 
@@ -133,7 +123,6 @@ export default function ChartLane(props: ChartInterceptProps){
                     container: neutronChartID,
                     layers: [neutronCurve],
                     css: "chart-view",
-
                     options: {
                         plugins: {
                             title: {
@@ -179,18 +168,19 @@ export default function ChartLane(props: ChartInterceptProps){
                         }
                     },
                 });
-                setViewReady(true);
             }
         }
+
+        props.setChartReady(true);
     }, [gammaCurve, neutronCurve, isReadyToRender]);
 
     const checkReadyToRender = useCallback(() => {
-        if (chartsReady && viewReady) {
+        if ( props.setChartReady()) {
             setIsReadyToRender(true);
         } else {
             setIsReadyToRender(false);
         }
-    }, [chartsReady, viewReady]);
+    }, [ props.setChartReady]);
 
     useEffect(() => {
         checkForMountableAndCreateCharts();
@@ -205,11 +195,11 @@ export default function ChartLane(props: ChartInterceptProps){
 
     useEffect(() => {
         checkReadyToRender();
-    }, [chartsReady, viewReady]);
+    }, [ props.setChartReady]);
 
     useEffect(() => {
         if (isReadyToRender) {
-            console.log("Chart is ready to render");
+            console.log("Lane View: Chart is ready to render");
             props.setChartReady(true);
         }
     }, [isReadyToRender]);
@@ -226,21 +216,17 @@ export default function ChartLane(props: ChartInterceptProps){
     }, [props.datasources]);
 
 
-
     return (
-        <Grid container direction="row" marginTop={2} marginLeft={1} spacing={4}>
-            <Grid item xs>
-                <div id={gammaChartID} style={{
-                    marginBottom: 50,
-                    height: '85%',
-                }}></div>
+        <Box display='flex' alignItems="center">
+            <Grid container direction="row" marginTop={2} marginLeft={1} spacing={4}>
+                <Grid item xs>
+                    <div id={gammaChartID} style={{marginBottom: 50, height: '85%',}}></div>
+                </Grid>
+                <Grid item xs>
+                    <div id={neutronChartID} style={{marginBottom: 50, height: '85%',}}></div>
+                </Grid>
             </Grid>
-            <Grid item xs>
-                <div id={neutronChartID} style={{
-                    marginBottom: 50,
-                    height: '85%',
-                }}></div>
-            </Grid>
-        </Grid>
+        </Box>
+
     );
 };

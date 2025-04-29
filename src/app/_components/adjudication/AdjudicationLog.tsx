@@ -93,8 +93,8 @@ export default function AdjudicationLog(props: {
     };
 
     async function getLaneAdjDatastream() {
-        let laneEntry = laneMapRef.current.get(props.event.laneId);
-        let laneDSId = laneEntry.parentNode.laneAdjMap.get(props.event.laneId);
+        let laneEntry = laneMapRef.current.get(props?.event?.laneId);
+        let laneDSId = laneEntry.parentNode.laneAdjMap.get(props?.event?.laneId);
         console.log("[ADJ-Log] Lane Datastream ID: ", laneDSId);
         let adjDs: typeof DataStream = await laneEntry.getAdjudicationDatastream(laneDSId);
         console.log("[ADJ-Log] Lane Adjudication Datastream: ", adjDs);

@@ -10,12 +10,14 @@ import {RootState} from "../Store";
 // @ts-ignore
 import {INode} from "@/app/data/osh/Node";
 import {Node, NodeOptions} from "@/lib/data/osh/Node";
+import {Datastream} from "@/lib/data/osh/Datastreams";
 
 enableMapSet();
 
 export interface IOSHSlice {
     nodes: INode[],
     configNode: INode,
+    datastreams: Datastream[]
 }
 
 const initialNodeOpts: NodeOptions = {
@@ -35,6 +37,7 @@ const initialNodeOpts: NodeOptions = {
 const initialState: IOSHSlice = {
     nodes: [new Node(initialNodeOpts)],
     configNode: null,
+    datastreams: []
 }
 
 export const Slice = createSlice({
@@ -52,6 +55,9 @@ export const Slice = createSlice({
         },
         setNodes: (state, action: PayloadAction<INode[]>) => {
             state.nodes = action.payload
+        },
+        setDatastreams: (state, action: PayloadAction<Datastream[]>) => {
+            state.datastreams = action.payload
         },
         updateNode: (state, action: PayloadAction<INode>) => {
             const nodeIndex = state.nodes.findIndex((node: INode) => node.name === action.payload.name);
@@ -79,6 +85,7 @@ export const {
     updateNode,
     removeNode,
     changeConfigNode,
+    setDatastreams
 } = Slice.actions;
 
 export const selectNodes = (state: RootState) => state.oshSlice.nodes;
