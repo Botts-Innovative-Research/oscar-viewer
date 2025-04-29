@@ -3,12 +3,13 @@
 import React, {createContext, MutableRefObject, ReactNode, useCallback, useEffect, useRef} from "react";
 import {useSelector} from "react-redux";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
-import {changeConfigNode, setDatastreams, setNodes} from "@/lib/state/OSHSlice";
+import {changeConfigNode, setNodes} from "@/lib/state/OSHSlice";
 import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {RootState} from "@/lib/state/Store";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
+import { NodeOptions, Node, INode } from "@/lib/data/osh/Node";
+
 
 interface IDataSourceContext {
     laneMapRef: MutableRefObject<Map<string, LaneMapEntry>> | undefined
@@ -21,6 +22,8 @@ export {DataSourceContext};
 
 
 export default function DataSourceProvider({children}: { children: ReactNode }) {
+
+
     const configNode: Node = useSelector((state: RootState) => state.oshSlice.configNode);
     const dispatch = useAppDispatch();
     const nodes = useSelector((state: RootState) => state.oshSlice.nodes);
@@ -48,7 +51,6 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }
 
     const InitializeApplication = useCallback(async () => {
-
 
         if (!configNode) {
             // if no default node, then just grab the first node in the list and try to use that
@@ -89,23 +91,34 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         await Promise.all(nodes.map(async (node: INode) => {
             console.log("Fetching lanes from node ", node);
             let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
-            await node.fetchDatastreamsTK(nodeLaneMap);
+            console.log("Fetching data streams from node ", node);
+            await node.fetchDatastreams(nodeLaneMap);
+            console.log("Fetching process video data streams from node ", node);
             await node.fetchProcessVideoDatastreams(nodeLaneMap);
-            for (let mapEntry of nodeLaneMap.values()) {
-                mapEntry.addDefaultSWEAPIs();
-            }
-            let nodeControlStreams = await node.fetchControlStreams()
+            console.log("Fetching control streams from node ", node);
+            await node.fetchControlStreams(nodeLaneMap);
 
-            nodeLaneMap.forEach((value, key) => {
-                const controlStream = nodeControlStreams.find((cStream: any) =>
-                    value.systems.some((system) => system.properties.id === cStream['system@id'])
-                );
-                console.log("Found Matching Control Stream", controlStream);
-                value.addControlStreamId(controlStream.id);
-                allLanes.set(key, value);
-            });
+
+            for (const [key, mapEntry] of nodeLaneMap.entries()) {
+                console.log(`[BEFORE] addDefaultConSysApis for ${key}`, mapEntry);
+                try {
+                    mapEntry.addDefaultConSysApis();
+                } catch (e) {
+                    console.error(`[ERROR] addDefaultConSysApis failed for ${key}:`, e);
+                }
+                console.log(`[AFTER] addDefaultConSysApis for ${key}`, mapEntry.datasourcesRealtime, mapEntry.datasourcesBatch);
+            }
+
+
+            console.log("nodelanemap", nodeLaneMap)
+
+            nodeLaneMap.forEach((value, key) =>{
+                allLanes.set(key,value);
+            })
         }));
 
+
+        console.log("all Lanes", allLanes)
         // fetch adjudication systems
         let adjMap: Map<string, string> = new Map();
         for(let node of nodes){
@@ -136,7 +149,8 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }, [laneMap]);
 
     useEffect(() => {
-        testSysFetch();
+        testSysFetch().then(r => console.log("All Systems fetched. "));
+
         setLastSystemFetch(Date.now());
 
     }, [nodes]);
@@ -144,6 +158,8 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     useEffect(() => {
         InitializeApplication();
     }, [InitializeApplication]);
+
+
 
     return (
         <>

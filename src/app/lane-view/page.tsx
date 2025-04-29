@@ -5,7 +5,7 @@ import BackButton from "../_components/BackButton";
 import LaneStatus from "../_components/lane-view/LaneStatus";
 import Media from "../_components/lane-view/Media";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
-import Table2 from "@/app/_components/event-table/TableType2";
+import EventTable from "@/app/_components/event-table/EventTable";
 import {useSelector} from "react-redux";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {RootState} from "@/lib/state/Store";
@@ -19,7 +19,7 @@ import {
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {selectLastToggleState, setToggleState} from "@/lib/state/LaneViewSlice";
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import LaneStatusTable from "../_components/lane-view/LaneStatusTable";
 
 
@@ -33,11 +33,11 @@ export default function LaneViewPage() {
 
     const currentLane = useSelector((state: RootState) => state.laneView.currentLane);
 
-    const [gammaDatasources, setGammaDS] =  useState<typeof SweApi>();
-    const [neutronDatasources, setNeutronDS] =  useState<typeof SweApi>();
-    const [thresholdDatasources, setThresholdDS] = useState<typeof SweApi>();
-    const [videoDatasources, setVideoDS] =  useState<typeof SweApi[]>([]);
-    const [tamperDatasources, setTamperDS] =  useState<typeof SweApi>();
+    const [gammaDatasources, setGammaDS] =  useState<typeof ConSysApi>();
+    const [neutronDatasources, setNeutronDS] =  useState<typeof ConSysApi>();
+    const [thresholdDatasources, setThresholdDS] = useState<typeof ConSysApi>();
+    const [videoDatasources, setVideoDS] =  useState<typeof ConSysApi[]>([]);
+    const [tamperDatasources, setTamperDS] =  useState<typeof ConSysApi>();
 
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
     const [toggleView, setToggleView] = useState(savedToggleState);
@@ -57,7 +57,7 @@ export default function LaneViewPage() {
         // @ts-ignore
         const laneDSMap = new Map<string, LaneDSColl>();
 
-        const updatedVideo: typeof SweApi[] = [];
+        const updatedVideo: typeof ConSysApi[] = [];
 
         const lane = laneMapRef.current.get(currentLane);
 
@@ -160,7 +160,7 @@ export default function LaneViewPage() {
                             </ToggleButtonGroup>
                         </Grid>
                         <Grid item sx={{ width: "100%", display: toggleView === 'occupancy' ? 'block' : 'none' }}>
-                            <Table2 tableMode={'lanelog'} laneMap={laneMap} viewLane viewSecondary viewAdjudicated currentLane={currentLane}/>
+                            <EventTable tableMode={'lanelog'} laneMap={laneMap} viewLane viewSecondary viewAdjudicated currentLane={currentLane}/>
                         </Grid>
                         <Grid item sx={{ width: "100%", display: toggleView === 'alarm' ? 'block' : 'none' }}>
                             <LaneStatusTable laneMap={laneMap}/>

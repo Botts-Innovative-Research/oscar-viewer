@@ -1,340 +1,1140 @@
-"use client";
+// "use client"
+//
+// import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+// import {useCallback, useEffect, useRef, useState} from "react";
+// import {Box} from "@mui/material";
+// import {useSelector} from "react-redux";
+// import {RootState} from "@/lib/state/Store";
+// import {
+//     setEventPreview,
+//     setSelectedRowId,
+//     selectSelectedRowId, setLatestGB
+// } from "@/lib/state/EventPreviewSlice";
+// import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
+// import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
+// import Observations from "osh-js/source/core/consysapi/observation/Observations";
+// import {AlarmTableData, EventTableData} from "@/lib/data/oscar/TableHelpers";
+// import {
+//     DataGrid,
+//     GridActionsCellItem,
+//     GridCellParams,
+//     gridClasses,
+//     GridColDef,
+//     GridRowParams,
+//     GridRowSelectionModel
+// } from "@mui/x-data-grid";
+// import CustomToolbar from "@/app/_components/CustomToolbar";
+// import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
+// import {useAppDispatch} from "@/lib/state/Hooks";
+// import {
+//     addEventToLog,
+//     selectEventTableDataArray,
+//     setEventLogData,
+//     setSelectedEvent
+// } from "@/lib/state/EventDataSlice";
+// import {useRouter} from "next/navigation";
+// import {getObservations} from "@/app/utils/ChartUtils";
+// import {isThresholdDatastream} from "@/lib/data/oscar/Utilities";
+// import {selectNodes} from "@/lib/state/OSHSlice";
+// import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+//
+//
+//
+// interface TableProps {
+//     tableMode: "eventlog" | "alarmtable" | "lanelog";
+//     viewSecondary?: boolean;
+//     currentLane?: string;
+//     viewMenu?: boolean;
+//     viewLane?: boolean;
+//     viewAdjudicated?: boolean;
+//     laneMap: Map<string, LaneMapEntry>;
+// }
+//
+//
+// /**
+//  * Gathers occupancy data both historical and real-time and creates TableEventData entries, which are passed into
+//  * the child components for further use
+//  * @param tableMode
+//  * @param viewSecondary Show 'Secondary Inspection' column, default FALSE
+//  * @param viewMenu Show three-dot menu button, default FALSE
+//  * @param viewLane Show 'View Lane' option in menu, default FALSE
+//  * @param viewAdjudicated shows Adjudicated status in the event log , not shown in the alarm table
+//  * @param laneMap map of LaneMapEntries to be used by created data sources
+//  * @constructor
+//  */
+// export default function Table2({
+//                                    tableMode,
+//                                    viewSecondary = false,
+//                                    // viewMenu = false,
+//                                    viewLane = false,
+//                                    viewAdjudicated = false,
+//                                    laneMap,
+//                                     currentLane
+//
+//                                }: TableProps) {
+//
+//     const selectedRowId = useSelector(selectSelectedRowId);
+//
+//     const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([selectedRowId]); // Currently selected row
+//
+//     const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
+//     const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
+//     const dispatch = useAppDispatch();
+//     const router = useRouter();
+//
+//
+//     const currentTablePage = useRef(0);
+//
+//     const handlePageChange = (model: any) =>{
+//         console.log("PAGE", model.page)
+//         currentTablePage.current = model.page;
+//     }
+//
+//     const nodes = useSelector(selectNodes);
+//
+//     async function fetchObservationsByPage(timeStart: string, timeEnd: string){
+//
+//         for (const node of nodes) {
+//             console.log("node", node)
+//
+//             const observations = new Observations({
+//                     endpointUrl: `${node.address}:${node.port}${node.oshPathRoot}${node.csAPIEndpoint}`,
+//                     tls: node.isSecure,
+//                     connectorOpts: node.auth
+//                 }
+//             );
+//
+//             console.log("observations", observations)
+//
+//             let searchObservation = await observations.searchObservations(new ObservationFilter({observedProperty: 'http://www.opengis.net/def/pillar-occupancy-count'}), 15);
+//
+//             console.log("searchObservations", searchObservation)
+//
+//             return await handleFetchedObservations(searchObservation)
+//
+//         }
+//
+//     }
+//
+//     async function handleFetchedObservations(searchObservation: any){
+//         let observations: EventTableData[] = [];
+//
+//         while(searchObservation.hasNext()){
+//             let obsResult = await searchObservation.nextPage();
+//
+//
+//             obsResult.map((obs: any) =>{
+//
+//                 // let laneEntry = Array.from(laneMap).find(([key, value]: any) =>
+//                 //     value.datastreams.find((ds: any) => ds.id === obs.id)
+//                 // );
+//                 // let result = eventFromObservation(obs, laneEntry);
+//                 // observations.push(result);
+//
+//             })
+//         }
+//     }
+//
+//     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
+//         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
+//         let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty("http://www.opengis.net/def/pillar-occupancy-count");
+//
+//         if (!occDS) {
+//             return;
+//         }
+//
+//         let obsCollection = await occDS.searchObservations(observationFilter, 15);
+//
+//         return await handleObservations(obsCollection, laneEntry, false);
+//     }
+//
+//     // here we need to do it by pages and only fetch the next page when clicked only 15 events at a time
+//     // @ts-ignore
+//     async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<EventTableData[]> {
+//         let observations: EventTableData[] = [];
+//
+//
+//         while (obsCollection.hasNext()) {
+//             let obsResults = await obsCollection.nextPage();
+//
+//             console.log("obsResults", obsResults)
+//             // console.log("ObsResults", obsResults)
+//             obsResults.map((obs: any) => {
+//                 let result = eventFromObservation(obs, laneEntry);
+//                 observations.push(result);
+//
+//                 // when fetching, this operation is a bit too costly so we probably want to just set the table with all the results we've collected
+//                 if (addToLog) dispatch(addEventToLog(result));
+//             })
+//
+//
+//         }
+//         return observations;
+//     }
+//
+//     async function doFetch(laneMap: Map<string, LaneMapEntry>) {
+//         let allFetchedResults: EventTableData[] = [];
+//         let promiseGroup: Promise<void>[] = [];
+//
+//         // createDatastreams(laneMap)
+//         laneMap.forEach((entry: LaneMapEntry, laneName: string) => {
+//             let promise = (async () => {
+//                 let startTimeForObs = new Date();
+//                 startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
+//                 await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
+//                 let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
+//                 allFetchedResults = [...allFetchedResults, ...fetchedResults];
+//             })();
+//             promiseGroup.push(promise);
+//         });
+//
+//         await Promise.all(promiseGroup);
+//         dispatch(setEventLogData(allFetchedResults))
+//     }
+//
+//
+//     async function streamObservations(laneEntry: LaneMapEntry) {
+//
+//         let futureTime = new Date();
+//         futureTime.setFullYear(futureTime.getFullYear() + 1);
+//         let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty("http://www.opengis.net/def/pillar-occupancy-count");
+//
+//         const observationFilter = new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`});
+//         occDS.streamObservations(observationFilter, (observation: any) => {
+//             let resultEvent = eventFromObservation(observation[0], laneEntry);
+//             dispatch(addEventToLog(resultEvent));
+//
+//         })
+//     }
+//
+//
+//     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
+//         const id = prngFromStr(obs, laneEntry.laneName);
+//         // console.log("obs id", obs.id)
+//         let newEvent: EventTableData = new EventTableData(id, laneEntry.laneName, obs.result, obs.id, obs.foiId);
+//         newEvent.setSystemIdx(laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId));
+//         newEvent.setDataStreamId(obs["datastream@id"]);
+//         newEvent.setFoiId(obs["foi@id"]);
+//         newEvent.setObservationId(obs.id);
+//
+//         return newEvent;
+//     }
+//
+//
+//     const convertToMap = (obj: any) =>{
+//         if(!obj) return new Map();
+//         if(obj instanceof Map) return obj;
+//         return new Map(Object.entries(obj));
+//     }
+//
+//     function doStream(laneMap: Map<string, LaneMapEntry>) {
+//         const laneMapToMap = convertToMap(laneMap);
+//
+//         laneMapToMap.forEach((entry) => {
+//             streamObservations(entry);
+//         })
+//     }
+//
+//     function unadjudicatedFilteredList(tableData: EventTableData[]) {
+//         if (!tableData) return [];
+//         return tableData.filter((entry) => {
+//             if (entry.isAdjudicated) return false;
+//             return entry.adjudicatedData.adjudicationCode.code === 0;
+//
+//         })
+//
+//     }
+//
+//     function onlyAlarmingFilteredList(tableData: EventTableData[]) {
+//         if (!tableData) return [];
+//         return  tableData.filter((entry: EventTableData) => entry.status !== 'None')
+//
+//     }
+//
+//     function onlyLaneFilteredList(tableData: EventTableData[], laneId: string) {
+//
+//         console.log("table data", tableData, laneId)
+//
+//         if (!tableData) return [];
+//         const laneData = tableData.filter((entry: EventTableData) => entry.laneId == laneId);
+//         console.log("filtered lane", laneData);
+//         return laneData;
+//     }
+//
+//     function laneEventList(tableData: EventTableData[]){
+//         let filteredData: EventTableData[] = [];
+//
+//         filteredData = tableData.filter((entry: EventTableData) => entry.laneId == currentLane)
+//         return filteredData;
+//     }
+//
+//
+//     useEffect(() => {
+//         dataStreamSetup(laneMap);
+//     }, [laneMap, laneMap.size]);
+//
+//     const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
+//         // await doFetch(laneMap);
+//         // let laneMapEntry = convertToMap(laneMap)
+//         // let startTimeForObs = new Date();
+//         // startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
+//         // await fetchObservationsByPage(startTimeForObs.toISOString(), 'now', laneMapEntry)
+//
+//         doFetch(laneMap);
+//         doStream(laneMap);
+//     }, [laneMap]);
+//
+//     useEffect(() => {
+//         let filteredData: EventTableData[] = [];
+//         if (tableMode === 'alarmtable') {
+//             filteredData = unadjudicatedFilteredList(onlyAlarmingFilteredList(tableData))
+//         } else if (tableMode === 'eventlog') {
+//             if (laneMap.size === 1) {
+//                 const laneId = Array.from(laneMap.keys())[0];
+//                 filteredData = onlyLaneFilteredList(tableData, laneId)
+//             }
+//         }else if(tableMode === 'lanelog'){
+//
+//             filteredData = laneEventList(tableData);
+//         }
+//         setFilteredTableData(filteredData);
+//     }, [tableData]);
+//
+//
+//     //Pseudorandom number generator from event data
+//     function prngFromStr(obs: any, laneName: string): number {
+//         const baseId = `${obs.result?.occupancyCount}${laneName}${obs.result?.startTime}${obs.result?.endTime}`;
+//         return hashString(baseId);
+//     }
+//
+//     function hashString(str: any) {
+//         let hash = 5381;
+//         for (let i = 0; i < str.length; i++) {
+//             hash = (hash * 33) ^ str.charCodeAt(i);
+//         }
+//         return (hash >>> 0) / 4294967296;
+//     }
+//
+//
+//     //------------------------------------------------------------------------------------------------------------------
+//     // Data Grid Setup and Related
+//     //------------------------------------------------------------------------------------------------------------------
+//
+//     const locale = navigator.language || 'en-US';
+//
+//     // Column definition for EventTable
+//     const columns: GridColDef<EventTableData>[] = [
+//         {
+//             field: 'secondaryInspection',
+//             headerName: 'Secondary Inspection',
+//             type: 'boolean',
+//             minWidth: 125,
+//             flex: 1,
+//         },
+//         {
+//             field: 'laneId',
+//             headerName: 'Lane ID',
+//             type: 'string',
+//             minWidth: 100,
+//             flex: 1,
+//         },
+//         {
+//             field: 'occupancyId',
+//             headerName: 'Occupancy ID',
+//             type: 'string',
+//             minWidth: 125,
+//             flex: 1.5,
+//         },
+//         {
+//             field: 'startTime',
+//             headerName: 'Start Time',
+//             valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
+//                 year: 'numeric',
+//                 month: 'numeric',
+//                 day: 'numeric',
+//                 hour: 'numeric',
+//                 minute: 'numeric',
+//                 second: 'numeric'
+//             }),
+//             minWidth: 200,
+//             flex: 2,
+//         },
+//         {
+//             field: 'endTime',
+//             headerName: 'End Time',
+//             valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
+//                 year: 'numeric',
+//                 month: 'numeric',
+//                 day: 'numeric',
+//                 hour: 'numeric',
+//                 minute: 'numeric',
+//                 second: 'numeric'
+//             }),
+//             minWidth: 200,
+//             flex: 2,
+//         },
+//         {
+//             field: 'maxGamma',
+//             headerName: 'Max Gamma (cps)',
+//             valueFormatter: (params) => (typeof params === 'number' ? params : 0),
+//             minWidth: 150,
+//             flex: 1.2,
+//         },
+//         {
+//             field: 'maxNeutron',
+//             headerName: 'Max Neutron (cps)',
+//             valueFormatter: (params) => (typeof params === 'number' ? params : 0),
+//             minWidth: 150,
+//             flex: 1.2,
+//         },
+//         {
+//             field: 'status',
+//             headerName: 'Status',
+//             type: 'string',
+//             minWidth: 125,
+//             flex: 1.2,
+//         },
+//         {
+//             field: 'isAdjudicated',
+//             headerName: 'Adjudicated',
+//             valueFormatter: (params) => params ? "Yes" : "No",
+//             minWidth: 100,
+//             flex: 1,
+//         },
+//         {
+//             field: 'Menu',
+//             headerName: '',
+//             type: 'actions',
+//             minWidth: 50,
+//             flex: 0.5,
+//             getActions: (params) => [
+//                 selectionModel.includes(params.row.id) ? (
+//                     <GridActionsCellItem
+//                         icon={<VisibilityRoundedIcon />}
+//                         label="Details"
+//                         onClick={() => handleEventPreview()}
+//                         showInMenu
+//                     />
+//                 ) : <></>,
+//             ],
+//         },
+//     ];
+//
+//     const handleEventPreview = () =>{
+//         //should we set the event preview open here using dispatch?
+//         router.push("/event-details")
+//     }
+//
+//     // Manage list of columns in toggle menu
+//     const getColumnList = () => {
+//         const excludeFields: string[] = [];
+//         // Exclude fields based on component parameters
+//         if (!viewSecondary) excludeFields.push('secondaryInspection');
+//         if (!viewAdjudicated) excludeFields.push('isAdjudicated');
+//         // if (!viewAdjudicated) excludeFields.push('adjudicatedCode');
+//
+//         return columns
+//             .filter((column) => !excludeFields.includes(column.field))
+//             .map((column) => column.field);
+//     }
+//
+//
+//     useEffect(() => {
+//         if(!selectedRowId){
+//             setSelectionModel([])
+//         }
+//     }, [selectedRowId]);
+//
+//
+//     const handleRowSelection = (params: GridRowParams) => {
+//
+//         const selectedId = params.row.id;
+//
+//         if (selectedRowId === selectedId) {
+//             setSelectionModel([]);
+//
+//             dispatch(setLatestGB(null));
+//             dispatch(setSelectedEvent(null));
+//             dispatch(setSelectedRowId(null));
+//             dispatch(setEventPreview({isOpen: false, eventData: null}));
+//         } else {
+//
+//             dispatch(setEventPreview({isOpen: false, eventData: null})); //clear before setting new data
+//
+//             setSelectionModel([selectedId]); // Highlight new row
+//             dispatch(setSelectedRowId(selectedId));
+//
+//             setTimeout(() =>{
+//                 const selectedRow = filteredTableData.find((row) => row.id === selectedId);
+//                 if(!selectedRow) return;
+//
+//                 getLatestGB(selectedRow)
+//                 dispatch(setEventPreview({ isOpen: true, eventData: selectedRow }));
+//                 dispatch(setSelectedEvent(selectedRow));
+//             }, 10)
+//         }
+//     };
+//
+//
+//     async function getLatestGB(eventData: any){
+//
+//         for (const lane of laneMap.values()){
+//             let datastreams = lane.datastreams.filter((ds: any) => isThresholdDatastream(ds));
+//             let gammaThreshDs = datastreams.find((ds: any) => {
+//                 console.log("heyy",ds.properties["system@id"] == eventData.systemIdx)
+//                 return ds.properties["system@id"] == eventData.systemIdx
+//             })
+//             if(gammaThreshDs){
+//                 console.log("gamma", gammaThreshDs)
+//                 let latestGB = await getObservations(eventData.startTime, eventData.endTime, gammaThreshDs);
+//                 dispatch(setLatestGB(latestGB));
+//             }
+//         }
+//     }
+//
+//
+//
+//     return (
+//         <Box sx={{flex: 1, width: '100%'}}>
+//             <DataGrid
+//                 rows={filteredTableData}
+//                 columns={columns}
+//                 onRowClick={handleRowSelection}
+//                 onPaginationModelChange={(model) => handlePageChange(model)}
+//                 rowSelectionModel={selectionModel}
+//                 initialState={{
+//                     pagination: {
+//                         paginationModel: {
+//                             pageSize: 15,
+//                         },
+//                     },
+//                     columns: {
+//                         // Manage visible columns in table based on component parameters
+//                         columnVisibilityModel: {
+//                             secondaryInspection: viewSecondary,
+//                             isAdjudicated: viewAdjudicated,
+//                             // adjudicatedCode: viewAdjudicated,
+//
+//                         },
+//                     },
+//                     sorting: {
+//                         sortModel: [{field: 'startTime', sort: 'desc'}]
+//                     },
+//                 }}
+//                 pageSizeOptions={[15]}
+//                 slots={{toolbar: CustomToolbar}}
+//                 slotProps={{
+//                     columnsManagement: {
+//                         getTogglableColumns: getColumnList,
+//                     }
+//                 }}
+//                 autosizeOptions={{
+//                     expand: true,
+//                     includeOutliers: true,
+//                     includeHeaders: false,
+//                 }}
+//                 getCellClassName={(params: GridCellParams<any, any, string>) => {
+//                     // Assign className for styling to 'Status' column based on value
+//                     if (params.value === "Gamma")
+//                         return "highlightGamma";
+//                     else if (params.value === "Neutron")
+//                         return "highlightNeutron";
+//                     else if (params.value === "Gamma & Neutron")
+//                         return "highlightGammaNeutron";
+//                     else if (params.formattedValue === 'Code 1: Contraband Found' || params.formattedValue === 'Code 2: Other' || params.formattedValue === 'Code 3: Medical Isotope Found')
+//                         return "highlightReal";
+//                     else if (params.formattedValue === 'Code 4: Norm Found' || params.formattedValue === 'Code 5: Declared Shipment of Radioactive Material' || params.formattedValue === 'Code 6: Physical Inspection Negative')
+//                         return "highlightInnocent";
+//                     else if (params.formattedValue === 'Code 7: RIID/ASP Indicates Background Only' || params.formattedValue === 'Code 8: Other' || params.formattedValue === 'Code 9: Authorized Test, Maintenance, or Training Activity')
+//                         return "highlightFalse";
+//                     else if (params.formattedValue === 'Code 10: Unauthorized Activity' || params.formattedValue === 'Code 11: Other')
+//                         return "highlightOther";
+//                     else
+//                         return '';
+//
+//
+//                 }}
+//
+//                 getRowClassName={(params) =>
+//                     selectionModel.includes(params.row.id) ? 'selected-row' : ''
+//                 }
+//
+//                 sx={{
+//                     // '& .MuiDataGrid-row:hover': {
+//                     //     backgroundColor: 'rgba(33,150,243,0.5)',
+//                     // },
+//                     // assign color styling to selected row
+//                     [`.${gridClasses.row}.selected-row`]: {
+//                         backgroundColor: 'rgba(33,150,243,0.5)',
+//                     },
+//
+//                     // Assign styling to 'Status' column based on className
+//                     [`.${gridClasses.cell}.highlightGamma`]: {
+//                         backgroundColor: "error.main",
+//                         color: "error.contrastText",
+//                     },
+//                     [`.${gridClasses.cell}.highlightNeutron`]: {
+//                         backgroundColor: "info.main",
+//                         color: "info.contrastText",
+//                     },
+//                     [`.${gridClasses.cell}.highlightGammaNeutron`]: {
+//                         backgroundColor: "secondary.main",
+//                         color: "secondary.contrastText",
+//                     },
+//
+//                     [`.${gridClasses.cell}.highlightReal`]: {
+//                         color: "error.dark",
+//                     },
+//                     [`.${gridClasses.cell}.highlightInnocent`]: {
+//                         color: "primary.dark",
+//                     },
+//                     [`.${gridClasses.cell}.highlightFalse`]: {
+//                         color: "success.dark",
+//                     },
+//                     [`.${gridClasses.cell}.highlightOther`]: {
+//                         color: "text.primary",
+//                     },
+//
+//                     border: "none",
+//
+//
+//                 }}
+//
+//             />
+//
+//         </Box>
+//     )
+// }
 
-import {Box} from '@mui/material';
-import {DataGrid, GridActionsCellItem, GridCellParams, GridColDef, gridClasses} from '@mui/x-data-grid';
+"use client"
 
-import {IEventTableData, SelectedEvent} from 'types/new-types';
-import {useContext, useState} from 'react';
-
-import NotesRoundedIcon from '@mui/icons-material/NotesRounded';
-import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
-import {EventTableData, EventTableDataCollection} from "@/lib/data/oscar/TableHelpers";
-import CustomToolbar from "@/app/_components/CustomToolbar";
-import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import {useCallback, useEffect, useState} from "react";
+import {Box} from "@mui/material";
 import {useSelector} from "react-redux";
+import {RootState} from "@/lib/state/Store";
+import {
+    setEventPreview,
+    setSelectedRowId,
+    selectSelectedRowId, setLatestGB
+} from "@/lib/state/EventPreviewSlice";
+import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
+import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
+import {AlarmTableData, EventTableData} from "@/lib/data/oscar/TableHelpers";
+import {
+    DataGrid,
+    GridActionsCellItem,
+    GridCellParams,
+    gridClasses,
+    GridColDef,
+    GridRowParams,
+    GridRowSelectionModel
+} from "@mui/x-data-grid";
+import CustomToolbar from "@/app/_components/CustomToolbar";
+import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {selectEventPreview, setEventPreview} from "@/lib/state/EventPreviewSlice";
+import {
+    addEventToLog,
+    selectEventTableDataArray,
+    setEventLogData,
+    setSelectedEvent
+} from "@/lib/state/EventDataSlice";
 import {useRouter} from "next/navigation";
-import {makeStyles} from "@mui/styles";
-import { locale } from 'dayjs';
+import {getObservations} from "@/app/utils/ChartUtils";
+import {isThresholdDatastream} from "@/lib/data/oscar/Utilities";
 
-const selectedRowStyles = makeStyles({
-  selectedRow: {
-    backgroundColor: 'rgba(33,150,243,0.5) !important',
-  },
-});
 
-export default function EventTable(props: {
-  viewSecondary?: boolean,  // Show 'Secondary Inspection' column, default FALSE
-  // viewMenu?: boolean, // Show three-dot menu button, default FALSE
-  viewLane?: boolean, // Show 'View Lane' option in menu, default FALSE
-  viewAdjudicated?: boolean, //shows Adjudicated status in the event log , not shown in the alarm table
-  eventTable: EventTableDataCollection,  // StatTable data
-}) {
+interface TableProps {
+    tableMode: "eventlog" | "alarmtable" | "lanelog";
+    viewSecondary?: boolean;
+    currentLane?: string;
+    viewMenu?: boolean;
+    viewLane?: boolean;
+    viewAdjudicated?: boolean;
+    laneMap: Map<string, LaneMapEntry>;
+}
 
-  const classes = selectedRowStyles();
 
-  const viewAdjudicated = props.viewAdjudicated || false;
-  const viewSecondary = props.viewSecondary || false;
-  // const viewMenu = props.viewMenu || false;
-  const viewLane = props.viewLane || false;
-  const eventTable = props.eventTable;
+/**
+ * Gathers occupancy data both historical and real-time and creates TableEventData entries, which are passed into
+ * the child components for further use
+ * @param tableMode
+ * @param viewSecondary Show 'Secondary Inspection' column, default FALSE
+ * @param viewMenu Show three-dot menu button, default FALSE
+ * @param viewLane Show 'View Lane' option in menu, default FALSE
+ * @param viewAdjudicated shows Adjudicated status in the event log , not shown in the alarm table
+ * @param laneMap map of LaneMapEntries to be used by created data sources
+ * @constructor
+ */
+export default function EventTable({
+                                   tableMode,
+                                   viewSecondary = false,
+                                   // viewMenu = false,
+                                   viewLane = false,
+                                   viewAdjudicated = false,
+                                   laneMap,
+                                   currentLane
 
-  const [selectionModel, setSelectionModel] = useState([]); // Currently selected row
-  const laneMapRef = useContext(DataSourceContext).laneMapRef;
+                               }: TableProps) {
 
-  const dispatch = useAppDispatch();
-  const router = useRouter();
+    const selectedRowId = useSelector(selectSelectedRowId);
 
-  const locale = navigator.language || 'en-US';
+    const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([selectedRowId]); // Currently selected row
 
-  // Column definition for EventTable
-  const columns: GridColDef<IEventTableData>[] = [
-    {
-      field: 'secondaryInspection',
-      headerName: 'Secondary Inspection',
-      type: 'string',
-      minWidth: 125,
-      flex: 1,
-    },
-    {
-      field: 'laneId',
-      headerName: 'Lane ID',
-      type: 'string',
-      minWidth: 100,
-      flex: 1,
-    },
-    {
-      field: 'occupancyId',
-      headerName: 'Occupancy ID',
-      type: 'string',
-      minWidth: 125,
-      flex: 1,
-    },
-    {
-      field: 'startTime',
-      headerName: 'Start Time',
-      valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        second: 'numeric'
-      }),
-      minWidth: 200,
-      flex: 2,
-      // type: 'string',
-    },
-    {
-      field: 'endTime',
-      headerName: 'End Time',
-      valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        second: 'numeric'
-      }),
-      minWidth: 200,
-      flex: 2,
-      // type: 'string',
-    },
-    {
-      field: 'maxGamma',
-      headerName: 'Max Gamma (cps)',
-      valueFormatter: (value) => {
-        // Append units to number value, or return 'N/A'
-        return typeof value === 'number' ? value : 0;
-      },
-      minWidth: 150,
-      flex: 1.2,
-    },
-    {
-      field: 'maxNeutron',
-      headerName: 'Max Neutron (cps)',
-      valueFormatter: (value) => {
-        // Append units to number value, or return 'N/A'
-        return typeof value === 'number' ? value : 0;
-      },
-      minWidth: 150,
-      flex: 1.2,
-    },
-    {
-      field: 'status',
-      headerName: 'Status',
-      type: 'string',
-      minWidth: 125,
-      flex: 1.2,
-    },
+    const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
+    const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
+    const dispatch = useAppDispatch();
+    const router = useRouter();
 
-    {
-      //TODO: when adjudication is updated to working state chang this back to adjudicatedCode
-      // field: 'adjudicatedCode',
-      field: 'isAdjudicated',
-      headerName: 'Adjudicated',
-      type: 'string',
-      valueFormatter: (value) => value ? "Yes" : "No",
-      minWidth: 100,
-      flex: 1,
+    async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
+        const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
+        let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty("http://www.opengis.net/def/pillar-occupancy-count");
 
-    },
-    {
-      field: 'Menu',
-      headerName: '',
-      type: 'actions',
-      maxWidth: 50,
-      flex: 0.5,
-
-      getActions: (params) => [
-        (selectionModel.includes(params.row.id) ?
-                <GridActionsCellItem
-                    icon={<VisibilityRoundedIcon/>}
-                    label="Details"
-                    onClick={() => handleEventPreview()}
-                    showInMenu
-                />
-
-                : <></>
-        ),
-        (viewLane && selectionModel.includes(params.row.id)  ?
-                <GridActionsCellItem
-                    icon={<VisibilityRoundedIcon/>}
-                    label="View Lane"
-                    onClick={() => handleLaneView(params.row.laneId)}
-                    showInMenu
-                />
-                : <></>
-        ),
-      ],
-
-    },
-  ];
-
-  const handleLaneView = (laneName: string) => {
-    router.push(`/lane-view?name=${encodeURIComponent(laneName)}`);
-  };
-
-  const handleEventPreview = () =>{
-    //should we set the event preview open here using dispatch?
-    router.push("/event-details")
-  }
-
-  // Manage list of columns in toggle menu
-  const getColumnList = () => {
-    const excludeFields: string[] = [];
-    // Exclude fields based on component parameters
-    if (!viewSecondary) excludeFields.push('secondaryInspection');
-    // if (!viewMenu) excludeFields.push('Menu');
-    if (!viewAdjudicated) excludeFields.push('adjudicatedCode');
-
-    return columns
-        .filter((column) => !excludeFields.includes(column.field))
-        .map((column) => column.field);
-  }
-
-  // Handle currently selected row
-  const handleRowSelection = (selection: any[]) => {
-
-    console.log("Selection: ", selection);
-
-    const selectedId = selection[0]; // Get the first selected ID
-
-    if (selectionModel[0] === selectedId) {
-      // If the same row is selected, clear the selection
-      setSelectionModel([]);
-      if (onRowSelect) {
-        onRowSelect(null); // Return an empty object when deselected
-      }
-    } else {
-      // Otherwise, set the new selection
-      setSelectionModel([selectedId]);
-
-      // Find the selected row's eventTable
-      const selectedRow = eventTable.data.find((row) => row.id === selectedId);
-      if (selectedRow && onRowSelect) {
-        onRowSelect(selectedRow); // Return start and end time to parent function
-      }
+        if (!occDS) {
+            return;
+        }
+        let obsCollection = await occDS.searchObservations(observationFilter, 15);
+        console.log("obs collection", obsCollection)
+        return await handleObservations(obsCollection, laneEntry, false);
     }
-  };
 
-  function onRowSelect(event: EventTableData) {
-    if (event) {
-      dispatch(setEventPreview({
-        isOpen: false,
-        eventData: null,
-      }));
-      console.log("Row selected: ", event);
-      console.log("LaneMapRef: ", laneMapRef.current);
-      const currentSystem = laneMapRef.current.get(event.laneId).systems.find((system) => system.properties.id === event.systemIdx)
-      console.log("Current System: ", currentSystem);
+    async function streamObservations(laneEntry: LaneMapEntry) {
 
-      dispatch(setEventPreview({
-        isOpen: true,
-        eventData: event,
-      }));
-    } else {
-      console.log("Setting EventPreview Data to null");
-      dispatch(setEventPreview({
-        isOpen: false,
-        eventData: null,
-      }));
+        let futureTime = new Date();
+        futureTime.setFullYear(futureTime.getFullYear() + 1);
+        let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty("http://www.opengis.net/def/pillar-occupancy-count");
+
+        const observationFilter = new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`});
+        occDS.streamObservations(observationFilter, (observation: any) => {
+            let resultEvent = eventFromObservation(observation[0], laneEntry);
+            dispatch(addEventToLog(resultEvent));
+
+        })
     }
-  }
 
-  return (
-      <Box sx={{height: 800, width: '100%'}}>
-        <DataGrid
-            rows={eventTable.data}
-            columns={columns}
-            onRowSelectionModelChange={handleRowSelection}
-            rowSelectionModel={selectionModel}
-            getRowClassName={(params) =>
-                params.row.id == selectionModel[0] ? classes.selectedRow : ''
-              // params.row.id == selectionModel[0] ? classes.selectedRow : ''
+    //Pseudorandom number generator from event data
+    function prngFromStr(obs: any, laneName: string): number {
+        const baseId = `${obs.result?.occupancyCount}${laneName}${obs.result?.startTime}${obs.result?.endTime}`;
+        return hashString(baseId);
+    }
+
+    function hashString(str: any) {
+        let hash = 5381;
+        for (let i = 0; i < str.length; i++) {
+            hash = (hash * 33) ^ str.charCodeAt(i);
+        }
+        return (hash >>> 0) / 4294967296;
+    }
+
+
+    // @ts-ignore
+    async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<EventTableData[]> {
+        let observations: EventTableData[] = [];
+
+        while (obsCollection.hasNext()) {
+            let obsResults = await obsCollection.nextPage();
+            obsResults.map((obs: any) => {
+                let result = eventFromObservation(obs, laneEntry);
+                observations.push(result);
+                // when fetching, this operation is a bit too costly so we probably want to just set the table with all the results we've collected
+                if (addToLog) dispatch(addEventToLog(result));
+            })
+        }
+        return observations;
+    }
+
+    function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
+        const id = prngFromStr(obs, laneEntry.laneName);
+        // console.log("obs id", obs.id)
+        let newEvent: EventTableData = new EventTableData(id, laneEntry.laneName, obs.result, obs.id, obs.foiId);
+        newEvent.setSystemIdx(laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId));
+        newEvent.setDataStreamId(obs["datastream@id"]);
+        newEvent.setFoiId(obs["foi@id"]);
+        newEvent.setObservationId(obs.id);
+
+        return newEvent;
+    }
+
+    async function doFetch(laneMap: Map<string, LaneMapEntry>) {
+        console.log("fetching lane map observations")
+        let allFetchedResults: EventTableData[] = [];
+        let promiseGroup: Promise<void>[] = [];
+
+        const laneMapToMap = convertToMap(laneMap);
+        // createDatastreams(laneMap)
+        laneMapToMap.forEach((entry: LaneMapEntry, laneName: string) => {
+            let promise = (async () => {
+                let startTimeForObs = new Date();
+                startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
+                // await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
+                let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
+                allFetchedResults = [...allFetchedResults, ...fetchedResults];
+
+            })();
+            promiseGroup.push(promise);
+        });
+
+        await Promise.all(promiseGroup);
+        dispatch(setEventLogData(allFetchedResults))
+    }
+
+    const convertToMap = (obj: any) =>{
+        if(!obj) return new Map();
+        if(obj instanceof Map) return obj;
+        return new Map(Object.entries(obj));
+    }
+
+    function doStream(laneMap: Map<string, LaneMapEntry>) {
+        const laneMapToMap = convertToMap(laneMap);
+
+        laneMapToMap.forEach((entry) => {
+            streamObservations(entry);
+        })
+    }
+
+    function unadjudicatedFilteredList(tableData: EventTableData[]) {
+        if (!tableData) return [];
+        return tableData.filter((entry) => {
+            if (entry.isAdjudicated) return false;
+            return entry.adjudicatedData.adjudicationCode.code === 0;
+
+        })
+
+    }
+
+    function onlyAlarmingFilteredList(tableData: EventTableData[]) {
+        if (!tableData) return [];
+        return  tableData.filter((entry: EventTableData) => entry.status !== 'None')
+
+    }
+
+    function onlyLaneFilteredList(tableData: EventTableData[], laneId: string) {
+
+        console.log("table data", tableData, laneId)
+
+        if (!tableData) return [];
+        const laneData = tableData.filter((entry: EventTableData) => entry.laneId == laneId);
+        console.log("filtered lane", laneData);
+        return laneData;
+    }
+
+    function laneEventList(tableData: EventTableData[]){
+        let filteredData: EventTableData[] = [];
+
+        filteredData = tableData.filter((entry: EventTableData) => entry.laneId == currentLane)
+        return filteredData;
+    }
+
+
+    useEffect(() => {
+        console.log("laneMap changed size", laneMap)
+        dataStreamSetup(laneMap);
+    }, [laneMap, laneMap.size]);
+
+    const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
+        await doFetch(laneMap);
+        doStream(laneMap);
+    }, [laneMap]);
+
+    useEffect(() => {
+        let filteredData: EventTableData[] = [];
+        if (tableMode === 'alarmtable') {
+            filteredData = unadjudicatedFilteredList(onlyAlarmingFilteredList(tableData))
+        } else if (tableMode === 'eventlog') {
+            filteredData = tableData
+        }else if(tableMode === 'lanelog'){
+
+            filteredData = laneEventList(tableData);
+        }
+        setFilteredTableData(filteredData);
+    }, [tableData]);
+
+    //------------------------------------------------------------------------------------------------------------------
+    // Data Grid Setup and Related
+    //------------------------------------------------------------------------------------------------------------------
+
+    const locale = navigator.language || 'en-US';
+
+    // Column definition for EventTable
+    const columns: GridColDef<EventTableData>[] = [
+        {
+            field: 'secondaryInspection',
+            headerName: 'Secondary Inspection',
+            type: 'boolean',
+            minWidth: 125,
+            flex: 1,
+        },
+        {
+            field: 'laneId',
+            headerName: 'Lane ID',
+            type: 'string',
+            minWidth: 100,
+            flex: 1,
+        },
+        {
+            field: 'occupancyId',
+            headerName: 'Occupancy ID',
+            type: 'string',
+            minWidth: 125,
+            flex: 1.5,
+        },
+        {
+            field: 'startTime',
+            headerName: 'Start Time',
+            valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric'
+            }),
+            minWidth: 200,
+            flex: 2,
+        },
+        {
+            field: 'endTime',
+            headerName: 'End Time',
+            valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric'
+            }),
+            minWidth: 200,
+            flex: 2,
+        },
+        {
+            field: 'maxGamma',
+            headerName: 'Max Gamma (cps)',
+            valueFormatter: (params) => (typeof params === 'number' ? params : 0),
+            minWidth: 150,
+            flex: 1.2,
+        },
+        {
+            field: 'maxNeutron',
+            headerName: 'Max Neutron (cps)',
+            valueFormatter: (params) => (typeof params === 'number' ? params : 0),
+            minWidth: 150,
+            flex: 1.2,
+        },
+        {
+            field: 'status',
+            headerName: 'Status',
+            type: 'string',
+            minWidth: 125,
+            flex: 1.2,
+        },
+        {
+            field: 'isAdjudicated',
+            headerName: 'Adjudicated',
+            valueFormatter: (params) => params ? "Yes" : "No",
+            minWidth: 100,
+            flex: 1,
+        },
+        {
+            field: 'Menu',
+            headerName: '',
+            type: 'actions',
+            minWidth: 50,
+            flex: 0.5,
+            getActions: (params) => [
+                selectionModel.includes(params.row.id) ? (
+                    <GridActionsCellItem
+                        icon={<VisibilityRoundedIcon />}
+                        label="Details"
+                        onClick={() => handleEventPreview()}
+                        showInMenu
+                    />
+                ) : <></>,
+            ],
+        },
+    ];
+
+    const handleEventPreview = () =>{
+        //should we set the event preview open here using dispatch?
+        router.push("/event-details")
+    }
+
+    // Manage list of columns in toggle menu
+    const getColumnList = () => {
+        const excludeFields: string[] = [];
+        // Exclude fields based on component parameters
+        if (!viewSecondary) excludeFields.push('secondaryInspection');
+        if (!viewAdjudicated) excludeFields.push('isAdjudicated');
+        // if (!viewAdjudicated) excludeFields.push('adjudicatedCode');
+
+        return columns
+            .filter((column) => !excludeFields.includes(column.field))
+            .map((column) => column.field);
+    }
+
+
+    useEffect(() => {
+        if(!selectedRowId){
+            setSelectionModel([])
+        }
+    }, [selectedRowId]);
+
+
+    console.log("selected row id vs selection model", selectedRowId, selectionModel[0])
+    const handleRowSelection = (params: GridRowParams) => {
+
+        const selectedId = params.row.id;
+
+        if (selectedRowId === selectedId) {
+            console.log("CLEARING SELECTION")
+            setSelectionModel([]);
+
+            dispatch(setLatestGB(null));
+            dispatch(setSelectedEvent(null));
+            dispatch(setSelectedRowId(null));
+            dispatch(setEventPreview({isOpen: false, eventData: null}));
+        } else {
+
+            dispatch(setEventPreview({isOpen: false, eventData: null})); //clear before setting new data
+
+            setSelectionModel([selectedId]); // Highlight new row
+            dispatch(setSelectedRowId(selectedId));
+
+            setTimeout(() =>{
+                const selectedRow = filteredTableData.find((row) => row.id === selectedId);
+                if(!selectedRow) return;
+
+                getLatestGB(selectedRow)
+                dispatch(setEventPreview({ isOpen: true, eventData: selectedRow }));
+                dispatch(setSelectedEvent(selectedRow));
+            }, 10)
+        }
+    };
+
+
+    async function getLatestGB(eventData: any){
+
+        for (const lane of laneMap.values()){
+            let datastreams = lane.datastreams.filter((ds: any) => isThresholdDatastream(ds));
+            let gammaThreshDs = datastreams.find((ds: any) => {
+                console.log("heyy",ds.properties["system@id"] == eventData.systemIdx)
+                return ds.properties["system@id"] == eventData.systemIdx
+            })
+            if(gammaThreshDs){
+                console.log("gamma", gammaThreshDs)
+                let latestGB = await getObservations(eventData.startTime, eventData.endTime, gammaThreshDs);
+                dispatch(setLatestGB(latestGB));
             }
-            initialState={{
-              pagination: {
-                paginationModel: {
-                  pageSize: 20,
-                },
-              },
-              columns: {
-                // Manage visible columns in table based on component parameters
-                columnVisibilityModel: {
-                  secondaryInspection: viewSecondary,
-                  adjudicatedCode: viewAdjudicated,
-                  // Menu: viewMenu,
-                },
-              },
-            }}
-            pageSizeOptions={[20]}
-            slots={{toolbar: CustomToolbar}}
-            slotProps={{
-              columnsManagement: {
-                getTogglableColumns: getColumnList,
-              }
-            }}
-            autosizeOnMount
-            autosizeOptions={{
-              expand: true,
-              includeOutliers: true,
-              includeHeaders: false,
-            }}
-            getCellClassName={(params: GridCellParams<any, any, string>) => {
-              // Assign className for styling to 'Status' column based on value
-              if (params.value === "Gamma")
-                return "highlightGamma";
-              else if (params.value === "Neutron")
-                return "highlightNeutron";
-              else if (params.value === "Gamma & Neutron")
-                return "highlightGammaNeutron";
-              else if (params.formattedValue === 'Code 1: Contraband Found' || params.formattedValue === 'Code 2: Other' || params.formattedValue === 'Code 3: Medical Isotope Found')
-                return "highlightReal";
-              else if (params.formattedValue === 'Code 4: Norm Found' || params.formattedValue === 'Code 5: Declared Shipment of Radioactive Material' || params.formattedValue === 'Code 6: Physical Inspection Negative')
-                return "highlightInnocent";
-              else if (params.formattedValue === 'Code 7: RIID/ASP Indicates Background Only' || params.formattedValue === 'Code 8: Other' || params.formattedValue === 'Code 9: Authorized Test, Maintenance, or Training Activity')
-                return "highlightFalse";
-              else if (params.formattedValue === 'Code 10: Unauthorized Activity' || params.formattedValue === 'Code 11: Other')
-                return "highlightOther";
-              else
-                return '';
+        }
+    }
+
+    return (
+        <Box sx={{flex: 1, width: '100%'}}>
+            <DataGrid
+                rows={filteredTableData}
+                columns={columns}
+                onRowClick={handleRowSelection}
+
+                rowSelectionModel={selectionModel}
+                initialState={{
+                    pagination: {
+                        paginationModel: {
+                            pageSize: 15,
+                        },
+                    },
+                    columns: {
+                        // Manage visible columns in table based on component parameters
+                        columnVisibilityModel: {
+                            secondaryInspection: viewSecondary,
+                            isAdjudicated: viewAdjudicated,
+                            // adjudicatedCode: viewAdjudicated,
+
+                        },
+                    },
+                    sorting: {
+                        sortModel: [{field: 'startTime', sort: 'desc'}]
+                    },
+                }}
+                pageSizeOptions={[15]}
+                slots={{toolbar: CustomToolbar}}
+                slotProps={{
+                    columnsManagement: {
+                        getTogglableColumns: getColumnList,
+                    }
+                }}
+                autosizeOptions={{
+                    expand: true,
+                    includeOutliers: true,
+                    includeHeaders: false,
+                }}
+                getCellClassName={(params: GridCellParams<any, any, string>) => {
+                    // Assign className for styling to 'Status' column based on value
+                    if (params.value === "Gamma")
+                        return "highlightGamma";
+                    else if (params.value === "Neutron")
+                        return "highlightNeutron";
+                    else if (params.value === "Gamma & Neutron")
+                        return "highlightGammaNeutron";
+                    else if (params.formattedValue === 'Code 1: Contraband Found' || params.formattedValue === 'Code 2: Other' || params.formattedValue === 'Code 3: Medical Isotope Found')
+                        return "highlightReal";
+                    else if (params.formattedValue === 'Code 4: Norm Found' || params.formattedValue === 'Code 5: Declared Shipment of Radioactive Material' || params.formattedValue === 'Code 6: Physical Inspection Negative')
+                        return "highlightInnocent";
+                    else if (params.formattedValue === 'Code 7: RIID/ASP Indicates Background Only' || params.formattedValue === 'Code 8: Other' || params.formattedValue === 'Code 9: Authorized Test, Maintenance, or Training Activity')
+                        return "highlightFalse";
+                    else if (params.formattedValue === 'Code 10: Unauthorized Activity' || params.formattedValue === 'Code 11: Other')
+                        return "highlightOther";
+                    else
+                        return '';
 
 
-            }}
-            sx={{
+                }}
 
-              // Assign styling to 'Status' column based on className
-              [`.${gridClasses.cell}.highlightGamma`]: {
-                backgroundColor: "error.main",
-                color: "error.contrastText",
-              },
-              [`.${gridClasses.cell}.highlightNeutron`]: {
-                backgroundColor: "info.main",
-                color: "info.contrastText",
-              },
-              [`.${gridClasses.cell}.highlightGammaNeutron`]: {
-                backgroundColor: "secondary.main",
-                color: "secondary.contrastText",
-              },
+                getRowClassName={(params) =>
+                    selectionModel.includes(params.row.id) ? 'selected-row' : ''
+                }
 
-              [`.${gridClasses.cell}.highlightReal`]: {
-                color: "error.dark",
-              },
-              [`.${gridClasses.cell}.highlightInnocent`]: {
-                color: "primary.dark",
-              },
-              [`.${gridClasses.cell}.highlightFalse`]: {
-                color: "success.dark",
-              },
-              [`.${gridClasses.cell}.highlightOther`]: {
-                color: "text.primary",
-              },
+                sx={{
+                    // '& .MuiDataGrid-row:hover': {
+                    //     backgroundColor: 'rgba(33,150,243,0.5)',
+                    // },
+                    // assign color styling to selected row
+                    [`.${gridClasses.row}.selected-row`]: {
+                        backgroundColor: 'rgba(33,150,243,0.5)',
+                    },
 
-              border: "none",
-            }}
-        />
-      </Box>
-  );
+                    // Assign styling to 'Status' column based on className
+                    [`.${gridClasses.cell}.highlightGamma`]: {
+                        backgroundColor: "error.main",
+                        color: "error.contrastText",
+                    },
+                    [`.${gridClasses.cell}.highlightNeutron`]: {
+                        backgroundColor: "info.main",
+                        color: "info.contrastText",
+                    },
+                    [`.${gridClasses.cell}.highlightGammaNeutron`]: {
+                        backgroundColor: "secondary.main",
+                        color: "secondary.contrastText",
+                    },
+
+                    [`.${gridClasses.cell}.highlightReal`]: {
+                        color: "error.dark",
+                    },
+                    [`.${gridClasses.cell}.highlightInnocent`]: {
+                        color: "primary.dark",
+                    },
+                    [`.${gridClasses.cell}.highlightFalse`]: {
+                        color: "success.dark",
+                    },
+                    [`.${gridClasses.cell}.highlightOther`]: {
+                        color: "text.primary",
+                    },
+
+                    border: "none",
+
+
+                }}
+
+            />
+
+        </Box>
+    )
 }

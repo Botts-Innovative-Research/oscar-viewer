@@ -8,7 +8,7 @@ import dynamic from "next/dynamic";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
-import Table2 from "@/app/_components/event-table/TableType2";
+import EventTable from "@/app/_components/event-table/EventTable";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import {
     isConnectionDatastream,
@@ -48,14 +48,20 @@ export default function DashboardPage() {
 
         for (let [laneid, lane] of laneMapRef.current.entries()) {
 
+            console.log("lanemap", laneMapRef.current)
             laneDSMap.set(laneid, new LaneDSColl());
-            for (let ds of lane.datastreams) {
 
-                let idx: number = lane.datastreams.indexOf(ds);
-                let rtDS = lane.datasourcesRealtime[idx];
+            lane.datastreams.forEach((ds, idx) => {
+
+                let rtDS = lane.datasourcesRealtime?.[idx];
+
+                if (!rtDS) {
+                    console.warn(`Missing RT data for datastream in lane ${laneid} at index ${idx}`);
+                    return;
+                }
 
                 rtDS.properties.startTime = new Date().toISOString();
-                rtDS.properties.endTime = "2055-01-01T08:13:25.845Z"
+                rtDS.properties.endTime = "2055-01-01T08:13:25.845Z";
 
                 let laneDSColl = laneDSMap.get(laneid);
 
@@ -75,7 +81,7 @@ export default function DashboardPage() {
                 if(isThresholdDatastream(ds)){
                     laneDSColl.addDS('gammaTrshldRT', rtDS);
                 }
-            }
+            });
 
             newStatusList.push({
                 id: idVal.current++,
@@ -86,18 +92,20 @@ export default function DashboardPage() {
             });
 
 
+            const newMap = new Map(laneDSMap)
+
             console.log("new status list", newStatusList)
-            setDataSourcesByLane(laneDSMap);
+            setDataSourcesByLane(newMap);
             dispatch(setLaneMap(laneMap))
         }
         setStatusList(prevState => [...newStatusList,
             ...prevState.filter(item => !newStatusList.some(newItem => newItem.name === item.name))]);
 
-    }, [laneMapRef.current]);
+    }, [laneMapRef, laneMapRef.current.size]);
 
     useEffect(() => {
         datasourceSetup();
-    }, [laneMapRef.current]);
+    }, [laneMapRef, laneMapRef.current.size]);
 
 
 
@@ -111,7 +119,7 @@ export default function DashboardPage() {
 
 
                     <Paper variant='outlined' sx={{flexGrow: 1, padding: 2, overflow: "hidden"}}>
-                        <Table2 tableMode={'alarmtable'} laneMap={laneMap}/>
+                        <EventTable tableMode={'alarmtable'} laneMap={laneMap}/>
                     </Paper>
                 </Grid>
 

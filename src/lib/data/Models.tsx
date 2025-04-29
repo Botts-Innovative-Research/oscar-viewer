@@ -12,11 +12,9 @@ import {
     END_TIME,
     START_TIME
 } from "./Constants";
-// @ts-ignore
+
 import Layer from "osh-js/source/core/ui/layer/Layer";
-// @ts-ignore
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource"
-// @ts-ignore
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource"
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 
 // Settings ==============================================================
@@ -384,8 +382,8 @@ export class PhysicalSystem implements IPhysicalSystem {
 // Visualization ==============================================================
 export interface IObservable {
     uuid: string,
-    layers: Layer[],
-    dataSources: SweApi[],
+    layers: typeof Layer[],
+    dataSources: typeof ConSysApi[],
     name: string,
     physicalSystem: IPhysicalSystem,
     sensorHubServer: ISensorHubServer,
@@ -413,8 +411,8 @@ const observableProps: IObservable = {
 export class Observable implements IObservable {
 
     uuid: string;
-    layers: Layer[];
-    dataSources: SweApi[];
+    layers: typeof Layer[];
+    dataSources: typeof ConSysApi[];
     name: string;
     physicalSystem: IPhysicalSystem;
     sensorHubServer: ISensorHubServer;
