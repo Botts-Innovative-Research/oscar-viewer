@@ -20,6 +20,7 @@ import {
     isTamperDatastream, isThresholdDatastream,
     isVideoDatastream
 } from "./Utilities";
+import {AdjudicationDatastreamConstant} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 
 class ILaneMeta {
     id: string;
@@ -344,6 +345,7 @@ export class LaneMapEntry {
         return dsMap;
     }
 
+
     async insertAdjudicationSystem(laneName: string) {
         console.log("[ADJ] Inserting Adjudication System for lane: ", this);
         let laneId = this.laneSystem.properties.properties.uid.split(":").pop();
@@ -356,14 +358,14 @@ export class LaneMapEntry {
         }
 
         console.log("[ADJ] Inserting Adjudication System: ", adJSysJSON);
-        let sysId: string = await this.parentNode.insertAdjSystem(adJSysJSON);
+        let sysId: string = await this.parentNode.insertSystem(adJSysJSON);
         console.log("[ADJ] Inserted Adjudication System: ", sysId);
         // let dsId = this.insertAdjudicationDataStream(laneName);
         return sysId;
     }
 
     async insertAdjudicationDataStream(systemId: string) {
-        let dsRes = await this.parentNode.insertAdjDatastream(systemId);
+        let dsRes = await this.parentNode.insertDatastream(systemId, AdjudicationDatastreamConstant);
         if (dsRes) {
             console.log("[ADJ] Inserted Adjudication Datastream: ", dsRes);
             this.adjDs = dsRes;

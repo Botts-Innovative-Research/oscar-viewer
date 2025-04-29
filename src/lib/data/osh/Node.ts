@@ -7,13 +7,14 @@
 import {LaneMapEntry, LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import {System} from "osh-js/source/core/consysapi/system/System";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
-import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
+// import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
 import {AdjudicationDatastreamConstant} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
 import DataStreamFilter from "osh-js/source/core/consysapi/datastream/DataStreamFilter.js";
 import { isVideoDatastream } from "../oscar/Utilities";
 import Systems from "osh-js/source/core/consysapi/system/Systems.js";
 import SystemFilter from "osh-js/source/core/consysapi/system/SystemFilter.js";
+import {ConfigDatastreamConstant, insertConfigSystem} from "@/app/_components/state-manager/Config";
 
 const SYSTEM_UID_PREFIX = "urn:osh:system:";
 const DATABASE_PROCESS_UID_PREFIX = "urn:osh:process:occupancy:";
@@ -26,7 +27,7 @@ export interface INode {
     oshPathRoot: string,
     sosEndpoint: string,
     csAPIEndpoint: string,
-    csAPIConfigEndpoint: string,
+    // csAPIConfigEndpoint: string,
     isSecure: boolean,
     auth: { username: string, password: string } | null,
     isDefaultNode: boolean
@@ -50,12 +51,12 @@ export interface INode {
 
     insertSubSystem(systemJSON: any, parentSystemId: string): Promise<string>
 
-    insertAdjSystem(systemJSON: any): Promise<string>
+    insertSystem(systemJSON: any): Promise<string>
 
-    insertAdjDatastream(systemId: string): Promise<string>
+    insertDatastream(systemId: string, datastreamConstant: any): Promise<string>
 
     insertObservation(observationJSON: any, datastreamId: string): Promise<string>
-
+    checkForEndpoint(): Promise<boolean>
 }
 
 export interface NodeOptions {
@@ -65,7 +66,7 @@ export interface NodeOptions {
     oshPathRoot?: string,
     sosEndpoint?: string,
     csAPIEndpoint?: string,
-    csAPIConfigEndpoint?: string,
+    // csAPIConfigEndpoint?: string,
     auth?: { username: string, password: string } | null,
     isSecure?: boolean,
     isDefaultNode?: boolean
@@ -80,7 +81,7 @@ export class Node implements INode {
     oshPathRoot: string;
     sosEndpoint: string;
     csAPIEndpoint: string;
-    csAPIConfigEndpoint: string;
+    // csAPIConfigEndpoint: string;
     isSecure: boolean;
     auth: { username: string, password: string } | null = null;
     isDefaultNode: boolean;
@@ -94,7 +95,7 @@ export class Node implements INode {
         this.oshPathRoot = options.oshPathRoot || '/sensorhub';
         this.sosEndpoint = options.sosEndpoint || '/sos';
         this.csAPIEndpoint = options.csAPIEndpoint || '/api';
-        this.csAPIConfigEndpoint = options.csAPIConfigEndpoint || '/configs';
+        // this.csAPIConfigEndpoint = options.csAPIConfigEndpoint || '/configs';
         this.auth = options.auth || null;
         this.isSecure = options.isSecure || false;
         this.isDefaultNode = options.isDefaultNode || false;
@@ -109,10 +110,10 @@ export class Node implements INode {
     }
 
 
-    getConfigEndpoint() {
-        // let protocol = this.isSecure ? 'https' : 'http';
-        return `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIConfigEndpoint}`;
-    }
+    // getConfigEndpoint() {
+    //     // let protocol = this.isSecure ? 'https' : 'http';
+    //     return `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIConfigEndpoint}`;
+    // }
 
     getBasicAuthHeader() {
         const encoded = btoa(`${this.auth.username}:${this.auth.password}`);
@@ -154,10 +155,34 @@ export class Node implements INode {
         return {lanes: null, systems: systems_arr};
     }
 
+
+    async checkForEndpoint() {
+        let ep: string = `${this.getConnectedSystemsEndpoint()}`;
+        console.log("Checking for API endpoint: ", ep, this);
+
+        const response = await fetch(ep, {
+            method: 'GET',
+            mode: 'cors',
+            headers: {
+                ...this.getBasicAuthHeader(),
+                'Content-Type': 'application/sml+json'
+            }
+        });
+
+        if (response.ok) {
+            console.log("API Endpoint found: ", response);
+            return true;
+        } else {
+            console.warn("Error checking for API endpoint: ", response);
+            return false;
+        }
+    }
+
     async fetchLaneSystemsAndSubsystems(): Promise<Map<string, LaneMapEntry>> {
 
         // check if node is reachable first
-        let isReachable = OSHSliceWriterReader.checkForEndpoint(this);
+        // let isReachable = OSHSliceWriterReader.checkForEndpoint(this);
+        const isReachable = await this.checkForEndpoint();
         if (!isReachable) {
             console.warn("Node is not reachable, check endpoint properties");
             return new Map<string, LaneMapEntry>();
@@ -330,7 +355,7 @@ export class Node implements INode {
                         laneAdjDsMap.set(laneName, datastreams[0].properties.id);
                     } else {
                         console.log("[ADJ-INSERT] No datastreams found for adjudication system: ", system);
-                        let dsId = await this.insertAdjDatastream(system.properties.id);
+                        let dsId = await this.insertDatastream(system.properties.id, AdjudicationDatastreamConstant);
                         adjSysAndDSMap.set(system.properties.id, dsId);
                         laneAdjDsMap.set(laneName, dsId);
                     }
@@ -347,7 +372,7 @@ export class Node implements INode {
 
                 console.log("sys ID", sysId)
                 // insert datastreams
-                let dsId = await this.insertAdjDatastream(sysId);
+                let dsId = await this.insertDatastream(sysId, AdjudicationDatastreamConstant);
                 adjSysAndDSMap.set(sysId, dsId);
                 laneAdjDsMap.set(laneName, dsId);
             }
@@ -356,9 +381,26 @@ export class Node implements INode {
         return adjSysAndDSMap;
     }
 
-    async insertAdjSystem(systemJSON: any): Promise<string> {
+
+    async fetchOrCreateConfigSystem(){
+        let systems: typeof System[] = await this.fetchSystems();
+
+        let configSystem = systems.find((system: any) => system.properties.properties.uid === "urn:ornl:oscar:client:config");
+
+        if(configSystem){
+           // it exists
+        }else{
+            console.log(`[CONFIG-INSERT] No existing config system found, creating new system`);
+            let sysId = await insertConfigSystem();
+
+            let dsId = await this.insertDatastream(sysId, ConfigDatastreamConstant);
+
+        }
+    }
+
+    async insertSystem(systemJSON: any): Promise<string> {
         let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/`;
-        console.log("[ADJ] Inserting Adjudication System: ", ep, JSON.stringify(systemJSON));
+        console.log("Inserting System: ", ep, JSON.stringify(systemJSON));
 
         const response = await fetch(ep, {
             method: 'POST',
@@ -371,23 +413,23 @@ export class Node implements INode {
         });
 
         if (response.ok) {
-            console.log("[ADJ] Adj System Inserted: ", response.headers.get("Location"));
+            console.log("System Inserted: ", response.headers.get("Location"));
             let sysId = response.headers.get("Location").split("/").pop();
             return sysId;
         } else {
-            console.warn("[ADJ] Error inserting Adj system: ", response);
+            console.warn("Error inserting system: ", response);
         }
     }
 
-    async insertAdjDatastream(systemId: string): Promise<string> {
+    async insertDatastream(systemId: string, datastreamConstant: any): Promise<string> {
         let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/${systemId}/datastreams/`;
-        console.log("[ADJ] Inserting Adjudication Datastream: ", ep, this);
+        console.log("Inserting Datastream: ", ep, this);
 
-        console.log(JSON.stringify(AdjudicationDatastreamConstant))
+        console.log(JSON.stringify(datastreamConstant))
         const response = await fetch(ep, {
             method: 'POST',
             mode: 'cors',
-            body: JSON.stringify(AdjudicationDatastreamConstant),
+            body: JSON.stringify(datastreamConstant),
             headers: {
                 ...this.getBasicAuthHeader(),
                 'Content-Type': 'application/json'
@@ -395,11 +437,11 @@ export class Node implements INode {
         });
 
         if (response.ok) {
-            console.log("[ADJ] Adj Datastream Inserted Response: ", response);
+            console.log("Datastream Inserted Response: ", response);
             let dsId = response.headers.get("Location").split("/").pop();
             return dsId;
         } else {
-            console.warn("[ADJ] Error inserting Adj Datastream: ", response);
+            console.warn("Error inserting Datastream: ", response);
         }
     }
 

@@ -74,3 +74,53 @@ export enum Protocols {
     WS = "ws",
     WSS = "wss"
 }
+
+// Functions that are reusable
+
+export async function insertSystem(systemJSON: any): Promise<string> {
+    let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/`;
+    console.log("Inserting System: ", ep, JSON.stringify(systemJSON));
+
+    const response = await fetch(ep, {
+        method: 'POST',
+        mode: 'cors',
+        body: JSON.stringify(systemJSON),
+        headers: {
+            ...this.getBasicAuthHeader(),
+            'Content-Type': 'application/sml+json'
+        }
+    });
+
+    if (response.ok) {
+        console.log("[CONFIG] Config System Inserted: ", response.headers.get("Location"));
+        let sysId = response.headers.get("Location").split("/").pop();
+        await insertDatastream(this, sysId);
+        return sysId;
+    } else {
+        console.warn("Error inserting system: ", response);
+    }
+}
+
+export async function insertDatastream(systemId: string, datastreamConstant: any): Promise<string> {
+    let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/${systemId}/datastreams/`;
+    console.log("Inserting Datastream: ", ep, this);
+
+    console.log(JSON.stringify(datastreamConstant))
+    const response = await fetch(ep, {
+        method: 'POST',
+        mode: 'cors',
+        body: JSON.stringify(datastreamConstant),
+        headers: {
+            ...this.getBasicAuthHeader(),
+            'Content-Type': 'application/json'
+        }
+    });
+
+    if (response.ok) {
+        console.log("Datastream Inserted Response: ", response);
+        let dsId = response.headers.get("Location").split("/").pop();
+        return dsId;
+    } else {
+        console.warn("Error inserting Datastream: ", response);
+    }
+}

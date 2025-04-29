@@ -18,7 +18,7 @@ import {
     useMediaQuery,
     useTheme
 } from "@mui/material";
-import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
+
 import {RootState} from "@/lib/state/Store";
 import {useSelector} from "react-redux";
 import {IOSHSlice, selectDefaultNode, setNodes} from "@/lib/state/OSHSlice";
@@ -27,6 +27,11 @@ import {IOSCARClientState, setCurrentUser} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {Node, NodeOptions} from "@/lib/data/osh/Node";
 import Divider from "@mui/material/Divider";
+import ConfigData, {
+    checkForConfigSystem,
+    retrieveLatestConfig,
+    sendConfig
+} from "@/app/_components/state-manager/Config";
 
 
 export default function StateManager() {
@@ -34,8 +39,9 @@ export default function StateManager() {
     const oshSlice: IOSHSlice = useSelector((state: RootState) => state.oshSlice);
     const oscarSlice: IOSCARClientState = useSelector((state: RootState) => state.oscarClientSlice);
     const defaultNode = useSelector(selectDefaultNode);
-    const [cfgDSId, setCfgDSId] = useState<string | null>(null);
+    const [configDSId, setconfigDSId] = useState<string | null>(null);
     const [fileName, setFileName] = useState<string>("config");
+
     const newNodeOpts: NodeOptions = {
         name: "New Node",
         address: "localhost",
@@ -48,6 +54,7 @@ export default function StateManager() {
         isSecure: false,
         isDefaultNode: false
     };
+
     const [loadNodeOpts, setLoadNodeOpts] = useState<NodeOptions>(newNodeOpts);
     const [targetNode, setTargetNode] = useState<Node>(new Node(newNodeOpts));
     const [showLoadAlert, setShowLoadAlert] = useState<boolean>(false);
@@ -62,62 +69,105 @@ export default function StateManager() {
     const [saveSnackMsg, setSaveSnackMsg] = useState('');
     const [colorStatus, setColorStatus]= useState('');
 
+
     useEffect(() => {
         setLoadNodeOpts({...loadNodeOpts, ...defaultNode});
     }, []);
 
-    const getCFGDataStream = useCallback(async () => {
-        if (defaultNode) {
-            console.log("Default Node: ", defaultNode);
-            let cfgSystem = await OSHSliceWriterReader.checkForConfigSystem(defaultNode);
-            if (cfgSystem) {
-                let dsId = await OSHSliceWriterReader.checkForConfigDatastream(defaultNode, cfgSystem);
-                setCfgDSId(dsId);
-                return dsId;
-            }
-        }
-    }, [defaultNode]);
+    // const getconfigDataStream = useCallback(async () => {
+    //     if (defaultNode) {
+    //         console.log("Default Node: ", defaultNode);
+    //         let configSystem = await checkForConfigSystem(defaultNode);
+    //         if (configSystem) {
+    //             let dsId = await (defaultNode, configSystem);
+    //             setconfigDSId(dsId);
+    //             return dsId;
+    //         }
+    //     }
+    // }, [defaultNode]);
 
-    const handleSaveState = async () => {
-        let dsID = await getCFGDataStream();
+    const [data, setData] = useState<ConfigData>();
+
+    const saveConfigState = async() =>{
+
         toggleSaveAlert();
-        if (cfgDSId === null) {
-            let obs = OSHSliceWriterReader.writeConfigToString({oscarData: oscarSlice, oshData: oshSlice}, fileName);
-            let resp = await OSHSliceWriterReader.sendBlobToServer(defaultNode, dsID, obs);
-            if (resp) {
+
+        let phenomenonTime = new Date().toISOString();
+        let tempData: ConfigData = data;
+
+        tempData.setTime(phenomenonTime);
+
+        let observation = tempData.createConfigurationObservation();
+        console.log("[CONFIG] Sending Config Data: ", observation);
+
+        const endpoint = defaultNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + configDSId + "/observations";
+        await submitConfig(endpoint, observation);
+
+
+    }
+
+    const submitConfig = async(endpoint: string, observation: any) => {
+        try{
+            const response = await sendConfig(endpoint, observation);
+
+            if(response.ok){
                 setSaveSnackMsg('OSCAR Configuration Saved')
                 setColorStatus('success')
-            } else {
+            }else {
                 setSaveSnackMsg('Failed to save OSCAR Configuration')
                 setColorStatus('error')
             }
-            setOpenSaveSnack(true)
+        }catch(error){
+            setSaveSnackMsg('Adjudication failed to submit.')
+            setColorStatus('error')
+        }finally{
+            setOpenSnack(true);
         }
-
     }
+
+    // const handleSaveState = async () => {
+    //     let dsID = await getconfigDataStream();
+    //
+    //
+    //     toggleSaveAlert();
+    //     if (configDSId === null) {
+    //         console.log("data", oscarSlice, oshSlice, fileName)
+    //         let obs = OSHSliceWriterReader.writeConfigToString({oscarData: oscarSlice, oshData: oshSlice}, fileName);
+    //         let resp = await OSHSliceWriterReader.sendBlobToServer(defaultNode, dsID, obs);
+    //         if (resp) {
+    //             setSaveSnackMsg('OSCAR Configuration Saved')
+    //             setColorStatus('success')
+    //         } else {
+    //             setSaveSnackMsg('Failed to save OSCAR Configuration')
+    //             setColorStatus('error')
+    //         }
+    //         setOpenSaveSnack(true)
+    //     }
+    //
+    // }
 
     const handleLoadState = async () => {
         toggleLoadAlert();
 
-        let responseJSON = await OSHSliceWriterReader.retrieveLatestConfig(targetNode);
-        if (responseJSON) {
-            setLoadSnackMsg('OSCAR State Loaded')
-            setColorStatus('success')
-            console.log("Config data retrieved: ", responseJSON);
-
-            let cfgData = responseJSON.result.filedata;
-            let cfgJSON = JSON.parse(cfgData);
-            console.log("Config data parsed: ", cfgJSON);
-
-            dispatch(setCurrentUser(cfgJSON.user.currentUser));
-
-            let nodes = cfgJSON.nodes.map((opt: NodeOptions) => new Node(opt));
-            dispatch(setNodes(nodes));
-
-        } else {
-            setLoadSnackMsg('Failed to load OSCAR State')
-            setColorStatus('error')
-        }
+        let responseJSON = await retrieveLatestConfig(targetNode);
+        // if (responseJSON) {
+        //     setLoadSnackMsg('OSCAR State Loaded')
+        //     setColorStatus('success')
+        //     console.log("Config data retrieved: ", responseJSON);
+        //
+        //     let configData = responseJSON.result.filedata;
+        //     let configJSON = JSON.parse(configData);
+        //     console.log("Config data parsed: ", configJSON);
+        //
+        //     dispatch(setCurrentUser(configJSON.user.currentUser));
+        //
+        //     let nodes = configJSON.nodes.map((opt: NodeOptions) => new Node(opt));
+        //     dispatch(setNodes(nodes));
+        //
+        // } else {
+        //     setLoadSnackMsg('Failed to load OSCAR State')
+        //     setColorStatus('error')
+        // }
         setOpenSnack(true)
     }
 
@@ -175,10 +225,7 @@ export default function StateManager() {
     }, [loadNodeOpts]);
 
 
-    const handleCloseSnack = (
-        event: React.SyntheticEvent | Event,
-        reason?: SnackbarCloseReason,
-    ) => {
+    const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
         if (reason === 'clickaway') {
             return;
         }
@@ -188,9 +235,7 @@ export default function StateManager() {
     };
 
     return (
-        <Box sx={{
-            margin: 2, padding: 2, width: isSmallScreen ? '100%' : '75%'
-        }}>
+        <Box sx={{margin: 2, padding: 2, width: isSmallScreen ? '100%' : '75%'}}>
             <Card>
                 <CardHeader title={"Configuration Management"} titleTypographyProps={{variant: "h2"}}/>
                 <CardContent component="form">
@@ -217,7 +262,7 @@ export default function StateManager() {
                                                         the previous one)?
                                                     </Typography>
                                                     <Button color={"success"} variant="contained"
-                                                            onClick={handleSaveState}>
+                                                            onClick={saveConfigState}>
                                                         Save
                                                     </Button>
                                                     <Button color={"error"} variant="contained"

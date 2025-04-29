@@ -38,11 +38,11 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         if (responseJSON) {
             console.log("Config data retrieved: ", responseJSON);
 
-            let cfgData = responseJSON.result.filedata;
-            let cfgJSON = JSON.parse(cfgData);
-            console.log("Config data parsed: ", cfgJSON);
+            let configData = responseJSON.result.filedata;
+            let configJSON = JSON.parse(configData);
+            console.log("Config data parsed: ", configJSON);
 
-            let nodes = cfgJSON.nodes.map((opt: NodeOptions) => new Node(opt));
+            let nodes = configJSON.nodes.map((opt: NodeOptions) => new Node(opt));
             dispatch(setNodes(nodes));
 
         } else {

@@ -42,7 +42,7 @@ export function getDatastreamsOfLanes(lanes: LaneMeta[], datastreamsMap: Map<str
     return laneDatastreams;
 }
 
-export function getDatasourcesOfLane(laneDatastreams: Map<string, typeof DataStream[]>, datasources: typeof ConSysApi[], dsToDatastreamMap: Map<string, string>): Map<string, ConSysApi> {
+export function getDatasourcesOfLane(laneDatastreams: Map<string, typeof DataStream[]>, datasources: typeof ConSysApi[], dsToDatastreamMap: Map<string, string>): Map<string, typeof ConSysApi> {
     let laneDatasources: Map<string, typeof ConSysApi> = new Map<string, typeof ConSysApi>();
     let dsKeys = Array.from(dsToDatastreamMap.keys());
     let lanes = Array.from(laneDatastreams.keys());
@@ -129,3 +129,8 @@ export function isThresholdDatastream(datastream: typeof DataStream): boolean {
     return datastream.properties.observedProperties[0].definition.includes(THRESHOLD_DEF);
 }
 
+export function isConfigurationDatastream(datastream: typeof DataStream): boolean {
+    const CONFIG_DEF ="http://www.opengis.net/def/threshold";
+
+    return datastream.properties.observedProperties[0].definition.includes(CONFIG_DEF);
+}
