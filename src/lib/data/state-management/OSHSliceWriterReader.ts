@@ -140,7 +140,7 @@ export class OSHSliceWriterReader {
             }
         });
 
-        let ep: string = `${node.getConnectedSystemsEndpoint()}/systems`;
+        let ep: string = `${node.getConnectedSystemsEndpoint()}/systems/`;
         console.log("Inserting Config System: ", ep, node);
 
         const response = await fetch(ep, {
@@ -164,7 +164,7 @@ export class OSHSliceWriterReader {
     }
 
     static async checkForConfigSystem(node: INode): Promise<string> {
-        let systems = await node.fetchSystemsTK();
+        let systems = await node.fetchSystems();
         console.log("TK Systems retrieved:", systems);
 
         let cfgSystem = systems.find((system: any) => {

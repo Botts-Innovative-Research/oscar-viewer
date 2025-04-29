@@ -1,11 +1,6 @@
-import {selectDatastreams, selectNodes} from "@/lib/state/OSHSlice";
+
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
-import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView";
-import {useSelector} from "react-redux";
-import {RootState} from "@/lib/state/Store";
-import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
-import getDataStreamById from "osh-js/source/core/sweapi/datastream/DataStreams";
-import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 
 export  function createNeutronViewCurve(neutronDatasource: { id: any; }) {
     if (!neutronDatasource) return null;

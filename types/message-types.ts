@@ -1,4 +1,4 @@
-export interface SweApiMessage {
+export interface ConSysApiMessage {
     dataSourceId: string,
     type: string,
     values: MessageValue[]

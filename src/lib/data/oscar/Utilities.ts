@@ -3,18 +3,18 @@
  * All Rights Reserved
  */
 
-import {IDatastream} from "@/lib/data/osh/Datastreams";
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
-import DataStream from "osh-js/source/core/sweapi/datastream/DataStream";
+// import {IDatastream} from "@/lib/data/osh/Datastreams";
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
+import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
 import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
 
 /**
  *
  * @param laneDatastreams map of lane name to specific datastreams
- * @param datasource singular SweApi Datasource
+ * @param datasource singular ConSysApi Datasource
  * @param sourceToStreamMap map of datasource id to datastream id, from state, typically
  */
-export function associateDatasourceToLane(laneDatastreams: Map<string, IDatastream>, datasource: typeof SweApi, sourceToStreamMap: Map<string, string>) {
+export function associateDatasourceToLane(laneDatastreams: Map<string, typeof DataStream>, datasource: typeof ConSysApi, sourceToStreamMap: Map<string, string>) {
     let newLaneDSPair = {laneName: "", datasource: datasource};
     for (let [laneName, datastreams] of laneDatastreams) {
         for (let ds of datastreams) {
@@ -26,15 +26,15 @@ export function associateDatasourceToLane(laneDatastreams: Map<string, IDatastre
     }
 }
 
-export function datastreamsOfSystemIdsArray(systemsIds: string[], datastreamsMap: Map<string, IDatastream>): IDatastream[] {
-    let dsArr: IDatastream[] = Array.from(datastreamsMap.values());
-    let matchingDatastreams: IDatastream[] = [];
+export function datastreamsOfSystemIdsArray(systemsIds: string[], datastreamsMap: Map<string, typeof DataStream>): typeof DataStream[] {
+    let dsArr: typeof DataStream[] = Array.from(datastreamsMap.values());
+    let matchingDatastreams: typeof DataStream[] = [];
     let filtered = dsArr.filter(ds => systemsIds.includes(ds.parentSystemId));
     return filtered;
 }
 
-export function getDatastreamsOfLanes(lanes: LaneMeta[], datastreamsMap: Map<string, IDatastream>): Map<string, IDatastream[]> {
-    let laneDatastreams: Map<string, IDatastream[]> = new Map<string, IDatastream[]>();
+export function getDatastreamsOfLanes(lanes: LaneMeta[], datastreamsMap: Map<string, typeof DataStream>): Map<string, typeof DataStream[]> {
+    let laneDatastreams: Map<string, typeof DataStream[]> = new Map<string, typeof DataStream[]>();
     for (let lane of lanes) {
         let dsOfLane = datastreamsOfSystemIdsArray(lane.systemIds, datastreamsMap);
         laneDatastreams.set(lane.name, dsOfLane);
@@ -42,8 +42,8 @@ export function getDatastreamsOfLanes(lanes: LaneMeta[], datastreamsMap: Map<str
     return laneDatastreams;
 }
 
-export function getDatasourcesOfLane(laneDatastreams: Map<string, IDatastream[]>, datasources: SweApi[], dsToDatastreamMap: Map<string, string>): Map<string, SweApi> {
-    let laneDatasources: Map<string, SweApi> = new Map<string, SweApi>();
+export function getDatasourcesOfLane(laneDatastreams: Map<string, typeof DataStream[]>, datasources: typeof ConSysApi[], dsToDatastreamMap: Map<string, string>): Map<string, ConSysApi> {
+    let laneDatasources: Map<string, typeof ConSysApi> = new Map<string, typeof ConSysApi>();
     let dsKeys = Array.from(dsToDatastreamMap.keys());
     let lanes = Array.from(laneDatastreams.keys());
     // create a map with keys that match the lane names
@@ -128,3 +128,4 @@ export function isThresholdDatastream(datastream: typeof DataStream): boolean {
 
     return datastream.properties.observedProperties[0].definition.includes(THRESHOLD_DEF);
 }
+

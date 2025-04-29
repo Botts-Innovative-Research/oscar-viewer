@@ -1,6 +1,6 @@
 import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import {Datastream} from "@/lib/data/osh/Datastreams";
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import PointMarkerLayer from "osh-js/source/core/ui/layer/PointMarkerLayer";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {colorCodes} from "@/app/_components/event-preview/AdjudicationSelect";
@@ -58,15 +58,15 @@ type SelectedEventOcc = {
 }
 
 type Chart={
-  gammaSources: typeof SweApi[];
-  neutronSources: typeof SweApi[];
-  tamperSources: typeof SweApi[];
-  occSources: typeof SweApi[];
+  gammaSources: typeof ConSysApi[];
+  neutronSources: typeof ConSysApi[];
+  tamperSources: typeof ConSysApi[];
+  occSources: typeof ConSysApi[];
   chartReady: boolean;
 }
 
 type VideoPlayback={
-  videoSources: typeof SweApi[];
+  videoSources: typeof ConSysApi[];
   videoReady: boolean;
   dataSync: typeof DataSynchronizer;
   addSource: number;
@@ -87,16 +87,16 @@ export type LaneStatusType = {
 
 export interface LaneWithLocation{
   laneName: string,
-  locationSources: typeof SweApi[],
+  locationSources: typeof ConSysApi[],
   status: string
 }
 
 
 export interface LaneStatusItem {
   laneName: string,
-  gammaSources: typeof SweApi[],
-  neutronSources: typeof SweApi[],
-  tamperSources: typeof SweApi[]
+  gammaSources: typeof ConSysApi[],
+  neutronSources: typeof ConSysApi[],
+  tamperSources: typeof ConSysApi[]
 }
 
 export interface Comment{

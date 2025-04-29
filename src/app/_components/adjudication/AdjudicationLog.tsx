@@ -2,8 +2,8 @@
 
 import {Comment} from "../../../../types/new-types";
 import React, {useContext, useEffect, useState} from "react";
-import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
-import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
+import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import AdjudicationData, {IAdjudicationData} from "@/lib/data/oscar/adjudication/Adjudication";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
@@ -11,7 +11,7 @@ import {DataGrid, GridColDef} from "@mui/x-data-grid";
 import {Checkbox, FormControlLabel, Stack, Typography} from "@mui/material";
 import {AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 
-
+const locale = navigator.language || 'en-US';
 const logColumns: GridColDef<AdjudicationData>[] = [
     {
         field: 'occupancyId',
@@ -19,6 +19,21 @@ const logColumns: GridColDef<AdjudicationData>[] = [
         width: 200,
         type: 'string',
     },
+    {
+        field: 'time',
+        headerName: 'Timestamp',
+        width: 200,
+        type: 'string',
+        valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+            second: 'numeric'
+        }),
+    },
+
     {
         field: 'secondaryInspectionStatus',
         headerName: 'Secondary Inspection Status',
@@ -112,12 +127,13 @@ export default function AdjudicationLog(props: {
             let obsRes = await observations.nextPage();
             let adjDataArr = obsRes.map((obs: any) => {
                 console.log("[ADJ-Log] Adjudication Datastream Observation: ", obs);
-                let data = new AdjudicationData(obs.result.username, obs.result.occupancyId, obs.result.alarmingSystemUid);
+                let data = new AdjudicationData(obs.result.username, obs.result.occupancyId, obs.result.alarmingSystemUid, obs.phenomenonTime);
                 data.setFeedback(obs.result.feedback);
                 data.setIsotopes(obs.result.isotopes);
                 data.setSecondaryInspectionStatus(obs.result.secondaryInspectionStatus);
                 data.setAdjudicationCode(AdjudicationCodes.getCodeObjByLabel(obs.result.adjudicationCode));
                 data.setVehicleId(obs.result.vehicleId);
+                data.setTime(obs.phenomenonTime)
                 return data
             });
             console.log("[ADJ-Log] Adjudication Datastream Observations: ", adjDataArr);
@@ -139,6 +155,9 @@ export default function AdjudicationLog(props: {
     useEffect(() => {
         console.log("[ADJ-Log] Adjudication Log Updated: ", adjLog);
         let filteredLog = adjLog.filter((adjData) => props.event.occupancyId.toString() === adjData.occupancyId);
+
+        console.log("adj log" , filteredLog)
+
         // if (onlySameObs) {
         //     filteredLog = adjLog.filter((adjData) => props.event.occupancyId.toString() === adjData.occupancyId);
         // }

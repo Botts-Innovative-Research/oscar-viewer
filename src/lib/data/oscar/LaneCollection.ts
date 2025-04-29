@@ -3,18 +3,17 @@
  * All Rights Reserved
  */
 
-import SweApi from "osh-js/source/core/datasource/sweapi/SweApi.datasource";
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
-import System from "osh-js/source/core/sweapi/system/System.js";
-import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
-import DataStreams from "osh-js/source/core/sweapi/datastream/DataStreams.js";
+import System from "osh-js/source/core/consysapi/system/System.js";
+import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
+import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js";
 import {INode} from "@/lib/data/osh/Node";
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
-
-import {isDynamicUsageError} from "next/dist/export/helpers/is-dynamic-usage-error";
 import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
 import {
+    isConnectionDatastream,
     isGammaDatastream,
     isNeutronDatastream,
     isOccupancyDatastream,
@@ -55,8 +54,9 @@ export class LaneMapEntry {
     parentNode: INode;
     laneSystem: typeof System;
     private adjDs: string;
-    adjControlStreamId: string;
+    // adjControlStreamId: string;
     laneName: string;
+    controlStreams: any[]
 
     constructor(node: INode) {
         this.systems = [];
@@ -65,7 +65,8 @@ export class LaneMapEntry {
         this.datasourcesBatch = [];
         this.datasourcesRealtime = [];
         this.parentNode = node;
-        this.laneName = undefined
+        this.laneName = undefined;
+        this.controlStreams = [];
     }
 
     setLaneSystem(system: typeof System) {
@@ -99,6 +100,10 @@ export class LaneMapEntry {
         this.laneName = name;
     }
 
+    addControlStreams(controlStreams: any[]){
+        this.controlStreams.push(...controlStreams)
+    }
+
     async getAdjudicationDatastream(dsId: string) {
         let isSecure = this.parentNode.isSecure;
         let url = this.parentNode.getConnectedSystemsEndpoint(true);
@@ -126,55 +131,62 @@ export class LaneMapEntry {
         }
     }
 
-    addDefaultSWEAPIs() {
-        // TODO: Verify that this doesn't negatively impact the app's visual usage
+    addDefaultConSysApis() {
         this.resetDatasources();
 
-        let rtArray = [];
-        let batchArray = [];
+        let rtArray: any[] = [];
+        let batchArray: any[] = [];
 
-        for (let dsObj of this.datastreams) {
 
-            let dsRT = new SweApi(`rtds - ${dsObj.properties.name}`, {
-                protocol: dsObj.networkProperties.streamProtocol,
-                endpointUrl: dsObj.networkProperties.endpointUrl,
-                resource: `/datastreams/${dsObj.properties.id}/observations`,
-                tls: dsObj.networkProperties.tls,
-                responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
-                mode: Mode.REAL_TIME,
-                connectorOpts: {
-                    username: this.parentNode.auth.username,
-                    password: this.parentNode.auth.password
-                }
-            });
+        for (const dsObj of this.datastreams) {
 
-            let dsBatch = new SweApi(`batchds - ${dsObj.properties.name}`, {
-                protocol: dsObj.networkProperties.streamProtocol,
-                endpointUrl: dsObj.networkProperties.endpointUrl,
-                resource: `/datastreams/${dsObj.properties.id}/observations`,
-                tls: dsObj.networkProperties.tls,
-                responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
-                mode: Mode.BATCH,
-                connectorOpts: {
-                    username: this.parentNode.auth.username,
-                    password: this.parentNode.auth.password
-                },
-                startTime: "2020-01-01T08:13:25.845Z",
-                endTime: "2055-01-01T08:13:25.845Z",
-                // endTime: new Date((new Date().getTime() - 1000000)).toISOString()
+            if (!dsObj || !dsObj.networkProperties || !dsObj.properties) {
+                console.warn("Skipping invalid datastream:", dsObj);
+                continue;
+            }
 
-            });
+            try {
+                const dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
+                    protocol: dsObj.networkProperties.streamProtocol,
+                    endpointUrl: dsObj.networkProperties.endpointUrl,
+                    resource: `/datastreams/${dsObj.properties.id}/observations`,
+                    tls: dsObj.networkProperties.tls,
+                    responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
+                    mode: Mode.REAL_TIME,
+                    connectorOpts: {
+                        username: this.parentNode.auth.username,
+                        password: this.parentNode.auth.password
+                    }
+                });
 
-            // this.datasources.push([dsRT, dsBatch]);
-            rtArray.push(dsRT);
-            batchArray.push(dsBatch);
+                const dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
+                    protocol: dsObj.networkProperties.streamProtocol,
+                    endpointUrl: dsObj.networkProperties.endpointUrl,
+                    resource: `/datastreams/${dsObj.properties.id}/observations`,
+                    tls: dsObj.networkProperties.tls,
+                    responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
+                    mode: Mode.BATCH,
+                    connectorOpts: {
+                        username: this.parentNode.auth.username,
+                        password: this.parentNode.auth.password
+                    },
+                    startTime: "2020-01-01T08:13:25.845Z",
+                    endTime: "2055-01-01T08:13:25.845Z"
+                });
+
+                rtArray.push(dsRT);
+                batchArray.push(dsBatch);
+            } catch (e) {
+                console.error("[ERROR] Failed to create ConSysApi for datastream:", dsObj, "\nError:", e);
+            }
         }
+
         this.datasourcesRealtime = rtArray;
         this.datasourcesBatch = batchArray;
     }
 
-    createReplaySweApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
-        return new SweApi(`rtds-${datastream.properties.id}`, {
+    createReplayConSysApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
+        return new ConSysApi(`rtds-${datastream.properties.id}`, {
             protocol: datastream.networkProperties.streamProtocol,
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
@@ -190,8 +202,8 @@ export class LaneMapEntry {
         });
     }
 
-    createBatchSweApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
-        return new SweApi(`batchds-${datastream.properties.id}`, {
+    createBatchConSysApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
+        return new ConSysApi(`batchds-${datastream.properties.id}`, {
             protocol: datastream.networkProperties.streamProtocol,
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
@@ -232,23 +244,24 @@ export class LaneMapEntry {
      *
      * @param {number} startTime - The start time of the range for datastreams.
      * @param {number} endTime - The end time of the range for datastreams.
-     * @return {Map<string, typeof SweApi[]>} A map categorizing the replayed datastreams by their event detail types.
+     * @return {Map<string, typeof ConSysApi[]>} A map categorizing the replayed datastreams by their event detail types.
      */
-    getDatastreamsForEventDetail(startTime: string, endTime: string): Map<string, typeof SweApi[]> {
+    getDatastreamsForEventDetail(startTime: string, endTime: string): Map<string, typeof ConSysApi[]> {
 
-        let dsMap: Map<string, typeof SweApi[]> = new Map();
+        let dsMap: Map<string, typeof ConSysApi[]> = new Map();
         dsMap.set('occ', []);
         dsMap.set('gamma', []);
         dsMap.set('neutron', []);
         dsMap.set('tamper', []);
         dsMap.set('video', []);
         dsMap.set('gammaTrshld', []);
-        
+        dsMap.set('connection', []);
+
         for (let ds of this.datastreams) {
 
             let idx: number = this.datastreams.indexOf(ds);
-            let datasourceReplay = this.createReplaySweApiFromDataStream(ds, startTime, endTime);
-            let datasourceBatch = this.createBatchSweApiFromDataStream(ds, startTime, endTime);
+            let datasourceReplay = this.createReplayConSysApiFromDataStream(ds, startTime, endTime);
+            let datasourceBatch = this.createBatchConSysApiFromDataStream(ds, startTime, endTime);
 
             console.log("datasourceBatch", ds)
             // move some of this into another function to remove code redundancy
@@ -291,7 +304,7 @@ export class LaneMapEntry {
                     tamperArray.push(datasourceBatch);
                 }
             }
-            // if (ds.properties.name.includes('Video')) {
+
             if(isVideoDatastream(ds)){
                 let videoArray = dsMap.get('video')!;
                 const index = videoArray.findIndex(dsItem => dsItem.properties.id === datasourceBatch.properties.id);
@@ -301,29 +314,8 @@ export class LaneMapEntry {
                 } else {
                     videoArray.push(datasourceBatch);
                 }
-                // const validInterval = ds.properties.resultTime;
-
-                // Ensure startTime and endTime are within the datastream's valid data time
-                // if(validInterval?.length === 2) {
-                //     let [validStart, validEnd] = validInterval.map(
-                //         (time: string | number | Date) => new Date(time));
-                //
-                //     // Account for ms
-                //     validStart.setSeconds(validStart.getSeconds() - 1);
-                //     validEnd.setSeconds(validEnd.getSeconds() + 1);
-                //
-                //     const eventStart = new Date(startTime);
-                //     const eventEnd = new Date(endTime);
-                //
-                //     if(eventStart >= validStart && eventEnd <= validEnd) {
-                //         videoArray.push(datasourceReplay);
-                //     } else {
-                //         console.info("Data within interval not found for datasource ", ds)
-                //     }
-                // } else {
-                //     console.info("No valid time found for datasource ", ds.properties.id);
-                // }
             }
+
             if(isThresholdDatastream(ds)){
                 let gammaTrshldArray = dsMap.get('gammaTrshld')!;
                 const index = gammaTrshldArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
@@ -334,6 +326,20 @@ export class LaneMapEntry {
                     gammaTrshldArray.push(datasourceBatch);
                 }
             }
+
+            if(isConnectionDatastream(ds)){
+
+                console.log("dsMap", dsMap)
+                let connectionArray = dsMap.get('connection')!;
+                console.log
+                const index = connectionArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
+
+                if (index !== -1) {
+                    connectionArray[index] = datasourceBatch;
+                } else {
+                    connectionArray.push(datasourceBatch);
+                }
+            }
         }
         return dsMap;
     }
@@ -341,12 +347,14 @@ export class LaneMapEntry {
     async insertAdjudicationSystem(laneName: string) {
         console.log("[ADJ] Inserting Adjudication System for lane: ", this);
         let laneId = this.laneSystem.properties.properties.uid.split(":").pop();
+
         let adJSysJSON = {
             "type": "SimpleProcess",
             "uniqueId": `urn:ornl:client:adjudication:${laneId}`,
             "label": `Adjudication System - ${laneName}`,
             "definition": "sosa:System"
         }
+
         console.log("[ADJ] Inserting Adjudication System: ", adJSysJSON);
         let sysId: string = await this.parentNode.insertAdjSystem(adJSysJSON);
         console.log("[ADJ] Inserted Adjudication System: ", sysId);
@@ -369,28 +377,30 @@ export class LaneMapEntry {
         }
     }
 
-    addControlStreamId(id: string) {
-        this.adjControlStreamId = id;
-    }
+    // addControlStreamId(id: string) {
+    //     this.adjControlStreamId = id;
+    // }
 }
 
 export class LaneDSColl {
-    occRT: typeof SweApi[];
-    occBatch: typeof SweApi[];
-    gammaRT: typeof SweApi[];
-    gammaBatch: typeof SweApi[];
-    neutronRT: typeof SweApi[];
-    neutronBatch: typeof SweApi[];
-    tamperRT: typeof SweApi[];
-    tamperBatch: typeof SweApi[];
-    locRT: typeof SweApi[];
-    locBatch: typeof SweApi[];
-    gammaTrshldBatch: typeof SweApi[];
-    gammaTrshldRT: typeof SweApi[];
-    connectionRT: typeof SweApi[];
-    videoRT: typeof SweApi[];
-    adjRT: typeof SweApi[];
-    adjBatch: typeof SweApi[];
+    occRT: typeof ConSysApi[];
+    occBatch: typeof ConSysApi[];
+    gammaRT: typeof ConSysApi[];
+    gammaBatch: typeof ConSysApi[];
+    neutronRT: typeof ConSysApi[];
+    neutronBatch: typeof ConSysApi[];
+    tamperRT: typeof ConSysApi[];
+    tamperBatch: typeof ConSysApi[];
+    locRT: typeof ConSysApi[];
+    locBatch: typeof ConSysApi[];
+    gammaTrshldBatch: typeof ConSysApi[];
+    gammaTrshldRT: typeof ConSysApi[];
+    videoRT: typeof ConSysApi[];
+    videoBatch: typeof ConSysApi[];
+    adjRT: typeof ConSysApi[];
+    adjBatch: typeof ConSysApi[];
+    connectionRT: typeof ConSysApi[];
+    connectionBatch: typeof ConSysApi[];
 
 
     constructor() {
@@ -408,16 +418,19 @@ export class LaneDSColl {
         this.gammaTrshldRT = [];
         this.connectionRT = [];
         this.videoRT = [];
+        this.videoBatch = [];
         this.adjRT = [];
         this.adjBatch = [];
+        this.connectionBatch =[];
+        this.connectionRT = [];
     }
 
-    getDSArray(propName: string): typeof SweApi[] {
+    getDSArray(propName: string): typeof ConSysApi[] {
         // @ts-ignore
         return this[propName];
     }
 
-    addDS(propName: string, ds: typeof SweApi) {
+    addDS(propName: string, ds: typeof ConSysApi) {
         let dsArr = this.getDSArray(propName);
         if (dsArr.some((d) => d.name == ds.name)) {
             return;
@@ -451,7 +464,12 @@ export class LaneDSColl {
         for (let ds of this.adjBatch) {
             ds.subscribe(handler, [EventType.DATA]);
         }
-
+        for (let ds of this.connectionBatch) {
+            ds.subscribe(handler, [EventType.DATA]);
+        }
+        for (let ds of this.videoBatch) {
+            ds.subscribe(handler, [EventType.DATA]);
+        }
     }
 
     addSubscribeHandlerToAllRTDS(handler: Function) {
@@ -484,10 +502,13 @@ export class LaneDSColl {
         }
     }
 
-    [key: string]: typeof SweApi[] | Function;
+    [key: string]: typeof ConSysApi[] | Function;
 
     addSubscribeHandlerToALLDSMatchingName(dsCollName: string, handler: Function) {
-        for (let ds of this[dsCollName] as typeof SweApi[]) {
+        if(!this) return;
+
+        for (let ds of this[dsCollName] as typeof ConSysApi[]) {
+
             ds.subscribe(handler, [EventType.DATA]);
         }
     }
@@ -532,7 +553,13 @@ export class LaneDSColl {
         for (let ds of this.connectionRT) {
             ds.connect();
         }
+        for (let ds of this.connectionBatch) {
+            ds.connect();
+        }
         for (let ds of this.videoRT) {
+            ds.connect();
+        }
+        for (let ds of this.videoBatch) {
             ds.connect();
         }
         // console.info("Connecting all datasources of:", this);

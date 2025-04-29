@@ -5,7 +5,7 @@ import {useSelector} from "react-redux";
 
 import {useCallback, useContext, useEffect, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import {selectEventData, selectSpeed, setSpeed} from "@/lib/state/EventDetailsSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
 
