@@ -33,12 +33,6 @@ export default class AdjudicationData implements IAdjudicationData {
     alarmingSystemUid: string
     vehicleId?: string
 
-    // constructor(properties: IAdjudicationData) {
-    //     Object.assign(this, properties);
-    //     this.id = randomUUID();
-    // }
-
-
     constructor(username: string, occupancyId: string, alarmingSystemUid: string, time: string) {
         this.time = time;
         this.username = username;
@@ -51,8 +45,6 @@ export default class AdjudicationData implements IAdjudicationData {
         this.isotopes= '';
         this.filePaths= '';
     }
-
-
 
 
     setTime(isoTime: string) {

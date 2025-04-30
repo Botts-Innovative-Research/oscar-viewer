@@ -7,8 +7,10 @@ import {changeConfigNode, setNodes} from "@/lib/state/OSHSlice";
 import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {RootState} from "@/lib/state/Store";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
+// import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
 import { NodeOptions, Node, INode } from "@/lib/data/osh/Node";
+import { retrieveLatestConfig } from "../_components/state-manager/Config";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 
 
 interface IDataSourceContext {
@@ -34,16 +36,20 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
     const handleLoadState = async () => {
 
-        let responseJSON = await OSHSliceWriterReader.retrieveLatestConfig(configNode);
-        if (responseJSON) {
-            console.log("Config data retrieved: ", responseJSON);
+        let latestConfigDs = await retrieveLatestConfig(configNode);
+        if (latestConfigDs) {
+            console.log("Config data retrieved: ", latestConfigDs);
 
-            let configData = responseJSON.result.filedata;
-            let configJSON = JSON.parse(configData);
-            console.log("Config data parsed: ", configJSON);
+            let latestConfigData = await fetchLatestConfigObservation(latestConfigDs);
 
-            let nodes = configJSON.nodes.map((opt: NodeOptions) => new Node(opt));
-            dispatch(setNodes(nodes));
+            console.log("Config data parsed: ", latestConfigData);
+            if(latestConfigData != null){
+                console.log("config data exists!")
+            }else{
+                console.log("No config data saved")
+            }
+            // let nodes = latestConfigData..map((opt: NodeOptions) => new Node(opt));
+            // dispatch(setNodes(nodes));
 
         } else {
             console.log('Failed to load OSCAR State')
@@ -65,18 +71,23 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
         await handleLoadState()
 
-        let filedata = await OSHSliceWriterReader.retrieveLatestConfig(configNode);
-
-        if (filedata) {
-            console.log("Filedata from config node:", filedata);
-            // load the filedata into the state
-        } else {
-            console.log("No filedata found from config node");
-            // do nothing else for now
-        }
+        // let filedata = await retrieveLatestConfig(configNode);
+        //
+        // if (filedata) {
+        //     console.log("Filedata from config node:", filedata);
+        //     // load the filedata into the state
+        // } else {
+        //     console.log("No filedata found from config node");
+        //     // do nothing else for now
+        // }
 
     }, [dispatch, configNode]);
 
+    const fetchLatestConfigObservation = async(ds: any) =>{
+        const observations = ds.searchObservations(new ObservationFilter(), 1);
+
+        console.log("observations", observations)
+    }
 
     function checkSystemFetchInterval() {
         console.log("Checking system fetch interval for TK Fetch...");

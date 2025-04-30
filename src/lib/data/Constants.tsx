@@ -13,6 +13,9 @@
  *
  */
 
+import { INode } from "./osh/Node";
+import {ConfigDatastreamConstant} from "@/app/_components/state-manager/Config";
+
 // Playback States========================================================
 export enum PlaybackState {
     PLAY,
@@ -77,8 +80,8 @@ export enum Protocols {
 
 // Functions that are reusable
 
-export async function insertSystem(systemJSON: any): Promise<string> {
-    let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/`;
+export async function insertSystem(node: INode, systemJSON: any): Promise<string> {
+    let ep: string = `${node.getConnectedSystemsEndpoint()}/systems/`;
     console.log("Inserting System: ", ep, JSON.stringify(systemJSON));
 
     const response = await fetch(ep, {
@@ -86,7 +89,7 @@ export async function insertSystem(systemJSON: any): Promise<string> {
         mode: 'cors',
         body: JSON.stringify(systemJSON),
         headers: {
-            ...this.getBasicAuthHeader(),
+            ...node.getBasicAuthHeader(),
             'Content-Type': 'application/sml+json'
         }
     });
@@ -94,24 +97,24 @@ export async function insertSystem(systemJSON: any): Promise<string> {
     if (response.ok) {
         console.log("[CONFIG] Config System Inserted: ", response.headers.get("Location"));
         let sysId = response.headers.get("Location").split("/").pop();
-        await insertDatastream(this, sysId);
+        await insertDatastream(sysId, node);
         return sysId;
     } else {
         console.warn("Error inserting system: ", response);
     }
 }
 
-export async function insertDatastream(systemId: string, datastreamConstant: any): Promise<string> {
-    let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/${systemId}/datastreams/`;
-    console.log("Inserting Datastream: ", ep, this);
+export async function insertDatastream(systemId: string, node: INode): Promise<string> {
+    let ep: string = `${node.getConnectedSystemsEndpoint()}/systems/${systemId}/datastreams/`;
+    console.log("Inserting Datastream: ", ep, node);
 
-    console.log(JSON.stringify(datastreamConstant))
+    console.log(JSON.stringify(ConfigDatastreamConstant))
     const response = await fetch(ep, {
         method: 'POST',
         mode: 'cors',
-        body: JSON.stringify(datastreamConstant),
+        body: JSON.stringify(ConfigDatastreamConstant),
         headers: {
-            ...this.getBasicAuthHeader(),
+            ...node.getBasicAuthHeader(),
             'Content-Type': 'application/json'
         }
     });

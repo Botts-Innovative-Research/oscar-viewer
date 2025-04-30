@@ -21,17 +21,18 @@ import {
 
 import {RootState} from "@/lib/state/Store";
 import {useSelector} from "react-redux";
-import {IOSHSlice, selectDefaultNode, setNodes} from "@/lib/state/OSHSlice";
+import {IOSHSlice, selectDefaultNode, selectNodes, setNodes} from "@/lib/state/OSHSlice";
 import React, {useCallback, useEffect, useState} from "react";
-import {IOSCARClientState, setCurrentUser} from "@/lib/state/OSCARClientSlice";
+import {IOSCARClientState, selectCurrentUser, setCurrentUser} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {Node, NodeOptions} from "@/lib/data/osh/Node";
 import Divider from "@mui/material/Divider";
 import ConfigData, {
-    checkForConfigSystem,
+    checkForConfigDatastream, checkForConfigSystem,
     retrieveLatestConfig,
     sendConfig
 } from "@/app/_components/state-manager/Config";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 
 
 export default function StateManager() {
@@ -39,7 +40,7 @@ export default function StateManager() {
     const oshSlice: IOSHSlice = useSelector((state: RootState) => state.oshSlice);
     const oscarSlice: IOSCARClientState = useSelector((state: RootState) => state.oscarClientSlice);
     const defaultNode = useSelector(selectDefaultNode);
-    const [configDSId, setconfigDSId] = useState<string | null>(null);
+    const [configDSId, setConfigDSId] = useState<string | null>(null);
     const [fileName, setFileName] = useState<string>("config");
 
     const newNodeOpts: NodeOptions = {
@@ -49,7 +50,6 @@ export default function StateManager() {
         oshPathRoot: "/sensorhub",
         sosEndpoint: "/sos",
         csAPIEndpoint: "/api",
-        csAPIConfigEndpoint: "/configs",
         auth: {username: "", password: ""},
         isSecure: false,
         isDefaultNode: false
@@ -69,38 +69,58 @@ export default function StateManager() {
     const [saveSnackMsg, setSaveSnackMsg] = useState('');
     const [colorStatus, setColorStatus]= useState('');
 
+    const nodes = useSelector(selectNodes)
+    const currentUser = useSelector(selectCurrentUser)
 
     useEffect(() => {
         setLoadNodeOpts({...loadNodeOpts, ...defaultNode});
     }, []);
 
-    // const getconfigDataStream = useCallback(async () => {
-    //     if (defaultNode) {
-    //         console.log("Default Node: ", defaultNode);
-    //         let configSystem = await checkForConfigSystem(defaultNode);
-    //         if (configSystem) {
-    //             let dsId = await (defaultNode, configSystem);
-    //             setconfigDSId(dsId);
-    //             return dsId;
-    //         }
-    //     }
-    // }, [defaultNode]);
-
     const [data, setData] = useState<ConfigData>();
+
+
+    const getConfigDataStream = useCallback(async () =>{
+        console.log("jkkk",defaultNode)
+        if(defaultNode){
+            let configSysId = await checkForConfigSystem(defaultNode);
+
+            console.log("jkkk", configSysId)
+            if(configSysId){
+                let dsId = await checkForConfigDatastream(defaultNode, configSysId);
+                console.log("jkkk dsId", dsId)
+                setConfigDSId(dsId);
+
+                return dsId;
+            }
+        }
+    },[defaultNode]);
 
     const saveConfigState = async() =>{
 
+        let dsId = await getConfigDataStream();
+
+        console.log("dsId", dsId)
         toggleSaveAlert();
 
         let phenomenonTime = new Date().toISOString();
-        let tempData: ConfigData = data;
 
-        tempData.setTime(phenomenonTime);
+
+        const user = currentUser || "Unknown";
+
+        const tempData = new ConfigData(
+            phenomenonTime,
+            configDSId || "",
+            user,
+            nodes,
+            nodes.length
+        );
+        console.log("temp data", tempData)
 
         let observation = tempData.createConfigurationObservation();
         console.log("[CONFIG] Sending Config Data: ", observation);
 
-        const endpoint = defaultNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + configDSId + "/observations";
+        const endpoint = defaultNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + dsId + "/observations";
+        console.log(observation)
         await submitConfig(endpoint, observation);
 
 
@@ -125,49 +145,28 @@ export default function StateManager() {
         }
     }
 
-    // const handleSaveState = async () => {
-    //     let dsID = await getconfigDataStream();
-    //
-    //
-    //     toggleSaveAlert();
-    //     if (configDSId === null) {
-    //         console.log("data", oscarSlice, oshSlice, fileName)
-    //         let obs = OSHSliceWriterReader.writeConfigToString({oscarData: oscarSlice, oshData: oshSlice}, fileName);
-    //         let resp = await OSHSliceWriterReader.sendBlobToServer(defaultNode, dsID, obs);
-    //         if (resp) {
-    //             setSaveSnackMsg('OSCAR Configuration Saved')
-    //             setColorStatus('success')
-    //         } else {
-    //             setSaveSnackMsg('Failed to save OSCAR Configuration')
-    //             setColorStatus('error')
-    //         }
-    //         setOpenSaveSnack(true)
-    //     }
-    //
-    // }
 
     const handleLoadState = async () => {
         toggleLoadAlert();
 
-        let responseJSON = await retrieveLatestConfig(targetNode);
-        // if (responseJSON) {
-        //     setLoadSnackMsg('OSCAR State Loaded')
-        //     setColorStatus('success')
-        //     console.log("Config data retrieved: ", responseJSON);
-        //
-        //     let configData = responseJSON.result.filedata;
-        //     let configJSON = JSON.parse(configData);
-        //     console.log("Config data parsed: ", configJSON);
-        //
-        //     dispatch(setCurrentUser(configJSON.user.currentUser));
-        //
-        //     let nodes = configJSON.nodes.map((opt: NodeOptions) => new Node(opt));
-        //     dispatch(setNodes(nodes));
-        //
-        // } else {
-        //     setLoadSnackMsg('Failed to load OSCAR State')
-        //     setColorStatus('error')
-        // }
+        let latestConfigDs = await retrieveLatestConfig(targetNode);
+
+        console.log("retrieved latest conifg", latestConfigDs)
+        if(latestConfigDs){
+
+            let latestConfigData = await fetchLatestConfigObservation(latestConfigDs);
+            setLoadSnackMsg('OSCAR State Loaded')
+            setColorStatus('success')
+
+            console.log("latest config data from load state", latestConfigData)
+            // dispatch(setCurrentUser(configData.user));
+            //
+            // let nodes = configData.nodes;
+            // dispatch(setNodes(nodes));
+        }else{
+            setLoadSnackMsg('Failed to load OSCAR State')
+            setColorStatus('error')
+        }
         setOpenSnack(true)
     }
 
@@ -176,6 +175,12 @@ export default function StateManager() {
         if (name === "File Name") {
             setFileName(value);
         }
+    }
+
+    const fetchLatestConfigObservation = async(ds: any) =>{
+        const observations = ds.searchObservations(new ObservationFilter(), 1);
+
+        console.log("observations", observations)
     }
 
     const handleChangeLoadForm = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -220,9 +225,14 @@ export default function StateManager() {
         }
     }
 
+
     useEffect(() => {
         setTargetNode(new Node(loadNodeOpts));
-    }, [loadNodeOpts]);
+
+        const time = new Date().toISOString();
+        const newData = new ConfigData(time, configDSId, currentUser || "Unknown", [defaultNode], 1);
+        setData(newData);
+    }, [loadNodeOpts, currentUser]);
 
 
     const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
@@ -323,12 +333,10 @@ export default function StateManager() {
                                                             Are you sure you want to load the configuration (and
                                                             overwrite the previous one)?
                                                         </Typography>
-                                                        <Button variant={"contained"} color={"success"}
-                                                                onClick={handleLoadState}>
+                                                        <Button variant={"contained"} color={"success"} onClick={handleLoadState}>
                                                             Yes
                                                         </Button>
-                                                        <Button variant={"contained"} color={"error"}
-                                                                onClick={toggleLoadAlert}>
+                                                        <Button variant={"contained"} color={"error"} onClick={toggleLoadAlert}>
                                                             Cancel
                                                         </Button>
                                                     </Stack>
@@ -357,3 +365,4 @@ export default function StateManager() {
         </Box>
     );
 }
+

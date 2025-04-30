@@ -205,6 +205,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         }
 
     }
+
     function onFetchComplete() {
         setShouldFetchLogs(false);
     }
