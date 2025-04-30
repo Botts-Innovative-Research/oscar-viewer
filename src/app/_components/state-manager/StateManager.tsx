@@ -178,9 +178,16 @@ export default function StateManager() {
     }
 
     const fetchLatestConfigObservation = async(ds: any) =>{
-        const observations = ds.searchObservations(new ObservationFilter(), 1);
+        const observations = ds.searchObservations(new ObservationFilter(), 15);
 
-        console.log("observations", observations)
+        while(observations.hasNext()){
+            let obsResult = await observations.nextPage();
+            let configData = obsResult.map((obs: any) =>{
+                let data = new ConfigData(obs.result.phenomenonTime, obs.result.id, obs.result.user, obs.result.nodeCount, obs.result.nodes)
+            })
+            console.log("observations", observations)
+        }
+
     }
 
     const handleChangeLoadForm = (e: React.ChangeEvent<HTMLInputElement>) => {
