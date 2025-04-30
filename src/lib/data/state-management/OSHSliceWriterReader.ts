@@ -60,7 +60,7 @@ export class OSHSliceWriterReader {
     static async sendBlobToServer(node: INode, dsId: string, body: string) {
 
         let epUri = encodeURIComponent(`f=application/om+json&resultTime=latest`);
-        let ep = `${node.getConnectedSystemsEndpoint()}/datastreams/${dsId}/observations?`;
+        let ep = `${node.getConfigEndpoint()}/datastreams/${dsId}/observations?`;
 
         const response = await fetch(ep, {
             method: 'POST',
@@ -95,7 +95,7 @@ export class OSHSliceWriterReader {
     }
 
     static async checkForEndpoint(node: INode) {
-        let ep: string = `${node.getConnectedSystemsEndpoint()}`;
+        let ep: string = `${node.getConfigEndpoint()}`;
         console.log("Checking for API endpoint: ", ep, node);
 
         const response = await fetch(ep, {
@@ -140,7 +140,7 @@ export class OSHSliceWriterReader {
             }
         });
 
-        let ep: string = `${node.getConnectedSystemsEndpoint()}/systems/`;
+        let ep: string = `${node.getConfigEndpoint()}/systems/`;
         console.log("Inserting Config System: ", ep, node);
 
         const response = await fetch(ep, {
@@ -219,7 +219,7 @@ export class OSHSliceWriterReader {
         });
 
         console.log("CFG SystemID: ", systemId);
-        let ep: string = `${node.getConnectedSystemsEndpoint()}/systems/${systemId}/datastreams`;
+        let ep: string = `${node.getConfigEndpoint()}/systems/${systemId}/datastreams`;
         console.log("Inserting Config Datastream: ", ep, node);
         const response = await fetch(ep, {
             method: 'POST',
@@ -255,7 +255,7 @@ export class OSHSliceWriterReader {
         //     uid: "urn:ornl:oscar:client:config"
         // }));
 
-        let dsResp = await fetch(`${node.getConnectedSystemsEndpoint()}/systems/${systemId}/datastreams`, {
+        let dsResp = await fetch(`${node.getConfigEndpoint()}/systems/${systemId}/datastreams`, {
             method: 'GET',
             headers: {
                 ...node.getBasicAuthHeader()
@@ -295,7 +295,7 @@ export class OSHSliceWriterReader {
 
             let dsId = await this.checkForConfigDatastream(node, sysId);
             let epUri = encodeURIComponent(`f=application/om+json&resultTime=latest`);
-            let ep = `${node.getConnectedSystemsEndpoint()}/datastreams/${dsId}/observations?${epUri}`;
+            let ep = `${node.getConfigEndpoint()}/datastreams/${dsId}/observations?${epUri}`;
             let configResp = await fetch(ep, {
                 method: 'GET',
                 headers: {
