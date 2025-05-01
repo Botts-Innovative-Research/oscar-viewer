@@ -20,6 +20,7 @@ import {
     isTamperDatastream, isThresholdDatastream,
     isVideoDatastream
 } from "./Utilities";
+import {AdjudicationDatastreamConstant} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 
 class ILaneMeta {
     id: string;
@@ -344,7 +345,8 @@ export class LaneMapEntry {
         return dsMap;
     }
 
-    async insertAdjudicationSystem(laneName: string) {
+
+    async getAdjudicationSystemID(laneName: string) {
         console.log("[ADJ] Inserting Adjudication System for lane: ", this);
         let laneId = this.laneSystem.properties.properties.uid.split(":").pop();
 
@@ -356,22 +358,28 @@ export class LaneMapEntry {
         }
 
         console.log("[ADJ] Inserting Adjudication System: ", adJSysJSON);
-        let sysId: string = await this.parentNode.insertAdjSystem(adJSysJSON);
+        let endpoint: string = `${this.parentNode.getConnectedSystemsEndpoint(false)}/systems/`;
+
+        let sysId: string = await this.parentNode.insertSystem(adJSysJSON, endpoint);
         console.log("[ADJ] Inserted Adjudication System: ", sysId);
         // let dsId = this.insertAdjudicationDataStream(laneName);
         return sysId;
     }
 
     async insertAdjudicationDataStream(systemId: string) {
-        let dsRes = await this.parentNode.insertAdjDatastream(systemId);
+        let endpoint: string = `${this.parentNode.getConnectedSystemsEndpoint(false)}/systems/` + systemId + '/datastreams/';
+
+        let dsRes = await this.parentNode.insertDatastream(endpoint, AdjudicationDatastreamConstant);
         if (dsRes) {
             console.log("[ADJ] Inserted Adjudication Datastream: ", dsRes);
             this.adjDs = dsRes;
         }
     }
 
-    async insertAdjudicationObservation(obsData: AdjudicationData) {
-        let obsRes = await this.parentNode.insertObservation(obsData, this.adjDs);
+    async insertAdjudicationObservation(obsData: AdjudicationData, datastreamId: string) {
+        let endpoint: string = `${this.parentNode.getConnectedSystemsEndpoint(false)}/datastreams/${datastreamId}/observations`;
+
+        let obsRes = await this.parentNode.insertObservation(endpoint, obsData);
         if (obsRes) {
             console.log("[ADJ] Inserted Adjudication Observation: ", obsRes);
         }

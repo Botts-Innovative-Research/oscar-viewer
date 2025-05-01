@@ -6,7 +6,7 @@
 'use client';
 
 import React from "react";
-import StateManager from "@/app/savestate/StateManager";
+import StateManager from "@/app/_components/state-manager/StateManager";
 
 export default function Page() {
     return (

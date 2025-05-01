@@ -28,7 +28,7 @@ const initialNodeOpts: NodeOptions = {
     oshPathRoot: "/sensorhub",
     sosEndpoint: "/sos",
     csAPIEndpoint: "/api",
-    csAPIConfigEndpoint: "/configs",
+    // csAPIConfigEndpoint: "/configs",
     auth: {username: "admin", password: "oscar"},
     isSecure: false,
     isDefaultNode: true
