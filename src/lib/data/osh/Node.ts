@@ -387,7 +387,6 @@ export class Node implements INode {
 
 
     async insertSystem(systemJSON: any, ep: string): Promise<string> {
-        // let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/`;
         console.log("Inserting System: ", ep, JSON.stringify(systemJSON));
 
         const response = await fetch(ep, {
@@ -411,7 +410,6 @@ export class Node implements INode {
     }
 
     async insertDatastream(endpoint: string, datastreamConstant: any): Promise<string> {
-        // let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/${systemId}/datastreams/`;
         console.log("Inserting Datastream: ", endpoint, this);
 
         console.log(JSON.stringify(datastreamConstant))
