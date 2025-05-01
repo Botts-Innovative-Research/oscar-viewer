@@ -10,7 +10,7 @@ export interface IConfigData{
     id: string,
     user: string,
     nodes: INode[],
-    nodeCount: number
+    numNodes: number
 }
 
 export default class ConfigData implements IConfigData {
@@ -18,14 +18,14 @@ export default class ConfigData implements IConfigData {
     id: string;
     user: string;
     nodes: INode[];
-    nodeCount: number
+    numNodes: number
 
-    constructor(time: string, id: string, user: string, nodes: INode[], nodeCount: number) {
+    constructor(time: string, id: string, user: string, nodes: INode[], numNodes: number) {
         this.time = time;
         this.id = id;
         this.user = user;
         this.nodes = nodes;
-        this.nodeCount = nodeCount
+        this.numNodes = numNodes
     }
 
     setTime(time: string) {
@@ -61,130 +61,21 @@ export default class ConfigData implements IConfigData {
     }
 
     createConfigurationObservation() {
-        console.log("Creating configuarion observation: ", this);
+        console.log("Creating configuration observation: ", this);
 
         let observation = {
-            "name": "Config",
-            "outputName": "Config",
-            "schema": {
-                "obsFormat": "application/om+json",
-                "resultSchema": {
-                    "type": "DataRecord",
-                    "definition": "http://sensorml.com/ont/swe/property/oscarConfig",
-                    "description": "Configurations saved via OSCAR Client",
-                    "fields": [
-                        {
-                            "type": "Time",
-                            "label": "Sampling Time",
-                            "name": "time",
-                            "definition": "http://www.opengis.net/def/property/OGC/0/SamplingTime",
-                            "referenceFrame": "http://www.opengis.net/def/trs/BIPM/0/UTC",
-                            "uom": {
-                                "href": "http://www.opengis.net/def/uom/ISO-8601/0/Gregorian"
-                            }
-                        },
-                        {
-                            "type": "Text",
-                            "name": "user",
-                            "definition": "http://sensorml.com/ont/swe/property/User",
-                            "label": "User"
-                        },
-                        {
-                            "type": "Count",
-                            "name": "nodeCount",
-                            "label": "Node Count",
-                            "id": "nodeCount"
-                        },
-                        {
-                            "type": "DataArray",
-                            "label": "Nodes",
-                            "definition": "http://www.test.org/def/nodes",
-                            "name": "Nodes",
-                            "elementCount": {
-                                "href": "#nodeCount"
-                            },
-                            "elementType": {
-                                "type": "DataRecord",
-                                "name": "nodes",
-                                "fields": [
-                                    {
-                                        "type": "Text",
-                                        "name": "name",
-                                        "definition": "http://sensorml.com/ont/swe/property/Name",
-                                        "label": "Name"
-                                    },
-                                    {
-                                        "type": "Text",
-                                        "name": "address",
-                                        "definition": "http://sensorml.com/ont/swe/property/Address",
-                                        "label": "Address"
-                                    },
-                                    {
-                                        "type": "Text",
-                                        "name": "port",
-                                        "definition": "http://sensorml.com/ont/swe/property/Port",
-                                        "label": "Port"
-                                    },
-                                    {
-                                        "type": "Text",
-                                        "name": "oshPathRoot",
-                                        "definition": "http://sensorml.com/ont/swe/property/oshPathRoot",
-                                        "label": "OSH Path Root"
-                                    },
-                                    {
-                                        "type": "Text",
-                                        "name": "sosEndpoint",
-                                        "definition": "http://sensorml.com/ont/swe/property/sosEndpoint",
-                                        "label": "sos Endpoint"
-                                    },
-                                    {
-                                        "type": "Text",
-                                        "name": "csAPIEndpoint",
-                                        "definition": "http://sensorml.com/ont/swe/property/csAPIEndpoint",
-                                        "label": "cs API Endpoint"
-                                    },
-                                    {
-                                        "type": "Boolean",
-                                        "name": "isSecure",
-                                        "definition": "http://sensorml.com/ont/swe/property/isSecure",
-                                        "label": "Secure"
-                                    },
-                                    {
-                                        "type": "Boolean",
-                                        "name": "isDefaultNode",
-                                        "definition": "http://sensorml.com/ont/swe/property/isDefaultNode",
-                                        "label": "Default Node"
-                                    },
-                                    {
-                                        "type": "Text",
-                                        "name": "username",
-                                        "definition": "http://sensorml.com/ont/swe/property/username",
-                                        "label": "Username"
-                                    },
-                                    {
-                                        "type": "Text",
-                                        "name": "password",
-                                        "definition": "http://sensorml.com/ont/swe/property/password",
-                                        "label": "Password"
-                                    }
-                                ]
-                            }
-                        }
-                    ]
-                }
-            },
-
             "phenomenonTime": this.time,
             "result": {
                 "user": this.user,
-                "nodeCount": this.nodeCount,
-                "Nodes": this.nodes.map((node: any) => ({
+                "numNodes": this.numNodes,
+                "nodes": this.nodes.map((node: any) => ({
                     "name": node.name,
                     "address": node.address,
                     "port": node.port,
                     "oshPathRoot": node.oshPathRoot,
                     "sosEndpoint": node.sosEndpoint,
                     "csAPIEndpoint": node.csAPIEndpoint,
+                    "csAPIConfigEndpoint": node.csAPIConfigEndpoint,
                     "isSecure": node.isSecure,
                     "isDefaultNode": node.isDefaultNode,
                     "username": node.auth.username,
@@ -227,13 +118,14 @@ export class ConfigCommand{
 }
 
 export function createConfigObservation(data: IConfigData, resultTime: string){
-    console.log("Creating configuarion observation: ", data);
+    console.log("Creating configuration observation: ", data);
 
     let observation = {
         "phenomenonTime": new Date(resultTime).getTime(),
         "result":{
             "user": data.user,
-            "node": data.nodes
+            "numNodes": data.numNodes,
+            "nodes": data.nodes
         }
     }
 
@@ -274,36 +166,36 @@ export async function checkForConfigSystem(node: INode): Promise<string> {
 }
 
 
-export async function sendSetAdjudicatedCommand(node: INode, controlStreamId: string, command: ConfigCommand | string) {
-    console.log("Adjudication Body:", command);
-    let ep = node.getConnectedSystemsEndpoint(false) + `/controlstreams/${controlStreamId}/commands`
-    let response = await fetch(ep, {
-        method: "POST",
-        headers: {
-            ...node.getBasicAuthHeader(),
-            'Content-Type': 'application/json'
-        },
-        mode: 'cors',
-        body: command instanceof ConfigCommand ? command.getJsonString() : command
-    })
-    if (response.ok) {
-        let json = await response.json();
-        console.log("Config Command Response", json)
-
-
-    } else {
-        console.warn("[Config] Sending config command failed", response)
-    }
-}
-
-export function generateCommandJSON(observationId: string, setConfig: boolean) {
-    return JSON.stringify({
-        "params": {
-            'observationId': observationId,
-            'setConfig': setConfig
-        }
-    })
-}
+// export async function sendSetConfigCommand(node: INode, controlStreamId: string, command: ConfigCommand | string) {
+//     console.log("Adjudication Body:", command);
+//     let ep = node.getConfigEndpoint(false) + `/controlstreams/${controlStreamId}/commands`
+//     let response = await fetch(ep, {
+//         method: "POST",
+//         headers: {
+//             ...node.getBasicAuthHeader(),
+//             'Content-Type': 'application/json'
+//         },
+//         mode: 'cors',
+//         body: command instanceof ConfigCommand ? command.getJsonString() : command
+//     })
+//     if (response.ok) {
+//         let json = await response.json();
+//         console.log("Config Command Response", json)
+//
+//
+//     } else {
+//         console.warn("[Config] Sending config command failed", response)
+//     }
+// }
+//
+// export function generateCommandJSON(observationId: string, setConfig: boolean) {
+//     return JSON.stringify({
+//         "params": {
+//             'observationId': observationId,
+//             'setConfig': setConfig
+//         }
+//     })
+// }
 
 export async function insertConfigSystem(node: INode){
     let configSystemJSON =
@@ -318,15 +210,6 @@ export async function insertConfigSystem(node: INode){
                 "now"
             ]
         }
-
-    // let configSystemJSON = {
-    //     "type": "SimpleProcess",
-    //     "uniqueId": "urn:ornl:oscar:client:config",
-    //     "label": `Config`,
-    //     "definition": "sosa:System"
-    // }
-
-    // @ts-ignore
 
     console.log("[CONFIG] Inserting Config System: ", configSystemJSON);
     let sysId: string = await insertSystem(node, configSystemJSON);
@@ -354,17 +237,13 @@ export async function checkForConfigDatastream(node: INode, systemId: string): P
 
     const configSystem = systems.find((system: any) => system.properties.properties.uid == "urn:ornl:oscar:client:config");
 
-    console.log("jey", configSystem)
     if(configSystem){
         let dsCollection = await configSystem.searchDataStreams(new DataStreamFilter(), 1000);
 
-        console.log("jey", dsCollection)
         if(dsCollection.hasNext()){
             let datastreams = await dsCollection.nextPage();
 
-            console.log("jey", datastreams)
             if(datastreams.length > 0){
-                console.log("jey", datastreams[0].properties.id)
                 return datastreams[0].properties.id;
             }else{
                 return null;
@@ -426,21 +305,20 @@ export const ConfigDatastreamConstant: any = {
                     },
                     {
                         "type": "Count",
-                        "name": "nodeCount",
-                        "label": "Node Count",
-                        "id": "nodeCount"
+                        "name": "numNodes",
+                        "label": "Number of Nodes",
+                        "id": "numNodes"
                     },
                     {
                         "type": "DataArray",
                         "label": "Nodes",
                         "definition": "http://www.test.org/def/nodes",
-                        "name": "Nodes",
+                        "name": "nodes",
                         "elementCount": {
-                            "href": "#nodeCount"
+                            "href": "#numNodes"
                         },
                         "elementType": {
                             "type": "DataRecord",
-                            "name": "nodes",
                             "fields": [
                                 {
                                     "type": "Text",
@@ -470,13 +348,19 @@ export const ConfigDatastreamConstant: any = {
                                     "type": "Text",
                                     "name": "sosEndpoint",
                                     "definition": "http://sensorml.com/ont/swe/property/sosEndpoint",
-                                    "label": "sos Endpoint"
+                                    "label": "SOS Endpoint"
                                 },
                                 {
                                     "type": "Text",
                                     "name": "csAPIEndpoint",
                                     "definition": "http://sensorml.com/ont/swe/property/csAPIEndpoint",
-                                    "label": "cs API Endpoint"
+                                    "label": "ConSys API Endpoint"
+                                },
+                                {
+                                    "type": "Text",
+                                    "name": "csAPIConfigEndpoint",
+                                    "definition": "http://sensorml.com/ont/swe/property/csAPIConfigEndpoint",
+                                    "label": "Config Endpoint"
                                 },
                                 {
                                     "type": "Boolean",

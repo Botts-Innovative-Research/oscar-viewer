@@ -11,7 +11,7 @@ import {
     Card,
     CardContent,
     CardHeader,
-    Container, Grid, Snackbar, SnackbarCloseReason,
+    Container, Snackbar, SnackbarCloseReason,
     Stack,
     TextField,
     Typography,
@@ -65,8 +65,8 @@ export default function StateManager() {
     const [openSaveSnack, setOpenSaveSnack] = useState(false);
     const [openSnack, setOpenSnack] = useState(false);
 
-    const [loadSnackMsg, setLoadSnackMsg] = useState('');
-    const [saveSnackMsg, setSaveSnackMsg] = useState('');
+    const [loadSnackMsg, setLoadSnackMsg] = useState<string>();
+    const [saveSnackMsg, setSaveSnackMsg] = useState<string>();
     const [colorStatus, setColorStatus]= useState('');
 
     const nodes = useSelector(selectNodes)
@@ -80,14 +80,11 @@ export default function StateManager() {
 
 
     const getConfigDataStream = useCallback(async () =>{
-        console.log("jkkk",defaultNode)
         if(defaultNode){
             let configSysId = await checkForConfigSystem(defaultNode);
 
-            console.log("jkkk", configSysId)
             if(configSysId){
                 let dsId = await checkForConfigDatastream(defaultNode, configSysId);
-                console.log("jkkk dsId", dsId)
                 setConfigDSId(dsId);
 
                 return dsId;
@@ -119,11 +116,9 @@ export default function StateManager() {
         let observation = tempData.createConfigurationObservation();
         console.log("[CONFIG] Sending Config Data: ", observation);
 
-        const endpoint = defaultNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + dsId + "/observations";
-        console.log(observation)
+        const endpoint = defaultNode.getConfigEndpoint(false) + "/datastreams/" + dsId + "/observations";
+
         await submitConfig(endpoint, observation);
-
-
     }
 
     const submitConfig = async(endpoint: string, observation: any) => {
@@ -140,9 +135,9 @@ export default function StateManager() {
         }catch(error){
             setSaveSnackMsg('Adjudication failed to submit.')
             setColorStatus('error')
-        }finally{
-            setOpenSnack(true);
         }
+
+        setOpenSaveSnack(true);
     }
 
 
@@ -151,18 +146,22 @@ export default function StateManager() {
 
         let latestConfigDs = await retrieveLatestConfig(targetNode);
 
-        console.log("retrieved latest conifg", latestConfigDs)
+        console.log("retrieved latest config", latestConfigDs)
         if(latestConfigDs){
 
             let latestConfigData = await fetchLatestConfigObservation(latestConfigDs);
-            setLoadSnackMsg('OSCAR State Loaded')
-            setColorStatus('success')
 
-            console.log("latest config data from load state", latestConfigData)
-            // dispatch(setCurrentUser(configData.user));
-            //
-            // let nodes = configData.nodes;
-            // dispatch(setNodes(nodes));
+            if(latestConfigData != null){
+                setLoadSnackMsg('OSCAR State Loaded')
+                setColorStatus('success')
+
+                console.log("latest config data from load state", latestConfigData[0])
+                dispatch(setCurrentUser(latestConfigData[0].user));
+
+                let nodes = latestConfigData[0].nodes;
+                dispatch(setNodes(nodes));
+            }
+
         }else{
             setLoadSnackMsg('Failed to load OSCAR State')
             setColorStatus('error')
@@ -178,14 +177,18 @@ export default function StateManager() {
     }
 
     const fetchLatestConfigObservation = async(ds: any) =>{
-        const observations = ds.searchObservations(new ObservationFilter(), 15);
+        const observations = await ds.searchObservations(new ObservationFilter(), 1);
 
         while(observations.hasNext()){
             let obsResult = await observations.nextPage();
             let configData = obsResult.map((obs: any) =>{
-                let data = new ConfigData(obs.result.phenomenonTime, obs.result.id, obs.result.user, obs.result.nodeCount, obs.result.nodes)
+                console.log("hello", obs)
+                let data = new ConfigData(obs.phenomenonTime, obs.id, obs.result.user, obs.result.nodes, obs.result.numNodes)
+                console.log("data", data)
+                return data;
             })
-            console.log("observations", observations)
+
+            return configData;
         }
 
     }

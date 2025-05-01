@@ -81,7 +81,7 @@ export enum Protocols {
 // Functions that are reusable
 
 export async function insertSystem(node: INode, systemJSON: any): Promise<string> {
-    let ep: string = `${node.getConnectedSystemsEndpoint()}/systems/`;
+    let ep: string = `${node.getConfigEndpoint()}/systems/`;
     console.log("Inserting System: ", ep, JSON.stringify(systemJSON));
 
     const response = await fetch(ep, {
@@ -105,7 +105,7 @@ export async function insertSystem(node: INode, systemJSON: any): Promise<string
 }
 
 export async function insertDatastream(systemId: string, node: INode): Promise<string> {
-    let ep: string = `${node.getConnectedSystemsEndpoint()}/systems/${systemId}/datastreams/`;
+    let ep: string = `${node.getConfigEndpoint()}/systems/${systemId}/datastreams/`;
     console.log("Inserting Datastream: ", ep, node);
 
     console.log(JSON.stringify(ConfigDatastreamConstant))

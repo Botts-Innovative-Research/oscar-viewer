@@ -27,13 +27,14 @@ export interface INode {
     oshPathRoot: string,
     sosEndpoint: string,
     csAPIEndpoint: string,
-    // csAPIConfigEndpoint: string,
+    csAPIConfigEndpoint: string,
     isSecure: boolean,
     auth: { username: string, password: string } | null,
     isDefaultNode: boolean
     laneAdjMap?: Map<string, string>
 
     getConnectedSystemsEndpoint(noProtocolPrefix: boolean): string,
+    getConfigEndpoint(noProtocolPrefix: boolean): string,
 
     getBasicAuthHeader(): any,
 
@@ -66,7 +67,7 @@ export interface NodeOptions {
     oshPathRoot?: string,
     sosEndpoint?: string,
     csAPIEndpoint?: string,
-    // csAPIConfigEndpoint?: string,
+    csAPIConfigEndpoint?: string,
     auth?: { username: string, password: string } | null,
     isSecure?: boolean,
     isDefaultNode?: boolean
@@ -81,7 +82,7 @@ export class Node implements INode {
     oshPathRoot: string;
     sosEndpoint: string;
     csAPIEndpoint: string;
-    // csAPIConfigEndpoint: string;
+    csAPIConfigEndpoint: string;
     isSecure: boolean;
     auth: { username: string, password: string } | null = null;
     isDefaultNode: boolean;
@@ -95,7 +96,7 @@ export class Node implements INode {
         this.oshPathRoot = options.oshPathRoot || '/sensorhub';
         this.sosEndpoint = options.sosEndpoint || '/sos';
         this.csAPIEndpoint = options.csAPIEndpoint || '/api';
-        // this.csAPIConfigEndpoint = options.csAPIConfigEndpoint || '/configs';
+        this.csAPIConfigEndpoint = options.csAPIConfigEndpoint || '/configs';
         this.auth = options.auth || null;
         this.isSecure = options.isSecure || false;
         this.isDefaultNode = options.isDefaultNode || false;
@@ -109,11 +110,13 @@ export class Node implements INode {
             : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
     }
 
+    getConfigEndpoint(noProtocolPrefix: boolean = false) {
+        let protocol = this.isSecure ? 'https' : 'http';
+        console.log("NODE TEST GET CSAPI ENDPOINT", this);
+        return noProtocolPrefix ? `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIConfigEndpoint}`
+            : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIConfigEndpoint}`;
+    }
 
-    // getConfigEndpoint() {
-    //     // let protocol = this.isSecure ? 'https' : 'http';
-    //     return `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIConfigEndpoint}`;
-    // }
 
     getBasicAuthHeader() {
         const encoded = btoa(`${this.auth.username}:${this.auth.password}`);
@@ -130,27 +133,27 @@ export class Node implements INode {
         // first, fetch the systems
         const systems_arr = await this.fetchSystems();
         console.log("Systems:", systems_arr);
-        // for (let system of systems_arr) {
-        //
-        //     console.log("OUR System:", system);
-        //     const newSystem = new System(system.id, system.properties.uid, system.properties.name, this, null);
-        //     console.log("New System:", newSystem);
-        //     fetchedSystems.push(newSystem);
-        //     // Test for lane signature in uid
-        //     if (system.properties.uid.includes(SYSTEM_UID_PREFIX)) {
-        //         console.info("Found System matching lane signature");
-        //         const newLaneName = system.properties.name;
-        //         // Fetch subsystems
-        //         const subsystems = await newSystem.fetchSubsystems();
-        //         fetchedSystems.push(...subsystems);
-        //         let systemIds = subsystems.map((subsystem: any) => subsystem.id);
-        //         systemIds.unshift(newSystem.id);
-        //         // Create a new LaneMeta object
-        //         let newLaneMeta = new LaneMeta(newLaneName, systemIds);
-        //         console.info("New Lane Created:", newLaneMeta);
-        //         fetchedLanes.push(newLaneMeta);
-        //     }
-        // }
+        for (let system of systems_arr) {
+
+            console.log("OUR System:", system);
+            const newSystem = new System(system.id, system.properties.uid, system.properties.name, this, null);
+            console.log("New System:", newSystem);
+            fetchedSystems.push(newSystem);
+            // Test for lane signature in uid
+            if (system.properties.uid.includes(SYSTEM_UID_PREFIX)) {
+                console.info("Found System matching lane signature");
+                const newLaneName = system.properties.name;
+                // Fetch subsystems
+                const subsystems = await newSystem.fetchSubsystems();
+                fetchedSystems.push(...subsystems);
+                let systemIds = subsystems.map((subsystem: any) => subsystem.id);
+                systemIds.unshift(newSystem.id);
+                // Create a new LaneMeta object
+                let newLaneMeta = new LaneMeta(newLaneName, systemIds);
+                console.info("New Lane Created:", newLaneMeta);
+                fetchedLanes.push(newLaneMeta);
+            }
+        }
         console.log("LaneFetched these objects:", fetchedLanes, fetchedSystems);
         return {lanes: null, systems: systems_arr};
     }
@@ -194,7 +197,6 @@ export class Node implements INode {
 
         // filter into lanes
         for (let system of systems) {
-            // console.log("TK System:", system);
             if (system.properties.properties?.uid.includes(SYSTEM_UID_PREFIX) && !system.properties.properties?.uid.includes("adjudication")) {
                 // console.log("TK Found lane system:", system);
                 // let laneName = system.properties.properties.uid.split(":").pop();
@@ -381,22 +383,6 @@ export class Node implements INode {
         return adjSysAndDSMap;
     }
 
-
-    async fetchOrCreateConfigSystem(){
-        let systems: typeof System[] = await this.fetchSystems();
-
-        let configSystem = systems.find((system: any) => system.properties.properties.uid === "urn:ornl:oscar:client:config");
-
-        if(configSystem){
-           // it exists
-        }else{
-            console.log(`[CONFIG-INSERT] No existing config system found, creating new system`);
-            let sysId = await insertConfigSystem();
-
-            let dsId = await this.insertDatastream(sysId, ConfigDatastreamConstant);
-
-        }
-    }
 
     async insertSystem(systemJSON: any): Promise<string> {
         let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/`;
