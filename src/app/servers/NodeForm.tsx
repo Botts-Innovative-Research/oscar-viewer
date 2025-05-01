@@ -41,7 +41,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         oshPathRoot: "/sensorhub",
         sosEndpoint: "/sos",
         csAPIEndpoint: "/api",
-        csAPIConfigEndpoint: "/configs",
+        configsEndpoint: "/configs",
         auth: {username: "", password: ""},
         isSecure: false,
         isDefaultNode: false
@@ -147,8 +147,8 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                     <TextField label="CS API Endpoint" name="csAPIEndpoint" value={newNode.csAPIEndpoint}
                                onChange={handleChange}/>
                     <Tooltip title={"The endpoint for the configuration API"}>
-                        <TextField label="Config Endpoint" name="csAPIConfigEndpoint"
-                                   value={newNode.csAPIConfigEndpoint}
+                        <TextField label="Config Endpoint" name="configsEndpoint"
+                                   value={newNode.configsEndpoint}
                                    onChange={handleChange}/>
                     </Tooltip>
                     <TextField label="Username" name="username" value={newNode.auth.username} onChange={handleChange}/>

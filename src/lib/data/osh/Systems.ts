@@ -5,7 +5,6 @@
 
 // @ts-ignore
 import {INode} from "@/app/data/osh/Node";
-import {randomUUID} from "osh-js/source/core/utils/Utils";
 
 export interface ISystem {
     id: string,

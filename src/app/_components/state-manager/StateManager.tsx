@@ -19,26 +19,22 @@ import {
     useTheme
 } from "@mui/material";
 
-import {RootState} from "@/lib/state/Store";
 import {useSelector} from "react-redux";
-import {IOSHSlice, selectDefaultNode, selectNodes, setNodes} from "@/lib/state/OSHSlice";
+import { selectDefaultNode, selectNodes, setNodes} from "@/lib/state/OSHSlice";
 import React, {useCallback, useEffect, useState} from "react";
-import {IOSCARClientState, selectCurrentUser, setCurrentUser} from "@/lib/state/OSCARClientSlice";
+import { selectCurrentUser, setCurrentUser} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {Node, NodeOptions} from "@/lib/data/osh/Node";
+import {Node, NodeOptions, insertObservation} from "@/lib/data/osh/Node";
 import Divider from "@mui/material/Divider";
-import ConfigData, {
-    checkForConfigDatastream, checkForConfigSystem,
-    retrieveLatestConfig,
-    sendConfig
-} from "@/app/_components/state-manager/Config";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import ConfigData, {
+    getConfigDataStreamID,
+    retrieveLatestConfigDataStream
+} from "./Config";
 
 
 export default function StateManager() {
     const dispatch = useAppDispatch();
-    const oshSlice: IOSHSlice = useSelector((state: RootState) => state.oshSlice);
-    const oscarSlice: IOSCARClientState = useSelector((state: RootState) => state.oscarClientSlice);
     const defaultNode = useSelector(selectDefaultNode);
     const [configDSId, setConfigDSId] = useState<string | null>(null);
     const [fileName, setFileName] = useState<string>("config");
@@ -49,6 +45,7 @@ export default function StateManager() {
         port: 0,
         oshPathRoot: "/sensorhub",
         sosEndpoint: "/sos",
+        configsEndpoint: "/config",
         csAPIEndpoint: "/api",
         auth: {username: "", password: ""},
         isSecure: false,
@@ -78,17 +75,13 @@ export default function StateManager() {
 
     const [data, setData] = useState<ConfigData>();
 
-
     const getConfigDataStream = useCallback(async () =>{
         if(defaultNode){
-            let configSysId = await checkForConfigSystem(defaultNode);
+            let dsId = await getConfigDataStreamID(defaultNode);
 
-            if(configSysId){
-                let dsId = await checkForConfigDatastream(defaultNode, configSysId);
-                setConfigDSId(dsId);
+            setConfigDSId(dsId);
 
-                return dsId;
-            }
+            return dsId;
         }
     },[defaultNode]);
 
@@ -96,11 +89,9 @@ export default function StateManager() {
 
         let dsId = await getConfigDataStream();
 
-        console.log("dsId", dsId)
         toggleSaveAlert();
 
         let phenomenonTime = new Date().toISOString();
-
 
         const user = currentUser || "Unknown";
 
@@ -111,10 +102,8 @@ export default function StateManager() {
             nodes,
             nodes.length
         );
-        console.log("temp data", tempData)
 
         let observation = tempData.createConfigurationObservation();
-        console.log("[CONFIG] Sending Config Data: ", observation);
 
         const endpoint = defaultNode.getConfigEndpoint(false) + "/datastreams/" + dsId + "/observations";
 
@@ -123,7 +112,7 @@ export default function StateManager() {
 
     const submitConfig = async(endpoint: string, observation: any) => {
         try{
-            const response = await sendConfig(endpoint, observation);
+            const response = await insertObservation(endpoint, observation);
 
             if(response.ok){
                 setSaveSnackMsg('OSCAR Configuration Saved')
@@ -133,7 +122,7 @@ export default function StateManager() {
                 setColorStatus('error')
             }
         }catch(error){
-            setSaveSnackMsg('Adjudication failed to submit.')
+            setSaveSnackMsg('Failed to save config')
             setColorStatus('error')
         }
 
@@ -144,9 +133,9 @@ export default function StateManager() {
     const handleLoadState = async () => {
         toggleLoadAlert();
 
-        let latestConfigDs = await retrieveLatestConfig(targetNode);
+        let latestConfigDs = await retrieveLatestConfigDataStream(targetNode);
 
-        console.log("retrieved latest config", latestConfigDs)
+
         if(latestConfigDs){
 
             let latestConfigData = await fetchLatestConfigObservation(latestConfigDs);
@@ -176,21 +165,18 @@ export default function StateManager() {
         }
     }
 
-    const fetchLatestConfigObservation = async(ds: any) =>{
+     const fetchLatestConfigObservation = async(ds: any) =>{
         const observations = await ds.searchObservations(new ObservationFilter(), 1);
 
         while(observations.hasNext()){
             let obsResult = await observations.nextPage();
             let configData = obsResult.map((obs: any) =>{
-                console.log("hello", obs)
                 let data = new ConfigData(obs.phenomenonTime, obs.id, obs.result.user, obs.result.nodes, obs.result.numNodes)
-                console.log("data", data)
                 return data;
             })
 
             return configData;
         }
-
     }
 
     const handleChangeLoadForm = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -240,7 +226,7 @@ export default function StateManager() {
         setTargetNode(new Node(loadNodeOpts));
 
         const time = new Date().toISOString();
-        const newData = new ConfigData(time, configDSId, currentUser || "Unknown", [defaultNode], 1);
+        const newData = new ConfigData(time, configDSId, currentUser || "Unknown", [targetNode], 1);
         setData(newData);
     }, [loadNodeOpts, currentUser]);
 

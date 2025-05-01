@@ -1,4 +1,9 @@
-import { insertSystem, insertDatastream } from "@/lib/data/Constants";
+/*
+ * Copyright (c) 2024.  Botts Innovative Research, Inc.
+ * All Rights Reserved
+ */
+
+
 import {INode, Node} from "@/lib/data/osh/Node";
 import DataStreamFilter from "osh-js/source/core/consysapi/datastream/DataStreamFilter";
 
@@ -75,7 +80,7 @@ export default class ConfigData implements IConfigData {
                     "oshPathRoot": node.oshPathRoot,
                     "sosEndpoint": node.sosEndpoint,
                     "csAPIEndpoint": node.csAPIEndpoint,
-                    "csAPIConfigEndpoint": node.csAPIConfigEndpoint,
+                    "configsEndpoint": node.configsEndpoint,
                     "isSecure": node.isSecure,
                     "isDefaultNode": node.isDefaultNode,
                     "username": node.auth.username,
@@ -88,34 +93,9 @@ export default class ConfigData implements IConfigData {
 
     }
 
-
-    insertConfigSystem(node: INode, systemId: string){}
-
-    insertConfigDatastream(node: INode, systemId: string){}
-
     retrieveLatestConfig(node: INode){}
 }
 
-
-export class ConfigCommand{
-    setConfig: boolean;
-    observationId: string;
-
-    constructor(obsId: string, setConfig: true) {
-        this.observationId = obsId;
-        this.setConfig = setConfig;
-    }
-
-    getJsonString() {
-        return JSON.stringify(
-            {
-                "params": {
-                    'observationId': this.observationId,
-                    'setConfig': this.setConfig
-                }
-            })
-    }
-}
 
 export function createConfigObservation(data: IConfigData, resultTime: string){
     console.log("Creating configuration observation: ", data);
@@ -134,29 +114,27 @@ export function createConfigObservation(data: IConfigData, resultTime: string){
 
 }
 
-export async function sendConfig(endpoint: string, observation: any){
-    let resp = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: observation,
-        mode: "cors"
-    });
-
-    return resp;
-}
-
-export async function checkForConfigSystem(node: INode): Promise<string> {
+export async function getConfigSystemID(node: INode): Promise<string> {
     let systems = await node.fetchSystems();
-    console.log("TK Systems retrieved:", systems);
+    console.log("Systems retrieved:", systems);
 
     let configSystem = systems.find((system: any) => system.properties?.properties.uid === CONFIG_UID);
 
     console.log("configSys", configSystem)
+
     if (!configSystem) {
         console.log("No config system found, attempting to create one...");
-        let configSystemId = await insertConfigSystem(node);
+
+        let ep: string = `${node.getConfigEndpoint(false)}/systems/`;
+
+        let configSystemId = await node.insertSystem(configSystemJSON, ep)
+
+        if(configSystemId){
+
+            const endpoint = `${ep}${configSystemId}/datastreams/`
+            await node.insertDatastream(endpoint, configDatastreamConstant);
+
+        }
 
         console.log("Config system found: ", configSystemId);
         return configSystemId;
@@ -165,77 +143,14 @@ export async function checkForConfigSystem(node: INode): Promise<string> {
     }
 }
 
+const startTime = new Date();
 
-// export async function sendSetConfigCommand(node: INode, controlStreamId: string, command: ConfigCommand | string) {
-//     console.log("Adjudication Body:", command);
-//     let ep = node.getConfigEndpoint(false) + `/controlstreams/${controlStreamId}/commands`
-//     let response = await fetch(ep, {
-//         method: "POST",
-//         headers: {
-//             ...node.getBasicAuthHeader(),
-//             'Content-Type': 'application/json'
-//         },
-//         mode: 'cors',
-//         body: command instanceof ConfigCommand ? command.getJsonString() : command
-//     })
-//     if (response.ok) {
-//         let json = await response.json();
-//         console.log("Config Command Response", json)
-//
-//
-//     } else {
-//         console.warn("[Config] Sending config command failed", response)
-//     }
-// }
-//
-// export function generateCommandJSON(observationId: string, setConfig: boolean) {
-//     return JSON.stringify({
-//         "params": {
-//             'observationId': observationId,
-//             'setConfig': setConfig
-//         }
-//     })
-// }
-
-export async function insertConfigSystem(node: INode){
-    let configSystemJSON =
-        {
-            "type": "PhysicalSystem",
-            "id": "0",
-            "uniqueId": "urn:ornl:oscar:client:config",
-            "definition": "http://www.w3.org/ns/sosa/Sensor",
-            "label": "OSCAR Client Config",
-            "validTime": [
-                "2025-04-29T22:30:03Z",
-                "now"
-            ]
-        }
-
-    console.log("[CONFIG] Inserting Config System: ", configSystemJSON);
-    let sysId: string = await insertSystem(node, configSystemJSON);
-
-    console.log("[CONFIG] Inserted Config System: ", sysId);
-    return sysId;
-}
-
-export async function insertConfigDatastream(node: INode, systemId: string){
-    let dsId = await insertDatastream(systemId, ConfigDatastreamConstant);
-
-    if(!dsId){
-        console.log("[ERROR] Inserting Config Datastream");
-        return null;
-    }else{
-        console.log("Config Datastream Inserted: ", dsId);
-        return dsId;
-    }
-}
-
-export async function checkForConfigDatastream(node: INode, systemId: string): Promise<string>{
+export async function getConfigDataStreamID(node: INode): Promise<string>{
     if(!node) return null;
 
     const systems = await node.fetchSystems();
 
-    const configSystem = systems.find((system: any) => system.properties.properties.uid == "urn:ornl:oscar:client:config");
+    const configSystem = systems.find((system: any) => system.properties.properties.uid == CONFIG_UID);
 
     if(configSystem){
         let dsCollection = await configSystem.searchDataStreams(new DataStreamFilter(), 1000);
@@ -253,8 +168,7 @@ export async function checkForConfigDatastream(node: INode, systemId: string): P
     }
 }
 
-
-export async function retrieveLatestConfig(node: INode) {
+export async function retrieveLatestConfigDataStream(node: INode) {
     let apiFound = await node.checkForEndpoint();
 
     if (apiFound) {
@@ -268,7 +182,6 @@ export async function retrieveLatestConfig(node: INode) {
             if(dsCollection.hasNext()) {
                 let ds = await dsCollection.nextPage();
 
-                console.log("latestConfigDs", ds)
                 return ds[0];
             }
         }
@@ -276,8 +189,18 @@ export async function retrieveLatestConfig(node: INode) {
     }
 }
 
+export const configSystemJSON = {
+    "type": "PhysicalSystem",
+    "uniqueId": "urn:ornl:oscar:client:config",
+    "definition": "http://www.w3.org/ns/sosa/Sensor",
+    "label": "OSCAR Client Config",
+    "validTime": [
+        (new Date(startTime).toISOString()),
+        "now"
+    ]
+}
 
-export const ConfigDatastreamConstant: any = {
+export const configDatastreamConstant: any = {
         "name": "Config",
         "outputName": "Config",
         "schema": {
@@ -358,8 +281,8 @@ export const ConfigDatastreamConstant: any = {
                                 },
                                 {
                                     "type": "Text",
-                                    "name": "csAPIConfigEndpoint",
-                                    "definition": "http://sensorml.com/ont/swe/property/csAPIConfigEndpoint",
+                                    "name": "configsEndpoint",
+                                    "definition": "http://sensorml.com/ont/swe/property/configsEndpoint",
                                     "label": "Config Endpoint"
                                 },
                                 {
