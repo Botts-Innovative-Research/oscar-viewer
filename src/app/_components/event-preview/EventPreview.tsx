@@ -54,7 +54,11 @@ import {RootState} from "@/lib/state/Store";
 import CircularProgress from "@mui/material/CircularProgress";
 import {isVideoDatastream} from "@/lib/data/oscar/Utilities";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
-
+import VideoView from "osh-js/source/core/ui/view/video/VideoView";
+import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js";
+import FFMPEGView from "osh-js/source/core/ui/view/video/FFMPEGView.js"
+import MjpegView from "osh-js/source/core/ui/view/video/MjpegView.js"
+import WebCodecView from "osh-js/source/core/ui/view/video/WebCodecView.js"
 
 export function EventPreview() {
     const dispatch = useAppDispatch();
@@ -119,8 +123,7 @@ export function EventPreview() {
             occupancyId: eventPreview.eventData.occupancyId,
             alarmingSystemUid: eventPreview.eventData.systemIdx
         }
-        let adjudicationData = new AdjudicationData(currentUser, eventPreview.eventData.occupancyId,
-            eventPreview.eventData.systemIdx);
+        let adjudicationData = new AdjudicationData(new Date().toISOString(), currentUser, eventPreview.eventData.occupancyId, eventPreview.eventData.systemIdx);
         adjudicationData.setFeedback(notes);
         adjudicationData.setAdjudicationCode(value);
         console.log("[ADJ] New Adjudication Data, Ready to Send: ", newAdjData);
@@ -324,11 +327,11 @@ export function EventPreview() {
         if (!syncRef.current && !dataSyncCreated && videoDatasources.length > 0) {
             syncRef.current = new DataSynchronizer({
                 dataSources: videoDatasources,
-                replaySpeed: 1.0,
+                replaySpeed: 0.5,
                 startTime: eventPreview.eventData.startTime,
                 // endTime: eventPreview.eventData.endTime,
                 endTime: "now",
-                reconnect: true
+                masterTimeRefreshRate: 250
             });
             syncRef.current.onTime
             setDataSyncCreated(true);
@@ -407,13 +410,22 @@ export function EventPreview() {
         if (syncRef.current) {
             console.log("Playback started.");
 
-            var img = document.getElementsByClassName("video-mjpeg");
 
             syncRef.current.connect().finally(() => {
-
-                if(img.length > 0) {
-                    img[0].src = frameSrc;
+                if(videoViewRef.current.videoView instanceof MjpegView){
+                    var img = document.getElementsByClassName("video-mjpeg");
+                    if(img.length > 0) {
+                        img[0].src = frameSrc;
+                    }
+                }else if(videoViewRef.current.videoView instanceof FFMPEGView || videoViewRef.current.videoView instanceof WebCodecView){
+                    videoViewRef.current.videoView.decode(
+                        savedFrame.pktSize,
+                        savedFrame.pktData,
+                        savedFrame.timestamp,
+                        savedFrame.roll
+                    )
                 }
+
             });
         }
     };
@@ -422,17 +434,21 @@ export function EventPreview() {
     const pause = async () => {
         if (syncRef.current) {
 
-            // await syncRef.current.setReplaySpeed(0.0);
             console.log("Playback paused.");
 
             await syncRef.current.disconnect();
 
-            var img = document.getElementsByClassName("video-mjpeg");
+            if(videoViewRef.current.videoView instanceof FFMPEGView || videoViewRef.current.videoView instanceof WebCodecView){
+                await getFrameObservations(syncTime)
+            }else if(videoViewRef.current.videoView instanceof MjpegView){
+                var img = document.getElementsByClassName("video-mjpeg");
+                setFrameSrc(img[0].src)
 
-            setFrameSrc(img[0].src)
+            }
+
         }
-
     };
+
 
     // when the user toggles the time controller this is the code to change the time sync
     const handleCommitChange = useCallback( async(event: Event, newValue: number) => {
@@ -441,27 +457,30 @@ export function EventPreview() {
         setSyncTime(newValue);
 
         await syncRef.current.dataSynchronizerReplay.setStartTime(newValue, false).finally(() => {
-            fetchImgBlob(newValue);
+            getFrameObservations(newValue);
         });
 
     },[syncRef, eventPreview.eventData.endTime]);
 
 
 
-
-    const fetchImgBlob = async(newVal: any)=>{
+    const getFrameObservations = async(newStartTime: number)=>{
 
         for (const lane of laneMapRef.current.values()){
 
             if(lane.laneName === eventPreview.eventData.laneId){
                 let datastreams = lane.datastreams.filter((ds: any) => isVideoDatastream(ds));
 
-                await fetchFrameCreateBlob(newVal, eventPreview.eventData.endTime, datastreams);
+                await fetchPausedFrame(newStartTime, eventPreview.eventData.endTime, datastreams);
             }
         }
     }
 
-    async function fetchFrameCreateBlob(startTime: any, endTime: any, datastreams: any){
+
+    const videoViewRef = useRef<typeof VideoView>();
+
+
+    async function fetchPausedFrame(startTime: any, endTime: string, datastreams: typeof DataStreams){
 
         let dsId = syncRef.current.dataSynchronizer.dataSources[selectedIndex.current].name.split("-")[1]
         console.log("sync ds id", dsId);
@@ -472,17 +491,49 @@ export function EventPreview() {
 
         const obsPage = await obs.nextPage();
 
-        let imgBlob = new Blob([obsPage[0].img.data]);
+        console.log("obsPage", obsPage)
+
+        const imageData = obsPage[0].img.data
+        const compression = obsPage[0].img.compression
+
+        if(videoViewRef.current.videoView instanceof FFMPEGView || videoViewRef.current.videoView instanceof WebCodecView){
+            // h264 create canvas pixels
+            setCanvasFrame(obsPage[0])
+        }else if(videoViewRef.current.videoView instanceof MjpegView){
+            // mjpeg image
+            setMjpegFrame(imageData)
+        }
+    }
+
+    let savedFrame: { pktSize: number, pktData: Uint8Array, timestamp: number, roll: number } | null = null;
+
+
+    //function to set frame data
+    function setCanvasFrame(imageData: any){
+        const pktSize = imageData.img.data.length;
+        const pktData = imageData.img.data;
+        const timestamp = imageData.timestamp;
+        const roll = imageData.roll;
+
+        savedFrame = { pktSize, pktData, timestamp, roll };
+    }
+
+    function setMjpegFrame(imageData: any){
+        let imgBlob = new Blob([imageData]);
         let url = window.URL.createObjectURL(imgBlob);
 
         var img = document.getElementsByClassName("video-mjpeg");
 
         img[0].src = url;
-
     }
+
 
     const handleUpdatingPage = (page: number)=>{
         selectedIndex.current = page;
+    }
+
+    const setVideoView =(videoView: any) =>{
+        videoViewRef.current = videoView
     }
 
     return (
@@ -519,6 +570,7 @@ export function EventPreview() {
                             dataSynchronizer={syncRef.current}
                             modeType={"preview"}
                             onSelectedVideoIdxChange={handleUpdatingPage}
+                            setVideoView={setVideoView}
                         />
                         <TimeController handleCommitChange={handleCommitChange} pause={pause} play={play} syncTime={syncTime}  startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
                     </Box>
@@ -537,10 +589,7 @@ export function EventPreview() {
                     rows={4}
                 />
                 <Stack direction={"row"} spacing={10} sx={{width: "100%"}} justifyContent={"center"}>
-                    <Button onClick={sendAdjudicationData} variant={"contained"} size={"small"} fullWidth={false}
-                            color={"success"}
-                            disabled={adjFormData === null}
-                            sx={{width: "25%"}}>Submit</Button>
+                    <Button onClick={sendAdjudicationData} variant={"contained"} size={"small"} fullWidth={false} color={"success"} disabled={adjFormData === null} sx={{width: "25%"}}>Submit</Button>
                     <Snackbar
                         anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         open={openSnack}
@@ -554,9 +603,7 @@ export function EventPreview() {
                         }}
                     />
 
-                    <Button onClick={resetAdjudicationData} variant={"contained"} size={"small"} fullWidth={false}
-                            color={"secondary"}
-                            sx={{width: "25%"}}>Reset</Button>
+                    <Button onClick={resetAdjudicationData} variant={"contained"} size={"small"} fullWidth={false} color={"secondary"} sx={{width: "25%"}}>Reset</Button>
                 </Stack>
             </Stack>
         </Stack>

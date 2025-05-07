@@ -1,7 +1,7 @@
 // "use client"
 //
 // import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-// import {useCallback, useEffect, useRef, useState} from "react";
+// import {useCallback, useEffect, useState} from "react";
 // import {Box} from "@mui/material";
 // import {useSelector} from "react-redux";
 // import {RootState} from "@/lib/state/Store";
@@ -10,9 +10,8 @@
 //     setSelectedRowId,
 //     selectSelectedRowId, setLatestGB
 // } from "@/lib/state/EventPreviewSlice";
-// import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
-// import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
-// import Observations from "osh-js/source/core/consysapi/observation/Observations";
+// import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
+// import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 // import {AlarmTableData, EventTableData} from "@/lib/data/oscar/TableHelpers";
 // import {
 //     DataGrid,
@@ -35,9 +34,6 @@
 // import {useRouter} from "next/navigation";
 // import {getObservations} from "@/app/utils/ChartUtils";
 // import {isThresholdDatastream} from "@/lib/data/oscar/Utilities";
-// import {selectNodes} from "@/lib/state/OSHSlice";
-// import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
-//
 //
 //
 // interface TableProps {
@@ -62,14 +58,14 @@
 //  * @param laneMap map of LaneMapEntries to be used by created data sources
 //  * @constructor
 //  */
-// export default function Table2({
+// export default function EventTable({
 //                                    tableMode,
 //                                    viewSecondary = false,
 //                                    // viewMenu = false,
 //                                    viewLane = false,
 //                                    viewAdjudicated = false,
 //                                    laneMap,
-//                                     currentLane
+//                                    currentLane
 //
 //                                }: TableProps) {
 //
@@ -82,59 +78,6 @@
 //     const dispatch = useAppDispatch();
 //     const router = useRouter();
 //
-//
-//     const currentTablePage = useRef(0);
-//
-//     const handlePageChange = (model: any) =>{
-//         console.log("PAGE", model.page)
-//         currentTablePage.current = model.page;
-//     }
-//
-//     const nodes = useSelector(selectNodes);
-//
-//     async function fetchObservationsByPage(timeStart: string, timeEnd: string){
-//
-//         for (const node of nodes) {
-//             console.log("node", node)
-//
-//             const observations = new Observations({
-//                     endpointUrl: `${node.address}:${node.port}${node.oshPathRoot}${node.csAPIEndpoint}`,
-//                     tls: node.isSecure,
-//                     connectorOpts: node.auth
-//                 }
-//             );
-//
-//             console.log("observations", observations)
-//
-//             let searchObservation = await observations.searchObservations(new ObservationFilter({observedProperty: 'http://www.opengis.net/def/pillar-occupancy-count'}), 15);
-//
-//             console.log("searchObservations", searchObservation)
-//
-//             return await handleFetchedObservations(searchObservation)
-//
-//         }
-//
-//     }
-//
-//     async function handleFetchedObservations(searchObservation: any){
-//         let observations: EventTableData[] = [];
-//
-//         while(searchObservation.hasNext()){
-//             let obsResult = await searchObservation.nextPage();
-//
-//
-//             obsResult.map((obs: any) =>{
-//
-//                 // let laneEntry = Array.from(laneMap).find(([key, value]: any) =>
-//                 //     value.datastreams.find((ds: any) => ds.id === obs.id)
-//                 // );
-//                 // let result = eventFromObservation(obs, laneEntry);
-//                 // observations.push(result);
-//
-//             })
-//         }
-//     }
-//
 //     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
 //         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
 //         let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty("http://www.opengis.net/def/pillar-occupancy-count");
@@ -142,56 +85,9 @@
 //         if (!occDS) {
 //             return;
 //         }
-//
 //         let obsCollection = await occDS.searchObservations(observationFilter, 15);
-//
 //         return await handleObservations(obsCollection, laneEntry, false);
 //     }
-//
-//     // here we need to do it by pages and only fetch the next page when clicked only 15 events at a time
-//     // @ts-ignore
-//     async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<EventTableData[]> {
-//         let observations: EventTableData[] = [];
-//
-//
-//         while (obsCollection.hasNext()) {
-//             let obsResults = await obsCollection.nextPage();
-//
-//             console.log("obsResults", obsResults)
-//             // console.log("ObsResults", obsResults)
-//             obsResults.map((obs: any) => {
-//                 let result = eventFromObservation(obs, laneEntry);
-//                 observations.push(result);
-//
-//                 // when fetching, this operation is a bit too costly so we probably want to just set the table with all the results we've collected
-//                 if (addToLog) dispatch(addEventToLog(result));
-//             })
-//
-//
-//         }
-//         return observations;
-//     }
-//
-//     async function doFetch(laneMap: Map<string, LaneMapEntry>) {
-//         let allFetchedResults: EventTableData[] = [];
-//         let promiseGroup: Promise<void>[] = [];
-//
-//         // createDatastreams(laneMap)
-//         laneMap.forEach((entry: LaneMapEntry, laneName: string) => {
-//             let promise = (async () => {
-//                 let startTimeForObs = new Date();
-//                 startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
-//                 await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
-//                 let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
-//                 allFetchedResults = [...allFetchedResults, ...fetchedResults];
-//             })();
-//             promiseGroup.push(promise);
-//         });
-//
-//         await Promise.all(promiseGroup);
-//         dispatch(setEventLogData(allFetchedResults))
-//     }
-//
 //
 //     async function streamObservations(laneEntry: LaneMapEntry) {
 //
@@ -207,10 +103,40 @@
 //         })
 //     }
 //
+//     //Pseudorandom number generator from event data
+//     function prngFromStr(obs: any, laneName: string): number {
+//         const baseId = `${obs.result?.occupancyCount}${laneName}${obs.result?.startTime}${obs.result?.endTime}`;
+//         return hashString(baseId);
+//     }
+//
+//     function hashString(str: any) {
+//         let hash = 5381;
+//         for (let i = 0; i < str.length; i++) {
+//             hash = (hash * 33) ^ str.charCodeAt(i);
+//         }
+//         return (hash >>> 0) / 4294967296;
+//     }
+//
+//
+//     // @ts-ignore
+//     async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<EventTableData[]> {
+//         let observations: EventTableData[] = [];
+//
+//         while (obsCollection.hasNext()) {
+//             let obsResults = await obsCollection.nextPage();
+//             obsResults.map((obs: any) => {
+//                 let result = eventFromObservation(obs, laneEntry);
+//                 observations.push(result);
+//                 // when fetching, this operation is a bit too costly so we probably want to just set the table with all the results we've collected
+//                 if (addToLog) dispatch(addEventToLog(result));
+//             })
+//         }
+//         return observations;
+//     }
 //
 //     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
 //         const id = prngFromStr(obs, laneEntry.laneName);
-//         // console.log("obs id", obs.id)
+//
 //         let newEvent: EventTableData = new EventTableData(id, laneEntry.laneName, obs.result, obs.id, obs.foiId);
 //         newEvent.setSystemIdx(laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId));
 //         newEvent.setDataStreamId(obs["datastream@id"]);
@@ -220,6 +146,27 @@
 //         return newEvent;
 //     }
 //
+//     async function doFetch(laneMap: Map<string, LaneMapEntry>) {
+//         let allFetchedResults: EventTableData[] = [];
+//         let promiseGroup: Promise<void>[] = [];
+//
+//         const laneMapToMap = convertToMap(laneMap);
+//         // createDatastreams(laneMap)
+//         laneMapToMap.forEach((entry: LaneMapEntry, laneName: string) => {
+//             let promise = (async () => {
+//                 let startTimeForObs = new Date();
+//                 startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
+//                 // await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
+//                 let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
+//                 allFetchedResults = [...allFetchedResults, ...fetchedResults];
+//
+//             })();
+//             promiseGroup.push(promise);
+//         });
+//
+//         await Promise.all(promiseGroup);
+//         dispatch(setEventLogData(allFetchedResults))
+//     }
 //
 //     const convertToMap = (obj: any) =>{
 //         if(!obj) return new Map();
@@ -253,11 +200,9 @@
 //
 //     function onlyLaneFilteredList(tableData: EventTableData[], laneId: string) {
 //
-//         console.log("table data", tableData, laneId)
-//
 //         if (!tableData) return [];
 //         const laneData = tableData.filter((entry: EventTableData) => entry.laneId == laneId);
-//         console.log("filtered lane", laneData);
+//
 //         return laneData;
 //     }
 //
@@ -274,13 +219,7 @@
 //     }, [laneMap, laneMap.size]);
 //
 //     const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
-//         // await doFetch(laneMap);
-//         // let laneMapEntry = convertToMap(laneMap)
-//         // let startTimeForObs = new Date();
-//         // startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
-//         // await fetchObservationsByPage(startTimeForObs.toISOString(), 'now', laneMapEntry)
-//
-//         doFetch(laneMap);
+//         await doFetch(laneMap);
 //         doStream(laneMap);
 //     }, [laneMap]);
 //
@@ -289,32 +228,13 @@
 //         if (tableMode === 'alarmtable') {
 //             filteredData = unadjudicatedFilteredList(onlyAlarmingFilteredList(tableData))
 //         } else if (tableMode === 'eventlog') {
-//             if (laneMap.size === 1) {
-//                 const laneId = Array.from(laneMap.keys())[0];
-//                 filteredData = onlyLaneFilteredList(tableData, laneId)
-//             }
+//             filteredData = tableData
 //         }else if(tableMode === 'lanelog'){
 //
 //             filteredData = laneEventList(tableData);
 //         }
 //         setFilteredTableData(filteredData);
 //     }, [tableData]);
-//
-//
-//     //Pseudorandom number generator from event data
-//     function prngFromStr(obs: any, laneName: string): number {
-//         const baseId = `${obs.result?.occupancyCount}${laneName}${obs.result?.startTime}${obs.result?.endTime}`;
-//         return hashString(baseId);
-//     }
-//
-//     function hashString(str: any) {
-//         let hash = 5381;
-//         for (let i = 0; i < str.length; i++) {
-//             hash = (hash * 33) ^ str.charCodeAt(i);
-//         }
-//         return (hash >>> 0) / 4294967296;
-//     }
-//
 //
 //     //------------------------------------------------------------------------------------------------------------------
 //     // Data Grid Setup and Related
@@ -446,11 +366,13 @@
 //     }, [selectedRowId]);
 //
 //
+//
 //     const handleRowSelection = (params: GridRowParams) => {
 //
 //         const selectedId = params.row.id;
 //
 //         if (selectedRowId === selectedId) {
+//             console.log("CLEARING SELECTION")
 //             setSelectionModel([]);
 //
 //             dispatch(setLatestGB(null));
@@ -481,18 +403,14 @@
 //         for (const lane of laneMap.values()){
 //             let datastreams = lane.datastreams.filter((ds: any) => isThresholdDatastream(ds));
 //             let gammaThreshDs = datastreams.find((ds: any) => {
-//                 console.log("heyy",ds.properties["system@id"] == eventData.systemIdx)
 //                 return ds.properties["system@id"] == eventData.systemIdx
 //             })
 //             if(gammaThreshDs){
-//                 console.log("gamma", gammaThreshDs)
 //                 let latestGB = await getObservations(eventData.startTime, eventData.endTime, gammaThreshDs);
 //                 dispatch(setLatestGB(latestGB));
 //             }
 //         }
 //     }
-//
-//
 //
 //     return (
 //         <Box sx={{flex: 1, width: '100%'}}>
@@ -500,7 +418,7 @@
 //                 rows={filteredTableData}
 //                 columns={columns}
 //                 onRowClick={handleRowSelection}
-//                 onPaginationModelChange={(model) => handlePageChange(model)}
+//
 //                 rowSelectionModel={selectionModel}
 //                 initialState={{
 //                     pagination: {
@@ -606,6 +524,8 @@
 //     )
 // }
 
+
+
 "use client"
 
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
@@ -667,15 +587,15 @@ interface TableProps {
  * @constructor
  */
 export default function EventTable({
-                                   tableMode,
-                                   viewSecondary = false,
-                                   // viewMenu = false,
-                                   viewLane = false,
-                                   viewAdjudicated = false,
-                                   laneMap,
-                                   currentLane
+                                       tableMode,
+                                       viewSecondary = false,
+                                       // viewMenu = false,
+                                       viewLane = false,
+                                       viewAdjudicated = false,
+                                       laneMap,
+                                       currentLane
 
-                               }: TableProps) {
+                                   }: TableProps) {
 
     const selectedRowId = useSelector(selectSelectedRowId);
 

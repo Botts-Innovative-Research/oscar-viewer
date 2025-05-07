@@ -18,9 +18,10 @@ export class LaneVideoPlaybackProps {
     dataSynchronizer: typeof DataSynchronizer;
     modeType: string;
     onSelectedVideoIdxChange?: (index: number) =>void;
+    setVideoView?: (videoView: typeof VideoView) => void;
 }
 
-export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, modeType, onSelectedVideoIdxChange}: LaneVideoPlaybackProps) {
+export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, modeType, onSelectedVideoIdxChange, setVideoView}: LaneVideoPlaybackProps) {
     const videoViewRef = useRef<typeof VideoView>();
     const [selVideoIdx, setSelVidIdx] = useState<number>(0);
     const [localVideoReady, setLocalVideoReady] = useState<boolean>(false);
@@ -36,7 +37,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
             setVideoWidth("500px")
         }else if (modeType=== 'preview'){
             setVideoHeight("275px")
-            setVideoWidth("350px")
+            setVideoWidth("325px")
         }
     }, [dataSynchronizer, modeType]);
 
@@ -48,7 +49,8 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                 videoViewRef.current = new VideoView({
                     container: `event-preview-video-${ds.id}`,
                     showStats: false,
-                    showTime: false,
+                    showTime: true,
+                    // useWebCodecApi: true,
                     layers: [new VideoDataLayer({
                         dataSourceId: ds.id,
                         getFrameData: (rec: any) => rec.img,
@@ -56,6 +58,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                     })]
                 });
 
+                setVideoView(videoViewRef.current);
                 console.log("video exists", videoViewRef)
 
 
@@ -132,7 +135,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
 
                         sx={{
                             height: videoHeight,
-                            width: videoWidth,
+                            width: "100%",
                             alignItems: "center",
                             border: "1px solid rgba(0,0,0,0.12)",
                             padding: 1,
@@ -162,4 +165,3 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
 
     )
 }
-

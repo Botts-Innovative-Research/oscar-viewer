@@ -263,7 +263,7 @@ export class LaneMapEntry {
             let datasourceReplay = this.createReplayConSysApiFromDataStream(ds, startTime, endTime);
             let datasourceBatch = this.createBatchConSysApiFromDataStream(ds, startTime, endTime);
 
-            console.log("datasourceBatch", ds)
+            // console.log("datasourceBatch", ds)
             // move some of this into another function to remove code redundancy
             if (isOccupancyDatastream(ds)) {
                 let occArray = dsMap.get('occ')!;
