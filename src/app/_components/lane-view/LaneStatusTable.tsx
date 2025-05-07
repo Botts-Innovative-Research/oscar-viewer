@@ -110,9 +110,9 @@ export default function StatusTables({laneMap}: TableProps){
                 startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 2);
                 await fetchObservations(entry, startTimeForObs.toISOString(), 'now', observedProperty)
 
-                let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now', observedProperty)
+                let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now', observedProperty) ?? [];
                 allFetchedResults = [...allFetchedResults, ...fetchedResults];
-
+                
             })();
             promiseGroup.push(promise);
         });
