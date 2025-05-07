@@ -74,9 +74,11 @@ export default function StatusTables({laneMap}: TableProps){
         while (obsCollection.hasNext()) {
             let obsResults = await obsCollection.nextPage();
             obsResults.map((obs: any) => {
+                if(obs?.result?.alarmState == 'Scan') return;
+
                 let result = eventFromObservation(obs, laneEntry);
+
                 observations.push(result);
-                // when fetching, this operation is a bit too costly so we probably want to just set the table with all the results we've collected
                 if (addToLog) dispatch(addEventToLaneViewLog(result));
             })
         }
@@ -84,6 +86,7 @@ export default function StatusTables({laneMap}: TableProps){
     }
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): AlarmTableData {
+
         let newEvent: AlarmTableData = new AlarmTableData(
             randomUUID(),
             laneEntry.laneName,
@@ -107,9 +110,9 @@ export default function StatusTables({laneMap}: TableProps){
                 startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 2);
                 await fetchObservations(entry, startTimeForObs.toISOString(), 'now', observedProperty)
 
-                let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now', observedProperty)
+                let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now', observedProperty) ?? [];
                 allFetchedResults = [...allFetchedResults, ...fetchedResults];
-
+                
             })();
             promiseGroup.push(promise);
         });
