@@ -453,7 +453,6 @@ export function EventPreview() {
     // when the user toggles the time controller this is the code to change the time sync
     const handleCommitChange = useCallback( async(event: Event, newValue: number) => {
 
-        // await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, 0.0, true);
         setSyncTime(newValue);
 
         await syncRef.current.dataSynchronizerReplay.setStartTime(newValue, false).finally(() => {
@@ -479,7 +478,6 @@ export function EventPreview() {
 
     const videoViewRef = useRef<typeof VideoView>();
 
-
     async function fetchPausedFrame(startTime: any, endTime: string, datastreams: typeof DataStreams){
 
         let dsId = syncRef.current.dataSynchronizer.dataSources[selectedIndex.current].name.split("-")[1]
@@ -494,7 +492,6 @@ export function EventPreview() {
         console.log("obsPage", obsPage)
 
         const imageData = obsPage[0].img.data
-        const compression = obsPage[0].img.compression
 
         if(videoViewRef.current.videoView instanceof FFMPEGView || videoViewRef.current.videoView instanceof WebCodecView){
             // h264 create canvas pixels
