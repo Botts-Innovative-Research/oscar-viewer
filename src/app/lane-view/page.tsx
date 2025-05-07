@@ -163,7 +163,7 @@ export default function LaneViewPage() {
                             <EventTable tableMode={'lanelog'} laneMap={laneMap} viewLane viewSecondary viewAdjudicated currentLane={currentLane}/>
                         </Grid>
                         <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'alarm' ? 'block' : 'none' }}>
-                            <LaneStatusTable laneMap={laneMap}/>
+                            <LaneStatusTable laneName={currentLane}/>
                         </Grid>
                     </Grid>
                 </Paper>
