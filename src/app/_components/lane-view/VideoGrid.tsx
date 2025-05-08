@@ -18,7 +18,7 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
     const [selVideoIdx, setSelVidIdx] = useState<number>(0);
     const [maxPages, setMaxPages] = useState(0)
 
-    const [videoWidth, setVideoWidth] = useState("450px");
+    // const [videoWidth, setVideoWidth] = useState("450px");
     const [videoHeight, setVideoHeight] = useState("500px");
 
 
@@ -104,7 +104,7 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
         }
     }
 
-
+//640 × 480 px
     return (
         <>
             {dataSources != null && dataSources.length > 0 && (
@@ -120,8 +120,8 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
                        alignContent="center"
                        justifyContent="center"
                        sx={{
-                           height: videoHeight,
-                           width: videoWidth,
+                           height: "100%",
+                           width: "480px",
                            alignItems: "center",
                            border: "1px solid rgba(0,0,0,0.12)",
                            padding: 1,

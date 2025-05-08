@@ -175,7 +175,7 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
 
     const getFrameObservations = async(newStartTime: number)=>{
 
-        for (const lane of laneMap.current.values()){
+        for (const lane of laneMap.values()){
 
             if(lane.laneName === eventData.laneId){
                 let datastreams = lane.datastreams.filter((ds: any) => isVideoDatastream(ds));
