@@ -59,15 +59,15 @@ interface TableProps {
  * @constructor
  */
 export default function EventTable({
-                                   tableMode,
-                                   viewSecondary = false,
-                                   // viewMenu = false,
-                                   viewLane = false,
-                                   viewAdjudicated = false,
-                                   laneMap,
-                                   currentLane
+                                       tableMode,
+                                       viewSecondary = false,
+                                       // viewMenu = false,
+                                       viewLane = false,
+                                       viewAdjudicated = false,
+                                       laneMap,
+                                       currentLane
 
-                               }: TableProps) {
+                                   }: TableProps) {
 
     const selectedRowId = useSelector(selectSelectedRowId);
 

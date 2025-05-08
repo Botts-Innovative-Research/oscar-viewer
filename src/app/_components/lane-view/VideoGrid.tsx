@@ -104,7 +104,7 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
         }
     }
 
-
+//640 × 480 px
     return (
         <>
             {dataSources != null && dataSources.length > 0 && (
@@ -120,8 +120,8 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
                        alignContent="center"
                        justifyContent="center"
                        sx={{
-                           height: videoHeight,
-                           width: "100%",
+                           height: "320px",
+                           width: "640px",
                            alignItems: "center",
                            border: "1px solid rgba(0,0,0,0.12)",
                            padding: 1,
