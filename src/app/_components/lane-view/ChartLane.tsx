@@ -7,10 +7,8 @@ import React, {useCallback, useEffect, useRef, useState} from "react";
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
 import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView";
 import {
-    createNSigmaCalcViewCurve,
     createGammaViewCurve,
     createNeutronViewCurve,
-    createThresholdViewCurve
 } from "@/app/utils/ChartUtils";
 
 export class ChartInterceptProps {

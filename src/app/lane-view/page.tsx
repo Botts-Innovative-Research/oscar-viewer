@@ -139,7 +139,7 @@ export default function LaneViewPage() {
             </Grid>
 
             <Grid item container spacing={2} sx={{ width: "100%" }}>
-                <Paper variant='outlined' sx={{ width: "100%" , padding: 2}}>
+                <Paper variant='outlined' sx={{ width: "100%", height: "100%", padding: 2}}>
                     <Grid container direction="column">
                         <Grid item sx={{ display: "flex", justifyContent: "center", padding: 1 }}>
                             <ToggleButtonGroup
@@ -159,11 +159,11 @@ export default function LaneViewPage() {
                                 {toggleButtons}
                             </ToggleButtonGroup>
                         </Grid>
-                        <Grid item sx={{ width: "100%", display: toggleView === 'occupancy' ? 'block' : 'none' }}>
+                        <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'occupancy' ? 'block' : 'none' }}>
                             <EventTable tableMode={'lanelog'} laneMap={laneMap} viewLane viewSecondary viewAdjudicated currentLane={currentLane}/>
                         </Grid>
-                        <Grid item sx={{ width: "100%", display: toggleView === 'alarm' ? 'block' : 'none' }}>
-                            <LaneStatusTable laneMap={laneMap}/>
+                        <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'alarm' ? 'block' : 'none' }}>
+                            <LaneStatusTable laneName={currentLane}/>
                         </Grid>
                     </Grid>
                 </Paper>

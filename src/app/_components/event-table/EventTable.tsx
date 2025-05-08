@@ -158,7 +158,6 @@ export default function EventTable({
             let promise = (async () => {
                 let startTimeForObs = new Date();
                 startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
-                // await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
                 let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
                 allFetchedResults = [...allFetchedResults, ...fetchedResults];
 
@@ -200,15 +199,6 @@ export default function EventTable({
 
     }
 
-    function onlyLaneFilteredList(tableData: EventTableData[], laneId: string) {
-
-        console.log("table data", tableData, laneId)
-
-        if (!tableData) return [];
-        const laneData = tableData.filter((entry: EventTableData) => entry.laneId == laneId);
-        console.log("filtered lane", laneData);
-        return laneData;
-    }
 
     function laneEventList(tableData: EventTableData[]){
         let filteredData: EventTableData[] = [];
