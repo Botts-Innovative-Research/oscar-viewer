@@ -79,7 +79,7 @@ export default function StatusTables({laneName}: TableProps){
         let allResults: any[] = [];
 
         let statusEvents: AlarmTableData[] =[];
-        let initialRes = await ds.searchObservations(new ObservationFilter({ resultTime: `${timeStart}/${timeEnd}` }), 25000);
+        let initialRes = await ds.searchObservations(new ObservationFilter({ resultTime: `${timeStart}/${timeEnd}` }), 15);
 
         while (initialRes.hasNext()) {
             let obsRes = await initialRes.nextPage();
@@ -94,12 +94,10 @@ export default function StatusTables({laneName}: TableProps){
                     let count3 = res.result.neutronCount3;
                     let count4 = res.result.neutronCount4;
 
-                    if(state === 'Alarm'){
-                        state = 'Neutron Alarm'
-                    }
-                    if(state.includes('Alarm') || state.includes('Fault')){
+
+                    if(state === 'Alarm' || state.includes('Fault')){
                         const date = (new Date(res.timestamp)).toISOString();
-                        let newEvent = new AlarmTableData(randomUUID(), laneName, count1, count2, count3, count4, state, date)
+                        let newEvent = new AlarmTableData(randomUUID(), laneName, count1, count2, count3, count4, `Neutron ${state}`, date)
                         newEvent ? statusEvents.push(newEvent) : null;
                     }
 
@@ -112,13 +110,9 @@ export default function StatusTables({laneName}: TableProps){
                     let count3 = res.result.gammaCount3;
                     let count4 = res.result.gammaCount4;
 
-                    if(state === 'Alarm'){
-                        state = 'Gamma Alarm'
-                    }
-
-                    if(state.includes('Alarm') || state.includes('Fault')){
+                    if(state === 'Alarm' || state.includes('Fault')){
                         const date = (new Date(res.timestamp)).toISOString()
-                        let newEvent = new AlarmTableData(randomUUID(),laneName, count1, count2, count3, count4,  state, date)
+                        let newEvent = new AlarmTableData(randomUUID(),laneName, count1, count2, count3, count4,`Gamma ${state}`, date)
                         newEvent ? statusEvents.push(newEvent) : null;
                     }
 
@@ -151,25 +145,22 @@ export default function StatusTables({laneName}: TableProps){
                 let count3: number;
                 let count4: number;
 
-                if(state === 'Alarm'){
-                    if(type === 'Neutron'){
-                        state = 'Neutron Alarm'
-                        count1 = value.data.neutronCount1;
-                        count2 = value.data.neutronCount2;
-                        count3 = value.data.neutronCount3;
-                        count4 = value.data.neutronCount4;
+                if(type === 'Neutron'){
+                    // state = 'Neutron Alarm'
+                    count1 = value.data.neutronCount1;
+                    count2 = value.data.neutronCount2;
+                    count3 = value.data.neutronCount3;
+                    count4 = value.data.neutronCount4;
 
-                    }else if(type === 'Gamma'){
-                        state = 'Gamma Alarm'
-                        count1 = value.data.gammaCount1;
-                        count2 = value.data.gammaCount2;
-                        count3 = value.data.gammaCount3;
-                        count4 = value.data.gammaCount4;
-                    }
-
+                }else if(type === 'Gamma'){
+                    // state = 'Gamma Alarm'
+                    count1 = value.data.gammaCount1;
+                    count2 = value.data.gammaCount2;
+                    count3 = value.data.gammaCount3;
+                    count4 = value.data.gammaCount4;
                 }
-                if(state.includes('Alarm') || value.data.alarmState.includes('Fault')){
-                    let newEvent = new AlarmTableData(randomUUID(), laneName,count1, count2, count3, count4, state, date);
+                if(state === 'Alarm' || state.includes('Fault')){
+                    let newEvent = new AlarmTableData(randomUUID(), laneName, count1, count2, count3, count4, `${type} ${state}`, date);
                     newEvent ? allEvents.push(newEvent) : null;
                 }
 

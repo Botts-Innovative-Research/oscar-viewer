@@ -72,11 +72,14 @@ export default function AlarmTable(props:{ alarmData: AlarmTableDataCollection }
             rows={data.data}
             columns={columns}
             initialState={{
-              pagination: {
-                paginationModel: {
-                  pageSize: 20,
+                pagination: {
+                    paginationModel: {
+                        pageSize: 15,
+                    },
                 },
-              },
+                sorting: {
+                    sortModel: [{field: 'timestamp', sort: 'desc'}]
+                },
             }}
             pageSizeOptions={[20]}
             slots={{toolbar: CustomToolbar}}

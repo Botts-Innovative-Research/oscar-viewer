@@ -7,10 +7,11 @@ import Media from "../_components/lane-view/Media";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import EventTable from "@/app/_components/event-table/EventTable";
 import {useSelector} from "react-redux";
-import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
+import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {RootState} from "@/lib/state/Store";
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {
+    isConnectionDatastream,
     isGammaDatastream,
     isNeutronDatastream,
     isTamperDatastream,
@@ -21,6 +22,7 @@ import {useAppDispatch} from "@/lib/state/Hooks";
 import {selectLastToggleState, setToggleState} from "@/lib/state/LaneViewSlice";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import LaneStatusTable from "../_components/lane-view/LaneStatusTable";
+import {LaneStatusProps} from "@/app/_components/dashboard/LaneStatus";
 
 
 
@@ -66,7 +68,7 @@ export default function LaneViewPage() {
 
         laneDSMap.set(currentLane, new LaneDSColl());
 
-        for(let i = 0; i< lane.datastreams.length; i++) {
+        for(let i = 0; i < lane.datastreams.length; i++) {
             const ds = lane.datastreams[i]
             let rtDS = lane.datasourcesRealtime[i];
             let laneDSColl = laneDSMap.get(currentLane);
@@ -88,24 +90,23 @@ export default function LaneViewPage() {
                 laneDSColl?.addDS('gammaTrshldRT', rtDS);
                 setThresholdDS(rtDS);
             }
-
             if (isVideoDatastream(ds)) {
                 laneDSColl?.addDS('videoRT', rtDS);
                 updatedVideo.push(rtDS)
 
             }
         }
+
         setVideoDS(updatedVideo);
         setDataSourcesByLane(laneDSMap);
 
-    }, [laneMapRef]);
-
-
+    }, [laneMapRef, laneMapRef.current.size]);
+    
     useEffect(() => {
-        if(laneMapRef?.current && currentLane)
-            collectDataSources();
-        console.log("lane view collected datasources")
-    }, [laneMapRef, currentLane]);
+        if(laneMapRef?.current && currentLane){
+            collectDataSources().then(r => console.log("lane view collected datasources"));
+        }
+    }, [laneMapRef, currentLane, laneMapRef.current.size]);
 
     return (
         <Stack spacing={2} direction={"column"}>

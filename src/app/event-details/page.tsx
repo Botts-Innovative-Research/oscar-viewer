@@ -45,6 +45,7 @@ export default function EventDetailsPage() {
 
         let currentLane = eventPreview.eventData.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+
         if (!currLaneEntry) {
             console.error("LaneMapEntry not found for:", currentLane);
             return;
@@ -53,10 +54,9 @@ export default function EventDetailsPage() {
         console.log("Collecting DataSources...", currLaneEntry, currentLane);
 
         // @ts-ignore
-        let tempDSMap: Map<string, ConSysApi[]>;
+        let tempDSMap: Map<string, typeof ConSysApi[]>;
 
         let datasources = currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
-        console.log("MY DATASOURCES ", datasources);
         setLocalDSMap(datasources);
         tempDSMap = datasources;
 
@@ -80,8 +80,10 @@ export default function EventDetailsPage() {
 
 
     useEffect(() => {
-        if(laneMapRef.current && eventPreview)
+        if(laneMapRef.current && eventPreview){
             collectDataSources();
+        }
+
     }, [eventPreview, laneMapRef.current]);
 
 
