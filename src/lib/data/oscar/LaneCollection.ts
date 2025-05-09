@@ -312,13 +312,13 @@ export class LaneMapEntry {
                 let videoArray = dsMap.get('video')!;
 
                 console.log("video ds", ds)
-                const index = videoArray.findIndex(dsItem => dsItem.properties.id === datasourceBatch.properties.id);
+                const index = videoArray.findIndex(dsItem => dsItem.properties.id === datasourceReplay.properties.id);
 
 
                 if (index !== -1) {
-                    videoArray[index] = datasourceBatch;
+                    videoArray[index] = datasourceReplay;
                 } else {
-                    videoArray.push(datasourceBatch);
+                    videoArray.push(datasourceReplay);
                 }
 
             }
