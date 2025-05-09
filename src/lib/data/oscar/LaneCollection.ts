@@ -263,11 +263,13 @@ export class LaneMapEntry {
             let datasourceReplay = this.createReplayConSysApiFromDataStream(ds, startTime, endTime);
             let datasourceBatch = this.createBatchConSysApiFromDataStream(ds, startTime, endTime);
 
+            if(ds.properties.outputName === 'video') continue; //skip, only use process videos
+
             // console.log("datasourceBatch", ds)
             // move some of this into another function to remove code redundancy
             if (isOccupancyDatastream(ds)) {
                 let occArray = dsMap.get('occ')!;
-                const index = occArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
+                const index = occArray.findIndex(dsItem => dsItem.properties.id === datasourceBatch.properties.id);
                 if (index !== -1) {
                     occArray[index] = datasourceBatch;
                 } else {
@@ -277,7 +279,7 @@ export class LaneMapEntry {
 
             if(isGammaDatastream(ds)){
                 let gammaArray = dsMap.get('gamma')!;
-                const index = gammaArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
+                const index = gammaArray.findIndex(dsItem => dsItem.properties.id === datasourceBatch.properties.id);
                 if (index !== -1) {
                     gammaArray[index] = datasourceBatch;
                 } else {
@@ -287,7 +289,7 @@ export class LaneMapEntry {
 
             if(isNeutronDatastream(ds)){
                 let neutronArray = dsMap.get('neutron')!;
-                const index = neutronArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
+                const index = neutronArray.findIndex(dsItem => dsItem.properties.id === datasourceBatch.properties.id);
                 if (index !== -1) {
                     neutronArray[index] = datasourceBatch;
                 } else {
@@ -297,7 +299,7 @@ export class LaneMapEntry {
 
             if(isTamperDatastream(ds)){
                 let tamperArray = dsMap.get('tamper')!;
-                const index = tamperArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
+                const index = tamperArray.findIndex(dsItem => dsItem.properties.id === datasourceBatch.properties.id);
                 if (index !== -1) {
                     tamperArray[index] = datasourceBatch;
                 } else {
@@ -305,20 +307,25 @@ export class LaneMapEntry {
                 }
             }
 
+
             if(isVideoDatastream(ds)){
                 let videoArray = dsMap.get('video')!;
+
+                console.log("video ds", ds)
                 const index = videoArray.findIndex(dsItem => dsItem.properties.id === datasourceBatch.properties.id);
+
 
                 if (index !== -1) {
                     videoArray[index] = datasourceBatch;
                 } else {
                     videoArray.push(datasourceBatch);
                 }
+
             }
 
             if(isThresholdDatastream(ds)){
                 let gammaTrshldArray = dsMap.get('gammaTrshld')!;
-                const index = gammaTrshldArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
+                const index = gammaTrshldArray.findIndex(dsItem => dsItem.properties.id === datasourceBatch.properties.id);
 
                 if (index !== -1) {
                     gammaTrshldArray[index] = datasourceBatch;
@@ -329,10 +336,9 @@ export class LaneMapEntry {
 
             if(isConnectionDatastream(ds)){
 
-                console.log("dsMap", dsMap)
                 let connectionArray = dsMap.get('connection')!;
-                console.log
-                const index = connectionArray.findIndex(dsItem => dsItem.properties.name === datasourceBatch.properties.name);
+
+                const index = connectionArray.findIndex(dsItem => dsItem.properties.id === datasourceBatch.properties.id);
 
                 if (index !== -1) {
                     connectionArray[index] = datasourceBatch;

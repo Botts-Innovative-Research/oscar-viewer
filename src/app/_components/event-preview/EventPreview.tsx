@@ -415,6 +415,7 @@ export function EventPreview() {
                 if(videoViewRef.current.videoView instanceof MjpegView){
                     var img = document.getElementsByClassName("video-mjpeg");
                     if(img.length > 0) {
+                        // @ts-ignore
                         img[0].src = frameSrc;
                     }
                 }else if(videoViewRef.current.videoView instanceof FFMPEGView || videoViewRef.current.videoView instanceof WebCodecView){
@@ -442,6 +443,7 @@ export function EventPreview() {
                 await getFrameObservations(syncTime)
             }else if(videoViewRef.current.videoView instanceof MjpegView){
                 var img = document.getElementsByClassName("video-mjpeg");
+                // @ts-ignore
                 setFrameSrc(img[0].src)
 
             }
@@ -521,6 +523,7 @@ export function EventPreview() {
 
         var img = document.getElementsByClassName("video-mjpeg");
 
+        // @ts-ignore
         img[0].src = url;
     }
 

@@ -90,8 +90,16 @@ export default function LaneViewPage() {
                 setThresholdDS(rtDS);
             }
             if (isVideoDatastream(ds)) {
-                laneDSColl?.addDS('videoRT', rtDS);
-                updatedVideo.push(rtDS)
+                const dsSystemId = ds.properties['system@id'];
+
+                for(let system of lane.systems) {
+                    if(system.properties.id === dsSystemId) {
+                        updatedVideo.push(rtDS)
+                        laneDSColl.addDS('videoRT', rtDS)
+                    }
+                }
+                // laneDSColl?.addDS('videoRT', rtDS);
+                // updatedVideo.push(rtDS)
 
             }
         }
