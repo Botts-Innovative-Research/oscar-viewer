@@ -18,25 +18,26 @@ export class LaneVideoPlaybackProps {
     dataSynchronizer: typeof DataSynchronizer;
     modeType: string;
     onSelectedVideoIdxChange?: (index: number) =>void;
+    setVideoView?: (videoView: typeof VideoView) => void;
 }
 
-export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, modeType, onSelectedVideoIdxChange}: LaneVideoPlaybackProps) {
+export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, modeType, onSelectedVideoIdxChange, setVideoView}: LaneVideoPlaybackProps) {
     const videoViewRef = useRef<typeof VideoView>();
     const [selVideoIdx, setSelVidIdx] = useState<number>(0);
     const [localVideoReady, setLocalVideoReady] = useState<boolean>(false);
 
     const maxPages = dataSynchronizer.dataSynchronizer.dataSources.length;
 
-    const [videoWidth, setVideoWidth] = useState("275px");
-    const [videoHeight, setVideoHeight] = useState("350px");
+    const [videoWidth, setVideoWidth] = useState("680px");
+    const [videoHeight, setVideoHeight] = useState("480px");
 
     useEffect(() => {
         if(modeType === 'detail'){
-            setVideoHeight("450px")
-            setVideoWidth("500px")
+            setVideoHeight("480px")
+            setVideoWidth("640px")
         }else if (modeType=== 'preview'){
-            setVideoHeight("275px")
-            setVideoWidth("350px")
+            setVideoHeight("240px")
+            setVideoWidth("320px")
         }
     }, [dataSynchronizer, modeType]);
 
@@ -49,6 +50,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                     container: `event-preview-video-${ds.id}`,
                     showStats: false,
                     showTime: false,
+                    // useWebCodecApi: true,
                     layers: [new VideoDataLayer({
                         dataSourceId: ds.id,
                         getFrameData: (rec: any) => rec.img,
@@ -56,6 +58,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                     })]
                 });
 
+                setVideoView(videoViewRef.current);
                 console.log("video exists", videoViewRef)
 
 
@@ -117,8 +120,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                     justifyContent: "center",
                     alignItems: "center",
                 }}>
-                    <IconButton onClick={handlePrevPage} sx={{margin: 2, cursor: 'pointer'}}
-                                disabled={selVideoIdx === 0}>
+                    <IconButton onClick={handlePrevPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === 0}>
                         <NavigateBeforeIcon/>
                     </IconButton>
 
@@ -152,8 +154,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
 
                     </Stack>
 
-                    <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}}
-                                disabled={selVideoIdx === maxPages - 1}>
+                    <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === maxPages - 1}>
                         <NavigateNextIcon/>
                     </IconButton>
                 </Box>
@@ -162,4 +163,3 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
 
     )
 }
-

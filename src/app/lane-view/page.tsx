@@ -7,10 +7,11 @@ import Media from "../_components/lane-view/Media";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import EventTable from "@/app/_components/event-table/EventTable";
 import {useSelector} from "react-redux";
-import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
+import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {RootState} from "@/lib/state/Store";
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {
+
     isGammaDatastream,
     isNeutronDatastream,
     isTamperDatastream,
@@ -20,7 +21,7 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {selectLastToggleState, setToggleState} from "@/lib/state/LaneViewSlice";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
-import LaneStatusTable from "../_components/lane-view/LaneStatusTable";
+import StatusTable from "../_components/lane-view/StatusTable";
 
 
 
@@ -44,8 +45,8 @@ export default function LaneViewPage() {
 
 
     const toggleButtons = [
-        <ToggleButton value={"occupancy"} key={"occupancy"}>Occupancy</ToggleButton>,
-        <ToggleButton value={"alarm"} key={"alarm"}>Alarm</ToggleButton>
+        <ToggleButton value={"occupancy"} key={"occupancy"}>Occupancy Table</ToggleButton>,
+        <ToggleButton value={"fault"} key={"fault"}>Fault Table</ToggleButton>
     ];
 
     const handleToggle = (event: React.MouseEvent<HTMLElement>, newView: string) =>{
@@ -66,7 +67,7 @@ export default function LaneViewPage() {
 
         laneDSMap.set(currentLane, new LaneDSColl());
 
-        for(let i = 0; i< lane.datastreams.length; i++) {
+        for(let i = 0; i < lane.datastreams.length; i++) {
             const ds = lane.datastreams[i]
             let rtDS = lane.datasourcesRealtime[i];
             let laneDSColl = laneDSMap.get(currentLane);
@@ -88,24 +89,31 @@ export default function LaneViewPage() {
                 laneDSColl?.addDS('gammaTrshldRT', rtDS);
                 setThresholdDS(rtDS);
             }
-
             if (isVideoDatastream(ds)) {
-                laneDSColl?.addDS('videoRT', rtDS);
-                updatedVideo.push(rtDS)
+                const dsSystemId = ds.properties['system@id'];
+
+                for(let system of lane.systems) {
+                    if(system.properties.id === dsSystemId) {
+                        updatedVideo.push(rtDS)
+                        laneDSColl.addDS('videoRT', rtDS)
+                    }
+                }
+                // laneDSColl?.addDS('videoRT', rtDS);
+                // updatedVideo.push(rtDS)
 
             }
         }
+
         setVideoDS(updatedVideo);
         setDataSourcesByLane(laneDSMap);
 
-    }, [laneMapRef]);
-
+    }, [laneMapRef, laneMapRef.current.size]);
 
     useEffect(() => {
-        if(laneMapRef?.current && currentLane)
-            collectDataSources();
-        console.log("lane view collected datasources")
-    }, [laneMapRef, currentLane]);
+        if(laneMapRef?.current && currentLane){
+            collectDataSources().then(r => console.log("lane view collected datasources"));
+        }
+    }, [laneMapRef, currentLane, laneMapRef.current.size]);
 
     return (
         <Stack spacing={2} direction={"column"}>
@@ -139,7 +147,7 @@ export default function LaneViewPage() {
             </Grid>
 
             <Grid item container spacing={2} sx={{ width: "100%" }}>
-                <Paper variant='outlined' sx={{ width: "100%" , padding: 2}}>
+                <Paper variant='outlined' sx={{ width: "100%", height: "100%", padding: 2}}>
                     <Grid container direction="column">
                         <Grid item sx={{ display: "flex", justifyContent: "center", padding: 1 }}>
                             <ToggleButtonGroup
@@ -159,11 +167,11 @@ export default function LaneViewPage() {
                                 {toggleButtons}
                             </ToggleButtonGroup>
                         </Grid>
-                        <Grid item sx={{ width: "100%", display: toggleView === 'occupancy' ? 'block' : 'none' }}>
+                        <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'occupancy' ? 'block' : 'none' }}>
                             <EventTable tableMode={'lanelog'} laneMap={laneMap} viewLane viewSecondary viewAdjudicated currentLane={currentLane}/>
                         </Grid>
-                        <Grid item sx={{ width: "100%", display: toggleView === 'alarm' ? 'block' : 'none' }}>
-                            <LaneStatusTable laneMap={laneMap}/>
+                        <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'fault' ? 'block' : 'none' }}>
+                            <StatusTable laneMap={laneMap}/>
                         </Grid>
                     </Grid>
                 </Paper>

@@ -5,26 +5,17 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import LaneItem from './LaneItem';
-import {selectLastLaneStatus, setLastLaneStatus} from "@/lib/state/LaneViewSlice";
+import {setLastLaneStatus} from "@/lib/state/LaneViewSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {useSelector} from "react-redux";
 
 interface LaneStatusProps{
   dataSourcesByLane: Map<string, LaneDSColl>;
 }
 export default function LaneStatus(props: LaneStatusProps) {
   const dispatch = useAppDispatch();
-  // const lastLaneStatus = useSelector(selectLastLaneStatus);
   const idVal = useRef(1);
   const [laneStatus, setLaneStatus] = useState<LaneStatusType>();
-  // const [laneStatus, setLaneStatus] = useState<LaneStatusType | null>(lastLaneStatus ?? null);
 
-//todo: add in a historic request so initial lane status is not null
-
-  // useEffect(() => {
-  //   if(lastLaneStatus.status != null)
-  //     setLaneStatus(lastLaneStatus ?? null);
-  // }, [lastLaneStatus]);
 
   const addSubscriptionCallbacks = useCallback(() => {
     for (let [laneName, laneDSColl] of props.dataSourcesByLane.entries()) {
@@ -48,7 +39,6 @@ export default function LaneStatus(props: LaneStatusProps) {
   }, [props.dataSourcesByLane]);
 
   useEffect(() => {
-    console.log('kalyn michelle,', props.dataSourcesByLane)
     addSubscriptionCallbacks();
   }, [props.dataSourcesByLane]);
 
