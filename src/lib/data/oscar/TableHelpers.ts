@@ -211,21 +211,22 @@ export class NationalTableDataCollection {
 export class AlarmTableData implements IAlarmTableData {
     id: number; // Unique ID for event
     laneId: string;
-    count1: number;
-    count2: number;
-    count3: number;
-    count4: number;
+    // count1: number;
+    // count2: number;
+    // count3: number;
+    // count4: number;
     status: string;
     timestamp: string;
 
 
-    constructor(id: number, laneId: string, count1: number, count2: number, count3: number, count4: number, status: string, timestamp: string) {
+    constructor(id: number, laneId: string,  status: string, timestamp: string) {
+    // constructor(id: number, laneId: string, count1: number, count2: number, count3: number, count4: number, status: string, timestamp: string) {
         this.id = id;
         this.laneId = laneId;
-        this.count1 = count1;
-        this.count2 = count2;
-        this.count3 = count3;
-        this.count4 = count4;
+        // this.count1 = count1;
+        // this.count2 = count2;
+        // this.count3 = count3;
+        // this.count4 = count4;
         this.status = status;
         this.timestamp = timestamp;
     }

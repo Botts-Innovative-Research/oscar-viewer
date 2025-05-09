@@ -23,6 +23,7 @@ import {selectLastToggleState, setToggleState} from "@/lib/state/LaneViewSlice";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import LaneStatusTable from "../_components/lane-view/LaneStatusTable";
 import {LaneStatusProps} from "@/app/_components/dashboard/LaneStatus";
+import StatusTable from "../_components/lane-view/StatusTable";
 
 
 
@@ -46,8 +47,8 @@ export default function LaneViewPage() {
 
 
     const toggleButtons = [
-        <ToggleButton value={"occupancy"} key={"occupancy"}>Occupancy</ToggleButton>,
-        <ToggleButton value={"alarm"} key={"alarm"}>Alarm</ToggleButton>
+        <ToggleButton value={"occupancy"} key={"occupancy"}>Occupancy Table</ToggleButton>,
+        <ToggleButton value={"fault"} key={"fault"}>Fault Table</ToggleButton>
     ];
 
     const handleToggle = (event: React.MouseEvent<HTMLElement>, newView: string) =>{
@@ -101,7 +102,7 @@ export default function LaneViewPage() {
         setDataSourcesByLane(laneDSMap);
 
     }, [laneMapRef, laneMapRef.current.size]);
-    
+
     useEffect(() => {
         if(laneMapRef?.current && currentLane){
             collectDataSources().then(r => console.log("lane view collected datasources"));
@@ -163,8 +164,8 @@ export default function LaneViewPage() {
                         <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'occupancy' ? 'block' : 'none' }}>
                             <EventTable tableMode={'lanelog'} laneMap={laneMap} viewLane viewSecondary viewAdjudicated currentLane={currentLane}/>
                         </Grid>
-                        <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'alarm' ? 'block' : 'none' }}>
-                            <LaneStatusTable laneName={currentLane}/>
+                        <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'fault' ? 'block' : 'none' }}>
+                            <StatusTable laneMap={laneMap}/>
                         </Grid>
                     </Grid>
                 </Paper>

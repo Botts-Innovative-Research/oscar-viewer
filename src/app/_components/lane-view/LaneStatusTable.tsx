@@ -2,7 +2,7 @@
 
 import {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {IAlarmTableData, INationalTableData} from "../../../../types/new-types";
-import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
+import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
@@ -18,6 +18,8 @@ import {
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import AlarmTable from "./AlarmTable";
 import {isGammaDatastream, isNeutronDatastream, isTamperDatastream} from "@/lib/data/oscar/Utilities";
+import {addEventToLaneViewLog, addEventToLog} from "@/lib/state/EventDataSlice";
+import {useAppDispatch} from "@/lib/state/Hooks";
 
 interface TableProps {
     laneName?: string;
@@ -50,9 +52,7 @@ export default function StatusTables({laneName}: TableProps){
                 let rtDS = lane.datasourcesRealtime[idx];
                 let laneDSColl = laneDSMap.get(laneid);
 
-
                 if(isGammaDatastream(ds)){
-
                     laneDSColl.addDS('gammaRT', rtDS);
                     await fetchObservations(laneid, ds, startTime, "now");
                 }
@@ -72,7 +72,7 @@ export default function StatusTables({laneName}: TableProps){
 
     useEffect(() => {
         datasourceSetup();
-    }, [laneMapRef.current]);
+    }, [laneMapRef]);
 
 
     async function fetchObservations(laneName: string, ds: typeof DataStream, timeStart: string, timeEnd: string) {
@@ -93,7 +93,6 @@ export default function StatusTables({laneName}: TableProps){
                     let count2 = res.result.neutronCount2;
                     let count3 = res.result.neutronCount3;
                     let count4 = res.result.neutronCount4;
-
 
                     if(state === 'Alarm' || state.includes('Fault')){
                         const date = (new Date(res.timestamp)).toISOString();
@@ -137,34 +136,39 @@ export default function StatusTables({laneName}: TableProps){
         if (message.values) {
             for (let value of message.values) {
 
+                console.log("state", value.data)
                 let date = (new Date(value.data.timestamp)).toISOString();
-                let state = value.data.alarmState;
 
                 let count1: number;
                 let count2: number;
                 let count3: number;
                 let count4: number;
 
-                if(type === 'Neutron'){
-                    // state = 'Neutron Alarm'
-                    count1 = value.data.neutronCount1;
-                    count2 = value.data.neutronCount2;
-                    count3 = value.data.neutronCount3;
-                    count4 = value.data.neutronCount4;
+                if(value.data?.alarmState){
+                    let state = value.data.alarmState;
 
-                }else if(type === 'Gamma'){
-                    // state = 'Gamma Alarm'
-                    count1 = value.data.gammaCount1;
-                    count2 = value.data.gammaCount2;
-                    count3 = value.data.gammaCount3;
-                    count4 = value.data.gammaCount4;
-                }
-                if(state === 'Alarm' || state.includes('Fault')){
-                    let newEvent = new AlarmTableData(randomUUID(), laneName, count1, count2, count3, count4, `${type} ${state}`, date);
-                    newEvent ? allEvents.push(newEvent) : null;
+                    if(type === 'Neutron'){
+                        // state = 'Neutron Alarm'
+                        count1 = value.data.neutronCount1;
+                        count2 = value.data.neutronCount2;
+                        count3 = value.data.neutronCount3;
+                        count4 = value.data.neutronCount4;
+
+                    }else if(type === 'Gamma'){
+                        // state = 'Gamma Alarm'
+                        count1 = value.data.gammaCount1;
+                        count2 = value.data.gammaCount2;
+                        count3 = value.data.gammaCount3;
+                        count4 = value.data.gammaCount4;
+                    }
+                    if(state === 'Alarm' || state.includes('Fault')){
+                        let newEvent = new AlarmTableData(randomUUID(), laneName, count1, count2, count3, count4, `${type} ${state}`, date);
+                        newEvent ? allEvents.push(newEvent) : null;
+                    }
                 }
 
-                if(value.data.tamperStatus){
+
+                if(value.data?.tamperStatus){
                     let newEvent = new AlarmTableData(randomUUID(), laneName, 0,0,0,0,'Tamper', date);
                     newEvent ? allEvents.push(newEvent) : null;
                 }
@@ -175,7 +179,6 @@ export default function StatusTables({laneName}: TableProps){
             setData(tableRef.current);
         }
     }
-
 
 
     const addSubscriptionCallbacks = useCallback(() => {
@@ -194,6 +197,70 @@ export default function StatusTables({laneName}: TableProps){
             laneDSColl.connectAllDS();
         }
     }, [dataSourcesByLane]);
+
+    const dispatch = useAppDispatch();
+
+    async function streamObservations(laneEntry: LaneMapEntry, obsProperty: string) {
+        let futureTime = new Date();
+        futureTime.setFullYear(futureTime.getFullYear() + 1);
+        let dss: typeof DataStream = laneEntry.findDataStreamByObsProperty(obsProperty);
+
+        if(dss){
+            dss.forEach((ds: typeof DataStream) =>{
+                let type: string = ds.properties.observedProperty
+                console.log("dsss", ds)
+                const observationFilter = new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`});
+                ds.streamObservations(observationFilter, (observation: any) => {
+                    let resultEvent = eventFromObservation(observation[0], type);
+                    dispatch(addEventToLaneViewLog(resultEvent));
+
+                })
+            })
+            }
+
+        }
+
+
+    }
+
+
+    function eventFromObservation(obs: any, type: string): AlarmTableData {
+
+        let newEvent: AlarmTableData;
+
+        let date = (new Date(obs.timestamp)).toISOString();
+
+        let count1, count2, count3, count4: number;
+
+        if(obs.result?.alarmState){
+            let state = obs.result.alarmState;
+
+            if(type === 'Neutron'){
+                // state = 'Neutron Alarm'
+                count1 = obs.result.neutronCount1;
+                count2 = obs.result.neutronCount2;
+                count3 = obs.result.neutronCount3;
+                count4 = obs.result.neutronCount4;
+
+            }else if(type === 'Gamma'){
+                // state = 'Gamma Alarm'
+                count1 = obs.result.gammaCount1;
+                count2 = obs.result.gammaCount2;
+                count3 = obs.result.gammaCount3;
+                count4 = obs.result.gammaCount4;
+            }
+            if(state === 'Alarm' || state.includes('Fault')){
+                newEvent = new AlarmTableData(randomUUID(), laneName, count1, count2, count3, count4, `${type} ${state}`, date);
+            }
+        }
+
+        if(obs.result?.tamperStatus){
+            newEvent = new AlarmTableData(randomUUID(), laneName, 0,0,0,0,'Tamper', date);
+        }
+
+        return newEvent;
+    }
+
 
     useEffect(() => {
         addSubscriptionCallbacks();
