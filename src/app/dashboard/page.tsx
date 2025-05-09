@@ -48,7 +48,6 @@ export default function DashboardPage() {
 
         for (let [laneid, lane] of laneMapRef.current.entries()) {
 
-            console.log("lanemap", laneMapRef.current)
             laneDSMap.set(laneid, new LaneDSColl());
 
             lane.datastreams.forEach((ds, idx) => {

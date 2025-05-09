@@ -2,7 +2,7 @@
 
 import { Box, IconButton, Stack, Typography } from "@mui/material";
 import Slider from '@mui/material/Slider';
-import React, {useEffect, useMemo, useRef, useState} from "react";
+import React, {useEffect, useState} from "react";
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 import PauseRoundedIcon from '@mui/icons-material/PauseRounded';
 

@@ -85,7 +85,8 @@ export default function EventTable({
         if (!occDS) {
             return;
         }
-        let obsCollection = await occDS.searchObservations(observationFilter, 15);
+
+        let obsCollection = await occDS[0].searchObservations(observationFilter, 15);
         console.log("obs collection", obsCollection)
         return await handleObservations(obsCollection, laneEntry, false);
     }
@@ -97,7 +98,7 @@ export default function EventTable({
         let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty("http://www.opengis.net/def/pillar-occupancy-count");
 
         const observationFilter = new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`});
-        occDS.streamObservations(observationFilter, (observation: any) => {
+        occDS[0].streamObservations(observationFilter, (observation: any) => {
             let resultEvent = eventFromObservation(observation[0], laneEntry);
             dispatch(addEventToLog(resultEvent));
 
@@ -361,7 +362,6 @@ export default function EventTable({
     }, [selectedRowId]);
 
 
-    console.log("selected row id vs selection model", selectedRowId, selectionModel[0])
     const handleRowSelection = (params: GridRowParams) => {
 
         const selectedId = params.row.id;

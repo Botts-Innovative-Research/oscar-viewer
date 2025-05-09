@@ -120,8 +120,8 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
                        alignContent="center"
                        justifyContent="center"
                        sx={{
-                           height: "320px",
-                           width: "640px",
+                           height: "100%",
+                           width: "480px",
                            alignItems: "center",
                            border: "1px solid rgba(0,0,0,0.12)",
                            padding: 1,
