@@ -209,7 +209,7 @@ export default function StatusTables({laneMap}: TableProps){
 
 
     useEffect(()=>{
-        let filteredData: AlarmTableData[] = [];
+        let filteredData: AlarmTableData[];
 
         filteredData = tableData.filter((entry: AlarmTableData)=> entry?.laneId == currentLane)
 
