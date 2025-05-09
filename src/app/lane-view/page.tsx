@@ -11,7 +11,7 @@ import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {RootState} from "@/lib/state/Store";
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {
-    isConnectionDatastream,
+
     isGammaDatastream,
     isNeutronDatastream,
     isTamperDatastream,
@@ -21,8 +21,6 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {selectLastToggleState, setToggleState} from "@/lib/state/LaneViewSlice";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
-import LaneStatusTable from "../_components/lane-view/LaneStatusTable";
-import {LaneStatusProps} from "@/app/_components/dashboard/LaneStatus";
 import StatusTable from "../_components/lane-view/StatusTable";
 
 
