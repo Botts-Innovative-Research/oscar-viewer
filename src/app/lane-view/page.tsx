@@ -34,13 +34,13 @@ export default function LaneViewPage() {
 
     const currentLane = useSelector((state: RootState) => state.laneView.currentLane);
 
-    const [gammaDatasources, setGammaDS] =  useState<typeof ConSysApi>();
-    const [neutronDatasources, setNeutronDS] =  useState<typeof ConSysApi>();
-    const [thresholdDatasources, setThresholdDS] = useState<typeof ConSysApi>();
-    const [videoDatasources, setVideoDS] =  useState<typeof ConSysApi[]>([]);
-    const [tamperDatasources, setTamperDS] =  useState<typeof ConSysApi>();
+    const [gammaDS, setGammaDS] =  useState<typeof ConSysApi>();
+    const [neutronDS, setNeutronDS] =  useState<typeof ConSysApi>();
+    const [thresholdDS, setThresholdDS] = useState<typeof ConSysApi>();
+    const [videoDS, setVideoDS] =  useState<typeof ConSysApi[]>([]);
+    const [tamperDS, setTamperDS] =  useState<typeof ConSysApi>();
 
-    const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
+    const [dataSourcesByLane, setDataSourcesByLane] = useState<LaneDSColl>(null);
     const [toggleView, setToggleView] = useState(savedToggleState);
 
 
@@ -55,38 +55,42 @@ export default function LaneViewPage() {
     }
 
     const collectDataSources = useCallback(async() => {
-        // @ts-ignore
-        const laneDSMap = new Map<string, LaneDSColl>();
+
+        let laneDsCollection = new LaneDSColl();
 
         const updatedVideo: typeof ConSysApi[] = [];
 
         const lane = laneMapRef.current.get(currentLane);
 
-        if(!lane) return;
-
-
-        laneDSMap.set(currentLane, new LaneDSColl());
+        if (!lane) {
+            console.warn("Lane not found for currentLane:", currentLane);
+            return;
+        }
 
         for(let i = 0; i < lane.datastreams.length; i++) {
             const ds = lane.datastreams[i]
             let rtDS = lane.datasourcesRealtime[i];
-            let laneDSColl = laneDSMap.get(currentLane);
+
+            console.log("Lane object", lane);
+            console.log("Datastreams", lane.datastreams);
+            console.log("Realtime datasources", lane.datasourcesRealtime);
 
             if (isGammaDatastream(ds)) {
-                laneDSColl.addDS('gammaRT', rtDS);
+                laneDsCollection.addDS('gammaRT', rtDS);
                 setGammaDS(rtDS)
             }
             if (isNeutronDatastream(ds)) {
-                laneDSColl.addDS('neutronRT', rtDS);
+
+                laneDsCollection.addDS('neutronRT', rtDS);
                 setNeutronDS(rtDS);
             }
             if (isTamperDatastream(ds)) {
-                laneDSColl.addDS('tamperRT', rtDS);
+                laneDsCollection.addDS('tamperRT', rtDS);
                 setTamperDS(rtDS)
 
             }
             if (isThresholdDatastream(ds)) {
-                laneDSColl?.addDS('gammaTrshldRT', rtDS);
+                laneDsCollection?.addDS('gammaTrshldRT', rtDS);
                 setThresholdDS(rtDS);
             }
             if (isVideoDatastream(ds)) {
@@ -95,17 +99,17 @@ export default function LaneViewPage() {
                 for(let system of lane.systems) {
                     if(system.properties.id === dsSystemId) {
                         updatedVideo.push(rtDS)
-                        laneDSColl.addDS('videoRT', rtDS)
+                        laneDsCollection.addDS('videoRT', rtDS)
                     }
                 }
-                // laneDSColl?.addDS('videoRT', rtDS);
-                // updatedVideo.push(rtDS)
 
             }
         }
 
         setVideoDS(updatedVideo);
-        setDataSourcesByLane(laneDSMap);
+
+        console.log("laneDsCOllection", laneDsCollection)
+        setDataSourcesByLane(laneDsCollection);
 
     }, [laneMapRef, laneMapRef.current.size]);
 
@@ -128,17 +132,21 @@ export default function LaneViewPage() {
 
             <Grid item container spacing={2} sx={{ width: "100%" }}>
                 <Paper variant='outlined' sx={{ width: "100%"}}>
-                    <LaneStatus dataSourcesByLane={dataSourcesByLane}/>
+                    {dataSourcesByLane &&
+
+                        <LaneStatus dataSourcesByLane={dataSourcesByLane}/>
+                    }
+
                 </Paper>
             </Grid>
 
             <Grid item container spacing={2} sx={{ width: "100%" }}>
                 <Media
                     datasources={{
-                        gamma: gammaDatasources,
-                        neutron: neutronDatasources,
-                        threshold: thresholdDatasources,
-                        video: videoDatasources
+                        gamma: gammaDS,
+                        neutron: neutronDS,
+                        threshold: thresholdDS,
+                        video: videoDS
                     }}
 
                     currentLane={currentLane}
