@@ -246,7 +246,8 @@ export class LaneMapEntry {
      * @param {number} endTime - The end time of the range for datastreams.
      * @return {Map<string, typeof ConSysApi[]>} A map categorizing the replayed datastreams by their event detail types.
      */
-    getDatastreamsForEventDetail(startTime: string, endTime: string): Map<string, typeof ConSysApi[]> {
+    async getDatastreamsForEventDetail(startTime: string, endTime: string): Promise<Map<string, typeof ConSysApi[]>>{
+
 
         let dsMap: Map<string, typeof ConSysApi[]> = new Map();
         dsMap.set('occ', []);
@@ -257,98 +258,153 @@ export class LaneMapEntry {
         dsMap.set('gammaTrshld', []);
         dsMap.set('connection', []);
 
-        for (let ds of this.datastreams) {
+        for (const ds of this.datastreams) {
 
-            let idx: number = this.datastreams.indexOf(ds);
-            let datasourceReplay = this.createReplayConSysApiFromDataStream(ds, startTime, endTime);
-            let datasourceBatch = this.createBatchConSysApiFromDataStream(ds, startTime, endTime);
+            const datasourceReplay = this.createReplayConSysApiFromDataStream(ds, startTime, endTime);
+            const datasourceBatch = this.createBatchConSysApiFromDataStream(ds, startTime, endTime);
 
-            if(ds.properties.outputName === 'video') continue; //skip, only use process videos
 
             // console.log("datasourceBatch", ds)
             // move some of this into another function to remove code redundancy
             if (isOccupancyDatastream(ds)) {
                 let occArray = dsMap.get('occ')!;
-                const index = occArray.findIndex(dsItem => dsItem.properties.id === datasourceBatch.properties.id);
-                if (index !== -1) {
-                    occArray[index] = datasourceBatch;
-                } else {
-                    occArray.push(datasourceBatch);
-                }
+
+                occArray.push(datasourceBatch);
             }
 
             if(isGammaDatastream(ds)){
                 let gammaArray = dsMap.get('gamma')!;
-                const index = gammaArray.findIndex(dsItem => dsItem.properties.id === datasourceBatch.properties.id);
-                if (index !== -1) {
-                    gammaArray[index] = datasourceBatch;
-                } else {
-                    gammaArray.push(datasourceBatch);
-                }
+                gammaArray.push(datasourceBatch);
             }
 
             if(isNeutronDatastream(ds)){
                 let neutronArray = dsMap.get('neutron')!;
-                const index = neutronArray.findIndex(dsItem => dsItem.properties.id === datasourceBatch.properties.id);
-                if (index !== -1) {
-                    neutronArray[index] = datasourceBatch;
-                } else {
-                    neutronArray.push(datasourceBatch);
-                }
+                neutronArray.push(datasourceBatch);
             }
 
             if(isTamperDatastream(ds)){
                 let tamperArray = dsMap.get('tamper')!;
-                const index = tamperArray.findIndex(dsItem => dsItem.properties.id === datasourceBatch.properties.id);
-                if (index !== -1) {
-                    tamperArray[index] = datasourceBatch;
-                } else {
-                    tamperArray.push(datasourceBatch);
-                }
+                tamperArray.push(datasourceBatch);
             }
 
-
-            if(isVideoDatastream(ds)){
+            if(isVideoDatastream(ds)) {
                 let videoArray = dsMap.get('video')!;
-
-                console.log("video ds", ds)
-                const index = videoArray.findIndex(dsItem => dsItem.properties.id === datasourceReplay.properties.id);
-
-
-                if (index !== -1) {
-                    videoArray[index] = datasourceReplay;
-                } else {
-                    videoArray.push(datasourceReplay);
-                }
-
+                videoArray.push(ds);
             }
-
             if(isThresholdDatastream(ds)){
                 let gammaTrshldArray = dsMap.get('gammaTrshld')!;
-                const index = gammaTrshldArray.findIndex(dsItem => dsItem.properties.id === datasourceBatch.properties.id);
-
-                if (index !== -1) {
-                    gammaTrshldArray[index] = datasourceBatch;
-                } else {
-                    gammaTrshldArray.push(datasourceBatch);
-                }
+                gammaTrshldArray.push(datasourceBatch);
             }
 
             if(isConnectionDatastream(ds)){
-
                 let connectionArray = dsMap.get('connection')!;
-
-                const index = connectionArray.findIndex(dsItem => dsItem.properties.id === datasourceBatch.properties.id);
-
-                if (index !== -1) {
-                    connectionArray[index] = datasourceBatch;
-                } else {
-                    connectionArray.push(datasourceBatch);
-                }
+                connectionArray.push(datasourceBatch);
             }
         }
+
+
+        let ds = dsMap;
+
+        const videoDs = ds.get("video") || [];
+
+        const processVideoDs: typeof DataStream[] = [];
+        const regularVideoDs: typeof DataStream[] = [];
+
+        for(const ds of videoDs){
+
+            const uid = ds.properties['system@link'].uid;
+            const uidArray = uid.split(":");
+
+            if(uidArray.includes("process")){
+                console.log("[is-video]  process videos: ", ds)
+                processVideoDs.push(ds);
+            } else{
+                console.log("[is-video] regular video", ds)
+                regularVideoDs.push(ds);
+            }
+        }
+
+        let validVideos: typeof DataStream[] = [];
+
+        if(processVideoDs.length > 0){
+
+            validVideos = await this.checkValidTime(processVideoDs, startTime, endTime);
+
+        }else if(processVideoDs.length == 0 && regularVideoDs.length > 0) {
+
+            this.checkValidTime(regularVideoDs, startTime, endTime).then((result: any) => validVideos.push(result));
+        }
+
+        dsMap.set("video", validVideos);
+
         return dsMap;
     }
+
+    async checkValidTime(dss: typeof DataStream[], startTime: string, endTime: string) {
+
+        const videoArray: typeof DataStream[] = [];
+
+        for (const ds of dss) {
+            let datasourceReplay = this.createReplayConSysApiFromDataStream(ds, startTime, endTime);
+
+            let validStartTime = ds.properties.resultTime[0];
+            let validEndTime = ds.properties.resultTime[1];
+
+
+            let isSecure = this.parentNode.isSecure;
+            let url = this.parentNode.getConnectedSystemsEndpoint(true);
+            let dsApi = new DataStreams({
+                endpointUrl: `${url}`,
+                tls: isSecure,
+                connectorOpts: {
+                    username: this.parentNode.auth.username,
+                    password: this.parentNode.auth.password
+                }
+            });
+
+            let newValidEndTime: string | null = null;
+
+            const result = await dsApi.getDataStreamById(ds.properties.id);
+
+            newValidEndTime = result?.properties?.resultTime[1];
+
+            console.log("new valid endtime",ds, result?.properties?.resultTime)
+
+            // check if old end time is less than new end time
+            if (newValidEndTime && validEndTime < newValidEndTime) {
+                console.info(`Updating end time from ${validEndTime} to ${newValidEndTime}`);
+                validEndTime = newValidEndTime;
+            }
+
+            // Ensure startTime and endTime are within the datastream's valid data time
+            if (validStartTime && validEndTime) {
+
+                const validStart = new Date(validStartTime);
+                const validEnd = new Date(validEndTime);
+
+
+                validStart.setSeconds(validStart.getSeconds() - 1);
+                validEnd.setSeconds(validEnd.getSeconds() + 1);
+
+                console.log(`valid start and end: ${validStart} - ${validEnd}`)
+
+                const eventStart = new Date(startTime);
+                const eventEnd = new Date(endTime);
+
+                if (eventStart >= validStart && eventEnd <= validEnd) {
+                    console.info("[IS-VIDEO] Found valid datastream ", ds)
+                    videoArray.push(datasourceReplay);
+                } else {
+                    console.info(`[IS-VIDEO] Data within interval ${validStart} - ${validEnd} not found for datasource`);
+                }
+            } else {
+                console.info("[IS-VIDEO] No valid time found for datasource ", ds.properties.id);
+            }
+        }
+        return videoArray;
+
+    }
+
 
     async insertAdjudicationSystem(laneName: string) {
         console.log("[ADJ] Inserting Adjudication System for lane: ", this);
@@ -571,3 +627,4 @@ export class LaneDSColl {
         // console.info("Connecting all datasources of:", this);
     }
 }
+

@@ -277,15 +277,15 @@ export function EventPreview() {
 
             prevEventIdRef.current = eventPreview.eventData?.occupancyId;
             if (eventPreview.eventData?.laneId && laneMapRef.current) {
-
-                collectDataSources();
+                console.log("kalyn: byeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
+                callCollectDataSources();
                 dispatch(setEventData(eventPreview.eventData));
 
             }
         }
     }, [eventPreview.eventData?.occupancyId]);
 
-    const collectDataSources = useCallback(() => {
+    const collectDataSources = useCallback(async() => {
         if (!eventPreview.eventData?.laneId || !laneMapRef.current) return;
 
         let currentLane = eventPreview.eventData.laneId;
@@ -299,7 +299,7 @@ export function EventPreview() {
 
         let tempDSMap = new Map<string, typeof ConSysApi[]>();
 
-        let datasources = currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
+        let datasources = await currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
         console.log("DataSources", datasources);
 
         setLocalDSMap(datasources);
@@ -313,11 +313,18 @@ export function EventPreview() {
         const updatedVideo = tempDSMap.get("video") || [];
         const updatedOcc = tempDSMap.get("occ") || [];
 
+        console.log("gamma heyyyy", updatedGamma)
+        console.log("neutron heyyyy", updatedNeutron)
+        console.log("thresh heyyyy", updatedThreshold)
+        console.log("video heyyyy", updatedVideo)
+        console.log("occupacny heyyyy", updatedOcc)
+
         setGammaDS(updatedGamma);
         setNeutronDS(updatedNeutron);
         setThresholdDS(updatedThreshold);
         setVideoDatasources(updatedVideo);
         setOccDS(updatedOcc);
+
         setDatasourcesReady(true);
 
     }, [eventPreview, laneMapRef]);
@@ -339,12 +346,18 @@ export function EventPreview() {
         }
     }, [syncRef, dataSyncCreated, datasourcesReady, videoDatasources]);
 
-    useEffect(() => {
-        if (eventPreview.eventData?.laneId && laneMapRef.current) {
-            collectDataSources();
-            console.log('Datasources collected', eventPreview.eventData?.laneId)
-        }
-    }, [eventPreview.eventData, laneMapRef.current]);
+    async function callCollectDataSources(){
+        await collectDataSources();
+    }
+
+    // useEffect(() => {
+    //
+    //     if (eventPreview.eventData?.laneId && laneMapRef.current) {
+    //         console.log("kalyn heyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy")
+    //         callCollectDataSources();
+    //         console.log('Datasources collected', eventPreview.eventData?.laneId)
+    //     }
+    // }, [eventPreview.eventData, laneMapRef.current]);
 
     useEffect(() => {
         createDataSync();

@@ -40,7 +40,7 @@ export default function EventDetailsPage() {
     const [videoDatasources, setVideoDatasources] = useState<typeof ConSysApi[]>([]);
 
 
-    const collectDataSources = useCallback(() => {
+    const collectDataSources = useCallback(async() => {
         if(!eventPreview.eventData?.laneId || !laneMapRef.current) return;
 
         let currentLane = eventPreview.eventData.laneId;
@@ -56,11 +56,16 @@ export default function EventDetailsPage() {
         // @ts-ignore
         let tempDSMap: Map<string, typeof ConSysApi[]>;
 
-        let datasources = currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
+        let datasources = await currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
+        console.log('datasources', datasources)
         setLocalDSMap(datasources);
         tempDSMap = datasources;
 
         console.log("LocalDSMap", localDSMap);
+
+        if(!tempDSMap){
+            return;
+        }
 
         const updatedGamma = tempDSMap.get("gamma") || [];
         const updatedNeutron = tempDSMap.get("neutron") || [];
@@ -80,10 +85,15 @@ export default function EventDetailsPage() {
 
 
     useEffect(() => {
-        if(laneMapRef.current && eventPreview){
-            collectDataSources();
+
+        async function callCollectDatasources(){
+            await collectDataSources();
         }
 
+
+        if(laneMapRef.current && eventPreview) {
+            callCollectDatasources();
+        }
     }, [eventPreview, laneMapRef.current]);
 
 
