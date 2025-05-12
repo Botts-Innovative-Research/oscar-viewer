@@ -227,22 +227,10 @@ export class LaneMapEntry {
 
     lookupSystemIdFromDataStreamId(dsId: string): string {
         let dataStream: typeof DataStream = this.datastreams.find((ds) => ds.properties.id === dsId);
-        console.log("datastreams:", dataStream)
-        console.log("all systems", this.systems)
 
-        console.log("system: ", this.systems.find((sys) => sys.properties.id === dataStream.properties["system@id"]).properties.id)
         return this.systems.find((sys) => sys.properties.id === dataStream.properties["system@id"]).properties.id;
     }
 
-    lookupParentSystemFromSystemId(systemId: string){
-        console.log("parent system: ", systemId)
-
-
-        // const parentSystemId = this.lookupSystemIdFromDataStreamId(systemId);
-        console.log("parent system",);
-
-        return "hey"
-    }
 
     findDataStreamByObsProperty(obsProperty: string){
         let stream: typeof DataStream = this.datastreams.filter((ds)=> {
@@ -252,7 +240,6 @@ export class LaneMapEntry {
         });
         return stream;
     }
-
 
 
     /**
@@ -328,10 +315,8 @@ export class LaneMapEntry {
             const uidArray = uid.split(":");
 
             if(uidArray.includes("process")){
-                console.log("[is-video]  process videos: ", ds)
                 processVideoDs.push(ds);
             } else{
-                console.log("[is-video] regular video", ds)
                 regularVideoDs.push(ds);
             }
         }
@@ -342,7 +327,6 @@ export class LaneMapEntry {
 
             for(const videoDs of processVideoDs){
                 const video = await this.checkValidDataSource(videoDs, startTime, endTime)
-                console.log("process video", video)
                 if(video){
                     validVideos.push(video);
                 }
@@ -354,7 +338,6 @@ export class LaneMapEntry {
 
             for(const videoDs of regularVideoDs){
                 const video = await this.checkValidDataSource(videoDs, startTime, endTime)
-                console.log("video", video)
                 if(video){
                     validVideos.push(video);
                 }
@@ -362,7 +345,6 @@ export class LaneMapEntry {
         }
 
         dsMap.set("video", validVideos);
-        console.log("latest ds map", dsMap)
         return dsMap;
     }
 
@@ -373,12 +355,8 @@ export class LaneMapEntry {
         let dsApi = await this.parentNode.getDataStreamsApi();
 
         const result = await dsApi.getDataStreamById(ds.properties.id);
-        console.log("dsApi", result)
-
 
         let validStartTime, validEndTime: string | null;
-
-        // const result = await this.datastreams
 
         validStartTime = result?.properties?.resultTime[0];
         validEndTime = result?.properties?.resultTime[1];
@@ -394,7 +372,6 @@ export class LaneMapEntry {
             validStart.setSeconds(validStart.getSeconds() - 1);
             validEnd.setSeconds(validEnd.getSeconds() + 1);
 
-            console.log(`valid start and end: ${validStart} - ${validEnd}`)
 
             const eventStart = new Date(startTime);
             const eventEnd = new Date(endTime);

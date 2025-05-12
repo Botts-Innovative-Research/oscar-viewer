@@ -299,7 +299,6 @@ export function EventPreview() {
         let tempDSMap = new Map<string, typeof ConSysApi[]>();
 
         let datasources = await currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
-        console.log("DataSources", datasources);
 
         setLocalDSMap(datasources);
         tempDSMap = datasources;

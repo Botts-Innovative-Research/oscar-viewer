@@ -95,7 +95,11 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         if (!layers && props.eventData) return;
 
         const elementIds = updateChartElIds(props.eventData);
-        renderCharts(layers, elementIds);
+
+        requestAnimationFrame(()=>{
+            renderCharts(layers, elementIds);
+
+        })
 
     }, [layers, props.eventData]);
 
@@ -126,13 +130,11 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             chartViews.nsigma.chart.update();
         }
         if(chartViews?.neutron) {
-                chartViews.neutron.chart.update();
-            }
+            chartViews.neutron.chart.update();
+        }
 
 
     }, [toggleView, chartViews]);
-
-
 
 
     function annotateCharts(currTime: any){
@@ -234,36 +236,35 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     const renderCharts = (layers: CurveLayers, elementIds: string[]) => {
 
         if (layers.gamma && gammaChartViewRef.current) {
-            // do this bc aspect has gamma but not threshold datasource
             const gammaLayers: any[] = [];
 
-            if(layers?.gamma) gammaLayers.push(layers.gamma);
-            if(layers?.threshold) gammaLayers.push(layers.threshold);
+            if (layers.gamma) gammaLayers.push(layers.gamma);
+            if (layers.threshold) gammaLayers.push(layers.threshold);
 
             const gammaDiv = document.createElement("div");
-            gammaDiv.id = elementIds.find(id => id.includes("gamma"));
-
+            gammaDiv.id = elementIds.find(id => id.includes("gamma"))!;
             gammaChartViewRef.current.innerHTML = "";
             gammaChartViewRef.current.appendChild(gammaDiv);
 
-            const gammaChart = new ChartJsView({
-                container: gammaDiv.id,
-                layers: gammaLayers,
-                css: "chart-view-event-detail",
-                type: 'line',
-                options: {
-                    scales: {
-                        x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
-                        y: { type: 'linear', position: 'left', title: { display: true, text: 'CPS', padding: 15 }, beginAtZero: false }
+            // Wait a tick to ensure DOM is ready before creating the chart
+            requestAnimationFrame(() => {
+                const gammaChart = new ChartJsView({
+                    container: gammaDiv.id,
+                    layers: gammaLayers,
+                    css: "chart-view-event-detail",
+                    type: 'line',
+                    options: {
+                        scales: {
+                            x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
+                            y: { title: { display: true, text: 'CPS', padding: 15 }, beginAtZero: false }
+                        }
                     }
-                }
+                });
+
+                setChartViews(prev => ({ ...prev, gamma: gammaChart }));
+                gammaChart.chart.update();
             });
-
-
-            setChartViews(prev => ({ ...prev, gamma: gammaChart }));
-
         }
-
         if (layers.neutron && neutronChartViewRef.current) {
             const neutronDiv = document.createElement("div");
             neutronDiv.id = elementIds.find(id => id.includes("neutron"));
@@ -313,8 +314,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         }
 
         setChartsReady(true);
-
-
     };
 
 

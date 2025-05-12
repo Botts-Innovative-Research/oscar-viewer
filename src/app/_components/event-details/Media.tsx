@@ -1,4 +1,4 @@
-import {Box, Grid, Paper} from "@mui/material";
+import {Box, Grid, Paper, Typography} from "@mui/material";
 import ChartTimeHighlight from "@/app/_components/event-preview/ChartTimeHighlight";
 import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
 import TimeController from "@/app/_components/TimeController";
@@ -50,7 +50,7 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
 
             masterTimeController.current = new DataSynchronizer({
                 dataSources: videoDS,
-                replaySpeed: 1.0,
+                replaySpeed: 0,
                 startTime: eventData?.startTime,
                 endTime: eventData?.endTime,
             });
@@ -73,7 +73,7 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
     }, [datasources, eventData]);
 
     useEffect(() => {
-        if (chartReady && videoReady) {
+        if (chartReady) {
             console.log("Chart Ready, Starting DataSync");
 
             if(datasources.gamma) datasources?.gamma.connect()
@@ -82,16 +82,17 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
 
             if(datasources.threshold) datasources?.threshold.connect()
 
+            if(videoReady){
+                masterTimeController.current?.connect().then(() => {
+                    console.log("DataSync Should Be Connected", masterTimeController.current);
+                });
 
-            masterTimeController.current?.connect().then(() => {
-                console.log("DataSync Should Be Connected", masterTimeController.current);
-            });
-
-            if (masterTimeController.current?.isConnected()) {
-                // if is true then pause else play
-                console.log("DataSync Connected!!!");
-            } else {
-                console.log("DataSync Not Connected... :(");
+                if (masterTimeController.current?.isConnected()) {
+                    // if is true then pause else play
+                    console.log("DataSync Connected!!!");
+                } else {
+                    console.log("DataSync Not Connected... :(");
+                }
             }
 
         } else {
@@ -119,13 +120,11 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
             var img = document.getElementsByClassName("video-mjpeg");
 
             masterTimeController.current.connect().finally(()=>{
-                // if(img.length > 0) {
-                //     img[0].src = frameSrc;
-                // }
 
                 if(videoViewRef.current.videoView instanceof MjpegView){
                     var img = document.getElementsByClassName("video-mjpeg");
                     if(img.length > 0) {
+                        // @ts-ignore
                         img[0].src = frameSrc;
                     }
                 }else if(videoViewRef.current.videoView instanceof FFMPEGView || videoViewRef.current.videoView instanceof WebCodecView){
@@ -153,6 +152,7 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
                 await getFrameObservations(syncTime)
             }else if(videoViewRef.current.videoView instanceof MjpegView){
                 var img = document.getElementsByClassName("video-mjpeg");
+                // @ts-ignore
                 setFrameSrc(img[0].src)
 
             }
@@ -230,6 +230,7 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
 
         var img = document.getElementsByClassName("video-mjpeg");
 
+        // @ts-ignore
         img[0].src = url;
     }
 
@@ -263,18 +264,30 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
 
                         </Grid>
                         <Grid item xs={12} md={6}>
-                            <LaneVideoPlayback
-                                setVideoReady={setVideoReady}
-                                dataSynchronizer={masterTimeController.current}
-                                modeType={"detail"}
-                                onSelectedVideoIdxChange={handleUpdatingPage}
-                                setVideoView={setVideoView}
-                            />
-                        </Grid>
+                        {(masterTimeController.current) ? (
+                            <div>
 
+                                <LaneVideoPlayback
+                                    setVideoReady={setVideoReady}
+                                    dataSynchronizer={masterTimeController.current}
+                                    modeType={"detail"}
+                                    onSelectedVideoIdxChange={handleUpdatingPage}
+                                    setVideoView={setVideoView}
+                                />
+
+                                <TimeController handleCommitChange={handleChange} pause={pause} play={play} syncTime={syncTime} startTime={eventData?.startTime} endTime={eventData?.endTime}/>
+
+                            </div>
+                            ):
+                            (
+                                <div>
+                                    <Typography variant="h6" align="center">No video data available.</Typography>
+                                </div>
+                            )}
+
+                        </Grid>
                     </Grid>
 
-                    <TimeController handleCommitChange={handleChange} pause={pause} play={play} syncTime={syncTime} startTime={eventData?.startTime} endTime={eventData?.endTime}/>
                 </Box>
             ):
                 <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}><CircularProgress/></Box>
