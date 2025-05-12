@@ -312,7 +312,7 @@ export function EventPreview() {
         const updatedVideo = tempDSMap.get("video") || [];
         const updatedOcc = tempDSMap.get("occ") || [];
 
-        console.log("uodated video", updatedVideo)
+
         setGammaDS(updatedGamma);
         setNeutronDS(updatedNeutron);
         setThresholdDS(updatedThreshold);
@@ -352,7 +352,7 @@ export function EventPreview() {
 
 
     useEffect(() => {
-        if (chartReady && videoReady) {
+        if (chartReady) {
             console.log("Chart Ready, Starting DataSync");
             gammaDatasources.forEach(ds => {
                 ds.connect();
@@ -366,15 +366,17 @@ export function EventPreview() {
             occDatasources.forEach(ds => {
                 ds.connect();
             });
-            syncRef.current.connect().then(() => {
-                console.log("DataSync Should Be Connected", syncRef.current);
-            });
-            if (syncRef.current.isConnected()) {
-                console.log("DataSync Connected!!!");
-            } else {
-                console.log("DataSync Not Connected... :(");
-            }
 
+            if(videoReady){
+                syncRef.current.connect().then(() => {
+                    console.log("DataSync Should Be Connected", syncRef.current);
+                });
+                if (syncRef.current.isConnected()) {
+                    console.log("DataSync Connected!!!");
+                } else {
+                    console.log("DataSync Not Connected... :(");
+                }
+            }
 
         } else {
             console.log("Chart Not Ready, cannot start DataSynchronizer...");
@@ -579,7 +581,7 @@ export function EventPreview() {
                             :
                            (
                                <div>
-                                   <Typography variant="h1" component="h2">No Video Data Available.</Typography>
+                                   <Typography variant="h6" align="center">No video data available.</Typography>
                                </div>
                            )}
                         </Box>

@@ -38,7 +38,7 @@ Chart.register(...registerables, annotationPlugin);
 export class ChartInterceptProps {
     setChartReady: Function;
     modeType: string;
-    currentTime: any;
+    currentTime?: any;
     datasources: { gamma: typeof ConSysApi, neutron: typeof ConSysApi, threshold: typeof ConSysApi };
     eventData: EventTableData;
     latestGB: number;
@@ -63,6 +63,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         neutron: null,
         nsigma: null,
     });
+
     const [toggleView, setToggleView] = useState("cps");
     const gammaToggleButtons = [
         <ToggleButton color= 'error' value={"cps"} key={"cps"}>CPS</ToggleButton>,
@@ -80,7 +81,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
     useEffect(() => {
 
-        console.log("latestGB in charts", props.latestGB)
         if (!props.eventData || !props.datasources?.gamma || !props.datasources?.neutron || !props.datasources?.threshold || !props.latestGB) return;
 
         const init = async () => {
@@ -88,7 +88,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             setLayers(layers)
         };
 
-        init().then(r => console.log("Curve Layers Created"));
+        init();
     }, [props.eventData]);
 
     useEffect(() => {
@@ -97,12 +97,11 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         const elementIds = updateChartElIds(props.eventData);
         renderCharts(layers, elementIds);
 
-
     }, [layers, props.eventData]);
 
 
     useEffect(() => {
-        if(chartViews){
+        if(chartViews && props.currentTime){
             annotateCharts(props.currentTime);
         }
     }, [props.currentTime, chartViews]);
@@ -119,16 +118,21 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     }, [isReadyToRender]);
 
     useEffect(() => {
-        if(chartViews?.gamma) {
-            chartViews?.gamma?.chart.update();
-            console.log("CPS chart updated",  chartViews.gamma);
-        }
 
-        if(chartViews?.nsigma) {
-            chartViews?.nsigma?.chart.update();
-            console.log("NSigma chart updated", chartViews.nsigma);
+        if(chartViews?.gamma) {
+            chartViews.gamma.chart.update();
         }
+        if(chartViews?.nsigma) {
+            chartViews.nsigma.chart.update();
+        }
+        if(chartViews?.neutron) {
+                chartViews.neutron.chart.update();
+            }
+
+
     }, [toggleView, chartViews]);
+
+
 
 
     function annotateCharts(currTime: any){
@@ -217,7 +221,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             createNSigmaCalcViewCurve(props.datasources.gamma, props.latestGB)
         ]);
 
-        console.log("RESULT", result)
         const [neutron, gamma, threshold, threshNsigma, nsigma] = result;
         return {
             neutron,
@@ -229,8 +232,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     }
 
     const renderCharts = (layers: CurveLayers, elementIds: string[]) => {
-
-        console.log("CHART LAYERS: ", layers);
 
         if (layers.gamma && gammaChartViewRef.current) {
             // do this bc aspect has gamma but not threshold datasource
@@ -258,7 +259,9 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 }
             });
 
+
             setChartViews(prev => ({ ...prev, gamma: gammaChart }));
+
         }
 
         if (layers.neutron && neutronChartViewRef.current) {
@@ -282,6 +285,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             });
 
             setChartViews(prev => ({ ...prev, neutron: neutronChart }));
+
         }
 
         if (layers.nsigma && layers.threshNsigma && nSigmaChartViewRef.current) {
@@ -305,9 +309,12 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             });
 
             setChartViews(prev => ({ ...prev, nsigma: nsigmaChart }));
+
         }
 
         setChartsReady(true);
+
+
     };
 
 
@@ -375,3 +382,5 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     );
 
 }
+
+
