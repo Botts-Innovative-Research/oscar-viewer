@@ -277,7 +277,6 @@ export function EventPreview() {
 
             prevEventIdRef.current = eventPreview.eventData?.occupancyId;
             if (eventPreview.eventData?.laneId && laneMapRef.current) {
-                console.log("kalyn: byeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
                 callCollectDataSources();
                 dispatch(setEventData(eventPreview.eventData));
 
@@ -313,12 +312,6 @@ export function EventPreview() {
         const updatedVideo = tempDSMap.get("video") || [];
         const updatedOcc = tempDSMap.get("occ") || [];
 
-        console.log("gamma heyyyy", updatedGamma)
-        console.log("neutron heyyyy", updatedNeutron)
-        console.log("thresh heyyyy", updatedThreshold)
-        console.log("video heyyyy", updatedVideo)
-        console.log("occupacny heyyyy", updatedOcc)
-
         setGammaDS(updatedGamma);
         setNeutronDS(updatedNeutron);
         setThresholdDS(updatedThreshold);
@@ -334,7 +327,7 @@ export function EventPreview() {
         if (!syncRef.current && !dataSyncCreated && videoDatasources.length > 0) {
             syncRef.current = new DataSynchronizer({
                 dataSources: videoDatasources,
-                replaySpeed: 0.5,
+                replaySpeed: 0,
                 startTime: eventPreview.eventData.startTime,
                 // endTime: eventPreview.eventData.endTime,
                 endTime: "now",
@@ -549,6 +542,7 @@ export function EventPreview() {
         videoViewRef.current = videoView
     }
 
+    console.log('datasourcesReady && latestGB && syncRef.current', datasourcesReady , latestGB , syncRef.current)
     return (
         <Stack p={1} display={"flex"} spacing={1}>
             <Stack direction={"row"} justifyContent={"space-between"} spacing={1}>

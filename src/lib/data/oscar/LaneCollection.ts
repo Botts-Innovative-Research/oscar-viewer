@@ -224,9 +224,25 @@ export class LaneMapEntry {
         return ds;
     }
 
+
     lookupSystemIdFromDataStreamId(dsId: string): string {
-        let stream: typeof DataStream = this.datastreams.find((ds) => ds.id === dsId);
-        return this.systems.find((sys) => sys.properties.id === stream.properties["system@id"]).properties.id;
+        let dataStream: typeof DataStream = this.datastreams.find((ds) => ds.properties.id === dsId);
+        console.log("datastreams:", dataStream)
+        console.log("all systems", this.systems)
+
+        console.log("system: ", this.systems.find((sys) => sys.properties.id === dataStream.properties["system@id"]).properties.id)
+        return this.systems.find((sys) => sys.properties.id === dataStream.properties["system@id"]).properties.id;
+    }
+
+
+    lookupParentSystemFromSystemId(systemId: string){
+        console.log("parent system: ", systemId)
+
+
+        // const parentSystemId = this.lookupSystemIdFromDataStreamId(systemId);
+        console.log("parent system",);
+
+        return "hey"
     }
 
     findDataStreamByObsProperty(obsProperty: string){
@@ -328,23 +344,30 @@ export class LaneMapEntry {
 
         if(processVideoDs.length > 0){
 
-            validVideos = await this.checkValidTime(processVideoDs, startTime, endTime);
+            for(const videoDs of processVideoDs){
+                validVideos.push(await this.checkValidTime(videoDs, startTime, endTime));
+            }
+
 
         }else if(processVideoDs.length == 0 && regularVideoDs.length > 0) {
 
-            this.checkValidTime(regularVideoDs, startTime, endTime).then((result: any) => validVideos.push(result));
+            for(const videoDs of regularVideoDs){
+                validVideos.push(await this.checkValidTime(videoDs, startTime, endTime));
+            }
+
         }
 
         dsMap.set("video", validVideos);
 
+        console.log("latst ds map", dsMap)
         return dsMap;
     }
 
-    async checkValidTime(dss: typeof DataStream[], startTime: string, endTime: string) {
+    async checkValidTime(ds: typeof DataStream, startTime: string, endTime: string) {
 
-        const videoArray: typeof DataStream[] = [];
-
-        for (const ds of dss) {
+        // const videoArray: typeof DataStream;
+        //
+        // for (const ds of dss) {
             let datasourceReplay = this.createReplayConSysApiFromDataStream(ds, startTime, endTime);
 
             let validStartTime = ds.properties.resultTime[0];
@@ -393,15 +416,16 @@ export class LaneMapEntry {
 
                 if (eventStart >= validStart && eventEnd <= validEnd) {
                     console.info("[IS-VIDEO] Found valid datastream ", ds)
-                    videoArray.push(datasourceReplay);
+                    // videoArray.push(datasourceReplay);
+                    return datasourceReplay;
                 } else {
                     console.info(`[IS-VIDEO] Data within interval ${validStart} - ${validEnd} not found for datasource`);
                 }
             } else {
                 console.info("[IS-VIDEO] No valid time found for datasource ", ds.properties.id);
             }
-        }
-        return videoArray;
+        // }
+        // return videoArray;
 
     }
 
