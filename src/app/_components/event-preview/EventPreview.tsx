@@ -121,9 +121,9 @@ export function EventPreview() {
             secondaryInspectionStatus: "NONE",
             filePaths: "",
             occupancyId: eventPreview.eventData.occupancyId,
-            alarmingSystemUid: eventPreview.eventData.systemIdx
+            alarmingSystemUid: eventPreview.eventData.rpmSystemId
         }
-        let adjudicationData = new AdjudicationData(new Date().toISOString(), currentUser, eventPreview.eventData.occupancyId, eventPreview.eventData.systemIdx);
+        let adjudicationData = new AdjudicationData(new Date().toISOString(), currentUser, eventPreview.eventData.occupancyId, eventPreview.eventData.rpmSystemId);
         adjudicationData.setFeedback(notes);
         adjudicationData.setAdjudicationCode(value);
         console.log("[ADJ] New Adjudication Data, Ready to Send: ", newAdjData);
@@ -312,6 +312,7 @@ export function EventPreview() {
         const updatedVideo = tempDSMap.get("video") || [];
         const updatedOcc = tempDSMap.get("occ") || [];
 
+        console.log("uodated video", updatedVideo)
         setGammaDS(updatedGamma);
         setNeutronDS(updatedNeutron);
         setThresholdDS(updatedThreshold);
@@ -324,12 +325,12 @@ export function EventPreview() {
 
 
     const createDataSync = useCallback(() => {
-        if (!syncRef.current && !dataSyncCreated && videoDatasources.length > 0) {
+        if (!syncRef.current && !dataSyncCreated && videoDatasources.length > 0 && videoDatasources) {
             syncRef.current = new DataSynchronizer({
                 dataSources: videoDatasources,
                 replaySpeed: 0,
                 startTime: eventPreview.eventData.startTime,
-                // endTime: eventPreview.eventData.endTime,
+                // endTime: eventPreview.eventData.endTime,lane1
                 endTime: "now",
                 masterTimeRefreshRate: 250
             });
@@ -342,15 +343,6 @@ export function EventPreview() {
     async function callCollectDataSources(){
         await collectDataSources();
     }
-
-    // useEffect(() => {
-    //
-    //     if (eventPreview.eventData?.laneId && laneMapRef.current) {
-    //         console.log("kalyn heyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy")
-    //         callCollectDataSources();
-    //         console.log('Datasources collected', eventPreview.eventData?.laneId)
-    //     }
-    // }, [eventPreview.eventData, laneMapRef.current]);
 
     useEffect(() => {
         createDataSync();
@@ -489,7 +481,6 @@ export function EventPreview() {
     async function fetchPausedFrame(startTime: any, endTime: string, datastreams: typeof DataStreams){
 
         let dsId = syncRef.current.dataSynchronizer.dataSources[selectedIndex.current].name.split("-")[1]
-        console.log("sync ds id", dsId);
 
 
         let currentVideoDs = datastreams.filter((ds: any) => ds.properties.id === dsId);
@@ -533,7 +524,6 @@ export function EventPreview() {
         img[0].src = url;
     }
 
-
     const handleUpdatingPage = (page: number)=>{
         selectedIndex.current = page;
     }
@@ -557,7 +547,7 @@ export function EventPreview() {
                 </IconButton>
             </Stack>
 
-            {(datasourcesReady && latestGB && syncRef.current) ? (
+            {(datasourcesReady && latestGB) ? (
                     <Box>
                         <ChartTimeHighlight
                             datasources={{
@@ -572,15 +562,27 @@ export function EventPreview() {
                             latestGB={latestGB}
                         />
 
-                        <LaneVideoPlayback
-                            setVideoReady={setVideoReady}
-                            dataSynchronizer={syncRef.current}
-                            modeType={"preview"}
-                            onSelectedVideoIdxChange={handleUpdatingPage}
-                            setVideoView={setVideoView}
-                        />
-                        <TimeController handleCommitChange={handleCommitChange} pause={pause} play={play} syncTime={syncTime}  startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
-                    </Box>
+                        {(syncRef.current) ?
+                            (
+                                <div>
+                                    <LaneVideoPlayback
+                                        setVideoReady={setVideoReady}
+                                        dataSynchronizer={syncRef.current}
+                                        modeType={"preview"}
+                                        onSelectedVideoIdxChange={handleUpdatingPage}
+                                        setVideoView={setVideoView}
+                                    />
+                                    <TimeController handleCommitChange={handleCommitChange} pause={pause} play={play} syncTime={syncTime}  startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
+
+                                </div>
+                            )
+                            :
+                           (
+                               <div>
+                                   <Typography variant="h1" component="h2">No Video Data Available.</Typography>
+                               </div>
+                           )}
+                        </Box>
                 ) :
 
                 <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}><CircularProgress/></Box>

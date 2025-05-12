@@ -75,11 +75,11 @@ export class EventTableData implements IEventTableData {
         return new Date(this.endTime).getTime();
     }
 
-    setLaneSystemIdx(laneSystemId: string) {
+    setLaneSystemId(laneSystemId: string) {
         this.laneSystemId = laneSystemId;
     }
 
-    setRPMSystemIdx(rpmSystemId: string) {
+    setRPMSystemId(rpmSystemId: string) {
         this.rpmSystemId = rpmSystemId;
     }
 

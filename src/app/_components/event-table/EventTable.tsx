@@ -140,9 +140,9 @@ export default function EventTable({
         const id = prngFromStr(obs, laneEntry.laneName);
         let newEvent: EventTableData = new EventTableData(id, laneEntry.laneName, obs.result, obs.id, obs.foiId);
 
-        newEvent.setRPMSystemIdx(laneEntry.lookupSystemIdFromDataStreamId(obs[`datastream@id`]));
+        newEvent.setRPMSystemId(laneEntry.lookupSystemIdFromDataStreamId(obs[`datastream@id`]));
 
-        // newEvent.setLaneSystemIdx(laneEntry.lookupParentSystemFromSystemId(newEvent.rpmSystemId));
+        // newEvent.setLaneSystemId(laneEntry.lookupParentSystemFromSystemId(newEvent.rpmSystemId));
         newEvent.setDataStreamId(obs["datastream@id"]);
         newEvent.setFoiId(obs["foi@id"]);
         newEvent.setObservationId(obs.id);

@@ -11,6 +11,7 @@ import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterRe
 import {AdjudicationDatastreamConstant} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
 import DataStreamFilter from "osh-js/source/core/consysapi/datastream/DataStreamFilter.js";
+import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js";
 import { isVideoDatastream } from "../oscar/Utilities";
 import Systems from "osh-js/source/core/consysapi/system/Systems.js";
 import SystemFilter from "osh-js/source/core/consysapi/system/SystemFilter.js";
@@ -58,6 +59,8 @@ export interface INode {
 
     insertObservation(observationJSON: any, datastreamId: string): Promise<string>
 
+    getDataStreamsApi(): typeof DataStreams
+    getSystemsApi(): typeof Systems
 }
 
 export interface NodeOptions {
@@ -204,11 +207,7 @@ export class Node implements INode {
     }
 
     async fetchSystems(): Promise<any[]> {
-        let systemsApi = new Systems({
-            endpointUrl: `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`,
-            tls: this.isSecure,
-            connectorOpts: this.auth
-        });
+        let systemsApi = await this.getSystemsApi();
 
         let searchedSystems = await systemsApi.searchSystems(new SystemFilter(), 100);
         let availableSystems = [];
@@ -249,6 +248,36 @@ export class Node implements INode {
         }
     }
 
+    async getDataStreamsApi(): Promise<typeof DataStreams >{
+        let isSecure = this.isSecure;
+        let url = this.getConnectedSystemsEndpoint(true);
+
+        let dsApi = new DataStreams({
+            endpointUrl: `${url}`,
+            tls: isSecure,
+            connectorOpts: {
+                username: this.auth.username,
+                password: this.auth.password
+            }
+        });
+        return dsApi
+    }
+
+    async getSystemsApi(): Promise<typeof Systems>{
+        let isSecure = this.isSecure;
+        let url = this.getConnectedSystemsEndpoint(true);
+
+        let sysApi = new Systems({
+            endpointUrl: `${url}`,
+            tls: isSecure,
+            connectorOpts: {
+                username: this.auth.username,
+                password: this.auth.password
+            }
+        });
+
+        return sysApi;
+    }
     async fetchControlStreams(laneMap: Map<string, LaneMapEntry>){
         for (const [, laneEntry] of laneMap) {
             try {
