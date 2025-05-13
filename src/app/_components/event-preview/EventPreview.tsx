@@ -327,9 +327,8 @@ export function EventPreview() {
         if (!syncRef.current && !dataSyncCreated && videoDatasources.length > 0 && videoDatasources) {
             syncRef.current = new DataSynchronizer({
                 dataSources: videoDatasources,
-                replaySpeed: 0,
+                replaySpeed: 0.5,
                 startTime: eventPreview.eventData.startTime,
-                // endTime: eventPreview.eventData.endTime,lane1
                 endTime: "now",
                 masterTimeRefreshRate: 250
             });

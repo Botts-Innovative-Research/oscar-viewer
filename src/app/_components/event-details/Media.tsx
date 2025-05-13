@@ -50,7 +50,7 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
 
             masterTimeController.current = new DataSynchronizer({
                 dataSources: videoDS,
-                replaySpeed: 0,
+                replaySpeed: 0.5,
                 startTime: eventData?.startTime,
                 endTime: eventData?.endTime,
             });
