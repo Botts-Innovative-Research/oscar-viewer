@@ -36,7 +36,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
             setVideoHeight("480px")
             setVideoWidth("640px")
         }else if (modeType=== 'preview'){
-            setVideoHeight("240px")
+            setVideoHeight("320px")
             setVideoWidth("320px")
         }
     }, [dataSynchronizer, modeType]);
@@ -133,8 +133,6 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                         justifyContent="center"
 
                         sx={{
-                            height: videoHeight,
-                            width: videoWidth,
                             alignItems: "center",
                             border: "1px solid rgba(0,0,0,0.12)",
                             padding: 1,
@@ -145,10 +143,6 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                             <Paper
                                 key={ds.id}
                                 id={`event-preview-video-${ds.id}`}
-                                sx={{
-                                    width: "100%",
-                                    height: "100%",
-                                }}
                             ></Paper>
                         ))}
 
