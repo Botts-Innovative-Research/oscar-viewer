@@ -262,7 +262,6 @@ export class LaneMapEntry {
 
         for (const ds of this.datastreams) {
 
-            const datasourceReplay = this.createReplayConSysApiFromDataStream(ds, startTime, endTime);
             const datasourceBatch = this.createBatchConSysApiFromDataStream(ds, startTime, endTime);
 
             if (isOccupancyDatastream(ds)) {
@@ -352,7 +351,7 @@ export class LaneMapEntry {
 
         let datasourceReplay = this.createReplayConSysApiFromDataStream(ds, startTime, endTime);
 
-        let dsApi = await this.parentNode.getDataStreamsApi();
+        let dsApi = this.parentNode.getDataStreamsApi();
 
         const result = await dsApi.getDataStreamById(ds.properties.id);
 

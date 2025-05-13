@@ -207,7 +207,7 @@ export class Node implements INode {
     }
 
     async fetchSystems(): Promise<any[]> {
-        let systemsApi = await this.getSystemsApi();
+        let systemsApi = this.getSystemsApi();
 
         let searchedSystems = await systemsApi.searchSystems(new SystemFilter(), 100);
         let availableSystems = [];
@@ -248,7 +248,7 @@ export class Node implements INode {
         }
     }
 
-    async getDataStreamsApi(): Promise<typeof DataStreams >{
+    getDataStreamsApi(): typeof DataStreams{
         let isSecure = this.isSecure;
         let url = this.getConnectedSystemsEndpoint(true);
 
@@ -263,7 +263,7 @@ export class Node implements INode {
         return dsApi
     }
 
-    async getSystemsApi(): Promise<typeof Systems>{
+    getSystemsApi(): typeof Systems{
         let isSecure = this.isSecure;
         let url = this.getConnectedSystemsEndpoint(true);
 
