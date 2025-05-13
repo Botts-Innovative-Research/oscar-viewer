@@ -11,6 +11,7 @@ import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterRe
 import {AdjudicationDatastreamConstant} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
 import DataStreamFilter from "osh-js/source/core/consysapi/datastream/DataStreamFilter.js";
+import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js";
 import { isVideoDatastream } from "../oscar/Utilities";
 import Systems from "osh-js/source/core/consysapi/system/Systems.js";
 import SystemFilter from "osh-js/source/core/consysapi/system/SystemFilter.js";
@@ -58,6 +59,8 @@ export interface INode {
 
     insertObservation(observationJSON: any, datastreamId: string): Promise<string>
 
+    getDataStreamsApi(): typeof DataStreams
+    getSystemsApi(): typeof Systems
 }
 
 export interface NodeOptions {
@@ -87,6 +90,8 @@ export class Node implements INode {
     auth: { username: string, password: string } | null = null;
     isDefaultNode: boolean;
     laneAdjMap: Map<string, string> = new Map<string, string>();
+    dataStreamsApi: typeof DataStreams;
+    systemsApi: typeof Systems
 
     constructor(options: NodeOptions) {
         this.id = "node-" + randomUUID();
@@ -100,6 +105,35 @@ export class Node implements INode {
         this.auth = options.auth || null;
         this.isSecure = options.isSecure || false;
         this.isDefaultNode = options.isDefaultNode || false;
+
+
+        let apiConfig = {
+            endpointUrl: this.getConnectedSystemsEndpoint(),
+            tls: this.isSecure,
+            connectorOpts:{
+                username: this.auth.username,
+                password: this.auth.password
+            }
+        }
+
+        this.dataStreamsApi = new DataStreams(apiConfig);
+        this.systemsApi = new Systems(apiConfig);
+
+    }
+
+    getSystemsApi(): typeof Systems{
+        return this.systemsApi;
+    }
+    getDataStreamsApi(): typeof DataStreams {
+        return this.dataStreamsApi;
+    }
+
+    setSystemsApi(apiConfig: string): typeof Systems{
+        return new Systems(apiConfig)
+    }
+
+    setDataStreamsApi(apiConfig: string): typeof DataStreams {
+        return new DataStreams(apiConfig);
     }
 
     getConnectedSystemsEndpoint(noProtocolPrefix: boolean = false) {
@@ -204,11 +238,7 @@ export class Node implements INode {
     }
 
     async fetchSystems(): Promise<any[]> {
-        let systemsApi = new Systems({
-            endpointUrl: `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`,
-            tls: this.isSecure,
-            connectorOpts: this.auth
-        });
+        let systemsApi = this.getSystemsApi();
 
         let searchedSystems = await systemsApi.searchSystems(new SystemFilter(), 100);
         let availableSystems = [];

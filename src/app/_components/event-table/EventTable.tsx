@@ -138,9 +138,11 @@ export default function EventTable({
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
         const id = prngFromStr(obs, laneEntry.laneName);
-        // console.log("obs id", obs.id)
         let newEvent: EventTableData = new EventTableData(id, laneEntry.laneName, obs.result, obs.id, obs.foiId);
-        newEvent.setSystemIdx(laneEntry.lookupSystemIdFromDataStreamId(obs.result.datastreamId));
+
+        newEvent.setRPMSystemId(laneEntry.lookupSystemIdFromDataStreamId(obs[`datastream@id`]));
+
+        // newEvent.setLaneSystemId(laneEntry.lookupParentSystemFromSystemId(newEvent.rpmSystemId));
         newEvent.setDataStreamId(obs["datastream@id"]);
         newEvent.setFoiId(obs["foi@id"]);
         newEvent.setObservationId(obs.id);
@@ -397,10 +399,9 @@ export default function EventTable({
 
         for (const lane of laneMap.values()){
             let datastreams = lane.datastreams.filter((ds: any) => isThresholdDatastream(ds));
-            let gammaThreshDs = datastreams.find((ds: any) => {
-                console.log("heyy",ds.properties["system@id"] == eventData.systemIdx)
-                return ds.properties["system@id"] == eventData.systemIdx
-            })
+            console.log("heyy ds", datastreams, eventData)
+            let gammaThreshDs = datastreams.find((ds: typeof DataStream) => ds.properties["system@id"] == eventData.rpmSystemId);
+
             if(gammaThreshDs){
                 console.log("gamma", gammaThreshDs)
                 let latestGB = await getObservations(eventData.startTime, eventData.endTime, gammaThreshDs);

@@ -121,9 +121,9 @@ export function EventPreview() {
             secondaryInspectionStatus: "NONE",
             filePaths: "",
             occupancyId: eventPreview.eventData.occupancyId,
-            alarmingSystemUid: eventPreview.eventData.systemIdx
+            alarmingSystemUid: eventPreview.eventData.rpmSystemId
         }
-        let adjudicationData = new AdjudicationData(new Date().toISOString(), currentUser, eventPreview.eventData.occupancyId, eventPreview.eventData.systemIdx);
+        let adjudicationData = new AdjudicationData(new Date().toISOString(), currentUser, eventPreview.eventData.occupancyId, eventPreview.eventData.rpmSystemId);
         adjudicationData.setFeedback(notes);
         adjudicationData.setAdjudicationCode(value);
         console.log("[ADJ] New Adjudication Data, Ready to Send: ", newAdjData);
@@ -277,15 +277,14 @@ export function EventPreview() {
 
             prevEventIdRef.current = eventPreview.eventData?.occupancyId;
             if (eventPreview.eventData?.laneId && laneMapRef.current) {
-
-                collectDataSources();
+                callCollectDataSources();
                 dispatch(setEventData(eventPreview.eventData));
 
             }
         }
     }, [eventPreview.eventData?.occupancyId]);
 
-    const collectDataSources = useCallback(() => {
+    const collectDataSources = useCallback(async() => {
         if (!eventPreview.eventData?.laneId || !laneMapRef.current) return;
 
         let currentLane = eventPreview.eventData.laneId;
@@ -299,8 +298,7 @@ export function EventPreview() {
 
         let tempDSMap = new Map<string, typeof ConSysApi[]>();
 
-        let datasources = currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
-        console.log("DataSources", datasources);
+        let datasources = await currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
 
         setLocalDSMap(datasources);
         tempDSMap = datasources;
@@ -313,23 +311,25 @@ export function EventPreview() {
         const updatedVideo = tempDSMap.get("video") || [];
         const updatedOcc = tempDSMap.get("occ") || [];
 
+
         setGammaDS(updatedGamma);
         setNeutronDS(updatedNeutron);
         setThresholdDS(updatedThreshold);
         setVideoDatasources(updatedVideo);
         setOccDS(updatedOcc);
+
         setDatasourcesReady(true);
 
     }, [eventPreview, laneMapRef]);
 
 
     const createDataSync = useCallback(() => {
-        if (!syncRef.current && !dataSyncCreated && videoDatasources.length > 0) {
+        if (!syncRef.current && !dataSyncCreated && videoDatasources.length > 0 && videoDatasources) {
             syncRef.current = new DataSynchronizer({
                 dataSources: videoDatasources,
-                replaySpeed: 0.5,
+                replaySpeed: 0,
                 startTime: eventPreview.eventData.startTime,
-                // endTime: eventPreview.eventData.endTime,
+                // endTime: eventPreview.eventData.endTime,lane1
                 endTime: "now",
                 masterTimeRefreshRate: 250
             });
@@ -339,12 +339,9 @@ export function EventPreview() {
         }
     }, [syncRef, dataSyncCreated, datasourcesReady, videoDatasources]);
 
-    useEffect(() => {
-        if (eventPreview.eventData?.laneId && laneMapRef.current) {
-            collectDataSources();
-            console.log('Datasources collected', eventPreview.eventData?.laneId)
-        }
-    }, [eventPreview.eventData, laneMapRef.current]);
+    async function callCollectDataSources(){
+        await collectDataSources();
+    }
 
     useEffect(() => {
         createDataSync();
@@ -354,7 +351,7 @@ export function EventPreview() {
 
 
     useEffect(() => {
-        if (chartReady && videoReady) {
+        if (chartReady) {
             console.log("Chart Ready, Starting DataSync");
             gammaDatasources.forEach(ds => {
                 ds.connect();
@@ -368,15 +365,17 @@ export function EventPreview() {
             occDatasources.forEach(ds => {
                 ds.connect();
             });
-            syncRef.current.connect().then(() => {
-                console.log("DataSync Should Be Connected", syncRef.current);
-            });
-            if (syncRef.current.isConnected()) {
-                console.log("DataSync Connected!!!");
-            } else {
-                console.log("DataSync Not Connected... :(");
-            }
 
+            if(videoReady){
+                syncRef.current.connect().then(() => {
+                    console.log("DataSync Should Be Connected", syncRef.current);
+                });
+                if (syncRef.current.isConnected()) {
+                    console.log("DataSync Connected!!!");
+                } else {
+                    console.log("DataSync Not Connected... :(");
+                }
+            }
 
         } else {
             console.log("Chart Not Ready, cannot start DataSynchronizer...");
@@ -483,7 +482,6 @@ export function EventPreview() {
     async function fetchPausedFrame(startTime: any, endTime: string, datastreams: typeof DataStreams){
 
         let dsId = syncRef.current.dataSynchronizer.dataSources[selectedIndex.current].name.split("-")[1]
-        console.log("sync ds id", dsId);
 
 
         let currentVideoDs = datastreams.filter((ds: any) => ds.properties.id === dsId);
@@ -527,7 +525,6 @@ export function EventPreview() {
         img[0].src = url;
     }
 
-
     const handleUpdatingPage = (page: number)=>{
         selectedIndex.current = page;
     }
@@ -536,6 +533,7 @@ export function EventPreview() {
         videoViewRef.current = videoView
     }
 
+    console.log('datasourcesReady && latestGB && syncRef.current', datasourcesReady , latestGB , syncRef.current)
     return (
         <Stack p={1} display={"flex"} spacing={1}>
             <Stack direction={"row"} justifyContent={"space-between"} spacing={1}>
@@ -550,7 +548,7 @@ export function EventPreview() {
                 </IconButton>
             </Stack>
 
-            {(datasourcesReady && latestGB && syncRef.current) ? (
+            {(datasourcesReady && latestGB) ? (
                     <Box>
                         <ChartTimeHighlight
                             datasources={{
@@ -565,15 +563,27 @@ export function EventPreview() {
                             latestGB={latestGB}
                         />
 
-                        <LaneVideoPlayback
-                            setVideoReady={setVideoReady}
-                            dataSynchronizer={syncRef.current}
-                            modeType={"preview"}
-                            onSelectedVideoIdxChange={handleUpdatingPage}
-                            setVideoView={setVideoView}
-                        />
-                        <TimeController handleCommitChange={handleCommitChange} pause={pause} play={play} syncTime={syncTime}  startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
-                    </Box>
+                        {(syncRef.current) ?
+                            (
+                                <div>
+                                    <LaneVideoPlayback
+                                        setVideoReady={setVideoReady}
+                                        dataSynchronizer={syncRef.current}
+                                        modeType={"preview"}
+                                        onSelectedVideoIdxChange={handleUpdatingPage}
+                                        setVideoView={setVideoView}
+                                    />
+                                    <TimeController handleCommitChange={handleCommitChange} pause={pause} play={play} syncTime={syncTime}  startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
+
+                                </div>
+                            )
+                            :
+                           (
+                               <div>
+                                   <Typography variant="h6" align="center">No video data available.</Typography>
+                               </div>
+                           )}
+                        </Box>
                 ) :
 
                 <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}><CircularProgress/></Box>

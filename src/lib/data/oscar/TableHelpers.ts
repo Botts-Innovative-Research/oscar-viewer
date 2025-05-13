@@ -20,7 +20,8 @@ export class EventTableData implements IEventTableData {
     pillarOccupancy?: number;
     status: string;
     adjudicatedData: AdjudicationData;
-    systemIdx?: string; //rpm system id
+    laneSystemId?: string; // lane system id
+    rpmSystemId?: string; // rpm id
     dataStreamId?: string;
     observationId: string;
     isAdjudicated: boolean;
@@ -74,8 +75,12 @@ export class EventTableData implements IEventTableData {
         return new Date(this.endTime).getTime();
     }
 
-    setSystemIdx(systemIdx: string) {
-        this.systemIdx = systemIdx;
+    setLaneSystemId(laneSystemId: string) {
+        this.laneSystemId = laneSystemId;
+    }
+
+    setRPMSystemId(rpmSystemId: string) {
+        this.rpmSystemId = rpmSystemId;
     }
 
     setDataStreamId(dataStreamId: string) {
@@ -211,22 +216,13 @@ export class NationalTableDataCollection {
 export class AlarmTableData implements IAlarmTableData {
     id: number; // Unique ID for event
     laneId: string;
-    // count1: number;
-    // count2: number;
-    // count3: number;
-    // count4: number;
     status: string;
     timestamp: string;
 
 
     constructor(id: number, laneId: string,  status: string, timestamp: string) {
-    // constructor(id: number, laneId: string, count1: number, count2: number, count3: number, count4: number, status: string, timestamp: string) {
         this.id = id;
         this.laneId = laneId;
-        // this.count1 = count1;
-        // this.count2 = count2;
-        // this.count3 = count3;
-        // this.count4 = count4;
         this.status = status;
         this.timestamp = timestamp;
     }
