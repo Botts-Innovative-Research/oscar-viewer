@@ -352,6 +352,7 @@ export class LaneMapEntry {
         let datasourceReplay = this.createReplayConSysApiFromDataStream(ds, startTime, endTime);
 
         let dsApi = this.parentNode.getDataStreamsApi();
+        console.log("dsApi", dsApi)
 
         const result = await dsApi.getDataStreamById(ds.properties.id);
 

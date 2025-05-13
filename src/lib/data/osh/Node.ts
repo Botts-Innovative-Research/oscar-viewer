@@ -108,7 +108,7 @@ export class Node implements INode {
 
 
         let apiConfig = {
-            endpointUrl: this.getConnectedSystemsEndpoint(),
+            endpointUrl: `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`,
             tls: this.isSecure,
             connectorOpts:{
                 username: this.auth.username,
@@ -240,6 +240,7 @@ export class Node implements INode {
     async fetchSystems(): Promise<any[]> {
         let systemsApi = this.getSystemsApi();
 
+        console.log("systemsApi", systemsApi)
         let searchedSystems = await systemsApi.searchSystems(new SystemFilter(), 100);
         let availableSystems = [];
 
