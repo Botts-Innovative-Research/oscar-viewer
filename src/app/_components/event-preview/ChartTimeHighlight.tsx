@@ -96,10 +96,8 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
         const elementIds = updateChartElIds(props.eventData);
 
-        requestAnimationFrame(()=>{
-            renderCharts(layers, elementIds);
+        renderCharts(layers, elementIds);
 
-        })
 
     }, [layers, props.eventData]);
 
@@ -243,27 +241,28 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
             const gammaDiv = document.createElement("div");
             gammaDiv.id = elementIds.find(id => id.includes("gamma"))!;
-            gammaChartViewRef.current.innerHTML = "";
+            gammaChartViewRef.current.innerHTML = ""; //clear previous chart
             gammaChartViewRef.current.appendChild(gammaDiv);
 
-            // Wait a tick to ensure DOM is ready before creating the chart
-            requestAnimationFrame(() => {
-                const gammaChart = new ChartJsView({
-                    container: gammaDiv.id,
-                    layers: gammaLayers,
-                    css: "chart-view-event-detail",
-                    type: 'line',
-                    options: {
-                        scales: {
-                            x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
-                            y: { title: { display: true, text: 'CPS', padding: 15 }, beginAtZero: false }
-                        }
+           const gammaChart = new ChartJsView({
+                container: gammaDiv.id,
+                layers: gammaLayers,
+                css: "chart-view-event-detail",
+                type: 'line',
+                options: {
+                    scales: {
+                        x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
+                        y: { title: { display: true, text: 'CPS', padding: 15 }, beginAtZero: false }
                     }
-                });
-
-                setChartViews(prev => ({ ...prev, gamma: gammaChart }));
-                gammaChart.chart.update();
+                }
             });
+
+           setChartViews(prev => ({ ...prev, gamma: gammaChart }));
+           gammaChart.chart.update();
+
+           setChartViews(prev => ({ ...prev, gamma: gammaChart }));
+
+
         }
         if (layers.neutron && neutronChartViewRef.current) {
             const neutronDiv = document.createElement("div");
