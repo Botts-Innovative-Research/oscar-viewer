@@ -90,6 +90,8 @@ export class Node implements INode {
     auth: { username: string, password: string } | null = null;
     isDefaultNode: boolean;
     laneAdjMap: Map<string, string> = new Map<string, string>();
+    dataStreamsApi: typeof DataStreams;
+    systemsApi: typeof Systems
 
     constructor(options: NodeOptions) {
         this.id = "node-" + randomUUID();
@@ -103,6 +105,27 @@ export class Node implements INode {
         this.auth = options.auth || null;
         this.isSecure = options.isSecure || false;
         this.isDefaultNode = options.isDefaultNode || false;
+
+
+        let apiConfig = {
+            endpointUrl: this.getConnectedSystemsEndpoint(),
+            tls: this.isSecure,
+            connectorOpts:{
+                username: this.auth.username,
+                password: this.auth.password
+            }
+        }
+
+        this.dataStreamsApi = new DataStreams(apiConfig);
+        this.systemsApi = new Systems(apiConfig);
+
+    }
+
+    getSystemsApi(): typeof Systems{
+        return this.systemsApi;
+    }
+    getDataStreamsApi(): typeof DataStreams {
+        return this.dataStreamsApi;
     }
 
     getConnectedSystemsEndpoint(noProtocolPrefix: boolean = false) {
@@ -248,36 +271,6 @@ export class Node implements INode {
         }
     }
 
-    getDataStreamsApi(): typeof DataStreams{
-        let isSecure = this.isSecure;
-        let url = this.getConnectedSystemsEndpoint(true);
-
-        let dsApi = new DataStreams({
-            endpointUrl: `${url}`,
-            tls: isSecure,
-            connectorOpts: {
-                username: this.auth.username,
-                password: this.auth.password
-            }
-        });
-        return dsApi
-    }
-
-    getSystemsApi(): typeof Systems{
-        let isSecure = this.isSecure;
-        let url = this.getConnectedSystemsEndpoint(true);
-
-        let sysApi = new Systems({
-            endpointUrl: `${url}`,
-            tls: isSecure,
-            connectorOpts: {
-                username: this.auth.username,
-                password: this.auth.password
-            }
-        });
-
-        return sysApi;
-    }
     async fetchControlStreams(laneMap: Map<string, LaneMapEntry>){
         for (const [, laneEntry] of laneMap) {
             try {
