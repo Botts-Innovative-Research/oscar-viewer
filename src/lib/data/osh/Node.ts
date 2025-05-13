@@ -128,6 +128,14 @@ export class Node implements INode {
         return this.dataStreamsApi;
     }
 
+    setSystemsApi(apiConfig: string): typeof Systems{
+        return new Systems(apiConfig)
+    }
+
+    setDataStreamsApi(apiConfig: string): typeof DataStreams {
+        return new DataStreams(apiConfig);
+    }
+
     getConnectedSystemsEndpoint(noProtocolPrefix: boolean = false) {
         let protocol = this.isSecure ? 'https' : 'http';
         // return `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
