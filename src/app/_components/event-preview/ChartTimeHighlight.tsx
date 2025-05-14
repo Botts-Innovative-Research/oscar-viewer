@@ -70,6 +70,12 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         <ToggleButton color= 'secondary' value={"sigma"} key={"sigma"}>NSigma</ToggleButton>
     ];
 
+    useEffect(() => {
+        if(chartViews.gamma)
+            setTimeout(() => {
+                chartViews.gamma.chart.update();
+            }, 300);
+    }, [chartViews.gamma]);
 
     const checkReadyToRender = useCallback(() => {
         if (chartsReady) {
@@ -97,8 +103,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         const elementIds = updateChartElIds(props.eventData);
 
         renderCharts(layers, elementIds);
-
-
     }, [layers, props.eventData]);
 
 
@@ -309,7 +313,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             });
 
             setChartViews(prev => ({ ...prev, nsigma: nsigmaChart }));
-
         }
 
         setChartsReady(true);
