@@ -34,7 +34,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
         if(modeType === 'detail'){
             setVideoHeight("400px")
         }else if (modeType=== 'preview'){
-            setVideoHeight("220px")
+            setVideoHeight("200px")
         }
     }, [dataSynchronizer, modeType]);
 
@@ -56,8 +56,6 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                 });
 
                 setVideoView(videoViewRef.current);
-                console.log("video exists", videoViewRef)
-
 
             })
             setVideoReady(true);
@@ -88,6 +86,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
             let nextPage = prevPage + 1
             const page = nextPage < maxPages ? nextPage : prevPage;
             onSelectedVideoIdxChange(page);
+
             return page;
         })
     }
@@ -120,31 +119,38 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                     <IconButton onClick={handlePrevPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === 0}>
                         <NavigateBeforeIcon/>
                     </IconButton>
-                    <Stack
-                        margin={0}
-                        spacing={2}
-                        direction="row"
-                        alignContent="center"
-                        justifyContent="center"
 
-                        sx={{
-                            alignItems: "center",
-                            border: "1px solid rgba(0,0,0,0.12)",
-                            padding: 1,
-                            flexShrink: 0
-                        }}
-                    >
+                    {/*<Stack*/}
+                    {/*    margin={0}*/}
+                    {/*    spacing={2}*/}
+                    {/*    direction="row"*/}
+                    {/*    alignContent="center"*/}
+                    {/*    justifyContent="center"*/}
+
+                    {/*    // sx={{*/}
+                    {/*    //     height: videoHeight,*/}
+                    {/*    //     alignItems: "center",*/}
+                    {/*    //     border: "1px solid rgba(0,0,0,0.12)",*/}
+                    {/*    //     padding: 1,*/}
+                    {/*    //     flexShrink: 0*/}
+                    {/*    // }}*/}
+                    {/*>*/}
                         {visibleVideo.map((ds: any) => (
                             <Paper
                                 key={ds.id}
                                 id={`event-preview-video-${ds.id}`}
                                 sx={{
-                                    height: videoHeight
+                                    height: videoHeight,
+                                    width: '100%',
+                                    minWidth: '300px',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    boxSizing: 'border-box'
                                 }}
                             ></Paper>
                         ))}
 
-                    </Stack>
+                    {/*</Stack>*/}
 
                     <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === maxPages - 1}>
                         <NavigateNextIcon/>

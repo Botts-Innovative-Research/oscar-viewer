@@ -399,7 +399,6 @@ export function EventPreview() {
         if (syncRef.current) {
             console.log("Playback started.");
 
-
             syncRef.current.connect().finally(() => {
                 if(videoViewRef.current.videoView instanceof MjpegView){
                     var img = document.getElementsByClassName("video-mjpeg");
