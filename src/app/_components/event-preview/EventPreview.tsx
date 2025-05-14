@@ -171,8 +171,6 @@ export function EventPreview() {
                 setColorStatus('error')
             }
 
-            console.log("[ADJ] Response: ", resp);
-
             // send command
             // we can use endTime as it is the same a resultTime in testing, this may not be true in practice but this is a stop-gap fix anyway
             let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == eventPreview.eventData.dataStreamId );
@@ -211,9 +209,6 @@ export function EventPreview() {
     }
 
     const handleCloseRounded = () => {
-
-        console.log("closed event preview: ", eventPreview.isOpen)
-
         dispatch(setEventPreview({
             isOpen: false,
             eventData: null
@@ -239,15 +234,6 @@ export function EventPreview() {
         dsArray.forEach(ds => {
             ds.disconnect();
         });
-    }
-
-    function setChartRef(type: string, ref: any) {
-        if (type === "gamma") {
-            gammaChartRef.current = ref;
-        } else if (type === "neutron") {
-            neutronChartRef.current = ref;
-        }
-
     }
 
     const cleanupResources = () => {
@@ -327,12 +313,12 @@ export function EventPreview() {
         if (!syncRef.current && !dataSyncCreated && videoDatasources.length > 0 && videoDatasources) {
             syncRef.current = new DataSynchronizer({
                 dataSources: videoDatasources,
-                replaySpeed: 0.5,
+                replaySpeed: 0,
                 startTime: eventPreview.eventData.startTime,
                 endTime: "now",
                 masterTimeRefreshRate: 250
             });
-            syncRef.current.onTime
+            // syncRef.current.onTime
             setDataSyncCreated(true);
 
         }
@@ -344,12 +330,11 @@ export function EventPreview() {
 
     useEffect(() => {
         createDataSync();
-        console.log("videodatasources", videoDatasources.length)
     }, [videoDatasources, syncRef, dataSyncCreated, datasourcesReady]);
 
 
 
-    useEffect(() => {
+    useEffect( () => {
         if (chartReady) {
             console.log("Chart Ready, Starting DataSync");
             gammaDatasources.forEach(ds => {
@@ -366,21 +351,30 @@ export function EventPreview() {
             });
 
             if(videoReady){
+
                 syncRef.current.connect().then(() => {
                     console.log("DataSync Should Be Connected", syncRef.current);
+
+                    setTimeout(()=>{
+                        pause();
+                    }, 500)
                 });
+
+
                 if (syncRef.current.isConnected()) {
                     console.log("DataSync Connected!!!");
+
+
                 } else {
                     console.log("DataSync Not Connected... :(");
                 }
+
             }
 
         } else {
             console.log("Chart Not Ready, cannot start DataSynchronizer...");
         }
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
-
 
     useEffect(() => {
         if(syncRef.current){
@@ -390,7 +384,6 @@ export function EventPreview() {
                 }}, [EventType.MASTER_TIME]
             );
         }
-
     }, [syncRef.current]);
 
 
@@ -482,13 +475,10 @@ export function EventPreview() {
 
         let dsId = syncRef.current.dataSynchronizer.dataSources[selectedIndex.current].name.split("-")[1]
 
-
         let currentVideoDs = datastreams.filter((ds: any) => ds.properties.id === dsId);
         let obs = await currentVideoDs[0].searchObservations(new ObservationFilter({ format: 'application/swe+binary', resultTime: `${new Date(startTime).toISOString()}/${endTime}`}),1);
 
         const obsPage = await obs.nextPage();
-
-        console.log("obsPage", obsPage)
 
         const imageData = obsPage[0].img.data
 
@@ -532,7 +522,6 @@ export function EventPreview() {
         videoViewRef.current = videoView
     }
 
-    console.log('datasourcesReady && latestGB && syncRef.current', datasourcesReady , latestGB , syncRef.current)
     return (
         <Stack p={1} display={"flex"} spacing={1}>
             <Stack direction={"row"} justifyContent={"space-between"} spacing={1}>

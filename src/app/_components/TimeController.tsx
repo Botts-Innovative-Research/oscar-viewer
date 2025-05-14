@@ -18,7 +18,7 @@ interface TimeControllerProps {
 
 export default function TimeController({syncTime, startTime, endTime, pause, play, handleCommitChange}: TimeControllerProps) {
 
-    const [isPlaying, setIsPlaying] = useState(true);
+    const [isPlaying, setIsPlaying] = useState(false);
     const [isScrubbing, setIsScrubbing] = useState(false);
 
 

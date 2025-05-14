@@ -28,16 +28,13 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
 
     const maxPages = dataSynchronizer.dataSynchronizer.dataSources.length;
 
-    const [videoWidth, setVideoWidth] = useState("680px");
-    const [videoHeight, setVideoHeight] = useState("480px");
+    const [videoHeight, setVideoHeight] = useState("240px");
 
     useEffect(() => {
         if(modeType === 'detail'){
-            setVideoHeight("480px")
-            setVideoWidth("640px")
-        }else if (modeType=== 'preview'){
             setVideoHeight("320px")
-            setVideoWidth("320px")
+        }else if (modeType=== 'preview'){
+            setVideoHeight("240px")
         }
     }, [dataSynchronizer, modeType]);
 
@@ -133,6 +130,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                         justifyContent="center"
 
                         sx={{
+                            height: videoHeight,
                             alignItems: "center",
                             border: "1px solid rgba(0,0,0,0.12)",
                             padding: 1,
@@ -143,6 +141,9 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                             <Paper
                                 key={ds.id}
                                 id={`event-preview-video-${ds.id}`}
+                                sx={{
+                                    height: videoHeight
+                                }}
                             ></Paper>
                         ))}
 
