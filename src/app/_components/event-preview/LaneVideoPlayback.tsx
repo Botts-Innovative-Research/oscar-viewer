@@ -32,9 +32,9 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
 
     useEffect(() => {
         if(modeType === 'detail'){
-            setVideoHeight("320px")
+            setVideoHeight("400px")
         }else if (modeType=== 'preview'){
-            setVideoHeight("240px")
+            setVideoHeight("220px")
         }
     }, [dataSynchronizer, modeType]);
 
@@ -130,7 +130,6 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                         justifyContent="center"
 
                         sx={{
-                            height: videoHeight,
                             alignItems: "center",
                             border: "1px solid rgba(0,0,0,0.12)",
                             padding: 1,
