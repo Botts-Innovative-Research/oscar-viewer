@@ -363,8 +363,6 @@ export function EventPreview() {
 
                 if (syncRef.current.isConnected()) {
                     console.log("DataSync Connected!!!");
-
-
                 } else {
                     console.log("DataSync Not Connected... :(");
                 }
