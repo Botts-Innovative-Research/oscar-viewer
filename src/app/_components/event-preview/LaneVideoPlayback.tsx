@@ -28,7 +28,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
 
     const maxPages = dataSynchronizer.dataSynchronizer.dataSources.length;
 
-    const [videoHeight, setVideoHeight] = useState("240px");
+    const [videoHeight, setVideoHeight] = useState("220px");
 
     useEffect(() => {
         if(modeType === 'detail'){
@@ -120,8 +120,6 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                     <IconButton onClick={handlePrevPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === 0}>
                         <NavigateBeforeIcon/>
                     </IconButton>
-
-
                     <Stack
                         margin={0}
                         spacing={2}
