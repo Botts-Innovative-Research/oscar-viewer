@@ -47,7 +47,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                     container: `event-preview-video-${ds.id}`,
                     showStats: false,
                     showTime: false,
-                    // useWebCodecApi: true,
+                    useWebCodecApi: true,
                     layers: [new VideoDataLayer({
                         dataSourceId: ds.id,
                         getFrameData: (rec: any) => rec.img,
@@ -141,8 +141,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                                 id={`event-preview-video-${ds.id}`}
                                 sx={{
                                     height: videoHeight,
-                                    width: '100%',
-                                    minWidth: '300px',
+                                    // width: '100%',
                                     justifyContent: 'center',
                                     alignItems: 'center',
                                     boxSizing: 'border-box'

@@ -407,6 +407,7 @@ export function EventPreview() {
                         img[0].src = frameSrc;
                     }
                 }else if(videoViewRef.current.videoView instanceof FFMPEGView || videoViewRef.current.videoView instanceof WebCodecView){
+                    console.log("saved frame", savedFrame);
                     videoViewRef.current.videoView.decode(
                         savedFrame.pktSize,
                         savedFrame.pktData,
@@ -496,9 +497,11 @@ export function EventPreview() {
         const pktSize = imageData.img.data.length;
         const pktData = imageData.img.data;
         const timestamp = imageData.timestamp;
-        const roll = imageData.roll;
+        const roll = imageData.roll | 0;
 
+        console.log("image data", imageData)
         savedFrame = { pktSize, pktData, timestamp, roll };
+        console.log("image data saved to frame: ", savedFrame)
     }
 
     function setMjpegFrame(imageData: any){
@@ -513,6 +516,16 @@ export function EventPreview() {
 
     const handleUpdatingPage = (page: number)=>{
         selectedIndex.current = page;
+
+        syncRef.current.connect().then(()=>{
+            getFrameObservations(syncTime);
+
+            setTimeout(()=>{
+                pause();
+            }, 500)
+        })
+
+
     }
 
     const setVideoView =(videoView: any) =>{
