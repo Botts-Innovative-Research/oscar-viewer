@@ -268,6 +268,7 @@ export function EventPreview() {
 
             }
         }
+        
     }, [eventPreview.eventData?.occupancyId]);
 
     const collectDataSources = useCallback(async() => {
@@ -355,9 +356,9 @@ export function EventPreview() {
                 syncRef.current.connect().then(() => {
                     console.log("DataSync Should Be Connected", syncRef.current);
 
-                    setTimeout(()=>{
-                        pause();
-                    }, 500)
+                    // setTimeout(()=>{
+                    //     pause();
+                    // }, 500)
                 });
 
 

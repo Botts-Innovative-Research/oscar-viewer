@@ -34,7 +34,7 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
                 container: "lane-view-video",
                 showTime: false,
                 showStats: false,
-                useWebCodecApi: true,
+                // useWebCodecApi: true,
                 layers: [new VideoDataLayer({
                     dataSourceId: dataSources[selVideoIdx].id,
                     getFrameData: (rec: any) => rec.img,

@@ -86,9 +86,9 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
                 masterTimeController.current?.connect().then(() => {
                     console.log("DataSync Should Be Connected", masterTimeController.current);
 
-                    setTimeout(()=>{
-                        pause();
-                    }, 500)
+                    // setTimeout(()=>{
+                    //     pause();
+                    // }, 500)
                 });
 
                 if (masterTimeController.current?.isConnected()) {
