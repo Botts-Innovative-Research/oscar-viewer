@@ -518,13 +518,13 @@ export function EventPreview() {
     const handleUpdatingPage = (page: number)=>{
         selectedIndex.current = page;
 
-        syncRef.current.connect().then(()=>{
-            getFrameObservations(syncTime);
-
-            setTimeout(()=>{
-                pause();
-            }, 500)
-        })
+        // syncRef.current.connect().then(()=>{
+        //     getFrameObservations(syncTime);
+        //
+        //     setTimeout(()=>{
+        //         pause();
+        //     }, 500)
+        // })
 
 
     }
