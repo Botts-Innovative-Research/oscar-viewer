@@ -368,10 +368,8 @@ export class LaneMapEntry {
             const validStart = new Date(validStartTime);
             const validEnd = new Date(validEndTime);
 
-
             validStart.setSeconds(validStart.getSeconds() - 1);
             validEnd.setSeconds(validEnd.getSeconds() + 1);
-
 
             const eventStart = new Date(startTime);
             const eventEnd = new Date(endTime);

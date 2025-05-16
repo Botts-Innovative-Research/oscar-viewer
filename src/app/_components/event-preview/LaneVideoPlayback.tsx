@@ -47,7 +47,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                     container: `event-preview-video-${ds.id}`,
                     showStats: false,
                     showTime: false,
-                    useWebCodecApi: true,
+                    useWebCodecApi: false,
                     layers: [new VideoDataLayer({
                         dataSourceId: ds.id,
                         getFrameData: (rec: any) => rec.img,
@@ -108,7 +108,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
 
     return (
         <>
-            { (
+            {(
 
                 <Box sx={{
                     display: "flex",
@@ -119,22 +119,6 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                     <IconButton onClick={handlePrevPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === 0}>
                         <NavigateBeforeIcon/>
                     </IconButton>
-
-                    {/*<Stack*/}
-                    {/*    margin={0}*/}
-                    {/*    spacing={2}*/}
-                    {/*    direction="row"*/}
-                    {/*    alignContent="center"*/}
-                    {/*    justifyContent="center"*/}
-
-                    {/*    // sx={{*/}
-                    {/*    //     height: videoHeight,*/}
-                    {/*    //     alignItems: "center",*/}
-                    {/*    //     border: "1px solid rgba(0,0,0,0.12)",*/}
-                    {/*    //     padding: 1,*/}
-                    {/*    //     flexShrink: 0*/}
-                    {/*    // }}*/}
-                    {/*>*/}
                         {visibleVideo.map((ds: any) => (
                             <Paper
                                 key={ds.id}
@@ -148,9 +132,6 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                                 }}
                             ></Paper>
                         ))}
-
-                    {/*</Stack>*/}
-
                     <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === maxPages - 1}>
                         <NavigateNextIcon/>
                     </IconButton>

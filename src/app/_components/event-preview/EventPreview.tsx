@@ -298,6 +298,7 @@ export function EventPreview() {
         const updatedVideo = tempDSMap.get("video") || [];
         const updatedOcc = tempDSMap.get("occ") || [];
 
+        console.log("video datasources", updatedVideo)
 
         setGammaDS(updatedGamma);
         setNeutronDS(updatedNeutron);
@@ -314,10 +315,10 @@ export function EventPreview() {
         if (!syncRef.current && !dataSyncCreated && videoDatasources.length > 0 && videoDatasources) {
             syncRef.current = new DataSynchronizer({
                 dataSources: videoDatasources,
-                replaySpeed: 0,
+                replaySpeed: 1,
                 startTime: eventPreview.eventData.startTime,
-                endTime: "now",
-                masterTimeRefreshRate: 250
+                endTime: eventPreview.eventData.endTime,
+                intervalRate: 5
             });
             // syncRef.current.onTime
             setDataSyncCreated(true);
