@@ -268,7 +268,7 @@ export function EventPreview() {
 
             }
         }
-        
+
     }, [eventPreview.eventData?.occupancyId]);
 
     const collectDataSources = useCallback(async() => {
