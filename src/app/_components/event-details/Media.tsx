@@ -50,7 +50,7 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
 
             masterTimeController.current = new DataSynchronizer({
                 dataSources: videoDS,
-                replaySpeed: 0.5,
+                replaySpeed: 0,
                 startTime: eventData?.startTime,
                 endTime: eventData?.endTime,
             });
@@ -85,6 +85,10 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
             if(videoReady){
                 masterTimeController.current?.connect().then(() => {
                     console.log("DataSync Should Be Connected", masterTimeController.current);
+
+                    // setTimeout(()=>{
+                    //     pause();
+                    // }, 500)
                 });
 
                 if (masterTimeController.current?.isConnected()) {

@@ -1,6 +1,6 @@
 "use client";
 
-import {Box, IconButton, Stack } from '@mui/material';
+import {Box, IconButton, Paper, Stack } from '@mui/material';
 import { useEffect, useRef, useState} from 'react';
 import "../../style/cameragrid.css";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource"
@@ -18,6 +18,7 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
     const [selVideoIdx, setSelVidIdx] = useState<number>(0);
     const [maxPages, setMaxPages] = useState(0)
 
+    const [videoHeight, setVideoHeight] = useState("380px");
 
     useEffect(() => {
         if(videoDataSources.length > 0 && videoDataSources){
@@ -33,6 +34,7 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
                 container: "lane-view-video",
                 showTime: false,
                 showStats: false,
+                // useWebCodecApi: true,
                 layers: [new VideoDataLayer({
                     dataSourceId: dataSources[selVideoIdx].id,
                     getFrameData: (rec: any) => rec.img,
@@ -104,11 +106,15 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
     return (
         <>
             {dataSources != null && dataSources.length > 0 && (
-                <Box sx={{display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "center"}}>
+                <Box sx={{
+                    display: "flex",
+                    flexWrap: "nowrap",
+                    justifyContent: "center",
+                    alignItems: "center",
+                }}>
                     <IconButton onClick={handlePrevPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === 0}>
                         <NavigateBeforeIcon/>
                     </IconButton>
-
                     <Stack
                         margin={0}
                         spacing={2}
@@ -119,14 +125,17 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
                             alignItems: "center",
                             border: "1px solid rgba(0,0,0,0.12)",
                             padding: 1,
-                            display: "flex"
+                            flexShrink: 0
                         }}
                     >
-                        <Box
+                        <Paper
                             key={dataSources[selVideoIdx].id}
                             id="lane-view-video"
+                            sx={{
+                                height: videoHeight
+                            }}
 
-                        />
+                        ></Paper>
                     </Stack>
 
                     <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === maxPages-1}>

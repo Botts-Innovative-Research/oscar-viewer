@@ -125,7 +125,6 @@ export default function StatusTables({laneMap}: TableProps){
                 startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
 
                 let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now', observedProperty) ?? [];
-                console.log("fetched results", fetchedResults)
 
                 allFetchedResults.push(...fetchedResults);
 

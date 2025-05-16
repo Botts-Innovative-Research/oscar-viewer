@@ -57,7 +57,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const currentUser = useSelector(selectCurrentUser);
     const [associatedAdjudications, setAssociatedAdjudications] = useState<Comment[]>([]);
     const [shouldFetchLogs, setShouldFetchLogs] = useState<boolean>(false);
-    const adjudication = props.event ? new AdjudicationData(currentUser, props.event.occupancyId, props.event.systemIdx, new Date().toISOString()) : null;
+    const adjudication = props.event ? new AdjudicationData(currentUser, props.event.occupancyId, props.event.rpmSystemId, new Date().toISOString()) : null;
     const [adjData, setAdjData] = useState<AdjudicationData>(adjudication);
 
     const dispatch = useDispatch();

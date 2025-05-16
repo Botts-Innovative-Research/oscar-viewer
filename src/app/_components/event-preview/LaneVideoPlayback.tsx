@@ -28,16 +28,13 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
 
     const maxPages = dataSynchronizer.dataSynchronizer.dataSources.length;
 
-    const [videoWidth, setVideoWidth] = useState("680px");
-    const [videoHeight, setVideoHeight] = useState("480px");
+    const [videoHeight, setVideoHeight] = useState("220px");
 
     useEffect(() => {
         if(modeType === 'detail'){
-            setVideoHeight("480px")
-            setVideoWidth("640px")
+            setVideoHeight("400px")
         }else if (modeType=== 'preview'){
-            setVideoHeight("320px")
-            setVideoWidth("320px")
+            setVideoHeight("200px")
         }
     }, [dataSynchronizer, modeType]);
 
@@ -50,7 +47,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                     container: `event-preview-video-${ds.id}`,
                     showStats: false,
                     showTime: false,
-                    // useWebCodecApi: true,
+                    useWebCodecApi: false,
                     layers: [new VideoDataLayer({
                         dataSourceId: ds.id,
                         getFrameData: (rec: any) => rec.img,
@@ -59,8 +56,6 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                 });
 
                 setVideoView(videoViewRef.current);
-                console.log("video exists", videoViewRef)
-
 
             })
             setVideoReady(true);
@@ -91,6 +86,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
             let nextPage = prevPage + 1
             const page = nextPage < maxPages ? nextPage : prevPage;
             onSelectedVideoIdxChange(page);
+
             return page;
         })
     }
@@ -112,7 +108,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
 
     return (
         <>
-            { (
+            {(
 
                 <Box sx={{
                     display: "flex",
@@ -123,31 +119,19 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                     <IconButton onClick={handlePrevPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === 0}>
                         <NavigateBeforeIcon/>
                     </IconButton>
-
-
-                    <Stack
-                        margin={0}
-                        spacing={2}
-                        direction="row"
-                        alignContent="center"
-                        justifyContent="center"
-
-                        sx={{
-                            alignItems: "center",
-                            border: "1px solid rgba(0,0,0,0.12)",
-                            padding: 1,
-                            flexShrink: 0
-                        }}
-                    >
                         {visibleVideo.map((ds: any) => (
                             <Paper
                                 key={ds.id}
                                 id={`event-preview-video-${ds.id}`}
+                                sx={{
+                                    height: videoHeight,
+                                    // width: '100%',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    boxSizing: 'border-box'
+                                }}
                             ></Paper>
                         ))}
-
-                    </Stack>
-
                     <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === maxPages - 1}>
                         <NavigateNextIcon/>
                     </IconButton>
