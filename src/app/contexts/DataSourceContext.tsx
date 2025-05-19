@@ -90,20 +90,19 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }, [dispatch, configNode]);
 
     const fetchLatestConfigObservation = async(ds: any) =>{
-        const observations = await ds.searchObservations(new ObservationFilter(), 1);
+        const observations = await ds.searchObservations(new ObservationFilter({ resultTime: 'latest'}), 1);
 
-        while(observations.hasNext()){
-            let obsResult = await observations.nextPage();
-            let configData = obsResult.map((obs: any) =>{
-                console.log("hello", obs)
-                let data = new ConfigData(obs.phenomenonTime, obs.id, obs.result.user, obs.result.nodes, obs.result.numNodes)
 
-                console.log("data", data)
-                return data;
-            })
+        let obsResult = await observations.nextPage();
+        let configData = obsResult.map((obs: any) =>{
 
-            return configData;
-        }
+            let data = new ConfigData(obs.phenomenonTime, obs.id, obs.result.user, obs.result.nodes, obs.result.numNodes)
+
+            return data;
+        })
+
+        return configData;
+
 
     }
 

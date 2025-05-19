@@ -139,6 +139,7 @@ export default function StateManager() {
         }
 
         setOpenSaveSnack(true);
+        setActiveAlert(null)
     }
 
 
@@ -159,7 +160,7 @@ export default function StateManager() {
                 dispatch(setCurrentUser(latestConfigData[0].user));
 
                 let nodes = latestConfigData[0].nodes;
-                dispatch(setNodes(latestConfigData[0].nodes));
+                dispatch(setNodes(nodes));
             }
 
         }else{
@@ -167,6 +168,7 @@ export default function StateManager() {
             setLoadColorStatus('error')
         }
         setOpenSnack(true)
+        setActiveAlert(null)
     }
 
     const handleChangeForm = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -179,15 +181,15 @@ export default function StateManager() {
      const fetchLatestConfigObservation = async(ds: any) =>{
         const observations = await ds.searchObservations(new ObservationFilter({ resultTime: 'latest'}), 1);
 
-        while(observations.hasNext()){
-            let obsResult = await observations.nextPage();
-            let configData = obsResult.map((obs: any) =>{
-                let data = new ConfigData(obs.phenomenonTime, obs.id, obs.result.user, obs.result.nodes, obs.result.numNodes)
-                return data;
-            })
 
-            return configData;
-        }
+        let obsResult = await observations.nextPage();
+        let configData = obsResult.map((obs: any) =>{
+            let data = new ConfigData(obs.phenomenonTime, obs.id, obs.result.user, obs.result.nodes, obs.result.numNodes)
+            return data;
+        })
+
+        return configData;
+
     }
 
     const handleChangeLoadForm = (e: React.ChangeEvent<HTMLInputElement>) => {

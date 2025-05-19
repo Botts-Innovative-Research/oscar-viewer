@@ -182,13 +182,12 @@ export async function retrieveLatestConfigDataStream(node: INode) {
         const configSystem = systems.find((system: any) => system.properties.properties.uid == "urn:ornl:oscar:client:config");
 
         if(configSystem){
-            const dsCollection = await configSystem.searchDataStreams(new DataStreamFilter(), 1);
+            const dsCollection = await configSystem.searchDataStreams(new DataStreamFilter({ resultTime: 'latest'}), 1);
 
-            if(dsCollection.hasNext()) {
-                let ds = await dsCollection.nextPage();
+            let ds = await dsCollection.nextPage();
 
-                return ds[0];
-            }
+            return ds[0];
+
         }
 
     }

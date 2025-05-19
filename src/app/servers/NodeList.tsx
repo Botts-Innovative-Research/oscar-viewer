@@ -21,6 +21,7 @@ export default function NodeList({modeChangeCallback}: NodeListProps) {
     const dispatch = useAppDispatch();
     const nodes = useSelector((state: RootState) => selectNodes(state));
 
+    console.log("nodes in node list: ", nodes)
     const setEditNode = (editNode: INode) => {
         modeChangeCallback(true, editNode);
     }
