@@ -35,7 +35,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
     const dispatch = useAppDispatch();
     const newNodeOpts: NodeOptions = {
-        name: "New Node",
+        name: "",
         address: "localhost",
         port: 8282,
         oshPathRoot: "/sensorhub",
@@ -85,11 +85,11 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
         if (isEditNode) {
             dispatch(updateNode(newNode));
-            console.log('dispatch', dispatch(addNode(newNode)));
+            console.log('Dispatching edited node: ', dispatch(addNode(newNode)));
             modeChangeCallback(false, null);
         } else {
             dispatch(addNode(newNode));
-            console.log('dispatch', dispatch(addNode(newNode)));
+            console.log('Dispatching new node: ', dispatch(addNode(newNode)));
             modeChangeCallback(false, null);
 
         }

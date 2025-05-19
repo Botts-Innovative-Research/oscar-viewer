@@ -46,8 +46,9 @@ export const Slice = createSlice({
     initialState,
     reducers: {
         addNode: (state, action: PayloadAction<INode>) => {
-            const nodeIndex = state.nodes.findIndex((node: INode) => node.name === action.payload.name);
+            const nodeIndex = state.nodes.findIndex((node: INode) => node.address === action.payload.address);
             console.log("Adding node: ", nodeIndex);
+
             if (nodeIndex === -1) {
                 state.nodes.push(action.payload);
             } else {

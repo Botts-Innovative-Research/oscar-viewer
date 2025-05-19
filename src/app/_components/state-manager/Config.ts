@@ -115,6 +115,7 @@ export function createConfigObservation(data: IConfigData, resultTime: string){
 }
 
 export async function getConfigSystemID(node: INode): Promise<string> {
+
     let systems = await node.fetchSystems();
     console.log("Systems retrieved:", systems);
 
@@ -152,11 +153,15 @@ export async function getConfigDataStreamID(node: INode): Promise<string>{
 
     const configSystem = systems.find((system: any) => system.properties.properties.uid == CONFIG_UID);
 
+
     if(configSystem){
         let dsCollection = await configSystem.searchDataStreams(new DataStreamFilter(), 1000);
 
+        console.log("config ds collecion: ", dsCollection)
         if(dsCollection.hasNext()){
             let datastreams = await dsCollection.nextPage();
+
+            console.log("config ds: ", datastreams)
 
             if(datastreams.length > 0){
                 return datastreams[0].properties.id;

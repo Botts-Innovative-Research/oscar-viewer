@@ -24,7 +24,6 @@ export {DataSourceContext};
 
 export default function DataSourceProvider({children}: { children: ReactNode }) {
 
-
     const configNode: Node = useSelector((state: RootState) => state.oshSlice.configNode);
     const dispatch = useAppDispatch();
     const nodes = useSelector((state: RootState) => state.oshSlice.nodes);

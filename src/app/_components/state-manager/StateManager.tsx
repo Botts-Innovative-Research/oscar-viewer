@@ -28,19 +28,20 @@ import {Node, NodeOptions, insertObservation} from "@/lib/data/osh/Node";
 import Divider from "@mui/material/Divider";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import ConfigData, {
-    getConfigDataStreamID,
+    getConfigDataStreamID, getConfigSystemID,
     retrieveLatestConfigDataStream
 } from "./Config";
+import {RootState} from "@/lib/state/Store";
 
 
 export default function StateManager() {
     const dispatch = useAppDispatch();
-    const defaultNode = useSelector(selectDefaultNode);
+    const defaultNode = useSelector((state: RootState) => state.oshSlice.configNode);
     const [configDSId, setConfigDSId] = useState<string | null>(null);
     const [fileName, setFileName] = useState<string>("config");
 
     const newNodeOpts: NodeOptions = {
-        name: "New Node",
+        name: "",
         address: "localhost",
         port: 0,
         oshPathRoot: "/sensorhub",
@@ -77,17 +78,26 @@ export default function StateManager() {
 
     const getConfigDataStream = useCallback(async () =>{
         if(defaultNode){
-            let dsId = await getConfigDataStreamID(defaultNode);
+            let configSystemId = await getConfigSystemID(defaultNode);
 
-            setConfigDSId(dsId);
+            if(configSystemId){
+                let dsId = await getConfigDataStreamID(defaultNode);
+                setConfigDSId(dsId);
 
-            return dsId;
+                return dsId;
+            }
         }
     },[defaultNode]);
 
     const saveConfigState = async() =>{
 
         let dsId = await getConfigDataStream();
+
+        if(!dsId){
+            setSaveSnackMsg('Failed to find config datastream')
+            setColorStatus('error')
+            setOpenSaveSnack(true);
+        }
 
         toggleSaveAlert();
 
@@ -103,6 +113,7 @@ export default function StateManager() {
             nodes.length
         );
 
+        console.log("temp config data", tempData);
         let observation = tempData.createConfigurationObservation();
 
         const endpoint = defaultNode.getConfigEndpoint(false) + "/datastreams/" + dsId + "/observations";
