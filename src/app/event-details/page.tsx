@@ -40,11 +40,12 @@ export default function EventDetailsPage() {
     const [videoDatasources, setVideoDatasources] = useState<typeof ConSysApi[]>([]);
 
 
-    const collectDataSources = useCallback(() => {
+    const collectDataSources = useCallback(async() => {
         if(!eventPreview.eventData?.laneId || !laneMapRef.current) return;
 
         let currentLane = eventPreview.eventData.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+
         if (!currLaneEntry) {
             console.error("LaneMapEntry not found for:", currentLane);
             return;
@@ -53,14 +54,18 @@ export default function EventDetailsPage() {
         console.log("Collecting DataSources...", currLaneEntry, currentLane);
 
         // @ts-ignore
-        let tempDSMap: Map<string, ConSysApi[]>;
+        let tempDSMap: Map<string, typeof ConSysApi[]>;
 
-        let datasources = currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
-        console.log("MY DATASOURCES ", datasources);
+        let datasources = await currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
+        console.log('datasources', datasources)
         setLocalDSMap(datasources);
         tempDSMap = datasources;
 
         console.log("LocalDSMap", localDSMap);
+
+        if(!tempDSMap){
+            return;
+        }
 
         const updatedGamma = tempDSMap.get("gamma") || [];
         const updatedNeutron = tempDSMap.get("neutron") || [];
@@ -80,8 +85,15 @@ export default function EventDetailsPage() {
 
 
     useEffect(() => {
-        if(laneMapRef.current && eventPreview)
-            collectDataSources();
+
+        async function callCollectDatasources(){
+            await collectDataSources();
+        }
+
+
+        if(laneMapRef.current && eventPreview) {
+            callCollectDatasources();
+        }
     }, [eventPreview, laneMapRef.current]);
 
 

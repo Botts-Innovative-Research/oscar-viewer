@@ -1,21 +1,21 @@
-import {Box, Grid, Paper} from "@mui/material";
+import {Box, Grid, Paper, Typography} from "@mui/material";
 import ChartTimeHighlight from "@/app/_components/event-preview/ChartTimeHighlight";
 import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
 import TimeController from "@/app/_components/TimeController";
-import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import DataSynchronizer from "osh-js/source/core/timesync/DataSynchronizer";
 import {EventType} from "osh-js/source/core/event/EventType";
-import {event} from "next/dist/build/output/log";
 import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams";
-import {getObservations} from "@/app/utils/ChartUtils";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
-import {selectNodes} from "@/lib/state/OSHSlice";
 import CircularProgress from "@mui/material/CircularProgress";
 import {selectLatestGB} from "@/lib/state/EventPreviewSlice";
 import {isVideoDatastream} from "@/lib/data/oscar/Utilities";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
-import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import MjpegView from "osh-js/source/core/ui/view/video/MjpegView";
+import FFMPEGView from "osh-js/source/core/ui/view/video/FFMPEGView";
+import WebCodecView from "osh-js/source/core/ui/view/video/WebCodecView";
+import VideoView from "osh-js/source/core/ui/view/video/VideoView";
 
 
 export default function Media({eventData, datasources, laneMap}: {eventData: any, datasources: any, laneMap: any}){
@@ -50,7 +50,7 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
 
             masterTimeController.current = new DataSynchronizer({
                 dataSources: videoDS,
-                replaySpeed: 1.0,
+                replaySpeed: 0,
                 startTime: eventData?.startTime,
                 endTime: eventData?.endTime,
             });
@@ -73,7 +73,7 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
     }, [datasources, eventData]);
 
     useEffect(() => {
-        if (chartReady && videoReady) {
+        if (chartReady) {
             console.log("Chart Ready, Starting DataSync");
 
             if(datasources.gamma) datasources?.gamma.connect()
@@ -82,16 +82,21 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
 
             if(datasources.threshold) datasources?.threshold.connect()
 
+            if(videoReady){
+                masterTimeController.current?.connect().then(() => {
+                    console.log("DataSync Should Be Connected", masterTimeController.current);
 
-            masterTimeController.current?.connect().then(() => {
-                console.log("DataSync Should Be Connected", masterTimeController.current);
-            });
+                    // setTimeout(()=>{
+                    //     pause();
+                    // }, 500)
+                });
 
-            if (masterTimeController.current?.isConnected()) {
-                // if is true then pause else play
-                console.log("DataSync Connected!!!");
-            } else {
-                console.log("DataSync Not Connected... :(");
+                if (masterTimeController.current?.isConnected()) {
+                    // if is true then pause else play
+                    console.log("DataSync Connected!!!");
+                } else {
+                    console.log("DataSync Not Connected... :(");
+                }
             }
 
         } else {
@@ -119,8 +124,20 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
             var img = document.getElementsByClassName("video-mjpeg");
 
             masterTimeController.current.connect().finally(()=>{
-                if(img.length > 0) {
-                    img[0].src = frameSrc;
+
+                if(videoViewRef.current.videoView instanceof MjpegView){
+                    var img = document.getElementsByClassName("video-mjpeg");
+                    if(img.length > 0) {
+                        // @ts-ignore
+                        img[0].src = frameSrc;
+                    }
+                }else if(videoViewRef.current.videoView instanceof FFMPEGView || videoViewRef.current.videoView instanceof WebCodecView){
+                    videoViewRef.current.videoView.decode(
+                        savedFrame.pktSize,
+                        savedFrame.pktData,
+                        savedFrame.timestamp,
+                        savedFrame.roll
+                    )
                 }
             })
         }
@@ -135,9 +152,14 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
 
             await masterTimeController.current.disconnect();
 
-            var img = document.getElementsByClassName("video-mjpeg");
+            if(videoViewRef.current.videoView instanceof FFMPEGView || videoViewRef.current.videoView instanceof WebCodecView){
+                await getFrameObservations(syncTime)
+            }else if(videoViewRef.current.videoView instanceof MjpegView){
+                var img = document.getElementsByClassName("video-mjpeg");
+                // @ts-ignore
+                setFrameSrc(img[0].src)
 
-            setFrameSrc(img[0].src)
+            }
         }
     };
 
@@ -148,30 +170,31 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
         setSyncTime(newValue);
 
         await masterTimeController.current.dataSynchronizerReplay.setStartTime(newValue, false).finally(() => {
-            fetchImgBlob(newValue);
+            // fetchImgBlob(newValue);
+            getFrameObservations(newValue);
         });
 
 
     },[masterTimeController, eventData]);
 
+    const getFrameObservations = async(newStartTime: number)=>{
 
-    const fetchImgBlob = async(newVal: any)=>{
-
-        console.log(laneMap)
         for (const lane of laneMap.values()){
 
             if(lane.laneName === eventData.laneId){
                 let datastreams = lane.datastreams.filter((ds: any) => isVideoDatastream(ds));
 
-                await fetchFrameCreateBlob(newVal, eventData.endTime, datastreams);
+                await fetchPausedFrame(newStartTime, eventData.endTime, datastreams);
             }
         }
     }
 
+    const videoViewRef = useRef<typeof VideoView>();
 
-    async function fetchFrameCreateBlob(startTime: any, endTime: any, datastreams: any){
+    async function fetchPausedFrame(startTime: any, endTime: string, datastreams: typeof DataStreams){
 
         let dsId = masterTimeController.current.dataSynchronizer.dataSources[selectedIndex.current].name.split("-")[1]
+        console.log("sync ds id", dsId);
 
 
         let currentVideoDs = datastreams.filter((ds: any) => ds.properties.id === dsId);
@@ -179,13 +202,44 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
 
         const obsPage = await obs.nextPage();
 
-        let imgBlob = new Blob([obsPage[0].img.data]);
+        console.log("obsPage", obsPage)
+
+        const imageData = obsPage[0].img.data
+
+        if(videoViewRef.current.videoView instanceof FFMPEGView || videoViewRef.current.videoView instanceof WebCodecView){
+            // h264 create canvas pixels
+            setCanvasFrame(obsPage[0])
+        }else if(videoViewRef.current.videoView instanceof MjpegView){
+            // mjpeg image
+            setMjpegFrame(imageData)
+        }
+    }
+
+    let savedFrame: { pktSize: number, pktData: Uint8Array, timestamp: number, roll: number } | null = null;
+
+
+    //function to set frame data
+    function setCanvasFrame(imageData: any){
+        const pktSize = imageData.img.data.length;
+        const pktData = imageData.img.data;
+        const timestamp = imageData.timestamp;
+        const roll = imageData.roll;
+
+        savedFrame = { pktSize, pktData, timestamp, roll };
+    }
+
+    function setMjpegFrame(imageData: any){
+        let imgBlob = new Blob([imageData]);
         let url = window.URL.createObjectURL(imgBlob);
 
         var img = document.getElementsByClassName("video-mjpeg");
 
+        // @ts-ignore
         img[0].src = url;
+    }
 
+    const setVideoView =(videoView: any) =>{
+        videoViewRef.current = videoView
     }
 
     const handleUpdatingPage = (page: number)=>{
@@ -214,17 +268,30 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
 
                         </Grid>
                         <Grid item xs={12} md={6}>
-                            <LaneVideoPlayback
-                                setVideoReady={setVideoReady}
-                                dataSynchronizer={masterTimeController.current}
-                                modeType={"detail"}
-                                onSelectedVideoIdxChange={handleUpdatingPage}
-                            />
-                        </Grid>
+                        {(masterTimeController.current) ? (
+                            <div>
 
+                                <LaneVideoPlayback
+                                    setVideoReady={setVideoReady}
+                                    dataSynchronizer={masterTimeController.current}
+                                    modeType={"detail"}
+                                    onSelectedVideoIdxChange={handleUpdatingPage}
+                                    setVideoView={setVideoView}
+                                />
+
+                                <TimeController handleCommitChange={handleChange} pause={pause} play={play} syncTime={syncTime} startTime={eventData?.startTime} endTime={eventData?.endTime}/>
+
+                            </div>
+                            ):
+                            (
+                                <div>
+                                    <Typography variant="h6" align="center">No video data available.</Typography>
+                                </div>
+                            )}
+
+                        </Grid>
                     </Grid>
 
-                    <TimeController handleCommitChange={handleChange} pause={pause} play={play} syncTime={syncTime} startTime={eventData?.startTime} endTime={eventData?.endTime}/>
                 </Box>
             ):
                 <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}><CircularProgress/></Box>

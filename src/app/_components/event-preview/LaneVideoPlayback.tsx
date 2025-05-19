@@ -18,25 +18,23 @@ export class LaneVideoPlaybackProps {
     dataSynchronizer: typeof DataSynchronizer;
     modeType: string;
     onSelectedVideoIdxChange?: (index: number) =>void;
+    setVideoView?: (videoView: typeof VideoView) => void;
 }
 
-export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, modeType, onSelectedVideoIdxChange}: LaneVideoPlaybackProps) {
+export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, modeType, onSelectedVideoIdxChange, setVideoView}: LaneVideoPlaybackProps) {
     const videoViewRef = useRef<typeof VideoView>();
     const [selVideoIdx, setSelVidIdx] = useState<number>(0);
     const [localVideoReady, setLocalVideoReady] = useState<boolean>(false);
 
     const maxPages = dataSynchronizer.dataSynchronizer.dataSources.length;
 
-    const [videoWidth, setVideoWidth] = useState("275px");
-    const [videoHeight, setVideoHeight] = useState("350px");
+    const [videoHeight, setVideoHeight] = useState("220px");
 
     useEffect(() => {
         if(modeType === 'detail'){
-            setVideoHeight("450px")
-            setVideoWidth("500px")
+            setVideoHeight("400px")
         }else if (modeType=== 'preview'){
-            setVideoHeight("275px")
-            setVideoWidth("350px")
+            setVideoHeight("200px")
         }
     }, [dataSynchronizer, modeType]);
 
@@ -49,6 +47,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                     container: `event-preview-video-${ds.id}`,
                     showStats: false,
                     showTime: false,
+                    useWebCodecApi: false,
                     layers: [new VideoDataLayer({
                         dataSourceId: ds.id,
                         getFrameData: (rec: any) => rec.img,
@@ -56,8 +55,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                     })]
                 });
 
-                console.log("video exists", videoViewRef)
-
+                setVideoView(videoViewRef.current);
 
             })
             setVideoReady(true);
@@ -88,6 +86,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
             let nextPage = prevPage + 1
             const page = nextPage < maxPages ? nextPage : prevPage;
             onSelectedVideoIdxChange(page);
+
             return page;
         })
     }
@@ -109,7 +108,7 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
 
     return (
         <>
-            { (
+            {(
 
                 <Box sx={{
                     display: "flex",
@@ -117,43 +116,23 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
                     justifyContent: "center",
                     alignItems: "center",
                 }}>
-                    <IconButton onClick={handlePrevPage} sx={{margin: 2, cursor: 'pointer'}}
-                                disabled={selVideoIdx === 0}>
+                    <IconButton onClick={handlePrevPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === 0}>
                         <NavigateBeforeIcon/>
                     </IconButton>
-
-
-                    <Stack
-                        margin={0}
-                        spacing={2}
-                        direction="row"
-                        alignContent="center"
-                        justifyContent="center"
-
-                        sx={{
-                            height: videoHeight,
-                            width: videoWidth,
-                            alignItems: "center",
-                            border: "1px solid rgba(0,0,0,0.12)",
-                            padding: 1,
-                            flexShrink: 0
-                        }}
-                    >
                         {visibleVideo.map((ds: any) => (
                             <Paper
                                 key={ds.id}
                                 id={`event-preview-video-${ds.id}`}
                                 sx={{
-                                    width: "100%",
-                                    height: "100%",
+                                    height: videoHeight,
+                                    // width: '100%',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    boxSizing: 'border-box'
                                 }}
                             ></Paper>
                         ))}
-
-                    </Stack>
-
-                    <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}}
-                                disabled={selVideoIdx === maxPages - 1}>
+                    <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={selVideoIdx === maxPages - 1}>
                         <NavigateNextIcon/>
                     </IconButton>
                 </Box>
@@ -162,4 +141,3 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
 
     )
 }
-

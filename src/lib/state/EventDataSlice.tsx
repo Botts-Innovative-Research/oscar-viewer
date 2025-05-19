@@ -35,6 +35,9 @@ export const Slice = createSlice({
     name: "EventDataState",
     initialState,
     reducers: {
+        setLaneViewLogData: (state, action: PayloadAction<AlarmTableData[]>) => {
+            state.laneViewLog = action.payload;
+        },
         setEventLogData: (state, action: PayloadAction<EventTableData[]>) => {
             state.eventLog = action.payload;
             // action.payload.forEach((eventData) => {
@@ -73,16 +76,14 @@ export const Slice = createSlice({
         setHasFetchedInitial: (state, action: PayloadAction<boolean>) => {
             state.hasFetchedInitial = action.payload;
         },
-        setLaneViewLogData: (state, action: PayloadAction<AlarmTableData[]>) => {
-            state.laneViewLog = action.payload;
-        },
-        addEventToLaneViewLog: (state, action: PayloadAction<AlarmTableData>) => {
-            let checkEntry = state.laneViewLog.some((event: any) =>( event.id === action.payload.id && event.laneName === action.payload.laneId))
-            console.log("Lane View Log for Statuses: ", checkEntry, action.payload.laneId)
 
-            let laneLog = [];
-            laneLog.push(action.payload);
-            state.laneViewLog = laneLog;
+        addEventToLaneViewLog: (state, action: PayloadAction<AlarmTableData>) => {
+            console.log("Alarm Status Adding to Log", action.payload)
+
+            let currentLog = [];
+            currentLog = [...state.laneViewLog];
+            currentLog.push(action.payload);
+            state.laneViewLog = currentLog;
         },
     }
 })

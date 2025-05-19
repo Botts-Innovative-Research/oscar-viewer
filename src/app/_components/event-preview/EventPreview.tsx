@@ -55,7 +55,11 @@ import CircularProgress from "@mui/material/CircularProgress";
 import {isVideoDatastream} from "@/lib/data/oscar/Utilities";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import {insertObservation} from "@/lib/data/osh/Node";
-
+import VideoView from "osh-js/source/core/ui/view/video/VideoView";
+import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js";
+import FFMPEGView from "osh-js/source/core/ui/view/video/FFMPEGView.js"
+import MjpegView from "osh-js/source/core/ui/view/video/MjpegView.js"
+import WebCodecView from "osh-js/source/core/ui/view/video/WebCodecView.js"
 
 export function EventPreview() {
     const dispatch = useAppDispatch();
@@ -118,10 +122,11 @@ export function EventPreview() {
             secondaryInspectionStatus: "NONE",
             filePaths: "",
             occupancyId: eventPreview.eventData.occupancyId,
-            alarmingSystemUid: eventPreview.eventData.systemIdx
+            alarmingSystemUid: eventPreview.eventData.rpmSystemId
         }
 
-        let adjudicationData = new AdjudicationData(new Date().toISOString(), currentUser, eventPreview.eventData.occupancyId, eventPreview.eventData.systemIdx);
+        let adjudicationData = new AdjudicationData(new Date().toISOString(), currentUser, eventPreview.eventData.occupancyId, eventPreview.eventData.rpmSystemId);
+
         adjudicationData.setFeedback(notes);
         adjudicationData.setAdjudicationCode(value);
         console.log("[ADJ] New Adjudication Data, Ready to Send: ", newAdjData);
@@ -170,8 +175,6 @@ export function EventPreview() {
                 setColorStatus('error')
             }
 
-            console.log("[ADJ] Response: ", resp);
-
             // send command
             // we can use endTime as it is the same a resultTime in testing, this may not be true in practice but this is a stop-gap fix anyway
             let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == eventPreview.eventData.dataStreamId );
@@ -210,9 +213,6 @@ export function EventPreview() {
     }
 
     const handleCloseRounded = () => {
-
-        console.log("closed event preview: ", eventPreview.isOpen)
-
         dispatch(setEventPreview({
             isOpen: false,
             eventData: null
@@ -238,15 +238,6 @@ export function EventPreview() {
         dsArray.forEach(ds => {
             ds.disconnect();
         });
-    }
-
-    function setChartRef(type: string, ref: any) {
-        if (type === "gamma") {
-            gammaChartRef.current = ref;
-        } else if (type === "neutron") {
-            neutronChartRef.current = ref;
-        }
-
     }
 
     const cleanupResources = () => {
@@ -276,15 +267,15 @@ export function EventPreview() {
 
             prevEventIdRef.current = eventPreview.eventData?.occupancyId;
             if (eventPreview.eventData?.laneId && laneMapRef.current) {
-
-                collectDataSources();
+                callCollectDataSources();
                 dispatch(setEventData(eventPreview.eventData));
 
             }
         }
+
     }, [eventPreview.eventData?.occupancyId]);
 
-    const collectDataSources = useCallback(() => {
+    const collectDataSources = useCallback(async() => {
         if (!eventPreview.eventData?.laneId || !laneMapRef.current) return;
 
         let currentLane = eventPreview.eventData.laneId;
@@ -298,8 +289,7 @@ export function EventPreview() {
 
         let tempDSMap = new Map<string, typeof ConSysApi[]>();
 
-        let datasources = currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
-        console.log("DataSources", datasources);
+        let datasources = await currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
 
         setLocalDSMap(datasources);
         tempDSMap = datasources;
@@ -312,48 +302,46 @@ export function EventPreview() {
         const updatedVideo = tempDSMap.get("video") || [];
         const updatedOcc = tempDSMap.get("occ") || [];
 
+        console.log("video datasources", updatedVideo)
+
         setGammaDS(updatedGamma);
         setNeutronDS(updatedNeutron);
         setThresholdDS(updatedThreshold);
         setVideoDatasources(updatedVideo);
         setOccDS(updatedOcc);
+
         setDatasourcesReady(true);
 
     }, [eventPreview, laneMapRef]);
 
 
     const createDataSync = useCallback(() => {
-        if (!syncRef.current && !dataSyncCreated && videoDatasources.length > 0) {
+        if (!syncRef.current && !dataSyncCreated && videoDatasources.length > 0 && videoDatasources) {
             syncRef.current = new DataSynchronizer({
                 dataSources: videoDatasources,
-                replaySpeed: 1.0,
+                replaySpeed: 1,
                 startTime: eventPreview.eventData.startTime,
-                // endTime: eventPreview.eventData.endTime,
-                endTime: "now",
-                reconnect: true
+                endTime: eventPreview.eventData.endTime,
+                intervalRate: 5
             });
-            syncRef.current.onTime
+            // syncRef.current.onTime
             setDataSyncCreated(true);
 
         }
     }, [syncRef, dataSyncCreated, datasourcesReady, videoDatasources]);
 
-    useEffect(() => {
-        if (eventPreview.eventData?.laneId && laneMapRef.current) {
-            collectDataSources();
-            console.log('Datasources collected', eventPreview.eventData?.laneId)
-        }
-    }, [eventPreview.eventData, laneMapRef.current]);
+    async function callCollectDataSources(){
+        await collectDataSources();
+    }
 
     useEffect(() => {
         createDataSync();
-        console.log("videodatasources", videoDatasources.length)
     }, [videoDatasources, syncRef, dataSyncCreated, datasourcesReady]);
 
 
 
-    useEffect(() => {
-        if (chartReady && videoReady) {
+    useEffect( () => {
+        if (chartReady) {
             console.log("Chart Ready, Starting DataSync");
             gammaDatasources.forEach(ds => {
                 ds.connect();
@@ -367,21 +355,30 @@ export function EventPreview() {
             occDatasources.forEach(ds => {
                 ds.connect();
             });
-            syncRef.current.connect().then(() => {
-                console.log("DataSync Should Be Connected", syncRef.current);
-            });
-            if (syncRef.current.isConnected()) {
-                console.log("DataSync Connected!!!");
-            } else {
-                console.log("DataSync Not Connected... :(");
-            }
 
+            if(videoReady){
+
+                syncRef.current.connect().then(() => {
+                    console.log("DataSync Should Be Connected", syncRef.current);
+
+                    // setTimeout(()=>{
+                    //     pause();
+                    // }, 500)
+                });
+
+
+                if (syncRef.current.isConnected()) {
+                    console.log("DataSync Connected!!!");
+                } else {
+                    console.log("DataSync Not Connected... :(");
+                }
+
+            }
 
         } else {
             console.log("Chart Not Ready, cannot start DataSynchronizer...");
         }
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
-
 
     useEffect(() => {
         if(syncRef.current){
@@ -391,7 +388,6 @@ export function EventPreview() {
                 }}, [EventType.MASTER_TIME]
             );
         }
-
     }, [syncRef.current]);
 
 
@@ -409,13 +405,23 @@ export function EventPreview() {
         if (syncRef.current) {
             console.log("Playback started.");
 
-            var img = document.getElementsByClassName("video-mjpeg");
-
             syncRef.current.connect().finally(() => {
-
-                if(img.length > 0) {
-                    img[0].src = frameSrc;
+                if(videoViewRef.current.videoView instanceof MjpegView){
+                    var img = document.getElementsByClassName("video-mjpeg");
+                    if(img.length > 0) {
+                        // @ts-ignore
+                        img[0].src = frameSrc;
+                    }
+                }else if(videoViewRef.current.videoView instanceof FFMPEGView || videoViewRef.current.videoView instanceof WebCodecView){
+                    console.log("saved frame", savedFrame);
+                    videoViewRef.current.videoView.decode(
+                        savedFrame.pktSize,
+                        savedFrame.pktData,
+                        savedFrame.timestamp,
+                        savedFrame.roll
+                    )
                 }
+
             });
         }
     };
@@ -424,67 +430,112 @@ export function EventPreview() {
     const pause = async () => {
         if (syncRef.current) {
 
-            // await syncRef.current.setReplaySpeed(0.0);
             console.log("Playback paused.");
 
             await syncRef.current.disconnect();
 
-            var img = document.getElementsByClassName("video-mjpeg");
+            if(videoViewRef.current.videoView instanceof FFMPEGView || videoViewRef.current.videoView instanceof WebCodecView){
+                await getFrameObservations(syncTime)
+            }else if(videoViewRef.current.videoView instanceof MjpegView){
+                var img = document.getElementsByClassName("video-mjpeg");
+                // @ts-ignore
+                setFrameSrc(img[0].src)
 
-            setFrameSrc(img[0].src)
+            }
+
         }
-
     };
+
 
     // when the user toggles the time controller this is the code to change the time sync
     const handleCommitChange = useCallback( async(event: Event, newValue: number) => {
 
-        // await syncRef.current.setTimeRange(newValue, eventPreview.eventData.endTime, 0.0, true);
         setSyncTime(newValue);
 
         await syncRef.current.dataSynchronizerReplay.setStartTime(newValue, false).finally(() => {
-            fetchImgBlob(newValue);
+            getFrameObservations(newValue);
         });
 
     },[syncRef, eventPreview.eventData.endTime]);
 
 
 
-
-    const fetchImgBlob = async(newVal: any)=>{
+    const getFrameObservations = async(newStartTime: number)=>{
 
         for (const lane of laneMapRef.current.values()){
 
             if(lane.laneName === eventPreview.eventData.laneId){
                 let datastreams = lane.datastreams.filter((ds: any) => isVideoDatastream(ds));
 
-                await fetchFrameCreateBlob(newVal, eventPreview.eventData.endTime, datastreams);
+                await fetchPausedFrame(newStartTime, eventPreview.eventData.endTime, datastreams);
             }
         }
     }
 
-    async function fetchFrameCreateBlob(startTime: any, endTime: any, datastreams: any){
+
+    const videoViewRef = useRef<typeof VideoView>();
+
+    async function fetchPausedFrame(startTime: any, endTime: string, datastreams: typeof DataStreams){
 
         let dsId = syncRef.current.dataSynchronizer.dataSources[selectedIndex.current].name.split("-")[1]
-        console.log("sync ds id", dsId);
-
 
         let currentVideoDs = datastreams.filter((ds: any) => ds.properties.id === dsId);
         let obs = await currentVideoDs[0].searchObservations(new ObservationFilter({ format: 'application/swe+binary', resultTime: `${new Date(startTime).toISOString()}/${endTime}`}),1);
 
         const obsPage = await obs.nextPage();
 
-        let imgBlob = new Blob([obsPage[0].img.data]);
+        const imageData = obsPage[0].img.data
+
+        if(videoViewRef.current.videoView instanceof FFMPEGView || videoViewRef.current.videoView instanceof WebCodecView){
+            // h264 create canvas pixels
+            setCanvasFrame(obsPage[0])
+        }else if(videoViewRef.current.videoView instanceof MjpegView){
+            // mjpeg image
+            setMjpegFrame(imageData)
+        }
+    }
+
+    let savedFrame: { pktSize: number, pktData: Uint8Array, timestamp: number, roll: number } | null = null;
+
+
+    //function to set frame data
+    function setCanvasFrame(imageData: any){
+        const pktSize = imageData.img.data.length;
+        const pktData = imageData.img.data;
+        const timestamp = imageData.timestamp;
+        const roll = imageData.roll | 0;
+
+        console.log("image data", imageData)
+        savedFrame = { pktSize, pktData, timestamp, roll };
+        console.log("image data saved to frame: ", savedFrame)
+    }
+
+    function setMjpegFrame(imageData: any){
+        let imgBlob = new Blob([imageData]);
         let url = window.URL.createObjectURL(imgBlob);
 
         var img = document.getElementsByClassName("video-mjpeg");
 
+        // @ts-ignore
         img[0].src = url;
-
     }
 
     const handleUpdatingPage = (page: number)=>{
         selectedIndex.current = page;
+
+        // syncRef.current.connect().then(()=>{
+        //     getFrameObservations(syncTime);
+        //
+        //     setTimeout(()=>{
+        //         pause();
+        //     }, 500)
+        // })
+
+
+    }
+
+    const setVideoView =(videoView: any) =>{
+        videoViewRef.current = videoView
     }
 
     return (
@@ -501,7 +552,7 @@ export function EventPreview() {
                 </IconButton>
             </Stack>
 
-            {(datasourcesReady && latestGB && syncRef.current) ? (
+            {(datasourcesReady && latestGB) ? (
                     <Box>
                         <ChartTimeHighlight
                             datasources={{
@@ -516,14 +567,27 @@ export function EventPreview() {
                             latestGB={latestGB}
                         />
 
-                        <LaneVideoPlayback
-                            setVideoReady={setVideoReady}
-                            dataSynchronizer={syncRef.current}
-                            modeType={"preview"}
-                            onSelectedVideoIdxChange={handleUpdatingPage}
-                        />
-                        <TimeController handleCommitChange={handleCommitChange} pause={pause} play={play} syncTime={syncTime}  startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
-                    </Box>
+                        {(syncRef.current) ?
+                            (
+                                <div>
+                                    <LaneVideoPlayback
+                                        setVideoReady={setVideoReady}
+                                        dataSynchronizer={syncRef.current}
+                                        modeType={"preview"}
+                                        onSelectedVideoIdxChange={handleUpdatingPage}
+                                        setVideoView={setVideoView}
+                                    />
+                                    <TimeController handleCommitChange={handleCommitChange} pause={pause} play={play} syncTime={syncTime}  startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
+
+                                </div>
+                            )
+                            :
+                           (
+                               <div>
+                                   <Typography variant="h6" align="center">No video data available.</Typography>
+                               </div>
+                           )}
+                        </Box>
                 ) :
 
                 <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}><CircularProgress/></Box>
@@ -539,10 +603,7 @@ export function EventPreview() {
                     rows={4}
                 />
                 <Stack direction={"row"} spacing={10} sx={{width: "100%"}} justifyContent={"center"}>
-                    <Button onClick={sendAdjudicationData} variant={"contained"} size={"small"} fullWidth={false}
-                            color={"success"}
-                            disabled={adjFormData === null}
-                            sx={{width: "25%"}}>Submit</Button>
+                    <Button onClick={sendAdjudicationData} variant={"contained"} size={"small"} fullWidth={false} color={"success"} disabled={adjFormData === null} sx={{width: "25%"}}>Submit</Button>
                     <Snackbar
                         anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         open={openSnack}
@@ -556,9 +617,7 @@ export function EventPreview() {
                         }}
                     />
 
-                    <Button onClick={resetAdjudicationData} variant={"contained"} size={"small"} fullWidth={false}
-                            color={"secondary"}
-                            sx={{width: "25%"}}>Reset</Button>
+                    <Button onClick={resetAdjudicationData} variant={"contained"} size={"small"} fullWidth={false} color={"secondary"} sx={{width: "25%"}}>Reset</Button>
                 </Stack>
             </Stack>
         </Stack>

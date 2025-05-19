@@ -57,7 +57,6 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
         backgroundColor: "rgba(245, 166, 160, 0.1)",
         lineColor: "#f44336",
         visible: true,
-        hidden: false,
         xLabel: 'Time',
         yLabel: 'CPS',
         order: 1,
