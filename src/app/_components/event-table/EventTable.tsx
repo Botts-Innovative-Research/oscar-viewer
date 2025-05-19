@@ -399,11 +399,10 @@ export default function EventTable({
 
         for (const lane of laneMap.values()){
             let datastreams = lane.datastreams.filter((ds: any) => isThresholdDatastream(ds));
-            console.log("heyy ds", datastreams, eventData)
+
             let gammaThreshDs = datastreams.find((ds: typeof DataStream) => ds.properties["system@id"] == eventData.rpmSystemId);
 
             if(gammaThreshDs){
-                console.log("gamma", gammaThreshDs)
                 let latestGB = await getObservations(eventData.startTime, eventData.endTime, gammaThreshDs);
                 dispatch(setLatestGB(latestGB));
             }

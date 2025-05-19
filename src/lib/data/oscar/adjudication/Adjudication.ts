@@ -33,12 +33,6 @@ export default class AdjudicationData implements IAdjudicationData {
     alarmingSystemUid: string
     vehicleId?: string
 
-    // constructor(properties: IAdjudicationData) {
-    //     Object.assign(this, properties);
-    //     this.id = randomUUID();
-    // }
-
-
     constructor(username: string, occupancyId: string, alarmingSystemUid: string, time: string) {
         this.time = time;
         this.username = username;
@@ -51,8 +45,6 @@ export default class AdjudicationData implements IAdjudicationData {
         this.isotopes= '';
         this.filePaths= '';
     }
-
-
 
 
     setTime(isoTime: string) {
@@ -156,19 +148,6 @@ export function createAdjudicationObservation(data: IAdjudicationData, resultTim
     }
     // return obs
     return JSON.stringify(obs, ['phenomenonTime', 'result', 'time', 'id', 'username', 'feedback', 'adjudicationCode', 'isotopes', 'secondaryInspectionStatus', 'filePaths', 'occupancyId', 'alarmingSystemUid', 'vehicleId'], 2);
-}
-
-export async function sendAdjudication(ep: any, observation: any, ){
-    let resp = await fetch(ep, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: observation,
-        mode: "cors"
-    });
-
-    return resp;
 }
 
 export async function sendSetAdjudicatedCommand(node: INode, controlStreamId: string, command: AdjudicationCommand | string) {

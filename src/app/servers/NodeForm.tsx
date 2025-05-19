@@ -35,13 +35,13 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
     const dispatch = useAppDispatch();
     const newNodeOpts: NodeOptions = {
-        name: "New Node",
+        name: "",
         address: "localhost",
         port: 8282,
         oshPathRoot: "/sensorhub",
         sosEndpoint: "/sos",
         csAPIEndpoint: "/api",
-        csAPIConfigEndpoint: "/configs",
+        configsEndpoint: "/configs",
         auth: {username: "", password: ""},
         isSecure: false,
         isDefaultNode: false
@@ -85,11 +85,11 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
         if (isEditNode) {
             dispatch(updateNode(newNode));
-            console.log('dispatch', dispatch(addNode(newNode)));
+            console.log('Dispatching edited node: ', dispatch(addNode(newNode)));
             modeChangeCallback(false, null);
         } else {
             dispatch(addNode(newNode));
-            console.log('dispatch', dispatch(addNode(newNode)));
+            console.log('Dispatching new node: ', dispatch(addNode(newNode)));
             modeChangeCallback(false, null);
 
         }
@@ -147,8 +147,8 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                     <TextField label="CS API Endpoint" name="csAPIEndpoint" value={newNode.csAPIEndpoint}
                                onChange={handleChange}/>
                     <Tooltip title={"The endpoint for the configuration API"}>
-                        <TextField label="Config Endpoint" name="csAPIConfigEndpoint"
-                                   value={newNode.csAPIConfigEndpoint}
+                        <TextField label="Config Endpoint" name="configsEndpoint"
+                                   value={newNode.configsEndpoint}
                                    onChange={handleChange}/>
                     </Tooltip>
                     <TextField label="Username" name="username" value={newNode.auth.username} onChange={handleChange}/>

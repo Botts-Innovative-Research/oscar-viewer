@@ -8,7 +8,7 @@ import {randomUUID} from "osh-js/source/core/utils/Utils";
 import System from "osh-js/source/core/consysapi/system/System.js";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
 import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js";
-import {INode} from "@/lib/data/osh/Node";
+import {INode, insertObservation} from "@/lib/data/osh/Node";
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
 import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
@@ -20,6 +20,7 @@ import {
     isTamperDatastream, isThresholdDatastream,
     isVideoDatastream
 } from "./Utilities";
+import {AdjudicationDatastreamConstant} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 
 class ILaneMeta {
     id: string;
@@ -347,6 +348,7 @@ export class LaneMapEntry {
         return dsMap;
     }
 
+
     async checkValidDataSource(ds: typeof DataStream, startTime: string, endTime: string): Promise<typeof ConSysApi> {
 
         let datasourceReplay = this.createReplayConSysApiFromDataStream(ds, startTime, endTime);
@@ -389,6 +391,7 @@ export class LaneMapEntry {
 
 
     async insertAdjudicationSystem(laneName: string) {
+
         console.log("[ADJ] Inserting Adjudication System for lane: ", this);
         let laneId = this.laneSystem.properties.properties.uid.split(":").pop();
 
@@ -400,22 +403,28 @@ export class LaneMapEntry {
         }
 
         console.log("[ADJ] Inserting Adjudication System: ", adJSysJSON);
-        let sysId: string = await this.parentNode.insertAdjSystem(adJSysJSON);
+        let endpoint: string = `${this.parentNode.getConnectedSystemsEndpoint(false)}/systems/`;
+
+        let sysId: string = await this.parentNode.insertSystem(adJSysJSON, endpoint);
         console.log("[ADJ] Inserted Adjudication System: ", sysId);
         // let dsId = this.insertAdjudicationDataStream(laneName);
         return sysId;
     }
 
     async insertAdjudicationDataStream(systemId: string) {
-        let dsRes = await this.parentNode.insertAdjDatastream(systemId);
+        let endpoint: string = `${this.parentNode.getConnectedSystemsEndpoint(false)}/systems/` + systemId + '/datastreams/';
+
+        let dsRes = await this.parentNode.insertDatastream(endpoint, AdjudicationDatastreamConstant);
         if (dsRes) {
             console.log("[ADJ] Inserted Adjudication Datastream: ", dsRes);
             this.adjDs = dsRes;
         }
     }
 
-    async insertAdjudicationObservation(obsData: AdjudicationData) {
-        let obsRes = await this.parentNode.insertObservation(obsData, this.adjDs);
+    async insertAdjudicationObservation(obsData: AdjudicationData, datastreamId: string) {
+        let endpoint: string = `${this.parentNode.getConnectedSystemsEndpoint(false)}/datastreams/${datastreamId}/observations`;
+
+        let obsRes = await insertObservation(endpoint, obsData);
         if (obsRes) {
             console.log("[ADJ] Inserted Adjudication Observation: ", obsRes);
         }

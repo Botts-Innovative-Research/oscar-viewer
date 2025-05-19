@@ -11,43 +11,48 @@ import {
     Card,
     CardContent,
     CardHeader,
-    Container, Grid, Snackbar, SnackbarCloseReason,
+    Container, Snackbar, SnackbarCloseReason,
     Stack,
     TextField,
     Typography,
     useMediaQuery,
     useTheme
 } from "@mui/material";
-import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
-import {RootState} from "@/lib/state/Store";
+
 import {useSelector} from "react-redux";
-import {IOSHSlice, selectDefaultNode, setNodes} from "@/lib/state/OSHSlice";
+import { selectDefaultNode, selectNodes, setNodes} from "@/lib/state/OSHSlice";
 import React, {useCallback, useEffect, useState} from "react";
-import {IOSCARClientState, setCurrentUser} from "@/lib/state/OSCARClientSlice";
+import { selectCurrentUser, setCurrentUser} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {Node, NodeOptions} from "@/lib/data/osh/Node";
+import {Node, NodeOptions, insertObservation} from "@/lib/data/osh/Node";
 import Divider from "@mui/material/Divider";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import ConfigData, {
+    getConfigDataStreamID, getConfigSystemID,
+    retrieveLatestConfigDataStream
+} from "./Config";
+import {RootState} from "@/lib/state/Store";
 
 
 export default function StateManager() {
     const dispatch = useAppDispatch();
-    const oshSlice: IOSHSlice = useSelector((state: RootState) => state.oshSlice);
-    const oscarSlice: IOSCARClientState = useSelector((state: RootState) => state.oscarClientSlice);
-    const defaultNode = useSelector(selectDefaultNode);
-    const [cfgDSId, setCfgDSId] = useState<string | null>(null);
+    const defaultNode = useSelector((state: RootState) => state.oshSlice.configNode);
+    const [configDSId, setConfigDSId] = useState<string | null>(null);
     const [fileName, setFileName] = useState<string>("config");
+
     const newNodeOpts: NodeOptions = {
-        name: "New Node",
+        name: "",
         address: "localhost",
         port: 0,
         oshPathRoot: "/sensorhub",
         sosEndpoint: "/sos",
+        configsEndpoint: "/config",
         csAPIEndpoint: "/api",
-        csAPIConfigEndpoint: "/configs",
         auth: {username: "", password: ""},
         isSecure: false,
         isDefaultNode: false
     };
+
     const [loadNodeOpts, setLoadNodeOpts] = useState<NodeOptions>(newNodeOpts);
     const [targetNode, setTargetNode] = useState<Node>(new Node(newNodeOpts));
     const [showLoadAlert, setShowLoadAlert] = useState<boolean>(false);
@@ -58,63 +63,106 @@ export default function StateManager() {
     const [openSaveSnack, setOpenSaveSnack] = useState(false);
     const [openSnack, setOpenSnack] = useState(false);
 
-    const [loadSnackMsg, setLoadSnackMsg] = useState('');
-    const [saveSnackMsg, setSaveSnackMsg] = useState('');
+    const [loadSnackMsg, setLoadSnackMsg] = useState<string>();
+    const [saveSnackMsg, setSaveSnackMsg] = useState<string>();
     const [colorStatus, setColorStatus]= useState('');
+
+    const nodes = useSelector(selectNodes)
+    const currentUser = useSelector(selectCurrentUser)
 
     useEffect(() => {
         setLoadNodeOpts({...loadNodeOpts, ...defaultNode});
     }, []);
 
-    const getCFGDataStream = useCallback(async () => {
-        if (defaultNode) {
-            console.log("Default Node: ", defaultNode);
-            let cfgSystem = await OSHSliceWriterReader.checkForConfigSystem(defaultNode);
-            if (cfgSystem) {
-                let dsId = await OSHSliceWriterReader.checkForConfigDatastream(defaultNode, cfgSystem);
-                setCfgDSId(dsId);
+    const [data, setData] = useState<ConfigData>();
+
+    const getConfigDataStream = useCallback(async () =>{
+        if(defaultNode){
+            let configSystemId = await getConfigSystemID(defaultNode);
+
+            if(configSystemId){
+                let dsId = await getConfigDataStreamID(defaultNode);
+                setConfigDSId(dsId);
+
                 return dsId;
             }
         }
-    }, [defaultNode]);
+    },[defaultNode]);
 
-    const handleSaveState = async () => {
-        let dsID = await getCFGDataStream();
+    const saveConfigState = async() =>{
+
+        let dsId = await getConfigDataStream();
+
+        if(!dsId){
+            setSaveSnackMsg('Failed to find config datastream')
+            setColorStatus('error')
+            setOpenSaveSnack(true);
+        }
+
         toggleSaveAlert();
-        if (cfgDSId === null) {
-            let obs = OSHSliceWriterReader.writeConfigToString({oscarData: oscarSlice, oshData: oshSlice}, fileName);
-            let resp = await OSHSliceWriterReader.sendBlobToServer(defaultNode, dsID, obs);
-            if (resp) {
+
+        let phenomenonTime = new Date().toISOString();
+
+        const user = currentUser || "Unknown";
+
+        const tempData = new ConfigData(
+            phenomenonTime,
+            configDSId || "",
+            user,
+            nodes,
+            nodes.length
+        );
+
+        console.log("temp config data", tempData);
+        let observation = tempData.createConfigurationObservation();
+
+        const endpoint = defaultNode.getConfigEndpoint(false) + "/datastreams/" + dsId + "/observations";
+
+        await submitConfig(endpoint, observation);
+    }
+
+    const submitConfig = async(endpoint: string, observation: any) => {
+        try{
+            const response = await insertObservation(endpoint, observation);
+
+            if(response.ok){
                 setSaveSnackMsg('OSCAR Configuration Saved')
                 setColorStatus('success')
-            } else {
+            }else {
                 setSaveSnackMsg('Failed to save OSCAR Configuration')
                 setColorStatus('error')
             }
-            setOpenSaveSnack(true)
+        }catch(error){
+            setSaveSnackMsg('Failed to save config')
+            setColorStatus('error')
         }
 
+        setOpenSaveSnack(true);
     }
+
 
     const handleLoadState = async () => {
         toggleLoadAlert();
 
-        let responseJSON = await OSHSliceWriterReader.retrieveLatestConfig(targetNode);
-        if (responseJSON) {
-            setLoadSnackMsg('OSCAR State Loaded')
-            setColorStatus('success')
-            console.log("Config data retrieved: ", responseJSON);
+        let latestConfigDs = await retrieveLatestConfigDataStream(targetNode);
 
-            let cfgData = responseJSON.result.filedata;
-            let cfgJSON = JSON.parse(cfgData);
-            console.log("Config data parsed: ", cfgJSON);
 
-            dispatch(setCurrentUser(cfgJSON.user.currentUser));
+        if(latestConfigDs){
 
-            let nodes = cfgJSON.nodes.map((opt: NodeOptions) => new Node(opt));
-            dispatch(setNodes(nodes));
+            let latestConfigData = await fetchLatestConfigObservation(latestConfigDs);
 
-        } else {
+            if(latestConfigData != null){
+                setLoadSnackMsg('OSCAR State Loaded')
+                setColorStatus('success')
+
+                console.log("latest config data from load state", latestConfigData[0])
+                dispatch(setCurrentUser(latestConfigData[0].user));
+
+                let nodes = latestConfigData[0].nodes;
+                dispatch(setNodes(nodes));
+            }
+
+        }else{
             setLoadSnackMsg('Failed to load OSCAR State')
             setColorStatus('error')
         }
@@ -125,6 +173,20 @@ export default function StateManager() {
         const {name, value} = e.target;
         if (name === "File Name") {
             setFileName(value);
+        }
+    }
+
+     const fetchLatestConfigObservation = async(ds: any) =>{
+        const observations = await ds.searchObservations(new ObservationFilter(), 1);
+
+        while(observations.hasNext()){
+            let obsResult = await observations.nextPage();
+            let configData = obsResult.map((obs: any) =>{
+                let data = new ConfigData(obs.phenomenonTime, obs.id, obs.result.user, obs.result.nodes, obs.result.numNodes)
+                return data;
+            })
+
+            return configData;
         }
     }
 
@@ -170,15 +232,17 @@ export default function StateManager() {
         }
     }
 
+
     useEffect(() => {
         setTargetNode(new Node(loadNodeOpts));
-    }, [loadNodeOpts]);
+
+        const time = new Date().toISOString();
+        const newData = new ConfigData(time, configDSId, currentUser || "Unknown", [targetNode], 1);
+        setData(newData);
+    }, [loadNodeOpts, currentUser]);
 
 
-    const handleCloseSnack = (
-        event: React.SyntheticEvent | Event,
-        reason?: SnackbarCloseReason,
-    ) => {
+    const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
         if (reason === 'clickaway') {
             return;
         }
@@ -188,9 +252,7 @@ export default function StateManager() {
     };
 
     return (
-        <Box sx={{
-            margin: 2, padding: 2, width: isSmallScreen ? '100%' : '75%'
-        }}>
+        <Box sx={{margin: 2, padding: 2, width: isSmallScreen ? '100%' : '75%'}}>
             <Card>
                 <CardHeader title={"Configuration Management"} titleTypographyProps={{variant: "h2"}}/>
                 <CardContent component="form">
@@ -217,7 +279,7 @@ export default function StateManager() {
                                                         the previous one)?
                                                     </Typography>
                                                     <Button color={"success"} variant="contained"
-                                                            onClick={handleSaveState}>
+                                                            onClick={saveConfigState}>
                                                         Save
                                                     </Button>
                                                     <Button color={"error"} variant="contained"
@@ -278,12 +340,10 @@ export default function StateManager() {
                                                             Are you sure you want to load the configuration (and
                                                             overwrite the previous one)?
                                                         </Typography>
-                                                        <Button variant={"contained"} color={"success"}
-                                                                onClick={handleLoadState}>
+                                                        <Button variant={"contained"} color={"success"} onClick={handleLoadState}>
                                                             Yes
                                                         </Button>
-                                                        <Button variant={"contained"} color={"error"}
-                                                                onClick={toggleLoadAlert}>
+                                                        <Button variant={"contained"} color={"error"} onClick={toggleLoadAlert}>
                                                             Cancel
                                                         </Button>
                                                     </Stack>
@@ -312,3 +372,4 @@ export default function StateManager() {
         </Box>
     );
 }
+
