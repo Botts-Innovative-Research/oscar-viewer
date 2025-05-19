@@ -240,7 +240,6 @@ export class Node implements INode {
     async fetchSystems(): Promise<any[]> {
         let systemsApi = this.getSystemsApi();
 
-        console.log("systemsApi", systemsApi)
         let searchedSystems = await systemsApi.searchSystems(new SystemFilter(), 100);
         let availableSystems = [];
 
@@ -258,22 +257,13 @@ export class Node implements INode {
     }
 
     async fetchDatastreams(laneMap: Map<string, LaneMapEntry>) {
-        // let availableDatastreams = [];
         for (const [, laneEntry] of laneMap) {
             try {
                 const datastreams = await laneEntry.laneSystem.searchDataStreams(undefined, 100);
                 while (datastreams.hasNext()) {
                     const datastreamResults = await datastreams.nextPage();
                     laneEntry.addDatastreams(datastreamResults);
-                    // availableDatastreams.push(...datastreamResults)
                 }
-
-                // if(availableDatastreams.length > 0) {
-                //     return availableDatastreams;
-                // }
-                // else {
-                //     throw new Error("No datastreams found, check endpoint properties");
-                // }
             } catch (error) {
                 console.error(`Error fetching datastreams for system ${laneEntry.laneSystem.id}:`, error);
             }
