@@ -7,8 +7,9 @@ import {changeConfigNode, setNodes} from "@/lib/state/OSHSlice";
 import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {RootState} from "@/lib/state/Store";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
-import { NodeOptions, Node, INode } from "@/lib/data/osh/Node";
+import { Node } from "@/lib/data/osh/Node";
+import ConfigData, { retrieveLatestConfigDataStream } from "../_components/state-manager/Config";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 
 
 interface IDataSourceContext {
@@ -23,7 +24,6 @@ export {DataSourceContext};
 
 export default function DataSourceProvider({children}: { children: ReactNode }) {
 
-
     const configNode: Node = useSelector((state: RootState) => state.oshSlice.configNode);
     const dispatch = useAppDispatch();
     const nodes = useSelector((state: RootState) => state.oshSlice.nodes);
@@ -34,15 +34,37 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
     const handleLoadState = async () => {
 
-        let responseJSON = await OSHSliceWriterReader.retrieveLatestConfig(configNode);
-        if (responseJSON) {
-            console.log("Config data retrieved: ", responseJSON);
+        let latestConfigDs = await retrieveLatestConfigDataStream(configNode);
 
-            let cfgData = responseJSON.result.filedata;
-            let cfgJSON = JSON.parse(cfgData);
-            console.log("Config data parsed: ", cfgJSON);
+        if (latestConfigDs) {
+            console.log("Config data retrieved: ", latestConfigDs);
 
-            let nodes = cfgJSON.nodes.map((opt: NodeOptions) => new Node(opt));
+            let latestConfigData = await fetchLatestConfigObservation(latestConfigDs);
+
+            if(latestConfigData == null) return;
+
+            let nodes = latestConfigData[0].nodes.map((opt: any) => {
+
+                return new Node({
+                    name: opt.name,
+                    address: opt.address,
+                    port: opt.port,
+                    oshPathRoot: opt.oshPathRoot,
+                    sosEndpoint: opt.sosEndpoint,
+                    configsEndpoint: opt.configsEndpoint,
+                    csAPIEndpoint: opt.csAPIEndpoint,
+                    auth: {
+                        username: opt.username,
+                        password: opt.password
+                    },
+                    isSecure: opt.isSecure,
+                    isDefaultNode: opt.isDefaultNode,
+                    laneAdjMap: opt.laneAdjMap
+                });
+            });
+
+
+            console.log("ds context nodes", nodes)
             dispatch(setNodes(nodes));
 
         } else {
@@ -63,20 +85,27 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             console.error("No config node found in state. Cannot initialize application.");
         }
 
-        await handleLoadState()
-
-        let filedata = await OSHSliceWriterReader.retrieveLatestConfig(configNode);
-
-        if (filedata) {
-            console.log("Filedata from config node:", filedata);
-            // load the filedata into the state
-        } else {
-            console.log("No filedata found from config node");
-            // do nothing else for now
-        }
+        await handleLoadState();
 
     }, [dispatch, configNode]);
 
+    const fetchLatestConfigObservation = async(ds: any) =>{
+        const observations = await ds.searchObservations(new ObservationFilter(), 1);
+
+        while(observations.hasNext()){
+            let obsResult = await observations.nextPage();
+            let configData = obsResult.map((obs: any) =>{
+                console.log("hello", obs)
+                let data = new ConfigData(obs.phenomenonTime, obs.id, obs.result.user, obs.result.nodes, obs.result.numNodes)
+
+                console.log("data", data)
+                return data;
+            })
+
+            return configData;
+        }
+
+    }
 
     function checkSystemFetchInterval() {
         console.log("Checking system fetch interval for TK Fetch...");
@@ -84,18 +113,39 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }
 
     const testSysFetch = useCallback(async () => {
-        console.log("Received new nodes, updating state\nNodes:");
-        console.log(nodes);
+        console.log("Received new nodes, updating state\nNodes:", nodes);
+
+        let nodes_ = nodes.map((opt: any) => {
+
+            return new Node({
+                name: opt.name,
+                address: opt.address,
+                port: opt.port,
+                oshPathRoot: opt.oshPathRoot,
+                sosEndpoint: opt.sosEndpoint,
+                configsEndpoint: opt.configsEndpoint,
+                csAPIEndpoint: opt.csAPIEndpoint,
+                auth: {
+                    username: opt.username,
+                    password: opt.password
+                },
+                isSecure: opt.isSecure,
+                isDefaultNode: opt.isDefaultNode,
+                laneAdjMap: opt.laneAdjMap
+            });
+        });
+
         let allLanes: Map<string, LaneMapEntry> = new Map();
+
+
         // let allDatastreams: any[];
-        await Promise.all(nodes.map(async (node: INode) => {
+        await Promise.all(nodes_.map(async (node: any) => {
             console.log("Fetching lanes from node ", node);
+
             let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
-            console.log("Fetching data streams from node ", node);
+
             await node.fetchDatastreams(nodeLaneMap);
-            console.log("Fetching process video data streams from node ", node);
             await node.fetchProcessVideoDatastreams(nodeLaneMap);
-            console.log("Fetching control streams from node ", node);
             await node.fetchControlStreams(nodeLaneMap);
 
 
@@ -110,9 +160,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             }
 
 
-            console.log("nodelanemap", nodeLaneMap)
-
-            nodeLaneMap.forEach((value, key) =>{
+            nodeLaneMap.forEach((value: LaneMapEntry, key: string) =>{
                 allLanes.set(key,value);
             })
         }));
@@ -121,9 +169,10 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         console.log("all Lanes", allLanes)
         // fetch adjudication systems
         let adjMap: Map<string, string> = new Map();
-        for(let node of nodes){
+        for(let node of nodes_){
             console.log("[ADJ] Fetching adjudication systems for node: ", node, allLanes);
-            adjMap = await node.fetchOrCreateAdjudicationSystems(allLanes);
+           adjMap = await node.fetchOrCreateAdjudicationSystems(allLanes);
+
         }
         console.log("[ADJ] Adjudication Systems Map:", adjMap);
 
@@ -149,7 +198,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }, [laneMap]);
 
     useEffect(() => {
-        testSysFetch().then(r => console.log("All Systems fetched. "));
+        testSysFetch();
 
         setLastSystemFetch(Date.now());
 

@@ -5,17 +5,16 @@
 
 // starts with lane, followed by 1 or more digits, ends after digit(s)
 import {LaneMapEntry, LaneMeta} from "@/lib/data/oscar/LaneCollection";
-import {System} from "osh-js/source/core/consysapi/system/System";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
-import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
 import {AdjudicationDatastreamConstant} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
 import DataStreamFilter from "osh-js/source/core/consysapi/datastream/DataStreamFilter.js";
 import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js";
 import { isVideoDatastream } from "../oscar/Utilities";
+import System from "osh-js/source/core/sweapi/system/System.js";
 import Systems from "osh-js/source/core/consysapi/system/Systems.js";
 import SystemFilter from "osh-js/source/core/consysapi/system/SystemFilter.js";
-
+import { ISystem } from "./Systems";
 const SYSTEM_UID_PREFIX = "urn:osh:system:";
 const DATABASE_PROCESS_UID_PREFIX = "urn:osh:process:occupancy:";
 
@@ -27,13 +26,14 @@ export interface INode {
     oshPathRoot: string,
     sosEndpoint: string,
     csAPIEndpoint: string,
-    csAPIConfigEndpoint: string,
+    configsEndpoint: string,
     isSecure: boolean,
     auth: { username: string, password: string } | null,
     isDefaultNode: boolean
     laneAdjMap?: Map<string, string>
 
     getConnectedSystemsEndpoint(noProtocolPrefix: boolean): string,
+    getConfigEndpoint(noProtocolPrefix: boolean): string,
 
     getConfigEndpoint() : string,
 
@@ -53,14 +53,17 @@ export interface INode {
 
     insertSubSystem(systemJSON: any, parentSystemId: string): Promise<string>
 
-    insertAdjSystem(systemJSON: any): Promise<string>
+    insertSystem(systemJSON: any, endpoint: string): Promise<string>
 
-    insertAdjDatastream(systemId: string): Promise<string>
+    insertDatastream( endPoint: string, datastreamConstant: any): Promise<string>
 
-    insertObservation(observationJSON: any, datastreamId: string): Promise<string>
+    // insertObservation(endPoint: string, observationJSON: any)
+
+    checkForEndpoint(): Promise<boolean>
 
     getDataStreamsApi(): typeof DataStreams
     getSystemsApi(): typeof Systems
+
 }
 
 export interface NodeOptions {
@@ -70,7 +73,7 @@ export interface NodeOptions {
     oshPathRoot?: string,
     sosEndpoint?: string,
     csAPIEndpoint?: string,
-    csAPIConfigEndpoint?: string,
+    configsEndpoint?: string,
     auth?: { username: string, password: string } | null,
     isSecure?: boolean,
     isDefaultNode?: boolean
@@ -85,7 +88,7 @@ export class Node implements INode {
     oshPathRoot: string;
     sosEndpoint: string;
     csAPIEndpoint: string;
-    csAPIConfigEndpoint: string;
+    configsEndpoint: string;
     isSecure: boolean;
     auth: { username: string, password: string } | null = null;
     isDefaultNode: boolean;
@@ -101,7 +104,7 @@ export class Node implements INode {
         this.oshPathRoot = options.oshPathRoot || '/sensorhub';
         this.sosEndpoint = options.sosEndpoint || '/sos';
         this.csAPIEndpoint = options.csAPIEndpoint || '/api';
-        this.csAPIConfigEndpoint = options.csAPIConfigEndpoint || '/configs';
+        this.configsEndpoint = options.configsEndpoint || '/configs';
         this.auth = options.auth || null;
         this.isSecure = options.isSecure || false;
         this.isDefaultNode = options.isDefaultNode || false;
@@ -144,12 +147,11 @@ export class Node implements INode {
             : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
     }
 
-
     getConfigEndpoint(noProtocolPrefix: boolean = false) {
         let protocol = this.isSecure ? 'https' : 'http';
         console.log("NODE TEST GET CSAPI ENDPOINT", this);
-        return noProtocolPrefix ? `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIConfigEndpoint}`
-            : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIConfigEndpoint}`;
+        return noProtocolPrefix ? `${this.address}:${this.port}${this.oshPathRoot}${this.configsEndpoint}`
+            : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.configsEndpoint}`;
     }
 
     getBasicAuthHeader() {
@@ -163,39 +165,63 @@ export class Node implements INode {
 
     async fetchLanes(): Promise<{ systems: typeof System[]; lanes: LaneMeta[] }> {
         let fetchedLanes: LaneMeta[] = [];
-        let fetchedSystems: typeof System[] = [];
+        let fetchedSystems: ISystem[] = [];
         // first, fetch the systems
         const systems_arr = await this.fetchSystems();
         console.log("Systems:", systems_arr);
-        // for (let system of systems_arr) {
-        //
-        //     console.log("OUR System:", system);
-        //     const newSystem = new System(system.id, system.properties.uid, system.properties.name, this, null);
-        //     console.log("New System:", newSystem);
-        //     fetchedSystems.push(newSystem);
-        //     // Test for lane signature in uid
-        //     if (system.properties.uid.includes(SYSTEM_UID_PREFIX)) {
-        //         console.info("Found System matching lane signature");
-        //         const newLaneName = system.properties.name;
-        //         // Fetch subsystems
-        //         const subsystems = await newSystem.fetchSubsystems();
-        //         fetchedSystems.push(...subsystems);
-        //         let systemIds = subsystems.map((subsystem: any) => subsystem.id);
-        //         systemIds.unshift(newSystem.id);
-        //         // Create a new LaneMeta object
-        //         let newLaneMeta = new LaneMeta(newLaneName, systemIds);
-        //         console.info("New Lane Created:", newLaneMeta);
-        //         fetchedLanes.push(newLaneMeta);
-        //     }
-        // }
+        for (let system of systems_arr) {
+
+            console.log("OUR System:", system);
+            const newSystem = new System(system.id, system.properties.uid, system.properties.name, this, null);
+            console.log("New System:", newSystem);
+            fetchedSystems.push(newSystem);
+            // Test for lane signature in uid
+            if (system.properties.uid.includes(SYSTEM_UID_PREFIX)) {
+                console.info("Found System matching lane signature");
+                const newLaneName = system.properties.name;
+                // Fetch subsystems
+                const subsystems = await newSystem.fetchSubsystems();
+                fetchedSystems.push(...subsystems);
+                let systemIds = subsystems.map((subsystem: any) => subsystem.id);
+                systemIds.unshift(newSystem.id);
+                // Create a new LaneMeta object
+                let newLaneMeta = new LaneMeta(newLaneName, systemIds);
+                console.info("New Lane Created:", newLaneMeta);
+                fetchedLanes.push(newLaneMeta);
+            }
+        }
         console.log("LaneFetched these objects:", fetchedLanes, fetchedSystems);
         return {lanes: null, systems: systems_arr};
+    }
+
+
+    async checkForEndpoint() {
+        let ep: string = `${this.getConnectedSystemsEndpoint()}`;
+        console.log("Checking for API endpoint: ", ep, this);
+
+        const response = await fetch(ep, {
+            method: 'GET',
+            mode: 'cors',
+            headers: {
+                ...this.getBasicAuthHeader(),
+                'Content-Type': 'application/sml+json'
+            }
+        });
+
+        if (response.ok) {
+            console.log("API Endpoint found: ", response);
+            return true;
+        } else {
+            console.warn("Error checking for API endpoint: ", response);
+            return false;
+        }
     }
 
     async fetchLaneSystemsAndSubsystems(): Promise<Map<string, LaneMapEntry>> {
 
         // check if node is reachable first
-        let isReachable = OSHSliceWriterReader.checkForEndpoint(this);
+        // let isReachable = OSHSliceWriterReader.checkForEndpoint(this);
+        const isReachable = await this.checkForEndpoint();
         if (!isReachable) {
             console.warn("Node is not reachable, check endpoint properties");
             return new Map<string, LaneMapEntry>();
@@ -207,7 +233,6 @@ export class Node implements INode {
 
         // filter into lanes
         for (let system of systems) {
-            // console.log("TK System:", system);
             if (system.properties.properties?.uid.includes(SYSTEM_UID_PREFIX) && !system.properties.properties?.uid.includes("adjudication")) {
                 // console.log("TK Found lane system:", system);
                 // let laneName = system.properties.properties.uid.split(":").pop();
@@ -365,24 +390,21 @@ export class Node implements INode {
                         laneAdjDsMap.set(laneName, datastreams[0].properties.id);
                     } else {
                         console.log("[ADJ-INSERT] No datastreams found for adjudication system: ", system);
-                        let dsId = await this.insertAdjDatastream(system.properties.id);
+
+                        let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/${system.properties.id}/datastreams/`;
+                        let dsId = await this.insertDatastream(ep, AdjudicationDatastreamConstant);
                         adjSysAndDSMap.set(system.properties.id, dsId);
                         laneAdjDsMap.set(laneName, dsId);
                     }
                 }
-                // } else {
-                //     console.log("[ADJ-INSERT] No datastreams found for adjudication system: ", system);
-                //     let dsId = await this.insertAdjDatastream(system.properties.id);
-                //     adjSysAndDSMap.set(system.properties.id, dsId);
-                //     laneAdjDsMap.set(laneName, dsId);
-                // }
             } else {
                 console.log(`[ADJ-INSERT] No existing adjudication systems found, creating new system for lane" ${laneName}`);
                 let sysId = await laneEntry.insertAdjudicationSystem(laneName);
 
                 console.log("sys ID", sysId)
                 // insert datastreams
-                let dsId = await this.insertAdjDatastream(sysId);
+                let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/${system.properties.id}/datastreams/`;
+                let dsId = await this.insertDatastream(ep, AdjudicationDatastreamConstant);
                 adjSysAndDSMap.set(sysId, dsId);
                 laneAdjDsMap.set(laneName, dsId);
             }
@@ -391,9 +413,9 @@ export class Node implements INode {
         return adjSysAndDSMap;
     }
 
-    async insertAdjSystem(systemJSON: any): Promise<string> {
-        let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/`;
-        console.log("[ADJ] Inserting Adjudication System: ", ep, JSON.stringify(systemJSON));
+
+    async insertSystem(systemJSON: any, ep: string): Promise<string> {
+        console.log("Inserting System: ", ep, JSON.stringify(systemJSON));
 
         const response = await fetch(ep, {
             method: 'POST',
@@ -406,23 +428,23 @@ export class Node implements INode {
         });
 
         if (response.ok) {
-            console.log("[ADJ] Adj System Inserted: ", response.headers.get("Location"));
+            console.log("System Inserted: ", response.headers.get("Location"));
             let sysId = response.headers.get("Location").split("/").pop();
+
             return sysId;
         } else {
-            console.warn("[ADJ] Error inserting Adj system: ", response);
+            console.warn("Error inserting system: ", response);
         }
     }
 
-    async insertAdjDatastream(systemId: string): Promise<string> {
-        let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/${systemId}/datastreams/`;
-        console.log("[ADJ] Inserting Adjudication Datastream: ", ep, this);
+    async insertDatastream(endpoint: string, datastreamConstant: any): Promise<string> {
+        console.log("Inserting Datastream: ", endpoint, this);
 
-        console.log(JSON.stringify(AdjudicationDatastreamConstant))
-        const response = await fetch(ep, {
+        console.log(JSON.stringify(datastreamConstant))
+        const response = await fetch(endpoint, {
             method: 'POST',
             mode: 'cors',
-            body: JSON.stringify(AdjudicationDatastreamConstant),
+            body: JSON.stringify(datastreamConstant),
             headers: {
                 ...this.getBasicAuthHeader(),
                 'Content-Type': 'application/json'
@@ -430,38 +452,31 @@ export class Node implements INode {
         });
 
         if (response.ok) {
-            console.log("[ADJ] Adj Datastream Inserted Response: ", response);
+            console.log("Datastream Inserted Response: ", response);
             let dsId = response.headers.get("Location").split("/").pop();
             return dsId;
         } else {
-            console.warn("[ADJ] Error inserting Adj Datastream: ", response);
+            console.warn("Error inserting Datastream: ", response);
         }
     }
 
-    async insertObservation(observationJSON: any, datastreamId: string): Promise<string> {
-        let ep: string = `${this.getConnectedSystemsEndpoint()}/datastreams/${datastreamId}/observations`;
-        console.log("[ADJ] Inserting Observation: ", ep, this);
-
-        const response = await fetch(ep, {
-            method: 'POST',
-            mode: 'cors',
-            body: JSON.stringify(observationJSON),
-            headers: {
-                ...this.getBasicAuthHeader(),
-                'Content-Type': 'application/sml+json'
-            }
-        });
-
-        if (response.ok) {
-            console.log("[NODE] Observation Inserted: ", response);
-            let obsId = response.headers.get("Location").split("/").pop();
-            return obsId;
-        } else {
-            console.warn("[Node] Error inserting Observation: ", response);
-        }
-    }
 
     insertSubSystem(systemJSON: any, parentSystemId: string): Promise<string> {
         return Promise.resolve("");
     }
+
+}
+
+
+export async function insertObservation(ep: any, observation: any, ){
+    let resp = await fetch(ep, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: observation,
+        mode: "cors"
+    });
+
+    return resp;
 }

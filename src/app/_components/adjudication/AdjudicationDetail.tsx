@@ -26,9 +26,7 @@ import IsotopeSelect from "./IsotopeSelect";
 import AdjudicationLog from "./AdjudicationLog"
 import AdjudicationData, {
     fetchOccupancyObservation,
-
     generateCommandJSON,
-    IAdjudicationData, sendAdjudication,
     sendSetAdjudicatedCommand
 } from "@/lib/data/oscar/adjudication/Adjudication";
 import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";
@@ -40,6 +38,7 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 import {updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
 import SecondaryInspectionSelect from "@/app/_components/adjudication/SecondaryInspectionSelect";
+import {insertObservation} from "@/lib/data/osh/Node";
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
 
@@ -167,7 +166,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const submitAdjudication = async(endpoint: string, observation: any, currLaneEntry: any, tempAdjData: any) => {
 
         try{
-            const resp = await sendAdjudication(endpoint, observation)
+            const resp = await insertObservation(endpoint, observation)
 
             if(resp.ok){
                 setAdjSnackMsg('Adjudication Submitted Successfully')
@@ -205,6 +204,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         }
 
     }
+
     function onFetchComplete() {
         setShouldFetchLogs(false);
     }

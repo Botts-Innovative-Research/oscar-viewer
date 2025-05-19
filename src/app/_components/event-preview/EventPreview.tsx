@@ -40,7 +40,7 @@ import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import AdjudicationData, {
     fetchOccupancyObservation,
     generateCommandJSON,
-    IAdjudicationData, sendAdjudication,
+    IAdjudicationData,
     sendSetAdjudicatedCommand
 } from "@/lib/data/oscar/adjudication/Adjudication";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
@@ -54,6 +54,7 @@ import {RootState} from "@/lib/state/Store";
 import CircularProgress from "@mui/material/CircularProgress";
 import {isVideoDatastream} from "@/lib/data/oscar/Utilities";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import {insertObservation} from "@/lib/data/osh/Node";
 import VideoView from "osh-js/source/core/ui/view/video/VideoView";
 import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js";
 import FFMPEGView from "osh-js/source/core/ui/view/video/FFMPEGView.js"
@@ -123,7 +124,9 @@ export function EventPreview() {
             occupancyId: eventPreview.eventData.occupancyId,
             alarmingSystemUid: eventPreview.eventData.rpmSystemId
         }
+
         let adjudicationData = new AdjudicationData(new Date().toISOString(), currentUser, eventPreview.eventData.occupancyId, eventPreview.eventData.rpmSystemId);
+
         adjudicationData.setFeedback(notes);
         adjudicationData.setAdjudicationCode(value);
         console.log("[ADJ] New Adjudication Data, Ready to Send: ", newAdjData);
@@ -141,6 +144,7 @@ export function EventPreview() {
     const sendAdjudicationData = async () => {
         const phenomenonTime = new Date().toISOString();
         const comboData = adjudication;
+        console.log()
 
         comboData.setFeedback(notes);
         comboData.setTime(phenomenonTime);
@@ -160,7 +164,7 @@ export function EventPreview() {
 
     const submitAdjudication = async(endpoint: string, observation: any, currLaneEntry: LaneMapEntry, comboData: any, eventPreview: any) =>{
         try {
-            const resp= await sendAdjudication(endpoint, observation);
+            const resp = await insertObservation(endpoint, observation);
 
             if(resp.ok){
                 setAdjSnackMsg('Adjudication Submitted Successfully')
