@@ -155,7 +155,7 @@ export async function getConfigDataStreamID(node: INode): Promise<string>{
 
 
     if(configSystem){
-        let dsCollection = await configSystem.searchDataStreams(new DataStreamFilter(), 1000);
+        let dsCollection = await configSystem.searchDataStreams(new DataStreamFilter({observedProperty: 'http://sensorml.com/ont/swe/property/User'}), 10);
 
         console.log("config ds collecion: ", dsCollection)
         if(dsCollection.hasNext()){

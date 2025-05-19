@@ -55,8 +55,8 @@ export default function StateManager() {
 
     const [loadNodeOpts, setLoadNodeOpts] = useState<NodeOptions>(newNodeOpts);
     const [targetNode, setTargetNode] = useState<Node>(new Node(newNodeOpts));
-    const [showLoadAlert, setShowLoadAlert] = useState<boolean>(false);
-    const [showSaveAlert, setShowSaveAlert] = useState<boolean>(false);
+
+    const [activeAlert, setActiveAlert] =useState<'save'| 'load'| 'saveload' | null>(null);
     const theme = useTheme();
     const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -65,7 +65,10 @@ export default function StateManager() {
 
     const [loadSnackMsg, setLoadSnackMsg] = useState<string>();
     const [saveSnackMsg, setSaveSnackMsg] = useState<string>();
-    const [colorStatus, setColorStatus]= useState('');
+
+
+    const [colorSaveStatus, setSaveColorStatus]= useState('');
+    const [colorLoadStatus, setLoadColorStatus]= useState('');
 
     const nodes = useSelector(selectNodes)
     const currentUser = useSelector(selectCurrentUser)
@@ -95,11 +98,9 @@ export default function StateManager() {
 
         if(!dsId){
             setSaveSnackMsg('Failed to find config datastream')
-            setColorStatus('error')
+            setSaveColorStatus('error')
             setOpenSaveSnack(true);
         }
-
-        toggleSaveAlert();
 
         let phenomenonTime = new Date().toISOString();
 
@@ -127,14 +128,14 @@ export default function StateManager() {
 
             if(response.ok){
                 setSaveSnackMsg('OSCAR Configuration Saved')
-                setColorStatus('success')
+                setSaveColorStatus('success')
             }else {
                 setSaveSnackMsg('Failed to save OSCAR Configuration')
-                setColorStatus('error')
+                setSaveColorStatus('error')
             }
         }catch(error){
             setSaveSnackMsg('Failed to save config')
-            setColorStatus('error')
+            setSaveColorStatus('error')
         }
 
         setOpenSaveSnack(true);
@@ -142,7 +143,6 @@ export default function StateManager() {
 
 
     const handleLoadState = async () => {
-        toggleLoadAlert();
 
         let latestConfigDs = await retrieveLatestConfigDataStream(targetNode);
 
@@ -153,18 +153,18 @@ export default function StateManager() {
 
             if(latestConfigData != null){
                 setLoadSnackMsg('OSCAR State Loaded')
-                setColorStatus('success')
+                setLoadColorStatus('success')
 
                 console.log("latest config data from load state", latestConfigData[0])
                 dispatch(setCurrentUser(latestConfigData[0].user));
 
                 let nodes = latestConfigData[0].nodes;
-                dispatch(setNodes(nodes));
+                dispatch(setNodes(latestConfigData[0].nodes));
             }
 
         }else{
             setLoadSnackMsg('Failed to load OSCAR State')
-            setColorStatus('error')
+            setLoadColorStatus('error')
         }
         setOpenSnack(true)
     }
@@ -177,7 +177,7 @@ export default function StateManager() {
     }
 
      const fetchLatestConfigObservation = async(ds: any) =>{
-        const observations = await ds.searchObservations(new ObservationFilter(), 1);
+        const observations = await ds.searchObservations(new ObservationFilter({ resultTime: 'latest'}), 1);
 
         while(observations.hasNext()){
             let obsResult = await observations.nextPage();
@@ -216,21 +216,6 @@ export default function StateManager() {
         }
     }
 
-    function toggleLoadAlert() {
-        if (showLoadAlert) {
-            setShowLoadAlert(false);
-        } else {
-            setShowLoadAlert(true);
-        }
-    }
-
-    function toggleSaveAlert() {
-        if (showSaveAlert) {
-            setShowSaveAlert(false);
-        } else {
-            setShowSaveAlert(true);
-        }
-    }
 
 
     useEffect(() => {
@@ -251,6 +236,10 @@ export default function StateManager() {
         setOpenSaveSnack(false);
     };
 
+    const handleSaveLoadState = async() =>{
+        await saveConfigState();
+        await handleLoadState();
+    }
     return (
         <Box sx={{margin: 2, padding: 2, width: isSmallScreen ? '100%' : '75%'}}>
             <Card>
@@ -265,11 +254,32 @@ export default function StateManager() {
                                     <Stack spacing={2}>
 
                                         <TextField label="File Name" value={fileName} onChange={handleChangeForm}/>
-                                        <Button onClick={toggleSaveAlert} variant={"contained"} color={"primary"}
-                                                disabled={showSaveAlert}>
+                                        <Button onClick={() => setActiveAlert('save')} variant={"contained"} color={"primary"}
+                                                disabled={activeAlert ==='save'}>
                                             Save
                                         </Button>
-                                        {showSaveAlert && (
+                                        <Button onClick={() => setActiveAlert('saveload')} variant={"outlined"} color={"primary"}
+                                                disabled={activeAlert === 'saveload'}>
+                                            Save and Load
+                                        </Button>
+                                        {activeAlert === 'saveload' && (
+                                            <Alert severity={"warning"}>
+                                                <AlertTitle>Please Confirm</AlertTitle>
+                                                <Stack spacing={2} direction={"row"}>
+                                                    <Typography>
+                                                        Are you sure you want to save and load the current configuration (and overwrite
+                                                        the previous one)?
+                                                    </Typography>
+                                                    <Button color={"success"} variant="contained" onClick={handleSaveLoadState}>
+                                                        Save
+                                                    </Button>
+                                                    <Button color={"error"} variant="contained" onClick={() => setActiveAlert(null)}>
+                                                        Cancel
+                                                    </Button>
+                                                </Stack>
+                                            </Alert>
+                                        )}
+                                        {activeAlert ==='save' && (
                                             <Alert severity={"warning"}>
                                                 <AlertTitle>Please Confirm</AlertTitle>
 
@@ -283,7 +293,7 @@ export default function StateManager() {
                                                         Save
                                                     </Button>
                                                     <Button color={"error"} variant="contained"
-                                                            onClick={toggleSaveAlert}>
+                                                            onClick={() => setActiveAlert(null)}>
                                                         Cancel
                                                     </Button>
                                                 </Stack>
@@ -298,7 +308,7 @@ export default function StateManager() {
                                             message={saveSnackMsg}
                                             sx={{
                                                 '& .MuiSnackbarContent-root': {
-                                                    backgroundColor: colorStatus === 'success' ? 'green' : 'red',
+                                                    backgroundColor: colorSaveStatus === 'success' ? 'green' : 'red',
                                                 },
                                             }}
                                         />
@@ -327,11 +337,11 @@ export default function StateManager() {
                                                    value={loadNodeOpts.auth.password}
                                                    onChange={handleChangeLoadForm} type={"password"}/>
 
-                                        <Button onClick={toggleLoadAlert} variant={"contained"} color={"primary"}
-                                                disabled={showLoadAlert}>
+                                        <Button onClick={() => setActiveAlert('load')} variant={"contained"} color={"primary"}
+                                                disabled={activeAlert === 'load'}>
                                             Load State
                                         </Button>
-                                        {showLoadAlert && (
+                                        {activeAlert === 'load' && (
                                             <Alert severity={"warning"}>
                                                 <AlertTitle>Please Confirm</AlertTitle>
                                                 <Container>
@@ -343,7 +353,7 @@ export default function StateManager() {
                                                         <Button variant={"contained"} color={"success"} onClick={handleLoadState}>
                                                             Yes
                                                         </Button>
-                                                        <Button variant={"contained"} color={"error"} onClick={toggleLoadAlert}>
+                                                        <Button color={"error"} variant="contained" onClick={() => setActiveAlert(null)}>
                                                             Cancel
                                                         </Button>
                                                     </Stack>
@@ -358,7 +368,7 @@ export default function StateManager() {
                                             message={loadSnackMsg}
                                             sx={{
                                                 '& .MuiSnackbarContent-root': {
-                                                    backgroundColor: colorStatus === 'success' ? 'green' : 'red',
+                                                    backgroundColor: colorLoadStatus === 'success' ? 'green' : 'red',
                                                 },
                                             }}
                                         />
