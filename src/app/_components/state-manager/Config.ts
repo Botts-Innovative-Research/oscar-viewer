@@ -122,7 +122,8 @@ export async function getConfigSystemID(node: INode): Promise<string> {
     let systems = await node.fetchSystems();
     console.log("Systems retrieved:", systems);
 
-    let configSystem = systems.find((system: any) => system.properties?.properties.uid === CONFIG_UID);
+
+    let configSystem = systems?.find((system: any) => system.properties?.properties.uid === CONFIG_UID);
 
     console.log("configSys", configSystem)
 
@@ -320,4 +321,3 @@ export const configDatastreamConstant: any = {
             }
         }
     }
-    
