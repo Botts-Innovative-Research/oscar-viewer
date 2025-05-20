@@ -78,15 +78,15 @@ export default class ConfigData implements IConfigData {
                 "nodes": this.nodes.map((node: any) => ({
                     "name": node.name,
                     "address": node.address,
-                    "port": node.port,
+                    "port": typeof node.port === "string" ? node.port : node.port?.toString(),
                     "oshPathRoot": node.oshPathRoot,
                     "sosEndpoint": node.sosEndpoint,
                     "csAPIEndpoint": node.csAPIEndpoint,
                     "configsEndpoint": node.configsEndpoint,
                     "isSecure": node.isSecure,
                     "isDefaultNode": node.isDefaultNode,
-                    "username": node.auth.username,
-                    "password": node.auth.password
+                    "username": node.auth.username ? node.auth.username : node.username,
+                    "password": node.auth.password ? node.auth.password : node.password
                 }))
             }
         }
@@ -320,5 +320,4 @@ export const configDatastreamConstant: any = {
             }
         }
     }
-
-
+    
