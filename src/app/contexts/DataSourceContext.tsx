@@ -32,7 +32,6 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
     const laneMapRef = useRef<Map<string, LaneMapEntry>>(new Map<string, LaneMapEntry>());
 
-    const dispatch = useAppDispatch();
 
     useEffect(() => {
 
