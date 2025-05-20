@@ -5,7 +5,7 @@ import {useSelector} from "react-redux";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {addNode, changeConfigNode, setNodes} from "@/lib/state/OSHSlice";
 import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
-import {RootState} from "@/lib/state/Store";
+import {AppDispatch, RootState} from "@/lib/state/Store";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
 import ConfigData, { retrieveLatestConfigDataStream } from "../_components/state-manager/Config";
@@ -34,26 +34,10 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
 
     useEffect(() => {
+        dispatch(initializeDefaultNode());
+    }, []);
 
-        let hostName = window.location.hostname;
 
-        const initialNodeOpts: NodeOptions = {
-            name: "Local Node",
-            address:  hostName,
-            port: 8282,
-            oshPathRoot: "/sensorhub",
-            sosEndpoint: "/sos",
-            csAPIEndpoint: "/api",
-            configsEndpoint: "/configs",
-            auth: {username: "admin", password: "oscar"},
-            isSecure: false,
-            isDefaultNode: true
-        }
-
-        dispatch(addNode(initialNodeOpts));
-        dispatch(changeConfigNode(initialNodeOpts));
-
-    }, [dispatch]);
 
     const handleLoadState = async () => {
 
@@ -197,6 +181,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }, [laneMap]);
 
     useEffect(() => {
+
         testSysFetch();
 
         setLastSystemFetch(Date.now());
@@ -204,9 +189,9 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }, [nodes, nodes.length]);
 
     useEffect(() => {
-        InitializeApplication();
-    }, [InitializeApplication]);
-
+        if(nodes.length > 0 && configNode)
+            InitializeApplication();
+    }, [InitializeApplication, nodes.length, configNode]);
 
 
     return (
@@ -216,4 +201,25 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             </DataSourceContext.Provider>
         </>
     );
+};
+
+export const initializeDefaultNode = () => (dispatch: AppDispatch) => {
+    const hostName = window.location.hostname;
+
+    const initialNodeOpts: NodeOptions = {
+        name: "Local Node",
+        address: hostName,
+        port: 8282,
+        oshPathRoot: "/sensorhub",
+        sosEndpoint: "/sos",
+        csAPIEndpoint: "/api",
+        configsEndpoint: "/configs",
+        auth: { username: "admin", password: "oscar" },
+        isSecure: false,
+        isDefaultNode: true
+    };
+
+    const defaultNode = new Node(initialNodeOpts);
+    dispatch(addNode(defaultNode));
+    dispatch(changeConfigNode(defaultNode));
 };

@@ -85,8 +85,8 @@ export default class ConfigData implements IConfigData {
                     "configsEndpoint": node.configsEndpoint,
                     "isSecure": node.isSecure,
                     "isDefaultNode": node.isDefaultNode,
-                    "username": node.auth.username ? node.auth.username : node.username,
-                    "password": node.auth.password ? node.auth.password : node.password
+                    "username": node?.auth?.username ? node.auth.username : node.username,
+                    "password": node?.auth?.password ? node.auth.password : node.password
                 }))
             }
         }

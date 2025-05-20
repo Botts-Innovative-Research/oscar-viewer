@@ -2,6 +2,7 @@
  * Copyright (c) 2024.  Botts Innovative Research, Inc.
  * All Rights Reserved
  */
+'use client';
 
 
 import {createSlice, PayloadAction} from "@reduxjs/toolkit";
@@ -12,6 +13,7 @@ import {RootState} from "../Store";
 import {INode} from "@/app/data/osh/Node";
 import {Node, NodeOptions} from "@/lib/data/osh/Node";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
+import {useEffect} from "react";
 
 
 enableMapSet();
@@ -22,11 +24,13 @@ export interface IOSHSlice {
     datastreams: typeof DataStream[]
 }
 
+
 const initialState: IOSHSlice = {
     nodes: [],
     configNode: null,
     datastreams: []
 }
+
 
 export const Slice = createSlice({
     name: 'OSHSlice',
@@ -83,7 +87,7 @@ export const {
 } = Slice.actions;
 
 export const selectNodes = (state: RootState) => state.oshSlice.nodes;
-export const selectDatastreams = (state: RootState) => state.oshSlice.dataStreams;
+export const selectDataStreams = (state: RootState) => state.oshSlice.dataStreams;
 export const selectDefaultNode = (state: RootState) => state.oshSlice.nodes.find((node: INode) => node.isDefaultNode);
 
 export default Slice.reducer;
