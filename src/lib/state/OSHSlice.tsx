@@ -47,6 +47,7 @@ export const Slice = createSlice({
             }
         },
         setNodes: (state, action: PayloadAction<INode[]>) => {
+
             state.nodes = action.payload
         },
         setDatastreams: (state, action: PayloadAction<typeof DataStream[]>) => {

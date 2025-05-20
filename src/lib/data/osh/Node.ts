@@ -287,6 +287,7 @@ export class Node implements INode {
 
     async fetchDatastreams(laneMap: Map<string, LaneMapEntry>) {
         for (const [, laneEntry] of laneMap) {
+            if(laneEntry.parentNode.id != this.id) continue;
             try {
                 const datastreams = await laneEntry.laneSystem.searchDataStreams(undefined, 100);
                 while (datastreams.hasNext()) {
@@ -301,6 +302,8 @@ export class Node implements INode {
 
     async fetchControlStreams(laneMap: Map<string, LaneMapEntry>){
         for (const [, laneEntry] of laneMap) {
+
+            if(laneEntry.parentNode.id != this.id) continue;
             try {
                 const controlStreamCollection = await laneEntry.laneSystem.searchControlStreams(undefined, 100);
                 while (controlStreamCollection.hasNext()) {
@@ -321,6 +324,7 @@ export class Node implements INode {
 
         const videoDsMap = new Map<typeof DataStream, string>(); // <ds, laneName>
         for(const [laneName, laneEntry] of laneMap) {
+            if(laneEntry.parentNode.id != this.id) continue;
             const laneVideoStreams = laneEntry.datastreams.filter((ds) => isVideoDatastream(ds));
             laneVideoStreams.forEach((videoDatastream) => videoDsMap.set(videoDatastream, laneName));
         }
@@ -361,7 +365,11 @@ export class Node implements INode {
         let adjSysAndDSMap: Map<string, string> = new Map();
         let laneAdjDsMap: Map<string, string> = new Map();
 
+
         for (const [laneName, laneEntry] of laneMap as Map<string, LaneMapEntry>) {
+
+            if(laneEntry.parentNode.id != this.id) continue;
+
             let system = systems.find((sys: typeof System) => {
                 return sys.properties.properties.uid.includes("adjudication")
             });
@@ -393,9 +401,8 @@ export class Node implements INode {
                 console.log(`[ADJ-INSERT] No existing adjudication systems found, creating new system for lane" ${laneName}`);
                 let sysId = await laneEntry.insertAdjudicationSystem(laneName);
 
-                console.log("sys ID", sysId)
                 // insert datastreams
-                let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/${system.properties.id}/datastreams/`;
+                let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/${sysId}/datastreams/`;
                 let dsId = await this.insertDatastream(ep, AdjudicationDatastreamConstant);
                 adjSysAndDSMap.set(sysId, dsId);
                 laneAdjDsMap.set(laneName, dsId);

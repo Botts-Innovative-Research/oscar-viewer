@@ -66,10 +66,6 @@ export default class ConfigData implements IConfigData {
     }
 
     createConfigurationObservation() {
-        console.log("Creating configuration observation: ", this);
-
-        console.log("isdefaultnode", this);
-
         let observation = {
             "phenomenonTime": this.time,
             "result": {
@@ -100,7 +96,6 @@ export default class ConfigData implements IConfigData {
 
 
 export function createConfigObservation(data: IConfigData, resultTime: string){
-    console.log("Creating configuration observation: ", data);
 
     let observation = {
         "phenomenonTime": new Date(resultTime).getTime(),
@@ -120,14 +115,11 @@ export function createConfigObservation(data: IConfigData, resultTime: string){
 export async function getConfigSystemID(node: INode): Promise<string> {
 
     let systems = await node.fetchSystems();
-    console.log("Systems retrieved:", systems);
 
     let configSystem = systems?.find((system: any) => system.properties?.properties.uid === CONFIG_UID);
 
-    console.log("configSys", configSystem)
 
     if (!configSystem) {
-        console.log("No config system found, attempting to create one...");
 
         let ep: string = `${node.getConfigEndpoint(false)}/systems/`;
 
@@ -140,7 +132,6 @@ export async function getConfigSystemID(node: INode): Promise<string> {
 
         }
 
-        console.log("Config system found: ", configSystemId);
         return configSystemId;
     }else{
         return configSystem.properties.id;
@@ -174,9 +165,9 @@ export async function getConfigDataStreamID(node: INode): Promise<string>{
 }
 
 export async function retrieveLatestConfigDataStream(node: INode) {
+
     let localNode = await node.checkForEndpoint();
 
-    console.log("local node", localNode)
     if (localNode) {
         const systems = await node.fetchSystems();
 

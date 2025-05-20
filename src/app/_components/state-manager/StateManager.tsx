@@ -113,12 +113,10 @@ export default function StateManager() {
             nodes.length
         );
 
-        console.log("temp config data", tempData);
         let observation = tempData.createConfigurationObservation();
 
         const endpoint = defaultNode.getConfigEndpoint(false) + "/datastreams/" + dsId + "/observations";
 
-        console.log("endpoint conifg", endpoint)
         await submitConfig(endpoint, observation);
     }
 
@@ -156,7 +154,6 @@ export default function StateManager() {
                 setLoadSnackMsg('OSCAR State Loaded')
                 setLoadColorStatus('success')
 
-                console.log("latest config data from load state", latestConfigData[0])
                 dispatch(setCurrentUser(latestConfigData[0].user));
 
                 let nodes = latestConfigData[0].nodes;
@@ -194,7 +191,6 @@ export default function StateManager() {
 
     const handleChangeLoadForm = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value} = e.target;
-        console.log("Changing: ", name, value);
 
         switch (name) {
             case "address":

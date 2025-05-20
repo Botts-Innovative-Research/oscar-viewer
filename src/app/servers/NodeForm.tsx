@@ -43,11 +43,9 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
     const defaultNode = useSelector((state: RootState) => state.oshSlice.configNode);
     const currentUser = useSelector(selectCurrentUser)
-    const nodes = useSelector(selectNodes)
+    const nodes = useSelector((state: RootState) => selectNodes(state));
 
     const dispatch = useAppDispatch();
-
-
 
     const newNodeOpts: NodeOptions = {
         name: "",
@@ -120,15 +118,18 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
 
         // send request to save new/updated nodes to the configs
-
         const response = await saveNodesToConfig();
+
 
         if (response.ok) {
             setNodeSnackMsg('OSCAR Configuration Saved')
             setColorStatus('success')
             setOpenSnack(true);
+
             // load the new config
             await handleLoadState();
+
+
         } else {
             setNodeSnackMsg('Failed to save OSCAR Configuration.')
             setColorStatus('error')
@@ -142,9 +143,11 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         if(defaultNode){
             let configSysId = await getConfigSystemID(defaultNode);
 
+            console.log("config sysid", configSysId)
             if(configSysId){
                 let dsId = await getConfigDataStreamID(defaultNode);
 
+                console.log("ds ID", dsId)
                 if(!dsId){
                     setNodeSnackMsg('Failed to find config datastream')
                     setColorStatus('error')
@@ -155,12 +158,18 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
                 const user =  currentUser|| "Unknown";
 
+
+                const nodesList = isEditNode
+                    ? nodes.map((n: any) => n.id === newNode.id ? newNode : n)
+                    : [...nodes, newNode];
+
+                console.log("saving nodes to config: ", nodes)
                 const tempData = new ConfigData(
                     phenomenonTime,
                     dsId || "",
                     user,
-                    nodes,
-                    nodes.length
+                    nodesList,
+                    nodesList.length
                 );
 
                 let observation = tempData.createConfigurationObservation();
@@ -168,6 +177,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                 const endpoint = defaultNode.getConfigEndpoint(false) + "/datastreams/" + dsId + "/observations";
                 const response = await insertObservation(endpoint, observation);
 
+                console.log("oscar repsonse", response)
                 return response;
 
             }
@@ -192,6 +202,27 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                 dispatch(setCurrentUser(latestConfigData[0].user));
 
                 let nodes = latestConfigData[0].nodes;
+
+                console.log("nodes from config: ", nodes)
+
+                nodes = nodes.map((node: any)=>{
+                    return new Node(
+                        {
+                            name: node.name,
+                            address: node.address,
+                            port: node.port,
+                            oshPathRoot: node.oshPathRoot,
+                            sosEndpoint: node.sosEndpoint,
+                            csAPIEndpoint: node.csAPIEndpoint,
+                            configsEndpoint: node.configsEndpoint,
+                            auth: { username: node.username, password: node.password },
+                            isSecure: node.isSecure,
+                            isDefaultNode: node.isDefaultNode
+                        }
+                    )
+                })
+
+                console.log("nodes from saved config: ", nodes )
                 dispatch(setNodes(nodes));
             }
 
@@ -277,9 +308,9 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
                     <Stack direction="row" spacing={2}>
                         <Button variant={"contained"} color={"primary"}
-                                onClick={handleButtonAction}>{isEditNode ? "Save Changes" : "Add Node"}</Button>
+                                onClick={handleAddSave}>{isEditNode ? "Save Changes" : "Add Node"}</Button>
                         <Button variant={"outlined"} color={"secondary"}
-                                onClick={handleAddSave}>Add and Save Node</Button>
+                                onClick={() => modeChangeCallback(false, null)}>Cancel</Button>
                     </Stack>
 
 
@@ -295,8 +326,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                             },
                         }}
                     />
-                    <Button variant={"contained"} color={"secondary"}
-                            onClick={() => modeChangeCallback(false, null)}>Cancel</Button>
+
                 </Stack>
             </Box>
         </Card>

@@ -22,6 +22,7 @@ export default function NodeList({modeChangeCallback}: NodeListProps) {
     const nodes = useSelector((state: RootState) => selectNodes(state));
 
     console.log("nodes in node list: ", nodes)
+
     const setEditNode = (editNode: INode) => {
         modeChangeCallback(true, editNode);
     }
@@ -43,7 +44,7 @@ export default function NodeList({modeChangeCallback}: NodeListProps) {
             ) : (
                 <List>
                     {nodes.map((node: INode) => (
-                        <Card key={node.id} sx={{backgroundColor: getBGColor(node.isDefaultNode)}}>
+                        <Card key={node.address + node.port} sx={{backgroundColor: getBGColor(node.isDefaultNode)}}>
                             <ListItem sx={{m: 0}}>
                                 <ListItemText primary={node.name} secondary={node.address}/>
                                 <Button variant="contained" size={"small"} color="primary" sx={{m: 1}}

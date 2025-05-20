@@ -27,16 +27,12 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     const configNode: Node = useSelector((state: RootState) => state.oshSlice.configNode);
     const dispatch = useAppDispatch();
     const nodes = useSelector((state: RootState) => state.oshSlice.nodes);
-    const minSystemFetchInterval = 30000;
-    const [lastSystemFetch, setLastSystemFetch] = React.useState<number>(0);
-    const laneMap = useSelector((state: RootState) => selectLaneMap(state));
     const laneMapRef = useRef<Map<string, LaneMapEntry>>(new Map<string, LaneMapEntry>());
 
 
     useEffect(() => {
         dispatch(initializeDefaultNode());
     }, []);
-
 
 
     const handleLoadState = async () => {
@@ -47,16 +43,37 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
             let latestConfigData = await fetchLatestConfigObservation(latestConfigDs);
 
-            if(latestConfigData == null) return;
+            if(latestConfigData != null){
+                let nodes = latestConfigData.nodes;
 
-            let nodes = latestConfigData.nodes.map(mapNodeFromConfig);
 
-            dispatch(setNodes(nodes));
+                nodes = nodes.map((node: any)=>{
+                    return new Node(
+                        {
+                            name: node.name,
+                            address: node.address,
+                            port: node.port,
+                            oshPathRoot: node.oshPathRoot,
+                            sosEndpoint: node.sosEndpoint,
+                            csAPIEndpoint: node.csAPIEndpoint,
+                            configsEndpoint: node.configsEndpoint,
+                            auth: { username: node.username, password: node.password },
+                            isSecure: node.isSecure,
+                            isDefaultNode: node.isDefaultNode
+                        }
+                    )
+                })
+
+                dispatch(setNodes(nodes));
+            }else{
+                console.warn("Failed to Load Oscar State: latest observation from config data is null")
+            }
 
         } else {
             console.warn('Failed to load OSCAR State')
         }
     }
+
 
     const InitializeApplication = useCallback(async () => {
 
@@ -70,10 +87,11 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             }
             console.error("No config node found in state. Cannot initialize application.");
         }
-
-        await handleLoadState();
-
-    }, [dispatch, configNode]);
+        else{
+            console.log("Config Node found: Loading state...")
+            await handleLoadState();
+        }
+    }, [nodes.length]);
 
     const fetchLatestConfigObservation = async(ds: any) =>{
         const observations = await ds.searchObservations(new ObservationFilter({ resultTime: 'latest'}), 1);
@@ -87,13 +105,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             return data;
         })
 
-        console.log("config data", configData)
         return configData[0];
-    }
-
-    function checkSystemFetchInterval() {
-        console.log("Checking system fetch interval for TK Fetch...");
-        return Date.now() - lastSystemFetch >= minSystemFetchInterval;
     }
 
     function mapNodeFromConfig(opt: any): Node{
@@ -115,15 +127,13 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         });
     }
 
-    const testSysFetch = useCallback(async () => {
-        console.log("Received new nodes, updating state:", nodes);
+    const testSysFetch = async () => {
 
         let newNodes = nodes.map(mapNodeFromConfig);
 
         let allLanes: Map<string, LaneMapEntry> = new Map();
 
         await Promise.all(newNodes.map(async (node: INode) => {
-            console.log("Fetching lanes from node ", node);
 
             let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
 
@@ -134,13 +144,11 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
 
             for (const [key, mapEntry] of nodeLaneMap.entries()) {
-                console.log(`[BEFORE] addDefaultConSysApis for ${key}`, mapEntry);
                 try {
                     mapEntry.addDefaultConSysApis();
                 } catch (e) {
                     console.error(`[ERROR] addDefaultConSysApis failed for ${key}:`, e);
                 }
-                console.log(`[AFTER] addDefaultConSysApis for ${key}`, mapEntry.datasourcesRealtime, mapEntry.datasourcesBatch);
             }
 
 
@@ -153,45 +161,24 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         // fetch adjudication systems
         let adjMap: Map<string, string> = new Map();
         for(let node of newNodes){
-            console.log("[ADJ] Fetching adjudication systems for node: ", node, allLanes);
            adjMap = await node.fetchOrCreateAdjudicationSystems(allLanes);
 
         }
-        console.log("[ADJ] Adjudication Systems Map:", adjMap);
 
         // dispatch(setDatastreams(allDatastreams));
         dispatch(setLaneMap(allLanes));
         laneMapRef.current = allLanes;
-        console.log("LaneMapRef for Table:", laneMapRef);
 
-    }, [nodes]);
+    }
 
-    useEffect(() => {
-        if (laneMap.size > 0) {
-            console.log("LaneMap After Update:", laneMap);
-            if (laneMap.has("lane1")) {
-                let ds: LaneMapEntry = laneMap.get("lane1")
-                console.log("LaneMap test for prop datastream:", ds.hasOwnProperty("datastreams"));
-                console.log("LaneMap test systems:", ds.systems);
-                console.log("LaneMap test DS:", ds.datastreams[0]);
-                let test = ds.datastreams[0].stream();
-                console.log("LaneMap test DS stream:", test);
-            }
-        }
-    }, [laneMap]);
 
     useEffect(() => {
-
         testSysFetch();
-
-        setLastSystemFetch(Date.now());
-
-    }, [nodes, nodes.length]);
+    }, [nodes.length]);
 
     useEffect(() => {
-        if(nodes.length > 0 && configNode)
-            InitializeApplication();
-    }, [InitializeApplication, nodes.length, configNode]);
+        InitializeApplication();
+    }, [nodes.length]);
 
 
     return (
