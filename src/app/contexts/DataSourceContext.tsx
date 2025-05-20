@@ -99,8 +99,8 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             configsEndpoint: opt.configsEndpoint,
             csAPIEndpoint: opt.csAPIEndpoint,
             auth: {
-                username: opt.auth.username ? opt.auth.username : opt.username,
-                password: opt.auth.password ? opt.auth.password : opt.password,
+                username: opt?.auth?.username ? opt.auth.username : opt.username,
+                password: opt?.auth?.password ? opt.auth.password : opt.password,
             },
             isSecure: opt.isSecure,
             isDefaultNode: opt.isDefaultNode,
