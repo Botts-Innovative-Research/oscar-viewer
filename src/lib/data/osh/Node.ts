@@ -230,6 +230,8 @@ export class Node implements INode {
         }
 
         let systems = await this.fetchSystems();
+        if(!systems || systems.length == 0) return;
+
         let laneMap = new Map<string, LaneMapEntry>();
         console.log("Systems retrieved:", systems);
 
@@ -279,7 +281,7 @@ export class Node implements INode {
             // console.log("Systems from TK:", availableSystems);
             return availableSystems;
         } else {
-            throw new Error("No systems found, check endpoint properties");
+            console.warn("No systems found, check endpoint properties for: ", this.address);
         }
     }
 
@@ -352,6 +354,9 @@ export class Node implements INode {
     // TODO: clean this up and verify that we aren't duplicating systems or outputs
     async fetchOrCreateAdjudicationSystems(laneMap: Map<string, LaneMapEntry>) {
         let systems: typeof System[] = await this.fetchSystems();
+
+        if(!systems) return;
+
         console.log("[ADJ] Fetching systems for node: ", this, laneMap, systems);
         let adjSysAndDSMap: Map<string, string> = new Map();
         let laneAdjDsMap: Map<string, string> = new Map();
@@ -456,6 +461,7 @@ export class Node implements INode {
 
 
 export async function insertObservation(ep: any, observation: any, ){
+    console.log("inserting observation: ", observation)
     let resp = await fetch(ep, {
         method: "POST",
         headers: {

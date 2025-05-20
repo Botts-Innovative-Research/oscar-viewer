@@ -117,9 +117,19 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
         // send request to save new/updated nodes to the configs
 
-        await saveNodesToConfig();
-        // load the new config
-        await handleLoadState();
+        const response = await saveNodesToConfig();
+
+        if (response.ok) {
+            setNodeSnackMsg('OSCAR Configuration Saved')
+            setColorStatus('success')
+            setOpenSnack(true);
+            // load the new config
+            await handleLoadState();
+        } else {
+            setNodeSnackMsg('Failed to save OSCAR Configuration.')
+            setColorStatus('error')
+            setOpenSnack(true);
+        }
     }
 
 
@@ -152,36 +162,19 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                 let observation = tempData.createConfigurationObservation();
 
                 const endpoint = defaultNode.getConfigEndpoint(false) + "/datastreams/" + dsId + "/observations";
-                await submitConfig(endpoint, observation);
+                const response = await insertObservation(endpoint, observation);
+
+                return response;
 
             }
         }
     }
 
-    const submitConfig = async(endpoint: string, observation: any) => {
-        try{
-            const response = await insertObservation(endpoint, observation);
-
-            if(response.ok){
-                setNodeSnackMsg('OSCAR Configuration Saved')
-                setColorStatus('success')
-            }else {
-                setNodeSnackMsg('Failed to save OSCAR Configuration')
-                setColorStatus('error')
-            }
-        }catch(error){
-            setNodeSnackMsg('Failed to save config')
-            setColorStatus('error')
-        }
-
-        setOpenSnack(true);
-    }
 
 
     const handleLoadState = async () => {
 
         let latestConfigDs = await retrieveLatestConfigDataStream(defaultNode);
-
 
         if(latestConfigDs){
 

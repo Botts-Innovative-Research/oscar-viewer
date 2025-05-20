@@ -68,6 +68,8 @@ export default class ConfigData implements IConfigData {
     createConfigurationObservation() {
         console.log("Creating configuration observation: ", this);
 
+        console.log("isdefaultnode", this);
+
         let observation = {
             "phenomenonTime": this.time,
             "result": {
@@ -83,8 +85,8 @@ export default class ConfigData implements IConfigData {
                     "configsEndpoint": node.configsEndpoint,
                     "isSecure": node.isSecure,
                     "isDefaultNode": node.isDefaultNode,
-                    "username": node.username,
-                    "password": node.password
+                    "username": node.auth.username,
+                    "password": node.auth.password
                 }))
             }
         }
@@ -114,6 +116,7 @@ export function createConfigObservation(data: IConfigData, resultTime: string){
 
 }
 
+//checks if config system exists and if it doesnt it creates it and inserts its datastream
 export async function getConfigSystemID(node: INode): Promise<string> {
 
     let systems = await node.fetchSystems();
@@ -171,15 +174,15 @@ export async function getConfigDataStreamID(node: INode): Promise<string>{
 }
 
 export async function retrieveLatestConfigDataStream(node: INode) {
-    let apiFound = await node.checkForEndpoint();
+    let localNode = await node.checkForEndpoint();
 
-    if (apiFound) {
+    if (localNode) {
         const systems = await node.fetchSystems();
 
         const configSystem = systems.find((system: any) => system.properties.properties.uid == "urn:ornl:oscar:client:config");
 
-        if(configSystem){
-            const dsCollection = await configSystem.searchDataStreams(new DataStreamFilter({ resultTime: 'latest'}), 1);
+        if(configSystem) {
+            const dsCollection = await configSystem.searchDataStreams(new DataStreamFilter({resultTime: 'latest'}), 1);
 
             let ds = await dsCollection.nextPage();
 

@@ -77,7 +77,6 @@ export default function StateManager() {
         setLoadNodeOpts({...loadNodeOpts, ...defaultNode});
     }, []);
 
-    const [data, setData] = useState<ConfigData>();
 
     const getConfigDataStream = useCallback(async () =>{
         if(defaultNode){
@@ -119,6 +118,7 @@ export default function StateManager() {
 
         const endpoint = defaultNode.getConfigEndpoint(false) + "/datastreams/" + dsId + "/observations";
 
+        console.log("endpoint conifg", endpoint)
         await submitConfig(endpoint, observation);
     }
 
@@ -223,10 +223,7 @@ export default function StateManager() {
     useEffect(() => {
         setTargetNode(new Node(loadNodeOpts));
 
-        const time = new Date().toISOString();
-        const newData = new ConfigData(time, configDSId, currentUser || "Unknown", [targetNode], 1);
-        setData(newData);
-    }, [loadNodeOpts, currentUser]);
+    }, [loadNodeOpts]);
 
 
     const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
@@ -241,7 +238,7 @@ export default function StateManager() {
     const handleSaveLoadState = async() =>{
         await saveConfigState();
         await handleLoadState();
-        
+
     }
 
     return (

@@ -120,6 +120,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
             let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
 
+            if(!nodeLaneMap) return;
             await node.fetchDatastreams(nodeLaneMap);
             await node.fetchProcessVideoDatastreams(nodeLaneMap);
             await node.fetchControlStreams(nodeLaneMap);
