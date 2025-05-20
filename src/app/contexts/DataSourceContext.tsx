@@ -3,7 +3,7 @@
 import React, {createContext, MutableRefObject, ReactNode, useCallback, useEffect, useRef} from "react";
 import {useSelector} from "react-redux";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {changeConfigNode, setNodes} from "@/lib/state/OSHSlice";
+import {addNode, changeConfigNode, setNodes} from "@/lib/state/OSHSlice";
 import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {RootState} from "@/lib/state/Store";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
@@ -31,6 +31,30 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     const [lastSystemFetch, setLastSystemFetch] = React.useState<number>(0);
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
     const laneMapRef = useRef<Map<string, LaneMapEntry>>(new Map<string, LaneMapEntry>());
+
+    const dispatch = useAppDispatch();
+
+    useEffect(() => {
+
+        let hostName = window.location.hostname;
+
+        const initialNodeOpts: NodeOptions = {
+            name: "Local Node",
+            address:  hostName,
+            port: 8282,
+            oshPathRoot: "/sensorhub",
+            sosEndpoint: "/sos",
+            csAPIEndpoint: "/api",
+            configsEndpoint: "/configs",
+            auth: {username: "admin", password: "oscar"},
+            isSecure: false,
+            isDefaultNode: true
+        }
+
+        dispatch(addNode(initialNodeOpts));
+        dispatch(changeConfigNode(initialNodeOpts));
+
+    }, [dispatch]);
 
     const handleLoadState = async () => {
 
@@ -178,7 +202,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
         setLastSystemFetch(Date.now());
 
-    }, [nodes]);
+    }, [nodes, nodes.length]);
 
     useEffect(() => {
         InitializeApplication();

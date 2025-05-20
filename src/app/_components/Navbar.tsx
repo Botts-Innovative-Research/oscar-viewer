@@ -34,6 +34,9 @@ import {Label, SaveRounded} from "@mui/icons-material";
 import AlarmAudio from "@/app/_components/AlarmAudio";
 import {selectAlarmAudioVolume} from "@/lib/state/OSCARClientSlice";
 import {useSelector} from "react-redux";
+import {addNode, changeConfigNode, updateNode} from "@/lib/state/OSHSlice";
+import {useAppDispatch} from "@/lib/state/Hooks";
+import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
 
 const drawerWidth = 240;
 
@@ -177,7 +180,6 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
         href: "/savestate",
     }
   ]
-
 
   return (
     <Box sx={{ display: 'flex' }}>

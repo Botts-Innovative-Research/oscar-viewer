@@ -176,10 +176,11 @@ export async function getConfigDataStreamID(node: INode): Promise<string>{
 export async function retrieveLatestConfigDataStream(node: INode) {
     let localNode = await node.checkForEndpoint();
 
+    console.log("local node", localNode)
     if (localNode) {
         const systems = await node.fetchSystems();
 
-        const configSystem = systems.find((system: any) => system.properties.properties.uid == "urn:ornl:oscar:client:config");
+        const configSystem = systems?.find((system: any) => system.properties.properties.uid == "urn:ornl:oscar:client:config");
 
         if(configSystem) {
             const dsCollection = await configSystem.searchDataStreams(new DataStreamFilter({resultTime: 'latest'}), 1);

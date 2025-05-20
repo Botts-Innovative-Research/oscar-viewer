@@ -3,6 +3,7 @@
  * All Rights Reserved
  */
 
+
 import {createSlice, PayloadAction} from "@reduxjs/toolkit";
 import {enableMapSet} from "immer";
 // @ts-ignore
@@ -21,22 +22,8 @@ export interface IOSHSlice {
     datastreams: typeof DataStream[]
 }
 
-const initialNodeOpts: NodeOptions = {
-    name: "Local Node",
-    address: "127.0.0.1",
-    port: 8282,
-    oshPathRoot: "/sensorhub",
-    sosEndpoint: "/sos",
-    csAPIEndpoint: "/api",
-    configsEndpoint: "/configs",
-    auth: {username: "admin", password: "oscar"},
-    isSecure: false,
-    isDefaultNode: true
-}
-
-
 const initialState: IOSHSlice = {
-    nodes: [new Node(initialNodeOpts)],
+    nodes: [],
     configNode: null,
     datastreams: []
 }
@@ -67,6 +54,11 @@ export const Slice = createSlice({
         },
         removeNode: (state, action: PayloadAction<string>) => {
             const rmvNode = state.nodes.find((node: INode) => node.id === action.payload);
+
+            if(!rmvNode){
+                console.error("Cannot find node to remove");
+                return;
+            }
             if (rmvNode.isDefaultNode) {
                 console.error("Cannot remove the default node");
                 return;

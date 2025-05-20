@@ -47,6 +47,8 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
     const dispatch = useAppDispatch();
 
+
+
     const newNodeOpts: NodeOptions = {
         name: "",
         address: "localhost",
@@ -84,7 +86,9 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
             tNode.isSecure = checked;
         } else if (name === "port") {
             tNode.port = Number.parseInt(value);
-        } else {
+        } else if (name === 'address'){
+            tNode.address = value;
+        } else{
             (tNode as any)[name] = value;
         }
 
