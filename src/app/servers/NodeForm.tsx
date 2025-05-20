@@ -63,10 +63,8 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
     useEffect(() => {
         if (isEditNode && editNode) {
-            console.log("Editing node: ", editNode);
             setNewNode(editNode);
         } else {
-            console.log("Adding new node");
             const node = new Node(newNodeOpts);
             setNewNode(node);
         }
@@ -99,11 +97,9 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
         if (isEditNode) {
             dispatch(updateNode(newNode));
-            console.log('Dispatching edited node: ', dispatch(addNode(newNode)));
             modeChangeCallback(false, null);
         } else {
             dispatch(addNode(newNode));
-            console.log('Dispatching new node: ', dispatch(addNode(newNode)));
             modeChangeCallback(false, null);
 
         }
@@ -143,11 +139,9 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         if(defaultNode){
             let configSysId = await getConfigSystemID(defaultNode);
 
-            console.log("config sysid", configSysId)
             if(configSysId){
                 let dsId = await getConfigDataStreamID(defaultNode);
 
-                console.log("ds ID", dsId)
                 if(!dsId){
                     setNodeSnackMsg('Failed to find config datastream')
                     setColorStatus('error')
@@ -163,7 +157,6 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                     ? nodes.map((n: any) => n.id === newNode.id ? newNode : n)
                     : [...nodes, newNode];
 
-                console.log("saving nodes to config: ", nodes)
                 const tempData = new ConfigData(
                     phenomenonTime,
                     dsId || "",
@@ -177,7 +170,6 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                 const endpoint = defaultNode.getConfigEndpoint(false) + "/datastreams/" + dsId + "/observations";
                 const response = await insertObservation(endpoint, observation);
 
-                console.log("oscar repsonse", response)
                 return response;
 
             }
@@ -198,12 +190,9 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                 setNodeSnackMsg('OSCAR State Loaded')
                 setColorStatus('success')
 
-                console.log("latest config data from load state", latestConfigData[0])
                 dispatch(setCurrentUser(latestConfigData[0].user));
 
                 let nodes = latestConfigData[0].nodes;
-
-                console.log("nodes from config: ", nodes)
 
                 nodes = nodes.map((node: any)=>{
                     return new Node(
@@ -222,7 +211,6 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                     )
                 })
 
-                console.log("nodes from saved config: ", nodes )
                 dispatch(setNodes(nodes));
             }
 
@@ -263,7 +251,6 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     };
 
      async function checkReachable(node: any){
-         console.log('node', node)
          const endpoint = `${node.getConnectedSystemsEndpoint()}`;
 
          try {
