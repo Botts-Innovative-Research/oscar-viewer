@@ -241,7 +241,9 @@ export default function StateManager() {
     const handleSaveLoadState = async() =>{
         await saveConfigState();
         await handleLoadState();
+        
     }
+
     return (
         <Box sx={{margin: 2, padding: 2, width: isSmallScreen ? '100%' : '75%'}}>
             <Card>

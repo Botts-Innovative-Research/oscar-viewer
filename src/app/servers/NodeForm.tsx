@@ -17,9 +17,18 @@ import {
     Typography
 } from "@mui/material";
 import React, {useEffect, useState} from "react";
-import {addNode, updateNode} from "@/lib/state/OSHSlice";
-import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
+import {addNode, selectNodes, setNodes, updateNode} from "@/lib/state/OSHSlice";
+import {INode, insertObservation, Node, NodeOptions} from "@/lib/data/osh/Node";
 import {useAppDispatch} from "@/lib/state/Hooks";
+import {useSelector} from "react-redux";
+import {RootState} from "@/lib/state/Store";
+import ConfigData, {
+    getConfigDataStreamID,
+    getConfigSystemID,
+    retrieveLatestConfigDataStream
+} from "@/app/_components/state-manager/Config";
+import {selectCurrentUser, setCurrentUser} from "@/lib/state/OSCARClientSlice";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 
 
 export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
@@ -28,12 +37,16 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     editNode?: INode
 }) {
 
-
     const [openSnack, setOpenSnack] = useState(false);
-    const[nodeSnackMsg, setNodeSnackMsg] = useState("");
-    const[colorStatus, setColorStatus] = useState("");
+    const [nodeSnackMsg, setNodeSnackMsg] = useState("");
+    const [colorStatus, setColorStatus] = useState("");
+
+    const defaultNode = useSelector((state: RootState) => state.oshSlice.configNode);
+    const currentUser = useSelector(selectCurrentUser)
+    const nodes = useSelector(selectNodes)
 
     const dispatch = useAppDispatch();
+
     const newNodeOpts: NodeOptions = {
         name: "",
         address: "localhost",
@@ -55,7 +68,6 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         } else {
             console.log("Adding new node");
             const node = new Node(newNodeOpts);
-            console.log(node)
             setNewNode(node);
         }
     }, [isEditNode, editNode]);
@@ -95,6 +107,115 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         }
         await checkReachable(newNode)
         setOpenSnack(true)
+    }
+
+    const handleAddSave = async(e: React.FormEvent)=> {
+
+        // update the list of nodes using the edit/update
+        handleButtonAction(e);
+
+
+        // send request to save new/updated nodes to the configs
+
+        await saveNodesToConfig();
+        // load the new config
+        await handleLoadState();
+    }
+
+
+    const saveNodesToConfig = async() => {
+        //default node is the local node running on the machine unless updated :p
+        if(defaultNode){
+            let configSysId = await getConfigSystemID(defaultNode);
+
+            if(configSysId){
+                let dsId = await getConfigDataStreamID(defaultNode);
+
+                if(!dsId){
+                    setNodeSnackMsg('Failed to find config datastream')
+                    setColorStatus('error')
+                    setOpenSnack(true);
+                }
+
+                let phenomenonTime = new Date().toISOString();
+
+                const user =  currentUser|| "Unknown";
+
+                const tempData = new ConfigData(
+                    phenomenonTime,
+                    dsId || "",
+                    user,
+                    nodes,
+                    nodes.length
+                );
+
+                let observation = tempData.createConfigurationObservation();
+
+                const endpoint = defaultNode.getConfigEndpoint(false) + "/datastreams/" + dsId + "/observations";
+                await submitConfig(endpoint, observation);
+
+            }
+        }
+    }
+
+    const submitConfig = async(endpoint: string, observation: any) => {
+        try{
+            const response = await insertObservation(endpoint, observation);
+
+            if(response.ok){
+                setNodeSnackMsg('OSCAR Configuration Saved')
+                setColorStatus('success')
+            }else {
+                setNodeSnackMsg('Failed to save OSCAR Configuration')
+                setColorStatus('error')
+            }
+        }catch(error){
+            setNodeSnackMsg('Failed to save config')
+            setColorStatus('error')
+        }
+
+        setOpenSnack(true);
+    }
+
+
+    const handleLoadState = async () => {
+
+        let latestConfigDs = await retrieveLatestConfigDataStream(defaultNode);
+
+
+        if(latestConfigDs){
+
+            let latestConfigData = await fetchLatestConfigObservation(latestConfigDs);
+
+            if(latestConfigData != null){
+                setNodeSnackMsg('OSCAR State Loaded')
+                setColorStatus('success')
+
+                console.log("latest config data from load state", latestConfigData[0])
+                dispatch(setCurrentUser(latestConfigData[0].user));
+
+                let nodes = latestConfigData[0].nodes;
+                dispatch(setNodes(nodes));
+            }
+
+        }else{
+            setNodeSnackMsg('Failed to load OSCAR State')
+            setColorStatus('error')
+        }
+        setOpenSnack(true)
+    }
+
+    const fetchLatestConfigObservation = async(ds: any) =>{
+        const observations = await ds.searchObservations(new ObservationFilter({ resultTime: 'latest'}), 1);
+
+        let obsResult = await observations.nextPage();
+        let configData = obsResult.map((obs: any) =>{
+            let data = new ConfigData(obs.phenomenonTime, obs.id, obs.result.user, obs.result.nodes, obs.result.numNodes)
+            return data;
+        })
+
+        return configData;
+
     }
 
     if (!newNode) {
@@ -154,9 +275,17 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                     <TextField label="Username" name="username" value={newNode.auth.username} onChange={handleChange}/>
                     <TextField label="Password" name="password" type={"password"} value={newNode.auth.password}
                                onChange={handleChange}/>
+
                     <FormControlLabel control={<Checkbox name="isSecure" checked={newNode.isSecure} onChange={handleChange}/>} label="Is Secure"/>
-                    <Button variant={"contained"} color={"primary"}
-                            onClick={handleButtonAction}>{isEditNode ? "Save Changes" : "Add Node"}</Button>
+
+                    <Stack direction="row" spacing={2}>
+                        <Button variant={"contained"} color={"primary"}
+                                onClick={handleButtonAction}>{isEditNode ? "Save Changes" : "Add Node"}</Button>
+                        <Button variant={"outlined"} color={"secondary"}
+                                onClick={handleAddSave}>Add and Save Node</Button>
+                    </Stack>
+
+
                     <Snackbar
                         open={openSnack}
                         anchorOrigin={{ vertical:'top', horizontal:'center' }}

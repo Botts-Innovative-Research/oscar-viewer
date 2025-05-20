@@ -3,12 +3,9 @@
  * All Rights Reserved
  */
 
-// import {IDatastream} from "@/lib/data/osh/Datastreams";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
 import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
-import {INode} from "@/lib/data/osh/Node";
-import {ConfigDatastreamConstant} from "@/app/_components/state-manager/Config";
 
 /**
  *
@@ -136,55 +133,3 @@ export function isConfigurationDatastream(datastream: typeof DataStream): boolea
 
     return datastream.properties.observedProperties[0].definition.includes(CONFIG_DEF);
 }
-
-
-
-// export async function insertSystem(node: INode, systemJSON: any, ep: string, dsConstant: any): Promise<string> {
-//
-//     console.log("Inserting System: ", ep, JSON.stringify(systemJSON));
-//
-//     const response = await fetch(ep, {
-//         method: 'POST',
-//         mode: 'cors',
-//         body: JSON.stringify(systemJSON),
-//         headers: {
-//             ...node.getBasicAuthHeader(),
-//             'Content-Type': 'application/sml+json'
-//         }
-//     });
-//
-//     if (response.ok) {
-//         console.log("System Inserted: ", response.headers.get("Location"));
-//         let sysId = response.headers.get("Location").split("/").pop();
-//
-//         let endpoint = ep + sysId +"/datastreams/";
-//         await insertDatastream(node, endpoint, dsConstant);
-//         return sysId;
-//     } else {
-//         console.warn("Error inserting system: ", response);
-//     }
-// }
-//
-// export async function insertDatastream(node: INode, endpoint: string, dsConstant: any): Promise<string> {
-//     // let ep: string = `${node.getConfigEndpoint(false)}/systems/${systemId}/datastreams/`;
-//     console.log("Inserting Datastream: ");
-//
-//     const response = await fetch(endpoint, {
-//         method: 'POST',
-//         mode: 'cors',
-//         body: JSON.stringify(dsConstant),
-//         // body: JSON.stringify(ConfigDatastreamConstant),
-//         headers: {
-//             ...node.getBasicAuthHeader(),
-//             'Content-Type': 'application/json'
-//         }
-//     });
-//
-//     if (response.ok) {
-//         console.log("Datastream Inserted Response: ", response);
-//         let dsId = response.headers.get("Location").split("/").pop();
-//         return dsId;
-//     } else {
-//         console.warn("Error inserting Datastream: ", response);
-//     }
-// }

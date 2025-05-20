@@ -33,6 +33,7 @@ export interface INode {
     laneAdjMap?: Map<string, string>
 
     getConnectedSystemsEndpoint(noProtocolPrefix: boolean): string,
+
     getConfigEndpoint(noProtocolPrefix: boolean): string,
 
     getConfigEndpoint() : string,
@@ -46,7 +47,7 @@ export interface INode {
     fetchLaneSystemsAndSubsystems(): Promise<Map<string, LaneMapEntry>>,
 
     fetchDatastreams(laneMap: Map<string, LaneMapEntry>): void,
-    // fetchDatastreams(laneMap: Map<string, LaneMapEntry>): Promise<any[]>,
+
     fetchControlStreams(laneMap: Map<string, LaneMapEntry>): Promise<any>,
 
     fetchProcessVideoDatastreams(laneMap: Map<string, LaneMapEntry>): void,
@@ -57,11 +58,10 @@ export interface INode {
 
     insertDatastream( endPoint: string, datastreamConstant: any): Promise<string>
 
-    // insertObservation(endPoint: string, observationJSON: any)
-
     checkForEndpoint(): Promise<boolean>
 
     getDataStreamsApi(): typeof DataStreams
+
     getSystemsApi(): typeof Systems
 
 }
@@ -221,7 +221,9 @@ export class Node implements INode {
 
         // check if node is reachable first
         // let isReachable = OSHSliceWriterReader.checkForEndpoint(this);
+        console.log("node: ", this);
         const isReachable = await this.checkForEndpoint();
+
         if (!isReachable) {
             console.warn("Node is not reachable, check endpoint properties");
             return new Map<string, LaneMapEntry>();
@@ -333,8 +335,6 @@ export class Node implements INode {
                 videoDatastreams.forEach((videoDatastream: typeof DataStream) => allProcessVideostreamsMap.set(videoDatastream.properties.outputName, videoDatastream));
             }
         }
-        console.log("All process streams:", allProcessVideostreamsMap);
-        console.log("All videos map: ", videoDsMap);
 
         for (const [videoDs, laneName] of videoDsMap) {
             const videoStreamUID = videoDs.properties["system@link"].uid;
@@ -342,12 +342,9 @@ export class Node implements INode {
             const processVideoStreamOutputName = `${videoStreamUID}:${videoStreamOutputName}`;
 
             const processVideoDs = allProcessVideostreamsMap.get(processVideoStreamOutputName);
-            console.log("Process Video Datastream: ", processVideoStreamOutputName);
 
             if(processVideoDs) {
                 laneMap.get(laneName).addDatastreams([processVideoDs]);
-                console.log("Added process video datastream to lane: ", laneName);
-
             }
         }
     }

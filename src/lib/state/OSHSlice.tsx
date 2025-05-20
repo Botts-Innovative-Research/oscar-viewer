@@ -28,7 +28,7 @@ const initialNodeOpts: NodeOptions = {
     oshPathRoot: "/sensorhub",
     sosEndpoint: "/sos",
     csAPIEndpoint: "/api",
-    // csAPIConfigEndpoint: "/configs",
+    configsEndpoint: "/configs",
     auth: {username: "admin", password: "oscar"},
     isSecure: false,
     isDefaultNode: true
@@ -46,7 +46,7 @@ export const Slice = createSlice({
     initialState,
     reducers: {
         addNode: (state, action: PayloadAction<INode>) => {
-            const nodeIndex = state.nodes.findIndex((node: INode) => node.address === action.payload.address);
+            const nodeIndex = state.nodes.findIndex((node: INode) => node.name === action.payload.name);
             console.log("Adding node: ", nodeIndex);
 
             if (nodeIndex === -1) {
