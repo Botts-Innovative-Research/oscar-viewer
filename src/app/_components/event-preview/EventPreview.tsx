@@ -144,7 +144,6 @@ export function EventPreview() {
     const sendAdjudicationData = async () => {
         const phenomenonTime = new Date().toISOString();
         const comboData = adjudication;
-        console.log()
 
         comboData.setFeedback(notes);
         comboData.setTime(phenomenonTime);

@@ -7,7 +7,7 @@ import {changeConfigNode, setNodes} from "@/lib/state/OSHSlice";
 import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {RootState} from "@/lib/state/Store";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import { Node } from "@/lib/data/osh/Node";
+import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
 import ConfigData, { retrieveLatestConfigDataStream } from "../_components/state-manager/Config";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 
@@ -37,38 +37,17 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         let latestConfigDs = await retrieveLatestConfigDataStream(configNode);
 
         if (latestConfigDs) {
-            console.log("Config data retrieved: ", latestConfigDs);
 
             let latestConfigData = await fetchLatestConfigObservation(latestConfigDs);
 
             if(latestConfigData == null) return;
 
-            let nodes = latestConfigData[0].nodes.map((opt: any) => {
+            let nodes = latestConfigData.nodes.map(mapNodeFromConfig);
 
-                return new Node({
-                    name: opt.name,
-                    address: opt.address,
-                    port: opt.port,
-                    oshPathRoot: opt.oshPathRoot,
-                    sosEndpoint: opt.sosEndpoint,
-                    configsEndpoint: opt.configsEndpoint,
-                    csAPIEndpoint: opt.csAPIEndpoint,
-                    auth: {
-                        username: opt.username,
-                        password: opt.password
-                    },
-                    isSecure: opt.isSecure,
-                    isDefaultNode: opt.isDefaultNode,
-                    laneAdjMap: opt.laneAdjMap
-                });
-            });
-
-
-            console.log("ds context nodes", nodes)
             dispatch(setNodes(nodes));
 
         } else {
-            console.log('Failed to load OSCAR State')
+            console.warn('Failed to load OSCAR State')
         }
     }
 
@@ -92,18 +71,17 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     const fetchLatestConfigObservation = async(ds: any) =>{
         const observations = await ds.searchObservations(new ObservationFilter({ resultTime: 'latest'}), 1);
 
-
         let obsResult = await observations.nextPage();
+
+        if(!obsResult) return;
+
         let configData = obsResult.map((obs: any) =>{
-
             let data = new ConfigData(obs.phenomenonTime, obs.id, obs.result.user, obs.result.nodes, obs.result.numNodes)
-
             return data;
         })
 
-        return configData;
-
-
+        console.log("config data", configData)
+        return configData[0];
     }
 
     function checkSystemFetchInterval() {
@@ -111,34 +89,33 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         return Date.now() - lastSystemFetch >= minSystemFetchInterval;
     }
 
-    const testSysFetch = useCallback(async () => {
-        console.log("Received new nodes, updating state\nNodes:", nodes);
-
-        let nodes_ = nodes.map((opt: any) => {
-
-            return new Node({
-                name: opt.name,
-                address: opt.address,
-                port: opt.port,
-                oshPathRoot: opt.oshPathRoot,
-                sosEndpoint: opt.sosEndpoint,
-                configsEndpoint: opt.configsEndpoint,
-                csAPIEndpoint: opt.csAPIEndpoint,
-                auth: {
-                    username: opt.username,
-                    password: opt.password
-                },
-                isSecure: opt.isSecure,
-                isDefaultNode: opt.isDefaultNode,
-                laneAdjMap: opt.laneAdjMap
-            });
+    function mapNodeFromConfig(opt: any): Node{
+        return new Node({
+            name: opt.name,
+            address: opt.address,
+            port: opt.port,
+            oshPathRoot: opt.oshPathRoot,
+            sosEndpoint: opt.sosEndpoint,
+            configsEndpoint: opt.configsEndpoint,
+            csAPIEndpoint: opt.csAPIEndpoint,
+            auth: {
+                username: opt.auth.username ? opt.auth.username : opt.username,
+                password: opt.auth.password ? opt.auth.password : opt.password,
+            },
+            isSecure: opt.isSecure,
+            isDefaultNode: opt.isDefaultNode,
+            laneAdjMap: opt.laneAdjMap
         });
+    }
+
+    const testSysFetch = useCallback(async () => {
+        console.log("Received new nodes, updating state:", nodes);
+
+        let newNodes = nodes.map(mapNodeFromConfig);
 
         let allLanes: Map<string, LaneMapEntry> = new Map();
 
-
-        // let allDatastreams: any[];
-        await Promise.all(nodes_.map(async (node: any) => {
+        await Promise.all(newNodes.map(async (node: INode) => {
             console.log("Fetching lanes from node ", node);
 
             let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
@@ -165,10 +142,9 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         }));
 
 
-        console.log("all Lanes", allLanes)
         // fetch adjudication systems
         let adjMap: Map<string, string> = new Map();
-        for(let node of nodes_){
+        for(let node of newNodes){
             console.log("[ADJ] Fetching adjudication systems for node: ", node, allLanes);
            adjMap = await node.fetchOrCreateAdjudicationSystems(allLanes);
 
