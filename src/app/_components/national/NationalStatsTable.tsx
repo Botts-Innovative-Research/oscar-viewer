@@ -47,6 +47,11 @@ export default function StatTable(){
 
 
     useEffect(() => {
+        setStartTime(savedStartDate);
+        setEndTime(savedEndDate);
+    }, [savedStartDate, savedEndDate]);
+
+    useEffect(() => {
         // create the site datastruct for each node that exists on the viewer and initialize it
         if(nodes && nodes.length> 0){
             let oscarSites: any[] = []
