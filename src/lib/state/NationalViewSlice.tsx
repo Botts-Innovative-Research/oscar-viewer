@@ -11,7 +11,7 @@ export interface NationalViewState {
 
 const initialState: NationalViewState ={
     startDate: "2020-01-01T08:13:25.845Z",
-    endDate: new Date().toISOString()
+    endDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
 }
 
 export const Slice = createSlice({
