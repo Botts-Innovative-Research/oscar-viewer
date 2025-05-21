@@ -11,114 +11,161 @@ import {
     Card,
     CardContent,
     CardHeader,
-    Container, Grid, Snackbar, SnackbarCloseReason,
+    Container, Snackbar, SnackbarCloseReason,
     Stack,
     TextField,
     Typography,
     useMediaQuery,
     useTheme
 } from "@mui/material";
-import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
-import {RootState} from "@/lib/state/Store";
+
 import {useSelector} from "react-redux";
-import {IOSHSlice, selectDefaultNode, setNodes} from "@/lib/state/OSHSlice";
+import { selectDefaultNode, selectNodes, setNodes} from "@/lib/state/OSHSlice";
 import React, {useCallback, useEffect, useState} from "react";
-import {IOSCARClientState, setCurrentUser} from "@/lib/state/OSCARClientSlice";
+import { selectCurrentUser, setCurrentUser} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {Node, NodeOptions} from "@/lib/data/osh/Node";
+import {Node, NodeOptions, insertObservation} from "@/lib/data/osh/Node";
 import Divider from "@mui/material/Divider";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import ConfigData, {
+    getConfigDataStreamID, getConfigSystemID,
+    retrieveLatestConfigDataStream
+} from "./Config";
+import {RootState} from "@/lib/state/Store";
 
 
 export default function StateManager() {
     const dispatch = useAppDispatch();
-    const oshSlice: IOSHSlice = useSelector((state: RootState) => state.oshSlice);
-    const oscarSlice: IOSCARClientState = useSelector((state: RootState) => state.oscarClientSlice);
-    const defaultNode = useSelector(selectDefaultNode);
-    const [cfgDSId, setCfgDSId] = useState<string | null>(null);
+    const defaultNode = useSelector((state: RootState) => state.oshSlice.configNode);
+    const [configDSId, setConfigDSId] = useState<string | null>(null);
     const [fileName, setFileName] = useState<string>("config");
+
     const newNodeOpts: NodeOptions = {
-        name: "New Node",
+        name: "",
         address: "localhost",
         port: 0,
         oshPathRoot: "/sensorhub",
         sosEndpoint: "/sos",
+        configsEndpoint: "/config",
         csAPIEndpoint: "/api",
-        csAPIConfigEndpoint: "/configs",
         auth: {username: "", password: ""},
         isSecure: false,
         isDefaultNode: false
     };
+
     const [loadNodeOpts, setLoadNodeOpts] = useState<NodeOptions>(newNodeOpts);
     const [targetNode, setTargetNode] = useState<Node>(new Node(newNodeOpts));
-    const [showLoadAlert, setShowLoadAlert] = useState<boolean>(false);
-    const [showSaveAlert, setShowSaveAlert] = useState<boolean>(false);
+
+    const [activeAlert, setActiveAlert] =useState<'save'| 'load'| 'saveload' | null>(null);
     const theme = useTheme();
     const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
     const [openSaveSnack, setOpenSaveSnack] = useState(false);
     const [openSnack, setOpenSnack] = useState(false);
 
-    const [loadSnackMsg, setLoadSnackMsg] = useState('');
-    const [saveSnackMsg, setSaveSnackMsg] = useState('');
-    const [colorStatus, setColorStatus]= useState('');
+    const [loadSnackMsg, setLoadSnackMsg] = useState<string>();
+    const [saveSnackMsg, setSaveSnackMsg] = useState<string>();
+
+
+    const [colorSaveStatus, setSaveColorStatus]= useState('');
+    const [colorLoadStatus, setLoadColorStatus]= useState('');
+
+    const nodes = useSelector(selectNodes)
+    const currentUser = useSelector(selectCurrentUser)
 
     useEffect(() => {
         setLoadNodeOpts({...loadNodeOpts, ...defaultNode});
     }, []);
 
-    const getCFGDataStream = useCallback(async () => {
-        if (defaultNode) {
-            console.log("Default Node: ", defaultNode);
-            let cfgSystem = await OSHSliceWriterReader.checkForConfigSystem(defaultNode);
-            if (cfgSystem) {
-                let dsId = await OSHSliceWriterReader.checkForConfigDatastream(defaultNode, cfgSystem);
-                setCfgDSId(dsId);
+
+    const getConfigDataStream = useCallback(async () =>{
+        if(defaultNode){
+            let configSystemId = await getConfigSystemID(defaultNode);
+
+            if(configSystemId){
+                let dsId = await getConfigDataStreamID(defaultNode);
+                setConfigDSId(dsId);
+
                 return dsId;
             }
         }
-    }, [defaultNode]);
+    },[defaultNode]);
 
-    const handleSaveState = async () => {
-        let dsID = await getCFGDataStream();
-        toggleSaveAlert();
-        if (cfgDSId === null) {
-            let obs = OSHSliceWriterReader.writeConfigToString({oscarData: oscarSlice, oshData: oshSlice}, fileName);
-            let resp = await OSHSliceWriterReader.sendBlobToServer(defaultNode, dsID, obs);
-            if (resp) {
-                setSaveSnackMsg('OSCAR Configuration Saved')
-                setColorStatus('success')
-            } else {
-                setSaveSnackMsg('Failed to save OSCAR Configuration')
-                setColorStatus('error')
-            }
-            setOpenSaveSnack(true)
+    const saveConfigState = async() =>{
+
+        let dsId = await getConfigDataStream();
+
+        if(!dsId){
+            setSaveSnackMsg('Failed to find config datastream')
+            setSaveColorStatus('error')
+            setOpenSaveSnack(true);
         }
 
+        let phenomenonTime = new Date().toISOString();
+
+        const user = currentUser || "Unknown";
+
+        const tempData = new ConfigData(
+            phenomenonTime,
+            configDSId || "",
+            user,
+            nodes,
+            nodes.length
+        );
+
+        let observation = tempData.createConfigurationObservation();
+
+        const endpoint = defaultNode.getConfigEndpoint(false) + "/datastreams/" + dsId + "/observations";
+
+        await submitConfig(endpoint, observation);
     }
 
+    const submitConfig = async(endpoint: string, observation: any) => {
+        try{
+            const response = await insertObservation(endpoint, observation);
+
+            if(response.ok){
+                setSaveSnackMsg('OSCAR Configuration Saved')
+                setSaveColorStatus('success')
+            }else {
+                setSaveSnackMsg('Failed to save OSCAR Configuration')
+                setSaveColorStatus('error')
+            }
+        }catch(error){
+            setSaveSnackMsg('Failed to save config')
+            setSaveColorStatus('error')
+        }
+
+        setOpenSaveSnack(true);
+        setActiveAlert(null)
+    }
+
+
     const handleLoadState = async () => {
-        toggleLoadAlert();
 
-        let responseJSON = await OSHSliceWriterReader.retrieveLatestConfig(targetNode);
-        if (responseJSON) {
-            setLoadSnackMsg('OSCAR State Loaded')
-            setColorStatus('success')
-            console.log("Config data retrieved: ", responseJSON);
+        let latestConfigDs = await retrieveLatestConfigDataStream(targetNode);
 
-            let cfgData = responseJSON.result.filedata;
-            let cfgJSON = JSON.parse(cfgData);
-            console.log("Config data parsed: ", cfgJSON);
 
-            dispatch(setCurrentUser(cfgJSON.user.currentUser));
+        if(latestConfigDs){
 
-            let nodes = cfgJSON.nodes.map((opt: NodeOptions) => new Node(opt));
-            dispatch(setNodes(nodes));
+            let latestConfigData = await fetchLatestConfigObservation(latestConfigDs);
 
-        } else {
+            if(latestConfigData != null){
+                setLoadSnackMsg('OSCAR State Loaded')
+                setLoadColorStatus('success')
+
+                dispatch(setCurrentUser(latestConfigData[0].user));
+
+                let nodes = latestConfigData[0].nodes;
+                dispatch(setNodes(nodes));
+            }
+
+        }else{
             setLoadSnackMsg('Failed to load OSCAR State')
-            setColorStatus('error')
+            setLoadColorStatus('error')
         }
         setOpenSnack(true)
+        setActiveAlert(null)
     }
 
     const handleChangeForm = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,9 +175,22 @@ export default function StateManager() {
         }
     }
 
+     const fetchLatestConfigObservation = async(ds: any) =>{
+        const observations = await ds.searchObservations(new ObservationFilter({ resultTime: 'latest'}), 1);
+
+
+        let obsResult = await observations.nextPage();
+        let configData = obsResult.map((obs: any) =>{
+            let data = new ConfigData(obs.phenomenonTime, obs.id, obs.result.user, obs.result.nodes, obs.result.numNodes)
+            return data;
+        })
+
+        return configData;
+
+    }
+
     const handleChangeLoadForm = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value} = e.target;
-        console.log("Changing: ", name, value);
 
         switch (name) {
             case "address":
@@ -154,31 +214,15 @@ export default function StateManager() {
         }
     }
 
-    function toggleLoadAlert() {
-        if (showLoadAlert) {
-            setShowLoadAlert(false);
-        } else {
-            setShowLoadAlert(true);
-        }
-    }
 
-    function toggleSaveAlert() {
-        if (showSaveAlert) {
-            setShowSaveAlert(false);
-        } else {
-            setShowSaveAlert(true);
-        }
-    }
 
     useEffect(() => {
         setTargetNode(new Node(loadNodeOpts));
+
     }, [loadNodeOpts]);
 
 
-    const handleCloseSnack = (
-        event: React.SyntheticEvent | Event,
-        reason?: SnackbarCloseReason,
-    ) => {
+    const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
         if (reason === 'clickaway') {
             return;
         }
@@ -187,10 +231,14 @@ export default function StateManager() {
         setOpenSaveSnack(false);
     };
 
+    const handleSaveLoadState = async() =>{
+        await saveConfigState();
+        await handleLoadState();
+
+    }
+
     return (
-        <Box sx={{
-            margin: 2, padding: 2, width: isSmallScreen ? '100%' : '75%'
-        }}>
+        <Box sx={{margin: 2, padding: 2, width: isSmallScreen ? '100%' : '75%'}}>
             <Card>
                 <CardHeader title={"Configuration Management"} titleTypographyProps={{variant: "h2"}}/>
                 <CardContent component="form">
@@ -203,11 +251,32 @@ export default function StateManager() {
                                     <Stack spacing={2}>
 
                                         <TextField label="File Name" value={fileName} onChange={handleChangeForm}/>
-                                        <Button onClick={toggleSaveAlert} variant={"contained"} color={"primary"}
-                                                disabled={showSaveAlert}>
+                                        <Button onClick={() => setActiveAlert('save')} variant={"contained"} color={"primary"}
+                                                disabled={activeAlert ==='save'}>
                                             Save
                                         </Button>
-                                        {showSaveAlert && (
+                                        <Button onClick={() => setActiveAlert('saveload')} variant={"outlined"} color={"primary"}
+                                                disabled={activeAlert === 'saveload'}>
+                                            Save and Load
+                                        </Button>
+                                        {activeAlert === 'saveload' && (
+                                            <Alert severity={"warning"}>
+                                                <AlertTitle>Please Confirm</AlertTitle>
+                                                <Stack spacing={2} direction={"row"}>
+                                                    <Typography>
+                                                        Are you sure you want to save and load the current configuration (and overwrite
+                                                        the previous one)?
+                                                    </Typography>
+                                                    <Button color={"success"} variant="contained" onClick={handleSaveLoadState}>
+                                                        Save
+                                                    </Button>
+                                                    <Button color={"error"} variant="contained" onClick={() => setActiveAlert(null)}>
+                                                        Cancel
+                                                    </Button>
+                                                </Stack>
+                                            </Alert>
+                                        )}
+                                        {activeAlert ==='save' && (
                                             <Alert severity={"warning"}>
                                                 <AlertTitle>Please Confirm</AlertTitle>
 
@@ -217,11 +286,11 @@ export default function StateManager() {
                                                         the previous one)?
                                                     </Typography>
                                                     <Button color={"success"} variant="contained"
-                                                            onClick={handleSaveState}>
+                                                            onClick={saveConfigState}>
                                                         Save
                                                     </Button>
                                                     <Button color={"error"} variant="contained"
-                                                            onClick={toggleSaveAlert}>
+                                                            onClick={() => setActiveAlert(null)}>
                                                         Cancel
                                                     </Button>
                                                 </Stack>
@@ -236,7 +305,7 @@ export default function StateManager() {
                                             message={saveSnackMsg}
                                             sx={{
                                                 '& .MuiSnackbarContent-root': {
-                                                    backgroundColor: colorStatus === 'success' ? 'green' : 'red',
+                                                    backgroundColor: colorSaveStatus === 'success' ? 'green' : 'red',
                                                 },
                                             }}
                                         />
@@ -265,11 +334,11 @@ export default function StateManager() {
                                                    value={loadNodeOpts.auth.password}
                                                    onChange={handleChangeLoadForm} type={"password"}/>
 
-                                        <Button onClick={toggleLoadAlert} variant={"contained"} color={"primary"}
-                                                disabled={showLoadAlert}>
+                                        <Button onClick={() => setActiveAlert('load')} variant={"contained"} color={"primary"}
+                                                disabled={activeAlert === 'load'}>
                                             Load State
                                         </Button>
-                                        {showLoadAlert && (
+                                        {activeAlert === 'load' && (
                                             <Alert severity={"warning"}>
                                                 <AlertTitle>Please Confirm</AlertTitle>
                                                 <Container>
@@ -278,12 +347,10 @@ export default function StateManager() {
                                                             Are you sure you want to load the configuration (and
                                                             overwrite the previous one)?
                                                         </Typography>
-                                                        <Button variant={"contained"} color={"success"}
-                                                                onClick={handleLoadState}>
+                                                        <Button variant={"contained"} color={"success"} onClick={handleLoadState}>
                                                             Yes
                                                         </Button>
-                                                        <Button variant={"contained"} color={"error"}
-                                                                onClick={toggleLoadAlert}>
+                                                        <Button color={"error"} variant="contained" onClick={() => setActiveAlert(null)}>
                                                             Cancel
                                                         </Button>
                                                     </Stack>
@@ -298,7 +365,7 @@ export default function StateManager() {
                                             message={loadSnackMsg}
                                             sx={{
                                                 '& .MuiSnackbarContent-root': {
-                                                    backgroundColor: colorStatus === 'success' ? 'green' : 'red',
+                                                    backgroundColor: colorLoadStatus === 'success' ? 'green' : 'red',
                                                 },
                                             }}
                                         />
@@ -312,3 +379,4 @@ export default function StateManager() {
         </Box>
     );
 }
+

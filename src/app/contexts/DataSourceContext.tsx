@@ -3,12 +3,13 @@
 import React, {createContext, MutableRefObject, ReactNode, useCallback, useEffect, useRef} from "react";
 import {useSelector} from "react-redux";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {changeConfigNode, setNodes} from "@/lib/state/OSHSlice";
+import {addNode, changeConfigNode, setNodes} from "@/lib/state/OSHSlice";
 import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
-import {RootState} from "@/lib/state/Store";
+import {AppDispatch, RootState} from "@/lib/state/Store";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {OSHSliceWriterReader} from "@/lib/data/state-management/OSHSliceWriterReader";
-import { NodeOptions, Node, INode } from "@/lib/data/osh/Node";
+import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
+import ConfigData, { retrieveLatestConfigDataStream } from "../_components/state-manager/Config";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 
 
 interface IDataSourceContext {
@@ -23,32 +24,56 @@ export {DataSourceContext};
 
 export default function DataSourceProvider({children}: { children: ReactNode }) {
 
-
     const configNode: Node = useSelector((state: RootState) => state.oshSlice.configNode);
     const dispatch = useAppDispatch();
     const nodes = useSelector((state: RootState) => state.oshSlice.nodes);
-    const minSystemFetchInterval = 30000;
-    const [lastSystemFetch, setLastSystemFetch] = React.useState<number>(0);
-    const laneMap = useSelector((state: RootState) => selectLaneMap(state));
     const laneMapRef = useRef<Map<string, LaneMapEntry>>(new Map<string, LaneMapEntry>());
+
+
+    useEffect(() => {
+        dispatch(initializeDefaultNode());
+    }, []);
+
 
     const handleLoadState = async () => {
 
-        let responseJSON = await OSHSliceWriterReader.retrieveLatestConfig(configNode);
-        if (responseJSON) {
-            console.log("Config data retrieved: ", responseJSON);
+        let latestConfigDs = await retrieveLatestConfigDataStream(configNode);
 
-            let cfgData = responseJSON.result.filedata;
-            let cfgJSON = JSON.parse(cfgData);
-            console.log("Config data parsed: ", cfgJSON);
+        if (latestConfigDs) {
 
-            let nodes = cfgJSON.nodes.map((opt: NodeOptions) => new Node(opt));
-            dispatch(setNodes(nodes));
+            let latestConfigData = await fetchLatestConfigObservation(latestConfigDs);
+
+            if(latestConfigData != null){
+                let nodes = latestConfigData.nodes;
+
+
+                nodes = nodes.map((node: any)=>{
+                    return new Node(
+                        {
+                            name: node.name,
+                            address: node.address,
+                            port: node.port,
+                            oshPathRoot: node.oshPathRoot,
+                            sosEndpoint: node.sosEndpoint,
+                            csAPIEndpoint: node.csAPIEndpoint,
+                            configsEndpoint: node.configsEndpoint,
+                            auth: { username: node.username, password: node.password },
+                            isSecure: node.isSecure,
+                            isDefaultNode: node.isDefaultNode
+                        }
+                    )
+                })
+
+                dispatch(setNodes(nodes));
+            }else{
+                console.warn("Failed to Load Oscar State: latest observation from config data is null")
+            }
 
         } else {
-            console.log('Failed to load OSCAR State')
+            console.warn('Failed to load OSCAR State')
         }
     }
+
 
     const InitializeApplication = useCallback(async () => {
 
@@ -62,103 +87,98 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             }
             console.error("No config node found in state. Cannot initialize application.");
         }
-
-        await handleLoadState()
-
-        let filedata = await OSHSliceWriterReader.retrieveLatestConfig(configNode);
-
-        if (filedata) {
-            console.log("Filedata from config node:", filedata);
-            // load the filedata into the state
-        } else {
-            console.log("No filedata found from config node");
-            // do nothing else for now
+        else{
+            console.log("Config Node found: Loading state...")
+            await handleLoadState();
         }
+    }, [nodes.length]);
 
-    }, [dispatch, configNode]);
+    const fetchLatestConfigObservation = async(ds: any) =>{
+        const observations = await ds.searchObservations(new ObservationFilter({ resultTime: 'latest'}), 1);
 
+        let obsResult = await observations.nextPage();
 
-    function checkSystemFetchInterval() {
-        console.log("Checking system fetch interval for TK Fetch...");
-        return Date.now() - lastSystemFetch >= minSystemFetchInterval;
+        if(!obsResult) return;
+
+        let configData = obsResult.map((obs: any) =>{
+            let data = new ConfigData(obs.phenomenonTime, obs.id, obs.result.user, obs.result.nodes, obs.result.numNodes)
+            return data;
+        })
+
+        return configData[0];
     }
 
-    const testSysFetch = useCallback(async () => {
-        console.log("Received new nodes, updating state\nNodes:");
-        console.log(nodes);
+    function mapNodeFromConfig(opt: any): Node{
+        return new Node({
+            name: opt.name,
+            address: opt.address,
+            port: opt.port,
+            oshPathRoot: opt.oshPathRoot,
+            sosEndpoint: opt.sosEndpoint,
+            configsEndpoint: opt.configsEndpoint,
+            csAPIEndpoint: opt.csAPIEndpoint,
+            auth: {
+                username: opt?.auth?.username ? opt.auth.username : opt.username,
+                password: opt?.auth?.password ? opt.auth.password : opt.password,
+            },
+            isSecure: opt.isSecure,
+            isDefaultNode: opt.isDefaultNode,
+            laneAdjMap: opt.laneAdjMap
+        });
+    }
+
+    const testSysFetch = async () => {
+
+        let newNodes = nodes.map(mapNodeFromConfig);
+
         let allLanes: Map<string, LaneMapEntry> = new Map();
-        // let allDatastreams: any[];
-        await Promise.all(nodes.map(async (node: INode) => {
-            console.log("Fetching lanes from node ", node);
+
+        await Promise.all(newNodes.map(async (node: INode) => {
+
             let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
-            console.log("Fetching data streams from node ", node);
+
+            if(!nodeLaneMap) return;
             await node.fetchDatastreams(nodeLaneMap);
-            console.log("Fetching process video data streams from node ", node);
             await node.fetchProcessVideoDatastreams(nodeLaneMap);
-            console.log("Fetching control streams from node ", node);
             await node.fetchControlStreams(nodeLaneMap);
 
 
             for (const [key, mapEntry] of nodeLaneMap.entries()) {
-                console.log(`[BEFORE] addDefaultConSysApis for ${key}`, mapEntry);
                 try {
                     mapEntry.addDefaultConSysApis();
                 } catch (e) {
                     console.error(`[ERROR] addDefaultConSysApis failed for ${key}:`, e);
                 }
-                console.log(`[AFTER] addDefaultConSysApis for ${key}`, mapEntry.datasourcesRealtime, mapEntry.datasourcesBatch);
             }
 
 
-            console.log("nodelanemap", nodeLaneMap)
-
-            nodeLaneMap.forEach((value, key) =>{
+            nodeLaneMap.forEach((value: LaneMapEntry, key: string) =>{
                 allLanes.set(key,value);
             })
         }));
 
 
-        console.log("all Lanes", allLanes)
         // fetch adjudication systems
         let adjMap: Map<string, string> = new Map();
-        for(let node of nodes){
-            console.log("[ADJ] Fetching adjudication systems for node: ", node, allLanes);
-            adjMap = await node.fetchOrCreateAdjudicationSystems(allLanes);
+        for(let node of newNodes){
+           adjMap = await node.fetchOrCreateAdjudicationSystems(allLanes);
+
         }
-        console.log("[ADJ] Adjudication Systems Map:", adjMap);
 
         // dispatch(setDatastreams(allDatastreams));
         dispatch(setLaneMap(allLanes));
         laneMapRef.current = allLanes;
-        console.log("LaneMapRef for Table:", laneMapRef);
 
-    }, [nodes]);
+    }
 
-    useEffect(() => {
-        if (laneMap.size > 0) {
-            console.log("LaneMap After Update:", laneMap);
-            if (laneMap.has("lane1")) {
-                let ds: LaneMapEntry = laneMap.get("lane1")
-                console.log("LaneMap test for prop datastream:", ds.hasOwnProperty("datastreams"));
-                console.log("LaneMap test systems:", ds.systems);
-                console.log("LaneMap test DS:", ds.datastreams[0]);
-                let test = ds.datastreams[0].stream();
-                console.log("LaneMap test DS stream:", test);
-            }
-        }
-    }, [laneMap]);
 
     useEffect(() => {
-        testSysFetch().then(r => console.log("All Systems fetched. "));
-
-        setLastSystemFetch(Date.now());
-
-    }, [nodes]);
+        testSysFetch();
+    }, [nodes.length]);
 
     useEffect(() => {
         InitializeApplication();
-    }, [InitializeApplication]);
-
+    }, [nodes.length]);
 
 
     return (
@@ -168,4 +188,25 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             </DataSourceContext.Provider>
         </>
     );
+};
+
+export const initializeDefaultNode = () => (dispatch: AppDispatch) => {
+    const hostName = window.location.hostname;
+
+    const initialNodeOpts: NodeOptions = {
+        name: "Local Node",
+        address: hostName,
+        port: 8282,
+        oshPathRoot: "/sensorhub",
+        sosEndpoint: "/sos",
+        csAPIEndpoint: "/api",
+        configsEndpoint: "/configs",
+        auth: { username: "admin", password: "oscar" },
+        isSecure: false,
+        isDefaultNode: true
+    };
+
+    const defaultNode = new Node(initialNodeOpts);
+    dispatch(addNode(defaultNode));
+    dispatch(changeConfigNode(defaultNode));
 };

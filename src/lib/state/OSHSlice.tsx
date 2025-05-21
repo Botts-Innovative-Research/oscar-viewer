@@ -2,6 +2,8 @@
  * Copyright (c) 2024.  Botts Innovative Research, Inc.
  * All Rights Reserved
  */
+'use client';
+
 
 import {createSlice, PayloadAction} from "@reduxjs/toolkit";
 import {enableMapSet} from "immer";
@@ -11,6 +13,7 @@ import {RootState} from "../Store";
 import {INode} from "@/app/data/osh/Node";
 import {Node, NodeOptions} from "@/lib/data/osh/Node";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
+import {useEffect} from "react";
 
 
 enableMapSet();
@@ -21,25 +24,13 @@ export interface IOSHSlice {
     datastreams: typeof DataStream[]
 }
 
-const initialNodeOpts: NodeOptions = {
-    name: "Local Node",
-    address: "127.0.0.1",
-    port: 8282,
-    oshPathRoot: "/sensorhub",
-    sosEndpoint: "/sos",
-    csAPIEndpoint: "/api",
-    csAPIConfigEndpoint: "/configs",
-    auth: {username: "admin", password: "oscar"},
-    isSecure: false,
-    isDefaultNode: true
-}
-
 
 const initialState: IOSHSlice = {
-    nodes: [new Node(initialNodeOpts)],
+    nodes: [],
     configNode: null,
     datastreams: []
 }
+
 
 export const Slice = createSlice({
     name: 'OSHSlice',
@@ -48,6 +39,7 @@ export const Slice = createSlice({
         addNode: (state, action: PayloadAction<INode>) => {
             const nodeIndex = state.nodes.findIndex((node: INode) => node.name === action.payload.name);
             console.log("Adding node: ", nodeIndex);
+
             if (nodeIndex === -1) {
                 state.nodes.push(action.payload);
             } else {
@@ -55,6 +47,7 @@ export const Slice = createSlice({
             }
         },
         setNodes: (state, action: PayloadAction<INode[]>) => {
+
             state.nodes = action.payload
         },
         setDatastreams: (state, action: PayloadAction<typeof DataStream[]>) => {
@@ -66,6 +59,11 @@ export const Slice = createSlice({
         },
         removeNode: (state, action: PayloadAction<string>) => {
             const rmvNode = state.nodes.find((node: INode) => node.id === action.payload);
+
+            if(!rmvNode){
+                console.error("Cannot find node to remove");
+                return;
+            }
             if (rmvNode.isDefaultNode) {
                 console.error("Cannot remove the default node");
                 return;
@@ -90,7 +88,7 @@ export const {
 } = Slice.actions;
 
 export const selectNodes = (state: RootState) => state.oshSlice.nodes;
-export const selectDatastreams = (state: RootState) => state.oshSlice.dataStreams;
+export const selectDataStreams = (state: RootState) => state.oshSlice.dataStreams;
 export const selectDefaultNode = (state: RootState) => state.oshSlice.nodes.find((node: INode) => node.isDefaultNode);
 
 export default Slice.reducer;

@@ -3,7 +3,6 @@
  * All Rights Reserved
  */
 
-// import {IDatastream} from "@/lib/data/osh/Datastreams";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
 import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
@@ -129,3 +128,8 @@ export function isThresholdDatastream(datastream: typeof DataStream): boolean {
     return datastream.properties.observedProperties[0].definition.includes(THRESHOLD_DEF);
 }
 
+export function isConfigurationDatastream(datastream: typeof DataStream): boolean {
+    const CONFIG_DEF ="http://www.opengis.net/def/threshold";
+
+    return datastream.properties.observedProperties[0].definition.includes(CONFIG_DEF);
+}
