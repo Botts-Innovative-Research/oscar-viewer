@@ -30,6 +30,8 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
 
     useEffect(() => {
         if(dataSources.length > 0){
+
+
             videoViewRef.current = new VideoView({
                 container: "lane-view-video",
                 showTime: false,
@@ -44,10 +46,18 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
         }
 
         return () => {
+
+            if(dataSources.length > 0 && dataSources)
+                dataSources[selVideoIdx].isConnected().then(dataSources[selVideoIdx].disconnect());
+
             if (videoViewRef.current) {
                 videoViewRef.current.destroy();
                 videoViewRef.current = undefined;
             }
+
+
+
+            console.log("cleaning up lane view resources!")
         }
 
     }, [dataSources, selVideoIdx]);
@@ -70,6 +80,15 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
 
         tryConnection().then(r => console.log("Connecting....."));
 
+        return () =>{
+            if(dataSources && dataSources.length > 0){
+                const currentVideo = dataSources[selVideoIdx];
+                if(currentVideo.isConnected()){
+                    currentVideo.disconnect().then(console.log("disconnected from video.. cleanup"));
+                }
+            }
+
+        }
     }, [dataSources, selVideoIdx]);
 
     const handleNextPage = () =>{

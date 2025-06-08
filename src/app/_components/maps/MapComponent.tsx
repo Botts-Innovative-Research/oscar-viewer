@@ -192,6 +192,14 @@ export default function MapComponent() {
             });
         }
 
+        return()=>{
+            if(locationList && locationList.length > 0){
+                locationList.forEach((location) => {
+                    location.locationSources.map((src: any) => src.disconnect());
+                });
+
+            }
+        }
     }, [locationList, isInit]);
 
     const updateLocationList = (laneName: string, newStatus: string) => {

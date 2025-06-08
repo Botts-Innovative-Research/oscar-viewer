@@ -14,19 +14,40 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
         console.log("lane view chart ready: ", datasources)
         if(chartReady){
             if(datasources.neutron){
+                if(datasources?.neutron.isConnected()){
+                    datasources?.neutron.disconnect();
+                }
                 datasources?.neutron.connect()
             }
 
             if(datasources.gamma){
+                if(datasources?.gamma.isConnected()){
+                    datasources?.gamma.disconnect();
+                }
                 datasources?.gamma.connect()
             }
             if(datasources.threshold){
+                if(datasources?.threshold.isConnected()){
+                    datasources?.threshold.disconnect();
+                }
                 datasources?.threshold.connect()
             }
         }else{
             console.log("Lane View: Charts not ready.")
         }
 
+
+        return () =>{
+            if(datasources.neutron){
+                datasources?.neutron.disconnect();
+            }
+            if(datasources.gamma){
+                datasources?.gamma.disconnect();
+            }
+            if(datasources.threshold){
+                datasources?.threshold.disconnect();
+            }
+        }
     }, [datasources, chartReady]);
 
     return (

@@ -76,11 +76,26 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
         if (chartReady) {
             console.log("Chart Ready, Starting DataSync");
 
-            if(datasources.gamma) datasources?.gamma.connect()
+            if(datasources.gamma) {
+                if(datasources?.gamma.isConnected())
+                    datasources?.gamma.disconnect();
 
-            if(datasources.neutron) datasources?.neutron.connect()
+                datasources?.gamma.connect()
+            }
 
-            if(datasources.threshold) datasources?.threshold.connect()
+            if(datasources.neutron) {
+                if(datasources?.neutron.isConnected())
+                    datasources?.neutron.disconnect();
+
+                datasources?.neutron.connect()
+            }
+
+            if(datasources.threshold){
+                if(datasources?.threshold.isConnected())
+                    datasources?.threshold.disconnect();
+
+                datasources?.threshold.connect()
+            }
 
             if(videoReady){
                 masterTimeController.current?.connect().then(() => {
@@ -101,6 +116,15 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
 
         } else {
             console.log("Chart Not Ready, cannot start DataSynchronizer...");
+        }
+
+
+        return()=>{
+            if(datasources.gamma) datasources?.gamma.disconnect()
+
+            if(datasources.neutron) datasources?.neutron.disconnect()
+
+            if(datasources.threshold) datasources?.threshold.disconnect()
         }
     }, [chartReady, masterTimeController, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady, datasources]);
 

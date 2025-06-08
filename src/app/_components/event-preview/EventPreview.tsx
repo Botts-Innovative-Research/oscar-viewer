@@ -335,6 +335,10 @@ export function EventPreview() {
 
     useEffect(() => {
         createDataSync();
+
+        return() =>{
+            cleanupResources();
+        }
     }, [videoDatasources, syncRef, dataSyncCreated, datasourcesReady]);
 
 
@@ -343,19 +347,25 @@ export function EventPreview() {
         if (chartReady) {
             console.log("Chart Ready, Starting DataSync");
             gammaDatasources.forEach(ds => {
+                if(ds.isConnected()) ds.disconnect().then(r => console.log("disconnecting"));
                 ds.connect();
             });
             neutronDatasources.forEach(ds => {
+                if(ds.isConnected()) ds.disconnect().then(r => console.log("disconnecting"));
                 ds.connect();
             });
             thresholdDatasources.forEach(ds => {
+                if(ds.isConnected()) ds.disconnect().then(r => console.log("disconnecting"));
                 ds.connect();
             });
             occDatasources.forEach(ds => {
+                if(ds.isConnected()) ds.disconnect().then(r => console.log("disconnecting"));
                 ds.connect();
             });
 
             if(videoReady){
+                if(syncRef.current.isConnected())
+                    syncRef.current.disconnect();
 
                 syncRef.current.connect().then(() => {
                     console.log("DataSync Should Be Connected", syncRef.current);
