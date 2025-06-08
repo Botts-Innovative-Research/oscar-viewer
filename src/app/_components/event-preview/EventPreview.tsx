@@ -17,7 +17,7 @@ import {
 } from "@mui/material";
 import OpenInFullRoundedIcon from "@mui/icons-material/OpenInFullRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
+import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
 import {
@@ -48,7 +48,7 @@ import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {setSelectedEvent, updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 import {EventType} from "osh-js/source/core/event/EventType";
-import TimeController, {formatTime} from "@/app/_components/TimeController";
+import TimeController from "@/app/_components/TimeController";
 import { setEventData } from "@/lib/state/EventDetailsSlice";
 import {RootState} from "@/lib/state/Store";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -81,12 +81,11 @@ export function EventPreview() {
     // Chart Specifics
     const [gammaDatasources, setGammaDS] = useState<typeof ConSysApi[]>([]);
     const [neutronDatasources, setNeutronDS] = useState<typeof ConSysApi[]>([]);
-    const [occDatasources, setOccDS] = useState<typeof ConSysApi[]>([]);
+    const [occDataSources, setOccDataSources] = useState<typeof ConSysApi[]>([]);
     const [thresholdDatasources, setThresholdDS] = useState<typeof ConSysApi[]>([]);
     const [chartReady, setChartReady] = useState<boolean>(false);
     const [syncTime, setSyncTime] = useState<number>(null);
-    const gammaChartRef = useRef<any>();
-    const neutronChartRef = useRef<any>();
+
 
     const [frameSrc, setFrameSrc]= useState();
     const selectedIndex = useRef<number>(0)
@@ -94,7 +93,6 @@ export function EventPreview() {
     // Video Specifics
     const [videoReady, setVideoReady] = useState<boolean>(false);
     const [videoDatasources, setVideoDatasources] = useState<typeof ConSysApi[]>([]);
-    const [activeVideoIDX, setActiveVideoIDX] = useState<number>(0);
 
     // Adjudication Specifics
     const [adjFormData, setAdjFormData] = useState<IAdjudicationData | null>();
@@ -204,7 +202,7 @@ export function EventPreview() {
         disconnectDSArray(gammaDatasources);
         disconnectDSArray(neutronDatasources);
         disconnectDSArray(thresholdDatasources);
-        disconnectDSArray(occDatasources);
+        disconnectDSArray(occDataSources);
         setAdjFormData(null);
         setAdjudication(null);
         setNotes("");
@@ -243,7 +241,7 @@ export function EventPreview() {
         disconnectDSArray(gammaDatasources);
         disconnectDSArray(neutronDatasources);
         disconnectDSArray(thresholdDatasources);
-        disconnectDSArray(occDatasources);
+        disconnectDSArray(occDataSources);
 
         if (syncRef.current?.isConnected()) {
             syncRef.current.disconnect();
@@ -307,7 +305,7 @@ export function EventPreview() {
         setNeutronDS(updatedNeutron);
         setThresholdDS(updatedThreshold);
         setVideoDatasources(updatedVideo);
-        setOccDS(updatedOcc);
+        setOccDataSources(updatedOcc);
 
         setDatasourcesReady(true);
 
@@ -347,25 +345,25 @@ export function EventPreview() {
         if (chartReady) {
             console.log("Chart Ready, Starting DataSync");
             gammaDatasources.forEach(ds => {
-                if(ds.isConnected()) ds.disconnect().then(r => console.log("disconnecting"));
+                if(ds.isConnected()) ds.disconnect().then((r: any) => console.log("disconnecting"));
                 ds.connect();
             });
             neutronDatasources.forEach(ds => {
-                if(ds.isConnected()) ds.disconnect().then(r => console.log("disconnecting"));
+                if(ds.isConnected()) ds.disconnect().then((r: any) => console.log("disconnecting"));
                 ds.connect();
             });
             thresholdDatasources.forEach(ds => {
-                if(ds.isConnected()) ds.disconnect().then(r => console.log("disconnecting"));
+                if(ds.isConnected()) ds.disconnect().then((r: any) => console.log("disconnecting"));
                 ds.connect();
             });
-            occDatasources.forEach(ds => {
-                if(ds.isConnected()) ds.disconnect().then(r => console.log("disconnecting"));
+            occDataSources.forEach(ds => {
+                if(ds.isConnected()) ds.disconnect().then((r: any) => console.log("disconnecting"));
                 ds.connect();
             });
 
             if(videoReady){
                 if(syncRef.current.isConnected())
-                    syncRef.current.disconnect();
+                    syncRef.current.disconnect().then((r: any) => console.log("disconnecting"));
 
                 syncRef.current.connect().then(() => {
                     console.log("DataSync Should Be Connected", syncRef.current);
