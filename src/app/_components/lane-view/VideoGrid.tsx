@@ -97,7 +97,6 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
         if(prevPage >= 0){
             const isConnected = await dataSources[prevPage].isConnected();
             if(isConnected){
-                console.log('disconnecting', dataSources[prevPage].name)
                 await dataSources[prevPage].disconnect();
             }
         }

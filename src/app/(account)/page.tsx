@@ -23,7 +23,6 @@ export default function AccountViewPage() {
     const onClickLogin = () => {
         setOpenSnack(true)
         dispatch(setCurrentUser(appUserName));
-        console.log("User updated:", appUserName);
         router.push('/dashboard');
     }
 

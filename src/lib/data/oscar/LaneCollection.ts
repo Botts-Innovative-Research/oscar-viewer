@@ -116,7 +116,14 @@ export class LaneMapEntry {
             connectorOpts: {
                 username: this.parentNode.auth.username,
                 password: this.parentNode.auth.password
-            }
+            },
+            mqttOpts:{
+                endpointUrl: `${url}`,
+                prefix: this.parentNode.csAPIEndpoint,
+                username: this.parentNode.auth.username,
+                password: this.parentNode.auth.password
+            },
+
         });
         let datastream = await dsApi.getDataStreamById(dsId);
         console.log("[ADJ-log] Adjudication Datastream: ", datastream);

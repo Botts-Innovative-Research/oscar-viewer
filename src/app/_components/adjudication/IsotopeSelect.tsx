@@ -67,7 +67,6 @@ export default function IsotopeSelect(props: {
       }else{
           props.onSelect(isoValue);
       }
-      console.log("[ISO] Isotope Selected: ", value);
       // setIsotope(isoValue); // Set local isotope
 
   };

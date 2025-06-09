@@ -70,7 +70,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     /**handle the file uploaded**/
     const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files === null) {
-            console.log('file is null')
+
             return;
         }
         const files = Array.from(e.target.files);
@@ -124,7 +124,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     }
 
     function resetForm() {
-        console.log("[ADJ-D] Resetting Form");
         setVehicleId('')
         setAdjData(adjudication);
         setUploadedFiles([]);
@@ -148,10 +147,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         let tempAdjData: AdjudicationData = adjData;
 
         tempAdjData.setTime(phenomenonTime);
-        console.log("tempAdjData", tempAdjData)
 
         let observation = tempAdjData.createAdjudicationObservation();
-        console.log("[ADJ] Sending Adjudication Data: ", observation);
 
         // send to server
         const currentLane = props.event.laneId;
@@ -177,7 +174,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 setColorStatus('error')
             }
 
-            console.log("[ADJ] Response: ", resp);
 
             let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == props.event.dataStreamId);
             let occupancyObservation = await fetchOccupancyObservation(ds, props.event.startTime, props.event.endTime)

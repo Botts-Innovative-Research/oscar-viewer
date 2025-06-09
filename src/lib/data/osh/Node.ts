@@ -221,7 +221,6 @@ export class Node implements INode {
 
         // check if node is reachable first
         // let isReachable = OSHSliceWriterReader.checkForEndpoint(this);
-        console.log("node: ", this);
         const isReachable = await this.checkForEndpoint();
 
         if (!isReachable) {
@@ -238,8 +237,6 @@ export class Node implements INode {
         // filter into lanes
         for (let system of systems) {
             if (system.properties.properties?.uid.includes(SYSTEM_UID_PREFIX) && !system.properties.properties?.uid.includes("adjudication")) {
-                // console.log("TK Found lane system:", system);
-                // let laneName = system.properties.properties.uid.split(":").pop();
                 let laneName = system.properties.properties.name;
 
                 if (laneMap.has(laneName)) {
@@ -249,7 +246,6 @@ export class Node implements INode {
                     let tLaneEntry = new LaneMapEntry(this);
                     tLaneEntry.setLaneName(laneName);
                     laneMap.set(laneName, tLaneEntry);
-                    // console.log("TK LaneMap:", laneMap, laneName);
                     let entry = laneMap.get(laneName);
                     entry.addSystem(system);
                     entry.setLaneSystem(system);

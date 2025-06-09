@@ -145,7 +145,6 @@ export default function MapComponent() {
 
                 autoZoomOnFirstMarker: true
             });
-            console.log('new view created')
             leafletViewRef.current = view;
             setIsInt(true);
         }
