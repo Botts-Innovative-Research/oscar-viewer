@@ -32,7 +32,7 @@ export default function LaneStatus(props: LaneStatusProps) {
     const neutronDs = props.dataSourcesByLane.getDSArray("neutronRT")[0]
     const tamperDs = props.dataSourcesByLane.getDSArray("tamperRT")[0];
 
-
+    console.log("tamper gamma neutron: ", tamperDs,gammaDs, neutronDs)
     gammaDs.subscribe((message: any) => {
       const state = message.values[0].data.alarmState;
       updateStatus(currentLane, state);
