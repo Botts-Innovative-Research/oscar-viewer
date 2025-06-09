@@ -150,10 +150,9 @@ export class LaneMapEntry {
             let mqttOptUrlArray = (dsObj.networkProperties.endpointUrl).split("/");
 
             let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
-            console.log("mqttOptUrl", mqttOptUrl)
             try {
                 const dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
-                    protocol: dsObj.networkProperties.mqtt,
+                    protocol: "mqtt",
                     mqttOpts:{
                         prefix: this.parentNode.csAPIEndpoint,
                         endpointUrl: mqttOptUrl,
@@ -169,7 +168,7 @@ export class LaneMapEntry {
                 });
 
                 const dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
-                    protocol: dsObj.networkProperties.mqtt,
+                    protocol: "mqtt",
                     mqttOpts:{
                         prefix: this.parentNode.csAPIEndpoint,
                         endpointUrl: mqttOptUrl,
@@ -201,7 +200,7 @@ export class LaneMapEntry {
         let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
 
         return new ConSysApi(`rtds-${datastream.properties.id}`, {
-            protocol: datastream.networkProperties.mqtt,
+            protocol: "mqtt",
             mqttOpts:{
                 prefix: this.parentNode.csAPIEndpoint,
                 endpointUrl: mqttOptUrl,
@@ -223,7 +222,7 @@ export class LaneMapEntry {
         let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
 
         return new ConSysApi(`batchds-${datastream.properties.id}`, {
-            protocol: datastream.networkProperties.mqtt,
+            protocol: "mqtt",
             mqttOpts:{
                 prefix: this.parentNode.csAPIEndpoint,
                 endpointUrl: mqttOptUrl,
