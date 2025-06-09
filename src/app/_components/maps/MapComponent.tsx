@@ -121,7 +121,7 @@ export default function MapComponent() {
                 }
             });
 
-            laneDSColl.connectAllDS();
+            laneDSColl.connectAllDS().then(r => console.log("connecting all map icon ds"));
         }
     }, [dataSourcesByLane]);
 

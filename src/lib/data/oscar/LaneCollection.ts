@@ -562,72 +562,63 @@ export class LaneDSColl {
         }
     }
 
-    connectAllDS() {
+    async connectAllDS() {
         for (let ds of this.occRT) {
-            if(ds.isConnected()) ds.disconnect();
-            ds.connect();
+            await checkConnection(ds)
         }
         for (let ds of this.occBatch) {
-            if(ds.isConnected()) ds.disconnect();
-            ds.connect();
+            await checkConnection(ds)
         }
         for (let ds of this.gammaRT) {
-            if(ds.isConnected()) ds.disconnect();
-            ds.connect();
+            await checkConnection(ds)
         }
         for (let ds of this.gammaBatch) {
-            if(ds.isConnected()) ds.disconnect();
-            ds.connect();
+            await checkConnection(ds)
         }
         for (let ds of this.neutronRT) {
-            if(ds.isConnected()) ds.disconnect();
-            ds.connect();
+            await checkConnection(ds)
         }
         for (let ds of this.neutronBatch) {
-            if(ds.isConnected()) ds.disconnect();
-            ds.connect();
+            await checkConnection(ds)
         }
         for (let ds of this.tamperRT) {
-            if(ds.isConnected()) ds.disconnect();
-            ds.connect();
+            await checkConnection(ds)
         }
         for (let ds of this.tamperBatch) {
-            if(ds.isConnected()) ds.disconnect();
-            ds.connect();
+            await checkConnection(ds)
         }
         for (let ds of this.locRT) {
-            if(ds.isConnected()) ds.disconnect();
-            ds.connect();
+            await checkConnection(ds)
         }
         for (let ds of this.locBatch) {
-            if(ds.isConnected()) ds.disconnect();
-            ds.connect();
+            await checkConnection(ds)
         }
         for (let ds of this.gammaTrshldBatch) {
-            if(ds.isConnected()) ds.disconnect();
-            ds.connect();
+            await checkConnection(ds)
         }
         for (let ds of this.gammaTrshldRT) {
-            if(ds.isConnected()) ds.disconnect();
-            ds.connect();
+            await checkConnection(ds)
         }
         for (let ds of this.connectionRT) {
-            if(ds.isConnected()) ds.disconnect();
-            ds.connect();
+            await checkConnection(ds)
         }
         for (let ds of this.connectionBatch) {
-            if(ds.isConnected()) ds.disconnect();
-            ds.connect();
+            await checkConnection(ds)
         }
         for (let ds of this.videoRT) {
-            if(ds.isConnected()) ds.disconnect();
-            ds.connect();
+            await checkConnection(ds)
         }
         for (let ds of this.videoBatch) {
-            if(ds.isConnected()) ds.disconnect();
-            ds.connect();
+            await checkConnection(ds)
         }
         // console.info("Connecting all datasources of:", this);
     }
+
+
 }
 
+async function checkConnection(ds: typeof DataStream){
+    const isConnected = await ds.isConnected();
+    if(isConnected) await ds.disconnect();
+    await ds.connect();
+}

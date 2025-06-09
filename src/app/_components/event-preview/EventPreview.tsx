@@ -336,26 +336,21 @@ export function EventPreview() {
     useEffect( () => {
         if (chartReady) {
             console.log("Chart Ready, Starting DataSync");
-            gammaDatasources.forEach(ds => {
-                if(ds.isConnected()) ds.disconnect();
-                ds.connect();
+            gammaDatasources.forEach(async ds => {
+                await checkConnection(ds)
             });
-            neutronDatasources.forEach(ds => {
-                if(ds.isConnected()) ds.disconnect();
-                ds.connect();
+            neutronDatasources.forEach(async ds => {
+                await checkConnection(ds)
             });
-            thresholdDatasources.forEach(ds => {
-                if(ds.isConnected()) ds.disconnect();
-                ds.connect();
+            thresholdDatasources.forEach(async ds => {
+                await checkConnection(ds)
             });
-            occDataSources.forEach(ds => {
-                if(ds.isConnected()) ds.disconnect();
-                ds.connect();
+            occDataSources.forEach(async ds => {
+                await checkConnection(ds)
             });
 
             if(videoReady){
-                if(syncRef.current.isConnected())
-                    syncRef.current.disconnect();
+                syncRef.current.isConnected().then(syncRef.current.disconnect());
 
                 syncRef.current.connect().then(() => {
                     console.log("DataSync Should Be Connected", syncRef.current);
@@ -379,6 +374,12 @@ export function EventPreview() {
         }
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
 
+    async function checkConnection(ds: typeof DataStreams){
+        const isConnected = await ds.isConnected();
+        if(isConnected) await ds.disconnect();
+
+        await ds.connect();
+    }
     useEffect(() => {
         if(syncRef.current){
             syncRef.current.subscribe((message: { type: any; timestamp: any }) => {

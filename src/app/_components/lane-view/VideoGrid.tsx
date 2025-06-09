@@ -74,14 +74,13 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
             }
         }
 
-        tryConnection().then(r => console.log("Connecting....."));
+        tryConnection().then(r => console.log("Connecting to video...."));
 
         return () =>{
             if(dataSources && dataSources.length > 0){
                 const currentVideo = dataSources[selVideoIdx];
-                if(currentVideo.isConnected()){
-                    currentVideo.disconnect();
-                }
+                currentVideo.isConnected().then(currentVideo.disconnect());
+
             }
 
         }

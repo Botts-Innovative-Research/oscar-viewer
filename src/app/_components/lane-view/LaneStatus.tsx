@@ -47,7 +47,7 @@ export default function LaneStatus(props: LaneStatusProps) {
       }
     }, [EventType.DATA]);
 
-    props.dataSourcesByLane.connectAllDS();
+    props.dataSourcesByLane.connectAllDS().then();
 
   }, [props.dataSourcesByLane]);
 
