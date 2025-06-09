@@ -20,18 +20,14 @@ import {Box} from "@mui/material";
 import CustomToolbar from "@/app/_components/CustomToolbar";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {RootState} from "@/lib/state/Store";
-import {selectLaneViewLog} from "@/lib/state/EventDataSlice";
 import {selectEndDate, selectStartDate} from "@/lib/state/NationalViewSlice";
 
 
 export default function StatTable(){
 
-    const dispatch = useAppDispatch();
+
     const savedStartDate = useSelector((state: RootState) => selectStartDate(state))
     const savedEndDate = useSelector((state: RootState) => selectEndDate(state))
-
-    const [filteredTableData, setFilteredTableData] = useState<AlarmTableData[]>([]);
-
 
     const [startTime, setStartTime] = useState(savedStartDate);
     const [endTime, setEndTime] = useState(savedEndDate);
@@ -104,7 +100,6 @@ export default function StatTable(){
             for (let ds of lane.datastreams) {
                 let idx: number = lane.datastreams.indexOf(ds);
 
-                console.log("national ds", ds)
                 if(isNeutronDatastream(ds)){
                     await fetchObservations(lane.parentNode.name, ds, startTime, endTime);
                 }
@@ -136,7 +131,6 @@ export default function StatTable(){
 
         let initialRes = await ds.searchObservations(new ObservationFilter({ resultTime: `${timeStart}/${timeEnd}` }), 25000);
 
-        console.log("initial res ntl", initialRes)
         while (initialRes.hasNext()) {
             let obsRes = await initialRes.nextPage();
 
@@ -194,7 +188,6 @@ export default function StatTable(){
 
 
 
-    // -------------------------------------
 
     const columns: GridColDef<INationalTableData>[] = [
         {

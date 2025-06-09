@@ -20,7 +20,6 @@ export default function MiscTable({currentTime}: {currentTime: string}) {
 
   const [speedVal, setSpeedval] = useState<string>(savedSpeed); //maybe put savedSpeed here instead
 
-  // console.log("currentTime", currentTime)
   const checkForSpeed = useCallback(async () => {
     if (eventData) {
       let lme = laneMapRef.current.get(eventData.laneId);

@@ -4,7 +4,7 @@ import React, {createContext, MutableRefObject, ReactNode, useCallback, useEffec
 import {useSelector} from "react-redux";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {addNode, changeConfigNode, setNodes} from "@/lib/state/OSHSlice";
-import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
+import {setLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {AppDispatch, RootState} from "@/lib/state/Store";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
@@ -88,7 +88,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             console.error("No config node found in state. Cannot initialize application.");
         }
         else{
-            console.log("Config Node found: Loading state...")
+            console.info("Config Node found: Loading state...")
             await handleLoadState();
         }
     }, [nodes.length]);

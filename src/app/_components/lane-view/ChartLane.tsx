@@ -38,14 +38,12 @@ export default function ChartLane(props: ChartInterceptProps){
         if(props.datasources.gamma){
             let gCurve = createGammaViewCurve(props.datasources.gamma);
             setGammaCurve(gCurve);
-            console.log('new gamma curve layer created')
         }
 
 
         if(props.datasources.neutron){
             let nCurve = createNeutronViewCurve(props.datasources.neutron);
             setNeutronCurve(nCurve);
-            console.log('new neutorn curve layer created')
         }
 
     },[props.datasources]);
@@ -54,7 +52,6 @@ export default function ChartLane(props: ChartInterceptProps){
     const checkForMountableAndCreateCharts = useCallback(() => {
 
         if (!gammaChartViewRef.current && !isReadyToRender && gammaCurve) {
-            console.log("Creating Gamma Chart with layers:", { gammaCurve});
 
             const container = document.getElementById(gammaChartID);
 
@@ -113,7 +110,6 @@ export default function ChartLane(props: ChartInterceptProps){
         }
 
         if (!neutronChartViewRef.current && !isReadyToRender && neutronCurve) {
-            console.log("Creating Neutron Chart:", neutronCurve);
 
             const containerN = document.getElementById(neutronChartID);
             if (containerN) {
@@ -204,7 +200,6 @@ export default function ChartLane(props: ChartInterceptProps){
 
 
     const checkForProvidedDataSources = useCallback(() => {
-        console.log("[CI] Checking for provided data sources...");
         if (!props.datasources) {
             console.warn("No DataSources provided for ChartTimeHighlight");
             return false;

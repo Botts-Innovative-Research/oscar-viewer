@@ -93,7 +93,6 @@ export default function DashboardPage() {
 
             const newMap = new Map(laneDSMap)
 
-            console.log("new status list", newStatusList)
             setDataSourcesByLane(newMap);
             dispatch(setLaneMap(laneMap))
         }

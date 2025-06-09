@@ -369,7 +369,6 @@ export default function EventTable({
         const selectedId = params.row.id;
 
         if (selectedRowId === selectedId) {
-            console.log("CLEARING SELECTION")
             setSelectionModel([]);
 
             dispatch(setLatestGB(null));

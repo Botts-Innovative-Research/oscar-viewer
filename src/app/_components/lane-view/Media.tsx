@@ -11,7 +11,6 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
 
 
     useEffect(() => {
-        console.log("lane view chart ready: ", datasources)
         if(chartReady){
             if(datasources.neutron){
                 if(datasources?.neutron.isConnected()){
@@ -33,7 +32,7 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
                 datasources?.threshold.connect()
             }
         }else{
-            console.log("Lane View: Charts not ready.")
+            console.info("Lane View: Charts not ready.")
         }
 
 

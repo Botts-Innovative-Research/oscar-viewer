@@ -63,7 +63,6 @@ export default function LaneViewPage() {
         const lane = laneMapRef.current.get(currentLane);
 
         if (!lane) {
-            console.warn("Lane not found for currentLane:", currentLane);
             return;
         }
 
@@ -71,9 +70,6 @@ export default function LaneViewPage() {
             const ds = lane.datastreams[i]
             let rtDS = lane.datasourcesRealtime[i];
 
-            console.log("Lane object", lane);
-            console.log("Datastreams", lane.datastreams);
-            console.log("Realtime datasources", lane.datasourcesRealtime);
 
             if (isGammaDatastream(ds)) {
                 laneDsCollection.addDS('gammaRT', rtDS);
@@ -108,14 +104,13 @@ export default function LaneViewPage() {
 
         setVideoDS(updatedVideo);
 
-        console.log("laneDsCOllection", laneDsCollection)
         setDataSourcesByLane(laneDsCollection);
 
     }, [laneMapRef, laneMapRef.current.size]);
 
     useEffect(() => {
         if(laneMapRef?.current && currentLane){
-            collectDataSources().then(r => console.log("lane view collected datasources"));
+            collectDataSources();
         }
     }, [laneMapRef, currentLane, laneMapRef.current.size]);
 

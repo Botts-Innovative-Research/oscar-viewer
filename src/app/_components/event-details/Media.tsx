@@ -24,7 +24,6 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
     const [currentTime, setCurrentTime] = useState<string>("");
     const [dataSyncCreated, setDataSyncCreated] = useState<boolean>(false);
     const [dataSyncReady, setDataSyncReady] = useState<boolean>(false);
-
     const [datasourcesReady, setDatasourcesReady] = useState<boolean>(false);
 
     // Video
@@ -33,13 +32,10 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
 
     //chart
     const [chartReady, setChartReady] = useState<boolean>(false);
-
     const [syncTime, setSyncTime]= useState(0);
 
     let latestGB = useSelector((state: RootState) => selectLatestGB(state));
-
     const [frameSrc, setFrameSrc]= useState();
-
     const selectedIndex = useRef<number>(0)
 
 
@@ -171,7 +167,6 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
     const pause = async () => {
         if (masterTimeController.current && await masterTimeController.current.isConnected()) {
 
-
             console.log("Playback paused.");
 
             await masterTimeController.current.disconnect();
@@ -218,15 +213,11 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
     async function fetchPausedFrame(startTime: any, endTime: string, datastreams: typeof DataStreams){
 
         let dsId = masterTimeController.current.dataSynchronizer.dataSources[selectedIndex.current].name.split("-")[1]
-        console.log("sync ds id", dsId);
-
 
         let currentVideoDs = datastreams.filter((ds: any) => ds.properties.id === dsId);
         let obs = await currentVideoDs[0].searchObservations(new ObservationFilter({ format: 'application/swe+binary', resultTime: `${new Date(startTime).toISOString()}/${endTime}`}),1);
 
         const obsPage = await obs.nextPage();
-
-        console.log("obsPage", obsPage)
 
         const imageData = obsPage[0].img.data
 

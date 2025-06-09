@@ -55,9 +55,6 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
                 videoViewRef.current = undefined;
             }
 
-
-
-            console.log("cleaning up lane view resources!")
         }
 
     }, [dataSources, selVideoIdx]);
@@ -84,7 +81,7 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
             if(dataSources && dataSources.length > 0){
                 const currentVideo = dataSources[selVideoIdx];
                 if(currentVideo.isConnected()){
-                    currentVideo.disconnect().then(console.log("disconnected from video.. cleanup"));
+                    currentVideo.disconnect();
                 }
             }
 
@@ -116,7 +113,6 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
         if(prevPage >= 0){
             const isConnected = await dataSources[prevPage].isConnected();
             if(isConnected){
-                console.log('disconnecting', dataSources[prevPage].name)
                 await dataSources[prevPage].disconnect();
             }
         }

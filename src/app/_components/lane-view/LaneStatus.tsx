@@ -21,10 +21,7 @@ export default function LaneStatus(props: LaneStatusProps) {
   const dispatch = useAppDispatch();
   const idVal = useRef(1);
   const [laneStatus, setLaneStatus] = useState<LaneStatusType>();
-
-
   const currentLane = useSelector((state: RootState) => state.laneView.currentLane);
-
 
   const addSubscriptionCallbacks = useCallback(() => {
 
@@ -61,7 +58,6 @@ export default function LaneStatus(props: LaneStatusProps) {
 
     // Just use gamma datasource bc all lanes should have it, and gamma "Background" state is the most common
     const gammaDatasource = currentLaneDatasources.gammaRT[0];
-    console.info("sample ds", gammaDatasource);
     const gammaDataStreamId = gammaDatasource.properties.resource.split('/')[2];
     const dsAPI = new DataStreams({
       endpointUrl: `${gammaDatasource.properties.endpointUrl}`,
@@ -94,7 +90,6 @@ export default function LaneStatus(props: LaneStatusProps) {
       name: laneName,
       status: newState
     }
-    // console.log("new status", newStatus)
     // set timer between each set status to just prevent flickering of status
     setTimeout(() => {
       setLaneStatus(newStatus);
