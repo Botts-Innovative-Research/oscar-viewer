@@ -121,6 +121,10 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
             if(datasources.neutron) datasources?.neutron.disconnect()
 
             if(datasources.threshold) datasources?.threshold.disconnect()
+
+            if(masterTimeController.current.isConnected()){
+                masterTimeController.current.disconnect();
+            }
         }
     }, [chartReady, masterTimeController, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady, datasources]);
 
@@ -139,7 +143,7 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
 
     // function to start the time controller by connecting to time sync
     const play = async () => {
-        if (masterTimeController.current ) {
+        if (masterTimeController.current) {
 
             var img = document.getElementsByClassName("video-mjpeg");
 

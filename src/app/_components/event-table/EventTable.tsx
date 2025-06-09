@@ -98,11 +98,12 @@ export default function EventTable({
         let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty("http://www.opengis.net/def/pillar-occupancy-count");
 
         const observationFilter = new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`});
+
         occDS[0].streamObservations(observationFilter, (observation: any) => {
             let resultEvent = eventFromObservation(observation[0], laneEntry);
             dispatch(addEventToLog(resultEvent));
 
-        })
+        });
     }
 
     //Pseudorandom number generator from event data

@@ -59,8 +59,6 @@ export default function AlarmAudio() {
             const audio = getAlarmAudio();
             if(tableData.length > 0 && tableData[tableData.length-1].status != 'None') {
                 audio.play();
-                audio.play();
-
             }
             audio.volume = volumeValue/100;
 
