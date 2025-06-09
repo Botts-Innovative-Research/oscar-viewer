@@ -152,7 +152,7 @@ export class LaneMapEntry {
                     mqttOpts:{
                         endpointUrl: dsObj.networkProperties.endpointUrl,
                     },
-
+                    endpointUrl: dsObj.networkProperties.endpointUrl,
                     resource: `/datastreams/${dsObj.properties.id}/observations`,
                     tls: dsObj.networkProperties.tls,
                     responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
@@ -168,7 +168,7 @@ export class LaneMapEntry {
                     mqttOpts:{
                         endpointUrl: dsObj.networkProperties.endpointUrl,
                     },
-
+                    endpointUrl: dsObj.networkProperties.endpointUrl,
                     resource: `/datastreams/${dsObj.properties.id}/observations`,
                     tls: dsObj.networkProperties.tls,
                     responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
@@ -198,6 +198,7 @@ export class LaneMapEntry {
             mqttOpts:{
                 endpointUrl: datastream.networkProperties.endpointUrl,
             },
+            endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
             responseFormat: isVideoDatastream(datastream) ? 'application/swe+binary' : 'application/swe+json',
@@ -217,6 +218,7 @@ export class LaneMapEntry {
             mqttOpts:{
                 endpointUrl: datastream.networkProperties.endpointUrl,
             },
+            endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
             responseFormat: isVideoDatastream(datastream) ? 'application/swe+binary' : 'application/swe+json',
