@@ -164,7 +164,6 @@ export class LaneMapEntry {
                     tls: dsObj.networkProperties.tls,
                     responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
                     mode: Mode.REAL_TIME,
-
                 });
 
                 const dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
