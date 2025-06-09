@@ -149,7 +149,10 @@ export class LaneMapEntry {
             try {
                 const dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
                     protocol: dsObj.networkProperties.streamProtocol,
-                    endpointUrl: dsObj.networkProperties.endpointUrl,
+                    mqttOpts:{
+                        endpointUrl: dsObj.networkProperties.endpointUrl,
+                    },
+
                     resource: `/datastreams/${dsObj.properties.id}/observations`,
                     tls: dsObj.networkProperties.tls,
                     responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
@@ -162,7 +165,10 @@ export class LaneMapEntry {
 
                 const dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
                     protocol: dsObj.networkProperties.streamProtocol,
-                    endpointUrl: dsObj.networkProperties.endpointUrl,
+                    mqttOpts:{
+                        endpointUrl: dsObj.networkProperties.endpointUrl,
+                    },
+
                     resource: `/datastreams/${dsObj.properties.id}/observations`,
                     tls: dsObj.networkProperties.tls,
                     responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
@@ -189,7 +195,9 @@ export class LaneMapEntry {
     createReplayConSysApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
         return new ConSysApi(`rtds-${datastream.properties.id}`, {
             protocol: datastream.networkProperties.streamProtocol,
-            endpointUrl: datastream.networkProperties.endpointUrl,
+            mqttOpts:{
+                endpointUrl: datastream.networkProperties.endpointUrl,
+            },
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
             responseFormat: isVideoDatastream(datastream) ? 'application/swe+binary' : 'application/swe+json',
@@ -206,7 +214,9 @@ export class LaneMapEntry {
     createBatchConSysApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
         return new ConSysApi(`batchds-${datastream.properties.id}`, {
             protocol: datastream.networkProperties.streamProtocol,
-            endpointUrl: datastream.networkProperties.endpointUrl,
+            mqttOpts:{
+                endpointUrl: datastream.networkProperties.endpointUrl,
+            },
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
             responseFormat: isVideoDatastream(datastream) ? 'application/swe+binary' : 'application/swe+json',
