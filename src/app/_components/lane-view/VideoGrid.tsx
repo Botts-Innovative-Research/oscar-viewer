@@ -71,7 +71,6 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
                     await currentVideo.disconnect()
                 }
                 await currentVideo.connect();
-                console.log('Videostream Connected: ', currentVideo.name)
             }
         }
 

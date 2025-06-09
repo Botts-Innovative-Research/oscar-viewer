@@ -374,7 +374,7 @@ export class Node implements INode {
                 return sys.properties.properties.uid.includes("adjudication")
             });
 
-            console.log("[ADJ-INSERT] systems check", system)
+
             if (system) {
                 // console.log("[ADJ-INSERT] Found adjudication systems for lane: ", laneEntry, system);
                 // check for datastreams
@@ -468,7 +468,7 @@ export class Node implements INode {
 
 
 export async function insertObservation(ep: any, observation: any, ){
-    console.log("inserting observation: ", observation)
+    console.log("Inserting observation: ", observation)
     let resp = await fetch(ep, {
         method: "POST",
         headers: {

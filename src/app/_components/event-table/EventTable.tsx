@@ -212,7 +212,6 @@ export default function EventTable({
 
 
     useEffect(() => {
-        console.log("laneMap changed size", laneMap)
         dataStreamSetup(laneMap);
     }, [laneMap, laneMap.size]);
 
