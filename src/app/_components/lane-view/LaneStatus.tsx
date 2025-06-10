@@ -28,22 +28,22 @@ export default function LaneStatus(props: LaneStatusProps) {
 
   const addSubscriptionCallbacks = useCallback(() => {
 
-    const gammaDs = props.dataSourcesByLane.getDSArray("gammaRT")[0];
-    const neutronDs = props.dataSourcesByLane.getDSArray("neutronRT")[0]
-    const tamperDs = props.dataSourcesByLane.getDSArray("tamperRT")[0];
+    // const gammaDs = props.dataSourcesByLane.getDSArray("gammaRT")[0];
+    // const neutronDs = props.dataSourcesByLane.getDSArray("neutronRT")[0]
+    // const tamperDs = props.dataSourcesByLane.getDSArray("tamperRT")[0];
 
-    props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("gammaRT", (message: any) =>{
+    props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("gammaRT", (message: any) => {
       console.log("gamma message: ", message);
       const state = message.values[0].data.alarmState;
       updateStatus(currentLane, state);
     })
 
-    props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("neutronRT", (message: any) =>{
+    props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("neutronRT", (message: any) => {
       const state = message.values[0].data.alarmState;
       updateStatus(currentLane, state);
     })
 
-    props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("tamperRT", (message: any) =>{
+    props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("tamperRT", (message: any) => {
       const state = message.values[0].data.tamperStatus;
       if(state){
         updateStatus(currentLane, 'Tamper')

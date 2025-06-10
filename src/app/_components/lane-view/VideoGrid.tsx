@@ -68,7 +68,7 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
             }
         }
 
-        tryConnection().then(r => console.log("Connecting....."));
+        tryConnection();
 
     }, [dataSources, selVideoIdx]);
 

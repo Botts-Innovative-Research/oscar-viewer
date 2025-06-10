@@ -388,7 +388,6 @@ export function EventPreview() {
                 ds.isConnected().then(ds.disconnect());
             });
 
-            syncRef.current.isConnected().then(syncRef.current.disconnect())
         }
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
 

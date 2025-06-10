@@ -32,6 +32,7 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
     for (let [laneName, laneDSColl] of props.dataSourcesByLane.entries()) {
 
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('connectionRT', (message: any) => {
+        console.log("message: lane", message)
         const connectedState = message.values[0].data.isConnected;
         updateStatus(laneName, (connectedState ? 'Online': 'Offline'));
       });
