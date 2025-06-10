@@ -146,7 +146,6 @@ export class LaneMapEntry {
                 continue;
             }
 
-
             let mqttOptUrlArray = (dsObj.networkProperties.endpointUrl).split("/");
 
             let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
@@ -580,54 +579,54 @@ export class LaneDSColl {
         }
     }
 
-    connectAllDS() {
+    async connectAllDS() {
         for (let ds of this.occRT) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.occBatch) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.gammaRT) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.gammaBatch) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.neutronRT) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.neutronBatch) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.tamperRT) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.tamperBatch) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.locRT) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.locBatch) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.gammaTrshldBatch) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.gammaTrshldRT) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.connectionRT) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.connectionBatch) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.videoRT) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.videoBatch) {
-            ds.connect();
+            await ds.connect();
         }
         // console.info("Connecting all datasources of:", this);
     }

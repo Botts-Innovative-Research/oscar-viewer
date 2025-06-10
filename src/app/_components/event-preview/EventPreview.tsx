@@ -334,17 +334,21 @@ export function EventPreview() {
     useEffect( () => {
         if (chartReady) {
             console.log("Chart Ready, Starting DataSync");
-            gammaDatasources.forEach(ds => {
-                ds.connect();
+            gammaDatasources.forEach(async ds => {
+                ds.isConnected().then(ds.disconnect());
+                await ds.connect();
             });
-            neutronDatasources.forEach(ds => {
-                ds.connect();
+            neutronDatasources.forEach(async ds => {
+                ds.isConnected().then(ds.disconnect());
+                await ds.connect();
             });
-            thresholdDatasources.forEach(ds => {
-                ds.connect();
+            thresholdDatasources.forEach(async ds => {
+                ds.isConnected().then(ds.disconnect());
+                await ds.connect();
             });
-            occDatasources.forEach(ds => {
-                ds.connect();
+            occDatasources.forEach(async ds => {
+                ds.isConnected().then(ds.disconnect());
+                await ds.connect();
             });
 
             if(videoReady){
@@ -368,6 +372,23 @@ export function EventPreview() {
 
         } else {
             console.log("Chart Not Ready, cannot start DataSynchronizer...");
+        }
+
+        return()=>{
+            gammaDatasources.forEach(ds => {
+                ds.isConnected().then(ds.disconnect());
+            });
+            neutronDatasources.forEach(ds => {
+                ds.isConnected().then(ds.disconnect());
+            });
+            thresholdDatasources.forEach(ds => {
+                ds.isConnected().then(ds.disconnect());
+            });
+            occDatasources.forEach(ds => {
+                ds.isConnected().then(ds.disconnect());
+            });
+
+            syncRef.current.isConnected().then(syncRef.current.disconnect())
         }
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
 

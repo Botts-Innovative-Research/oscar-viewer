@@ -32,28 +32,48 @@ export default function LaneStatus(props: LaneStatusProps) {
     const neutronDs = props.dataSourcesByLane.getDSArray("neutronRT")[0]
     const tamperDs = props.dataSourcesByLane.getDSArray("tamperRT")[0];
 
-    console.log("tamper gamma neutron: ", tamperDs,gammaDs, neutronDs)
-    gammaDs.subscribe((message: any) => {
+    props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("gammaRT", (message: any) =>{
+      console.log("gamma message: ", message);
       const state = message.values[0].data.alarmState;
       updateStatus(currentLane, state);
-    }, [EventType.DATA]);
+    })
 
-    neutronDs.subscribe((message: any) => {
+    props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("neutronRT", (message: any) =>{
       const state = message.values[0].data.alarmState;
       updateStatus(currentLane, state);
-    }, [EventType.DATA]);
+    })
 
-    tamperDs.subscribe((message: any) => {
+    props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("tamperRT", (message: any) =>{
       const state = message.values[0].data.tamperStatus;
       if(state){
         updateStatus(currentLane, 'Tamper')
       }
-    }, [EventType.DATA]);
+    })
 
-    props.dataSourcesByLane.connectAllDS();
+    // gammaDs.subscribe((message: any) => {
+    //   console.log("gamma message: ", message);
+    //   const state = message.values[0].data.alarmState;
+    //   updateStatus(currentLane, state);
+    // }, [EventType.DATA]);
+    //
+    // neutronDs.subscribe((message: any) => {
+    //   const state = message.values[0].data.alarmState;
+    //   updateStatus(currentLane, state);
+    // }, [EventType.DATA]);
+    //
+    // tamperDs.subscribe((message: any) => {
+    //   const state = message.values[0].data.tamperStatus;
+    //   if(state){
+    //     updateStatus(currentLane, 'Tamper')
+    //   }
+    // }, [EventType.DATA]);
+
+
+    props.dataSourcesByLane.connectAllDS().then(console.log("Lane View Statuses Connected"));
 
   }, [props.dataSourcesByLane]);
 
+  function handleAlarms(ds)
 
   async function fetchLatestStatus() {
 
