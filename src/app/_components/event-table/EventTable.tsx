@@ -410,7 +410,7 @@ export default function EventTable({
     }
 
     return (
-        <Box sx={{flex: 1, width: '100%'}}>
+        <Box sx={{flex: 1, width: '100%', height: 800}}>
             <DataGrid
                 rows={filteredTableData}
                 columns={columns}
