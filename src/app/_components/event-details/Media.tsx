@@ -94,7 +94,7 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
                     // if is true then pause else play
                     console.log("DataSync Connected!!!");
                 } else {
-                    console.log("DataSync Not Connected... :(");
+                    console.log("DataSync Not Connected...");
                 }
             }
 

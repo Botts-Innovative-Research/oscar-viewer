@@ -38,14 +38,12 @@ export default function ChartLane(props: ChartInterceptProps){
         if(props.datasources.gamma){
             let gCurve = createGammaViewCurve(props.datasources.gamma);
             setGammaCurve(gCurve);
-            console.log('new gamma curve layer created')
         }
 
 
         if(props.datasources.neutron){
             let nCurve = createNeutronViewCurve(props.datasources.neutron);
             setNeutronCurve(nCurve);
-            console.log('new neutorn curve layer created')
         }
 
     },[props.datasources]);

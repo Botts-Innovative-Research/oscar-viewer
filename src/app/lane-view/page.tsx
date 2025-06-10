@@ -110,7 +110,7 @@ export default function LaneViewPage() {
 
     useEffect(() => {
         if(laneMapRef?.current && currentLane){
-            collectDataSources().then(r => console.log("lane view collected datasources"));
+            collectDataSources().then(r => console.log(""));
         }
     }, [laneMapRef, currentLane, laneMapRef.current.size]);
 

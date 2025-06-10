@@ -21,7 +21,6 @@ export default function AdjudicationSelect(props: {
 
     const handleChangeAdjCode = (event: SelectChangeEvent) => {
         let value: AdjudicationCode = AdjudicationCodes.getCodeObjByLabel(event.target.value);
-        console.log("[ADJ] Adjudication Selected: ", value);
         // setAdjudicated(value); // Set local adjudicated state
         props.onSelect(value); // Return selected value to parent component
 

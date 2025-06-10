@@ -11,7 +11,6 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
 
 
     useEffect(() => {
-        console.log("lane view chart ready: ", datasources)
         if(chartReady){
             if(datasources.neutron){
                 datasources?.neutron.isConnected().then(datasources.neutron.disconnect());

@@ -50,25 +50,6 @@ export default function LaneStatus(props: LaneStatusProps) {
       }
     })
 
-    // gammaDs.subscribe((message: any) => {
-    //   console.log("gamma message: ", message);
-    //   const state = message.values[0].data.alarmState;
-    //   updateStatus(currentLane, state);
-    // }, [EventType.DATA]);
-    //
-    // neutronDs.subscribe((message: any) => {
-    //   const state = message.values[0].data.alarmState;
-    //   updateStatus(currentLane, state);
-    // }, [EventType.DATA]);
-    //
-    // tamperDs.subscribe((message: any) => {
-    //   const state = message.values[0].data.tamperStatus;
-    //   if(state){
-    //     updateStatus(currentLane, 'Tamper')
-    //   }
-    // }, [EventType.DATA]);
-
-
     props.dataSourcesByLane.connectAllDS().then(console.log("Lane View Statuses Connected"));
 
   }, [props.dataSourcesByLane]);
@@ -81,18 +62,18 @@ export default function LaneStatus(props: LaneStatusProps) {
 
     // Just use gamma datasource bc all lanes should have it, and gamma "Background" state is the most common
     const gammaDatasource = currentLaneDatasources.gammaRT[0];
-    console.info("sample ds", gammaDatasource);
     const gammaDataStreamId = gammaDatasource.properties.resource.split('/')[2];
     const dsAPI = new DataStreams({
       endpointUrl: `${gammaDatasource.properties.endpointUrl}`,
       tls: gammaDatasource.properties.tls,
       connectorOpts: gammaDatasource.properties.connectorOpts
     });
+
     const gammaDataStream = await dsAPI.getDataStreamById(gammaDataStreamId);
     const latestObservationQuery = await gammaDataStream.searchObservations(new ObservationFilter({ resultTime: 'latest'}), 1);
     const latestObservationArray = await latestObservationQuery.nextPage();
     const latestObservation = latestObservationArray[0];
-    console.info("Latest gamma observation: ", latestObservation);
+
     const initialLaneStatus: LaneStatusType = {
       id: -1,
       name: currentLane,
@@ -114,7 +95,6 @@ export default function LaneStatus(props: LaneStatusProps) {
       name: laneName,
       status: newState
     }
-    // console.log("new status", newStatus)
     // set timer between each set status to just prevent flickering of status
     setTimeout(() => {
       setLaneStatus(newStatus);

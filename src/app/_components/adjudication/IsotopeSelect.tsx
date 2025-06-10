@@ -56,8 +56,7 @@ export default function IsotopeSelect(props: {
   const [isotope, setIsotope] = useState<string[]>([""]);
 
   const handleChange = (event: SelectChangeEvent<typeof isotope>) => {
-      // const isotopes = event.target.value;
-      // console.log("[ISO] Isotope Selected: ", isotopes);
+
       const {target: {value},} = event;
       let isoValue = typeof value === 'string' ? value.split(', ') : value;
 
