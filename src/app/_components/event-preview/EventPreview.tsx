@@ -111,7 +111,6 @@ export function EventPreview() {
 
 
     const handleAdjudicationCode = (value: AdjudicationCode) => {
-        console.log("Adjudication Value: ", value);
         let newAdjData: IAdjudicationData = {
             time: new Date().toISOString(),
             id: randomUUID(),
@@ -129,7 +128,6 @@ export function EventPreview() {
 
         adjudicationData.setFeedback(notes);
         adjudicationData.setAdjudicationCode(value);
-        console.log("[ADJ] New Adjudication Data, Ready to Send: ", newAdjData);
         setAdjudicationCode(value);
         setAdjFormData(newAdjData);
         setAdjudication(adjudicationData);
@@ -137,7 +135,6 @@ export function EventPreview() {
 
     const handleNotes = (event: React.ChangeEvent<HTMLInputElement>) => {
         let notesValues = event.target.value;
-        console.log("[ADJ] Notes: ", notesValues);
         setNotes(notesValues);
     }
 
@@ -149,7 +146,6 @@ export function EventPreview() {
         comboData.setTime(phenomenonTime);
 
         let observation = comboData.createAdjudicationObservation();
-        console.log("[ADJ] Sending Adjudication Data: ", observation);
 
         // send to server
         const currentLane = eventPreview.eventData.laneId;
@@ -222,7 +218,6 @@ export function EventPreview() {
     }
 
     const handleExpand = () => {
-        console.log("opened event detail: ", eventPreview.isOpen)
 
         dispatch(setEventData(eventPreview.eventData));
 
@@ -284,7 +279,6 @@ export function EventPreview() {
             return;
         }
 
-        console.log("Collecting DataSources...", currLaneEntry, currentLane);
 
         let tempDSMap = new Map<string, typeof ConSysApi[]>();
 
@@ -293,7 +287,6 @@ export function EventPreview() {
         setLocalDSMap(datasources);
         tempDSMap = datasources;
 
-        console.log("LocalDSMap", localDSMap);
 
         const updatedGamma = tempDSMap.get("gamma") || [];
         const updatedNeutron = tempDSMap.get("neutron") || [];
@@ -301,7 +294,6 @@ export function EventPreview() {
         const updatedVideo = tempDSMap.get("video") || [];
         const updatedOcc = tempDSMap.get("occ") || [];
 
-        console.log("video datasources", updatedVideo)
 
         setGammaDS(updatedGamma);
         setNeutronDS(updatedNeutron);
@@ -342,17 +334,21 @@ export function EventPreview() {
     useEffect( () => {
         if (chartReady) {
             console.log("Chart Ready, Starting DataSync");
-            gammaDatasources.forEach(ds => {
-                ds.connect();
+            gammaDatasources.forEach(async ds => {
+                ds.isConnected().then(ds.disconnect());
+                await ds.connect();
             });
-            neutronDatasources.forEach(ds => {
-                ds.connect();
+            neutronDatasources.forEach(async ds => {
+                ds.isConnected().then(ds.disconnect());
+                await ds.connect();
             });
-            thresholdDatasources.forEach(ds => {
-                ds.connect();
+            thresholdDatasources.forEach(async ds => {
+                ds.isConnected().then(ds.disconnect());
+                await ds.connect();
             });
-            occDatasources.forEach(ds => {
-                ds.connect();
+            occDatasources.forEach(async ds => {
+                ds.isConnected().then(ds.disconnect());
+                await ds.connect();
             });
 
             if(videoReady){
@@ -376,6 +372,22 @@ export function EventPreview() {
 
         } else {
             console.log("Chart Not Ready, cannot start DataSynchronizer...");
+        }
+
+        return()=>{
+            gammaDatasources.forEach(ds => {
+                ds.isConnected().then(ds.disconnect());
+            });
+            neutronDatasources.forEach(ds => {
+                ds.isConnected().then(ds.disconnect());
+            });
+            thresholdDatasources.forEach(ds => {
+                ds.isConnected().then(ds.disconnect());
+            });
+            occDatasources.forEach(ds => {
+                ds.isConnected().then(ds.disconnect());
+            });
+
         }
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
 
@@ -412,7 +424,6 @@ export function EventPreview() {
                         img[0].src = frameSrc;
                     }
                 }else if(videoViewRef.current.videoView instanceof FFMPEGView || videoViewRef.current.videoView instanceof WebCodecView){
-                    console.log("saved frame", savedFrame);
                     videoViewRef.current.videoView.decode(
                         savedFrame.pktSize,
                         savedFrame.pktData,
@@ -504,9 +515,7 @@ export function EventPreview() {
         const timestamp = imageData.timestamp;
         const roll = imageData.roll | 0;
 
-        console.log("image data", imageData)
         savedFrame = { pktSize, pktData, timestamp, roll };
-        console.log("image data saved to frame: ", savedFrame)
     }
 
     function setMjpegFrame(imageData: any){

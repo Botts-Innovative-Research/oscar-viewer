@@ -140,7 +140,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
 
     function annotateCharts(currTime: any){
-        // console.log('curr time', currTime)
         if (currTime) {
             let chartAnnotation = {
                 annotations: {
@@ -159,7 +158,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             };
 
             if (chartViews?.gamma) {
-                // console.log("Annotating Gamma Chart", chartViews.gamma);
                 const gchart = chartViews.gamma.chart;
                 gchart.options.plugins.annotation = chartAnnotation;
 
@@ -167,14 +165,12 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             }
 
             if (chartViews?.nsigma) {
-                // console.log("Annotating Nsigma Chart", chartViews.nsigma);
                 const nSigmachart = chartViews.nsigma.chart;
                 nSigmachart.options.plugins.annotation = chartAnnotation;
                 nSigmachart.update();
             }
 
             if (chartViews?.neutron) {
-                // console.log("Annotating Neutron Chart", chartViews.neutron);
                 const nchart = chartViews.neutron.chart;
                 nchart.options.plugins.annotation = chartAnnotation;
                 nchart.update();

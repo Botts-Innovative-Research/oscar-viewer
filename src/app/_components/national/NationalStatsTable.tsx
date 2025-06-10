@@ -104,7 +104,6 @@ export default function StatTable(){
             for (let ds of lane.datastreams) {
                 let idx: number = lane.datastreams.indexOf(ds);
 
-                console.log("national ds", ds)
                 if(isNeutronDatastream(ds)){
                     await fetchObservations(lane.parentNode.name, ds, startTime, endTime);
                 }
@@ -136,7 +135,6 @@ export default function StatTable(){
 
         let initialRes = await ds.searchObservations(new ObservationFilter({ resultTime: `${timeStart}/${timeEnd}` }), 25000);
 
-        console.log("initial res ntl", initialRes)
         while (initialRes.hasNext()) {
             let obsRes = await initialRes.nextPage();
 

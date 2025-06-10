@@ -50,7 +50,8 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
         updateStatus(laneName, (state ? 'Tamper': 'TamperOff'));
       });
 
-      laneDSColl.connectAllDS();
+
+      laneDSColl.connectAllDS().then(console.log("Dashboard Statuses Connected"));
     }
   }, [props.dataSourcesByLane]);
 

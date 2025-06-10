@@ -11,22 +11,37 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
 
 
     useEffect(() => {
-        console.log("lane view chart ready: ", datasources)
         if(chartReady){
             if(datasources.neutron){
+                datasources?.neutron.isConnected().then(datasources.neutron.disconnect());
                 datasources?.neutron.connect()
             }
 
             if(datasources.gamma){
+                datasources?.gamma.isConnected().then(datasources.gamma.disconnect());
                 datasources?.gamma.connect()
             }
             if(datasources.threshold){
+                datasources?.threshold.isConnected().then(datasources.threshold.disconnect());
                 datasources?.threshold.connect()
             }
         }else{
             console.log("Lane View: Charts not ready.")
         }
 
+
+        return()=>{
+            if(datasources.neutron){
+                datasources?.neutron.isConnected().then(datasources.neutron.disconnect());
+            }
+
+            if(datasources.gamma){
+                datasources?.gamma.isConnected().then(datasources.gamma.disconnect());
+            }
+            if(datasources.threshold){
+                datasources?.threshold.isConnected().then(datasources.threshold.disconnect());
+            }
+        }
     }, [datasources, chartReady]);
 
     return (

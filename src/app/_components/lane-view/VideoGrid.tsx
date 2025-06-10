@@ -68,7 +68,7 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
             }
         }
 
-        tryConnection().then(r => console.log("Connecting....."));
+        tryConnection();
 
     }, [dataSources, selVideoIdx]);
 
@@ -97,7 +97,6 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
         if(prevPage >= 0){
             const isConnected = await dataSources[prevPage].isConnected();
             if(isConnected){
-                console.log('disconnecting', dataSources[prevPage].name)
                 await dataSources[prevPage].disconnect();
             }
         }

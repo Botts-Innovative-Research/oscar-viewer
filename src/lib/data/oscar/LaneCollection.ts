@@ -109,6 +109,7 @@ export class LaneMapEntry {
         let isSecure = this.parentNode.isSecure;
         let url = this.parentNode.getConnectedSystemsEndpoint(true);
         console.log("[ADJ-log] Creating Adjudication Datastream: ", this, url);
+
         let dsApi = new DataStreams({
             // streamProtocol: isSecure ? "https" : "http",
             endpointUrl: `${url}`,
@@ -116,7 +117,7 @@ export class LaneMapEntry {
             connectorOpts: {
                 username: this.parentNode.auth.username,
                 password: this.parentNode.auth.password
-            }
+            },
         });
         let datastream = await dsApi.getDataStreamById(dsId);
         console.log("[ADJ-log] Adjudication Datastream: ", datastream);
@@ -146,34 +147,86 @@ export class LaneMapEntry {
                 continue;
             }
 
-            try {
-                const dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
-                    protocol: dsObj.networkProperties.streamProtocol,
-                    endpointUrl: dsObj.networkProperties.endpointUrl,
-                    resource: `/datastreams/${dsObj.properties.id}/observations`,
-                    tls: dsObj.networkProperties.tls,
-                    responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
-                    mode: Mode.REAL_TIME,
-                    connectorOpts: {
-                        username: this.parentNode.auth.username,
-                        password: this.parentNode.auth.password
-                    }
-                });
+            let mqttOptUrlArray = (dsObj.networkProperties.endpointUrl).split("/");
 
-                const dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
-                    protocol: dsObj.networkProperties.streamProtocol,
-                    endpointUrl: dsObj.networkProperties.endpointUrl,
-                    resource: `/datastreams/${dsObj.properties.id}/observations`,
-                    tls: dsObj.networkProperties.tls,
-                    responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
-                    mode: Mode.BATCH,
-                    connectorOpts: {
-                        username: this.parentNode.auth.username,
-                        password: this.parentNode.auth.password
-                    },
-                    startTime: "2020-01-01T08:13:25.845Z",
-                    endTime: "2055-01-01T08:13:25.845Z"
-                });
+            let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
+
+            let mqttOpts = {
+                prefix: this.parentNode.csAPIEndpoint,
+                endpointUrl: mqttOptUrl,
+                username: this.parentNode.auth.username,
+                password: this.parentNode.auth.password,
+            }
+
+            try {
+                let dsRT: typeof ConSysApi = null;
+                let dsBatch: typeof ConSysApi = null;
+
+                if(isVideoDatastream(dsObj)){
+                    dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
+                        protocol: dsObj.networkProperties.streamProtocol,
+                        endpointUrl: dsObj.networkProperties.endpointUrl,
+                        resource: `/datastreams/${dsObj.properties.id}/observations`,
+                        tls: dsObj.networkProperties.tls,
+                        responseFormat: 'application/swe+binary',
+                        mode: Mode.REAL_TIME,
+                    });
+
+                    dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
+                        protocol: dsObj.networkProperties.streamProtocol,
+                        endpointUrl: dsObj.networkProperties.endpointUrl,
+                        resource: `/datastreams/${dsObj.properties.id}/observations`,
+                        tls: dsObj.networkProperties.tls,
+                        responseFormat: 'application/swe+binary',
+                        mode: Mode.BATCH,
+                        startTime: "2020-01-01T08:13:25.845Z",
+                        endTime: "2055-01-01T08:13:25.845Z"
+                    });
+                }else{
+                    dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
+                        endpointUrl: dsObj.networkProperties.endpointUrl,
+                        resource: `/datastreams/${dsObj.properties.id}/observations`,
+                        tls: dsObj.networkProperties.tls,
+                        protocol: "mqtt",
+                        mqttOpts: mqttOpts,
+                        mode: Mode.REAL_TIME,
+                        responseFormat: 'application/swe+json',
+                    });
+
+                    dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
+                        endpointUrl: dsObj.networkProperties.endpointUrl,
+                        resource: `/datastreams/${dsObj.properties.id}/observations`,
+                        tls: dsObj.networkProperties.tls,
+                        protocol: "mqtt",
+                        mqttOpts: mqttOpts,
+                        mode: Mode.BATCH,
+                        responseFormat: 'application/swe+json',
+                        startTime: "2020-01-01T08:13:25.845Z",
+                        endTime: "2055-01-01T08:13:25.845Z"
+                    });
+                }
+
+                // const dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
+                //     protocol: "mqtt",
+                //     mqttOpts: mqttOpts,
+                //     endpointUrl: dsObj.networkProperties.endpointUrl,
+                //     resource: `/datastreams/${dsObj.properties.id}/observations`,
+                //     tls: dsObj.networkProperties.tls,
+                //     responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
+                //     mode: Mode.REAL_TIME,
+                // });
+
+                // const dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
+                //     protocol: "mqtt",
+                //     mqttOpts: mqttOpts,
+                //     endpointUrl: dsObj.networkProperties.endpointUrl,
+                //     resource: `/datastreams/${dsObj.properties.id}/observations`,
+                //     tls: dsObj.networkProperties.tls,
+                //     responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
+                //     mode: Mode.BATCH,
+                //     startTime: "2020-01-01T08:13:25.845Z",
+                //     endTime: "2055-01-01T08:13:25.845Z"
+                // });
 
                 rtArray.push(dsRT);
                 batchArray.push(dsBatch);
@@ -187,34 +240,48 @@ export class LaneMapEntry {
     }
 
     createReplayConSysApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
+        let mqttOptUrlArray = (datastream.networkProperties.endpointUrl).split("/");
+        let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
+
+        let mqttOpts = {
+            prefix: this.parentNode.csAPIEndpoint,
+            endpointUrl: mqttOptUrl,
+            username: this.parentNode.auth.username,
+            password: this.parentNode.auth.password,
+        }
+        console.log("mqtt opts: ", mqttOpts)
         return new ConSysApi(`rtds-${datastream.properties.id}`, {
-            protocol: datastream.networkProperties.streamProtocol,
+            protocol: "mqtt",
+            mqttOpts: mqttOpts,
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
             responseFormat: isVideoDatastream(datastream) ? 'application/swe+binary' : 'application/swe+json',
             mode: Mode.REPLAY,
-            connectorOpts: {
-                username: this.parentNode.auth.username,
-                password: this.parentNode.auth.password
-            },
             startTime: startTime,
             endTime: endTime
         });
     }
 
     createBatchConSysApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
+        let mqttOptUrlArray = (datastream.networkProperties.endpointUrl).split("/");
+        let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
+
+        let mqttOpts = {
+            prefix: this.parentNode.csAPIEndpoint,
+            endpointUrl: mqttOptUrl,
+            username: this.parentNode.auth.username,
+            password: this.parentNode.auth.password,
+        }
+
         return new ConSysApi(`batchds-${datastream.properties.id}`, {
-            protocol: datastream.networkProperties.streamProtocol,
+            protocol: "mqtt",
+            mqttOpts: mqttOpts,
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
             responseFormat: isVideoDatastream(datastream) ? 'application/swe+binary' : 'application/swe+json',
             mode: Mode.BATCH,
-            connectorOpts: {
-                username: this.parentNode.auth.username,
-                password: this.parentNode.auth.password
-            },
             startTime: startTime,
             endTime: endTime
         });
@@ -225,13 +292,11 @@ export class LaneMapEntry {
         return ds;
     }
 
-
     lookupSystemIdFromDataStreamId(dsId: string): string {
         let dataStream: typeof DataStream = this.datastreams.find((ds) => ds.properties.id === dsId);
 
         return this.systems.find((sys) => sys.properties.id === dataStream.properties["system@id"]).properties.id;
     }
-
 
     findDataStreamByObsProperty(obsProperty: string){
         let stream: typeof DataStream = this.datastreams.filter((ds)=> {
@@ -348,13 +413,11 @@ export class LaneMapEntry {
         return dsMap;
     }
 
-
     async checkValidDataSource(ds: typeof DataStream, startTime: string, endTime: string): Promise<typeof ConSysApi> {
 
         let datasourceReplay = this.createReplayConSysApiFromDataStream(ds, startTime, endTime);
 
         let dsApi = this.parentNode.getDataStreamsApi();
-        console.log("dsApi", dsApi)
 
         const result = await dsApi.getDataStreamById(ds.properties.id);
 
@@ -388,7 +451,6 @@ export class LaneMapEntry {
 
 
     }
-
 
     async insertAdjudicationSystem(laneName: string) {
 
@@ -557,59 +619,58 @@ export class LaneDSColl {
         if(!this) return;
 
         for (let ds of this[dsCollName] as typeof ConSysApi[]) {
-
             ds.subscribe(handler, [EventType.DATA]);
         }
     }
 
-    connectAllDS() {
+    async connectAllDS() {
         for (let ds of this.occRT) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.occBatch) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.gammaRT) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.gammaBatch) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.neutronRT) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.neutronBatch) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.tamperRT) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.tamperBatch) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.locRT) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.locBatch) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.gammaTrshldBatch) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.gammaTrshldRT) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.connectionRT) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.connectionBatch) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.videoRT) {
-            ds.connect();
+            await ds.connect();
         }
         for (let ds of this.videoBatch) {
-            ds.connect();
+            await ds.connect();
         }
         // console.info("Connecting all datasources of:", this);
     }

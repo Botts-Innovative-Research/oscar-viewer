@@ -87,7 +87,7 @@ export default function EventTable({
         }
 
         let obsCollection = await occDS[0].searchObservations(observationFilter, 15);
-        console.log("obs collection", obsCollection)
+
         return await handleObservations(obsCollection, laneEntry, false);
     }
 
@@ -129,7 +129,7 @@ export default function EventTable({
             obsResults.map((obs: any) => {
                 let result = eventFromObservation(obs, laneEntry);
                 observations.push(result);
-                // when fetching, this operation is a bit too costly so we probably want to just set the table with all the results we've collected
+                // when fetching, this operation is a bit too costly, so we probably want to just set the table with all the results we've collected
                 if (addToLog) dispatch(addEventToLog(result));
             })
         }
@@ -151,7 +151,7 @@ export default function EventTable({
     }
 
     async function doFetch(laneMap: Map<string, LaneMapEntry>) {
-        console.log("fetching lane map observations")
+
         let allFetchedResults: EventTableData[] = [];
         let promiseGroup: Promise<void>[] = [];
 
@@ -369,7 +369,6 @@ export default function EventTable({
         const selectedId = params.row.id;
 
         if (selectedRowId === selectedId) {
-            console.log("CLEARING SELECTION")
             setSelectionModel([]);
 
             dispatch(setLatestGB(null));
@@ -410,7 +409,7 @@ export default function EventTable({
     }
 
     return (
-        <Box sx={{flex: 1, width: '100%'}}>
+        <Box sx={{flex: 1, width: '100%', height: 800}}>
             <DataGrid
                 rows={filteredTableData}
                 columns={columns}

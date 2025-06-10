@@ -15,9 +15,6 @@ import {selectEventPreview, setSelectedRowId} from "@/lib/state/EventPreviewSlic
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 
 
-
-
-
 /**
  * Expects the following search params:
  * startTime: string;
@@ -51,17 +48,13 @@ export default function EventDetailsPage() {
             return;
         }
 
-        console.log("Collecting DataSources...", currLaneEntry, currentLane);
-
         // @ts-ignore
         let tempDSMap: Map<string, typeof ConSysApi[]>;
 
         let datasources = await currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
-        console.log('datasources', datasources)
         setLocalDSMap(datasources);
         tempDSMap = datasources;
 
-        console.log("LocalDSMap", localDSMap);
 
         if(!tempDSMap){
             return;

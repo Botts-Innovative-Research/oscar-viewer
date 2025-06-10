@@ -71,7 +71,6 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
 // get latest gamma background from threshold datasource to calc nsigma for chart
 export function createNSigmaCalcViewCurve(gammaDatasource: any, latestGB: number) {
     if (!gammaDatasource) {
-        console.log("datasources are null")
         return null;
     }
 

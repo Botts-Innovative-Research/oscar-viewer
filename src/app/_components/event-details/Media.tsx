@@ -74,7 +74,6 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
 
     useEffect(() => {
         if (chartReady) {
-            console.log("Chart Ready, Starting DataSync");
 
             if(datasources.gamma) datasources?.gamma.connect()
 
@@ -95,7 +94,7 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
                     // if is true then pause else play
                     console.log("DataSync Connected!!!");
                 } else {
-                    console.log("DataSync Not Connected... :(");
+                    console.log("DataSync Not Connected...");
                 }
             }
 
@@ -147,7 +146,6 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
     const pause = async () => {
         if (masterTimeController.current && await masterTimeController.current.isConnected()) {
 
-
             console.log("Playback paused.");
 
             await masterTimeController.current.disconnect();
@@ -194,15 +192,11 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
     async function fetchPausedFrame(startTime: any, endTime: string, datastreams: typeof DataStreams){
 
         let dsId = masterTimeController.current.dataSynchronizer.dataSources[selectedIndex.current].name.split("-")[1]
-        console.log("sync ds id", dsId);
-
 
         let currentVideoDs = datastreams.filter((ds: any) => ds.properties.id === dsId);
         let obs = await currentVideoDs[0].searchObservations(new ObservationFilter({ format: 'application/swe+binary', resultTime: `${new Date(startTime).toISOString()}/${endTime}`}),1);
 
         const obsPage = await obs.nextPage();
-
-        console.log("obsPage", obsPage)
 
         const imageData = obsPage[0].img.data
 

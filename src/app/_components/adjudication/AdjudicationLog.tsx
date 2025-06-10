@@ -44,7 +44,6 @@ const logColumns: GridColDef<AdjudicationData>[] = [
         headerName: 'Adjudication Code',
         width: 400,
         valueGetter: (value, row) => {
-            console.log("ADJDEt - ", row);
             return row.adjudicationCode.label
         }
     },
@@ -110,9 +109,7 @@ export default function AdjudicationLog(props: {
     async function getLaneAdjDatastream() {
         let laneEntry = laneMapRef.current.get(props?.event?.laneId);
         let laneDSId = laneEntry.parentNode.laneAdjMap.get(props?.event?.laneId);
-        console.log("[ADJ-Log] Lane Datastream ID: ", laneDSId);
         let adjDs: typeof DataStream = await laneEntry.getAdjudicationDatastream(laneDSId);
-        console.log("[ADJ-Log] Lane Adjudication Datastream: ", adjDs);
 
         setLaneAdjDatastream(adjDs);
         return adjDs;
@@ -126,7 +123,6 @@ export default function AdjudicationLog(props: {
         while (observations.hasNext()) {
             let obsRes = await observations.nextPage();
             let adjDataArr = obsRes.map((obs: any) => {
-                console.log("[ADJ-Log] Adjudication Datastream Observation: ", obs);
                 let data = new AdjudicationData(obs.result.username, obs.result.occupancyId, obs.result.alarmingSystemUid, obs.phenomenonTime);
                 data.setFeedback(obs.result.feedback);
                 data.setIsotopes(obs.result.isotopes);
@@ -136,7 +132,6 @@ export default function AdjudicationLog(props: {
                 data.setTime(obs.phenomenonTime)
                 return data
             });
-            console.log("[ADJ-Log] Adjudication Datastream Observations: ", adjDataArr);
             setAdjLog(adjDataArr);
         }
         props.onFetch();
@@ -153,10 +148,7 @@ export default function AdjudicationLog(props: {
     }, [laneAdjdatastream]);
 
     useEffect(() => {
-        console.log("[ADJ-Log] Adjudication Log Updated: ", adjLog);
         let filteredLog = adjLog.filter((adjData) => props.event.occupancyId.toString() === adjData.occupancyId);
-
-        console.log("adj log" , filteredLog)
 
         // if (onlySameObs) {
         //     filteredLog = adjLog.filter((adjData) => props.event.occupancyId.toString() === adjData.occupancyId);
@@ -167,7 +159,6 @@ export default function AdjudicationLog(props: {
     useEffect(() => {
         if (props.shouldFetch) {
             setTimeout(() => {
-                console.log("[ADJ-Log] Fetching Adjudication Log due to trigger");
                 fetchObservations(laneAdjdatastream);
             }, 10000);
         }

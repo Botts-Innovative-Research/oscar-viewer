@@ -30,9 +30,6 @@ export default function AlarmAudio() {
     const isLoaded = useRef(false);
     const [volumeValue, setVolumeValue] = useState(savedVolume)
 
-
-    console.log("alarm audio", volumeValue, savedVolume);
-
     useEffect(() => {
         document.body.addEventListener("click", function() {
             if(alarmAudio == undefined || alarmAudio == null) {
@@ -59,7 +56,6 @@ export default function AlarmAudio() {
         if(isLoaded.current) {
             const audio = getAlarmAudio();
             if(tableData.length > 0 && tableData[tableData.length-1].status != 'None') {
-                console.log("Playing alarm audio")
                 audio.play();
 
             }

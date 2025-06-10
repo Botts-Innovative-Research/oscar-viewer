@@ -38,14 +38,12 @@ export default function ChartLane(props: ChartInterceptProps){
         if(props.datasources.gamma){
             let gCurve = createGammaViewCurve(props.datasources.gamma);
             setGammaCurve(gCurve);
-            console.log('new gamma curve layer created')
         }
 
 
         if(props.datasources.neutron){
             let nCurve = createNeutronViewCurve(props.datasources.neutron);
             setNeutronCurve(nCurve);
-            console.log('new neutorn curve layer created')
         }
 
     },[props.datasources]);
@@ -204,7 +202,6 @@ export default function ChartLane(props: ChartInterceptProps){
 
 
     const checkForProvidedDataSources = useCallback(() => {
-        console.log("[CI] Checking for provided data sources...");
         if (!props.datasources) {
             console.warn("No DataSources provided for ChartTimeHighlight");
             return false;
