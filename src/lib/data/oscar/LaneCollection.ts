@@ -187,7 +187,8 @@ export class LaneMapEntry {
                         endpointUrl: dsObj.networkProperties.endpointUrl,
                         resource: `/datastreams/${dsObj.properties.id}/observations`,
                         tls: dsObj.networkProperties.tls,
-                        protocol: "mqtt",
+                        // protocol: "mqtt",
+                        protocol: dsObj.networkProperties.streamProtocol,
                         mqttOpts: mqttOpts,
                         mode: Mode.REAL_TIME,
                         responseFormat: 'application/swe+json',
@@ -197,7 +198,8 @@ export class LaneMapEntry {
                         endpointUrl: dsObj.networkProperties.endpointUrl,
                         resource: `/datastreams/${dsObj.properties.id}/observations`,
                         tls: dsObj.networkProperties.tls,
-                        protocol: "mqtt",
+                        // protocol: "mqtt",
+                        protocol: dsObj.networkProperties.streamProtocol,
                         mqttOpts: mqttOpts,
                         mode: Mode.BATCH,
                         responseFormat: 'application/swe+json',
@@ -251,7 +253,8 @@ export class LaneMapEntry {
         }
         console.log("mqtt opts: ", mqttOpts)
         return new ConSysApi(`rtds-${datastream.properties.id}`, {
-            protocol: "mqtt",
+            // protocol: "mqtt",
+            protocol: datastream.networkProperties.streamProtocol,
             mqttOpts: mqttOpts,
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
@@ -275,7 +278,8 @@ export class LaneMapEntry {
         }
 
         return new ConSysApi(`batchds-${datastream.properties.id}`, {
-            protocol: "mqtt",
+            // protocol: "mqtt",
+            protocol: datastream.networkProperties.streamProtocol,
             mqttOpts: mqttOpts,
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
