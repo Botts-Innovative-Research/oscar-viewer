@@ -28,6 +28,7 @@ export class EventTableData implements IEventTableData {
     foiId: string;
 
     constructor(id: number, laneId: string, msgValue: any, observationId: string, foiId: string,  adjudicatedData: AdjudicationData | null = null) {
+
         this.id = id
         this.laneId = laneId
         this.occupancyId = msgValue.occupancyCount;

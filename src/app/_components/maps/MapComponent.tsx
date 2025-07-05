@@ -13,20 +13,23 @@ import { LaneWithLocation } from "types/new-types";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import "leaflet/dist/leaflet.css"
 import {isGammaDatastream, isNeutronDatastream, isTamperDatastream} from "@/lib/data/oscar/Utilities";
+import {setCurrentLane} from "@/lib/state/LaneViewSlice";
+import {useRouter} from "next/navigation";
+import {useAppDispatch} from "@/lib/state/Hooks";
 
 
 export default function MapComponent() {
-
-    const leafletViewRef = useRef<typeof LeafletView | null>(null);
-    const [locationList, setLocationList] = useState<LaneWithLocation[] | null>(null);
     const mapcontainer: string = "mapcontainer";
-
-    const [isInit, setIsInt] = useState(false);
-
-    const {laneMapRef} = useContext(DataSourceContext);
-    const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
 
+    const leafletViewRef = useRef<typeof LeafletView | null>(null);
+
+    const {laneMapRef} = useContext(DataSourceContext);
+    const dispatch = useAppDispatch();
+
+    const [isInit, setIsInt] = useState(false);
+    const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
+    const [locationList, setLocationList] = useState<LaneWithLocation[] | null>(null);
     const [dsLocations, setDsLocations] = useState([]);
 
     const convertToMap = (obj: any) =>{
@@ -56,13 +59,15 @@ export default function MapComponent() {
                         };
 
                         locations.push(laneWithLocation);
-
-                        }
-                    )
+                    });
                 }
             });
             setLocationList(locations);
         }
+
+        return () => {
+
+        };
     },[laneMap, dsLocations]);
 
     /*****************lane status datasources******************/
@@ -121,7 +126,10 @@ export default function MapComponent() {
                 }
             });
 
-            laneDSColl.connectAllDS();
+            laneDSColl.addConnectToALLDSMatchingName("gammaRT");
+            laneDSColl.addConnectToALLDSMatchingName("neutronRT");
+            laneDSColl.addConnectToALLDSMatchingName("tamperRT");
+
         }
     }, [dataSourcesByLane]);
 
@@ -129,15 +137,16 @@ export default function MapComponent() {
         if (locationList !== null && locationList.length > 0) {
             addSubscriptionCallbacks();
         }
+
     }, [dataSourcesByLane]);
 
     useEffect(() => {
-        datasourceSetup();
-    }, [laneMapRef.current]);
+        if(!isInit)
+            datasourceSetup();
+    }, [isInit]);
 
 
     useEffect(() => {
-
         if (!leafletViewRef.current && !isInit) {
             let view = new LeafletView({
                 container: mapcontainer,
@@ -185,13 +194,38 @@ export default function MapComponent() {
                         iconSize: [16, 16],
                         description: getContent(location.status, location.laneName),
                     });
+
                     leafletViewRef.current?.addLayer(newPointMarker);
                 });
                 location.locationSources.map((src: any) => src.connect());
             });
         }
 
+
     }, [locationList, isInit]);
+
+    useEffect(() => {
+        return () => {
+            console.log("Unmounted Map: disconnecting from location datasources")
+            if(locationList && locationList.length > 0){
+                locationList.forEach((location) => {
+                    location.locationSources.map((src: any) => src.disconnect());
+                });
+            }
+
+            console.log("Unmounted map -- alarm status datasources disconnected")
+            for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
+                laneDSColl.addDisconnectToALLDSMatchingName("gammaRT");
+                laneDSColl.addDisconnectToALLDSMatchingName("neutronRT");
+                laneDSColl.addDisconnectToALLDSMatchingName("tamperRT");
+            }
+
+            if(leafletViewRef.current != null){
+                leafletViewRef.current.destroy();
+                leafletViewRef.current = undefined;
+            }
+        }
+    }, []);
 
     const updateLocationList = (laneName: string, newStatus: string) => {
         setLocationList((prevState) => {
@@ -205,16 +239,20 @@ export default function MapComponent() {
 
     /***************content in popup************/
     function getContent(status: string, laneName: string) {
+        dispatch(setCurrentLane(laneName));
 
         return (
             `<div id='popup-data-layer' class='point-popup'><hr/>
                 <h3 class='popup-text-status'>Status: ${status}</h3>
-                <button onClick='location.href="./lane-view?name=${laneName}"' class="popup-button" type="button">VIEW LANE</button>
+                <button onClick='location.href="/lane-view"' class="popup-button" type="button">VIEW LANE</button>
             </div>`
         );
     }
 
     return (
-        <Box id="mapcontainer" style={{width: '100%', height: '1200px'}}></Box>
+        <Box
+            id="mapcontainer"
+            style={{width: '100%', height: '1200px'}}
+        />
     );
 }

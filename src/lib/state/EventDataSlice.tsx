@@ -50,11 +50,21 @@ export const Slice = createSlice({
         addEventToLog: (state, action: PayloadAction<EventTableData>) => {
             let checkForEntry = state.eventLog.some((evtData)=> evtData.observationId === action.payload.observationId);
             // if (state.eventLog.some((data) => data.observationId === action.payload.observationId)) return;
-            console.log("EVT table Adding to Event Log", action.payload);
+
             let currentLog = [];
+
+            // if(!checkForEntry){
+                // state.eventLog.push(action.payload);
+
             currentLog =  [...state.eventLog];
             currentLog.push(action.payload);
             state.eventLog = currentLog;
+            console.log("EVT table Adding to Event Log", action.payload);
+            // }else{
+            //     console.log("Duplicate event ignored: ", action.payload.observationId)
+            // }
+
+
             // state.eventLog.set(action.payload.observationId, action.payload);
         },
         updateSelectedEventAdjudication: (state, action: PayloadAction<AdjudicationData>) => {

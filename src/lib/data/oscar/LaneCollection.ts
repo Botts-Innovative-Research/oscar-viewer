@@ -251,7 +251,6 @@ export class LaneMapEntry {
             username: this.parentNode.auth.username,
             password: this.parentNode.auth.password,
         }
-        console.log("mqtt opts: ", mqttOpts)
         return new ConSysApi(`rtds-${datastream.properties.id}`, {
             // protocol: "mqtt",
             protocol: datastream.networkProperties.streamProtocol,
@@ -304,7 +303,6 @@ export class LaneMapEntry {
 
     findDataStreamByObsProperty(obsProperty: string){
         let stream: typeof DataStream = this.datastreams.filter((ds)=> {
-            // console.log("FIND ds props", ds)
             let hasProp = ds.properties.observedProperties.some((prop: any)=> prop.definition === obsProperty)
             return hasProp;
         });
@@ -627,6 +625,22 @@ export class LaneDSColl {
         }
     }
 
+    async addConnectToALLDSMatchingName(dsCollName: string) {
+        if(!this) return;
+
+        for (let ds of this[dsCollName] as typeof ConSysApi[]) {
+            await ds.connect();
+        }
+    }
+
+    async addDisconnectToALLDSMatchingName(dsCollName: string) {
+        if(!this) return;
+
+        for (let ds of this[dsCollName] as typeof ConSysApi[]) {
+            await ds.disconnect();
+        }
+    }
+
     async connectAllDS() {
         for (let ds of this.occRT) {
             await ds.connect();
@@ -676,7 +690,61 @@ export class LaneDSColl {
         for (let ds of this.videoBatch) {
             await ds.connect();
         }
-        // console.info("Connecting all datasources of:", this);
     }
+
+    async disconnectAllDS() {
+        for (let ds of this.occRT) {
+            await ds.disconnect();
+        }
+        for (let ds of this.occBatch) {
+            await ds.disconnect();
+        }
+        for (let ds of this.gammaRT) {
+            await ds.disconnect();
+        }
+        for (let ds of this.gammaBatch) {
+            await ds.disconnect();
+        }
+        for (let ds of this.neutronRT) {
+            await ds.disconnect();
+        }
+        for (let ds of this.neutronBatch) {
+            await ds.disconnect();
+        }
+        for (let ds of this.tamperRT) {
+            await ds.disconnect();
+        }
+        for (let ds of this.tamperBatch) {
+            await ds.disconnect();
+        }
+        for (let ds of this.locRT) {
+            await ds.disconnect();
+        }
+        for (let ds of this.locBatch) {
+            await ds.disconnect();
+        }
+        for (let ds of this.gammaTrshldBatch) {
+            await ds.disconnect();
+        }
+        for (let ds of this.gammaTrshldRT) {
+            await ds.disconnect();
+        }
+        for (let ds of this.connectionRT) {
+            await ds.disconnect();
+        }
+        for (let ds of this.connectionBatch) {
+            await ds.disconnect();
+        }
+        for (let ds of this.videoRT) {
+            await ds.disconnect();
+        }
+        for (let ds of this.videoBatch) {
+            await ds.disconnect();
+        }
+    }
+
+
+
+
 }
 

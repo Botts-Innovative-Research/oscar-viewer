@@ -13,47 +13,39 @@ import {
 
 export class ChartInterceptProps {
     laneName: string;
-    datasources: { gamma: typeof ConSysApi, neutron: typeof ConSysApi, threshold: typeof ConSysApi };
+    datasources: {
+        gamma: typeof ConSysApi,
+        neutron: typeof ConSysApi,
+        threshold: typeof ConSysApi
+    };
     setChartReady: Function;
 }
 
 export default function ChartLane(props: ChartInterceptProps){
 
-    const [isReadyToRender, setIsReadyToRender] = useState<boolean>(false);
-
-    const gammaChartBaseId = "chart-view-gamma";
-    const neutronChartBaseId = "chart-view-neutron";
-
-    const [gammaChartID, setGammaChartID] = useState<string>(gammaChartBaseId);
-    const [neutronChartID, setNeutronChartID] = useState<string>(neutronChartBaseId);
+    const gammaChartID = "chart-view-gamma";
+    const neutronChartID = "chart-view-neutron";
 
     const [gammaCurve, setGammaCurve] = useState<typeof CurveLayer>();
     const [neutronCurve, setNeutronCurve] = useState<typeof CurveLayer>();
+    const [isReadyToRender, setIsReadyToRender] = useState<boolean>(false);
 
     const gammaChartViewRef = useRef<typeof ChartJsView | null>(null);
     const neutronChartViewRef = useRef<typeof ChartJsView | null>(null);
 
 
-    const createCurveLayers = useCallback(() =>{
-        if(props.datasources.gamma){
-            let gCurve = createGammaViewCurve(props.datasources.gamma);
-            setGammaCurve(gCurve);
-        }
+    const createCurveLayers = useCallback(() => {
+        if(props.datasources.gamma)
+            setGammaCurve(createGammaViewCurve(props.datasources.gamma));
 
-
-        if(props.datasources.neutron){
-            let nCurve = createNeutronViewCurve(props.datasources.neutron);
-            setNeutronCurve(nCurve);
-        }
+        if(props.datasources.neutron)
+            setNeutronCurve(createNeutronViewCurve(props.datasources.neutron));
 
     },[props.datasources]);
 
-
     const checkForMountableAndCreateCharts = useCallback(() => {
 
-        if (!gammaChartViewRef.current && !isReadyToRender && gammaCurve) {
-            console.log("Creating Gamma Chart with layers:", { gammaCurve});
-
+        if (!isReadyToRender && gammaCurve && !gammaChartViewRef.current) {
             const container = document.getElementById(gammaChartID);
 
             if (container) {
@@ -110,10 +102,9 @@ export default function ChartLane(props: ChartInterceptProps){
             }
         }
 
-        if (!neutronChartViewRef.current && !isReadyToRender && neutronCurve) {
-            console.log("Creating Neutron Chart:", neutronCurve);
-
+        if (!isReadyToRender && neutronCurve && !neutronChartViewRef.current) {
             const containerN = document.getElementById(neutronChartID);
+
             if (containerN) {
                 neutronChartViewRef.current = new ChartJsView({
                     container: neutronChartID,
@@ -167,11 +158,24 @@ export default function ChartLane(props: ChartInterceptProps){
             }
         }
 
-        props.setChartReady(true);
-    }, [gammaCurve, neutronCurve, isReadyToRender]);
+        if(!isReadyToRender && (gammaCurve || neutronCurve)){
+            setIsReadyToRender(true);
+            // props.setChartReady(true);
+        }
+
+    }, [gammaCurve, neutronCurve, isReadyToRender, props.setChartReady]);
+
+    const checkForProvidedDataSources = useCallback(() => {
+        if (!props.datasources) {
+            console.warn("No DataSources provided for ChartTimeHighlight");
+            return false;
+        }
+        return true;
+
+    }, [props.datasources]);
 
     const checkReadyToRender = useCallback(() => {
-        if ( props.setChartReady()) {
+        if (props.setChartReady()) {
             setIsReadyToRender(true);
         } else {
             setIsReadyToRender(false);
@@ -188,7 +192,6 @@ export default function ChartLane(props: ChartInterceptProps){
         }
     }, [props]);
 
-
     useEffect(() => {
         checkReadyToRender();
     }, [ props.setChartReady]);
@@ -200,16 +203,26 @@ export default function ChartLane(props: ChartInterceptProps){
         }
     }, [isReadyToRender]);
 
+    useEffect(() => {
+        return() => {
+            console.log("Charts unmounted, cleaning up resources");
 
-    const checkForProvidedDataSources = useCallback(() => {
-        if (!props.datasources) {
-            console.warn("No DataSources provided for ChartTimeHighlight");
-            return false;
-        } else {
-            return true;
-        }
-    }, [props.datasources]);
+            if(gammaChartViewRef.current != null){
+                gammaChartViewRef.current.destroy();
+                gammaChartViewRef.current = undefined;
+            }
 
+            if(neutronChartViewRef.current != null){
+                neutronChartViewRef.current.destroy();
+                neutronChartViewRef.current = undefined;
+            }
+
+            setGammaCurve(null);
+            setNeutronCurve(null);
+            setIsReadyToRender(false);
+            props.setChartReady(false);
+        };
+    }, []);
 
     return (
         <Box display='flex' alignItems="center">
@@ -222,6 +235,5 @@ export default function ChartLane(props: ChartInterceptProps){
                 </Grid>
             </Grid>
         </Box>
-
     );
 };

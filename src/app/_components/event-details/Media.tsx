@@ -24,7 +24,6 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
     const [currentTime, setCurrentTime] = useState<string>("");
     const [dataSyncCreated, setDataSyncCreated] = useState<boolean>(false);
     const [dataSyncReady, setDataSyncReady] = useState<boolean>(false);
-
     const [datasourcesReady, setDatasourcesReady] = useState<boolean>(false);
 
     // Video
@@ -91,7 +90,6 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
                 });
 
                 if (masterTimeController.current?.isConnected()) {
-                    // if is true then pause else play
                     console.log("DataSync Connected!!!");
                 } else {
                     console.log("DataSync Not Connected...");
@@ -100,6 +98,16 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
 
         } else {
             console.log("Chart Not Ready, cannot start DataSynchronizer...");
+        }
+
+        return () =>{
+            if(datasources.gamma) datasources?.gamma.disconnect()
+
+            if(datasources.neutron) datasources?.neutron.disconnect()
+
+            if(datasources.threshold) datasources?.threshold.disconnect()
+
+            if(masterTimeController.current) masterTimeController.current.disconnect();
         }
     }, [chartReady, masterTimeController, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady, datasources]);
 
@@ -244,7 +252,12 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
         <Paper variant='outlined' sx={{ width: "100%" , padding: 2}}>
             {datasourcesReady && latestGB ? (
                 <Box>
-                    <Grid container direction="row" spacing={2} justifyContent={"center"}>
+                    <Grid
+                        container
+                        direction="row"
+                        spacing={2}
+                        justifyContent={"center"}
+                    >
                         <Grid item xs={12} md={6}>
                             <ChartTimeHighlight
                                 // key={eventData.id + "-detail"}
@@ -273,13 +286,24 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
                                     setVideoView={setVideoView}
                                 />
 
-                                <TimeController handleCommitChange={handleChange} pause={pause} play={play} syncTime={syncTime} startTime={eventData?.startTime} endTime={eventData?.endTime}/>
+                                <TimeController
+                                    handleCommitChange={handleChange}
+                                    pause={pause}
+                                    play={play}
+                                    syncTime={syncTime}
+                                    startTime={eventData?.startTime}
+                                    endTime={eventData?.endTime}
+                                />
 
                             </div>
                             ):
                             (
                                 <div>
-                                    <Typography variant="h6" align="center">No video data available.</Typography>
+                                    <Typography
+                                        variant="h6"
+                                        align="center">
+                                        No video data available.
+                                    </Typography>
                                 </div>
                             )}
 
@@ -288,7 +312,11 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
 
                 </Box>
             ):
-                <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}><CircularProgress/></Box>
+                <Box
+                    sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}
+                >
+                    <CircularProgress/>
+                </Box>
             }
         </Paper>
     )

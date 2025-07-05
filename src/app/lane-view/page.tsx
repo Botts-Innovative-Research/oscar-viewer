@@ -7,9 +7,9 @@ import Media from "../_components/lane-view/Media";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import EventTable from "@/app/_components/event-table/EventTable";
 import {useSelector} from "react-redux";
-import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
+import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {RootState} from "@/lib/state/Store";
-import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
+import React, {useCallback, useContext, useEffect, useState} from "react";
 import {
 
     isGammaDatastream,
@@ -110,7 +110,7 @@ export default function LaneViewPage() {
 
     useEffect(() => {
         if(laneMapRef?.current && currentLane){
-            collectDataSources().then(r => console.log(""));
+            collectDataSources();
         }
     }, [laneMapRef, currentLane, laneMapRef.current.size]);
 

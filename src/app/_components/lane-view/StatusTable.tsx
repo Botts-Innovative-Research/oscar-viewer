@@ -21,9 +21,6 @@ import {selectCurrentLane} from "@/lib/state/LaneViewSlice";
 import {isGammaDatastream, isNeutronDatastream, isTamperDatastream} from "@/lib/data/oscar/Utilities";
 
 
-// only want : Tamper and Faults
-// gamma counts, neutron counts, and tamper datastreams
-
 interface TableProps {laneMap: Map<string, LaneMapEntry>;}
 
 export default function StatusTables({laneMap}: TableProps){
@@ -32,135 +29,12 @@ export default function StatusTables({laneMap}: TableProps){
     const [filteredTableData, setFilteredTableData] = useState<AlarmTableData[]>([]);
 
     const currentLane = useSelector(selectCurrentLane)
+    const locale = navigator.language || 'en-US';
 
-    async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string, observedProperty: string) {
-        const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
-
-        let dss: typeof DataStream = laneEntry.findDataStreamByObsProperty(observedProperty);
-
-        if (!dss) return;
-
-        const results: AlarmTableData[] = [];
-
-        for (const ds of dss) {
-            let obsCollection = await ds.searchObservations(observationFilter, 15);
-            const result = await handleObservations(obsCollection, laneEntry, false);
-            results.push(...result);
-        }
-        return results;
-
-    }
-
-    async function streamObservations(laneEntry: LaneMapEntry, observedProperty: string) {
-        let futureTime = new Date();
-        futureTime.setFullYear(futureTime.getFullYear() + 1);
-
-        let dss: typeof DataStream = laneEntry.findDataStreamByObsProperty(observedProperty);
-
-        if(!dss) return;
-
-        dss.forEach((ds: typeof DataStream)=>{
-            ds.streamObservations(new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`
-            }), (observation: any) => {
-                if(observation[0]?.result?.alarmState == 'Scan' || observation[0]?.result?.alarmState === 'Background' || observation[0]?.result.alarmState === 'Alarm') return;
-
-                let result = eventFromObservation(observation[0], laneEntry.laneName);
-
-                if(result){
-
-                    dispatch(addEventToLaneViewLog(result));
-                }
-
-            })
-        })
-
-    }
-
-    // @ts-ignore
-    async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<AlarmTableData[]> {
-        let observations: AlarmTableData[] = [];
-
-        while (obsCollection.hasNext()) {
-            let obsResults = await obsCollection.nextPage();
-            obsResults.map((obs: any) => {
-                if(obs?.result?.alarmState == 'Scan' || obs?.result?.alarmState === 'Background' || obs?.result.alarmState === 'Alarm') return;
-
-                let result = eventFromObservation(obs, laneEntry.laneName);
-
-                if(result){
-                    observations.push(result);
-                    if (addToLog) dispatch(addEventToLaneViewLog(result));
-                }
-
-            })
-        }
-        return observations;
-    }
-
-    function eventFromObservation(obs: any, laneName: string): AlarmTableData {
-
-        let date = (new Date(obs.timestamp)).toISOString();
-
-        if(obs.result?.alarmState){
-            let state = obs.result.alarmState;
-
-            return new AlarmTableData(randomUUID(), laneName, state, date);
-
-        }else if(obs.result?.tamperStatus){
-            return  new AlarmTableData(randomUUID(), laneName, 'Tamper', date);
-        }
-
-    }
-
-
-    async function doFetch(laneMap: Map<string, LaneMapEntry>, observedProperty: string) {
-        let allFetchedResults: AlarmTableData[] = [];
-        let promiseGroup: Promise<void>[] = [];
-
-        const laneMapToMap = convertToMap(laneMap);
-
-        laneMapToMap.forEach((entry: LaneMapEntry, laneName: string) => {
-            let promise = (async () => {
-                let startTimeForObs = new Date();
-                startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
-
-                let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now', observedProperty) ?? [];
-
-                allFetchedResults.push(...fetchedResults);
-
-            })();
-            promiseGroup.push(promise);
-        });
-
-        await Promise.all(promiseGroup);
-
-        return allFetchedResults;
-    }
-
-
-    const convertToMap = (obj: any) =>{
-        if(!obj) return new Map();
-        if(obj instanceof Map) return obj;
-        return new Map(Object.entries(obj));
-    }
-
-    function doStream(laneMap: Map<string, LaneMapEntry>, observedProperty: string) {
-        const laneMapToMap = convertToMap(laneMap);
-
-        laneMapToMap.forEach((entry) => {
-            streamObservations(entry, observedProperty);
-        })
-    }
-
-
-    useEffect(() => {
-        dataStreamSetup(laneMap);
-    }, [laneMap]);
 
     const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
         if (!laneMap) return;
 
-        const laneMapToMap = convertToMap(laneMap);
 
         let hasGamma = false;
         let hasNeutron = false;
@@ -170,7 +44,7 @@ export default function StatusTables({laneMap}: TableProps){
         let allStatusResults: AlarmTableData[] = [];
 
 
-        laneMapToMap.forEach((entry: LaneMapEntry) => {
+        laneMap.forEach((entry: LaneMapEntry) => {
             entry.datastreams.forEach((ds: typeof DataStream) => {
                 if (!hasGamma && isGammaDatastream(ds)) {
                     hasGamma = true;
@@ -205,18 +79,152 @@ export default function StatusTables({laneMap}: TableProps){
     }, [laneMap]);
 
 
+    async function doFetch(laneMap: Map<string, LaneMapEntry>, observedProperty: string) {
+        let allFetchedResults: AlarmTableData[] = [];
+        let promiseGroup: Promise<void>[] = [];
+
+
+        laneMap.forEach((entry: LaneMapEntry, laneName: string) => {
+            let promise = (async () => {
+                let startTimeForObs = new Date();
+                startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
+
+                let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now', observedProperty) ?? [];
+
+                allFetchedResults.push(...fetchedResults);
+
+            })();
+            promiseGroup.push(promise);
+        });
+
+        await Promise.all(promiseGroup);
+
+        return allFetchedResults;
+    }
+
+    function doStream(laneMap: Map<string, LaneMapEntry>, observedProperty: string) {
+
+        laneMap.forEach((entry) => {
+            streamObservations(entry, observedProperty);
+        });
+    }
+
+    async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string, observedProperty: string) {
+        const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
+
+        let dss: typeof DataStream = laneEntry.findDataStreamByObsProperty(observedProperty);
+
+        if (!dss) return;
+
+        const results: AlarmTableData[] = [];
+
+        for (const ds of dss) {
+            let obsCollection = await ds.searchObservations(observationFilter, 15);
+            const result = await handleObservations(obsCollection, laneEntry, false);
+            results.push(...result);
+        }
+        return results;
+
+    }
+
+    async function streamObservations(laneEntry: LaneMapEntry, observedProperty: string) {
+        let futureTime = new Date();
+        futureTime.setFullYear(futureTime.getFullYear() + 1);
+
+        let dss: typeof DataStream = laneEntry.findDataStreamByObsProperty(observedProperty);
+
+        if(!dss) return;
+
+        dss.forEach((ds: typeof DataStream)=>{
+            ds.streamObservations(new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`
+            }), (obs: any) => {
+
+                let state = obs[0].result.alarmState;
+                if(["Scan", "Background", "Alarm"].includes(state)) return;
+
+                let result = eventFromObservation(obs[0], laneEntry.laneName);
+
+                if(result){
+
+                    dispatch(addEventToLaneViewLog(result));
+                }
+            })
+        })
+    }
+
+    // @ts-ignore
+    async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<AlarmTableData[]> {
+        let observations: AlarmTableData[] = [];
+
+        while (obsCollection.hasNext()) {
+            let obsResults = await obsCollection.nextPage();
+            obsResults.map((obs: any) => {
+                const state = obs?.result?.alarmState;
+                if (["Scan", "Background", "Alarm"].includes(state)) return;
+
+                let result = eventFromObservation(obs, laneEntry.laneName);
+
+                if(result){
+                    observations.push(result);
+                    if (addToLog) dispatch(addEventToLaneViewLog(result));
+                }
+            })
+        }
+        return observations;
+    }
+
+    function eventFromObservation(obs: any, laneName: string): AlarmTableData {
+
+        let date = (new Date(obs.timestamp)).toISOString();
+
+        if(obs.result?.alarmState){
+            let state = obs.result.alarmState;
+
+            return new AlarmTableData(randomUUID(), laneName, state, date);
+
+        }else if(obs.result?.tamperStatus){
+            return  new AlarmTableData(randomUUID(), laneName, 'Tamper', date);
+        }
+
+    }
+
+    useEffect(() => {
+        laneMap = convertToMap(laneMap);
+        dataStreamSetup(laneMap);
+
+        return () => {
+          console.log("Lane View: StatusTables unmounted, cleaning up resources")
+            laneMap.forEach((entry) => {
+
+                let alarmDs: typeof DataStream = entry.findDataStreamByObsProperty("http://www.opengis.net/def/alarm")
+                let tamperDs: typeof DataStream = entry.findDataStreamByObsProperty("http://www.opengis.net/def/tamper-status")
+
+                if(alarmDs){
+                    alarmDs.forEach((ds: typeof DataStream) => {
+                        ds.stream().disconnect();
+                    });
+                }
+                if(tamperDs){
+                    tamperDs.forEach((ds: typeof DataStream) => {
+                        ds.stream().disconnect();
+                    })
+                }
+            });
+        };
+    }, [laneMap]);
 
 
     useEffect(()=>{
-        let filteredData: AlarmTableData[];
-
-        filteredData = tableData.filter((entry: AlarmTableData)=> entry?.laneId == currentLane)
-
+        let filteredData: AlarmTableData[] = tableData.filter((entry: AlarmTableData)=> entry?.laneId == currentLane)
         setFilteredTableData(filteredData);
+    },[tableData, currentLane])
 
-    },[tableData])
 
-    const locale = navigator.language || 'en-US';
+    const convertToMap = (obj: any) =>{
+        if(!obj) return new Map();
+        if(obj instanceof Map) return obj;
+        return new Map(Object.entries(obj));
+    }
 
     const columns: GridColDef<AlarmTableData>[] = [
         {
@@ -249,7 +257,6 @@ export default function StatusTables({laneMap}: TableProps){
             flex: 1,
         },
     ];
-
 
     return(
         <Box sx={{height: 800, width: '100%'}}>

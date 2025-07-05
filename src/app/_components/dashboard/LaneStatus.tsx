@@ -23,6 +23,8 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
   let timersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   let alarmStates= ['Alarm', 'Scan', 'Background']
 
+  const dispatch = useAppDispatch();
+  const router = useRouter();
 
   useEffect(() => {
     setStatusList(props.initialLanes);
@@ -39,30 +41,58 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
         const state = message.values[0].data.alarmState;
         updateStatus(laneName, state);
-
       });
+
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
         const state = message.values[0].data.alarmState;
         updateStatus(laneName, state);
       });
+
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
         const state = message.values[0].data.tamperStatus;
         updateStatus(laneName, (state ? 'Tamper': 'TamperOff'));
       });
 
-
-      laneDSColl.connectAllDS().then(console.log("Dashboard Statuses Connected"));
+      // connect to only necessary datasources
+      laneDSColl.addConnectToALLDSMatchingName('connectionRT');
+      laneDSColl.addConnectToALLDSMatchingName('tamperRT');
+      laneDSColl.addConnectToALLDSMatchingName('neutronRT');
+      laneDSColl.addConnectToALLDSMatchingName('gammaRT');
     }
   }, [props.dataSourcesByLane]);
 
   useEffect(() => {
     addSubscriptionCallbacks();
-  }, [props.dataSourcesByLane]);
+
+    return() => {
+      console.log("Dashboard: Lane Status unmounted, cleaning up timers and disconnecting from datasources")
+
+      // clean up timers
+      for(const timeout of timersRef.current.values()){
+        clearTimeout(timeout);
+      }
+      timersRef.current.clear();
+
+
+      //clean up subscriptions and disconnect from datasources
+      for (let [laneName, laneDSColl] of props.dataSourcesByLane.entries()) {
+
+        laneDSColl.addDisconnectToALLDSMatchingName('connectionRT');
+        laneDSColl.addDisconnectToALLDSMatchingName('tamperRT');
+        laneDSColl.addDisconnectToALLDSMatchingName('neutronRT');
+        laneDSColl.addDisconnectToALLDSMatchingName('gammaRT');
+      }
+    };
+
+  }, [props.dataSourcesByLane, addSubscriptionCallbacks]);
 
 
   function updateStatus(laneName: string, newState: string) {
 
-    clearTimeout(timersRef.current.get(laneName));
+    // clear existing timer for this lane
+    if(timersRef.current.has(laneName)){
+      clearTimeout(timersRef.current.get(laneName));
+    }
 
     setStatusList((prevList) => {
       let existingLane = prevList.find((lane) => lane.name === laneName)
@@ -71,25 +101,16 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
         const updatedList = prevList.map((laneData) => {
           if (laneData.name === laneName) {
             if (newState === 'Tamper') {
-
               return {...laneData, isTamper: true, isOnline: true}
-
             }else if (newState === 'TamperOff') {
-
               return {...laneData, isTamper: false, isOnline: true}
-
             }else if (newState === 'Fault - Neutron High' || newState === 'Fault - Gamma High' || newState === 'Fault - Gamma Low') {
               return {...laneData, isFault: true, isOnline: true}
-
             }else if (newState === 'Clear') {
               return {...laneData, isFault: false }
-
             } else if (newState === 'Online'|| alarmStates.includes(newState)) {
-
               return {...laneData, isFault: false, isOnline: true}
-
             }else if (newState === 'Offline') {
-
               return {...laneData, isOnline: false, isFault: false, isTamper: false}
             }
           }
@@ -97,11 +118,11 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
         });
 
 
-        // we still want to clear alarming states like fault after a certain time...
-        setTimeout(() => updateStatus(laneName, 'Clear'), 15000);
+        // set new timer
+        const timer = setTimeout(() => updateStatus(laneName, 'Clear'), 10000);
+        timersRef.current.set(laneName, timer);
 
         return [...updatedList];
-
 
       }else{
         const newLane: LaneStatusProps= {
@@ -116,12 +137,10 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
     });
   }
 
-  const dispatch = useAppDispatch();
-  const router = useRouter();
+
 
   const handleLaneView = (laneName: string) =>{
     dispatch(setCurrentLane(laneName));
-
     router.push("/lane-view");
   }
 
@@ -134,7 +153,7 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
                 <Grid container columns={{sm: 12, md: 24, lg: 36, xl: 48}} spacing={1}>
                   {statusList.map((item) => (
                       <Grid key={item.id} item sm={8} md={8} lg={8} xl={6}>
-                        <div key={item.id} onClick={() => handleLaneView(item.name)}>
+                        <div onClick={() => handleLaneView(item.name)}>
                           <LaneStatusItem
                               key={item.id}
                               id={item.id}

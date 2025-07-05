@@ -28,12 +28,7 @@ export default function LaneStatus(props: LaneStatusProps) {
 
   const addSubscriptionCallbacks = useCallback(() => {
 
-    // const gammaDs = props.dataSourcesByLane.getDSArray("gammaRT")[0];
-    // const neutronDs = props.dataSourcesByLane.getDSArray("neutronRT")[0]
-    // const tamperDs = props.dataSourcesByLane.getDSArray("tamperRT")[0];
-
     props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("gammaRT", (message: any) => {
-      console.log("gamma message: ", message);
       const state = message.values[0].data.alarmState;
       updateStatus(currentLane, state);
     })
@@ -50,11 +45,10 @@ export default function LaneStatus(props: LaneStatusProps) {
       }
     })
 
-    props.dataSourcesByLane.connectAllDS().then(console.log("Lane View Statuses Connected"));
+    props.dataSourcesByLane.connectAllDS().then(() => console.log("Lane View Statuses Connected"));
 
   }, [props.dataSourcesByLane]);
 
-  function handleAlarms(ds)
 
   async function fetchLatestStatus() {
 
@@ -87,6 +81,11 @@ export default function LaneStatus(props: LaneStatusProps) {
       fetchLatestStatus();
 
     addSubscriptionCallbacks();
+
+    return() => {
+      console.log("Lane View: Lane Status unmounted, cleaning up resources")
+      props.dataSourcesByLane.disconnectAllDS();
+    }
   }, [props.dataSourcesByLane]);
 
   function updateStatus(laneName: string, newState: string){

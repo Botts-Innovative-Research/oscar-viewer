@@ -70,11 +70,11 @@ export default function EventTable({
                                    }: TableProps) {
 
     const selectedRowId = useSelector(selectSelectedRowId);
+    const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
 
     const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([selectedRowId]); // Currently selected row
-
-    const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
     const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
+
     const dispatch = useAppDispatch();
     const router = useRouter();
 
@@ -102,7 +102,7 @@ export default function EventTable({
             let resultEvent = eventFromObservation(observation[0], laneEntry);
             dispatch(addEventToLog(resultEvent));
 
-        })
+        });
     }
 
     //Pseudorandom number generator from event data
@@ -118,7 +118,6 @@ export default function EventTable({
         }
         return (hash >>> 0) / 4294967296;
     }
-
 
     // @ts-ignore
     async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<EventTableData[]> {
@@ -193,15 +192,12 @@ export default function EventTable({
             return entry.adjudicatedData.adjudicationCode.code === 0;
 
         })
-
     }
 
     function onlyAlarmingFilteredList(tableData: EventTableData[]) {
         if (!tableData) return [];
         return  tableData.filter((entry: EventTableData) => entry.status !== 'None')
-
     }
-
 
     function laneEventList(tableData: EventTableData[]){
         let filteredData: EventTableData[] = [];
@@ -212,7 +208,6 @@ export default function EventTable({
 
 
     useEffect(() => {
-        console.log("laneMap changed size", laneMap)
         dataStreamSetup(laneMap);
     }, [laneMap, laneMap.size]);
 
@@ -356,16 +351,13 @@ export default function EventTable({
             .map((column) => column.field);
     }
 
-
     useEffect(() => {
         if(!selectedRowId){
             setSelectionModel([])
         }
     }, [selectedRowId]);
 
-
     const handleRowSelection = (params: GridRowParams) => {
-
         const selectedId = params.row.id;
 
         if (selectedRowId === selectedId) {
@@ -393,7 +385,6 @@ export default function EventTable({
         }
     };
 
-
     async function getLatestGB(eventData: any){
 
         for (const lane of laneMap.values()){
@@ -414,7 +405,6 @@ export default function EventTable({
                 rows={filteredTableData}
                 columns={columns}
                 onRowClick={handleRowSelection}
-
                 rowSelectionModel={selectionModel}
                 initialState={{
                     pagination: {
@@ -428,7 +418,6 @@ export default function EventTable({
                             secondaryInspection: viewSecondary,
                             isAdjudicated: viewAdjudicated,
                             // adjudicatedCode: viewAdjudicated,
-
                         },
                     },
                     sorting: {
@@ -465,14 +454,10 @@ export default function EventTable({
                         return "highlightOther";
                     else
                         return '';
-
-
                 }}
-
                 getRowClassName={(params) =>
                     selectionModel.includes(params.row.id) ? 'selected-row' : ''
                 }
-
                 sx={{
                     // '& .MuiDataGrid-row:hover': {
                     //     backgroundColor: 'rgba(33,150,243,0.5)',
@@ -481,7 +466,6 @@ export default function EventTable({
                     [`.${gridClasses.row}.selected-row`]: {
                         backgroundColor: 'rgba(33,150,243,0.5)',
                     },
-
                     // Assign styling to 'Status' column based on className
                     [`.${gridClasses.cell}.highlightGamma`]: {
                         backgroundColor: "error.main",
@@ -495,7 +479,6 @@ export default function EventTable({
                         backgroundColor: "secondary.main",
                         color: "secondary.contrastText",
                     },
-
                     [`.${gridClasses.cell}.highlightReal`]: {
                         color: "error.dark",
                     },
@@ -508,14 +491,9 @@ export default function EventTable({
                     [`.${gridClasses.cell}.highlightOther`]: {
                         color: "text.primary",
                     },
-
                     border: "none",
-
-
                 }}
-
             />
-
         </Box>
     )
 }
