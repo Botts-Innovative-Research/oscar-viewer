@@ -248,6 +248,7 @@ export default function EventTable({
             type: 'boolean',
             minWidth: 125,
             flex: 1,
+            filterable: viewSecondary
         },
         {
             field: 'laneId',
@@ -318,6 +319,7 @@ export default function EventTable({
             valueFormatter: (params) => params ? "Yes" : "No",
             minWidth: 100,
             flex: 1,
+            filterable: viewAdjudicated
         },
         {
             field: 'Menu',
@@ -414,7 +416,6 @@ export default function EventTable({
                 rows={filteredTableData}
                 columns={columns}
                 onRowClick={handleRowSelection}
-
                 rowSelectionModel={selectionModel}
                 initialState={{
                     pagination: {
@@ -428,8 +429,8 @@ export default function EventTable({
                             secondaryInspection: viewSecondary,
                             isAdjudicated: viewAdjudicated,
                             // adjudicatedCode: viewAdjudicated,
-
                         },
+
                     },
                     sorting: {
                         sortModel: [{field: 'startTime', sort: 'desc'}]
