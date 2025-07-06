@@ -63,7 +63,9 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
 
   useEffect(() => {
     addSubscriptionCallbacks();
+  }, [props.dataSourcesByLane]);
 
+  useEffect(() => {
     return() => {
       console.log("Dashboard: Lane Status unmounted, cleaning up timers and disconnecting from datasources")
 
@@ -83,15 +85,14 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
         laneDSColl.addDisconnectToALLDSMatchingName('gammaRT');
       }
     };
-
-  }, [props.dataSourcesByLane, addSubscriptionCallbacks]);
-
+  }, []);
 
   function updateStatus(laneName: string, newState: string) {
 
     // clear existing timer for this lane
     if(timersRef.current.has(laneName)){
       clearTimeout(timersRef.current.get(laneName));
+      timersRef.current.delete(laneName)
     }
 
     setStatusList((prevList) => {
@@ -99,28 +100,39 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
 
       if(existingLane){
         const updatedList = prevList.map((laneData) => {
-          if (laneData.name === laneName) {
-            if (newState === 'Tamper') {
-              return {...laneData, isTamper: true, isOnline: true}
-            }else if (newState === 'TamperOff') {
-              return {...laneData, isTamper: false, isOnline: true}
-            }else if (newState === 'Fault - Neutron High' || newState === 'Fault - Gamma High' || newState === 'Fault - Gamma Low') {
-              return {...laneData, isFault: true, isOnline: true}
-            }else if (newState === 'Clear') {
-              return {...laneData, isFault: false }
-            } else if (newState === 'Online'|| alarmStates.includes(newState)) {
-              return {...laneData, isFault: false, isOnline: true}
-            }else if (newState === 'Offline') {
-              return {...laneData, isOnline: false, isFault: false, isTamper: false}
-            }
+          if(laneData.name !== laneName) return laneData;
+
+          if (newState === 'Tamper') {
+            return {...laneData, isTamper: true, isOnline: true}
+          }else if (newState === 'TamperOff') {
+            return {...laneData, isTamper: false, isOnline: true}
+          }else if (newState === 'Fault - Neutron High' ||
+              newState === 'Fault - Gamma High' ||
+              newState === 'Fault - Gamma Low'
+          ) {
+            return {...laneData, isFault: true, isOnline: true}
+          }else if (newState === 'Clear') {
+            return {...laneData, isFault: false }
+          } else if (newState === 'Online'||
+              alarmStates.includes(newState)
+          ) {
+            return {...laneData, isFault: false, isOnline: true}
+          }else if (newState === 'Offline') {
+            return {...laneData, isOnline: false, isFault: false, isTamper: false}
           }
+
           return laneData;
         });
 
 
-        // set new timer
-        const timer = setTimeout(() => updateStatus(laneName, 'Clear'), 10000);
-        timersRef.current.set(laneName, timer);
+        // set timer when in fault-alarm states
+        if(newState.includes('Fault') || alarmStates.includes(newState)){
+          const timer = setTimeout(() => {
+            updateStatus(laneName, 'Clear')
+          }, 10000);
+          timersRef.current.set(laneName, timer);
+        }
+
 
         return [...updatedList];
 
@@ -152,7 +164,7 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
             {(
                 <Grid container columns={{sm: 12, md: 24, lg: 36, xl: 48}} spacing={1}>
                   {statusList.map((item) => (
-                      <Grid key={item.id} item sm={8} md={8} lg={8} xl={6}>
+                      <Grid item sm={8} md={8} lg={8} xl={6}>
                         <div onClick={() => handleLaneView(item.name)}>
                           <LaneStatusItem
                               key={item.id}
