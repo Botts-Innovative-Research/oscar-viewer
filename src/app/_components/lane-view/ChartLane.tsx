@@ -158,6 +158,7 @@ export default function ChartLane(props: ChartInterceptProps){
                                 position: 'left',
                                 align: 'center',
                                 ticks: {
+                                    stepSize: 1
                                 },
 
                             },
