@@ -279,7 +279,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 options: {
                     scales: {
                         x: { title: { display: true, text: 'Time', padding: 5 }, type: 'time' },
-                        y: { type: 'linear', position: 'left', title: { display: true, text: 'CPS', padding: 15 }, beginAtZero: false }
+                        y: { type: 'linear', position: 'left', title: { display: true, text: 'CPS', padding: 15 }, beginAtZero: false, ticks: { stepSize: 1 } }
                     }
                 }
             });
