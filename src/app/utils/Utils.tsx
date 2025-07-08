@@ -95,3 +95,17 @@ export function findInObject(record: any, term: string) {
 
     return value;
 }
+
+export function convertToMap(obj: any){
+    if(!obj) return new Map();
+    if(obj instanceof Map) return obj;
+    return new Map(Object.entries(obj));
+}
+
+export function hashString(str: any) {
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash * 33) ^ str.charCodeAt(i);
+    }
+    return (hash >>> 0) / 4294967296;
+}

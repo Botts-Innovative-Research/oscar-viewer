@@ -28,11 +28,14 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
         connectDataSources();
 
         return () => {
-            console.log("Media unmounted, cleaning up resources")
 
-            datasources?.neutron?.disconnect();
-            datasources?.gamma?.disconnect();
-            datasources?.threshold?.disconnect();
+            if(!chartReady){
+                console.log("Media unmounted, cleaning up resources")
+                datasources?.neutron?.disconnect();
+                datasources?.gamma?.disconnect();
+                datasources?.threshold?.disconnect();
+            }
+
         };
     }, [datasources, chartReady]);
 

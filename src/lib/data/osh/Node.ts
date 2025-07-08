@@ -134,12 +134,24 @@ export class Node implements INode {
         return this.observationsApi;
     }
 
+    async searchObservations(observationFilter: typeof ObservationFilter, pageSize: number = 10){
+        return await this.getObservationsApi().searchObservations(observationFilter, pageSize);
+    }
+
     getSystemsApi(): typeof Systems{
         return this.systemsApi;
     }
 
+    async searchSystems(systemFilter: typeof SystemFilter, pageSize: number = 10){
+        return await this.getSystemsApi().searchSystems(systemFilter, pageSize);
+    }
+
     getDataStreamsApi(): typeof DataStreams {
         return this.dataStreamsApi;
+    }
+
+    async searchDataStreams(dsFilter: typeof DataStreamFilter, pageSize: number = 10){
+        return await this.getDataStreamsApi().searchDataStreams(dsFilter, pageSize);
     }
 
     setObservationsApi(apiConfig: string): typeof Observations{
@@ -208,7 +220,6 @@ export class Node implements INode {
         console.log("LaneFetched these objects:", fetchedLanes, fetchedSystems);
         return {lanes: null, systems: systems_arr};
     }
-
 
     async checkForEndpoint() {
         let ep: string = `${this.getConnectedSystemsEndpoint()}`;
@@ -458,7 +469,6 @@ export class Node implements INode {
         this.laneAdjMap = laneAdjDsMap;
         return adjSysAndDSMap;
     }
-
 
     async insertSystem(systemJSON: any, ep: string): Promise<string> {
         console.log("Inserting System: ", ep, JSON.stringify(systemJSON));
