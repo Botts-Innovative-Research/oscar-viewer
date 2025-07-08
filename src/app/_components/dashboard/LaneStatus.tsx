@@ -28,6 +28,18 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
 
   useEffect(() => {
     setStatusList(props.initialLanes);
+
+    return() => {
+      if(timersRef.current){
+        console.log("Dashboard: Lane Status unmounted, cleaning up timers")
+
+        // clean up timers
+        for(const timeout of timersRef.current.values()){
+          clearTimeout(timeout);
+        }
+        timersRef.current.clear();
+      }
+    };
   }, [props.initialLanes]);
 
   const addSubscriptionCallbacks = useCallback(() => {
@@ -59,22 +71,14 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
       laneDSColl.addConnectToALLDSMatchingName('neutronRT');
       laneDSColl.addConnectToALLDSMatchingName('gammaRT');
     }
+
   }, [props.dataSourcesByLane]);
 
   useEffect(() => {
     addSubscriptionCallbacks();
-  }, [props.dataSourcesByLane]);
 
-  useEffect(() => {
     return() => {
-      console.log("Dashboard: Lane Status unmounted, cleaning up timers and disconnecting from datasources")
-
-      // clean up timers
-      for(const timeout of timersRef.current.values()){
-        clearTimeout(timeout);
-      }
-      timersRef.current.clear();
-
+      console.log("Dashboard: Lane Status unmounted, disconnecting from datasources")
 
       //clean up subscriptions and disconnect from datasources
       for (let [laneName, laneDSColl] of props.dataSourcesByLane.entries()) {
@@ -85,11 +89,11 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
         laneDSColl.addDisconnectToALLDSMatchingName('gammaRT');
       }
     };
-  }, []);
+  }, [props.dataSourcesByLane]);
+
 
   function updateStatus(laneName: string, newState: string) {
-
-    // clear existing timer for this lane
+    // clear the existing timer for this lane
     if(timersRef.current.has(laneName)){
       clearTimeout(timersRef.current.get(laneName));
       timersRef.current.delete(laneName)
@@ -148,8 +152,6 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
       }
     });
   }
-
-
 
   const handleLaneView = (laneName: string) =>{
     dispatch(setCurrentLane(laneName));

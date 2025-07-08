@@ -45,7 +45,9 @@ export default function LaneStatus(props: LaneStatusProps) {
       }
     })
 
-    props.dataSourcesByLane.connectAllDS().then(() => console.log("Lane View Statuses Connected"));
+    props.dataSourcesByLane.addConnectToALLDSMatchingName("gammaRT");
+    props.dataSourcesByLane.addConnectToALLDSMatchingName("neutronRT");
+    props.dataSourcesByLane.addConnectToALLDSMatchingName("tamperRT");
 
   }, [props.dataSourcesByLane]);
 
@@ -56,7 +58,10 @@ export default function LaneStatus(props: LaneStatusProps) {
 
     // Just use gamma datasource bc all lanes should have it, and gamma "Background" state is the most common
     const gammaDatasource = currentLaneDatasources.gammaRT[0];
+    if(!gammaDatasource) return;
+
     const gammaDataStreamId = gammaDatasource.properties.resource.split('/')[2];
+
     const dsAPI = new DataStreams({
       endpointUrl: `${gammaDatasource.properties.endpointUrl}`,
       tls: gammaDatasource.properties.tls,
@@ -84,7 +89,9 @@ export default function LaneStatus(props: LaneStatusProps) {
 
     return() => {
       console.log("Lane View: Lane Status unmounted, cleaning up resources")
-      props.dataSourcesByLane.disconnectAllDS();
+      props.dataSourcesByLane.addDisconnectToALLDSMatchingName("gammaRT");
+      props.dataSourcesByLane.addDisconnectToALLDSMatchingName("neutronRT");
+      props.dataSourcesByLane.addDisconnectToALLDSMatchingName("tamperRT");
     }
   }, [props.dataSourcesByLane]);
 

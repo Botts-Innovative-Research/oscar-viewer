@@ -58,6 +58,10 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
             setDataSyncCreated(true);
             setDataSyncReady(true);
         }
+
+        return () => {
+            if(masterTimeController.current) masterTimeController.current.disconnect();
+        }
     }, [chartReady, masterTimeController, dataSyncCreated, datasources, datasourcesReady, eventData]);
 
 
@@ -101,13 +105,13 @@ export default function Media({eventData, datasources, laneMap}: {eventData: any
         }
 
         return () =>{
-            if(datasources.gamma) datasources?.gamma.disconnect()
+            if(!chartReady){
+                if(datasources.gamma) datasources?.gamma.disconnect()
 
-            if(datasources.neutron) datasources?.neutron.disconnect()
+                if(datasources.neutron) datasources?.neutron.disconnect()
 
-            if(datasources.threshold) datasources?.threshold.disconnect()
-
-            if(masterTimeController.current) masterTimeController.current.disconnect();
+                if(datasources.threshold) datasources?.threshold.disconnect()
+            }
         }
     }, [chartReady, masterTimeController, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady, datasources]);
 

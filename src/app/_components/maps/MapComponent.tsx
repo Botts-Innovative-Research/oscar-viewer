@@ -65,9 +65,6 @@ export default function MapComponent() {
             setLocationList(locations);
         }
 
-        return () => {
-
-        };
     },[laneMap, dsLocations]);
 
     /*****************lane status datasources******************/
@@ -131,13 +128,21 @@ export default function MapComponent() {
             laneDSColl.addConnectToALLDSMatchingName("tamperRT");
 
         }
+
+        return () => {
+            console.log("Cleaning up map datasources...")
+            for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
+                laneDSColl.addDisconnectToALLDSMatchingName("gammaRT");
+                laneDSColl.addDisconnectToALLDSMatchingName("neutronRT");
+                laneDSColl.addDisconnectToALLDSMatchingName("tamperRT");
+            }
+        }
     }, [dataSourcesByLane]);
 
     useEffect(() => {
         if (locationList !== null && locationList.length > 0) {
             addSubscriptionCallbacks();
         }
-
     }, [dataSourcesByLane]);
 
     useEffect(() => {
@@ -158,6 +163,12 @@ export default function MapComponent() {
             setIsInt(true);
         }
 
+        return () =>{
+            if(isInit && leafletViewRef.current != null){
+                leafletViewRef.current.destroy();
+                leafletViewRef.current = undefined;
+            }
+        }
     }, [isInit]);
 
     useEffect(() => {
@@ -201,31 +212,18 @@ export default function MapComponent() {
             });
         }
 
+        return () => {
+            if(!isInit || !locationList || locationList.length === 0) return;
 
+            console.log("Unmounted Map: disconnecting from location datasources")
+
+            locationList.forEach((location) => {
+                location.locationSources.map((src: any) => src.disconnect());
+            });
+
+        }
     }, [locationList, isInit]);
 
-    useEffect(() => {
-        return () => {
-            console.log("Unmounted Map: disconnecting from location datasources")
-            if(locationList && locationList.length > 0){
-                locationList.forEach((location) => {
-                    location.locationSources.map((src: any) => src.disconnect());
-                });
-            }
-
-            console.log("Unmounted map -- alarm status datasources disconnected")
-            for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
-                laneDSColl.addDisconnectToALLDSMatchingName("gammaRT");
-                laneDSColl.addDisconnectToALLDSMatchingName("neutronRT");
-                laneDSColl.addDisconnectToALLDSMatchingName("tamperRT");
-            }
-
-            if(leafletViewRef.current != null){
-                leafletViewRef.current.destroy();
-                leafletViewRef.current = undefined;
-            }
-        }
-    }, []);
 
     const updateLocationList = (laneName: string, newStatus: string) => {
         setLocationList((prevState) => {

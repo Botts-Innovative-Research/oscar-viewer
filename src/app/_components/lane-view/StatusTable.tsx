@@ -19,6 +19,7 @@ import {DataGrid, GridCellParams, gridClasses, GridColDef} from "@mui/x-data-gri
 import CustomToolbar from "@/app/_components/CustomToolbar";
 import {selectCurrentLane} from "@/lib/state/LaneViewSlice";
 import {isGammaDatastream, isNeutronDatastream, isTamperDatastream} from "@/lib/data/oscar/Utilities";
+import { convertToMap } from "@/app/utils/Utils";
 
 
 interface TableProps {laneMap: Map<string, LaneMapEntry>;}
@@ -112,17 +113,15 @@ export default function StatusTables({laneMap}: TableProps){
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string, observedProperty: string) {
         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
 
-        let dss: typeof DataStream = laneEntry.findDataStreamByObsProperty(observedProperty);
-
-        if (!dss) return;
+        let ds: typeof DataStream = laneEntry.findDataStreamByObsProperty(observedProperty);
+        if (!ds) return;
 
         const results: AlarmTableData[] = [];
 
-        for (const ds of dss) {
-            let obsCollection = await ds.searchObservations(observationFilter, 15);
-            const result = await handleObservations(obsCollection, laneEntry, false);
-            results.push(...result);
-        }
+        let obsCollection = await ds.searchObservations(observationFilter, 15);
+        const result = await handleObservations(obsCollection, laneEntry, false);
+        results.push(...result);
+
         return results;
 
     }
@@ -131,25 +130,21 @@ export default function StatusTables({laneMap}: TableProps){
         let futureTime = new Date();
         futureTime.setFullYear(futureTime.getFullYear() + 1);
 
-        let dss: typeof DataStream = laneEntry.findDataStreamByObsProperty(observedProperty);
+        let ds: typeof DataStream = laneEntry.findDataStreamByObsProperty(observedProperty);
+        if(!ds) return;
 
-        if(!dss) return;
+        ds.streamObservations(new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`}), (obs: any) => {
+            let state = obs[0].result.alarmState;
+            if(["Scan", "Background", "Alarm"].includes(state)) return;
 
-        dss.forEach((ds: typeof DataStream)=>{
-            ds.streamObservations(new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`
-            }), (obs: any) => {
+            let result = eventFromObservation(obs[0], laneEntry.laneName);
 
-                let state = obs[0].result.alarmState;
-                if(["Scan", "Background", "Alarm"].includes(state)) return;
+            if(result){
 
-                let result = eventFromObservation(obs[0], laneEntry.laneName);
-
-                if(result){
-
-                    dispatch(addEventToLaneViewLog(result));
-                }
-            })
+                dispatch(addEventToLaneViewLog(result));
+            }
         })
+
     }
 
     // @ts-ignore
@@ -199,16 +194,12 @@ export default function StatusTables({laneMap}: TableProps){
                 let alarmDs: typeof DataStream = entry.findDataStreamByObsProperty("http://www.opengis.net/def/alarm")
                 let tamperDs: typeof DataStream = entry.findDataStreamByObsProperty("http://www.opengis.net/def/tamper-status")
 
-                if(alarmDs){
-                    alarmDs.forEach((ds: typeof DataStream) => {
-                        ds.stream().disconnect();
-                    });
-                }
-                if(tamperDs){
-                    tamperDs.forEach((ds: typeof DataStream) => {
-                        ds.stream().disconnect();
-                    })
-                }
+                if(alarmDs)
+                    alarmDs.stream().disconnect();
+
+                if(tamperDs)
+                    tamperDs.stream().disconnect();
+
             });
         };
     }, [laneMap]);
@@ -219,12 +210,6 @@ export default function StatusTables({laneMap}: TableProps){
         setFilteredTableData(filteredData);
     },[tableData, currentLane])
 
-
-    const convertToMap = (obj: any) =>{
-        if(!obj) return new Map();
-        if(obj instanceof Map) return obj;
-        return new Map(Object.entries(obj));
-    }
 
     const columns: GridColDef<AlarmTableData>[] = [
         {
@@ -247,7 +232,6 @@ export default function StatusTables({laneMap}: TableProps){
             }),
             minWidth: 200,
             flex: 2,
-
         },
         {
             field: 'status',
