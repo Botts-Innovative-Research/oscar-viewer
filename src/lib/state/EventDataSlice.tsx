@@ -7,16 +7,13 @@
 import {createSlice, PayloadAction} from "@reduxjs/toolkit";
 import {enableMapSet} from "immer";
 import {RootState} from "@/lib/state/Store";
-
 import {AlarmTableData, EventTableData} from "@/lib/data/oscar/TableHelpers";
 import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
 
 
 enableMapSet();
 
-
 export interface IEventDataState {
-    // eventLog: Map<string, EventTableData>,
     eventLog: EventTableData[],
     selectedEvent: EventTableData | null,
     hasFetchedInitial: boolean,
@@ -24,7 +21,6 @@ export interface IEventDataState {
 }
 
 const initialState: IEventDataState = {
-    // eventLog: new Map(),
     eventLog: [],
     selectedEvent: null,
     hasFetchedInitial: false,
@@ -40,9 +36,6 @@ export const Slice = createSlice({
         },
         setEventLogData: (state, action: PayloadAction<EventTableData[]>) => {
             state.eventLog = action.payload;
-            // action.payload.forEach((eventData) => {
-            //     state.eventLog.set(eventData.observationId, eventData);
-            // })
         },
         setSelectedEvent: (state, action: PayloadAction<EventTableData>) => {
             state.selectedEvent = action.payload;
@@ -60,23 +53,18 @@ export const Slice = createSlice({
                     ...state.selectedEvent,
                     adjudicatedData: action.payload
                 };
-
                 const eventInLogIdx = state.eventLog.findIndex((eventData) => eventData.id === state.selectedEvent.id);
                 if (eventInLogIdx !== -1) {
                     state.eventLog[eventInLogIdx] = updatedEvent;
                 }
-
                 state.selectedEvent = updatedEvent;
             }
-
         },
         setHasFetchedInitial: (state, action: PayloadAction<boolean>) => {
             state.hasFetchedInitial = action.payload;
         },
-
         addEventToLaneViewLog: (state, action: PayloadAction<AlarmTableData>) => {
             console.log("Alarm Status Adding to Log", action.payload)
-
             let currentLog = [];
             currentLog = [...state.laneViewLog];
             currentLog.push(action.payload);

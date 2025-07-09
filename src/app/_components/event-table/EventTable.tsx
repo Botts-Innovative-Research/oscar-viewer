@@ -1,7 +1,7 @@
 "use client"
 
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {useCallback, useEffect, useState} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 import {Box} from "@mui/material";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
@@ -10,9 +10,9 @@ import {
     setSelectedRowId,
     selectSelectedRowId, setLatestGB
 } from "@/lib/state/EventPreviewSlice";
-import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
-import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
-import {AlarmTableData, EventTableData} from "@/lib/data/oscar/TableHelpers";
+import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {
     DataGrid,
     GridActionsCellItem,
@@ -20,22 +20,23 @@ import {
     gridClasses,
     GridColDef,
     GridRowParams,
-    GridRowSelectionModel
+    GridRowSelectionModel,
 } from "@mui/x-data-grid";
 import CustomToolbar from "@/app/_components/CustomToolbar";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {
     addEventToLog,
-    selectEventTableDataArray,
-    setEventLogData,
+    selectEventTableDataArray, setEventLogData,
     setSelectedEvent
 } from "@/lib/state/EventDataSlice";
 import {useRouter} from "next/navigation";
 import {getObservations} from "@/app/utils/ChartUtils";
 import {isThresholdDatastream} from "@/lib/data/oscar/Utilities";
-import {convertToMap, hashString} from "@/app/utils/Utils";
 import {selectNodes} from "@/lib/state/OSHSlice";
+import {Node} from "@/lib/data/osh/Node";
+import { hashString } from "@/app/utils/Utils";
+import {GridDataSource, GridGetRowsParams, GridGetRowsResponse} from "@mui/x-data-grid/internals";
 
 
 interface TableProps {
@@ -72,125 +73,182 @@ export default function EventTable({
                                    }: TableProps) {
 
     const selectedRowId = useSelector(selectSelectedRowId);
-    const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
-
     const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([selectedRowId]); // Currently selected row
+    const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
     const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
 
+    // paginated data fetching
+
+    const [loading, setLoading] = useState(false);
+    const [paginationModel, setPaginationModel]= useState({page: 0, pageSize: 15});
+    const pageOffset = paginationModel.page - 1;
+    const [rowCount, setRowCount] = useState<number>(25);
+    const [prevPage, setPrevPage]= useState(0);
+    const [obsCurrentPage, setObsCurrentPage] = useState(0);
     const dispatch = useAppDispatch();
     const router = useRouter();
 
-    const observedProperty = "http://www.opengis.net/def/pillar-occupancy-count";
+    const nodes: Node[] = useSelector(selectNodes);
+
+    const observedProperty = 'http://www.opengis.net/def/pillar-occupancy-count';
 
 
-    async function doFetch(laneMap: Map<string, LaneMapEntry>) {
-        let allFetchedResults: EventTableData[] = [];
-        let promiseGroup: Promise<void>[] = [];
+    // useEffect(() => {
+    //     const startTime = new Date();
+    //     startTime.setFullYear(startTime.getFullYear() - 1);
+    //
+    //     const fetchPage = async () => {
+    //         const results = await fetchObservations(startTime.toISOString(), 'now');
+    //         setPrevPage(paginationModel.page);
+    //
+    //         console.log("Setting Filtered Table Data: ", results);
+    //         setFilteredTableData(results);
+    //         setRowCount(25) // how many pages there are
+    //     };
+    //
+    //     fetchPage();
+    //
+    // }, [paginationModel]);
 
-        laneMap.forEach((entry: LaneMapEntry, laneName: string) => {
-            let promise = (async () => {
-                let startTimeForObs = new Date();
-                startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
-                let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
-                allFetchedResults = [...allFetchedResults, ...fetchedResults];
+    const fetchPage = async () => {
+        let allFetchedResults: EventTableData[] = []
 
-            })();
-            promiseGroup.push(promise);
+        const startTime = new Date();
+        startTime.setFullYear(startTime.getFullYear() - 1);
+        const results = await fetchObservations(startTime.toISOString(), 'now');
+
+        allFetchedResults = [...allFetchedResults, ...results];
+
+        console.log(`Setting ${tableMode} Data: `, results);
+        dispatch(setEventLogData(allFetchedResults));
+
+        setRowCount(1000) // how many total items there are
+    };
+
+    const obsCollectionRef = useRef<any>(null);
+    //  need to pass the page in here
+    //TOTAL OBSERVATIONS === /sensorhub/api/observations/count?observedProperty=http://www.opengis.net/def/pillar-occupancy-count&limit=15
+    async function fetchObservations(startTime: string, endTime: string){
+        const observationFilter = new ObservationFilter({
+            observedProperty: observedProperty,
+            // resultTime: `${startTime}/${endTime}`
         });
 
-        await Promise.all(promiseGroup);
-        dispatch(setEventLogData(allFetchedResults))
-    }
+        if(!nodes?.length) return []
 
-    function doStream(laneMap: Map<string, LaneMapEntry>) {
-        laneMap.forEach((entry) => {
-            streamObservations(entry);
-        })
-    }
-
-    async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
-        const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
-        let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty(observedProperty);
-
-        if (!occDS) {
-            return;
+        if(!obsCollectionRef.current){
+            // TODO: be able to loop through all nodes
+            const node = nodes[0];
+            obsCollectionRef.current =  await node.searchObservations(observationFilter, 15);
         }
+        const obsCollection = obsCollectionRef.current;
 
-        let obsCollection = await occDS.searchObservations(observationFilter, 15);
+        let results: any = await obsCollection.page(paginationModel.page + 1);
 
-        return await handleObservations(obsCollection, laneEntry);
-    }
+        setObsCurrentPage(obsCollection.currentPage);
 
-    async function streamObservations(laneEntry: LaneMapEntry) {
-        let futureTime = new Date();
-        futureTime.setFullYear(futureTime.getFullYear() + 1);
+        console.log("Results from fetch: ", results);
+        console.log(`Pagination page ${paginationModel.page} vs obs collection page ${obsCollection.currentPage}`);
+        return await handleObservation(results);
 
-        const observationFilter = new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`});
 
-        let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty(observedProperty);
-        if(!occDS) return;
-
-        occDS.streamObservations(observationFilter, (observation: any) => {
-            let resultEvent = eventFromObservation(observation[0], laneEntry);
-            dispatch(addEventToLog(resultEvent));
-        });
+        // if(paginationModel.page >= prevPage && obsCollection.hasNext()){
+        //     results = await obsCollection.nextPage();
+        //     setObsCurrentPage(obsCollection.currentPage);
+        // }else if(paginationModel.page < prevPage && obsCollection.hasPrevious()){
+        //     results = await obsCollection.previousPage();
+        //     setObsCurrentPage(obsCollection.currentPage);
+        // }
+        // return await handleObservation(results);
     }
 
     // @ts-ignore
-    async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry): Promise<EventTableData[]> {
+    async function handleObservation(obsResults: any): Promise<EventTableData[]> {
         let observations: EventTableData[] = [];
 
-        while (obsCollection.hasNext()) {
-            let obsResults = await obsCollection.nextPage();
-            obsResults.map((obs: any) => {
-                let result = eventFromObservation(obs, laneEntry);
-                observations.push(result);
-            })
-        }
+        obsResults.map((obs: any) =>{
+            laneMap.forEach((entry: LaneMapEntry) => {
+                entry.datastreams.forEach((ds:any) =>{
+                    if(ds.properties.id === obs.properties['datastream@id']){
+                        let result = eventFromObservation(obs, entry, false);
+                        observations.push(result)
+                    }
+                });
+            });
+        });
+
         return observations;
     }
 
-    function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
-        const id = prngFromStr(obs, laneEntry.laneName);
-        let newEvent: EventTableData = new EventTableData(id, laneEntry.laneName, obs.result, obs.id, obs.foiId);
 
-        newEvent.setRPMSystemId(laneEntry.lookupSystemIdFromDataStreamId(obs[`datastream@id`]));
-        // newEvent.setLaneSystemId(laneEntry.lookupParentSystemFromSystemId(newEvent.rpmSystemId));
-        newEvent.setDataStreamId(obs["datastream@id"]);
-        newEvent.setFoiId(obs["foi@id"]);
-        newEvent.setObservationId(obs.id);
+    function eventFromObservation(obs: any, laneEntry: LaneMapEntry, isStream: boolean): EventTableData {
+
+        const datastreamId = isStream ? obs["datastream@id"] : obs.properties["datastream@id"];
+        const observationId = isStream ? obs.id : obs.properties.id;
+        const result = isStream ? obs.result : obs.properties.result;
+        const foiId = isStream ? obs["foi@id"] : null;
+
+        const idSrc = `${observationId}-${laneEntry.laneName}-${datastreamId}`;
+        const id = hashString(idSrc);
+
+        let newEvent = new EventTableData(id, laneEntry.laneName, result, observationId, foiId);
+        newEvent.setRPMSystemId(laneEntry.lookupSystemIdFromDataStreamId(datastreamId));
+        newEvent.setDataStreamId(datastreamId);
+        newEvent.setObservationId(observationId);
+        newEvent.setFoiId(foiId);
 
         return newEvent;
     }
+
+    // function doStream(laneMap: Map<string, LaneMapEntry>) {
+    //     laneMap.forEach((entry) => {
+    //         streamObservations(entry);
+    //     })
+    // }
+    // async function streamObservations(laneEntry: LaneMapEntry) {
+    //     let futureTime = new Date();
+    //     futureTime.setFullYear(futureTime.getFullYear() + 1);
+    //     let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty("http://www.opengis.net/def/pillar-occupancy-count");
+    //
+    //     const observationFilter = new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`});
+    //
+    //     if(occDS && occDS.length > 0){
+    //         occDS[0].streamObservations(observationFilter, (observation: any) => {
+    //             let resultEvent = eventFromObservation(observation[0], laneEntry, true);
+    //             dispatch(addEventToLog(resultEvent));
+    //         })
+    //     }
+    // }
 
     function unadjudicatedFilteredList(tableData: EventTableData[]) {
         if (!tableData) return [];
         return tableData.filter((entry) => {
             if (entry.isAdjudicated) return false;
             return entry.adjudicatedData.adjudicationCode.code === 0;
-
         })
     }
 
     function onlyAlarmingFilteredList(tableData: EventTableData[]) {
         if (!tableData) return [];
-        return  tableData.filter((entry: EventTableData) => entry.status !== 'None')
+        return tableData.filter((entry: EventTableData) => entry.status !== 'None')
     }
 
     function laneEventList(tableData: EventTableData[]){
-        let filteredData: EventTableData[] = tableData.filter((entry: EventTableData) => entry.laneId == currentLane)
-        return filteredData;
+        if (!tableData) return [];
+        return tableData.filter((entry: EventTableData) => entry.laneId == currentLane);
     }
 
-    useEffect(() => {
-        laneMap = convertToMap(laneMap);
-        dataStreamSetup(laneMap);
-    }, [laneMap, laneMap.size]);
 
-    const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
-        await doFetch(laneMap);
-        doStream(laneMap);
-    }, [laneMap]);
+    useEffect(() => {
+        // laneMap = convertToMap(laneMap);
+        dataStreamSetup();
+    }, [paginationModel]);
+
+    const dataStreamSetup = useCallback(async () => {
+        await fetchPage();
+        // doStream(laneMap);
+    }, [paginationModel]);
+
 
     useEffect(() => {
         let filteredData: EventTableData[] = [];
@@ -199,11 +257,11 @@ export default function EventTable({
         } else if (tableMode === 'eventlog') {
             filteredData = tableData
         }else if(tableMode === 'lanelog'){
-
             filteredData = laneEventList(tableData);
         }
         setFilteredTableData(filteredData);
     }, [tableData]);
+
 
     //------------------------------------------------------------------------------------------------------------------
     // Data Grid Setup and Related
@@ -312,7 +370,6 @@ export default function EventTable({
     ];
 
     const handleEventPreview = () =>{
-        //should we set the event preview open here using dispatch?
         router.push("/event-details")
     }
 
@@ -346,6 +403,7 @@ export default function EventTable({
             dispatch(setSelectedRowId(null));
             dispatch(setEventPreview({isOpen: false, eventData: null}));
         } else {
+
             dispatch(setEventPreview({isOpen: false, eventData: null})); //clear before setting new data
 
             setSelectionModel([selectedId]); // Highlight new row
@@ -365,20 +423,12 @@ export default function EventTable({
     async function getLatestGB(eventData: any){
         for (const lane of laneMap.values()){
             let datastreams = lane.datastreams.filter((ds: any) => isThresholdDatastream(ds));
-
             let gammaThreshDs = datastreams.find((ds: typeof DataStream) => ds.properties["system@id"] == eventData.rpmSystemId);
-
             if(gammaThreshDs){
                 let latestGB = await getObservations(eventData.startTime, eventData.endTime, gammaThreshDs);
                 dispatch(setLatestGB(latestGB));
             }
         }
-    }
-
-    //Pseudorandom number generator from event data
-    function prngFromStr(obs: any, laneName: string): number {
-        const baseId = `${obs.result?.occupancyCount}${laneName}${obs.result?.startTime}${obs.result?.endTime}`;
-        return hashString(baseId);
     }
 
 
@@ -387,13 +437,19 @@ export default function EventTable({
             <DataGrid
                 rows={filteredTableData}
                 columns={columns}
+                pagination
+                paginationMode="server"
+                // loading={loading}
+                paginationModel={paginationModel}
+                onPaginationModelChange={setPaginationModel}
                 onRowClick={handleRowSelection}
                 rowSelectionModel={selectionModel}
+                rowCount={rowCount}
                 initialState={{
                     pagination: {
                         paginationModel: {
                             pageSize: 15,
-                        },
+                        }
                     },
                     columns: {
                         // Manage visible columns in table based on component parameters
@@ -401,13 +457,13 @@ export default function EventTable({
                             secondaryInspection: viewSecondary,
                             isAdjudicated: viewAdjudicated,
                             // adjudicatedCode: viewAdjudicated,
+
                         },
                     },
                     sorting: {
                         sortModel: [{field: 'startTime', sort: 'desc'}]
                     },
                 }}
-                pageSizeOptions={[15]}
                 slots={{toolbar: CustomToolbar}}
                 slotProps={{
                     columnsManagement: {
@@ -437,14 +493,14 @@ export default function EventTable({
                         return "highlightOther";
                     else
                         return '';
+
+
                 }}
+
                 getRowClassName={(params) =>
                     selectionModel.includes(params.row.id) ? 'selected-row' : ''
                 }
                 sx={{
-                    // '& .MuiDataGrid-row:hover': {
-                    //     backgroundColor: 'rgba(33,150,243,0.5)',
-                    // },
                     // assign color styling to selected row
                     [`.${gridClasses.row}.selected-row`]: {
                         backgroundColor: 'rgba(33,150,243,0.5)',
@@ -476,7 +532,10 @@ export default function EventTable({
                     },
                     border: "none",
                 }}
+
             />
+
         </Box>
     )
 }
+
