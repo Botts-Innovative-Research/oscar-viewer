@@ -30,7 +30,7 @@ import {
 
 import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {useRouter} from "next/navigation";
+import {useRouter} from "next/dist/client/components/navigation";
 import ChartTimeHighlight from "@/app/_components/event-preview/ChartTimeHighlight";
 import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
