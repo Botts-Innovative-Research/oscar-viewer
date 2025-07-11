@@ -35,8 +35,9 @@ import {getObservations} from "@/app/utils/ChartUtils";
 import {isThresholdDatastream} from "@/lib/data/oscar/Utilities";
 import {selectNodes} from "@/lib/state/OSHSlice";
 import {Node} from "@/lib/data/osh/Node";
-import { hashString } from "@/app/utils/Utils";
+import {convertToMap, hashString } from "@/app/utils/Utils";
 import {GridDataSource, GridGetRowsParams, GridGetRowsResponse} from "@mui/x-data-grid/internals";
+import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams";
 
 
 interface TableProps {
@@ -92,93 +93,70 @@ export default function EventTable({
 
     const observedProperty = 'http://www.opengis.net/def/pillar-occupancy-count';
 
+    // @ts-ignore
+    async function doFetch(laneMap: Map<string, LaneMapEntry>) {
+        let allFetchedResults: EventTableData[] = [];
 
-    // useEffect(() => {
-    //     const startTime = new Date();
-    //     startTime.setFullYear(startTime.getFullYear() - 1);
-    //
-    //     const fetchPage = async () => {
-    //         const results = await fetchObservations(startTime.toISOString(), 'now');
-    //         setPrevPage(paginationModel.page);
-    //
-    //         console.log("Setting Filtered Table Data: ", results);
-    //         setFilteredTableData(results);
-    //         setRowCount(25) // how many pages there are
-    //     };
-    //
-    //     fetchPage();
-    //
-    // }, [paginationModel]);
+        let allDS: typeof DataStream = [];
 
-    const fetchPage = async () => {
-        let allFetchedResults: EventTableData[] = []
 
         const startTime = new Date();
         startTime.setFullYear(startTime.getFullYear() - 1);
-        const results = await fetchObservations(startTime.toISOString(), 'now');
 
-        allFetchedResults = [...allFetchedResults, ...results];
 
-        console.log(`Setting ${tableMode} Data: `, results);
-        dispatch(setEventLogData(allFetchedResults));
-
-        setRowCount(1000) // how many total items there are
-    };
-
-    const obsCollectionRef = useRef<any>(null);
-    //  need to pass the page in here
-    //TOTAL OBSERVATIONS === /sensorhub/api/observations/count?observedProperty=http://www.opengis.net/def/pillar-occupancy-count&limit=15
-    async function fetchObservations(startTime: string, endTime: string){
-        const observationFilter = new ObservationFilter({
-            observedProperty: observedProperty,
-            // resultTime: `${startTime}/${endTime}`
+        laneMap.forEach((entry: LaneMapEntry, laneName: string) => {
+            const ds = entry.findDataStreamByObsProperty(observedProperty);
+            if(ds) allDS.push(ds);
         });
 
-        if(!nodes?.length) return []
+        if(allDS.length == 0 || !nodes?.length) return [];
 
-        if(!obsCollectionRef.current){
-            // TODO: be able to loop through all nodes
-            const node = nodes[0];
-            obsCollectionRef.current =  await node.searchObservations(observationFilter, 15);
-        }
-        const obsCollection = obsCollectionRef.current;
-
-        let results: any = await obsCollection.page(paginationModel.page + 1);
-
-        setObsCurrentPage(obsCollection.currentPage);
-
-        console.log("Results from fetch: ", results);
-        console.log(`Pagination page ${paginationModel.page} vs obs collection page ${obsCollection.currentPage}`);
-        return await handleObservation(results);
+        const node = nodes[0];
 
 
-        // if(paginationModel.page >= prevPage && obsCollection.hasNext()){
-        //     results = await obsCollection.nextPage();
-        //     setObsCurrentPage(obsCollection.currentPage);
-        // }else if(paginationModel.page < prevPage && obsCollection.hasPrevious()){
-        //     results = await obsCollection.previousPage();
-        //     setObsCurrentPage(obsCollection.currentPage);
-        // }
-        // return await handleObservation(results);
+        const dataStreamIds = allDS.map((ds: typeof DataStreams) => ds.properties.id);
+
+        const observationFilter = new ObservationFilter({
+            dataStream: dataStreamIds,
+            resultTime: `${startTime.toISOString()}/now`
+        });
+
+
+       let obsApi = node.getObservationsApi();
+       if(obsApi){
+           let obsCollection = await obsApi.searchObservations(observationFilter, 15);
+           const results = await handleObservations(obsCollection)
+           allFetchedResults.push(...results);
+       }
+
+        dispatch(setEventLogData(allFetchedResults))
     }
+
+
 
     // @ts-ignore
-    async function handleObservation(obsResults: any): Promise<EventTableData[]> {
+    async function handleObservations(obsCollection: Collection<JSON>): Promise<EventTableData[]> {
         let observations: EventTableData[] = [];
 
-        obsResults.map((obs: any) =>{
-            laneMap.forEach((entry: LaneMapEntry) => {
-                entry.datastreams.forEach((ds:any) =>{
-                    if(ds.properties.id === obs.properties['datastream@id']){
-                        let result = eventFromObservation(obs, entry, false);
-                        observations.push(result)
-                    }
-                });
-            });
-        });
+        while (obsCollection.hasNext()) {
+            let obsResults = await obsCollection.nextPage();
 
+                obsResults.map((obs: any) =>{
+                    laneMap.forEach((entry: LaneMapEntry) => {
+                        entry.datastreams.forEach((ds:any) =>{
+                            if(ds.properties.id === obs.properties['datastream@id']){
+                                let result = eventFromObservation(obs, entry, false);
+                                observations.push(result)
+                            }
+                        });
+                    });
+                });
+        }
         return observations;
     }
+
+
+
 
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry, isStream: boolean): EventTableData {
@@ -240,14 +218,15 @@ export default function EventTable({
 
 
     useEffect(() => {
-        // laneMap = convertToMap(laneMap);
-        dataStreamSetup();
-    }, [paginationModel]);
+        laneMap = convertToMap(laneMap);
+        dataStreamSetup(laneMap);
+    }, [laneMap]);
 
-    const dataStreamSetup = useCallback(async () => {
-        await fetchPage();
+    const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
+        // await fetchPage();
+        await doFetch(laneMap);
         // doStream(laneMap);
-    }, [paginationModel]);
+    }, [laneMap]);
 
 
     useEffect(() => {
@@ -434,22 +413,46 @@ export default function EventTable({
 
     return (
         <Box sx={{flex: 1, width: '100%', height: 800}}>
+            {/*<DataGrid*/}
+            {/*    rows={filteredTableData}*/}
+            {/*    columns={columns}*/}
+            {/*    pagination*/}
+            {/*    paginationMode="server"*/}
+            {/*    // loading={loading}*/}
+            {/*    paginationModel={paginationModel}*/}
+            {/*    onPaginationModelChange={setPaginationModel}*/}
+            {/*    onRowClick={handleRowSelection}*/}
+            {/*    rowSelectionModel={selectionModel}*/}
+            {/*    rowCount={rowCount}*/}
+            {/*    initialState={{*/}
+            {/*        pagination: {*/}
+            {/*            paginationModel: {*/}
+            {/*                pageSize: 15,*/}
+            {/*            }*/}
+            {/*        },*/}
+            {/*        columns: {*/}
+            {/*            // Manage visible columns in table based on component parameters*/}
+            {/*            columnVisibilityModel: {*/}
+            {/*                secondaryInspection: viewSecondary,*/}
+            {/*                isAdjudicated: viewAdjudicated,*/}
+            {/*                // adjudicatedCode: viewAdjudicated,*/}
+
+            {/*            },*/}
+            {/*        },*/}
+            {/*        sorting: {*/}
+            {/*            sortModel: [{field: 'startTime', sort: 'desc'}]*/}
+            {/*        },*/}
+            {/*    }}*/}
             <DataGrid
                 rows={filteredTableData}
                 columns={columns}
-                pagination
-                paginationMode="server"
-                // loading={loading}
-                paginationModel={paginationModel}
-                onPaginationModelChange={setPaginationModel}
                 onRowClick={handleRowSelection}
                 rowSelectionModel={selectionModel}
-                rowCount={rowCount}
                 initialState={{
                     pagination: {
                         paginationModel: {
                             pageSize: 15,
-                        }
+                        },
                     },
                     columns: {
                         // Manage visible columns in table based on component parameters
@@ -457,13 +460,14 @@ export default function EventTable({
                             secondaryInspection: viewSecondary,
                             isAdjudicated: viewAdjudicated,
                             // adjudicatedCode: viewAdjudicated,
-
                         },
+
                     },
                     sorting: {
                         sortModel: [{field: 'startTime', sort: 'desc'}]
                     },
                 }}
+                pageSizeOptions={[15]}
                 slots={{toolbar: CustomToolbar}}
                 slotProps={{
                     columnsManagement: {
@@ -539,3 +543,76 @@ export default function EventTable({
     )
 }
 
+
+
+
+// const fetchPage = async () => {
+//     let allFetchedResults: EventTableData[] = []
+//
+//     const startTime = new Date();
+//     startTime.setFullYear(startTime.getFullYear() - 1);
+//     const results = await fetchObservations(startTime.toISOString(), 'now');
+//
+//     allFetchedResults = [...allFetchedResults, ...results];
+//
+//     console.log(`Setting ${tableMode} Data: `, results);
+//     dispatch(setEventLogData(allFetchedResults));
+//
+//     setRowCount(1000) // how many total items there are
+// };
+
+// const obsCollectionRef = useRef<any>(null);
+
+// //  need to pass the page in here
+// //TOTAL OBSERVATIONS === /sensorhub/api/observations/count?observedProperty=http://www.opengis.net/def/pillar-occupancy-count&limit=15
+// async function fetchObservations(startTime: string, endTime: string){
+//     const observationFilter = new ObservationFilter({
+//         observedProperty: observedProperty,
+//         // resultTime: `${startTime}/${endTime}`
+//     });
+//
+//     if(!nodes?.length) return []
+//
+//     if(!obsCollectionRef.current){
+//         // TODO: be able to loop through all nodes
+//         const node = nodes[0];
+//         obsCollectionRef.current =  await node.searchObservations(observationFilter, 15);
+//     }
+//     const obsCollection = obsCollectionRef.current;
+//
+//     let results: any = await obsCollection.page(paginationModel.page + 1);
+//
+//     setObsCurrentPage(obsCollection.currentPage);
+//
+//     console.log("Results from fetch: ", results);
+//     console.log(`Pagination page ${paginationModel.page} vs obs collection page ${obsCollection.currentPage}`);
+//     return await handleObservation(results);
+//
+//
+//     // if(paginationModel.page >= prevPage && obsCollection.hasNext()){
+//     //     results = await obsCollection.nextPage();
+//     //     setObsCurrentPage(obsCollection.currentPage);
+//     // }else if(paginationModel.page < prevPage && obsCollection.hasPrevious()){
+//     //     results = await obsCollection.previousPage();
+//     //     setObsCurrentPage(obsCollection.currentPage);
+//     // }
+//     // return await handleObservation(results);
+// }
+
+// @ts-ignore
+// async function handleObservation(obsResults: any): Promise<EventTableData[]> {
+//     let observations: EventTableData[] = [];
+//
+//     obsResults.map((obs: any) =>{
+//         laneMap.forEach((entry: LaneMapEntry) => {
+//             entry.datastreams.forEach((ds:any) =>{
+//                 if(ds.properties.id === obs.properties['datastream@id']){
+//                     let result = eventFromObservation(obs, entry, false);
+//                     observations.push(result)
+//                 }
+//             });
+//         });
+//     });
+//
+//     return observations;
+// }
