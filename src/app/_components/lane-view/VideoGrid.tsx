@@ -13,11 +13,9 @@ import VideoDataLayer from "osh-js/source/core/ui/layer/VideoDataLayer";
 export default function VideoGrid({videoDataSources}: {videoDataSources: typeof ConSysApi[]}) {
 
     const [dataSources, setDatasources] = useState<typeof ConSysApi[]>([]);
-
     const videoViewRef = useRef<typeof VideoView>();
     const [selVideoIdx, setSelVidIdx] = useState<number>(0);
     const [maxPages, setMaxPages] = useState(0)
-
     const [videoHeight, setVideoHeight] = useState("380px");
 
     useEffect(() => {
@@ -26,7 +24,6 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
             setMaxPages(videoDataSources.length);
         }
     }, [videoDataSources]);
-
 
     useEffect(() => {
         if(dataSources.length > 0){
@@ -44,36 +41,51 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
         }
 
         return () => {
-            if (videoViewRef.current) {
+            if(videoViewRef.current) {
+                console.log("VideoView unmounted, cleaning up resources")
                 videoViewRef.current.destroy();
                 videoViewRef.current = undefined;
             }
-        }
+
+            if(dataSources.length > 0 && selVideoIdx < dataSources.length){
+                dataSources[selVideoIdx].disconnect().then(() =>{
+                    console.log("Disconnected from videosource on unmount.")
+                });
+            }
+        };
 
     }, [dataSources, selVideoIdx]);
 
-
-
     useEffect(() => {
+        // let isMounted = true;
+
         async function tryConnection(){
             if(dataSources && dataSources.length > 0 && selVideoIdx <= dataSources.length){
                 const currentVideo = dataSources[selVideoIdx];
 
                 const isConnected = await currentVideo.isConnected();
+                // if(!isMounted) return;
+
                 if(isConnected){
                     await currentVideo.disconnect()
+                    // if(!isMounted) return;
                 }
                 await currentVideo.connect();
-                console.log('Videostream Connected: ', currentVideo.name)
+                // if(isMounted)
+                    console.log('Videostream Connected: ', currentVideo.name)
             }
         }
 
         tryConnection();
 
+        // return () =>{
+        //     console.log("lane view: unmounting video....")
+        //     isMounted = false;
+        // };
+
     }, [dataSources, selVideoIdx]);
 
     const handleNextPage = () =>{
-
         setSelVidIdx((prevPage)=> {
             if (videoDataSources.length === 0) return 0;
 
@@ -89,10 +101,8 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
             disconnectLastVideo(prevPage)
             return prevPage > 0 ? prevPage -1 : prevPage;
         })
-
     }
 
-    //next page -> disconnect from the previous page and connect to the next page if its not connected we can connect it
     async function disconnectLastVideo (prevPage: number){
         if(prevPage >= 0){
             const isConnected = await dataSources[prevPage].isConnected();
@@ -142,8 +152,6 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
                     </IconButton>
                 </Box>
             )}
-
-
         </>
     );
 }

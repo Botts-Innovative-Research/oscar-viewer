@@ -109,7 +109,6 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
     return (
         <>
             {(
-
                 <Box sx={{
                     display: "flex",
                     flexWrap: "nowrap",

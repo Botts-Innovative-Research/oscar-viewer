@@ -12,6 +12,8 @@ import {INode, insertObservation} from "@/lib/data/osh/Node";
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
 import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+
 import {
     isConnectionDatastream,
     isGammaDatastream,
@@ -251,7 +253,6 @@ export class LaneMapEntry {
             username: this.parentNode.auth.username,
             password: this.parentNode.auth.password,
         }
-        console.log("mqtt opts: ", mqttOpts)
         return new ConSysApi(`rtds-${datastream.properties.id}`, {
             // protocol: "mqtt",
             protocol: datastream.networkProperties.streamProtocol,
@@ -303,14 +304,13 @@ export class LaneMapEntry {
     }
 
     findDataStreamByObsProperty(obsProperty: string){
-        let stream: typeof DataStream = this.datastreams.filter((ds)=> {
-            // console.log("FIND ds props", ds)
+        let stream: typeof DataStream = this.datastreams.find((ds)=> {
             let hasProp = ds.properties.observedProperties.some((prop: any)=> prop.definition === obsProperty)
             return hasProp;
         });
         return stream;
     }
-
+    
 
     /**
      * Retrieves datastreams within the specified time range and categorizes them by event detail types.
@@ -545,6 +545,57 @@ export class LaneDSColl {
         return this[propName];
     }
 
+    getAllDSArrayNames(): string[]{
+        return [
+            'occBatch',
+            'gammaBatch',
+            'neutronBatch',
+            'tamperBatch',
+            'locBatch',
+            'gammaTrshldBatch',
+            'adjBatch',
+            'connectionBatch',
+            'videoBatch',
+            'occRT',
+            'gammaRT',
+            'neutronRT',
+            'tamperRT',
+            'locRT',
+            'gammaTrshldRT',
+            'connectionRT',
+            'videoRT',
+            'adjRT'
+        ]
+    }
+
+    getBatchDSArrayNames(): string[]{
+        return [
+            'occBatch',
+            'gammaBatch',
+            'neutronBatch',
+            'tamperBatch',
+            'locBatch',
+            'gammaTrshldBatch',
+            'adjBatch',
+            'connectionBatch',
+            'videoBatch'
+        ]
+    }
+
+    getRTDSArrayNames(): string[] {
+        return [
+            'occRT',
+            'gammaRT',
+            'neutronRT',
+            'tamperRT',
+            'locRT',
+            'gammaTrshldRT',
+            'connectionRT',
+            'videoRT',
+            'adjRT'
+        ];
+    }
+
     addDS(propName: string, ds: typeof ConSysApi) {
         let dsArr = this.getDSArray(propName);
         if (dsArr.some((d) => d.name == ds.name)) {
@@ -554,129 +605,78 @@ export class LaneDSColl {
         }
     }
 
+    addSubscriptionToDS(dsArrayNames: string[], handler: Function){
+        for(const name of dsArrayNames){
+            const dsArray = this.getDSArray(name);
+            for(const ds of dsArray){
+                ds.subscribe(handler, [EventType.DATA]);
+            }
+        }
+    }
+
     addSubscribeHandlerToAllBatchDS(handler: Function) {
-        for (let ds of this.occBatch) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
-        for (let ds of this.gammaBatch) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
-        for (let ds of this.neutronBatch) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
-        for (let ds of this.tamperBatch) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
-        for (let ds of this.locBatch) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
-        for (let ds of this.occBatch) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
-        for (let ds of this.gammaTrshldBatch) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
-        for (let ds of this.adjBatch) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
-        for (let ds of this.connectionBatch) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
-        for (let ds of this.videoBatch) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
+        this.addSubscriptionToDS(this.getBatchDSArrayNames(), handler);
     }
 
     addSubscribeHandlerToAllRTDS(handler: Function) {
-        for (let ds of this.occRT) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
-        for (let ds of this.gammaRT) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
-        for (let ds of this.neutronRT) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
-        for (let ds of this.tamperRT) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
-        for (let ds of this.locRT) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
-        for (let ds of this.gammaTrshldRT) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
-        for (let ds of this.connectionRT) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
-        for (let ds of this.videoRT) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
-        for (let ds of this.adjRT) {
-            ds.subscribe(handler, [EventType.DATA]);
-        }
+        this.addSubscriptionToDS(this.getRTDSArrayNames(), handler);
     }
-
-    [key: string]: typeof ConSysApi[] | Function;
 
     addSubscribeHandlerToALLDSMatchingName(dsCollName: string, handler: Function) {
         if(!this) return;
+        this.addSubscriptionToDS([dsCollName], handler);
+    }
 
-        for (let ds of this[dsCollName] as typeof ConSysApi[]) {
-            ds.subscribe(handler, [EventType.DATA]);
+    async connectToDS(dsArrayNames: string[]){
+        for(const name of dsArrayNames) {
+            const dsArray = this.getDSArray(name);
+            for (const ds of dsArray) {
+                await ds.connect()
+            }
         }
     }
 
+    async disconnectToDS(dsArrayNames: string[]){
+        for(const name of dsArrayNames) {
+            const dsArray = this.getDSArray(name);
+            for (const ds of dsArray) {
+                await ds.disconnect()
+            }
+        }
+    }
+
+    async addConnectToALLDSMatchingName(dsCollName: string) {
+        if(!this) return;
+        await this.connectToDS([dsCollName]);
+    }
+
+    async addDisconnectToALLDSMatchingName(dsCollName: string) {
+        if(!this) return;
+        await this.disconnectToDS([dsCollName]);
+    }
+
     async connectAllDS() {
-        for (let ds of this.occRT) {
-            await ds.connect();
-        }
-        for (let ds of this.occBatch) {
-            await ds.connect();
-        }
-        for (let ds of this.gammaRT) {
-            await ds.connect();
-        }
-        for (let ds of this.gammaBatch) {
-            await ds.connect();
-        }
-        for (let ds of this.neutronRT) {
-            await ds.connect();
-        }
-        for (let ds of this.neutronBatch) {
-            await ds.connect();
-        }
-        for (let ds of this.tamperRT) {
-            await ds.connect();
-        }
-        for (let ds of this.tamperBatch) {
-            await ds.connect();
-        }
-        for (let ds of this.locRT) {
-            await ds.connect();
-        }
-        for (let ds of this.locBatch) {
-            await ds.connect();
-        }
-        for (let ds of this.gammaTrshldBatch) {
-            await ds.connect();
-        }
-        for (let ds of this.gammaTrshldRT) {
-            await ds.connect();
-        }
-        for (let ds of this.connectionRT) {
-            await ds.connect();
-        }
-        for (let ds of this.connectionBatch) {
-            await ds.connect();
-        }
-        for (let ds of this.videoRT) {
-            await ds.connect();
-        }
-        for (let ds of this.videoBatch) {
-            await ds.connect();
-        }
-        // console.info("Connecting all datasources of:", this);
+       await this.connectToDS(this.getAllDSArrayNames());
+    }
+
+    async disconnectAllDS() {
+        await this.disconnectToDS(this.getAllDSArrayNames());
+    }
+
+    async connectRTDS() {
+        await this.connectToDS(this.getRTDSArrayNames());
+    }
+
+    async disconnectRTDS() {
+        await this.disconnectToDS(this.getRTDSArrayNames());
+    }
+
+    async connectBatchDS() {
+        await this.connectToDS(this.getBatchDSArrayNames());
+    }
+
+    async disconnectBatchDS() {
+        await this.disconnectToDS(this.getBatchDSArrayNames());
     }
 }
 

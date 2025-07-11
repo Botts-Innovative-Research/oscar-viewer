@@ -375,6 +375,7 @@ export function EventPreview() {
         }
 
         return()=>{
+            console.log("Unmounted event preview: disconnecting from datasources")
             gammaDatasources.forEach(ds => {
                 ds.isConnected().then(ds.disconnect());
             });
@@ -539,7 +540,6 @@ export function EventPreview() {
         //     }, 500)
         // })
 
-
     }
 
     const setVideoView =(videoView: any) =>{
@@ -547,15 +547,39 @@ export function EventPreview() {
     }
 
     return (
-        <Stack p={1} display={"flex"} spacing={1}>
-            <Stack direction={"row"} justifyContent={"space-between"} spacing={1}>
-                <Stack direction={"row"} spacing={1} alignItems={"center"}>
-                    <Typography variant="h6">Occupancy ID: {eventPreview.eventData.occupancyId}</Typography>
-                    <IconButton onClick={handleExpand} aria-label="expand">
-                        <OpenInFullRoundedIcon fontSize="small"/>
+        <Stack
+            p={1}
+            display={"flex"}
+            spacing={1}
+        >
+            <Stack
+                direction={"row"}
+                justifyContent={"space-between"}
+                spacing={1}
+            >
+                <Stack
+                    direction={"row"}
+                    spacing={1}
+                    alignItems={"center"}
+                >
+                    <Typography
+                        variant="h6"
+                    >
+                        Occupancy ID: {eventPreview.eventData.occupancyId}
+                    </Typography>
+                    <IconButton
+                        onClick={handleExpand}
+                        aria-label="expand"
+                    >
+                        <OpenInFullRoundedIcon
+                            fontSize="small"
+                        />
                     </IconButton>
                 </Stack>
-                <IconButton onClick={handleCloseRounded} aria-label="close">
+                <IconButton
+                    onClick={handleCloseRounded}
+                    aria-label="close"
+                >
                     <CloseRoundedIcon fontSize="small"/>
                 </IconButton>
             </Stack>
@@ -585,24 +609,43 @@ export function EventPreview() {
                                         onSelectedVideoIdxChange={handleUpdatingPage}
                                         setVideoView={setVideoView}
                                     />
-                                    <TimeController handleCommitChange={handleCommitChange} pause={pause} play={play} syncTime={syncTime}  startTime={eventPreview.eventData.startTime} endTime={eventPreview.eventData.endTime}/>
+                                    <TimeController
+                                        handleCommitChange={handleCommitChange}
+                                        pause={pause}
+                                        play={play}
+                                        syncTime={syncTime}
+                                        startTime={eventPreview.eventData.startTime}
+                                        endTime={eventPreview.eventData.endTime}
+                                    />
 
                                 </div>
                             )
                             :
                            (
                                <div>
-                                   <Typography variant="h6" align="center">No video data available.</Typography>
+                                   <Typography
+                                       variant="h6"
+                                       align="center"
+                                   >
+                                       No video data available.
+                                   </Typography>
                                </div>
                            )}
                         </Box>
                 ) :
 
-                <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}><CircularProgress/></Box>
+                <Box
+                    sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}
+                >
+                    <CircularProgress/>
+                </Box>
             }
 
             <Stack spacing={2}>
-                <AdjudicationSelect adjCode={adjudicationCode} onSelect={handleAdjudicationCode}/>
+                <AdjudicationSelect
+                    adjCode={adjudicationCode}
+                                    onSelect={handleAdjudicationCode}
+                />
                 <TextField
                     onChange={handleNotes}
                     id="outlined-multiline-static"
@@ -610,8 +653,24 @@ export function EventPreview() {
                     multiline
                     rows={4}
                 />
-                <Stack direction={"row"} spacing={10} sx={{width: "100%"}} justifyContent={"center"}>
-                    <Button onClick={sendAdjudicationData} variant={"contained"} size={"small"} fullWidth={false} color={"success"} disabled={adjFormData === null} sx={{width: "25%"}}>Submit</Button>
+                <Stack
+                    direction={"row"}
+                       spacing={10}
+                       sx={{width: "100%"}}
+                       justifyContent={"center"}
+                >
+                    <Button
+                        onClick={sendAdjudicationData}
+                        variant={"contained"}
+                        size={"small"}
+                        fullWidth={false}
+                        color={"success"}
+                        disabled={adjFormData === null}
+                        sx={{width: "25%"}}
+                    >
+                        Submit
+                    </Button>
+
                     <Snackbar
                         anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         open={openSnack}
@@ -625,7 +684,16 @@ export function EventPreview() {
                         }}
                     />
 
-                    <Button onClick={resetAdjudicationData} variant={"contained"} size={"small"} fullWidth={false} color={"secondary"} sx={{width: "25%"}}>Reset</Button>
+                    <Button
+                        onClick={resetAdjudicationData}
+                        variant={"contained"}
+                        size={"small"}
+                        fullWidth={false}
+                        color={"secondary"}
+                        sx={{width: "25%"}}
+                    >
+                        Reset
+                    </Button>
                 </Stack>
             </Stack>
         </Stack>

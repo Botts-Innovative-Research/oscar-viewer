@@ -20,8 +20,6 @@ export default function TimeController({syncTime, startTime, endTime, pause, pla
 
     const [isPlaying, setIsPlaying] = useState(true); //update to false to start paused
     const [isScrubbing, setIsScrubbing] = useState(false);
-
-
     const [minTime, setMinTime] = useState<number>(new Date(startTime).getTime());
     const [maxTime, setMaxTime] = useState<number>(new Date(endTime).getTime());
     const [currentTime, setCurrentTime]= useState(syncTime);
@@ -72,11 +70,19 @@ export default function TimeController({syncTime, startTime, endTime, pause, pla
                     onChangeCommitted={handleSliderCommitted} //updates when release the slider
                     valueLabelDisplay="off"
                 />
-                <Stack direction={"row"} alignItems={"center"} justifyContent={"start"}>
-                    <IconButton onClick={handlePlaying}>
+                <Stack
+                    direction={"row"}
+                    alignItems={"center"}
+                    justifyContent={"start"}
+                >
+                    <IconButton
+                        onClick={handlePlaying}
+                    >
                         {isPlaying ? (<PauseRoundedIcon />) : (<PlayArrowRoundedIcon />)}
                     </IconButton>
-                    <Typography variant="body1">
+                    <Typography
+                        variant="body1"
+                    >
                         {formatTime(currentTime)} / {formatTime(maxTime)}
                     </Typography>
                 </Stack>

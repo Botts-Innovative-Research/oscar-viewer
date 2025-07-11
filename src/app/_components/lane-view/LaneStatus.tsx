@@ -28,12 +28,7 @@ export default function LaneStatus(props: LaneStatusProps) {
 
   const addSubscriptionCallbacks = useCallback(() => {
 
-    // const gammaDs = props.dataSourcesByLane.getDSArray("gammaRT")[0];
-    // const neutronDs = props.dataSourcesByLane.getDSArray("neutronRT")[0]
-    // const tamperDs = props.dataSourcesByLane.getDSArray("tamperRT")[0];
-
     props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("gammaRT", (message: any) => {
-      console.log("gamma message: ", message);
       const state = message.values[0].data.alarmState;
       updateStatus(currentLane, state);
     })
@@ -50,11 +45,12 @@ export default function LaneStatus(props: LaneStatusProps) {
       }
     })
 
-    props.dataSourcesByLane.connectAllDS().then(console.log("Lane View Statuses Connected"));
+    props.dataSourcesByLane.addConnectToALLDSMatchingName("gammaRT");
+    props.dataSourcesByLane.addConnectToALLDSMatchingName("neutronRT");
+    props.dataSourcesByLane.addConnectToALLDSMatchingName("tamperRT");
 
   }, [props.dataSourcesByLane]);
 
-  function handleAlarms(ds)
 
   async function fetchLatestStatus() {
 
@@ -62,7 +58,10 @@ export default function LaneStatus(props: LaneStatusProps) {
 
     // Just use gamma datasource bc all lanes should have it, and gamma "Background" state is the most common
     const gammaDatasource = currentLaneDatasources.gammaRT[0];
+    if(!gammaDatasource) return;
+
     const gammaDataStreamId = gammaDatasource.properties.resource.split('/')[2];
+
     const dsAPI = new DataStreams({
       endpointUrl: `${gammaDatasource.properties.endpointUrl}`,
       tls: gammaDatasource.properties.tls,
@@ -87,6 +86,13 @@ export default function LaneStatus(props: LaneStatusProps) {
       fetchLatestStatus();
 
     addSubscriptionCallbacks();
+
+    return() => {
+      console.log("Lane View: Lane Status unmounted, cleaning up resources")
+      props.dataSourcesByLane.addDisconnectToALLDSMatchingName("gammaRT");
+      props.dataSourcesByLane.addDisconnectToALLDSMatchingName("neutronRT");
+      props.dataSourcesByLane.addDisconnectToALLDSMatchingName("tamperRT");
+    }
   }, [props.dataSourcesByLane]);
 
   function updateStatus(laneName: string, newState: string){

@@ -26,23 +26,19 @@ import {selectEndDate, selectStartDate} from "@/lib/state/NationalViewSlice";
 
 export default function StatTable(){
 
-    const dispatch = useAppDispatch();
+
     const savedStartDate = useSelector((state: RootState) => selectStartDate(state))
     const savedEndDate = useSelector((state: RootState) => selectEndDate(state))
-
-    const [filteredTableData, setFilteredTableData] = useState<AlarmTableData[]>([]);
-
+    const nodes = useSelector(selectNodes);
 
     const [startTime, setStartTime] = useState(savedStartDate);
     const [endTime, setEndTime] = useState(savedEndDate);
-
+    const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
+    const [sites, setSites] = useState<INationalTableData[]>([]);
 
     const {laneMapRef} = useContext(DataSourceContext);
-    const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
 
-    const [sites, setSites] = useState<INationalTableData[]>([]);
     const idVal = useRef(0);
-    const nodes = useSelector(selectNodes);
     const natlTableRef = useRef<NationalTableDataCollection>(new NationalTableDataCollection());
 
 
@@ -52,7 +48,6 @@ export default function StatTable(){
     }, [savedStartDate, savedEndDate]);
 
     useEffect(() => {
-        // create the site datastruct for each node that exists on the viewer and initialize it
         if(nodes && nodes.length> 0){
             let oscarSites: any[] = []
             nodes.forEach((node: any) =>{
@@ -72,6 +67,7 @@ export default function StatTable(){
 
         setStartTime(savedStartDate)
         setEndTime(savedEndDate)
+
 
     }, [nodes, savedStartDate, savedEndDate]);
 
@@ -251,8 +247,6 @@ export default function StatTable(){
 
 
     return (
-        // <NationalTable tableData={natlTableRef.current}/>
-
         <Box sx={{height: 800, width: '100%'}}>
             <DataGrid
                 rows={natlTableRef.current.data}

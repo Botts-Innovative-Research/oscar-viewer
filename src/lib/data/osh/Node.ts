@@ -11,10 +11,12 @@ import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
 import DataStreamFilter from "osh-js/source/core/consysapi/datastream/DataStreamFilter.js";
 import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js";
 import { isVideoDatastream } from "../oscar/Utilities";
-import System from "osh-js/source/core/sweapi/system/System.js";
+import System from "osh-js/source/core/consysapi/system/System.js";
 import Systems from "osh-js/source/core/consysapi/system/Systems.js";
+import Observations from "osh-js/source/core/consysapi/observation/Observations.js"
 import SystemFilter from "osh-js/source/core/consysapi/system/SystemFilter.js";
 import { ISystem } from "./Systems";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 const SYSTEM_UID_PREFIX = "urn:osh:system:";
 const DATABASE_PROCESS_UID_PREFIX = "urn:osh:process:occupancy:";
 
@@ -64,6 +66,8 @@ export interface INode {
 
     getSystemsApi(): typeof Systems
 
+    getObservationsApi(): typeof Observations
+
 }
 
 export interface NodeOptions {
@@ -94,7 +98,8 @@ export class Node implements INode {
     isDefaultNode: boolean;
     laneAdjMap: Map<string, string> = new Map<string, string>();
     dataStreamsApi: typeof DataStreams;
-    systemsApi: typeof Systems
+    systemsApi: typeof Systems;
+    observationsApi: typeof Observations;
 
     constructor(options: NodeOptions) {
         this.id = "node-" + randomUUID();
@@ -121,14 +126,36 @@ export class Node implements INode {
 
         this.dataStreamsApi = new DataStreams(apiConfig);
         this.systemsApi = new Systems(apiConfig);
+        this.observationsApi = new Observations(apiConfig);
 
+    }
+
+    getObservationsApi(): typeof Observations{
+        return this.observationsApi;
+    }
+
+    async searchObservations(observationFilter: typeof ObservationFilter, pageSize: number = 10){
+        return await this.getObservationsApi().searchObservations(observationFilter, pageSize);
     }
 
     getSystemsApi(): typeof Systems{
         return this.systemsApi;
     }
+
+    async searchSystems(systemFilter: typeof SystemFilter, pageSize: number = 10){
+        return await this.getSystemsApi().searchSystems(systemFilter, pageSize);
+    }
+
     getDataStreamsApi(): typeof DataStreams {
         return this.dataStreamsApi;
+    }
+
+    async searchDataStreams(dsFilter: typeof DataStreamFilter, pageSize: number = 10){
+        return await this.getDataStreamsApi().searchDataStreams(dsFilter, pageSize);
+    }
+
+    setObservationsApi(apiConfig: string): typeof Observations{
+        return new Observations(apiConfig)
     }
 
     setSystemsApi(apiConfig: string): typeof Systems{
@@ -193,7 +220,6 @@ export class Node implements INode {
         console.log("LaneFetched these objects:", fetchedLanes, fetchedSystems);
         return {lanes: null, systems: systems_arr};
     }
-
 
     async checkForEndpoint() {
         let ep: string = `${this.getConnectedSystemsEndpoint()}`;
@@ -278,6 +304,42 @@ export class Node implements INode {
             return availableSystems;
         } else {
             console.warn("No systems found, check endpoint properties for: ", this.address);
+        }
+    }
+
+    async fetchObservations(): Promise<any[]> {
+        let observationsApi = this.getObservationsApi();
+
+        let searchedObservations = await observationsApi.searchObservations(new ObservationFilter(), 100);
+        let availableObservations = [];
+
+        while (searchedObservations.hasNext()) {
+            let systems = await searchedObservations.nextPage();
+            availableObservations.push(...systems);
+        }
+
+        if (availableObservations.length > 0) {
+            return availableObservations;
+        } else {
+            console.warn("No observations found, check endpoint properties for: ", this.address);
+        }
+    }
+
+    async fetchObservationsWithFilter(observationFilter: typeof ObservationFilter): Promise<any[]> {
+        let observationsApi = this.getObservationsApi();
+
+        let searchedObservations = await observationsApi.searchObservations(observationFilter, 100);
+        let availableObservations = [];
+
+        while (searchedObservations.hasNext()) {
+            let systems = await searchedObservations.nextPage();
+            availableObservations.push(...systems);
+        }
+
+        if (availableObservations.length > 0) {
+            return availableObservations;
+        } else {
+            console.warn("No observations found, check endpoint properties for: ", this.address);
         }
     }
 
@@ -408,7 +470,6 @@ export class Node implements INode {
         return adjSysAndDSMap;
     }
 
-
     async insertSystem(systemJSON: any, ep: string): Promise<string> {
         console.log("Inserting System: ", ep, JSON.stringify(systemJSON));
 
@@ -464,7 +525,7 @@ export class Node implements INode {
 
 
 export async function insertObservation(ep: any, observation: any, ){
-    console.log("inserting observation: ", observation)
+    console.log("Inserting new observation: ", observation)
     let resp = await fetch(ep, {
         method: "POST",
         headers: {

@@ -9,14 +9,14 @@ import ObservationFilter from "osh-js/source/core/consysapi/observation/Observat
 import {selectEventData, selectSpeed, setSpeed} from "@/lib/state/EventDetailsSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
 
-// export default function MiscTable() {
+
 export default function MiscTable({currentTime}: {currentTime: string}) {
   const dispatch = useAppDispatch();
 
   const savedSpeed = useSelector(selectSpeed)
-
-  const laneMapRef = useContext(DataSourceContext).laneMapRef;
   const eventData = useSelector(selectEventData);
+  const laneMapRef = useContext(DataSourceContext).laneMapRef;
+
 
   const [speedVal, setSpeedval] = useState<string>(savedSpeed); //maybe put savedSpeed here instead
 
