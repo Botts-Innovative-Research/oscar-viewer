@@ -41,7 +41,6 @@ export default function LaneVideoPlayback({setVideoReady, dataSynchronizer, mode
 
     useEffect(() => {
         if (dataSynchronizer.dataSynchronizer.dataSources?.length > 0 && dataSynchronizer.dataSynchronizer.dataSources) {
-
             dataSynchronizer.dataSynchronizer.dataSources.forEach((ds: any) =>{
                 videoViewRef.current = new VideoView({
                     container: `event-preview-video-${ds.id}`,

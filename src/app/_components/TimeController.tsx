@@ -5,6 +5,7 @@ import Slider from '@mui/material/Slider';
 import React, {useEffect, useState} from "react";
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 import PauseRoundedIcon from '@mui/icons-material/PauseRounded';
+import CircularProgress from "@mui/material/CircularProgress";
 
 
 interface TimeControllerProps {
@@ -20,18 +21,23 @@ export default function TimeController({syncTime, startTime, endTime, pause, pla
 
     const [isPlaying, setIsPlaying] = useState(true); //update to false to start paused
     const [isScrubbing, setIsScrubbing] = useState(false);
-    const [minTime, setMinTime] = useState<number>(new Date(startTime).getTime());
-    const [maxTime, setMaxTime] = useState<number>(new Date(endTime).getTime());
-    const [currentTime, setCurrentTime]= useState(syncTime);
+    const [minTime, setMinTime] = useState<number | null>(null);
+    const [maxTime, setMaxTime] = useState<number | null>(null);
+    const [currentTime, setCurrentTime]= useState<number | null>(null);
 
+    console.log("min time", startTime, minTime)
     useEffect(() => {
-        setMinTime(new Date(startTime).getTime());
-        setMaxTime(new Date(endTime).getTime());
+        if(startTime && endTime){
+            setMinTime(new Date(startTime).getTime());
+            setMaxTime(new Date(endTime).getTime());
+            setCurrentTime(syncTime)
+        }
+
     }, [startTime, endTime]);
 
 
     useEffect(() => {
-        if(!isScrubbing)
+        if(!isScrubbing && typeof syncTime === "number")
             setCurrentTime(syncTime);
     }, [syncTime, isScrubbing]);
 
@@ -60,35 +66,42 @@ export default function TimeController({syncTime, startTime, endTime, pause, pla
     return (
         <Box sx={{padding: 3}}>
             <Stack>
-                <Slider
-                    aria-labelledby="time-indicator"
-                    value={currentTime} //current position of the slider
-                    // step={1}
-                    min={minTime} //start time of slider
-                    max={maxTime} //end time of event
-                    onChange={handleSliderChange} //slider as it is dragged
-                    onChangeCommitted={handleSliderCommitted} //updates when release the slider
-                    valueLabelDisplay="off"
-                />
-                <Stack
-                    direction={"row"}
-                    alignItems={"center"}
-                    justifyContent={"start"}
-                >
-                    <IconButton
-                        onClick={handlePlaying}
-                    >
-                        {isPlaying ? (<PauseRoundedIcon />) : (<PlayArrowRoundedIcon />)}
-                    </IconButton>
-                    <Typography
-                        variant="body1"
-                    >
-                        {formatTime(currentTime)} / {formatTime(maxTime)}
-                    </Typography>
-                </Stack>
+                {minTime !== null && maxTime !== null && currentTime !== null && (
+                    <div>
+                        <Slider
+                            aria-labelledby="time-indicator"
+                            value={currentTime} //current position of the slider
+                            // step={1}
+                            min={new Date(startTime).getTime()} //start time of slider
+                            max={maxTime} //end time of event
+                            onChange={handleSliderChange} //slider as it is dragged
+                            onChangeCommitted={handleSliderCommitted} //updates when release the slider
+                            valueLabelDisplay="off"
+                        />
+                        <Stack
+                            direction={"row"}
+                            alignItems={"center"}
+                            justifyContent={"start"}
+                        >
+                            <IconButton
+                                onClick={handlePlaying}
+                            >
+                                {isPlaying ? (<PauseRoundedIcon />) : (<PlayArrowRoundedIcon />)}
+                            </IconButton>
+                            <Typography
+                                variant="body1"
+                            >
+                                {formatTime(currentTime)} / {formatTime(maxTime)}
+                            </Typography>
+                        </Stack>
+                    </div>
+
+                )}
+
             </Stack>
         </Box>
     )
+
 }
 
 // this function will take the timestamp convert it to iso string and then returns it with only the time part
