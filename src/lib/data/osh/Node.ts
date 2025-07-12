@@ -300,7 +300,6 @@ export class Node implements INode {
         }
 
         if (availableSystems.length > 0) {
-            // console.log("Systems from TK:", availableSystems);
             return availableSystems;
         } else {
             console.warn("No systems found, check endpoint properties for: ", this.address);

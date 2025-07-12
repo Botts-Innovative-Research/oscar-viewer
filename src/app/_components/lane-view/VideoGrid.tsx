@@ -42,15 +42,12 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
 
         return () => {
             if(videoViewRef.current) {
-                console.log("VideoView unmounted, cleaning up resources")
                 videoViewRef.current.destroy();
                 videoViewRef.current = undefined;
             }
 
             if(dataSources.length > 0 && selVideoIdx < dataSources.length){
-                dataSources[selVideoIdx].disconnect().then(() =>{
-                    console.log("Disconnected from videosource on unmount.")
-                });
+                dataSources[selVideoIdx].disconnect();
             }
         };
 
@@ -79,7 +76,6 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
         tryConnection();
 
         // return () =>{
-        //     console.log("lane view: unmounting video....")
         //     isMounted = false;
         // };
 

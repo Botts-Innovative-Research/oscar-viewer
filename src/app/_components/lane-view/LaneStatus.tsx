@@ -88,7 +88,6 @@ export default function LaneStatus(props: LaneStatusProps) {
     addSubscriptionCallbacks();
 
     return() => {
-      console.log("Lane View: Lane Status unmounted, cleaning up resources")
       props.dataSourcesByLane.addDisconnectToALLDSMatchingName("gammaRT");
       props.dataSourcesByLane.addDisconnectToALLDSMatchingName("neutronRT");
       props.dataSourcesByLane.addDisconnectToALLDSMatchingName("tamperRT");

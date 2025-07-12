@@ -188,7 +188,6 @@ export default function StatusTables({laneMap}: TableProps){
         dataStreamSetup(laneMap);
 
         return () => {
-          console.log("Lane View: StatusTables unmounted, cleaning up resources")
             laneMap.forEach((entry) => {
 
                 let alarmDs: typeof DataStream = entry.findDataStreamByObsProperty("http://www.opengis.net/def/alarm")

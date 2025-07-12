@@ -206,7 +206,6 @@ export default function ChartLane(props: ChartInterceptProps){
 
     useEffect(() => {
         return() => {
-            console.log("Charts unmounted, cleaning up resources");
 
             if(gammaChartViewRef.current != null){
                 gammaChartViewRef.current.destroy();

@@ -31,7 +31,6 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
 
     return() => {
       if(timersRef.current){
-        console.log("Dashboard: Lane Status unmounted, cleaning up timers")
 
         // clean up timers
         for(const timeout of timersRef.current.values()){
@@ -78,7 +77,6 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
     addSubscriptionCallbacks();
 
     return() => {
-      console.log("Dashboard: Lane Status unmounted, disconnecting from datasources")
 
       //clean up subscriptions and disconnect from datasources
       for (let [laneName, laneDSColl] of props.dataSourcesByLane.entries()) {

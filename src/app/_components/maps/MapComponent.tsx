@@ -215,7 +215,6 @@ export default function MapComponent() {
         return () => {
             if(!isInit || !locationList || locationList.length === 0) return;
 
-            console.log("Unmounted Map: disconnecting from location datasources")
 
             locationList.forEach((location) => {
                 location.locationSources.map((src: any) => src.disconnect());

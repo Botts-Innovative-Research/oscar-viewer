@@ -85,7 +85,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
                     return; // force a rerender...
                 }
             }
-            console.error("No config node found in state. Cannot initialize application.");
+            console.warn("No config node found in state. Initializing default node");
         }
         else{
             console.log("Config Node found: Loading state...")

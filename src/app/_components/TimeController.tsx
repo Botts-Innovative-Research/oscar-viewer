@@ -25,7 +25,8 @@ export default function TimeController({syncTime, startTime, endTime, pause, pla
     const [maxTime, setMaxTime] = useState<number | null>(null);
     const [currentTime, setCurrentTime]= useState<number | null>(null);
 
-    console.log("min time", startTime, minTime)
+    console.log("min time", startTime, minTime, syncTime, currentTime)
+
     useEffect(() => {
         if(startTime && endTime){
             setMinTime(new Date(startTime).getTime());

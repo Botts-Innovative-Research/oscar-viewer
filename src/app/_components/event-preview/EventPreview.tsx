@@ -375,7 +375,6 @@ export function EventPreview() {
         }
 
         return()=>{
-            console.log("Unmounted event preview: disconnecting from datasources")
             gammaDatasources.forEach(ds => {
                 ds.isConnected().then(ds.disconnect());
             });
