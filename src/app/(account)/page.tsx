@@ -4,7 +4,7 @@ import {Button, Container, Snackbar, SnackbarCloseReason, SnackbarContent, Stack
 import React, {useState} from "react";
 import {setCurrentUser} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {useRouter} from "next/navigation";
+import {useRouter} from "next/dist/client/components/navigation";
 
 export default function AccountViewPage() {
     const dispatch = useAppDispatch();

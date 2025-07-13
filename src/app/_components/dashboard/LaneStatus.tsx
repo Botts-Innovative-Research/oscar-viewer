@@ -5,7 +5,7 @@ import LaneStatusItem from './LaneStatusItem';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import { setCurrentLane } from '@/lib/state/LaneViewSlice';
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {useRouter} from "next/navigation";
+import {useRouter} from "next/dist/client/components/navigation";
 
 
 export interface LaneStatusProps{

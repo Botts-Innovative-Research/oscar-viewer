@@ -30,7 +30,7 @@ import {
 
 import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {useRouter} from "next/navigation";
+import {useRouter} from "next/dist/client/components/navigation";
 import ChartTimeHighlight from "@/app/_components/event-preview/ChartTimeHighlight";
 import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
@@ -287,13 +287,11 @@ export function EventPreview() {
         setLocalDSMap(datasources);
         tempDSMap = datasources;
 
-
         const updatedGamma = tempDSMap.get("gamma") || [];
         const updatedNeutron = tempDSMap.get("neutron") || [];
         const updatedThreshold = tempDSMap.get("gammaTrshld") || [];
         const updatedVideo = tempDSMap.get("video") || [];
         const updatedOcc = tempDSMap.get("occ") || [];
-
 
         setGammaDS(updatedGamma);
         setNeutronDS(updatedNeutron);
@@ -490,8 +488,8 @@ export function EventPreview() {
 
         let dsId = syncRef.current.dataSynchronizer.dataSources[selectedIndex.current].name.split("-")[1]
 
-        let currentVideoDs = datastreams.filter((ds: any) => ds.properties.id === dsId);
-        let obs = await currentVideoDs[0].searchObservations(new ObservationFilter({ format: 'application/swe+binary', resultTime: `${new Date(startTime).toISOString()}/${endTime}`}),1);
+        let currentVideoDs = datastreams.find((ds: any) => ds.properties.id === dsId);
+        let obs = await currentVideoDs.searchObservations(new ObservationFilter({ format: 'application/swe+binary', resultTime: `${new Date(startTime).toISOString()}/${endTime}`}), 1);
 
         const obsPage = await obs.nextPage();
 

@@ -357,6 +357,7 @@ export class LaneMapEntry {
 
             if(isVideoDatastream(ds)) {
                 let videoArray = dsMap.get('video')!;
+
                 videoArray.push(ds);
             }
             if(isThresholdDatastream(ds)){
@@ -418,42 +419,45 @@ export class LaneMapEntry {
     }
 
     async checkValidDataSource(ds: typeof DataStream, startTime: string, endTime: string): Promise<typeof ConSysApi> {
-
         let datasourceReplay = this.createReplayConSysApiFromDataStream(ds, startTime, endTime);
 
         let dsApi = this.parentNode.getDataStreamsApi();
-
         const result = await dsApi.getDataStreamById(ds.properties.id);
+        console.log("[IS-VIDEO] result from dsapi: ", result);
 
         let validStartTime, validEndTime: string | null;
 
         validStartTime = result?.properties?.resultTime[0];
         validEndTime = result?.properties?.resultTime[1];
 
-
-        // Ensure startTime and endTime are within the datastream's valid data time
+        // // Ensure startTime and endTime are within the datastream's valid data time
         if (validStartTime && validEndTime) {
-
             const validStart = new Date(validStartTime);
             const validEnd = new Date(validEndTime);
-
-            validStart.setSeconds(validStart.getSeconds() - 1);
-            validEnd.setSeconds(validEnd.getSeconds() + 1);
 
             const eventStart = new Date(startTime);
             const eventEnd = new Date(endTime);
 
+            validStart.setSeconds(validStart.getSeconds() - 1); //acount for ms difference
+            validEnd.setSeconds(validEnd.getSeconds() + 1); // account for ms difference
+
+            //compare events start and end time with ds valid times
             if (eventStart >= validStart && eventEnd <= validEnd) {
-                console.info("[IS-VIDEO] Found valid datastream ", ds)
-                return datasourceReplay;
+                console.info(`[IS-VIDEO] Found valid datastream ${validStart} - ${validEnd}`, ds)
+
+                const observations = await ds.searchObservations(new ObservationFilter({resultTime: `${startTime}/${endTime}`}), 1);
+                console.log("[IS-VIDEO] observations", observations)
+
+                let obs = await observations.nextPage();
+                console.log("[IS-VIDEO] obs", obs)
+                if(obs.length > 0)
+                    return datasourceReplay;
             } else {
-                console.info(`[IS-VIDEO] Data within interval ${validStart} - ${validEnd} not found for datasource`);
+                console.warn(`[IS-VIDEO] Data within interval ${validStart} - ${validEnd} not found for datasource`);
             }
         } else {
-            console.info("[IS-VIDEO] No valid time found for datasource ", ds.properties.id);
+            console.warn("[IS-VIDEO] No valid time found for datasource ", ds.properties.id);
         }
-
-
     }
 
     async insertAdjudicationSystem(laneName: string) {

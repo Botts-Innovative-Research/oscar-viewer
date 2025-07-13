@@ -14,7 +14,7 @@ import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import "leaflet/dist/leaflet.css"
 import {isGammaDatastream, isNeutronDatastream, isTamperDatastream} from "@/lib/data/oscar/Utilities";
 import {setCurrentLane} from "@/lib/state/LaneViewSlice";
-import {useRouter} from "next/navigation";
+import {useRouter} from "next/dist/client/components/navigation";
 import {useAppDispatch} from "@/lib/state/Hooks";
 
 

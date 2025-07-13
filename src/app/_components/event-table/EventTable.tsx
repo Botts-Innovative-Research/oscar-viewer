@@ -31,7 +31,7 @@ import {
     setEventLogData,
     setSelectedEvent
 } from "@/lib/state/EventDataSlice";
-import {useRouter} from "next/navigation";
+import {useRouter} from "next/dist/client/components/navigation";
 import {getObservations} from "@/app/utils/ChartUtils";
 import {isThresholdDatastream} from "@/lib/data/oscar/Utilities";
 import {convertToMap, hashString} from "@/app/utils/Utils";
