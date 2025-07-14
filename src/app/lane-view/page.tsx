@@ -115,23 +115,50 @@ export default function LaneViewPage() {
     }, [laneMapRef, currentLane, laneMapRef.current.size]);
 
     return (
-        <Stack spacing={2} direction={"column"}>
-            <Grid container spacing={2} alignItems="center">
-                <Grid item xs={"auto"} >
+        <Stack
+            spacing={2}
+            direction={"column"}
+        >
+            <Grid
+                container
+                spacing={2}
+                alignItems="center"
+            >
+                <Grid
+                    item
+                    xs={"auto"}
+                >
                     <BackButton/>
                 </Grid>
-                <Grid item xs>
-                    <Typography variant="h4">Lane View: {currentLane}</Typography>
+                <Grid
+                    item
+                    xs
+                >
+                    <Typography
+                        variant="h4"
+                    >
+                        Lane View: {currentLane}
+                    </Typography>
                 </Grid>
             </Grid>
 
-            <Grid item container spacing={2} sx={{ width: "100%" }}>
-                <Paper variant='outlined' sx={{ width: "100%"}}>
+            <Grid
+                item
+                container
+                spacing={2}
+                sx={{
+                    width: "100%"
+            }}
+            >
+                <Paper
+                    variant='outlined'
+                    sx={{ width: "100%"}}
+                >
                     {dataSourcesByLane &&
-
-                        <LaneStatus dataSourcesByLane={dataSourcesByLane}/>
+                        <LaneStatus
+                            dataSourcesByLane={dataSourcesByLane}
+                        />
                     }
-
                 </Paper>
             </Grid>
 
@@ -143,16 +170,32 @@ export default function LaneViewPage() {
                         threshold: thresholdDS,
                         video: videoDS
                     }}
-
                     currentLane={currentLane}
                 />
 
             </Grid>
 
             <Grid item container spacing={2} sx={{ width: "100%" }}>
-                <Paper variant='outlined' sx={{ width: "100%", height: "100%", padding: 2}}>
-                    <Grid container direction="column">
-                        <Grid item sx={{ display: "flex", justifyContent: "center", padding: 1 }}>
+                <Paper
+                    variant='outlined'
+                    sx={{
+                        width: "100%",
+                        height: "100%",
+                        padding: 2
+                }}
+                >
+                    <Grid
+                        container
+                        direction="column"
+                    >
+                        <Grid
+                            item
+                            sx={{
+                                display: "flex",
+                                justifyContent: "center",
+                                padding: 1
+                        }}
+                        >
                             <ToggleButtonGroup
                                 size="small"
                                 orientation="horizontal"
@@ -171,10 +214,26 @@ export default function LaneViewPage() {
                             </ToggleButtonGroup>
                         </Grid>
                         <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'occupancy' ? 'block' : 'none' }}>
-                            <EventTable tableMode={'lanelog'} laneMap={laneMap} viewLane viewSecondary viewAdjudicated currentLane={currentLane}/>
+                            <EventTable
+                                tableMode={'lanelog'}
+                                laneMap={laneMap}
+                                viewLane
+                                viewSecondary
+                                viewAdjudicated
+                                currentLane={currentLane}
+                            />
                         </Grid>
-                        <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'fault' ? 'block' : 'none' }}>
-                            <StatusTable laneMap={laneMap}/>
+                        <Grid
+                            item
+                            sx={{
+                                width: "100%",
+                                height: 800,
+                                display: toggleView === 'fault' ? 'block' : 'none'
+                        }}
+                        >
+                            <StatusTable
+                                laneMap={laneMap}
+                            />
                         </Grid>
                     </Grid>
                 </Paper>
