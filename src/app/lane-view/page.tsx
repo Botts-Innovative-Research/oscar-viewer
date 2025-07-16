@@ -1,6 +1,6 @@
 "use client";
 
-import {Grid, Paper, Stack, ToggleButton, ToggleButtonGroup, Typography} from "@mui/material";
+import {Button, Grid, Paper, Stack, ToggleButton, ToggleButtonGroup, Typography} from "@mui/material";
 import BackButton from "../_components/BackButton";
 import LaneStatus from "../_components/lane-view/LaneStatus";
 import Media from "../_components/lane-view/Media";
@@ -9,7 +9,7 @@ import EventTable from "@/app/_components/event-table/EventTable";
 import {useSelector} from "react-redux";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {RootState} from "@/lib/state/Store";
-import React, {useCallback, useContext, useEffect, useState} from "react";
+import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {
 
     isGammaDatastream,
@@ -22,6 +22,8 @@ import {useAppDispatch} from "@/lib/state/Hooks";
 import {selectLastToggleState, setToggleState} from "@/lib/state/LaneViewSlice";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import StatusTable from "../_components/lane-view/StatusTable";
+import {PictureAsPdfRounded} from "@mui/icons-material";
+import {useReactToPrint} from "react-to-print";
 
 
 
@@ -48,6 +50,17 @@ export default function LaneViewPage() {
         <ToggleButton value={"occupancy"} key={"occupancy"}>Occupancy Table</ToggleButton>,
         <ToggleButton value={"fault"} key={"fault"}>Fault Table</ToggleButton>
     ];
+
+    const contentRef = useRef<HTMLDivElement>(null);
+    const time = new Date().toISOString();
+    const docTitle = currentLane ? `laneview-${currentLane}-${time}` : `laneview-${time}`;
+
+    const reactToPrintFn = useReactToPrint({
+        contentRef: contentRef,
+        documentTitle: docTitle,
+        onAfterPrint: () => console.log('Successfully saved as a PDF.')
+    });
+
 
     const handleToggle = (event: React.MouseEvent<HTMLElement>, newView: string) =>{
         setToggleView(newView);
@@ -115,70 +128,85 @@ export default function LaneViewPage() {
     }, [laneMapRef, currentLane, laneMapRef.current.size]);
 
     return (
-        <Stack spacing={2} direction={"column"}>
-            <Grid container spacing={2} alignItems="center">
-                <Grid item xs={"auto"} >
-                    <BackButton/>
-                </Grid>
-                <Grid item xs>
-                    <Typography variant="h4">Lane View: {currentLane}</Typography>
-                </Grid>
-            </Grid>
-
-            <Grid item container spacing={2} sx={{ width: "100%" }}>
-                <Paper variant='outlined' sx={{ width: "100%"}}>
-                    {dataSourcesByLane &&
-
-                        <LaneStatus dataSourcesByLane={dataSourcesByLane}/>
-                    }
-
-                </Paper>
-            </Grid>
-
-            <Grid item container spacing={2} sx={{ width: "100%" }}>
-                <Media
-                    datasources={{
-                        gamma: gammaDS,
-                        neutron: neutronDS,
-                        threshold: thresholdDS,
-                        video: videoDS
-                    }}
-
-                    currentLane={currentLane}
-                />
-
-            </Grid>
-
-            <Grid item container spacing={2} sx={{ width: "100%" }}>
-                <Paper variant='outlined' sx={{ width: "100%", height: "100%", padding: 2}}>
-                    <Grid container direction="column">
-                        <Grid item sx={{ display: "flex", justifyContent: "center", padding: 1 }}>
-                            <ToggleButtonGroup
-                                size="small"
-                                orientation="horizontal"
-                                onChange={handleToggle}
-                                exclusive
-                                value={toggleView}
-                                sx={{
-                                    boxShadow: 1,
-                                    '& .MuiToggleButton-root': {
-                                        margin: 0.5,
-                                        padding: "5px",
-                                    },
-                                }}
-                            >
-                                {toggleButtons}
-                            </ToggleButtonGroup>
-                        </Grid>
-                        <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'occupancy' ? 'block' : 'none' }}>
-                            <EventTable tableMode={'lanelog'} laneMap={laneMap} viewLane viewSecondary viewAdjudicated currentLane={currentLane}/>
-                        </Grid>
-                        <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'fault' ? 'block' : 'none' }}>
-                            <StatusTable laneMap={laneMap}/>
-                        </Grid>
+        <div ref={contentRef}>
+            <Stack spacing={2} direction={"column"}>
+                <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={"auto"} >
+                        <BackButton/>
                     </Grid>
-                </Paper>
-            </Grid>
-        </Stack>
+                    <Grid item xs>
+                        <Typography variant="h4">Lane View: {currentLane}</Typography>
+                    </Grid>
+
+                    <Grid item xs={2}>
+                        <Button
+                            variant="outlined"
+                            startIcon={<PictureAsPdfRounded />}
+                            onClick={() => {
+                                console.log('contentref: ', contentRef.current);
+                                reactToPrintFn()
+                            }}
+                        >
+                            Export as PDF
+                        </Button>
+                    </Grid>
+                </Grid>
+
+                <Grid item container spacing={2} sx={{ width: "100%" }}>
+                    <Paper variant='outlined' sx={{ width: "100%"}}>
+                        {dataSourcesByLane &&
+
+                            <LaneStatus dataSourcesByLane={dataSourcesByLane}/>
+                        }
+
+                    </Paper>
+                </Grid>
+
+                <Grid item container spacing={2} sx={{ width: "100%" }}>
+                    <Media
+                        datasources={{
+                            gamma: gammaDS,
+                            neutron: neutronDS,
+                            threshold: thresholdDS,
+                            video: videoDS
+                        }}
+
+                        currentLane={currentLane}
+                    />
+
+                </Grid>
+
+                <Grid item container spacing={2} sx={{ width: "100%" }}>
+                    <Paper variant='outlined' sx={{ width: "100%", height: "100%", padding: 2}}>
+                        <Grid container direction="column">
+                            <Grid item sx={{ display: "flex", justifyContent: "center", padding: 1 }}>
+                                <ToggleButtonGroup
+                                    size="small"
+                                    orientation="horizontal"
+                                    onChange={handleToggle}
+                                    exclusive
+                                    value={toggleView}
+                                    sx={{
+                                        boxShadow: 1,
+                                        '& .MuiToggleButton-root': {
+                                            margin: 0.5,
+                                            padding: "5px",
+                                        },
+                                    }}
+                                >
+                                    {toggleButtons}
+                                </ToggleButtonGroup>
+                            </Grid>
+                            <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'occupancy' ? 'block' : 'none' }}>
+                                <EventTable tableMode={'lanelog'} laneMap={laneMap} viewLane viewSecondary viewAdjudicated currentLane={currentLane}/>
+                            </Grid>
+                            <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'fault' ? 'block' : 'none' }}>
+                                <StatusTable laneMap={laneMap}/>
+                            </Grid>
+                        </Grid>
+                    </Paper>
+                </Grid>
+            </Stack>
+        </div>
     );
 }
