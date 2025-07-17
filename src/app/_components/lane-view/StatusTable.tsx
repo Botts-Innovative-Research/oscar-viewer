@@ -18,8 +18,15 @@ import {Box} from "@mui/material";
 import {DataGrid, GridCellParams, gridClasses, GridColDef} from "@mui/x-data-grid";
 import CustomToolbar from "@/app/_components/CustomToolbar";
 import {selectCurrentLane} from "@/lib/state/LaneViewSlice";
-import {isGammaDatastream, isNeutronDatastream, isTamperDatastream} from "@/lib/data/oscar/Utilities";
+import {
+    isConnectionDatastream,
+    isGammaDatastream,
+    isNeutronDatastream,
+    isOccupancyDatastream,
+    isTamperDatastream, isVideoDatastream
+} from "@/lib/data/oscar/Utilities";
 import { convertToMap } from "@/app/utils/Utils";
+import {event} from "next/dist/build/output/log";
 
 
 interface TableProps {laneMap: Map<string, LaneMapEntry>;}
@@ -36,12 +43,16 @@ export default function StatusTables({laneMap}: TableProps){
     const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
         if (!laneMap) return;
 
-
         let hasGamma = false;
         let hasNeutron = false;
         let alarmObsProperty;
         let tamperObsProperty;
+        let occProperty;
         let hasTamper = false;
+
+
+        let hasExtendedOccupancy = false;
+
         let allStatusResults: AlarmTableData[] = [];
 
 
@@ -58,7 +69,10 @@ export default function StatusTables({laneMap}: TableProps){
                 if (!hasTamper && isTamperDatastream(ds)) {
                     hasTamper = true;
                     tamperObsProperty = ds.properties.observedProperties[0].definition;
-
+                }
+                if(isOccupancyDatastream((ds))){
+                   hasExtendedOccupancy = true;
+                   occProperty = ds.properties.observedProperties[0].definition;
                 }
             });
         });
@@ -75,6 +89,13 @@ export default function StatusTables({laneMap}: TableProps){
             allStatusResults.push(...tamperResults);
             doStream(laneMap, tamperObsProperty);
         }
+
+        if(hasExtendedOccupancy){
+            const extendedOccResults = await doFetch(laneMap, occProperty);
+            allStatusResults.push(...extendedOccResults);
+            doStream(laneMap, occProperty)
+        }
+
 
         dispatch(setLaneViewLogData(allStatusResults));
     }, [laneMap]);
@@ -119,12 +140,104 @@ export default function StatusTables({laneMap}: TableProps){
         const results: AlarmTableData[] = [];
 
         let obsCollection = await ds.searchObservations(observationFilter, 15);
-        const result = await handleObservations(obsCollection, laneEntry, false);
+
+        const result = await handleObservations(ds, obsCollection, laneEntry, false);
         results.push(...result);
 
         return results;
 
     }
+
+
+
+    // @ts-ignore
+    async function handleObservations(ds: DataStream, obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<AlarmTableData[]> {
+        let observations: AlarmTableData[] = [];
+
+        while(obsCollection.hasNext()){
+            let obsRes = await obsCollection.nextPage();
+
+            obsRes.map((res: any) => {
+                if (isNeutronDatastream(ds) && (res.result.alarmState === 'Neutron High')) {
+                    let date = (new Date(res.timestamp)).toISOString();
+                    let result = new AlarmTableData(randomUUID(), laneEntry.laneName, 'Neutron High', date);
+                    observations.push(result);
+                }
+                else if(isGammaDatastream(ds)){
+
+                    if(res.result.alarmState === 'Gamma High'){
+                        let date = (new Date(res.timestamp)).toISOString();
+                        let result = new AlarmTableData(randomUUID(), laneEntry.laneName, "Gamma High", date);
+                        observations.push(result);
+                    }
+                    else if(res.result.alarmState.includes('Gamma Low')){
+                        let date = (new Date(res.timestamp)).toISOString();
+                        let result = new AlarmTableData(randomUUID(), laneEntry.laneName, "Gamma Low", date);
+                        observations.push(result);
+                    }
+
+                }
+                else if(isTamperDatastream(ds) && res.result.tamperStatus){
+                    let date = (new Date(res.timestamp)).toISOString();
+                    let result = new AlarmTableData(randomUUID(), laneEntry.laneName, 'Tamper', date);
+                    observations.push(result);
+
+                }
+                else if(isOccupancyDatastream(ds)){
+                    let resultTimeLength = res.result.endTime + res.result.startTime
+                    // extended occupancy is defined as an occupancy lasting longer than 10 minutes
+                    if(resultTimeLength > 600){
+
+                        let date = (new Date(res.timestamp)).toISOString();
+                        let result = new AlarmTableData(randomUUID(), laneEntry.laneName, 'Extended Occupancy', date);
+                        observations.push(result);
+                    }
+                }
+                else if(isVideoDatastream(ds)){
+                    // VIDEO COMMUNICATION DISCONNECTION COUNT
+                    // think they are looking for disconnections so we will need to add stuff to the backend before this changes
+                    // camCount++;
+                }
+                else if(isConnectionDatastream(ds)){
+                    // RAPISCAN COMMUNICATION DISCONNECTION COUNT
+                }
+
+            })
+
+        }
+
+        // while (obsCollection.hasNext()) {
+        //     let obsResults = await obsCollection.nextPage();
+        //     obsResults.map((obs: any) => {
+        //
+        //         const state = obs?.result?.alarmState;
+        //         if (["Scan", "Background", "Alarm"].includes(state)) return;
+        //
+        //         let result = eventFromObservation(obs, laneEntry.laneName);
+        //
+        //         if(result){
+        //             observations.push(result);
+        //             if (addToLog) dispatch(addEventToLaneViewLog(result));
+        //         }
+        //     })
+        // }
+        return observations;
+    }
+
+    // function eventFromObservation(obs: any, laneName: string): AlarmTableData {
+    //
+    //
+    //
+    //     if(obs.result?.alarmState){
+    //         let state = obs.result.alarmState;
+    //
+    //         return new AlarmTableData(randomUUID(), laneName, state, date);
+    //
+    //     }else if(obs.result?.tamperStatus){
+    //         return  new AlarmTableData(randomUUID(), laneName, 'Tamper', date);
+    //     }
+    //
+    // }
 
     async function streamObservations(laneEntry: LaneMapEntry, observedProperty: string) {
         let futureTime = new Date();
@@ -133,55 +246,63 @@ export default function StatusTables({laneMap}: TableProps){
         let ds: typeof DataStream = laneEntry.findDataStreamByObsProperty(observedProperty);
         if(!ds) return;
 
-        ds.streamObservations(new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`}), (obs: any) => {
-            let state = obs[0].result.alarmState;
-            if(["Scan", "Background", "Alarm"].includes(state)) return;
-
-            let result = eventFromObservation(obs[0], laneEntry.laneName);
-
-            if(result){
-
+        ds.streamObservations(new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`}), (res: any) => {
+            if (isNeutronDatastream(ds) && (res[0].result.alarmState === 'Neutron High')) {
+                let date = (new Date(res[0].timestamp)).toISOString();
+                let result = new AlarmTableData(randomUUID(), laneEntry.laneName, 'Neutron High', date);
                 dispatch(addEventToLaneViewLog(result));
             }
+            else if(isGammaDatastream(ds)){
+
+                if(res[0].result.alarmState === 'Gamma High'){
+                    let date = (new Date(res[0].timestamp)).toISOString();
+                    let result = new AlarmTableData(randomUUID(), laneEntry.laneName, "Gamma High", date);
+                    dispatch(addEventToLaneViewLog(result));
+                }
+                else if(res[0].result.alarmState.includes('Gamma Low')){
+                    let date = (new Date(res[0].timestamp)).toISOString();
+                    let result = new AlarmTableData(randomUUID(), laneEntry.laneName, "Gamma Low", date);
+                    dispatch(addEventToLaneViewLog(result));
+                }
+
+            }else if(isTamperDatastream(ds) && res[0].result.tamperStatus){
+                let date = (new Date(res[0].timestamp)).toISOString();
+                let result = new AlarmTableData(randomUUID(), laneEntry.laneName, 'Tamper', date);
+                dispatch(addEventToLaneViewLog(result));
+
+            }
+            else if(isOccupancyDatastream(ds)){
+                let resultTimeLength = res[0].result.endTime + res[0].result.startTime
+                // extended occupancy is defined as an occupancy lasting longer than 10 minutes
+                if(resultTimeLength > 600){
+
+                    let date = (new Date(res[0].timestamp)).toISOString();
+                    let result = new AlarmTableData(randomUUID(), laneEntry.laneName, 'Extended Occupancy', date);
+                    dispatch(addEventToLaneViewLog(result));
+                }
+            }
+            else if(isVideoDatastream(ds)){
+                // VIDEO COMMUNICATION DISCONNECTION COUNT
+                // think they are looking for disconnections so we will need to add stuff to the backend before this changes
+                // camCount++;
+            }else if(isConnectionDatastream(ds)){
+                // RAPISCAN COMMUNICATION DISCONNECTION COUNT
+            }
+
+
+            // let state = obs[0].result.alarmState;
+            // if(["Scan", "Background", "Alarm"].includes(state)) return;
+            //
+            // let result = eventFromObservation(obs[0], laneEntry.laneName);
+            //
+            // if(result){
+            //     dispatch(addEventToLaneViewLog(result));
+            // }
         })
 
     }
 
-    // @ts-ignore
-    async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<AlarmTableData[]> {
-        let observations: AlarmTableData[] = [];
 
-        while (obsCollection.hasNext()) {
-            let obsResults = await obsCollection.nextPage();
-            obsResults.map((obs: any) => {
-                const state = obs?.result?.alarmState;
-                if (["Scan", "Background", "Alarm"].includes(state)) return;
-
-                let result = eventFromObservation(obs, laneEntry.laneName);
-
-                if(result){
-                    observations.push(result);
-                    if (addToLog) dispatch(addEventToLaneViewLog(result));
-                }
-            })
-        }
-        return observations;
-    }
-
-    function eventFromObservation(obs: any, laneName: string): AlarmTableData {
-
-        let date = (new Date(obs.timestamp)).toISOString();
-
-        if(obs.result?.alarmState){
-            let state = obs.result.alarmState;
-
-            return new AlarmTableData(randomUUID(), laneName, state, date);
-
-        }else if(obs.result?.tamperStatus){
-            return  new AlarmTableData(randomUUID(), laneName, 'Tamper', date);
-        }
-
-    }
 
     useEffect(() => {
         laneMap = convertToMap(laneMap);

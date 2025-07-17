@@ -11,10 +11,9 @@ import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasou
 import AdjudicationDetail from "@/app/_components/adjudication/AdjudicationDetail";
 import Media from "@/app/_components/event-details/Media";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {selectEventPreview, setSelectedRowId} from "@/lib/state/EventPreviewSlice";
+import {selectEventPreview} from "@/lib/state/EventPreviewSlice";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {PictureAsPdfRounded} from "@mui/icons-material";
-import {event} from "next/dist/build/output/log";
 import {useReactToPrint} from "react-to-print";
 
 
@@ -40,7 +39,6 @@ export default function EventDetailsPage() {
     const [videoDatasources, setVideoDatasources] = useState<typeof ConSysApi[]>([]);
 
     const contentRef = useRef<HTMLDivElement>(null);
-
     const docTitle = eventPreview.eventData ? `eventdetails-${eventPreview.eventData.laneId}-${eventPreview.eventData.observationId}-${eventPreview.eventData.startTime}-${eventPreview.eventData.endTime}` : 'eventdetails';
 
     const reactToPrintFn = useReactToPrint({
@@ -67,7 +65,6 @@ export default function EventDetailsPage() {
         let datasources = await currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
         setLocalDSMap(datasources);
         tempDSMap = datasources;
-
 
         if(!tempDSMap){
             return;
@@ -108,7 +105,7 @@ export default function EventDetailsPage() {
         <div ref={contentRef}>
             <Stack spacing={4} direction={"column"} sx={{width: "100%"}}>
                 <Grid container spacing={2} alignItems="center">
-                    <Grid item xs={"auto"} >
+                    <Grid item xs={"auto"}>
                         <BackButton/>
                     </Grid>
                     <Grid item xs>
@@ -117,7 +114,7 @@ export default function EventDetailsPage() {
                     <Grid item xs={2}>
                         <Button
                             variant="outlined"
-                            startIcon={<PictureAsPdfRounded />}
+                            startIcon={<PictureAsPdfRounded/>}
                             onClick={() => {
                                 console.log('contentref: ', contentRef.current);
                                 reactToPrintFn()
@@ -129,13 +126,13 @@ export default function EventDetailsPage() {
 
                 </Grid>
 
-                <Paper variant='outlined' sx={{ width: '100%'}}>
-                    <DataRow/>
+                <Paper variant='outlined' sx={{width: '100%'}}>
+                    <DataRow />
                 </Paper>
 
-                { (gammaDatasources.length > 0 || neutronDatasources.length > 0 || thresholdDatasources.length > 0) && laneMapRef &&
+                {(gammaDatasources.length > 0 || neutronDatasources.length > 0 || thresholdDatasources.length > 0) && laneMapRef &&
 
-                    <Media eventData={eventPreview.eventData}  datasources={{
+                    <Media eventData={eventPreview.eventData} datasources={{
                         gamma: gammaDatasources?.[0],
                         neutron: neutronDatasources?.[0],
                         threshold: thresholdDatasources?.[0],
@@ -156,6 +153,8 @@ export default function EventDetailsPage() {
 
             </Stack>
         </div>
+
+
 
     );
 }

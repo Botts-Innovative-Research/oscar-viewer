@@ -24,6 +24,7 @@ import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasou
 import StatusTable from "../_components/lane-view/StatusTable";
 import {PictureAsPdfRounded} from "@mui/icons-material";
 import {useReactToPrint} from "react-to-print";
+import FaultStatsRow from "@/app/_components/lane-view/FaultStatsRow";
 
 
 
@@ -132,7 +133,7 @@ export default function LaneViewPage() {
             <Stack spacing={2} direction={"column"}>
                 <Grid container spacing={2} alignItems="center">
                     <Grid item xs={"auto"} >
-                        <BackButton/>
+                        <BackButton />
                     </Grid>
                     <Grid item xs>
                         <Typography variant="h4">Lane View: {currentLane}</Typography>
@@ -156,11 +157,15 @@ export default function LaneViewPage() {
                     <Paper variant='outlined' sx={{ width: "100%"}}>
                         {dataSourcesByLane &&
 
-                            <LaneStatus dataSourcesByLane={dataSourcesByLane}/>
+                            <LaneStatus dataSourcesByLane={dataSourcesByLane} />
                         }
 
                     </Paper>
                 </Grid>
+
+                <Paper variant='outlined' sx={{width: '100%'}}>
+                    <FaultStatsRow />
+                </Paper>
 
                 <Grid item container spacing={2} sx={{ width: "100%" }}>
                     <Media
@@ -201,7 +206,7 @@ export default function LaneViewPage() {
                                 <EventTable tableMode={'lanelog'} laneMap={laneMap} viewLane viewSecondary viewAdjudicated currentLane={currentLane}/>
                             </Grid>
                             <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'fault' ? 'block' : 'none' }}>
-                                <StatusTable laneMap={laneMap}/>
+                                <StatusTable laneMap={laneMap} />
                             </Grid>
                         </Grid>
                     </Paper>
