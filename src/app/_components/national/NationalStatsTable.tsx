@@ -18,10 +18,9 @@ import {
 import {DataGrid, GridColDef} from "@mui/x-data-grid";
 import {Box} from "@mui/material";
 import CustomToolbar from "@/app/_components/CustomToolbar";
-import {useAppDispatch} from "@/lib/state/Hooks";
 import {RootState} from "@/lib/state/Store";
-import {selectLaneViewLog} from "@/lib/state/EventDataSlice";
 import {selectEndDate, selectStartDate} from "@/lib/state/NationalViewSlice";
+import {selectEventTableData} from "@/lib/state/EventDataSlice";
 
 
 export default function StatTable(){
@@ -42,6 +41,7 @@ export default function StatTable(){
     const natlTableRef = useRef<NationalTableDataCollection>(new NationalTableDataCollection());
 
 
+
     useEffect(() => {
         setStartTime(savedStartDate);
         setEndTime(savedEndDate);
@@ -59,6 +59,7 @@ export default function StatTable(){
                     neutronAlarmCount: 0,
                     faultAlarmCount: 0,
                     tamperAlarmCount: 0,
+
                 }
                 oscarSites.push(newSite);
             })
@@ -67,7 +68,6 @@ export default function StatTable(){
 
         setStartTime(savedStartDate)
         setEndTime(savedEndDate)
-
 
     }, [nodes, savedStartDate, savedEndDate]);
 
@@ -82,6 +82,7 @@ export default function StatTable(){
                 neutronAlarmCount: 0,
                 faultAlarmCount: 0,
                 tamperAlarmCount: 0,
+
             }));
         });
 
@@ -171,9 +172,7 @@ export default function StatTable(){
                         neutronAlarmCount: site.neutronAlarmCount + neutronCount,
                         tamperAlarmCount: site.tamperAlarmCount + tamperCount,
                         faultAlarmCount: site.faultAlarmCount + faultCount,
-
                     };
-
                 }
                 return site;
             })

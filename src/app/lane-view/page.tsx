@@ -24,7 +24,9 @@ import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasou
 import StatusTable from "../_components/lane-view/StatusTable";
 import {PictureAsPdfRounded} from "@mui/icons-material";
 import {useReactToPrint} from "react-to-print";
-import FaultStatsRow from "@/app/_components/lane-view/FaultStatsRow";
+import FaultStatsRow from "@/app/_components/reports/FaultStatsRow";
+import OccAndAlarmStatsRow from "../_components/reports/OccAndAlarmStatsRow";
+import AlarmsOccupancyChart from "@/app/_components/reports/AlarmsOccupancyChart";
 
 
 
@@ -48,8 +50,8 @@ export default function LaneViewPage() {
 
 
     const toggleButtons = [
-        <ToggleButton value={"occupancy"} key={"occupancy"}>Occupancy Table</ToggleButton>,
-        <ToggleButton value={"fault"} key={"fault"}>Fault Table</ToggleButton>
+        <ToggleButton value={"occupancy"} key={"occupancy"} disabled={toggleView == 'occupancy'}>Occupancy Table</ToggleButton>,
+        <ToggleButton value={"fault"} key={"fault"} disabled={toggleView == 'fault'}>Fault Table</ToggleButton>
     ];
 
     const contentRef = useRef<HTMLDivElement>(null);
@@ -163,10 +165,6 @@ export default function LaneViewPage() {
                     </Paper>
                 </Grid>
 
-                <Paper variant='outlined' sx={{width: '100%'}}>
-                    <FaultStatsRow />
-                </Paper>
-
                 <Grid item container spacing={2} sx={{ width: "100%" }}>
                     <Media
                         datasources={{
@@ -178,8 +176,36 @@ export default function LaneViewPage() {
 
                         currentLane={currentLane}
                     />
-
                 </Grid>
+
+                <Paper variant='outlined' sx={{width: '100%', p:2 }}>
+                    <Grid container spacing={2} alignItems="center">
+                        <Grid item xs={12}>
+                            <Typography variant="h6">Fault Statistics</Typography>
+                        </Grid>
+
+                        <Grid item xs={12}>
+                            <Paper variant='outlined' sx={{width: '100%'}}>
+                                <FaultStatsRow filterByLane={true}/>
+                            </Paper>
+                        </Grid>
+
+                        <Grid item xs={12}>
+                            <Typography variant="h6">Occupancy and Alarm Statistics</Typography>
+                        </Grid>
+
+                        <Grid item xs={12}>
+                            <Paper variant='outlined' sx={{width: '100%'}}>
+                                <OccAndAlarmStatsRow filterByLane={true}/>
+                            </Paper>
+                        </Grid>
+
+                        {/*<AlarmsOccupancyChart/>*/}
+                    </Grid>
+
+                </Paper>
+
+
 
                 <Grid item container spacing={2} sx={{ width: "100%" }}>
                     <Paper variant='outlined' sx={{ width: "100%", height: "100%", padding: 2}}>

@@ -219,13 +219,15 @@ export class AlarmTableData implements IAlarmTableData {
     laneId: string;
     status: string;
     timestamp: string;
+    laneSystemId: string;
 
 
-    constructor(id: number, laneId: string,  status: string, timestamp: string) {
+    constructor(id: number, laneId: string,  status: string, timestamp: string, laneSystemId: string) {
         this.id = id;
         this.laneId = laneId;
         this.status = status;
         this.timestamp = timestamp;
+        this.laneSystemId = laneSystemId;
     }
 }
 

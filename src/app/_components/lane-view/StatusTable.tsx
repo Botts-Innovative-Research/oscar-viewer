@@ -26,7 +26,7 @@ import {
     isTamperDatastream, isVideoDatastream
 } from "@/lib/data/oscar/Utilities";
 import { convertToMap } from "@/app/utils/Utils";
-import {event} from "next/dist/build/output/log";
+
 
 
 interface TableProps {laneMap: Map<string, LaneMapEntry>;}
@@ -149,7 +149,6 @@ export default function StatusTables({laneMap}: TableProps){
     }
 
 
-
     // @ts-ignore
     async function handleObservations(ds: DataStream, obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, addToLog: boolean = true): Promise<AlarmTableData[]> {
         let observations: AlarmTableData[] = [];
@@ -160,36 +159,38 @@ export default function StatusTables({laneMap}: TableProps){
             obsRes.map((res: any) => {
                 if (isNeutronDatastream(ds) && (res.result.alarmState === 'Neutron High')) {
                     let date = (new Date(res.timestamp)).toISOString();
-                    let result = new AlarmTableData(randomUUID(), laneEntry.laneName, 'Neutron High', date);
+                    let result = new AlarmTableData(randomUUID(), laneEntry.laneName, 'Neutron High', date , "2");
                     observations.push(result);
                 }
                 else if(isGammaDatastream(ds)){
 
                     if(res.result.alarmState === 'Gamma High'){
                         let date = (new Date(res.timestamp)).toISOString();
-                        let result = new AlarmTableData(randomUUID(), laneEntry.laneName, "Gamma High", date);
+                        let result = new AlarmTableData(randomUUID(), laneEntry.laneName, "Gamma High", date, "2");
                         observations.push(result);
                     }
                     else if(res.result.alarmState.includes('Gamma Low')){
                         let date = (new Date(res.timestamp)).toISOString();
-                        let result = new AlarmTableData(randomUUID(), laneEntry.laneName, "Gamma Low", date);
+                        let result = new AlarmTableData(randomUUID(), laneEntry.laneName, "Gamma Low", date, "2");
                         observations.push(result);
                     }
 
                 }
                 else if(isTamperDatastream(ds) && res.result.tamperStatus){
                     let date = (new Date(res.timestamp)).toISOString();
-                    let result = new AlarmTableData(randomUUID(), laneEntry.laneName, 'Tamper', date);
+                    console.log("lane entry: ", laneEntry);
+                    console.log("result", res)
+                    let result = new AlarmTableData(randomUUID(), laneEntry.laneName, 'Tamper', date, "2");
                     observations.push(result);
 
                 }
                 else if(isOccupancyDatastream(ds)){
-                    let resultTimeLength = res.result.endTime + res.result.startTime
+                    let resultTimeLength = res.result.endTime - res.result.startTime
                     // extended occupancy is defined as an occupancy lasting longer than 10 minutes
                     if(resultTimeLength > 600){
 
                         let date = (new Date(res.timestamp)).toISOString();
-                        let result = new AlarmTableData(randomUUID(), laneEntry.laneName, 'Extended Occupancy', date);
+                        let result = new AlarmTableData(randomUUID(), laneEntry.laneName, 'Extended Occupancy', date, "2");
                         observations.push(result);
                     }
                 }
@@ -201,43 +202,11 @@ export default function StatusTables({laneMap}: TableProps){
                 else if(isConnectionDatastream(ds)){
                     // RAPISCAN COMMUNICATION DISCONNECTION COUNT
                 }
-
             })
-
         }
-
-        // while (obsCollection.hasNext()) {
-        //     let obsResults = await obsCollection.nextPage();
-        //     obsResults.map((obs: any) => {
-        //
-        //         const state = obs?.result?.alarmState;
-        //         if (["Scan", "Background", "Alarm"].includes(state)) return;
-        //
-        //         let result = eventFromObservation(obs, laneEntry.laneName);
-        //
-        //         if(result){
-        //             observations.push(result);
-        //             if (addToLog) dispatch(addEventToLaneViewLog(result));
-        //         }
-        //     })
-        // }
         return observations;
     }
 
-    // function eventFromObservation(obs: any, laneName: string): AlarmTableData {
-    //
-    //
-    //
-    //     if(obs.result?.alarmState){
-    //         let state = obs.result.alarmState;
-    //
-    //         return new AlarmTableData(randomUUID(), laneName, state, date);
-    //
-    //     }else if(obs.result?.tamperStatus){
-    //         return  new AlarmTableData(randomUUID(), laneName, 'Tamper', date);
-    //     }
-    //
-    // }
 
     async function streamObservations(laneEntry: LaneMapEntry, observedProperty: string) {
         let futureTime = new Date();
@@ -249,35 +218,37 @@ export default function StatusTables({laneMap}: TableProps){
         ds.streamObservations(new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`}), (res: any) => {
             if (isNeutronDatastream(ds) && (res[0].result.alarmState === 'Neutron High')) {
                 let date = (new Date(res[0].timestamp)).toISOString();
-                let result = new AlarmTableData(randomUUID(), laneEntry.laneName, 'Neutron High', date);
+                let result = new AlarmTableData(randomUUID(), laneEntry.laneName, 'Neutron High', date, "2");
                 dispatch(addEventToLaneViewLog(result));
             }
             else if(isGammaDatastream(ds)){
 
                 if(res[0].result.alarmState === 'Gamma High'){
                     let date = (new Date(res[0].timestamp)).toISOString();
-                    let result = new AlarmTableData(randomUUID(), laneEntry.laneName, "Gamma High", date);
+                    let result = new AlarmTableData(randomUUID(), laneEntry.laneName, "Gamma High", date, "2");
                     dispatch(addEventToLaneViewLog(result));
                 }
                 else if(res[0].result.alarmState.includes('Gamma Low')){
                     let date = (new Date(res[0].timestamp)).toISOString();
-                    let result = new AlarmTableData(randomUUID(), laneEntry.laneName, "Gamma Low", date);
+                    let result = new AlarmTableData(randomUUID(), laneEntry.laneName, "Gamma Low", date, "2");
                     dispatch(addEventToLaneViewLog(result));
                 }
 
             }else if(isTamperDatastream(ds) && res[0].result.tamperStatus){
                 let date = (new Date(res[0].timestamp)).toISOString();
-                let result = new AlarmTableData(randomUUID(), laneEntry.laneName, 'Tamper', date);
+                console.log("lane entry: ", laneEntry);
+                console.log("result", res)
+                let result = new AlarmTableData(randomUUID(), laneEntry.laneName, 'Tamper', date, "2");
                 dispatch(addEventToLaneViewLog(result));
 
             }
             else if(isOccupancyDatastream(ds)){
-                let resultTimeLength = res[0].result.endTime + res[0].result.startTime
+                let resultTimeLength = res[0].result.endTime - res[0].result.startTime
                 // extended occupancy is defined as an occupancy lasting longer than 10 minutes
                 if(resultTimeLength > 600){
 
                     let date = (new Date(res[0].timestamp)).toISOString();
-                    let result = new AlarmTableData(randomUUID(), laneEntry.laneName, 'Extended Occupancy', date);
+                    let result = new AlarmTableData(randomUUID(), laneEntry.laneName, 'Extended Occupancy', date, "2");
                     dispatch(addEventToLaneViewLog(result));
                 }
             }
@@ -364,7 +335,7 @@ export default function StatusTables({laneMap}: TableProps){
     ];
 
     return(
-        <Box sx={{height: 800, width: '100%'}}>
+        <Box sx={{flex: 1, height: 800, width: '100%'}}>
             <DataGrid
                 rows={filteredTableData}
                 columns={columns}

@@ -11,7 +11,7 @@ import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js"
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter.js";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
-import {EventType} from "osh-js/source/core/event/EventType";
+
 
 interface LaneStatusProps{
   dataSourcesByLane: LaneDSColl;

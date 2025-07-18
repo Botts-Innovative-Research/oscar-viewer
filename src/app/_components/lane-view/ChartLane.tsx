@@ -65,7 +65,6 @@ export default function ChartLane(props: ChartInterceptProps){
                                 },
                                 align: 'center',
                                 position: 'top',
-
                             },
                             legend: {
                                 display: true,

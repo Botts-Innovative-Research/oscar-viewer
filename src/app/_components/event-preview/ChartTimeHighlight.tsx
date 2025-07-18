@@ -66,8 +66,8 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
     const [toggleView, setToggleView] = useState("cps");
     const gammaToggleButtons = [
-        <ToggleButton color= 'error' value={"cps"} key={"cps"}>CPS</ToggleButton>,
-        <ToggleButton color= 'secondary' value={"sigma"} key={"sigma"}>NSigma</ToggleButton>
+        <ToggleButton color= 'error' value={"cps"} key={"cps"} disabled={toggleView === 'cps'}>CPS</ToggleButton>,
+        <ToggleButton color= 'secondary' value={"sigma"} key={"sigma"} disabled={toggleView === 'sigma'}>NSigma</ToggleButton>
     ];
 
     useEffect(() => {
