@@ -293,6 +293,7 @@ export function EventPreview() {
         const updatedVideo = tempDSMap.get("video") || [];
         const updatedOcc = tempDSMap.get("occ") || [];
 
+        console.log("tempDS: ", tempDSMap);
         setGammaDS(updatedGamma);
         setNeutronDS(updatedNeutron);
         setThresholdDS(updatedThreshold);
@@ -373,7 +374,6 @@ export function EventPreview() {
         }
 
         return()=>{
-            console.log("Unmounted event preview: disconnecting from datasources")
             gammaDatasources.forEach(ds => {
                 ds.isConnected().then(ds.disconnect());
             });
@@ -386,6 +386,7 @@ export function EventPreview() {
             occDatasources.forEach(ds => {
                 ds.isConnected().then(ds.disconnect());
             });
+
 
         }
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
@@ -582,7 +583,7 @@ export function EventPreview() {
                 </IconButton>
             </Stack>
 
-            {(datasourcesReady && latestGB) ? (
+            {(datasourcesReady) ? (
                     <Box>
                         <ChartTimeHighlight
                             datasources={{
