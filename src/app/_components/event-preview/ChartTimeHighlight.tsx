@@ -319,10 +319,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             setChartViews(prev => ({ ...prev, nsigma: nsigmaChart }));
         }
 
-        setHasNsigma(nsigmaAvailable);
         setChartsReady(true);
-        console.log("charts: ", nsigmaAvailable)
-        console.log("charts: ", chartViews)
     };
 
 
