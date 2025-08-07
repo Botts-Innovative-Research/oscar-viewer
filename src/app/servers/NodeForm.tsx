@@ -103,11 +103,20 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
             modeChangeCallback(false, null);
 
         }
-        await checkReachable(newNode)
-        setOpenSnack(true)
+
     }
 
     const handleAddSave = async(e: React.FormEvent)=> {
+
+        let reachable = await checkReachable(newNode)
+        setOpenSnack(true)
+
+        if(!reachable){
+            setNodeSnackMsg('Node is not reachable. Try again.')
+            setColorStatus('error')
+            setOpenSnack(true);
+            return;
+        }
 
         // update the list of nodes using the edit/update
         handleButtonAction(e);
@@ -250,22 +259,30 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         setOpenSnack(false);
     };
 
-     async function checkReachable(node: any){
-         const endpoint = `${node.getConnectedSystemsEndpoint()}`;
+    async function checkReachable(node: any){
+        setNodeSnackMsg('Trying to connect...')
+        setColorStatus('info')
+        setOpenSnack(true)
 
-         try {
-             const response = await fetch(endpoint);
-             if (!response.ok) {
-                 setNodeSnackMsg(`Connection failed. Unreachable server at ${node.address}.`);
-                 setColorStatus('error')
-             } else {
-                 setNodeSnackMsg(`Successfully connected to server at ${node.address}`);
-                 setColorStatus('success')
-             }
-         } catch (error) {
-             setNodeSnackMsg('Connection failed. Confirm IP, port, and server availability.');
-             setColorStatus('error')
-         }
+
+        const endpoint = `${node.getConnectedSystemsEndpoint()}`;
+
+        try {
+            const response = await fetch(endpoint);
+            if (response.ok) {
+                setNodeSnackMsg(`Successfully connected to server at ${node.address}`);
+                setColorStatus('success')
+                return true;
+            }else{
+                setNodeSnackMsg(`Connection failed. Unreachable server at ${node.address}.`);
+                setColorStatus('error')
+                return false;
+            }
+
+        } catch (error) {
+            setNodeSnackMsg('Connection failed. Confirm IP, port, and server availability.');
+            setColorStatus('error')
+        }
     }
 
     return (
@@ -309,7 +326,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                         message={nodeSnackMsg}
                         sx={{
                             '& .MuiSnackbarContent-root': {
-                                backgroundColor: colorStatus === 'success' ? 'green' : 'red',
+                                backgroundColor: colorStatus === 'success' ? 'green' : colorStatus === 'error' ? 'red' : 'orange',
                             },
                         }}
                     />
