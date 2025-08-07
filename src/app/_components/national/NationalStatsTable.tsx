@@ -1,194 +1,150 @@
-"use client"
 
-import {useCallback, useContext, useEffect, useRef, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {INationalTableData} from "../../../../types/new-types";
-import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
-import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
-import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
 import {useSelector} from "react-redux";
 import  {selectNodes} from "@/lib/state/OSHSlice";
-import {AlarmTableData, NationalTableDataCollection} from "@/lib/data/oscar/TableHelpers";
-import {
-    isGammaDatastream,
-    isNeutronDatastream,
-    isOccupancyDatastream,
-    isTamperDatastream
-} from "@/lib/data/oscar/Utilities";
+import { NationalTableDataCollection} from "@/lib/data/oscar/TableHelpers";
 import {DataGrid, GridColDef} from "@mui/x-data-grid";
 import {Box} from "@mui/material";
 import CustomToolbar from "@/app/_components/CustomToolbar";
-import {useAppDispatch} from "@/lib/state/Hooks";
-import {RootState} from "@/lib/state/Store";
-import {selectLaneViewLog} from "@/lib/state/EventDataSlice";
-import {selectEndDate, selectStartDate} from "@/lib/state/NationalViewSlice";
 
 
 export default function StatTable(){
 
-
-    const savedStartDate = useSelector((state: RootState) => selectStartDate(state))
-    const savedEndDate = useSelector((state: RootState) => selectEndDate(state))
     const nodes = useSelector(selectNodes);
-
-    const [startTime, setStartTime] = useState(savedStartDate);
-    const [endTime, setEndTime] = useState(savedEndDate);
-    const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
     const [sites, setSites] = useState<INationalTableData[]>([]);
-
-    const {laneMapRef} = useContext(DataSourceContext);
 
     const idVal = useRef(0);
     const natlTableRef = useRef<NationalTableDataCollection>(new NationalTableDataCollection());
 
+    const occObservedProperty = "http://www.opengis.net/def/pillar-occupancy-count";
+    const gammaObservedProperty = "http://www.opengis.net/def/gamma-gross-count";
+    const neutronObservedProperty = "http://www.opengis.net/def/neutron-gross-count";
+    const tamperObservedProperty = "http://www.opengis.net/def/tamper-status";
 
     useEffect(() => {
-        setStartTime(savedStartDate);
-        setEndTime(savedEndDate);
-    }, [savedStartDate, savedEndDate]);
+        console.log("all nodes:", nodes);
 
-    useEffect(() => {
-        if(nodes && nodes.length> 0){
-            let oscarSites: any[] = []
-            nodes.forEach((node: any) =>{
-                const newSite ={
+        // reset
+        setSites([]);
+        idVal.current = 0;
+
+        if (nodes && nodes.length > 0) {
+            createSiteList(nodes);
+        }
+    }, [nodes]);
+
+
+
+    const createSiteList = async (nodeList: any[]) => {
+        const newSites: INationalTableData[] = [];
+
+        for (const node of nodeList) {
+            try {
+                const siteData = await retrieveObservationsForNode(node);
+                newSites.push(siteData);
+            } catch (error) {
+                console.error(`Error processing node ${node.name}:`, error);
+                newSites.push({
                     id: idVal.current++,
                     site: node.name,
                     occupancyCount: 0,
                     gammaAlarmCount: 0,
                     neutronAlarmCount: 0,
-                    faultAlarmCount: 0,
                     tamperAlarmCount: 0,
-                }
-                oscarSites.push(newSite);
-            })
-            setSites(oscarSites);
-        }
-
-        setStartTime(savedStartDate)
-        setEndTime(savedEndDate)
-
-
-    }, [nodes, savedStartDate, savedEndDate]);
-
-
-    useEffect(() => {
-        //reset sites when start time changes
-        setSites((prevSites) => {
-            return prevSites.map((site) => ({
-                ...site,
-                occupancyCount: 0,
-                gammaAlarmCount: 0,
-                neutronAlarmCount: 0,
-                faultAlarmCount: 0,
-                tamperAlarmCount: 0,
-            }));
-        });
-
-        // call the datasources to set up the map of systems and datasources
-        datasourceSetup();
-    }, [laneMapRef.current, startTime, endTime]);
-
-
-
-    const datasourceSetup = useCallback(async () => {
-        let laneDSMap = new Map<string, LaneDSColl>();
-
-        for (let [laneid, lane] of laneMapRef.current.entries()) {
-
-            laneDSMap.set(laneid, new LaneDSColl());
-            for (let ds of lane.datastreams) {
-                let idx: number = lane.datastreams.indexOf(ds);
-
-                if(isNeutronDatastream(ds)){
-                    await fetchObservations(lane.parentNode.name, ds, startTime, endTime);
-                }
-
-                if(isGammaDatastream(ds)){
-                    await fetchObservations(lane.parentNode.name, ds, startTime, endTime);
-                }
-
-                if(isTamperDatastream(ds)){
-                    await fetchObservations(lane.parentNode.name, ds, startTime, endTime);
-                }
-
-                if (isOccupancyDatastream(ds)) {
-                    await fetchObservations(lane.parentNode.name, ds, startTime, endTime);
-                }
+                    faultAlarmCount: 0,
+                    gammaNeutronAlarmCount: 0
+                });
             }
-            setDataSourcesByLane(laneDSMap);
         }
-    }, [laneMapRef.current, startTime, endTime]);
 
+        setSites(newSites);
+    };
 
-    async function fetchObservations(siteName: string, ds: typeof DataStream, timeStart: string, timeEnd: string) {
-
+    const retrieveObservationsForNode = async (node: any): Promise<INationalTableData> => {
         let occCount = 0;
         let gammaCount = 0;
         let neutronCount = 0;
         let tamperCount = 0;
         let faultCount = 0;
+        let gammaNeutronCount = 0;
 
-        let initialRes = await ds.searchObservations(new ObservationFilter({ resultTime: `${timeStart}/${timeEnd}` }), 25000);
+        console.log(`Processing node: ${node.name}`);
 
-        while (initialRes.hasNext()) {
-            let obsRes = await initialRes.nextPage();
+        let occFilter = new ObservationFilter({observedProperty: occObservedProperty});
+        let gammaFilter = new ObservationFilter({observedProperty: gammaObservedProperty});
+        let neutronFilter = new ObservationFilter({observedProperty: neutronObservedProperty});
+        let tamperFilter = new ObservationFilter({observedProperty: tamperObservedProperty});
 
-            obsRes.map((res: any) => {
+        try {
+            let occObservations = await node.fetchObservationsWithFilter(occFilter);
+            let gammaObservations = await node.fetchObservationsWithFilter(gammaFilter);
+            let neutronObservations = await node.fetchObservationsWithFilter(neutronFilter);
+            let tamperObservations = await node.fetchObservationsWithFilter(tamperFilter);
 
-                if (isNeutronDatastream(ds) && (res.result.alarmState === 'Alarm')) {
-                    neutronCount++;
-                }
-                else if(isGammaDatastream(ds)){
-                    if(res.result.alarmState === 'Alarm'){
+            // occupancy observations
+            while(occObservations.hasNext()){
+                let obsRes = await occObservations.nextPage();
+                obsRes.forEach((obs: any) => {
+                    occCount++;
+
+                    if(obs.properties.result.gammaAlarm == true && obs.properties.result.neutronAlarm == true){
+                        gammaNeutronCount++
+                    }else if(obs.properties.result.gammaAlarm == false && obs.properties.result.neutronAlarm == true){
+                        neutronCount++;
+                    }else if(obs.properties.result.gammaAlarm == true && obs.properties.result.neutronAlarm == false){
                         gammaCount++;
                     }
-                    else if(res.result.alarmState.includes('Fault')){
-                        faultCount++;
-                    }
-                }
-                else if (isTamperDatastream(ds) && res.result.tamperStatus) {
-                    tamperCount++;
-                }
-                else if (isOccupancyDatastream(ds)) {
-                    if(res.result.gammaAlarm === true || res.result.neutronAlarm === true){
-                        occCount++
-                    }else if(res.result.gammaAlarm === false || res.result.neutronAlarm === false){
-                        occCount++
-                    }
-                }
-            })
+                });
+            }
+
+            // gamma observations
+            while(gammaObservations.hasNext()){
+                let obsRes = await gammaObservations.nextPage();
+                obsRes.forEach((obs: any) => {
+                    if(obs.properties.result.alarmState.includes('Fault')) faultCount++;
+                });
+            }
+
+            // neutron observations
+            while(neutronObservations.hasNext()){
+                let obsRes = await neutronObservations.nextPage();
+                obsRes.forEach((obs: any) => {
+                    if(obs.properties.result.alarmState.includes('Fault')) faultCount++;
+                });
+            }
+
+            // tamper observations
+            while(tamperObservations.hasNext()){
+                let obsRes = await tamperObservations.nextPage();
+                obsRes.forEach((obs: any) => {
+                    if(obs.properties.result.tamperStatus === true) tamperCount++;
+                });
+            }
+        } catch (error) {
+            console.error(`Error fetching observations for node ${node.name}:`, error);
         }
 
+        console.log(`Node ${node.name} - occCount: ${occCount}, gammaCount: ${gammaCount}, neutronCount: ${neutronCount}, gammaNeutronCount: ${gammaNeutronCount}, faultCount: ${faultCount}, tamperCount: ${tamperCount}`);
 
-        setSites((prevSites) => {
-            return prevSites.map((site) =>{
-                if(site.site === siteName){
-                    return{
-                        ...site,
-                        occupancyCount: site.occupancyCount + occCount,
-                        gammaAlarmCount: site.gammaAlarmCount + gammaCount,
-                        neutronAlarmCount: site.neutronAlarmCount + neutronCount,
-                        tamperAlarmCount: site.tamperAlarmCount + tamperCount,
-                        faultAlarmCount: site.faultAlarmCount + faultCount,
-
-                    };
-
-                }
-                return site;
-            })
-        });
-    }
+        return {
+            id: idVal.current++,
+            site: node.name,
+            occupancyCount: occCount,
+            gammaAlarmCount: gammaCount,
+            neutronAlarmCount: neutronCount,
+            tamperAlarmCount: tamperCount,
+            faultAlarmCount: faultCount,
+            gammaNeutronAlarmCount: gammaNeutronCount
+        };
+    };
 
     useEffect(() => {
         let tableData = new NationalTableDataCollection();
         tableData.setData(sites);
         natlTableRef.current = tableData;
     }, [sites]);
-
-
-
-    // -------------------------------------
 
     const columns: GridColDef<INationalTableData>[] = [
         {
@@ -209,7 +165,7 @@ export default function StatTable(){
         },
         {
             field: 'gammaAlarmCount',
-            headerName: 'Gamma Alarms',
+            headerName: 'Gamma',
             valueFormatter: (value) => {
                 return typeof value === 'number' ? value : 0;
             },
@@ -218,7 +174,16 @@ export default function StatTable(){
         },
         {
             field: 'neutronAlarmCount',
-            headerName: 'Neutron Alarms',
+            headerName: 'Neutron',
+            valueFormatter: (value) => {
+                return typeof value === 'number' ? value : 0;
+            },
+            minWidth: 150,
+            flex: 1,
+        },
+        {
+            field: 'gammaNeutronAlarmCount',
+            headerName: 'Gamma-Neutron',
             valueFormatter: (value) => {
                 return typeof value === 'number' ? value : 0;
             },
@@ -245,7 +210,6 @@ export default function StatTable(){
         },
     ]
 
-
     return (
         <Box sx={{height: 800, width: '100%'}}>
             <DataGrid
@@ -270,5 +234,3 @@ export default function StatTable(){
         </Box>
     )
 }
-
-
