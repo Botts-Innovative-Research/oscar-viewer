@@ -1,5 +1,3 @@
-
-
 describe('Account View Page (E2E)', () => {
     it('logs in and shows snackbar', () => {
         cy.visit('/');
