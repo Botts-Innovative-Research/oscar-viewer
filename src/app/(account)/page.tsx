@@ -4,7 +4,7 @@ import {Button, Container, Snackbar, SnackbarCloseReason, SnackbarContent, Stack
 import React, {useState} from "react";
 import {setCurrentUser} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {useRouter} from "next/dist/client/components/navigation";
+import {useRouter} from "next/navigation";
 
 export default function AccountViewPage() {
     const dispatch = useAppDispatch();
@@ -39,10 +39,36 @@ export default function AccountViewPage() {
     return (
         <Container sx={{width: "40%"}}>
             <Stack spacing={2} alignItems={"center"}>
-                <Typography variant="h4">Login</Typography>
-                <TextField autoComplete="new-username" fullWidth id="username" placeholder="Username" variant="outlined" onChange={onChangeUserName}/>
-                <TextField autoComplete="new-password" fullWidth id="password" placeholder="Password" variant="outlined" type="password"/>
-                <Button fullWidth variant="contained" color="success" onClick={onClickLogin}>Login</Button>
+                <TextField
+                    data-testid="username-input"
+                    autoComplete="new-username"
+                    fullWidth
+                    id="username"
+                    placeholder="Username"
+                    variant="outlined"
+                    onChange={onChangeUserName}
+                />
+
+                <TextField
+                    data-testid="password-input"
+                    autoComplete="new-password"
+                    fullWidth
+                    id="password"
+                    placeholder="Password"
+                    variant="outlined"
+                    type="password"
+                />
+
+                <Button
+                    data-testid="login-button"
+                    fullWidth
+                    variant="contained"
+                    color="success"
+                    onClick={onClickLogin}
+                >
+                    Login
+                </Button>
+
                 <Snackbar
                     open={openSnack}
                     anchorOrigin={{ vertical:'top', horizontal:'center' }}
@@ -50,6 +76,7 @@ export default function AccountViewPage() {
                     onClose={handleCloseSnack}
                 >
                     <SnackbarContent
+                        data-testid="volume-snackbar"
                         style={{
                             backgroundColor: '#f8aa51',
                             color: '#ffffff'
@@ -57,6 +84,7 @@ export default function AccountViewPage() {
                         message={volumeSnackMsg}
                     />
                 </Snackbar>
+
             </Stack>
         </Container>
     )
