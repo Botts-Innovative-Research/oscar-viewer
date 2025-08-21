@@ -4,7 +4,7 @@
  */
 
 describe('Event Preview (Component)', () => {
-    beforeEach('', () => {
+    beforeEach('Set up', () => {
         cy.visit('/dashboard');
     });
 
@@ -23,7 +23,4 @@ describe('Event Preview (Component)', () => {
     it('', () => {
 
     });
-
-
-
 });
