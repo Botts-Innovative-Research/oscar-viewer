@@ -48,7 +48,7 @@ describe('Site Config Management Page (E2E)', () => {
         cy.get('input[name="username"]').clear().type('admin');
         cy.get('input[name="password"]').clear().type('oscar');
 
-        cy.contains('Load State').click();
+        cy.contains('button','Load State').click();
 
         // confirm loading
         cy.contains('Are you sure you want to load the configuration (and overwrite the previous one)?');
@@ -66,7 +66,7 @@ describe('Site Config Management Page (E2E)', () => {
 
         // confirm saving
         cy.contains('Please Confirm');
-        cy.contains('Save').click();
+        cy.contains('button','Save').click();
 
 
         // saved state snackbar

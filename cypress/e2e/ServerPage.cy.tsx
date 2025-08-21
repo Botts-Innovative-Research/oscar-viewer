@@ -1,17 +1,85 @@
-/**
- *
- *
- */
+
 describe('Servers Page (E2E)', () => {
-    beforeEach('', () => {
+    beforeEach('Set Up', () => {
         cy.visit('/servers');
     });
 
     it('Edit existing node displays changes in node list', () => {
 
-    })
-    it('Add new node displays changes in node list', () => {
+        cy.contains('button', 'Edit').first().click();
 
-    })
+        cy.contains('Edit Node').should('be.visible');
+
+        cy.get('input[name="name"]').clear().type('Testing Node');
+        cy.get('input[name="address"]').clear().type('localhost');
+        cy.get('input[name="port"]').clear().type(8282);
+        cy.get('input[name="sosEndpoint"]').clear().type('/sos');
+        cy.get('input[name="csAPIEndpoint"]').clear().type('/api');
+        cy.get('input[name="configsEndpoint"]').clear().type('/configs');
+        cy.get('input[name="username"]').clear().type('admin');
+        cy.get('input[name="password"]').clear().type('oscar');
+
+
+        cy.contains('button','Save Changes').click();
+
+
+        cy.get('[id="saveNode-snackbar"]')
+            .should('be.visible')
+            .and(/Node is reachable | Node is not reachable. Try again./);
+
+
+        cy.wait(5000);
+
+
+        cy.get('[id="saveNode-snackbar"]')
+            .should('be.visible')
+            .and(/OSCAR Configuration Saved | Failed to save OSCAR Configuration./);
+    });
+
+    it('Add new node', () => {
+
+        cy.contains('Add a New Server').should('be.visible')
+
+        // fill out node form
+        cy.get('input[name="name"]').clear().type('Testing Node');
+        cy.get('input[name="address"]').clear().type('localhost');
+        cy.get('input[name="port"]').clear().type(8282);
+        cy.get('input[name="sosEndpoint"]').clear().type('/sos');
+        cy.get('input[name="csAPIEndpoint"]').clear().type('/api');
+        cy.get('input[name="configsEndpoint"]').clear().type('/configs');
+        cy.get('input[name="username"]').clear().type('admin');
+        cy.get('input[name="password"]').clear().type('oscar');
+
+
+        cy.contains('button','Add Node').click();
+
+        cy.get('[id="saveNode-snackbar"]')
+            .should('be.visible')
+            .and(/Node is reachable | Node is not reachable. Try again./);
+
+
+        cy.wait(5000);
+
+
+        cy.get('[id="saveNode-snackbar"]')
+            .should('be.visible')
+            .and(/OSCAR Configuration Saved | Failed to save OSCAR Configuration./);
+    });
+
+    // it('Cancel new node', () => {
+    //
+    //     // fill out node form
+    //     cy.get('input[name="name"]').clear().type('Testing Node');
+    //     cy.get('input[name="address"]').clear().type('localhost');
+    //     cy.get('input[name="port"]').clear().type(8282);
+    //     cy.get('input[name="sosEndpoint"]').clear().type('/sos');
+    //     cy.get('input[name="csAPIEndpoint"]').clear().type('/api');
+    //     cy.get('input[name="configsEndpoint"]').clear().type('/configs');
+    //     cy.get('input[name="username"]').clear().type('admin');
+    //     cy.get('input[name="password"]').clear().type('oscar');
+    //
+    //
+    //     cy.contains('button','Cancel').click();
+    // });
 
 });
