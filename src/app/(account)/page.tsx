@@ -39,36 +39,10 @@ export default function AccountViewPage() {
     return (
         <Container sx={{width: "40%"}}>
             <Stack spacing={2} alignItems={"center"}>
-                <TextField
-                    data-testid="username-input"
-                    autoComplete="new-username"
-                    fullWidth
-                    id="username"
-                    placeholder="Username"
-                    variant="outlined"
-                    onChange={onChangeUserName}
-                />
-
-                <TextField
-                    data-testid="password-input"
-                    autoComplete="new-password"
-                    fullWidth
-                    id="password"
-                    placeholder="Password"
-                    variant="outlined"
-                    type="password"
-                />
-
-                <Button
-                    data-testid="login-button"
-                    fullWidth
-                    variant="contained"
-                    color="success"
-                    onClick={onClickLogin}
-                >
-                    Login
-                </Button>
-
+                <Typography variant="h4">Login</Typography>
+                <TextField autoComplete="new-username" fullWidth id="username" placeholder="Username" variant="outlined" onChange={onChangeUserName}/>
+                <TextField autoComplete="new-password" fullWidth id="password" placeholder="Password" variant="outlined" type="password"/>
+                <Button fullWidth variant="contained" color="success" onClick={onClickLogin} name="login-btn">Login</Button>
                 <Snackbar
                     open={openSnack}
                     anchorOrigin={{ vertical:'top', horizontal:'center' }}
@@ -76,7 +50,7 @@ export default function AccountViewPage() {
                     onClose={handleCloseSnack}
                 >
                     <SnackbarContent
-                        data-testid="volume-snackbar"
+                        id="volume-snackbar"
                         style={{
                             backgroundColor: '#f8aa51',
                             color: '#ffffff'
@@ -84,7 +58,6 @@ export default function AccountViewPage() {
                         message={volumeSnackMsg}
                     />
                 </Snackbar>
-
             </Stack>
         </Container>
     )
