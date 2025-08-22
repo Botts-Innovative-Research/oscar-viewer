@@ -6,6 +6,17 @@ describe('Dashboard View Page (E2E)', () => {
     });
 
 
+    it('table populates < 3 seconds', () => {
+
+    });
+
+    it('lane status are displayed correctly', () => {
+
+    });
+
+    it('map is displayed with pointmarkers for all lanes', () => {
+
+    });
 
 
 });
@@ -55,13 +66,27 @@ describe('Event Preview', () => {
     it('', () => {
 
     });
-})
+});
 
+/*
+selected aspect event from table
 
+chart loads and displays only cps chart for gamma events or neutron chart for neutron selected events
+
+should not include a button to switch between nsigma/cps for aspect
+
+charts appear in sync with video and are not 'wonky'
+ */
 describe('aspect event preview -- chart', () => {
 
-    it('Gamma event selected and Nsigma & CPS curve are displayed together in chart', () => {
-        cy.contains('Gamma').click();
+    it('Gamma event selected chart is displayed', () => {
+        // cy.contains('Gamma').click();
+
+        // figure out how to click the event table
+
+        cy.contains('Occupancy ID: Aspect').should('be.visible');
+
+        // cy.
 
 
     });
@@ -96,7 +121,7 @@ describe('rapiscan event preview -- chart', () => {
 
 describe('Video Playback', () => {
     it('Pressing Pause, stops the video playback', () => {
-
+        
     });
 
     it('Pressing play, starts the video playback', () => {
