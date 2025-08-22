@@ -121,7 +121,7 @@ describe('rapiscan event preview -- chart', () => {
 
 describe('Video Playback', () => {
     it('Pressing Pause, stops the video playback', () => {
-        
+
     });
 
     it('Pressing play, starts the video playback', () => {
@@ -151,7 +151,7 @@ describe('Map', () => {
     it('clicking view lane navigates to lane view for selected pointmarker', () => {
 
     });
-})
+});
 
 
 describe('Event Table', () => {
@@ -159,4 +159,62 @@ describe('Event Table', () => {
         cy.visit('/dashboard');
     });
 
-})
+
+    it('table populates < 3 seconds', () => {
+        cy.get('.MuiDataGrid-row', {timeout: 3000}).should('have.lengthOf.greaterThan', 0);
+
+        // check if table has columns
+        cy.get('[data-field="laneId"]').should('be.visible');
+        cy.get('[data-field="occupancyId"]').should('be.visible');
+        cy.get('[data-field="status"]').should('be.visible');
+    });
+
+    it('use a filter on the alarm table', () => {
+        cy.get('button[aria-label="Show filters"]').click();
+
+        // add a filter
+        cy.get('.MuiDataGrid-filterForm').should('be.visible');
+
+        // filter by status in drop down menu
+        cy.get('.MuiDataGrid-filterForm .MuiSelect-select').first().click();
+        cy.get('.MuiMenuItem-root').contains('Status').click();
+
+        // set filter to Gamma
+        cy.get('.MuiDataGrid-filterForm input[placeholder="Filter value"]')
+            .clear()
+            .type('Gamma');
+
+        // TODO verify only gamma events are displayed in table
+        cy.get('');
+    });
+
+    it('Selecting an alarm from the table, the event becomes selected', () => {
+
+        // click first row in table
+        cy.get('.MuiDataGrid-row').first().click();
+
+        // cy.get('aria-selected = true')
+        cy.get('.MuiDataGrid-row').first()
+            .should('have.class', 'selected-row');
+
+        //verify row is selected (either by highlight color or that event preview is now visible)
+        cy.contains('Occupancy ID:').should('be.visible');
+    });
+
+    it('adjudicated alarm is removed from table', () => {
+
+        // event table size
+
+        // click first row in table
+
+        // event preview is visible
+
+        // type in notes box testing adj
+
+        // click submit
+
+        // event preview closes
+
+        // event table size = size - 1 (item was removed)
+    });
+});
