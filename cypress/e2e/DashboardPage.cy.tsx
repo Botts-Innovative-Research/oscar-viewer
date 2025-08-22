@@ -9,7 +9,6 @@ describe('Dashboard View Page (E2E)', () => {
         cy.visit('/dashboard');
     });
 
-
     describe('Render dashboard components', () => {
         it('should load lane status, map and alarm table', () => {
             // make sure lane status, map and event table are loaded onto dashboard page
@@ -21,9 +20,8 @@ describe('Dashboard View Page (E2E)', () => {
         });
     });
 
-
-    //FE-PERF-002:Open a  live lane view and video stream appears in <3 seconds
     describe('Lane Status', () => {
+        //FE-PERF-002: Open a  live lane view and video stream appears in < 3 seconds
         it('Open rapiscan lane view on click', () => {
             //click on first lane status (the lane will be called "Rapiscan" and another test lane "Aspect")
             cy.get('[aria-label="Rapiscan"]').first().click();
@@ -32,21 +30,22 @@ describe('Dashboard View Page (E2E)', () => {
         });
     });
 
-    /**
-     * load dashboard
-     * click on an event in the table
-     * event preview opens
-     * id matches the table id for event
-     * charts/video load and play
-     * --- adjudicate alarm
-     * --- expand to event details page
-     * --- close the event
-     */
     describe('Event Preview', () => {
+        /**
+         * load dashboard
+         * click on an event in the table
+         * event preview opens
+         * id matches the table id for event
+         * charts/video load and play
+         * --- adjudicate alarm
+         * --- expand to event details page
+         * --- close the event
+         */
         beforeEach(() => {
             cy.contains('Occupancy Id: ').should('be.visible');
         });
 
+        // FE-PERF-001 Adjudicate a selected alarm.
         it('Adjudicates an alarm and closes the preview', () => {
             cy.get('input[id="outlined-multiline-static"]').clear().type('Testing notes');
 
@@ -64,18 +63,13 @@ describe('Dashboard View Page (E2E)', () => {
         });
     });
 
-
-
-    /*
-selected aspect event from table
-
-chart loads and displays only cps chart for gamma events or neutron chart for neutron selected events
-
-should not include a button to switch between nsigma/cps for aspect
-
-charts appear in sync with video and are not 'wonky'
- */
     describe('Aspect Event Preview Charts', () => {
+        /*
+       selected aspect event from table
+       chart loads and displays only cps chart for gamma events or neutron chart for neutron selected events
+       should not include a button to switch between nsigma/cps for aspect
+       charts appear in sync with video and are not 'wonky'
+       */
 
         it('displays gamma chart for gamma event', () => {
             //TODO: click on first gamma event in table for aspect rpm
@@ -137,7 +131,6 @@ charts appear in sync with video and are not 'wonky'
         });
     });
 
-
     describe('Video Playback', () => {
         it.skip('Pressing Pause, stops the video playback', () => {
             //todo
@@ -156,19 +149,18 @@ charts appear in sync with video and are not 'wonky'
         });
     })
 
-
     describe('Map', () => {
         it.skip('selecting point marker displays popup with lanename, status, and button', () => {
             //todo
         });
 
-        it('navigate to laneview from pointmarker', () => {
+        it.skip('navigate to laneview from pointmarker', () => {
             //todo
         });
     });
 
     describe('Event Table - Alarming Events', () => {
-
+        // FE-PERF-007 - Load initial alarm data upon page load.
         it('table populates < 3 seconds', () => {
             cy.get('.MuiDataGrid-row', {timeout: 3000}).should('have.lengthOf.greaterThan', 0);
 
@@ -178,7 +170,8 @@ charts appear in sync with video and are not 'wonky'
             cy.get('[data-field="status"]').should('be.visible');
         });
 
-        it('use a filter on the alarm table', () => {
+        // FE-PERF-004 - Apply Filter to the past alarms view
+        it('apply filter to alarm table', () => {
             cy.get('button[aria-label="Show filters"]').click();
 
             // add a filter
@@ -197,7 +190,7 @@ charts appear in sync with video and are not 'wonky'
             cy.get('');
         });
 
-        it('Selecting an alarm from the table, the event becomes selected', () => {
+        it('selecting event opens event preview', () => {
 
             // click first row in table
             cy.get('.MuiDataGrid-row').first().click();
@@ -210,7 +203,8 @@ charts appear in sync with video and are not 'wonky'
             cy.contains('Occupancy ID:').should('be.visible');
         });
 
-        it.skip('adjudicated alarm is removed from table', () => {
+        // FE-PERF-001 Adjudicate a selected alarm
+        it.skip('remove adjudicated event from table', () => {
             //todo
 
             // event table size

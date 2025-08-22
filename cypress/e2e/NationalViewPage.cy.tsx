@@ -1,14 +1,10 @@
-/**
- *
- * FE-PERF-003- Load the National View table.
- * The table fully populates with data in < 3 seconds.
- *
- */
+
 describe('National View Page (E2E)', () => {
     beforeEach('Set up', () => {
         cy.visit('/national-view');
     });
 
+    // FE-PERF-003- Load the National View table.
 
     it('table populates < 3 seconds', () => {
         cy.get('.MuiDataGrid-row', {timeout: 3000}).should('have.lengthOf.greaterThan', 0);
@@ -21,6 +17,4 @@ describe('National View Page (E2E)', () => {
         cy.get('[data-field="faultAlarmCount"]').should('be.visible');
         cy.get('[data-field="tamperAlarmCount"]').should('be.visible');
     });
-
-
 });
