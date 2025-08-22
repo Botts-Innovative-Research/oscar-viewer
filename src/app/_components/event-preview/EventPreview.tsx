@@ -649,6 +649,7 @@ export function EventPreview() {
                     </Button>
 
                     <Snackbar
+                        id="adj-snack-msg"
                         anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         open={openSnack}
                         autoHideDuration={5000}

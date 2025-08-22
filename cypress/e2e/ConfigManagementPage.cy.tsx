@@ -20,7 +20,7 @@ describe('Site Config Management Page (E2E)', () => {
 
         cy.get('[id="save-snackbar"]')
             .should('be.visible')
-            .and(/OSCAR Configuration Saved | Failed to save/);
+            .should('match',/OSCAR Configuration Saved | Failed to save/);
     });
 
     it('cancels the alert when cancel is clicked', () => {
@@ -56,7 +56,7 @@ describe('Site Config Management Page (E2E)', () => {
 
         cy.get('[id="load-snackbar"]')
             .should('be.visible')
-            .and(/OSCAR State Loaded | Failed to load/);
+            .should('match',/OSCAR State Loaded | Failed to load/);
 
     });
 
@@ -72,7 +72,7 @@ describe('Site Config Management Page (E2E)', () => {
         // saved state snackbar
         cy.get('[id="save-snackbar"]')
             .should('be.visible')
-            .and(/OSCAR Configuration Saved | Failed to save/);
+            .should('match',/OSCAR Configuration Saved | Failed to save/);
 
 
         cy.wait(5000);

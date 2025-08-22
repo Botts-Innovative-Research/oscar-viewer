@@ -25,7 +25,7 @@ describe('Servers Page (E2E)', () => {
 
         cy.get('[id="saveNode-snackbar"]')
             .should('be.visible')
-            .and(/Node is reachable | Node is not reachable. Try again./);
+            .should('match',/Node is reachable | Node is not reachable. Try again./);
 
 
         cy.wait(5000);
@@ -33,7 +33,7 @@ describe('Servers Page (E2E)', () => {
 
         cy.get('[id="saveNode-snackbar"]')
             .should('be.visible')
-            .and(/OSCAR Configuration Saved | Failed to save OSCAR Configuration./);
+            .should('match',/OSCAR Configuration Saved | Failed to save OSCAR Configuration./);
     });
 
     it('Add new node', () => {
@@ -55,7 +55,7 @@ describe('Servers Page (E2E)', () => {
 
         cy.get('[id="saveNode-snackbar"]')
             .should('be.visible')
-            .and(/Node is reachable | Node is not reachable. Try again./);
+            .should('match',/Node is reachable | Node is not reachable. Try again./);
 
 
         cy.wait(5000);
@@ -63,7 +63,7 @@ describe('Servers Page (E2E)', () => {
 
         cy.get('[id="saveNode-snackbar"]')
             .should('be.visible')
-            .and(/OSCAR Configuration Saved | Failed to save OSCAR Configuration./);
+            .should('match',/OSCAR Configuration Saved | Failed to save OSCAR Configuration./);
     });
 
     // it('Cancel new node', () => {
