@@ -10,79 +10,63 @@ describe('Dashboard View Page (E2E)', () => {
     });
 
 
-    it('components load on page', () => {
-        // make sure lane status, map and event table are loaded onto dashboard page
-        cy.contains('Lane Status').should('be.visible');
+    describe('Render dashboard components', () => {
+        it('should load lane status, map and alarm table', () => {
+            // make sure lane status, map and event table are loaded onto dashboard page
+            cy.contains('Lane Status').should('be.visible');
 
-        cy.get('[id="mapcontainer"]').should('have.class', 'leaflet-container').should('be.visible');
+            cy.get('[id="mapcontainer"]').should('have.class', 'leaflet-container').should('be.visible');
 
-        cy.get('[]').should('be.visible');
-    });
-
-});
-
-/*
-FE-PERF-002:Open a  live lane view and video stream appears in <3 seconds
- */
-describe('Lane Status', () => {
-    beforeEach('SetUp', () => {
-
-        cy.visit('/dashboard');
-    });
-
-    it('click on the first lane status and open lane view', () => {
-        //click on first lane status (the lane will be called "Rapiscan" and another test lane "Aspect")
-        cy.get('[aria-label="Rapiscan"]').first().click();
-        //verifty the url is lane view
-        cy.url().should('include', '/lane-view');
-    });
-})
-
-/**
- * load dashboard
- * click on an event in the table
- * event preview opens
- * id matches the table id for event
- * charts/video load and play
- *
- *
- * --- adjudicate alarm
- *
- * --- expand to event details page
- *
- * --- close the event
- */
-describe('Event Preview', () => {
-    beforeEach('Set up', () => {
-        cy.visit('/dashboard');
-        cy.contains('Occupancy Id: ').should('be.visible');
+            cy.get('.MuiDataGrid-root').should('be.visible');
+        });
     });
 
 
-    it('Adjudicates an alarm and closes the event preview', () => {
-        cy.get('input[id="outlined-multiline-static"]').clear().type('Testing notes');
-
-        cy.contains('button', 'Submit').click();
-
-        cy.get('[id="adj-snack-msg"]')
-            .should('be.visible')
-            .should('match',/Adjudication Submitted Successfully | Adjudication Submission Failed. Check connection and form then try again./);
-
-        cy.contains('Occupancy ID: ').should('not.exist');
+    //FE-PERF-002:Open a  live lane view and video stream appears in <3 seconds
+    describe('Lane Status', () => {
+        it('Open rapiscan lane view on click', () => {
+            //click on first lane status (the lane will be called "Rapiscan" and another test lane "Aspect")
+            cy.get('[aria-label="Rapiscan"]').first().click();
+            //verifty the url is lane view
+            cy.url().should('include', '/lane-view');
+        });
     });
 
-    it('Expand an event preview, navigates to event details page', () => {
-        cy.get('button[aria-label="expand"]').click(); //click expand button
+    /**
+     * load dashboard
+     * click on an event in the table
+     * event preview opens
+     * id matches the table id for event
+     * charts/video load and play
+     * --- adjudicate alarm
+     * --- expand to event details page
+     * --- close the event
+     */
+    describe('Event Preview', () => {
+        beforeEach(() => {
+            cy.contains('Occupancy Id: ').should('be.visible');
+        });
 
-        cy.contains('Event Details').should('be.visible');
+        it('Adjudicates an alarm and closes the preview', () => {
+            cy.get('input[id="outlined-multiline-static"]').clear().type('Testing notes');
+
+            cy.contains('button', 'Submit').click();
+
+            cy.get('[id="adj-snack-msg"]').should('be.visible')
+                .should('match',/Adjudication Submitted Successfully | Adjudication Submission Failed. Check connection and form then try again./);
+
+            cy.contains('Occupancy ID: ').should('not.exist');
+        });
+
+        it('expands event preview to event details page', () => {
+            cy.get('button[aria-label="expand"]').click(); //click expand button
+            cy.contains('Event Details').should('be.visible');
+        });
     });
 
-    it('', () => {
 
-    });
-});
 
-/*
+    /*
 selected aspect event from table
 
 chart loads and displays only cps chart for gamma events or neutron chart for neutron selected events
@@ -91,212 +75,164 @@ should not include a button to switch between nsigma/cps for aspect
 
 charts appear in sync with video and are not 'wonky'
  */
-describe('aspect event preview -- chart', () => {
+    describe('Aspect Event Preview Charts', () => {
 
-    it('Gamma event selected chart is displayed', () => {
-        //click on first gamma event in table for aspect rpm
+        it('displays gamma chart for gamma event', () => {
+            //TODO: click on first gamma event in table for aspect rpm
 
-        // event preview is open
-        cy.contains('Occupancy ID: Aspect').should('be.visible');
+            // event preview is open
+            cy.contains('Occupancy ID: Aspect').should('be.visible');
 
-        // charts display with gamma curve
-        // chart id == chart-view-event-detail-gamma-
+            // charts display with gamma curve
+            // chart id == chart-view-event-detail-gamma-
+            cy.get('[id="chart-view-event-detail-gamma-"]').should('exist');
+        });
 
-    });
+        it('Neutron event selected, and neutron chart correctly displays in the chart', () => {
 
-    it('Neutron event selected, and neutron chart correctly displays in the chart', () => {
+            //TODO: select neutron event for aspect
+            //click on first neutron event in table for aspect rpm
 
-        //click on first neutron event in table for aspect rpm
+            //event preview opens
 
-        //event preview opens
+            //chart displays with neutron curve
+        });
 
-        //chart displays with neutron curve
-    });
+        it('Neutron-Gamma event selected, and both charts appear in event preview', () => {
+            //todo select gamma-neutron event for aspect
+            //click on first gamma-neutron event in table for aspect rpm
 
-    it('Neutron-Gamma event selected, and both charts appear in event preview', () => {
-        //click on first gamma-neutron event in table for aspect rpm
+            //event preview opens
 
-        //event preview opens
+            //neutron chart is displayed with neutron curve and gamma chart is displayed with gamma curve
 
-        //neutron chart is displayed with neutron curve and gamma chart is displayed with gamma curve
-
-    });
-
-});
-
-
-describe('rapiscan event preview -- chart', () => {
-
-    it('Gamma charts appear with cps and threshold at the same time', () => {
-        cy.contains('Gamma').click();
+        });
 
     });
 
-    it('Can toggle between nsigma and cps charts (Rapiscan only)', () => {
+    describe('Rapiscan Event Preview Chart', () => {
+        it('displays gamma chart with CPS and Nsigma', () => {
 
-    });
+            //click first gamma status
+            cy.get('.MuiDataGrid-row').first().get('[data-field="LaneId"]').contains('Rapiscan')
+                .get('[data-field="Status"]').contains('Gamma').click();
 
-    it('Rapiscan RPM chart displays correctly and timebar moves properly in sync with video', () => {
+            // cy.get('aria-selected = true')
+            cy.get('.MuiDataGrid-row').first()
+                .should('have.class', 'selected-row');
 
-    });
-});
+            //verify row is selected (either by highlight color or that event preview is now visible)
+            cy.contains('Occupancy ID:').should('be.visible');
+            cy.contains('Gamma').click();
 
-describe('Video Playback', () => {
-    it('Pressing Pause, stops the video playback', () => {
+        });
 
-    });
+        it('can toggle between nsigma and cps charts', () => {
+            //todo click on rapiscan gamma event and then click on toggle button that is cps
+            // then toggle to the nsigma and check the charts to ensure they display correctly
+        });
 
-    it('Pressing play, starts the video playback', () => {
-
-    });
-
-    it('Pause video, scrubbing video', () => {
-
-    });
-
-
-    it('Can switch between video streams', () => {
-        // event is selected from table
-
-        // videos
-    });
-})
-
-
-describe('Map', () => {
-    beforeEach('Set up', () => {
-        cy.visit('/dashboard');
-    });
-
-    it('selecting point marker displays popup with lanename, status, and view lane button', () => {
-
-    });
-
-    it('clicking view lane navigates to lane view for selected point marker', () => {
-
-
-    });
-});
-
-
-describe('Event Table', () => {
-    beforeEach('Set up', () => {
-        cy.visit('/dashboard');
+        it('Rapiscan RPM chart displays correctly and timebar moves properly in sync with video', () => {
+            //todo
+        });
     });
 
 
-    it('table populates < 3 seconds', () => {
-        cy.get('.MuiDataGrid-row', {timeout: 3000}).should('have.lengthOf.greaterThan', 0);
+    describe('Video Playback', () => {
+        it.skip('Pressing Pause, stops the video playback', () => {
+            //todo
+        });
 
-        // check if table has columns
-        cy.get('[data-field="laneId"]').should('be.visible');
-        cy.get('[data-field="occupancyId"]').should('be.visible');
-        cy.get('[data-field="status"]').should('be.visible');
+        it.skip('Pressing play, starts the video playback', () => {
+            //todo
+        });
+
+        it.skip('Pause video, scrubbing video', () => {
+            //todo
+        });
+
+        it.skip('Can switch between video streams', () => {
+            //todo
+        });
+    })
+
+
+    describe('Map', () => {
+        it.skip('selecting point marker displays popup with lanename, status, and button', () => {
+            //todo
+        });
+
+        it('navigate to laneview from pointmarker', () => {
+            //todo
+        });
     });
 
-    it('use a filter on the alarm table', () => {
-        cy.get('button[aria-label="Show filters"]').click();
+    describe('Event Table - Alarming Events', () => {
 
-        // add a filter
-        cy.get('.MuiDataGrid-filterForm').should('be.visible');
+        it('table populates < 3 seconds', () => {
+            cy.get('.MuiDataGrid-row', {timeout: 3000}).should('have.lengthOf.greaterThan', 0);
 
-        // filter by status in drop down menu
-        cy.get('.MuiDataGrid-filterForm .MuiSelect-select').first().click();
-        cy.get('.MuiMenuItem-root').contains('Status').click();
+            // check if table has columns
+            cy.get('[data-field="laneId"]').should('be.visible');
+            cy.get('[data-field="occupancyId"]').should('be.visible');
+            cy.get('[data-field="status"]').should('be.visible');
+        });
 
-        // set filter to Gamma
-        cy.get('.MuiDataGrid-filterForm input[placeholder="Filter value"]')
-            .clear()
-            .type('Gamma');
+        it('use a filter on the alarm table', () => {
+            cy.get('button[aria-label="Show filters"]').click();
 
-        // TODO verify only gamma events are displayed in table
-        cy.get('');
-    });
+            // add a filter
+            cy.get('.MuiDataGrid-filterForm').should('be.visible');
 
-    it('Selecting an alarm from the table, the event becomes selected', () => {
+            // filter by status in drop down menu
+            cy.get('.MuiDataGrid-filterForm .MuiSelect-select').first().click();
+            cy.get('.MuiMenuItem-root').contains('Status').click();
 
-        // click first row in table
-        cy.get('.MuiDataGrid-row').first().click();
+            // set filter to Gamma
+            cy.get('.MuiDataGrid-filterForm input[placeholder="Filter value"]')
+                .clear()
+                .type('Gamma');
 
-        // cy.get('aria-selected = true')
-        cy.get('.MuiDataGrid-row').first()
-            .should('have.class', 'selected-row');
+            // TODO verify only gamma events are displayed in table
+            cy.get('');
+        });
 
-        //verify row is selected (either by highlight color or that event preview is now visible)
-        cy.contains('Occupancy ID:').should('be.visible');
-    });
+        it('Selecting an alarm from the table, the event becomes selected', () => {
 
-    it('adjudicated alarm is removed from table', () => {
+            // click first row in table
+            cy.get('.MuiDataGrid-row').first().click();
 
-        // event table size
+            // cy.get('aria-selected = true')
+            cy.get('.MuiDataGrid-row').first()
+                .should('have.class', 'selected-row');
 
-        // click first row in table
+            //verify row is selected (either by highlight color or that event preview is now visible)
+            cy.contains('Occupancy ID:').should('be.visible');
+        });
 
-        // event preview is visible
+        it.skip('adjudicated alarm is removed from table', () => {
+            //todo
 
-        // type in notes box testing adj
+            // event table size
 
-        // click submit
+            // click first row in table
 
-        // event preview closes
+            // event preview is visible
 
-        // event table size = size - 1 (item was removed)
+            // type in notes box testing adj
 
-        //timeout 3000  to update the UI
-    });
-});
+            // click submit
 
-describe('Event Table (FOR NON-ALARMING)', () => {
-    beforeEach('Set up', () => {
-        cy.visit('/event-log');
-    });
+            // event preview closes
 
-    it('table populates < 3 seconds', () => {
-        cy.get('.MuiDataGrid-row', {timeout: 3000}).should('have.lengthOf.greaterThan', 0);
+            // event table size = size - 1 (item was removed)
 
-        // check if table has columns
-        cy.get('[data-field="laneId"]').should('be.visible');
-        cy.get('[data-field="occupancyId"]').should('be.visible');
-        cy.get('[data-field="status"]').should('be.visible');
-    });
-
-    it('use a filter on the alarm table', () => {
-        cy.get('button[aria-label="Show filters"]').click();
-
-        // add a filter
-        cy.get('.MuiDataGrid-filterForm').should('be.visible');
-
-        // filter by status in drop down menu
-        cy.get('.MuiDataGrid-filterForm .MuiSelect-select').first().click();
-        cy.get('.MuiMenuItem-root').contains('Status').click();
-
-        // set filter to Gamma
-        cy.get('.MuiDataGrid-filterForm input[placeholder="Filter value"]')
-            .clear()
-            .type('Gamma');
-
-        // TODO verify only gamma events are displayed in table
-        cy.get('');
-    });
-
-    it('Select a non-alarming occupancy and navigate to event details', () => {
-
-        // click first row in table that status is None
-        cy.get('.MuiDataGrid-row').first()
-            .get('[data-field="Status"]').contains('None').click();
-
-
-        cy.get('.MuiDataGrid-row').first()
-            .should('have.class', 'selected-row');
-
-        cy.get('[data-field="Menu"]').click();
-
-        // menu is displayed to navigate to details
-        cy.get('.MuiList-root .MuiDataGrid-menulist').first();
-        cy.get('.MuiMenuItem-root').contains('Details').click();
-
-
-        // event details page is opened
+            //timeout 3000  to update the UI
+        });
     });
 
 });
+
+
+
+
