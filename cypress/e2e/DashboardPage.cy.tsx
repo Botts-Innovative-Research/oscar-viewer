@@ -1,23 +1,23 @@
-
-
+/**
+ * test set up:
+ * create two lanes on admin panel:
+ * - one aspect lane with 2 cameras
+ * - one rapiscan lane with 2 cameras
+ */
 describe('Dashboard View Page (E2E)', () => {
     beforeEach('Set up', () => {
         cy.visit('/dashboard');
     });
 
 
-    it('table loads', () => {
+    it('components load on page', () => {
+        // make sure lane status, map and event table are loaded onto dashboard page
+        cy.contains('Lane Status').should('be.visible');
 
+        cy.get('[id="mapcontainer"]').should('have.class', 'leaflet-container').should('be.visible');
+
+        cy.get('[]').should('be.visible');
     });
-
-    it('lane status loads', () => {
-
-    });
-
-    it('map loads', () => {
-
-    });
-
 
 });
 
@@ -27,10 +27,14 @@ FE-PERF-002:Open a  live lane view and video stream appears in <3 seconds
 describe('Lane Status', () => {
     beforeEach('SetUp', () => {
 
+        cy.visit('/dashboard');
     });
 
     it('click on the first lane status and open lane view', () => {
-
+        //click on first lane status (the lane will be called "Rapiscan" and another test lane "Aspect")
+        cy.get('[aria-label="Rapiscan"]').first().click();
+        //verifty the url is lane view
+        cy.url().should('include', '/lane-view');
     });
 })
 
@@ -96,6 +100,7 @@ describe('aspect event preview -- chart', () => {
         cy.contains('Occupancy ID: Aspect').should('be.visible');
 
         // charts display with gamma curve
+        // chart id == chart-view-event-detail-gamma-
 
     });
 
