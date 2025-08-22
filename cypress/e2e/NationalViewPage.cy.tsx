@@ -1,6 +1,6 @@
 
 describe('National View Page (E2E)', () => {
-    beforeEach('Set up', () => {
+    beforeEach(() => {
         cy.visit('/national-view');
     });
 

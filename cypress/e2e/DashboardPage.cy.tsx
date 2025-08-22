@@ -5,7 +5,7 @@
  * - one rapiscan lane with 2 cameras
  */
 describe('Dashboard View Page (E2E)', () => {
-    beforeEach('Set up', () => {
+    beforeEach(() => {
         cy.visit('/dashboard');
     });
 

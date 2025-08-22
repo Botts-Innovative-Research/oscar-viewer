@@ -1,6 +1,6 @@
 
 describe('Servers Page (E2E)', () => {
-    beforeEach('Set Up', () => {
+    beforeEach(() => {
         cy.visit('/servers');
     });
 

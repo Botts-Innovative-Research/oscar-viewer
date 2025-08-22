@@ -3,7 +3,7 @@
  *
  */
 describe('Site Config Management Page (E2E)', () => {
-    beforeEach('', () => {
+    beforeEach(() => {
         cy.visit('/savestate');
     });
 

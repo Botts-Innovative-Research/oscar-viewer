@@ -1,6 +1,6 @@
 
 describe('Event Table (FOR NON-ALARMING)', () => {
-    beforeEach('Set up', () => {
+    beforeEach(() => {
         cy.visit('/event-log');
     });
 

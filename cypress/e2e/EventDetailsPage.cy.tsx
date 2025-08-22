@@ -1,6 +1,6 @@
 
 describe('Event Details View Page (E2E)', () => {
-    it('', () => {
+    beforeEach(() => {
         cy.visit('/event-details');
     });
 });
