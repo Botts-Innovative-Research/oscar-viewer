@@ -5,18 +5,26 @@ import {useDispatch, useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectEndDate, selectStartDate, setEndDate, setStartDate} from "@/lib/state/NationalViewSlice";
 import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import dayjs, {Dayjs} from "dayjs";
 
 
 export default function NationalDatePicker(){
     const dispatch = useDispatch();
 
-    const savedStartDate = useSelector((state: RootState) => selectStartDate(state))
-    const savedEndDate = useSelector((state: RootState) => selectEndDate(state))
+    // const savedStartDate = useSelector((state: RootState) => selectStartDate(state))
+    // const savedEndDate = useSelector((state: RootState) => selectEndDate(state))
 
 
-    const [startTime, setStartTime] = useState<Dayjs>(dayjs(savedStartDate)); //dayjs().subtract(1, 'day')
-    const [endTime, setEndTime] = useState<Dayjs>(dayjs(savedEndDate)); //dayjs
+    const [startTime, setStartTime] = useState<Dayjs>();
+    const [endTime, setEndTime] = useState<Dayjs>();
+    // const [startTime, setStartTime] = useState<Dayjs>(dayjs(savedStartDate)); //dayjs().subtract(1, 'day')
+    // const [endTime, setEndTime] = useState<Dayjs>(dayjs(savedEndDate)); //dayjs
+
+    useEffect(() => {
+        setStartTime(dayjs().subtract(1, 'year'));
+        setEndTime(dayjs())
+    }, []);
 
     const handleStartTimeChange = (newValue: Dayjs) => {
         setStartTime(newValue);

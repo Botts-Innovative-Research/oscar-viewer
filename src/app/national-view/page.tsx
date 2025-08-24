@@ -13,7 +13,8 @@ export default function NationalViewPage() {
             <Typography variant="h4">National View</Typography>
             <br/>
             <Paper variant='outlined' sx={{height: "100%"}}>
-                <NationalStatsTable/>
+                <NationalDatePicker />
+                <NationalStatsTable />
             </Paper>
         </Box>
     );
