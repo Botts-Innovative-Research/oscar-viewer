@@ -194,21 +194,44 @@ describe('Dashboard View Page (E2E)', () => {
     });
 
     describe('Video Playback', () => {
+        it.skip('video displays when event preview loads', () => {
+
+            // cy.get( //video).should('be.visible');
+        });
+
         it.skip('Pressing Pause, stops the video playback', () => {
-            //todo
+
+            // click button to pause on time controller
+            cy.get('button[id=""]').click();
+
+            // current time is not moving or time controller is not moving ?? to show it is paused?
+
         });
 
         it.skip('Pressing play, starts the video playback', () => {
-            //todo
+            // click button to play on time controller
+            cy.get('button[id=""]').click();
+
         });
 
         it.skip('Pause video, scrubbing video', () => {
             //todo
+
+            // click pause video
+
+            // click the slider and move it
+
+            // time skips forward
         });
 
         it.skip('Can switch between video streams', () => {
             //todo
+
+            // click the nav right button to switch video streams
+
+            // old video is hidden, new video shows
         });
+
     })
 
     describe('Map', () => {
@@ -228,6 +251,16 @@ describe('Dashboard View Page (E2E)', () => {
             //todo
 
             // click the pointmarker and click view lane button
+
+            // click pointmarker
+            cy.get('[""]').click();
+
+            // check if popup menu is visible
+
+            // find button to view lane and click it
+
+            // check url to see if navigation occured to lane view
+
         });
     });
 
