@@ -12,6 +12,7 @@ describe('Servers Page (E2E)', () => {
 
         cy.get('input[name="name"]').clear().type('Testing Node');
         cy.get('input[name="address"]').clear().type('localhost');
+        // @ts-ignore
         cy.get('input[name="port"]').clear().type(8282);
         cy.get('input[name="sosEndpoint"]').clear().type('/sos');
         cy.get('input[name="csAPIEndpoint"]').clear().type('/api');
@@ -43,6 +44,7 @@ describe('Servers Page (E2E)', () => {
         // fill out node form
         cy.get('input[name="name"]').clear().type('Testing Node');
         cy.get('input[name="address"]').clear().type('localhost');
+        // @ts-ignore
         cy.get('input[name="port"]').clear().type(8282);
         cy.get('input[name="sosEndpoint"]').clear().type('/sos');
         cy.get('input[name="csAPIEndpoint"]').clear().type('/api');

@@ -37,11 +37,11 @@
 // }
 
 // write a function to open event preview
-Cypress.Commands.add('openEventPreview', () => {
-
-});
-
-// write a function to
-Cypress.Commands.add('', () => {
-
-});
+// Cypress.Commands.add('openEventPreview', () => {
+//
+// });
+//
+// // write a function to
+// Cypress.Commands.add('', () => {
+//
+// });
