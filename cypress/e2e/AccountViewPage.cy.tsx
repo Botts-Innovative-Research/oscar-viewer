@@ -11,5 +11,13 @@ describe('Account View Page (E2E)', () => {
 
     it('change alarm volume', () => {
 
+        // click notif bell
+        cy.get('data-testid=NotificationsRoundedIcon').click();
+
+        // verify the menu appears
+        cy.get('.MuiTypography-root').contains('Alarm Volume').should('be.visible');
+
+        // update volume
+        // cy.get('input[aria-label="Volume"]').get("value").should('contain.value', 50);
     })
 });

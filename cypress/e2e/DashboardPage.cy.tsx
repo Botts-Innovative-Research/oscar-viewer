@@ -43,11 +43,29 @@ describe('Dashboard View Page (E2E)', () => {
          * --- close the event
          */
         beforeEach(() => {
+            //click first gamma status
+            cy.get('.MuiDataGrid-row').first()
+                .get('[data-field="laneId"]').contains('Rapiscan')
+                .get('[data-field="status"]').contains('Gamma')
+                .click();
+
+            // check that row is selected
+            cy.get('.MuiDataGrid-row')
+                .first()
+                .should('have.class', 'selected-row');
+
             cy.contains('Occupancy Id: ').should('be.visible');
         });
 
         // FE-PERF-001 Adjudicate a selected alarm.
         it('Adjudicates an alarm and closes the preview', () => {
+            cy.get('.MuiSelect-select').first(); //click the select drop down
+
+            cy.get('.MuiList-root').should('be.visible');
+            cy.get('data-value="Code 9: Authorized Test, Maintenance, or Training Activity"').click();
+
+            cy.get('input[value="Code 9: Authorized Test, Maintenance, or Training Activity"]').should('exist')
+
             cy.get('input[id="outlined-multiline-static"]').clear().type('Testing notes');
 
             cy.contains('button', 'Submit').click();
@@ -60,8 +78,18 @@ describe('Dashboard View Page (E2E)', () => {
 
         it('expands event preview to event details page', () => {
             cy.get('button[aria-label="expand"]').click(); //click expand button
-            cy.contains('Event Details').should('be.visible');
+
+            cy.url().should('include', '/event-details'); // check url contains event-details now
+            cy.contains('Event Details').should('be.visible'); //another way to verify the event details page is now showing
         });
+
+        it('closing event preview, removes the component from the screen and highlighted row is not highlighted', () => {
+            cy.get('button[data-test-id="CloseRoundedIcon"]').click(); //click close button
+
+            // event preview should not be exist
+            cy.get('Occupancy ID:').should('not.exist');
+
+        })
     });
 
     describe('Aspect Event Preview Charts', () => {
@@ -137,18 +165,19 @@ describe('Dashboard View Page (E2E)', () => {
         it('displays gamma chart with CPS and Nsigma', () => {
             //click first gamma status
             cy.get('.MuiDataGrid-row').first()
-                .get('[data-field="LaneId"]').contains('Rapiscan')
-                .get('[data-field="Status"]').contains('Gamma')
+                .get('[data-field="laneId"]').contains('Rapiscan')
+                .get('[data-field="status"]').contains('Gamma')
                 .click();
 
-            // cy.get('aria-selected = true')
+            // check that row is selected
             cy.get('.MuiDataGrid-row')
                 .first()
                 .should('have.class', 'selected-row');
 
-            //verify row is selected (either by highlight color or that event preview is now visible)
+            // verify that event preview is visible by checking if occupany id is displayed on the screen
             cy.contains('Occupancy ID:').should('be.visible');
-            // cy.contains('Gamma').click();
+            cy.contains('[class="chart-view-event-detail"]').should('be.visible');
+
 
         });
 
@@ -170,16 +199,20 @@ describe('Dashboard View Page (E2E)', () => {
             //verify row is selected (either by highlight color or that event preview is now visible)
             cy.contains('Occupancy ID:')
                 .should('be.visible');
-            // cy.contains('Gamma').click();
+
+            cy.contains('[class="chart-view-event-detail"]').should('be.visible');
+
+
+
 
             // it should show cps first by default and nsigma shouldnt be visib le
             // cy.get('button[key="cps"]').first().click();
-            cy.get('[id="chart-view-event-detail-nsigma-"]')
+            cy.contains('[id="chart-view-event-detail-nsigma-"]')
                 .should('not.be.visible');
-            cy.get('[id="chart-view-event-detail-gamma-"]')
+            cy.contains('[id="chart-view-event-detail-gamma-"]')
                 .should('be.visible');
 
-            cy.get('button[key="sigma"]').first()
+            cy.get('button[value="sigma"]').first()
                 .click();
             cy.get('[id="chart-view-event-detail-nsigma-"]')
                 .should('be.visible');
@@ -194,7 +227,7 @@ describe('Dashboard View Page (E2E)', () => {
     });
 
     describe('Video Playback', () => {
-        it.skip('video displays when event preview loads', () => {
+        it('video displays when event preview loads', () => {
 
             cy.get('id=""event-preview-video-').should('be.visible');
 
@@ -203,10 +236,10 @@ describe('Dashboard View Page (E2E)', () => {
             // cy.get( //video).should('be.visible');
         });
 
-        it.skip('Pressing Pause, stops the video playback', () => {
+        it('Pressing Pause, stops the video playback', () => {
 
             // click button to pause on time controller
-            cy.get('button[id=""]').click();
+            cy.get('button[data-testid="PauseRoundedIcon"]').click();
 
             // current time is not moving or time controller is not moving ?? to show it is paused?
 
@@ -214,7 +247,7 @@ describe('Dashboard View Page (E2E)', () => {
 
         it.skip('Pressing play, starts the video playback', () => {
             // click button to play on time controller
-            cy.get('button[id=""]').click();
+            cy.get('button[data-testid="PlayRoundedIcon"]').click();
 
         });
 
@@ -222,8 +255,11 @@ describe('Dashboard View Page (E2E)', () => {
             //todo
 
             // click pause video
+            cy.get('button[data-testid="PauseRoundedIcon"]').click();
 
             // click the slider and move it
+
+            cy.get('input[value=""]');
 
             // time skips forward
         });
@@ -231,9 +267,24 @@ describe('Dashboard View Page (E2E)', () => {
         it.skip('Can switch between video streams', () => {
             //todo
 
-            // click the nav right button to switch video streams
+            // check if video exists
+            cy.contains('event-preview-video').should('exist');
+
+            // pause the video stream
+            cy.get('button[data-testid="PauseRoundedIcon"]').click();
+
+            //check if the button is clickable or disabled if it is clickable click it !!
+            cy.get('button[data-testid="NavigateNextIcon"').should('exist').click();
+                // .get('class', 'Mui-disabled').should('not.exist')
+
+            // press play to start the video stream
+            cy.get('button[data-testid="PlayRoundedIcon"]').click();
+
 
             // old video is hidden, new video shows
+            cy.contains('event-preview-video-').should('not.be.visible');
+            cy.contains('event-preview-video-').should('be.visible');
+
         });
 
     })
