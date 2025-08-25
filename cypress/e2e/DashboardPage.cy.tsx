@@ -196,6 +196,10 @@ describe('Dashboard View Page (E2E)', () => {
     describe('Video Playback', () => {
         it.skip('video displays when event preview loads', () => {
 
+            cy.get('id=""event-preview-video-').should('be.visible');
+
+
+
             // cy.get( //video).should('be.visible');
         });
 

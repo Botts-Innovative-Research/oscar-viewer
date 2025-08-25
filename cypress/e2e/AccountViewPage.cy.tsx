@@ -8,4 +8,8 @@ describe('Account View Page (E2E)', () => {
             .should('be.visible')
             .and('contain', 'Alarms will trigger audible sound in client');
     });
+
+    it('change alarm volume', () => {
+
+    })
 });
