@@ -26,7 +26,7 @@ describe('Dashboard View Page (E2E)', () => {
         it('Open rapiscan lane view on click', () => {
             //click on first lane status (the lane will be called "Rapiscan" and another test lane "Aspect")
             cy.get('[aria-label="Rapiscan"]').first().click();
-            //verifty the url is lane view
+            //verify the url is lane view
             cy.url().should('include', '/lane-view');
         });
     });
@@ -86,7 +86,7 @@ describe('Dashboard View Page (E2E)', () => {
         it('closing event preview, removes the component from the screen and highlighted row is not highlighted', () => {
             cy.get('button[data-test-id="CloseRoundedIcon"]').click(); //click close button
 
-            // event preview should not be exist
+            // event preview should not exist
             cy.get('Occupancy ID:').should('not.exist');
 
         })
@@ -204,8 +204,7 @@ describe('Dashboard View Page (E2E)', () => {
 
 
 
-
-            // it should show cps first by default and nsigma shouldnt be visib le
+            // it should show cps first by default and nsigma shouldn't be visible
             // cy.get('button[key="cps"]').first().click();
             cy.contains('[id="chart-view-event-detail-nsigma-"]')
                 .should('not.be.visible');
@@ -229,9 +228,7 @@ describe('Dashboard View Page (E2E)', () => {
     describe('Video Playback', () => {
         it('video displays when event preview loads', () => {
 
-            cy.get('id=""event-preview-video-').should('be.visible');
-
-
+            cy.get('[id="event-preview-video-"]').should('be.visible');
 
             // cy.get( //video).should('be.visible');
         });
@@ -245,13 +242,13 @@ describe('Dashboard View Page (E2E)', () => {
 
         });
 
-        it.skip('Pressing play, starts the video playback', () => {
+        it('Pressing play, starts the video playback', () => {
             // click button to play on time controller
             cy.get('button[data-testid="PlayRoundedIcon"]').click();
 
         });
 
-        it.skip('Pause video, scrubbing video', () => {
+        it('Pause video, scrubbing video', () => {
             //todo
 
             // click pause video
@@ -264,7 +261,7 @@ describe('Dashboard View Page (E2E)', () => {
             // time skips forward
         });
 
-        it.skip('Can switch between video streams', () => {
+        it('Can switch between video streams', () => {
             //todo
 
             // check if video exists
@@ -287,34 +284,38 @@ describe('Dashboard View Page (E2E)', () => {
 
         });
 
-    })
+    });
 
     describe('Map', () => {
-        it.skip('selecting point marker displays popup with lanename, status, and button', () => {
-            //todo
+        beforeEach(() => {
             cy.get('[id="mapcontainer"]')
                 .should('be.visible');
 
-            // find the pointmarker and click
-
-            // cy.get('').should('exist') //lane name
-            // lane status
-            // view button
+            // find the point marker and click
+            cy.get('[alt="Marker"]').click();
         });
 
-        it.skip('navigate to laneview from pointmarker', () => {
-            //todo
+        it('selecting point marker displays popup with lanename, status, and button', () => {
 
-            // click the pointmarker and click view lane button
+            // pop up should be visible
+            cy.get('.leaflet-popup-content-wrapper').should('be.visible');
 
-            // click pointmarker
-            cy.get('[""]').click();
+            // should have status, lanename and button visible
+            cy.get("popup-text-lane").contains('Aspect').should('be.visible');
+            cy.get("popup-text-status").contains('Status:').should('be.visible');
+            cy.get('button["VIEW LANE"]').should('be.visible');
+            // cy.get('[id="popup-data-layer"]').should('be.visible');
+
+        });
+
+        it('navigate to lane view from point marker', () => {
 
             // check if popup menu is visible
 
             // find button to view lane and click it
-
+            cy.get('button["VIEW LANE"]').click();
             // check url to see if navigation occured to lane view
+            cy.url().should('include', '/lane-view');
 
         });
     });
@@ -373,7 +374,7 @@ describe('Dashboard View Page (E2E)', () => {
         });
 
         // FE-PERF-001 Adjudicate a selected alarm
-        it.skip('remove adjudicated event from table', () => {
+        it('remove adjudicated event from table', () => {
             //todo
 
             // event table size
