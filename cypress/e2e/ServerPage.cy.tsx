@@ -66,8 +66,16 @@ describe('Servers Page (E2E)', () => {
         cy.get('[id="saveNode-snackbar"]')
             .should('be.visible')
             .should('match',/OSCAR Configuration Saved | Failed to save OSCAR Configuration./);
+
+
+        // todo:
+        // find the new node name on the list of nodes on the page!!!!
+
     });
 
+    it('deleting node removes it from the list', () => {
+
+    });
     // it('Cancel new node', () => {
     //
     //     // fill out node form

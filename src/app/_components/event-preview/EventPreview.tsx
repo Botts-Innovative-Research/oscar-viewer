@@ -293,7 +293,7 @@ export function EventPreview() {
         const updatedVideo = tempDSMap.get("video") || [];
         const updatedOcc = tempDSMap.get("occ") || [];
 
-
+        console.log("tempDS: ", tempDSMap);
         setGammaDS(updatedGamma);
         setNeutronDS(updatedNeutron);
         setThresholdDS(updatedThreshold);
@@ -326,49 +326,68 @@ export function EventPreview() {
 
     useEffect(() => {
         createDataSync();
-
-        return () => {
-            cleanupResources();
-        }
     }, [videoDatasources, syncRef, dataSyncCreated, datasourcesReady]);
 
 
 
     useEffect( () => {
-
         if (chartReady) {
-            console.log("Chart Ready, connecting to datasources");
-            gammaDatasources.forEach(ds => {
-                ds.connect();
+            console.log("Chart Ready, Starting DataSync");
+            gammaDatasources.forEach(async ds => {
+                ds.isConnected().then(ds.disconnect());
+                await ds.connect();
             });
-            neutronDatasources.forEach(ds => {
-                ds.connect();
+            neutronDatasources.forEach(async ds => {
+                ds.isConnected().then(ds.disconnect());
+                await ds.connect();
             });
-            thresholdDatasources.forEach(ds => {
-                ds.connect();
+            thresholdDatasources.forEach(async ds => {
+                ds.isConnected().then(ds.disconnect());
+                await ds.connect();
             });
-            occDatasources.forEach(ds => {
-                ds.connect();
+            occDatasources.forEach(async ds => {
+                ds.isConnected().then(ds.disconnect());
+                await ds.connect();
             });
 
             if(videoReady){
-                console.log("Video Ready, Starting DataSync")
+
                 syncRef.current.connect().then(() => {
                     console.log("DataSync Should Be Connected", syncRef.current);
+
+                    // setTimeout(()=>{
+                    //     pause();
+                    // }, 500)
                 });
+
+
                 if (syncRef.current.isConnected()) {
                     console.log("DataSync Connected!!!");
                 } else {
                     console.log("DataSync Not Connected... :(");
                 }
+
             }
 
         } else {
-            console.log("Chart Not Ready, cannot connect to charts or datasync");
+            console.log("Chart Not Ready, cannot start DataSynchronizer...");
         }
 
         return()=>{
-            cleanupResources();
+            gammaDatasources.forEach(ds => {
+                ds.isConnected().then(ds.disconnect());
+            });
+            neutronDatasources.forEach(ds => {
+                ds.isConnected().then(ds.disconnect());
+            });
+            thresholdDatasources.forEach(ds => {
+                ds.isConnected().then(ds.disconnect());
+            });
+            occDatasources.forEach(ds => {
+                ds.isConnected().then(ds.disconnect());
+            });
+
+
         }
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
 
@@ -450,6 +469,7 @@ export function EventPreview() {
     },[syncRef, eventPreview.eventData.endTime]);
 
 
+
     const getFrameObservations = async(newStartTime: number)=>{
 
         for (const lane of laneMapRef.current.values()){
@@ -461,6 +481,7 @@ export function EventPreview() {
             }
         }
     }
+
 
     const videoViewRef = useRef<typeof VideoView>();
 
@@ -485,6 +506,7 @@ export function EventPreview() {
     }
 
     let savedFrame: { pktSize: number, pktData: Uint8Array, timestamp: number, roll: number } | null = null;
+
 
     //function to set frame data
     function setCanvasFrame(imageData: any){
@@ -598,17 +620,17 @@ export function EventPreview() {
                                 </div>
                             )
                             :
-                           (
-                               <div>
-                                   <Typography
-                                       variant="h6"
-                                       align="center"
-                                   >
-                                       No video data available.
-                                   </Typography>
-                               </div>
-                           )}
-                        </Box>
+                            (
+                                <div>
+                                    <Typography
+                                        variant="h6"
+                                        align="center"
+                                    >
+                                        No video data available.
+                                    </Typography>
+                                </div>
+                            )}
+                    </Box>
                 ) :
 
                 <Box
@@ -621,7 +643,7 @@ export function EventPreview() {
             <Stack spacing={2}>
                 <AdjudicationSelect
                     adjCode={adjudicationCode}
-                                    onSelect={handleAdjudicationCode}
+                    onSelect={handleAdjudicationCode}
                 />
                 <TextField
                     onChange={handleNotes}
@@ -632,9 +654,9 @@ export function EventPreview() {
                 />
                 <Stack
                     direction={"row"}
-                       spacing={10}
-                       sx={{width: "100%"}}
-                       justifyContent={"center"}
+                    spacing={10}
+                    sx={{width: "100%"}}
+                    justifyContent={"center"}
                 >
                     <Button
                         onClick={sendAdjudicationData}
@@ -649,7 +671,6 @@ export function EventPreview() {
                     </Button>
 
                     <Snackbar
-                        id="adj-snack-msg"
                         anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         open={openSnack}
                         autoHideDuration={5000}
