@@ -77,6 +77,13 @@ describe('Dashboard View Page (E2E)', () => {
             // Verify occupancy ID is visible
             cy.contains('Occupancy ID: ')
                 .should('be.visible');
+
+            //chart displayed
+            cy.get('.chart-view-event-detail').should('exist').and('be.visible');
+            // check if chart has stuff on it? possible get canvas and check if pixels are available?
+
+            //video available
+            cy.get('img').should('have.class', 'video-mjpeg');
         });
 
 

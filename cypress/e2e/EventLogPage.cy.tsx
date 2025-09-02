@@ -4,44 +4,43 @@ describe('Event Table (FOR NON-ALARMING)', () => {
         cy.visit('/event-log');
     });
 
-    // it('table populates < 3 seconds', () => {
-    //     cy.get('.MuiDataGrid-row', {timeout: 3000}).should('have.lengthOf.greaterThan', 0);
-    //
-    //     // check if table has columns
-    //     cy.get('[data-field="laneId"]').should('be.visible');
-    //     cy.get('[data-field="occupancyId"]').should('be.visible');
-    //     cy.get('[data-field="status"]').should('be.visible');
-    // });
-    //
-    // it('use a filter on the alarm table', () => {
-    //     cy.get('button[aria-label="Show filters"]').click();
-    //
-    //     // add a filter
-    //     cy.get('.MuiDataGrid-filterForm').should('be.visible');
-    //
-    //     // filter by status in drop down menu
-    //     cy.get('.MuiDataGrid-filterForm .MuiSelect-select').first().click();
-    //     cy.get('.MuiMenuItem-root').contains('Status').click();
-    //
-    //     // set filter to Gamma
-    //     cy.get('.MuiDataGrid-filterForm input[placeholder="Filter value"]')
-    //         .clear()
-    //         .type('Gamma');
-    //
-    //     // TODO verify only gamma events are displayed in table
-    //     cy.get('');
-    // });
+    it('table populates < 3 seconds', () => {
+        cy.get('.MuiDataGrid-row', {timeout: 3000}).should('have.lengthOf.greaterThan', 0);
+
+        // check if table has columns
+        cy.get('[data-field="laneId"]').should('be.visible');
+        cy.get('[data-field="occupancyId"]').should('be.visible');
+        cy.get('[data-field="status"]').should('be.visible');
+    });
+
+    it('use a filter on the alarm table', () => {
+        cy.get('button[aria-label="Show filters"]').click();
+
+        // add a filter
+        cy.get('.MuiDataGrid-filterForm').should('be.visible');
+
+        // filter by status in drop down menu
+        cy.get('.MuiDataGrid-filterForm .MuiSelect-select').first().click();
+        cy.get('.MuiMenuItem-root').contains('Status').click();
+
+        // set filter to Gamma
+        cy.get('.MuiDataGrid-filterForm input[placeholder="Filter value"]')
+            .clear()
+            .type('Gamma');
+
+        // TODO verify only gamma events are displayed in table
+        cy.get('');
+    });
 
     // FE-PERF-005 - View details of a non-alarming occupancy.
     it('Select a non-alarming occupancy and navigate to event details', () => {
 
         // click first row in table that status is None
         cy.get('.MuiDataGrid-row').first()
-            .get('[data-field="Status"]').contains('None').click();
+            .contains('[data-field="Status"]','None') .closest('.MuiDataGrid-row').click();
 
 
-        cy.get('.MuiDataGrid-row').first()
-            .should('have.class', 'selected-row');
+        cy.get('.MuiDataGrid-row').should('have.class', 'selected-row');
 
         cy.get('[data-field="Menu"]').click();
 
@@ -51,6 +50,8 @@ describe('Event Table (FOR NON-ALARMING)', () => {
 
 
         // event details page is opened
+        cy.url().should('include', '/event-details/');
+
     });
 
 });
