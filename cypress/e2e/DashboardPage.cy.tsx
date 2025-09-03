@@ -6,7 +6,8 @@
  */
 describe('Dashboard View Page (E2E)', () => {
     before(() => {
-        cy.visit('/dashboard');
+        cy.visit('/dashboardvi');
+        cy.intercept({ resourceType: /xhr|fetch/ }, { log: false });
     });
 
     describe.skip('Render dashboard components', () => {
