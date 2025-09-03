@@ -42,6 +42,43 @@
 // });
 //
 // // write a function to
-// Cypress.Commands.add('', () => {
-//
-// });
+Cypress.Commands.add('selectRapiscanEvent', () => {
+    cy.get('.MuiDataGrid-row').then(($rows) => {
+        const selectedRow = $rows.filter('.selected-row');
+        if (selectedRow.length === 0) {
+            cy.get('.MuiDataGrid-row')
+                .contains('[data-field="laneId"]', 'Rapiscan')
+                .closest('.MuiDataGrid-row')
+                .click();
+        }
+    });
+});
+
+Cypress.Commands.add('selectNoneEvent', () => {
+    cy.get('.MuiDataGrid-row').then(($rows) => {
+        const selectedRow = $rows.filter('.selected-row');
+        if (selectedRow.length === 0) {
+            cy.get('.MuiDataGrid-row')
+                .filter(':contains("None")')
+                .first()
+                // .contains('[data-field="status"]', 'None')
+                // .closest('.MuiDataGrid-row')
+                .click();
+        }
+    });
+});
+
+Cypress.Commands.add('selectAspectEvent', () => {
+    cy.get('.MuiDataGrid-row').then(($rows) => {
+        const selectedRow = $rows.filter('.selected-row');
+        if (selectedRow.length === 0) {
+            cy.get('.MuiDataGrid-row')
+                .filter(':contains("Aspect")')
+                .first()
+                // .contains('[data-field="laneId"]', 'Aspect')
+                // .closest('.MuiDataGrid-row')
+                .click();
+        }
+    });
+});
+
