@@ -226,7 +226,7 @@ describe('Full Client Testing', () => {
     it('FE-PERF-003- Load the National View table & table populates in <3 seconds', () => {
 
         //click national page icon and navigate to national view page
-        cy.get('button[data-testid="MediationIcon"]')
+        cy.get('[data-testid="MediationIcon"]')
             .click();
 
         cy.contains('National View:')
@@ -247,7 +247,7 @@ describe('Full Client Testing', () => {
     it('click event log on navbar and table populates < 3 seconds', () => {
 
         //click event log page icon and navigate to event log page
-        cy.get('button[data-testid="WarningRoundedIcon"]')
+        cy.get('[data-testid="WarningRoundedIcon"]')
             .click();
 
         cy.contains('Event Log:')

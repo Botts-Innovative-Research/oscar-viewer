@@ -10,10 +10,6 @@ describe('Dashboard View Page (E2E)', () => {
         cy.intercept({ resourceType: /xhr|fetch/ }, { log: false });
     });
 
-    it('click national icon', () => {
-        cy.get('button[data-testid="MediationIcon"]')
-            .click();
-    })
 
     describe.skip('Render dashboard components', () => {
         it('should load lane status, map and alarm table', () => {
