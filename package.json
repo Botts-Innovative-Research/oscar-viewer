@@ -9,7 +9,8 @@
     "postinstall": "patch-package",
     "dev": "next dev",
     "lint": "next lint",
-    "start-exported": "npx serve@latest web"
+    "start-exported": "npx serve@latest web",
+    "test": "cypress run"
   },
   "keywords": [
     "OpenSensorHub",
