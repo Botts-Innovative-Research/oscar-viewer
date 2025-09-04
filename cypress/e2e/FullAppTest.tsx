@@ -223,13 +223,14 @@ describe('Full Client Testing', () => {
 
     });
 
-    /
     it('FE-PERF-003- Load the National View table & table populates in <3 seconds', () => {
 
         //click national page icon and navigate to national view page
-        cy.get('button[=""]').click();
+        cy.get('button[data-testid="MediationIcon"]')
+            .click();
 
-        cy.contains('National View:').should('be.visible');
+        cy.contains('National View:')
+            .should('be.visible');
 
         cy.url().should('include', '/national-view');
 
@@ -246,9 +247,11 @@ describe('Full Client Testing', () => {
     it('click event log on navbar and table populates < 3 seconds', () => {
 
         //click event log page icon and navigate to event log page
-        cy.get('button[=""]').click();
+        cy.get('button[data-testid="WarningRoundedIcon"]')
+            .click();
 
-        cy.contains('Event Log:').should('be.visible');
+        cy.contains('Event Log:')
+            .should('be.visible');
 
         cy.url().should('include', '/event-log');
 
