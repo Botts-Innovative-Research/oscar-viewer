@@ -34,8 +34,37 @@ describe('Dashboard', () => {
 
     });
 
+    describe('Event Table', () => {
+        it('FE-PERF-004 - Apply Filter to the past alarms view', () => {
+
+            // open filter options by clicking filters
+            cy.get('button[aria-label="Show filters"]').click();
+
+            // check if filter form is open
+            cy.get('.MuiDataGrid-filterForm').should('be.visible');
+
+            // select column to filter by status
+            cy.get('.MuiDataGrid-filterForm .MuiSelect-select').filter(':visible').eq(0).click();
+            cy.get('.MuiList-root .MuiMenuItem-root').contains('Status').click();
+
+            cy.get('.MuiDataGrid-filterForm .MuiSelect-select').filter(':visible').eq(1).click();
+            cy.get('.MuiList-root .MuiMenuItem-root').contains('equals').click();
+
+            // set filter to Gamma
+            cy.get('.MuiDataGrid-filterForm input[placeholder="Filter value"]')
+                .clear()
+                .type('Gamma');
+
+            // verify only gamma events are displayed in table
+            cy.get('.MuiDataGrid-row').each(($row) => {
+                cy.wrap($row).contains('Gamma');
+            });
+        });
+
+    });
 
     describe('Event Preview', () => {
+
         it('select event to open event preview', () => {
 
             cy.selectRapiscanEvent();
@@ -52,7 +81,9 @@ describe('Dashboard', () => {
             // can also look into legends
 
             //TODO: video available
-            cy.get('img').should('have.class', 'video-mjpeg');
+            cy.get('img.video-mjpeg')
+                .should('exist')
+                .and('be.visible');
             // for mjpeg video possible looking at src and see if the value changes?
         });
 
@@ -83,7 +114,6 @@ describe('Dashboard', () => {
                 .should('not.exist');
         });
 
-
         it('select event and expand to event details', () => {
 
             // Check if a row is already selected
@@ -101,7 +131,9 @@ describe('Dashboard', () => {
             // check if chart has stuff on it? possible get canvas and check if pixels are available?
 
             //video available
-            cy.get('img').should('have.class', 'video-mjpeg');
+            cy.get('img.video-mjpeg')
+                .should('exist')
+                .and('be.visible');
 
             cy.get('button[aria-label="expand"]').click(); //click expand button
 
@@ -109,7 +141,6 @@ describe('Dashboard', () => {
             cy.contains('Event Details').should('be.visible'); //another way to verify the event details page is now showing
 
         });
-
 
         it('should close event preview when button clicked', () => {
             cy.get('button[data-testid="CloseRoundedIcon"]')

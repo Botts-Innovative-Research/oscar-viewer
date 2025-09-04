@@ -1,10 +1,7 @@
 
 describe('Event Log', () => {
     before(() => {
-        cy.get('[data-testid="WarningRoundedIcon"]')
-            .click();
-
-        cy.url().should('include', '/event-log')
+        cy.visitEventsPage();
     });
 
     describe('Performance Testing', () => {

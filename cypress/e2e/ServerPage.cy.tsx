@@ -1,88 +1,85 @@
 
 describe('Servers Page (E2E)', () => {
     beforeEach(() => {
-        cy.visit('/servers');
+        // cy.visit('/servers');
+        cy.visitServerPage();
     });
 
-    it.skip('Edit existing node displays changes in node list', () => {
+    describe('Adding Nodes', () => {
 
-        cy.contains('button', 'Edit').first().click();
+        it('Should successfully add non-local node to the list of ndoes', () => {
+            cy.get('input[name="name"]').clear().type('TEST Non-Local Node');
+            cy.get('[name="name"]').should('have.value','TEST Non-Local Node');
 
-        cy.contains('Edit Node').should('be.visible');
+            //TODO: put ip addy here
+            cy.get('input[name="address"]').clear().type('IP ADDRESS');
+            cy.get('[name="address"]').should('have.value', 'IP ADDRESS');
 
-        cy.get('input[name="name"]').clear().type('Testing Node');
-        cy.get('input[name="address"]').clear().type('localhost');
-        cy.get('input[name="port"]').clear().type('8282');
-        cy.get('input[name="sosEndpoint"]').clear().type('/sos');
-        cy.get('input[name="csAPIEndpoint"]').clear().type('/api');
-        cy.get('input[name="configsEndpoint"]').clear().type('/configs');
-        cy.get('input[name="username"]').clear().type('admin');
-        cy.get('input[name="password"]').clear().type('oscar');
+            cy.get('input[name="port"]').clear().type('8282');
+            cy.get('[name="port"]').should('have.value','8282');
 
+            cy.get('input[name="username"]').clear().type('admin');
+            cy.get('[name="username"]').should('have.value','admin');
 
-        cy.contains('button','Save Changes').click();
-
-
-        cy.get('[id="saveNode-snackbar"]')
-            .should('be.visible')
-            .should('match',/Node is reachable | Node is not reachable. Try again./);
+            cy.get('input[name="password"]').clear().type('oscar');
+            cy.get('[name="password"]').should('have.value','oscar');
 
 
-        cy.get('[id="saveNode-snackbar"]')
-            .should('be.visible')
-            .should('match',/OSCAR Configuration Saved | Failed to save OSCAR Configuration./);
+            cy.contains('button','Add Node').click();
+            cy.get('[id="saveNode-snackbar"]')
+                .should('be.visible')
+                .should('match',/Node is reachable | Node is not reachable. Try again./);
+
+
+            cy.get('[id="saveNode-snackbar"]')
+                .should('be.visible')
+                .should('match',/OSCAR Configuration Saved | Failed to save OSCAR Configuration./);
+
+        })
     });
 
-    it('Add new node', () => {
+    describe('Editing/Removing Nodes', () => {
+        it.skip('Edit existing node displays changes in node list', () => {
 
-        cy.contains('Add a New Server').should('be.visible')
+            cy.contains('button', 'Edit').first().click();
 
-        // fill out node form
-        cy.get('input[name="name"]').clear().type('Testing Node');
-        cy.get('input[name="address"]').clear().type('localhost');
-        cy.get('input[name="port"]').clear().type('8282');
-        cy.get('input[name="sosEndpoint"]').clear().type('/sos');
-        cy.get('input[name="csAPIEndpoint"]').clear().type('/api');
-        cy.get('input[name="configsEndpoint"]').clear().type('/configs');
-        cy.get('input[name="username"]').clear().type('admin');
-        cy.get('input[name="password"]').clear().type('oscar');
+            cy.contains('Edit Node').should('be.visible');
 
-
-        cy.contains('button','Add Node').click();
-
-        cy.get('[id="saveNode-snackbar"]')
-            .should('be.visible')
-            .should('match',/Node is reachable | Node is not reachable. Try again./);
+            cy.get('input[name="name"]').clear().type('Testing Node');
+            cy.get('input[name="address"]').clear().type('localhost');
+            cy.get('input[name="port"]').clear().type('8282');
+            cy.get('input[name="username"]').clear().type('admin');
+            cy.get('input[name="password"]').clear().type('oscar');
 
 
-        cy.get('[id="saveNode-snackbar"]')
-            .should('be.visible')
-            .should('match',/OSCAR Configuration Saved | Failed to save OSCAR Configuration./);
+            cy.contains('button','Save Changes').click();
+
+            cy.get('[id="saveNode-snackbar"]')
+                .should('be.visible')
+                .should('match',/Node is reachable | Node is not reachable. Try again./);
 
 
-        // todo:
-        // find the new node name on the list of nodes on the page!!!!
+            cy.get('[id="saveNode-snackbar"]')
+                .should('be.visible')
+                .should('match',/OSCAR Configuration Saved | Failed to save OSCAR Configuration./);
+        });
 
+        it.skip('deleting node removes it from the list', () => {
+
+        });
+
+        it.skip('Cancel new node', () => {
+
+            // fill out node form
+            cy.get('input[name="name"]').clear().type('Testing Node');
+            cy.get('input[name="address"]').clear().type('localhost');
+            cy.get('input[name="port"]').clear().type(8282);
+            cy.get('input[name="username"]').clear().type('admin');
+            cy.get('input[name="password"]').clear().type('oscar');
+
+
+            cy.contains('button','Cancel').click();
+        });
     });
-
-    it('deleting node removes it from the list', () => {
-
-    });
-
-    // it('Cancel new node', () => {
-    //
-    //     // fill out node form
-    //     cy.get('input[name="name"]').clear().type('Testing Node');
-    //     cy.get('input[name="address"]').clear().type('localhost');
-    //     cy.get('input[name="port"]').clear().type(8282);
-    //     cy.get('input[name="sosEndpoint"]').clear().type('/sos');
-    //     cy.get('input[name="csAPIEndpoint"]').clear().type('/api');
-    //     cy.get('input[name="configsEndpoint"]').clear().type('/configs');
-    //     cy.get('input[name="username"]').clear().type('admin');
-    //     cy.get('input[name="password"]').clear().type('oscar');
-    //
-    //
-    //     cy.contains('button','Cancel').click();
-    // });
 
 });

@@ -37,6 +37,7 @@ declare global {
       visitEventsPage(): Chainable<any>;
       visitConfigPage(): Chainable<any>;
       visitServerPage(): Chainable<any>;
+      visitLaneViewPage(): Chainable<any>;
     }
   }
 }

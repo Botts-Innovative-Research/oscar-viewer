@@ -173,45 +173,47 @@ describe('Full Client Testing', () => {
 
     });
 
-    it('FE-PERF-004 - Apply Filter to the past alarms view', () => {
+    // it('FE-PERF-004 - Apply Filter to the past alarms view', () => {
+    //
+    //     // open filter options by clicking filters
+    //     cy.get('button[aria-label="Show filters"]').click();
+    //
+    //     // check if filter form is open
+    //     cy.get('.MuiDataGrid-filterForm').should('be.visible');
+    //
+    //     // select column to filter by status
+    //     cy.get('.MuiDataGrid-filterForm .MuiSelect-select').filter(':visible').eq(0).click();
+    //     cy.get('.MuiList-root .MuiMenuItem-root').contains('Status').click();
+    //
+    //     cy.get('.MuiDataGrid-filterForm .MuiSelect-select').filter(':visible').eq(1).click();
+    //     cy.get('.MuiList-root .MuiMenuItem-root').contains('equals').click();
+    //
+    //     // set filter to Gamma
+    //     cy.get('.MuiDataGrid-filterForm input[placeholder="Filter value"]')
+    //         .clear()
+    //         .type('Gamma');
+    //
+    //     // verify only gamma events are displayed in table
+    //     cy.get('.MuiDataGrid-row').each(($row) => {
+    //         cy.wrap($row).contains('Gamma');
+    //     });
+    // });
 
-        // open filter options by clicking filters
-        cy.get('button[aria-label="Show filters"]').click();
-
-        // check if filter form is open
-        cy.get('.MuiDataGrid-filterForm').should('be.visible');
-
-        // select column to filter by status
-        cy.get('.MuiDataGrid-filterForm .MuiSelect-select').filter(':visible').eq(0).click();
-        cy.get('.MuiList-root .MuiMenuItem-root').contains('Status').click();
-
-        cy.get('.MuiDataGrid-filterForm .MuiSelect-select').filter(':visible').eq(1).click();
-        cy.get('.MuiList-root .MuiMenuItem-root').contains('equals').click();
-
-        // set filter to Gamma
-        cy.get('.MuiDataGrid-filterForm input[placeholder="Filter value"]')
-            .clear()
-            .type('Gamma');
-
-        // verify only gamma events are displayed in table
-        cy.get('.MuiDataGrid-row').each(($row) => {
-            cy.wrap($row).contains('Gamma');
-        });
-    });
-
-    it('FE-PERF-002: Open a  live lane view and video stream appears in < 3 seconds', () => {
-        const start = Date.now();
-
-        cy.get('img', {timeout: 10000}).should('have.class', 'video-mjpeg').then(() => {
-            const duration = Date.now() - start;
-
-            expect(duration).to.be.lessThan(3000);
-        });
-    });
+    // it('FE-PERF-002: Open a  live lane view and video stream appears in < 3 seconds', () => {
+    //     const start = Date.now();
+    //
+    //     cy.get('img', {timeout: 10000}).should('have.class', 'video-mjpeg').then(() => {
+    //         const duration = Date.now() - start;
+    //
+    //         expect(duration).to.be.lessThan(3000);
+    //     });
+    // });
 
     it('switch between video streams in lane view', () => {
 
-        cy.get('img').should('have.class', 'video-mjpeg');
+        cy.get('img.video-mjpeg')
+            .should('exist')
+            .and('be.visible');
 
         // pause video
         cy.get('button[data-testid="PauseRoundedIcon"]').click();
@@ -219,95 +221,95 @@ describe('Full Client Testing', () => {
         // get right arrow and check if disabled if disable only 1 video, else click the button
         cy.get('button[data-testid="NavigateAfterIcon"]').and('not.be.disabled').click();
 
-        cy.get('img').should('have.class', 'video-mjpeg');
-
+        cy.get('img.video-mjpeg')
+            .should('exist')
+            .and('be.visible');
     });
 
-    it('FE-PERF-003- Load the National View table & table populates in <3 seconds', () => {
+    // it('FE-PERF-003- Load the National View table & table populates in <3 seconds', () => {
+    //
+    //     //click national page icon and navigate to national view page
+    //     cy.get('[data-testid="MediationIcon"]')
+    //         .click();
+    //
+    //     cy.contains('National View:')
+    //         .should('be.visible');
+    //
+    //     cy.url().should('include', '/national-view');
+    //
+    //     const start = Date.now();
+    //
+    //     cy.get('.MuiDataGrid-row', {timeout: 10000}).should('have.lengthOf.greaterThan', 0).then(() => {
+    //         const duration = Date.now() - start;
+    //
+    //         expect(duration).to.be.lessThan(3000);
+    //     });
+    // });
 
-        //click national page icon and navigate to national view page
-        cy.get('[data-testid="MediationIcon"]')
-            .click();
+    // it('click event log on navbar and table populates < 3 seconds', () => {
+    //
+    //     //click event log page icon and navigate to event log page
+    //     cy.get('[data-testid="WarningRoundedIcon"]')
+    //         .click();
+    //
+    //     cy.contains('Event Log:')
+    //         .should('be.visible');
+    //
+    //     cy.url().should('include', '/event-log');
+    //
+    //     const start = Date.now();
+    //     cy.get('.MuiDataGrid-row', {timeout: 10000}).should('exist').then(() => {
+    //         const duration = Date.now() - start;
+    //
+    //         expect(duration).to.be.lessThan(3000);
+    //     });
+    // });
 
-        cy.contains('National View:')
-            .should('be.visible');
+    // it('FE-PERF-005 - View details of a non-alarming occupancy.', () => {
+    //
+    //     //click first row in table that status is None
+    //     cy.selectNoneEvent();
+    //
+    //     cy.get('.MuiDataGrid-row.selected-row')
+    //         .within(() => {
+    //             cy.get('button[data-testid="MoreVertIcon"]')
+    //                 .closest('button')
+    //                 .click();
+    //         });
+    //
+    //
+    //     // menu is displayed to navigate to details
+    //     cy.get('.MuiList-root .MuiDataGrid-menulist')
+    //         .should('be.visible');
+    //
+    //     cy.get('.MuiMenuItem-root')
+    //         .contains('Details')
+    //         .click();
+    //
+    //     // event details page is opened
+    //     cy.url().should('include', '/event-details/');
+    //
+    // });
 
-        cy.url().should('include', '/national-view');
-
-        const start = Date.now();
-
-        cy.get('.MuiDataGrid-row', {timeout: 10000}).should('have.lengthOf.greaterThan', 0).then(() => {
-            const duration = Date.now() - start;
-
-            expect(duration).to.be.lessThan(3000);
-        });
-    });
-
-    it('click event log on navbar and table populates < 3 seconds', () => {
-
-        //click event log page icon and navigate to event log page
-        cy.get('[data-testid="WarningRoundedIcon"]')
-            .click();
-
-        cy.contains('Event Log:')
-            .should('be.visible');
-
-        cy.url().should('include', '/event-log');
-
-        const start = Date.now();
-
-        cy.get('.MuiDataGrid-row', {timeout: 10000}).should('exist').then(() => {
-            const duration = Date.now() - start;
-
-            expect(duration).to.be.lessThan(3000);
-        });
-    });
-
-    it('FE-PERF-005 - View details of a non-alarming occupancy.', () => {
-
-        //click first row in table that status is None
-        cy.selectNoneEvent();
-
-        cy.get('.MuiDataGrid-row.selected-row')
-            .within(() => {
-                cy.get('button[data-testid="MoreVertIcon"]')
-                    .closest('button')
-                    .click();
-            });
-
-
-        // menu is displayed to navigate to details
-        cy.get('.MuiList-root .MuiDataGrid-menulist')
-            .should('be.visible');
-
-        cy.get('.MuiMenuItem-root')
-            .contains('Details')
-            .click();
-
-        // event details page is opened
-        cy.url().should('include', '/event-details/');
-
-    });
-
-    it('Add non local node to client', () => {
-        //click cloud icon in navbar
-        cy.get('[data-testid="CloudRoundedIcon"]')
-            .click();
-
-        cy.get('input[name="name"]').clear().type('TEST Non-Local Node');
-        cy.get('[name="name"]').should('have.value','TEST Non-Local Node');
-
-        cy.get('input[name="address"]').clear().type('192.168.1.73');
-        cy.get('[name="address"]').should('have.value','192.168.1.73');
-
-        cy.get('input[name="port"]').clear().type('8282');
-        cy.get('[name="port"]').should('have.value','8282');
-
-        cy.get('input[name="username"]').clear().type('admin');
-        cy.get('[name="username"]').should('have.value','admin');
-
-        cy.get('input[name="password"]').clear().type('oscar');
-        cy.get('[name="password"]').should('have.value','oscar');
-        // fill out fields
-    })
+    // it('Add non local node to client', () => {
+    //     //click cloud icon in navbar
+    //     cy.get('[data-testid="CloudRoundedIcon"]')
+    //         .click();
+    //
+    //     cy.get('input[name="name"]').clear().type('TEST Non-Local Node');
+    //     cy.get('[name="name"]').should('have.value','TEST Non-Local Node');
+    //
+    //     cy.get('input[name="address"]').clear().type('192.168.1.73');
+    //     cy.get('[name="address"]').should('have.value','192.168.1.73');
+    //
+    //     cy.get('input[name="port"]').clear().type('8282');
+    //     cy.get('[name="port"]').should('have.value','8282');
+    //
+    //     cy.get('input[name="username"]').clear().type('admin');
+    //     cy.get('[name="username"]').should('have.value','admin');
+    //
+    //     cy.get('input[name="password"]').clear().type('oscar');
+    //     cy.get('[name="password"]').should('have.value','oscar');
+    //     // fill out fields
+    // })
 });

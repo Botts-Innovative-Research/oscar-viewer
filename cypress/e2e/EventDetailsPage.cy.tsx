@@ -1,7 +1,6 @@
 
 describe('Event Details', () => {
     before(() => {
-
         // visit dashboard page
         cy.visitDashboardPage();
 
@@ -34,7 +33,7 @@ describe('Event Details', () => {
             cy.get('img.video-mjpeg', {timeout: 10000})
                 .should('exist')
                 .and('be.visible')
-                then(() => {
+                .then(() => {
                     const duration = Date.now() - start;
                     expect(duration).to.be.lessThan(5000);
                 });

@@ -98,6 +98,9 @@ Cypress.Commands.add('visitNationalPage', () => {
     cy.get('[data-testid="MediationIcon"]').click();
 
     cy.url().should('include', '/national-view');
+
+    cy.contains('National View:')
+        .should('be.visible');
 });
 
 Cypress.Commands.add('visitMapPage', () => {
@@ -114,7 +117,10 @@ Cypress.Commands.add('visitAccountPage', () => {
 Cypress.Commands.add('visitEventsPage', () => {
     cy.get('[data-testid="WarningRoundedIcon"]').click();
 
-    cy.url().should('include', '/event-log/');
+    cy.url().should('include', '/event-log');
+
+    cy.contains('Event Log:')
+        .should('be.visible');
 });
 
 Cypress.Commands.add('visitConfigPage', () => {
@@ -127,6 +133,22 @@ Cypress.Commands.add('visitServerPage', () => {
     cy.get('[data-testid="CloudRoundedIcon"]').click();
 
     cy.url().should('include', '/servers/');
+});
+
+Cypress.Commands.add('visitLaneViewPage', () => {
+    cy.visitDashboardPage();
+
+    cy.get('[data-testid="CheckCircleIcon"]')
+        .should('be.visible')
+        .click();
+
+    cy.get('[aria-label="Rapiscan"]')
+        .should('be.visible').first()
+        .click();
+
+    cy.url().should('include', '/lane-view/');
+
+    cy.contain('Lane View: ').should('be.visible');
 });
 
 
