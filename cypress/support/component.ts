@@ -29,6 +29,14 @@ declare global {
       selectRapiscanEvent(): Chainable<any>;
       selectNoneEvent(): Chainable<any>;
       selectAspectEvent(): Chainable<any>;
+      selectEventAndExpandDetails(): Chainable<any>;
+      visitDashboardPage(): Chainable<any>;
+      visitNationalPage(): Chainable<any>;
+      visitMapPage(): Chainable<any>;
+      visitAccountPage(): Chainable<any>;
+      visitEventsPage(): Chainable<any>;
+      visitConfigPage(): Chainable<any>;
+      visitServerPage(): Chainable<any>;
     }
   }
 }

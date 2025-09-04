@@ -1,90 +1,154 @@
 
-describe('Event Details View Page (E2E)', () => {
+describe('Event Details', () => {
     before(() => {
-        cy.visit('/event-details');
+
+        // visit dashboard page
+        cy.visitDashboardPage();
+
+        // select event from alarm table
+        cy.selectEventAndExpandDetails();
     });
 
-    it('Renders components', () => {
-        cy.contains('Event Details').should('be.visible');
+    describe('Performance Test', () => {
+        it('FE-PERF-007 Load initial data', () => {
+            const start = Date.now();
 
-        // event data row
-        cy.get('.MuiDataGrid-root').should('be.visible');
+            // check datagrid loads
+            cy.get('.MuiDataGrid-root', {timeout: 10000})
+                .should('exist')
+                .then(() => {
+                    const duration = Date.now() - start;
+                    expect(duration).to.be.lessThan(5000);
+                });
 
-        // event details table
-        // charts
-        cy.get('.chart-view-event-detail').should('exist').and('be.visible');
+            // check chart loads
+            cy.get('.chart-view-event-detail', {timeout: 10000})
+                .should('exist')
+                .and('be.visible')
+                .then(() => {
+                    const duration = Date.now() - start;
+                    expect(duration).to.be.lessThan(5000);
+                });
 
-
-        // video
-        cy.get('img').should('have.class', 'video-mjpeg');
-        // no video available
-        // cy.get('No video data available.').should('be.visible');
-
-        // max table
-        cy.get('Max Gamma Count Rate (cps)').should('be.visible');
-
-        // adjudication log
-        cy.get('Logged Adjudications').should('be.visible');
-        cy.get('.MuiDataGrid-root').contains('[data-field="isotopes"]').should('be.visible');
-
-        // adjudication form
-        cy.get('Adjudication Report Form').should('be.visible');
+            //check video stream loads
+            cy.get('img.video-mjpeg', {timeout: 10000})
+                .should('exist')
+                .and('be.visible')
+                then(() => {
+                    const duration = Date.now() - start;
+                    expect(duration).to.be.lessThan(5000);
+                });
+        });
     });
 
-    describe('Charts', () => {
-        it('displays chart for selected event', () => {
-            cy.get('.chart-view-event-detail').should('exist').and('be.visible');
+    describe('Page components load', () => {
+        it('should display tables', () => {
+            cy.contains('Max Gamma Count Rate (cps)')
+                .should('be.visible');
+
+            cy.contains('Logged Adjudications')
+                .should('be.visible');
+
+            cy.get('.MuiDataGrid-root')
+                .find('[data-field="isotopes"]')
+                .should('be.visible');
+
+        });
+
+        it('should display adjudication report form', () => {
+            cy.contains('Adjudication Report Form')
+                .should('be.visible');
+        });
+    })
+
+
+    describe('Chart Actions', () => {
+        it('should display chart for selected event', () => {
+            cy.get('.chart-view-event-detail')
+                .should('exist')
+                .and('be.visible');
+
 
         });
     });
 
     describe('Video', () => {
-        it('displays video for selected event', () => {
-            // video should exist
-            cy.get('img').should('have.class', 'video-mjpeg');
+        it('should display video stream', () => {
+            cy.get('img.video-mjpeg')
+                .should('exist')
+                .and('be.visible');
         });
 
-        it('switch between video streams', () => {
+        it('should switch between video streams', () => {
 
-            cy.get('img').should('have.class', 'video-mjpeg');
+            cy.get('img.video-mjpeg')
+                .should('exist')
+                .and('be.visible')
 
             // pause video
-            cy.get('button[data-testid="PauseRoundedIcon"]').click();
+            cy.get('button[data-testid="PauseRoundedIcon"]')
+                .click();
 
-            // get right arrow and check if disabled if disable only 1 video, else click the button
-            cy.get('button[data-testid="NavigateAfterIcon"]').and('not.be.disabled').click();
+            // click button to go to next video stream, verify video stream is visible
+            cy.get('button[data-testid="NavigateAfterIcon"]')
+                .should('be.visible')
+                .then(($btn) => {
+                    if(!$btn.is(':disabled')){
 
-            cy.get('img').should('have.class', 'video-mjpeg');
+                        cy.wrap($btn).click();
 
+                        cy.get('img-video-mjpeg')
+                            .should('exist')
+                            .and('be.visible');
+                    }
+                });
         });
     });
 
-    describe('Adjudication ', () => {
 
-        it('Adjudicates alarm and displays on log', () => {
+    describe("Event Adjudication", () => {
+        it('should successfully adjudicate an event', () => {
 
-            // select adj test
-            cy.get('.MuiSelect-select').contains('Adjudicate').click();
-            cy.get('.MuiList-root').should('be.visible');
-            cy.get('[data-value="Code 9: Authorized Test, Maintenance, or Training Activity"]').click();
+            // todo: check if i need to reselect an event and open event details
+            cy.get('.MuiSelect-select')
+                .contains('Adjudicate')
+                .click();
+            cy.get('.MuiList-root')
+                .should('be.visible');
+            cy.get('[data-value="Code 9: Authorized Test, Maintenance, or Training Activity"]')
+                .click();
 
             // select unknown isotope
-            cy.get('.MuiSelect-select').contains('Isotope').click();
-            cy.get('.MuiList-root').should('be.visible');
-            cy.get('[data-value="Unknown"]').click();
+            cy.get('.MuiSelect-select')
+                .contains('Isotope')
+                .click();
+            cy.get('.MuiList-root')
+                .should('be.visible');
+            cy.get('[data-value="Unknown"]')
+                .click();
 
             // type in note area
-            cy.get('textarea[id="outlined-multiline-static"]').clear().type('Testing notes- ignore');
+            cy.get('textarea[id="outlined-multiline-static"]')
+                .clear()
+                .type('Testing notes- ignore');
 
             // type in vehicle id
-            cy.get('input[name="vehicileId"]').clear().type('Test Vehicle');
+            cy.get('input[name="vehicleId"]')
+                .clear()
+                .type('Test Vehicle');
 
             //submit adjudication form
-            cy.contains('button', 'Submit').click();
-
-            // check log for adjudication
-
+            cy.contains('button', 'Submit')
+                .click();
         });
+    });
 
+    describe('Navigate back', () => {
+        it('should navigate back to dashboard', () => {
+            cy.contains('button', 'Back')
+                .click();
+
+            cy.url().should('include', '/dashboard');
+        });
     });
 });

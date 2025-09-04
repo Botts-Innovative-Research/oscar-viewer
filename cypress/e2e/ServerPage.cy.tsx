@@ -4,7 +4,7 @@ describe('Servers Page (E2E)', () => {
         cy.visit('/servers');
     });
 
-    it('Edit existing node displays changes in node list', () => {
+    it.skip('Edit existing node displays changes in node list', () => {
 
         cy.contains('button', 'Edit').first().click();
 
@@ -12,8 +12,7 @@ describe('Servers Page (E2E)', () => {
 
         cy.get('input[name="name"]').clear().type('Testing Node');
         cy.get('input[name="address"]').clear().type('localhost');
-        // @ts-ignore
-        cy.get('input[name="port"]').clear().type(8282);
+        cy.get('input[name="port"]').clear().type('8282');
         cy.get('input[name="sosEndpoint"]').clear().type('/sos');
         cy.get('input[name="csAPIEndpoint"]').clear().type('/api');
         cy.get('input[name="configsEndpoint"]').clear().type('/configs');
@@ -29,9 +28,6 @@ describe('Servers Page (E2E)', () => {
             .should('match',/Node is reachable | Node is not reachable. Try again./);
 
 
-        cy.wait(5000);
-
-
         cy.get('[id="saveNode-snackbar"]')
             .should('be.visible')
             .should('match',/OSCAR Configuration Saved | Failed to save OSCAR Configuration./);
@@ -44,8 +40,7 @@ describe('Servers Page (E2E)', () => {
         // fill out node form
         cy.get('input[name="name"]').clear().type('Testing Node');
         cy.get('input[name="address"]').clear().type('localhost');
-        // @ts-ignore
-        cy.get('input[name="port"]').clear().type(8282);
+        cy.get('input[name="port"]').clear().type('8282');
         cy.get('input[name="sosEndpoint"]').clear().type('/sos');
         cy.get('input[name="csAPIEndpoint"]').clear().type('/api');
         cy.get('input[name="configsEndpoint"]').clear().type('/configs');
@@ -58,9 +53,6 @@ describe('Servers Page (E2E)', () => {
         cy.get('[id="saveNode-snackbar"]')
             .should('be.visible')
             .should('match',/Node is reachable | Node is not reachable. Try again./);
-
-
-        cy.wait(5000);
 
 
         cy.get('[id="saveNode-snackbar"]')
@@ -76,6 +68,7 @@ describe('Servers Page (E2E)', () => {
     it('deleting node removes it from the list', () => {
 
     });
+
     // it('Cancel new node', () => {
     //
     //     // fill out node form

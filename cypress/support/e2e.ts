@@ -22,5 +22,5 @@ beforeEach(() => {
         // failing the test
         return false
     })
-    cy.log('I run before every test in every spec file!!!!!!')
+    cy.intercept({ resourceType: /xhr|fetch/ }, { log: false });
 })

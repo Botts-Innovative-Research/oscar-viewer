@@ -9,13 +9,18 @@ describe('Site Config Management Page (E2E)', () => {
 
     it('shows alert and saves configuration on confirm', () => {
         //save config
-        cy.contains('button','Save').first().click();
+        cy.contains('button','Save')
+            .first()
+            .click();
 
         // alert is visible
-        cy.contains('Please Confirm').should('be.visible');
+        cy.contains('Please Confirm')
+            .should('be.visible');
         cy.contains('Are you sure you want to save the configuration (and overwrite the previous one)?').should('be.visible');
 
-        cy.contains('button','Save').last().click();
+        cy.contains('button','Save')
+            .last()
+            .click();
 
 
         cy.get('[id="save-snackbar"]')
@@ -42,9 +47,7 @@ describe('Site Config Management Page (E2E)', () => {
     it('Load config and shows snackbar', () => {
         //load config options
         cy.get('input[name="address"]').clear().type('localhost');
-        cy.get('input[name="port"]').clear().type(8282);
-        cy.get('input[name="sosEndpoint"]').clear().type('/sos');
-        cy.get('input[name="csAPIEndpoint"]').clear().type('/api');
+        cy.get('input[name="port"]').clear().type('8282');
         cy.get('input[name="username"]').clear().type('admin');
         cy.get('input[name="password"]').clear().type('oscar');
 
@@ -74,8 +77,6 @@ describe('Site Config Management Page (E2E)', () => {
             .should('be.visible')
             .should('match',/OSCAR Configuration Saved | Failed to save/);
 
-
-        cy.wait(5000);
 
         // this is loading state snackbar
         cy.get('[id="load-snackbar"]')

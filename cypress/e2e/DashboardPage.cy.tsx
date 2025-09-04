@@ -1,84 +1,100 @@
-/**
- * test set up:
- * create two lanes on admin panel:
- * - one aspect lane with 2 cameras
- * - one rapiscan lane with 2 cameras
- */
-describe('Dashboard View Page (E2E)', () => {
+
+describe('Dashboard', () => {
     before(() => {
-        cy.visit('/dashboard');
-        cy.intercept({ resourceType: /xhr|fetch/ }, { log: false });
+        cy.visitDashboard();
     });
 
+    describe('Performance Testing', () => {
+        it('FE-PERF-007 Load initial alarm data', () => {
 
-    describe.skip('Render dashboard components', () => {
-        it('should load lane status, map and alarm table', () => {
-            // make sure lane status, map and event table are loaded onto dashboard page
-            cy.contains('Lane Status').should('be.visible');
+            const start = Date.now();
 
-            cy.get('[id="mapcontainer"]').should('be.visible');
-            cy.get('.MuiDataGrid-root').should('be.visible');
+            cy.get('.MuiDataGrid-row', {timeout: 10000})
+                .should('exist')
+                .then(() => {
+                    const duration = Date.now() - start;
+                    expect(duration).to.be.lessThan(5000);
+                });
+
+            cy.get('[id="mapcontainer"]', {timeout: 10000})
+                .should('be.visible')
+                .then(() => {
+                    const duration = Date.now() - start;
+                    expect(duration).to.be.lessThan(5000);
+                });
+
+            cy.contains('Lane Status', {timeout: 10000})
+                .should('be.visible')
+                .then(() => {
+                    const duration = Date.now() - start;
+                    expect(duration).to.be.lessThan(5000);
+                });
+
         });
-    });
-
-    // remove skip to test - works
-    describe.skip('Lane Status', () => {
-
-        //FE-PERF-002: Open a  live lane view and video stream appears in < 3 seconds
-        it('Open rapiscan lane view on click', () => {
-
-            cy.get('[data-testid="CheckCircleIcon"]').should('be.visible').click();
-            //click on first lane status (the lane will be called "Rapiscan" and another test lane "Aspect")
-            cy.get('[aria-label="Rapiscan"]').should('be.visible').first().click();
-            //verify the url is lane view
-            cy.url().should('include', '/lane-view/');
-
-        });
 
     });
+
 
     describe('Event Preview', () => {
+        it('select event to open event preview', () => {
 
-        // maybe check if event preview is open and close it before we start lol for testing purposes
-        /**
-         * load dashboard
-         * click on an event in the table
-         * event preview opens
-         * id matches the table id for event
-         * charts/video load and play
-         * --- adjudicate alarm
-         * --- expand to event details page
-         * --- close the event
-         */
+            cy.selectRapiscanEvent();
 
-        it('select event to open event preview ', () => {
+            // Verify that row is now selected
+            cy.get('.MuiDataGrid-row.selected-row', {timeout: 2000} ).should('exist');
+
+            // Verify occupancy ID is visible
+            cy.contains('Occupancy ID: ').should('be.visible');
+
+            //TODO: chart displayed
+            cy.get('.chart-view-event-detail').should('exist').and('be.visible');
+            // check if chart has stuff on it? possible get canvas and check if pixels are available?
+            // can also look into legends
+
+            //TODO: video available
+            cy.get('img').should('have.class', 'video-mjpeg');
+            // for mjpeg video possible looking at src and see if the value changes?
+        });
+
+        it('FE-PERF-001 Adjudicate a selected alarm', () => {
+
+            cy.get('.MuiSelect-select')
+                .click();
+
+            cy.get('.MuiList-root')
+                .should('be.visible');
+
+            cy.get('[data-value="Code 9: Authorized Test, Maintenance, or Training Activity"]')
+                .click();
+
+            cy.get('input[value="Code 9: Authorized Test, Maintenance, or Training Activity"]')
+                .should('be.visible')
+
+            cy.get('textarea[id="outlined-multiline-static"]')
+                .clear().type('Testing notes');
+
+            cy.contains('button', 'Submit')
+                .click();
+
+            // cy.get('[id="adj-snack-msg"]').should('be.visible')
+            //     .should('match',/Adjudication Submitted Successfully | Adjudication Submission Failed. Check connection and form then try again./);
+
+            cy.contains('Occupancy ID: ')
+                .should('not.exist');
+        });
+
+
+        it('select event and expand to event details', () => {
 
             // Check if a row is already selected
-            cy.get('.MuiDataGrid-row').then(($rows) => {
-                const selectedRow = $rows.filter('.selected-row');
-                if (selectedRow.length > 0) {
-                    // Row is already selected
-                    cy.log('Row already selected');
-                } else {
-                    // No row selected
-                    cy.log('No row selected');
-
-                    cy.get('.MuiDataGrid-row')
-                        .contains('[data-field="laneId"]', 'Rapiscan')
-                        .closest('.MuiDataGrid-row')
-                        .click();
-                }
-            });
+            cy.selectRapiscanEvent();
 
             // Verify that row is now selected
             cy.get('.MuiDataGrid-row.selected-row')
                 .should('exist');
 
-            cy.wait(2000);
-
             // Verify occupancy ID is visible
-            cy.contains('Occupancy ID: ')
-                .should('be.visible');
+            cy.contains('Occupancy ID: ').should('be.visible');
 
             //chart displayed
             cy.get('.chart-view-event-detail').should('exist').and('be.visible');
@@ -86,49 +102,56 @@ describe('Dashboard View Page (E2E)', () => {
 
             //video available
             cy.get('img').should('have.class', 'video-mjpeg');
-        });
 
-
-        // FE-PERF-001 Adjudicate a selected alarm. THIS WORKS -- remove the skip when testing
-        it.skip('Adjudicates an alarm and closes the preview', () => {
-            cy.wait(2000);
-
-            cy.get('.MuiSelect-select').click();
-
-            cy.get('.MuiList-root').should('be.visible');
-            cy.get('[data-value="Code 9: Authorized Test, Maintenance, or Training Activity"]').click();
-
-            cy.get('input[value="Code 9: Authorized Test, Maintenance, or Training Activity"]').should('be.visible')
-
-            cy.get('textarea[id="outlined-multiline-static"]').clear().type('Testing notes');
-
-            cy.contains('button', 'Submit').click();
-
-            // cy.get('[id="adj-snack-msg"]').should('be.visible')
-            //     .should('match',/Adjudication Submitted Successfully | Adjudication Submission Failed. Check connection and form then try again./);
-
-            cy.contains('Occupancy ID: ').should('not.exist');
-        });
-
-        // WORKS
-        it.skip('expands event preview to event details page', () => {
             cy.get('button[aria-label="expand"]').click(); //click expand button
 
             cy.url().should('include', '/event-details'); // check url contains event-details now
             cy.contains('Event Details').should('be.visible'); //another way to verify the event details page is now showing
+
         });
 
 
-        it.skip('closing event preview, removes the component from the screen and highlighted row is not highlighted', () => {
-            cy.get('button[data-testid="CloseRoundedIcon"]').click(); //click close button
+        it('should close event preview when button clicked', () => {
+            cy.get('button[data-testid="CloseRoundedIcon"]')
+                .click(); //click close button
 
             // event preview should not exist
-            cy.get('Occupancy ID:').should('not.exist');
+            cy.get('Occupancy ID:')
+                .should('not.exist');
 
             cy.get('.MuiDataGrid-row.selected-row')
                 .should('not.exist');
+        });
+    });
 
-        })
+
+    describe('Lane Status', () => {
+        it('FE-PERF-002: Open a  live lane view and video stream appears in < 3 seconds', () => {
+
+            cy.get('[data-testid="CheckCircleIcon"]')
+                .should('be.visible')
+                .click();
+
+            cy.get('[aria-label="Rapiscan"]')
+                .should('be.visible').first()
+                .click();
+
+            cy.url().should('include', '/lane-view/');
+
+            cy.contains('button', 'Back').click();
+
+            cy.url().should('include', '/dashboard');
+        });
+    });
+
+    describe('Map', () => {
+        it('should navigate to lane view from pointmarker', () => {
+
+        });
+
+        it('should open popup when pointmarker selected', () => {
+
+        });
     });
 
     // describe.skip('Aspect Event Preview Charts', () => {

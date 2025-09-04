@@ -36,12 +36,8 @@
 //   }
 // }
 
-// write a function to open event preview
-// Cypress.Commands.add('openEventPreview', () => {
-//
-// });
-//
-// // write a function to
+
+
 Cypress.Commands.add('selectRapiscanEvent', () => {
     cy.get('.MuiDataGrid-row').then(($rows) => {
         const selectedRow = $rows.filter('.selected-row');
@@ -81,4 +77,60 @@ Cypress.Commands.add('selectAspectEvent', () => {
         }
     });
 });
+
+Cypress.Commands.add('selectEventAndExpandDetails', () => {
+    cy.selectRapiscanEvent();
+
+    cy.get('button[aria-label="expand"]').click(); //click expand button
+
+    cy.url().should('include', '/event-details'); // check url contains event-details now
+
+    cy.contains('Event Details').should('be.visible');
+});
+
+Cypress.Commands.add('visitDashboardPage', () => {
+    cy.get('[data-testid="DashboardRoundedIcon"]').click();
+
+    cy.url().should('include', '/dashboard');
+});
+
+Cypress.Commands.add('visitNationalPage', () => {
+    cy.get('[data-testid="MediationIcon"]').click();
+
+    cy.url().should('include', '/national-view');
+});
+
+Cypress.Commands.add('visitMapPage', () => {
+    cy.get('[data-testid="LocationOnRoundedIcon"]').click();
+    cy.url().should('include', '/map/');
+});
+
+Cypress.Commands.add('visitAccountPage', () => {
+    cy.get('[data-testid="AccountCircleRoundedIcon"]').click();
+
+    cy.url().should('include', '/');
+});
+
+Cypress.Commands.add('visitEventsPage', () => {
+    cy.get('[data-testid="WarningRoundedIcon"]').click();
+
+    cy.url().should('include', '/event-log/');
+});
+
+Cypress.Commands.add('visitConfigPage', () => {
+    cy.get('[data-testid="SaveRoundedIcon"]').click();
+
+    cy.url().should('include', '/savestate/');
+});
+
+Cypress.Commands.add('visitServerPage', () => {
+    cy.get('[data-testid="CloudRoundedIcon"]').click();
+
+    cy.url().should('include', '/servers/');
+});
+
+
+
+
+
 
