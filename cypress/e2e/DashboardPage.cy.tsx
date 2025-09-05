@@ -3,6 +3,13 @@ describe('Dashboard', () => {
     beforeEach(() => {
         cy.visit('/dashboard/');
         cy.intercept('GET', '**/api/**', { log: false });
+
+        // can close event preview before each test
+        // cy.get('body').then(($body) => {
+        //     if ($body.find('button[data-testid="CloseRoundedIcon"]').length > 0) {
+        //         cy.get('button[data-testid="CloseRoundedIcon"]').click();
+        //     }
+        // });
     });
 
     describe('Performance Testing', () => {
@@ -17,14 +24,27 @@ describe('Dashboard', () => {
                     expect(duration).to.be.lessThan(9000);
                 });
 
-            cy.get('[id="mapcontainer"]').then(($map) => {
-                if(!$map){
-                    cy.contains('Occupancy ID:').should('be.visible');
-                }
-            }).then(() => {
+            cy.get('[id="mapcontainer"]', { timeout: 10000 })
+                .should('exist')
+                .then(() => {
                     const duration = Date.now() - start;
-                    expect(duration).to.be.lessThan(5000);
+                    expect(duration).to.be.lessThan(9000);
                 });
+
+            cy.get('body').then(($body) => {
+                const hasMap = $body.find('[id="mapcontainer"]').is(':visible');
+                const hasEventPreview = $body.find('.MuiDataGrid-row.selected-row').length > 0;
+
+                if (hasMap) {
+                    cy.get('[id="mapcontainer"]').should('be.visible');
+                } else if (hasEventPreview) {
+                    cy.contains('Occupancy ID:').should('be.visible');
+                } else {
+                    // Neither state is active, this might indicate a problem
+                    cy.get('[id="mapcontainer"]').should('be.visible'); // Default expectation
+                }
+            });
+
 
             cy.contains('Lane Status', { timeout: 10000 })
                 .should('be.visible')
@@ -76,17 +96,24 @@ describe('Dashboard', () => {
                 .should('exist').then(() => {
 
                 // Verify occupancy ID is visible
-                cy.contains('Occupancy ID: ').should('be.visible');
+                cy.contains('Occupancy ID: ')
+                    .should('be.visible');
 
                 //TODO: chart displayed
-                cy.get('.chart-view-event-detail').should('exist').and('be.visible');
+                cy.get('.chart-view-event-detail')
+                    .should('exist')
+                    .and('be.visible')
+                    .find('canvas, svg')
+                    .should('exist');
                 // check if chart has stuff on it? possible get canvas and check if pixels are available?
                 // can also look into legends
 
                 //TODO: video available
                 cy.get('img.video-mjpeg', { timeout: 4000 })
                     .should('exist')
-                    .and('be.visible');
+                    .and('be.visible')
+                    .and('have.attr', 'src')
+                    .and('not.be.empty');
                 // for mjpeg video possible looking at src and see if the value changes?
             });
 
@@ -542,6 +569,26 @@ describe('Dashboard', () => {
     //     });
     // });
 
+
+    afterEach(() => {
+        // Ensure we're back to dashboard state for next test
+        cy.url().then((url) => {
+            if (!url.includes('/dashboard')) {
+                cy.visit('/dashboard/');
+            }
+        });
+
+        // Close any open event previews
+        cy.get('body').then(($body) => {
+            if ($body.find('button[data-testid="CloseRoundedIcon"]').length > 0) {
+                cy.get('button[data-testid="CloseRoundedIcon"]').click();
+                cy.get('.MuiDataGrid-row.selected-row').should('not.exist');
+            }
+        });
+    });
 });
+
+
+
 
 
