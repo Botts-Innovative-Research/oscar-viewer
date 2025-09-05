@@ -11,7 +11,7 @@ export default function NationalDatePicker(){
 
     useEffect(() => {
         setStartTime(dayjs().subtract(1, 'year'));
-        setEndTime(dayjs())
+        setEndTime(dayjs().add(1, 'hour'));
     }, []);
 
     const handleStartTimeChange = (newValue: Dayjs) => {
