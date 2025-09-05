@@ -148,7 +148,7 @@ Cypress.Commands.add('visitLaneViewPage', () => {
 
     cy.url().should('include', '/lane-view/');
 
-    cy.contain('Lane View: ').should('be.visible');
+    cy.contains('Lane View: ').should('be.visible');
 });
 
 

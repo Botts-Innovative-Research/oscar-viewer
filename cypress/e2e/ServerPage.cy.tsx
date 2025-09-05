@@ -73,7 +73,7 @@ describe('Servers Page (E2E)', () => {
             // fill out node form
             cy.get('input[name="name"]').clear().type('Testing Node');
             cy.get('input[name="address"]').clear().type('localhost');
-            cy.get('input[name="port"]').clear().type(8282);
+            cy.get('input[name="port"]').clear().type('8282');
             cy.get('input[name="username"]').clear().type('admin');
             cy.get('input[name="password"]').clear().type('oscar');
 

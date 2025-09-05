@@ -1,7 +1,7 @@
 
 describe('Dashboard', () => {
     before(() => {
-        cy.visitDashboard();
+        cy.visitDashboardPage();
     });
 
     describe('Performance Testing', () => {
@@ -153,11 +153,29 @@ describe('Dashboard', () => {
             cy.get('.MuiDataGrid-row.selected-row')
                 .should('not.exist');
         });
+
+        it('switch between video streams in lane view', () => {
+
+            cy.get('img.video-mjpeg')
+                .should('exist')
+                .and('be.visible');
+
+            // pause video
+            cy.get('button[data-testid="PauseRoundedIcon"]').click();
+
+            // get right arrow and check if disabled if disable only 1 video, else click the button
+            cy.get('button[data-testid="NavigateAfterIcon"]').and('not.be.disabled').click();
+
+            cy.get('img.video-mjpeg')
+                .should('exist')
+                .and('be.visible');
+        });
+
     });
 
 
     describe('Lane Status', () => {
-        it('FE-PERF-002: Open a  live lane view and video stream appears in < 3 seconds', () => {
+        it('should navigate to lane status when clicked', () => {
 
             cy.get('[data-testid="CheckCircleIcon"]')
                 .should('be.visible')
