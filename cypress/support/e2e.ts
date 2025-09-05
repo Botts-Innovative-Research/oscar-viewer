@@ -22,5 +22,4 @@ beforeEach(() => {
         // failing the test
         return false
     })
-    cy.intercept({ resourceType: /xhr|fetch/ }, { log: false });
 })
