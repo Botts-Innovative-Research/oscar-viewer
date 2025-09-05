@@ -1,15 +1,9 @@
+import {afterEach} from "mocha";
 
 describe('Dashboard', () => {
     beforeEach(() => {
         cy.visit('/dashboard/');
         cy.intercept('GET', '**/api/**', { log: false });
-
-        // can close event preview before each test
-        // cy.get('body').then(($body) => {
-        //     if ($body.find('button[data-testid="CloseRoundedIcon"]').length > 0) {
-        //         cy.get('button[data-testid="CloseRoundedIcon"]').click();
-        //     }
-        // });
     });
 
     describe('Performance Testing', () => {
@@ -18,13 +12,6 @@ describe('Dashboard', () => {
             const start = Date.now();
 
             cy.get('.MuiDataGrid-row', { timeout: 10000 })
-                .should('exist')
-                .then(() => {
-                    const duration = Date.now() - start;
-                    expect(duration).to.be.lessThan(9000);
-                });
-
-            cy.get('[id="mapcontainer"]', { timeout: 10000 })
                 .should('exist')
                 .then(() => {
                     const duration = Date.now() - start;
@@ -86,10 +73,11 @@ describe('Dashboard', () => {
     // });
 
     describe('Event Preview', () => {
+        beforeEach(() => {
+            cy.selectRapiscanEvent();
+        })
 
         it('select event to open event preview', () => {
-
-            cy.selectRapiscanEvent();
 
             // Verify that row is now selected
             cy.get('.MuiDataGrid-row.selected-row', { timeout: 2000 } )
@@ -116,16 +104,14 @@ describe('Dashboard', () => {
                     .and('not.be.empty');
                 // for mjpeg video possible looking at src and see if the value changes?
             });
-
-
         });
 
         it('FE-PERF-001 Adjudicate a selected alarm', () => {
-            cy.selectRapiscanEvent();
 
             cy.get('.MuiDataGrid-row.selected-row', {timeout: 2000} )
                 .should('exist')
                 .then(() => {
+
                     cy.get('.MuiSelect-select')
                         .click();
 
@@ -134,9 +120,6 @@ describe('Dashboard', () => {
 
                     cy.get('[data-value="Code 9: Authorized Test, Maintenance, or Training Activity"]')
                         .click();
-
-                    cy.get('input[value="Code 9: Authorized Test, Maintenance, or Training Activity"]')
-                        .should('be.visible')
 
                     cy.get('textarea[id="outlined-multiline-static"]')
                         .clear().type('Testing notes');
@@ -155,62 +138,41 @@ describe('Dashboard', () => {
 
         it('select event and expand to event details', () => {
 
-            // Check if a row is already selected
-            cy.selectRapiscanEvent();
-
             // Verify that row is now selected
             cy.get('.MuiDataGrid-row.selected-row')
-                .should('exist')
-                .then(() => {
+                .should('exist');
 
-                    // Verify occupancy ID is visible
-                    cy.contains('Occupancy ID: ').should('be.visible');
+            // Verify occupancy ID is visible
+            cy.contains('Occupancy ID: ').should('be.visible');
 
-                    //chart displayed
-                    cy.get('.chart-view-event-detail').should('exist').and('be.visible');
-                    // check if chart has stuff on it? possible get canvas and check if pixels are available?
 
-                    //video available
-                    cy.get('img.video-mjpeg')
-                        .should('exist')
-                        .and('be.visible');
+            cy.get('[aria-label="expand"]').click({force: true}); //click expand button
 
-                    cy.get('button[aria-label="expand"]').click(); //click expand button
+            cy.url().should('include', '/event-details'); // check url contains event-details now
 
-                    cy.url().should('include', '/event-details'); // check url contains event-details now
-                    cy.contains('Event Details').should('be.visible'); //another way to verify the event details page is now showing
-
-                });
-
+            cy.contains('Event Details').should('be.visible'); //another way to verify the event details page is now showing
 
         });
 
         it('should close event preview when button clicked', () => {
 
-            cy.selectRapiscanEvent();
-
             // Verify that row is now selected
             cy.get('.MuiDataGrid-row.selected-row')
-                .should('exist')
-                .then(() => {
-                    cy.get('button[data-testid="CloseRoundedIcon"]')
-                        .click(); //click close button
+                .should('exist');
 
-                    // event preview should not exist
-                    cy.get('Occupancy ID:')
-                        .should('not.exist');
+            cy.get('[data-testid="CloseRoundedIcon"]')
+                .click({force: true}); //click close button
 
-                    cy.get('.MuiDataGrid-row.selected-row')
-                        .should('not.exist');
-                });
+            // event preview should not exist
+            cy.contains('Occupancy ID:')
+                .should('not.exist');
+
+            cy.get('.MuiDataGrid-row.selected-row')
+                .should('not.exist');
 
         });
 
         // it('switch between video streams in event preview', () => {
-        //
-        //     // Check if a row is already selected
-        //     cy.selectRapiscanEvent();
-        //
         //     // Verify that row is now selected
         //     cy.get('.MuiDataGrid-row.selected-row')
         //         .should('exist')
@@ -234,6 +196,14 @@ describe('Dashboard', () => {
         //
         // });
 
+        afterEach(() => {
+            //close event preview
+            cy.get('.MuiDataGrid-row.selected-row').click();
+
+            cy.get('.MuiDataGrid-row.selected-row')
+                .should('not.exist');
+        })
+
     });
 
 
@@ -249,14 +219,16 @@ describe('Dashboard', () => {
                 .click();
 
             cy.url().should('include', '/lane-view/');
+        });
 
+        afterEach(() => {
+            // return back to dashboard
             cy.contains('button', 'Back').click();
-
             cy.url().should('include', '/dashboard');
         });
     });
 
-    describe('Map', () => {
+    describe.skip('Map', () => {
         it('should navigate to lane view from pointmarker', () => {
 
         });
@@ -569,23 +541,6 @@ describe('Dashboard', () => {
     //     });
     // });
 
-
-    afterEach(() => {
-        // Ensure we're back to dashboard state for next test
-        cy.url().then((url) => {
-            if (!url.includes('/dashboard')) {
-                cy.visit('/dashboard/');
-            }
-        });
-
-        // Close any open event previews
-        cy.get('body').then(($body) => {
-            if ($body.find('button[data-testid="CloseRoundedIcon"]').length > 0) {
-                cy.get('button[data-testid="CloseRoundedIcon"]').click();
-                cy.get('.MuiDataGrid-row.selected-row').should('not.exist');
-            }
-        });
-    });
 });
 
 

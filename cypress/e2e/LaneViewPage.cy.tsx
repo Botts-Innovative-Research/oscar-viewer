@@ -2,6 +2,8 @@
 describe('Lane View Page (E2E)', () => {
     before(() => {
         cy.visitLaneViewPage();
+        cy.intercept('GET', '**/api/**', { log: false });
+
     });
 
     describe('Performance Testing', () => {
@@ -74,11 +76,9 @@ describe('Lane View Page (E2E)', () => {
                 .should('exist')
                 .and('be.visible');
 
-            // pause video
-            cy.get('button[data-testid="PauseRoundedIcon"]').click();
 
             // get right arrow and check if disabled if disable only 1 video, else click the button
-            cy.get('button[data-testid="NavigateAfterIcon"]').and('not.be.disabled').click();
+            cy.get('[data-testid="NavigateNextIcon"]').and('not.be.disabled').click({ force: true });
 
             cy.get('img.video-mjpeg')
                 .should('exist')

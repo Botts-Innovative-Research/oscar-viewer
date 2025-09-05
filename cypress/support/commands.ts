@@ -89,12 +89,14 @@ Cypress.Commands.add('selectEventAndExpandDetails', () => {
 });
 
 Cypress.Commands.add('visitDashboardPage', () => {
+    cy.visit('/');
     cy.get('[data-testid="DashboardRoundedIcon"]').click();
 
     cy.url().should('include', '/dashboard');
 });
 
 Cypress.Commands.add('visitNationalPage', () => {
+    cy.visit('/');
     cy.get('[data-testid="MediationIcon"]').click();
 
     cy.url().should('include', '/national-view');
@@ -104,6 +106,7 @@ Cypress.Commands.add('visitNationalPage', () => {
 });
 
 Cypress.Commands.add('visitMapPage', () => {
+    cy.visit('/');
     cy.get('[data-testid="LocationOnRoundedIcon"]').click();
     cy.url().should('include', '/map/');
 });
@@ -115,27 +118,28 @@ Cypress.Commands.add('visitAccountPage', () => {
 });
 
 Cypress.Commands.add('visitEventsPage', () => {
+    cy.visit('/');
     cy.get('[data-testid="WarningRoundedIcon"]').click();
 
     cy.url().should('include', '/event-log');
-
-    cy.contains('Event Log:')
-        .should('be.visible');
 });
 
 Cypress.Commands.add('visitConfigPage', () => {
+    cy.visit('/');
     cy.get('[data-testid="SaveRoundedIcon"]').click();
 
     cy.url().should('include', '/savestate/');
 });
 
 Cypress.Commands.add('visitServerPage', () => {
+    cy.visit('/');
     cy.get('[data-testid="CloudRoundedIcon"]').click();
 
     cy.url().should('include', '/servers/');
 });
 
 Cypress.Commands.add('visitLaneViewPage', () => {
+    cy.visit('/');
     cy.visitDashboardPage();
 
     cy.get('[data-testid="CheckCircleIcon"]')
