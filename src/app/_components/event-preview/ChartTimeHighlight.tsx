@@ -55,7 +55,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
     const gammaChartBaseId = "chart-view-event-detail-gamma-";
     const neutronChartBaseId = "chart-view-event-detail-neutron-";
-    const nsigmaChartBaseId = "chart-view-event-detail-nsigms-";
+    const nsigmaChartBaseId = "chart-view-event-detail-nsigma-";
 
     const [layers, setLayers] = useState<CurveLayers>();
 
