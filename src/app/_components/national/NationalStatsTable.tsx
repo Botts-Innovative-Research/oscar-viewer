@@ -24,8 +24,6 @@ export default function StatTable(){
     const tamperObservedProperty = "http://www.opengis.net/def/tamper-status";
 
     useEffect(() => {
-        console.log("all nodes:", nodes);
-
         // reset
         setSites([]);
         idVal.current = 0;
