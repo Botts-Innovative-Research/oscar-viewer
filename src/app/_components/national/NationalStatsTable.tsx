@@ -50,6 +50,7 @@ export default function StatTable(){
                     occupancyCount: 0,
                     gammaAlarmCount: 0,
                     neutronAlarmCount: 0,
+                    nonAlarmingCount: 0,
                     tamperAlarmCount: 0,
                     faultAlarmCount: 0,
                     gammaNeutronAlarmCount: 0
@@ -67,6 +68,7 @@ export default function StatTable(){
         let tamperCount = 0;
         let faultCount = 0;
         let gammaNeutronCount = 0;
+        let nonAlarmingCount = 0;
 
         console.log(`Processing node: ${node.name}`);
 
@@ -82,44 +84,36 @@ export default function StatTable(){
             let tamperObservations = await node.fetchObservationsWithFilter(tamperFilter);
 
             // occupancy observations
-            while(occObservations.hasNext()){
-                let obsRes = await occObservations.nextPage();
-                obsRes.forEach((obs: any) => {
-                    occCount++;
+            occObservations.forEach((obs: any) => {
+                occCount++;
 
-                    if(obs.properties.result.gammaAlarm == true && obs.properties.result.neutronAlarm == true){
-                        gammaNeutronCount++
-                    }else if(obs.properties.result.gammaAlarm == false && obs.properties.result.neutronAlarm == true){
-                        neutronCount++;
-                    }else if(obs.properties.result.gammaAlarm == true && obs.properties.result.neutronAlarm == false){
-                        gammaCount++;
-                    }
-                });
-            }
+                if(obs.properties.result.gammaAlarm == true && obs.properties.result.neutronAlarm == true){
+                    gammaNeutronCount++
+                }else if(obs.properties.result.gammaAlarm == false && obs.properties.result.neutronAlarm == true){
+                    neutronCount++;
+                }else if(obs.properties.result.gammaAlarm == true && obs.properties.result.neutronAlarm == false){
+                    gammaCount++;
+                }else{
+                    nonAlarmingCount++;
+                }
+            });
+
 
             // gamma observations
-            while(gammaObservations.hasNext()){
-                let obsRes = await gammaObservations.nextPage();
-                obsRes.forEach((obs: any) => {
-                    if(obs.properties.result.alarmState.includes('Fault')) faultCount++;
-                });
-            }
+            gammaObservations.forEach((obs: any) => {
+                if(obs.properties.result.alarmState.includes('Fault')) faultCount++;
+            });
+
 
             // neutron observations
-            while(neutronObservations.hasNext()){
-                let obsRes = await neutronObservations.nextPage();
-                obsRes.forEach((obs: any) => {
-                    if(obs.properties.result.alarmState.includes('Fault')) faultCount++;
-                });
-            }
+            neutronObservations.forEach((obs: any) => {
+                if(obs.properties.result.alarmState.includes('Fault')) faultCount++;
+            });
 
             // tamper observations
-            while(tamperObservations.hasNext()){
-                let obsRes = await tamperObservations.nextPage();
-                obsRes.forEach((obs: any) => {
-                    if(obs.properties.result.tamperStatus === true) tamperCount++;
-                });
-            }
+            tamperObservations.forEach((obs: any) => {
+                if(obs.properties.result.tamperStatus === true) tamperCount++;
+            });
         } catch (error) {
             console.error(`Error fetching observations for node ${node.name}:`, error);
         }
@@ -132,6 +126,7 @@ export default function StatTable(){
             occupancyCount: occCount,
             gammaAlarmCount: gammaCount,
             neutronAlarmCount: neutronCount,
+            nonAlarmingCount: nonAlarmingCount,
             tamperAlarmCount: tamperCount,
             faultAlarmCount: faultCount,
             gammaNeutronAlarmCount: gammaNeutronCount
@@ -154,7 +149,7 @@ export default function StatTable(){
         },
         {
             field: 'occupancyCount',
-            headerName: 'Occupancy',
+            headerName: 'Total Occupancy',
             valueFormatter: (value) => {
                 return typeof value === 'number' ? value : 0;
             },
@@ -163,7 +158,7 @@ export default function StatTable(){
         },
         {
             field: 'gammaAlarmCount',
-            headerName: 'Gamma',
+            headerName: 'Gamma Alarm',
             valueFormatter: (value) => {
                 return typeof value === 'number' ? value : 0;
             },
@@ -172,7 +167,7 @@ export default function StatTable(){
         },
         {
             field: 'neutronAlarmCount',
-            headerName: 'Neutron',
+            headerName: 'Neutron Alarms',
             valueFormatter: (value) => {
                 return typeof value === 'number' ? value : 0;
             },
@@ -181,7 +176,16 @@ export default function StatTable(){
         },
         {
             field: 'gammaNeutronAlarmCount',
-            headerName: 'Gamma-Neutron',
+            headerName: 'Gamma-Neutron Alarms',
+            valueFormatter: (value) => {
+                return typeof value === 'number' ? value : 0;
+            },
+            minWidth: 150,
+            flex: 1,
+        },
+        {
+            field: 'nonAlarmingCount',
+            headerName: 'Non-Alarming Occupancy',
             valueFormatter: (value) => {
                 return typeof value === 'number' ? value : 0;
             },
