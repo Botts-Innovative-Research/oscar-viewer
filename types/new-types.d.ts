@@ -31,6 +31,7 @@ export interface INationalTableData {
   gammaAlarmCount: number;
   neutronAlarmCount: number;
   faultAlarmCount: number;
+  nonAlarmingCount: number;
   tamperAlarmCount: number;
   gammaNeutronAlarmCount: number;
 }
