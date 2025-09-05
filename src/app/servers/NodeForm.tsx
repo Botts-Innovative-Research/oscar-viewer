@@ -118,6 +118,10 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
             return;
         }
 
+        setNodeSnackMsg('Node is reachable')
+        setColorStatus('success')
+        setOpenSnack(true);
+
         // update the list of nodes using the edit/update
         handleButtonAction(e);
 
@@ -319,6 +323,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
 
                     <Snackbar
+                        id="saveNode-snackbar"
                         open={openSnack}
                         anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         autoHideDuration={5000}

@@ -239,8 +239,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
     const renderCharts = (layers: CurveLayers, elementIds: string[]) => {
 
-        let nsigmaAvailable = false;
-
         if (layers.gamma && gammaChartViewRef.current) {
             const gammaLayers: any[] = [];
 
@@ -296,7 +294,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         }
 
         if (layers.nsigma && layers.threshNsigma && nSigmaChartViewRef.current) {
-            nsigmaAvailable = true;
 
             const nsigmaDiv = document.createElement("div");
             nsigmaDiv.id = elementIds.find(id => id.includes("nsigma"));

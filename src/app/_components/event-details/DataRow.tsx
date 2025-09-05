@@ -4,6 +4,7 @@ import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from "
 import {useSelector} from "react-redux";
 import {styled, Theme} from "@mui/material/styles";
 import {selectEventData} from "@/lib/state/EventDetailsSlice";
+import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 
 
 const StatusTableCell = styled(TableCell)(({theme, status}: { theme: Theme, status: string }) => ({
@@ -12,8 +13,8 @@ const StatusTableCell = styled(TableCell)(({theme, status}: { theme: Theme, stat
 }));
 
 
-export default function DataRow() {
-    const eventData = useSelector(selectEventData);
+export default function DataRow({eventData}: {eventData: EventTableData}) {
+    // const eventData = useSelector(selectEventData);
 
     return (
         <TableContainer>
