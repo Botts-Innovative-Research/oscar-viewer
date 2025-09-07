@@ -5,6 +5,7 @@
 
 // create form component
 import {
+    Alert,
     Box,
     Button,
     Card,
@@ -38,8 +39,8 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 }) {
 
     const [openSnack, setOpenSnack] = useState(false);
-    const [nodeSnackMsg, setNodeSnackMsg] = useState("");
-    const [colorStatus, setColorStatus] = useState("");
+    const [snackMessage, setSnackMessage] = useState("");
+    const [severity, setSeverity] = useState<'success'| 'error'>("success");
 
     const defaultNode = useSelector((state: RootState) => state.oshSlice.configNode);
     const currentUser = useSelector(selectCurrentUser)
@@ -112,8 +113,8 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         setOpenSnack(true)
 
         if(!reachable){
-            setNodeSnackMsg('Node is not reachable. Try again.')
-            setColorStatus('error')
+            setSnackMessage('Node is not reachable. Try again.')
+            setSeverity('error')
             setOpenSnack(true);
             return;
         }
@@ -127,8 +128,8 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
 
         if (response.ok) {
-            setNodeSnackMsg('OSCAR Configuration Saved')
-            setColorStatus('success')
+            setSnackMessage('OSCAR Configuration Saved')
+            setSeverity('success')
             setOpenSnack(true);
 
             // load the new config
@@ -136,8 +137,8 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
 
         } else {
-            setNodeSnackMsg('Failed to save OSCAR Configuration.')
-            setColorStatus('error')
+            setSnackMessage('Failed to save OSCAR Configuration.')
+            setSeverity('error')
             setOpenSnack(true);
         }
     }
@@ -152,8 +153,8 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                 let dsId = await getConfigDataStreamID(defaultNode);
 
                 if(!dsId){
-                    setNodeSnackMsg('Failed to find config datastream')
-                    setColorStatus('error')
+                    setSnackMessage('Failed to find config datastream')
+                    setSeverity('error')
                     setOpenSnack(true);
                 }
 
@@ -196,8 +197,8 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
             let latestConfigData = await fetchLatestConfigObservation(latestConfigDs);
 
             if(latestConfigData != null){
-                setNodeSnackMsg('OSCAR State Loaded')
-                setColorStatus('success')
+                setSnackMessage('OSCAR State Loaded')
+                setSeverity('success')
 
                 dispatch(setCurrentUser(latestConfigData[0].user));
 
@@ -224,8 +225,8 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
             }
 
         }else{
-            setNodeSnackMsg('Failed to load OSCAR State')
-            setColorStatus('error')
+            setSnackMessage('Failed to load OSCAR State')
+            setSeverity('error')
         }
         setOpenSnack(true)
     }
@@ -260,28 +261,23 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     };
 
     async function checkReachable(node: any){
-        setNodeSnackMsg('Trying to connect...')
-        setColorStatus('info')
-        setOpenSnack(true)
-
-
         const endpoint = `${node.getConnectedSystemsEndpoint()}`;
 
         try {
             const response = await fetch(endpoint);
             if (response.ok) {
-                setNodeSnackMsg(`Successfully connected to server at ${node.address}`);
-                setColorStatus('success')
+                setSnackMessage(`Successfully connected to server at ${node.address}`);
+                setSeverity('success')
                 return true;
             }else{
-                setNodeSnackMsg(`Connection failed. Unreachable server at ${node.address}.`);
-                setColorStatus('error')
+                setSnackMessage(`Connection failed. Unreachable server at ${node.address}.`);
+                setSeverity('error')
                 return false;
             }
 
         } catch (error) {
-            setNodeSnackMsg('Connection failed. Confirm IP, port, and server availability.');
-            setColorStatus('error')
+            setSnackMessage('Connection failed. Confirm IP, port, and server availability.');
+            setSeverity('error')
         }
     }
 
@@ -323,13 +319,14 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                         anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         autoHideDuration={5000}
                         onClose={handleCloseSnack}
-                        message={nodeSnackMsg}
-                        sx={{
-                            '& .MuiSnackbarContent-root': {
-                                backgroundColor: colorStatus === 'success' ? 'green' : colorStatus === 'error' ? 'red' : 'orange',
-                            },
-                        }}
-                    />
+                    >
+                        <Alert
+                            severity={severity}
+                            onClose={handleCloseSnack}
+                        >
+                            {snackMessage}
+                        </Alert>
+                    </Snackbar>
 
                 </Stack>
             </Box>

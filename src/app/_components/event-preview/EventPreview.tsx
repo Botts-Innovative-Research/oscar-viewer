@@ -6,6 +6,7 @@
 'use client'
 
 import {
+    Alert,
     Box,
     Button,
     IconButton,
@@ -105,7 +106,7 @@ export function EventPreview() {
     //snackbar
     const [adjSnackMsg, setAdjSnackMsg] = useState('');
     const [openSnack, setOpenSnack] = useState(false);
-    const [colorStatus, setColorStatus] = useState('')
+    const [severity, setSeverity] = useState<'success' | 'error'>('success');
 
     let latestGB = useSelector((state: RootState) => selectLatestGB(state));
 
@@ -163,11 +164,11 @@ export function EventPreview() {
 
             if(resp.ok){
                 setAdjSnackMsg('Adjudication Submitted Successfully')
-                setColorStatus('success')
+                setSeverity('success')
 
             }else{
                 setAdjSnackMsg('Adjudication Submission Failed. Check connection and form then try again.')
-                setColorStatus('error')
+                setSeverity('error')
             }
 
             // send command
@@ -178,7 +179,7 @@ export function EventPreview() {
 
             if (!occupancyObservation) {
                 setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
-                setColorStatus('error')
+                setSeverity('error')
                 setOpenSnack(true);
                 return;
             }
@@ -188,7 +189,7 @@ export function EventPreview() {
 
         } catch (error) {
             setAdjSnackMsg('Adjudication failed to submit.')
-            setColorStatus('error')
+            setSeverity('error')
         }finally{
             setOpenSnack(true)
             resetAdjudicationData();
@@ -649,18 +650,18 @@ export function EventPreview() {
                     </Button>
 
                     <Snackbar
-                        anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         open={openSnack}
+                        anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         autoHideDuration={5000}
                         onClose={handleCloseSnack}
-                        message={adjSnackMsg}
-                        sx={{
-                            '& .MuiSnackbarContent-root': {
-                                backgroundColor: colorStatus === 'success' ? 'green' : 'red',
-                            },
-                        }}
-                    />
-
+                    >
+                        <Alert
+                            severity={severity}
+                            onClose={handleCloseSnack}
+                        >
+                            {adjSnackMsg}
+                        </Alert>
+                    </Snackbar>
                     <Button
                         onClick={resetAdjudicationData}
                         variant={"contained"}
