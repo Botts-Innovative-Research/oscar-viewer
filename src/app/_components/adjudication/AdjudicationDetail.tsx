@@ -6,6 +6,7 @@
 "use client";
 
 import {
+    Alert,
     Box,
     Button,
     Checkbox,
@@ -64,7 +65,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     //snackbar
     const [adjSnackMsg, setAdjSnackMsg] = useState('');
-    const [colorStatus, setColorStatus] = useState('');
+    const [severity, setSeverity] = useState<'success' | 'error'>('success');
     const [openSnack, setOpenSnack] = useState(false);
 
     /**handle the file uploaded**/
@@ -138,7 +139,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
         if(adjData.adjudicationCode === null || !adjData.adjudicationCode || adjData.adjudicationCode === AdjudicationCodes.codes[0]){
             setAdjSnackMsg("Please selected a valid adjudication code before submitting.");
-            setColorStatus('error');
+            setSeverity('error');
             setOpenSnack(true)
             return;
         }
@@ -167,11 +168,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             if(resp.ok){
                 setAdjSnackMsg('Adjudication Submitted Successfully')
-                setColorStatus('success')
+                setSeverity('success')
                 dispatch(updateSelectedEventAdjudication(tempAdjData))
             }else{
                 setAdjSnackMsg('Adjudication Submission Failed. Check connection and form then try again.')
-                setColorStatus('error')
+                setSeverity('error')
             }
 
 
@@ -180,7 +181,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             if (!occupancyObservation) {
                 setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
-                setColorStatus('error')
+                setSeverity('error')
                 setOpenSnack(true);
                 return;
             }
@@ -192,7 +193,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
         }catch(error){
             setAdjSnackMsg('Adjudication failed to submit.')
-            setColorStatus('error')
+            setSeverity('error')
         }finally{
             setShouldFetchLogs(true);
             setOpenSnack(true);
@@ -310,18 +311,20 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     {/*                                     onChange={handleChange}/>} label="Secondary Inspection"/>*/}
                     <Button disableElevation variant={"contained"} color={"success"}
                             onClick={sendAdjudicationData}>Submit</Button>
+
                     <Snackbar
-                        anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         open={openSnack}
+                        anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         autoHideDuration={5000}
                         onClose={handleCloseSnack}
-                        message={adjSnackMsg}
-                        sx={{
-                            '& .MuiSnackbarContent-root': {
-                                backgroundColor: colorStatus === 'success' ? 'green' : 'red',
-                            },
-                        }}
-                    />
+                    >
+                        <Alert
+                            severity={severity}
+                            onClose={handleCloseSnack}
+                        >
+                            {adjSnackMsg}
+                        </Alert>
+                    </Snackbar>
                 </Stack>
 
             </Stack>

@@ -1,6 +1,16 @@
 "use client"
 
-import {Button, Container, Snackbar, SnackbarCloseReason, SnackbarContent, Stack, TextField, Typography} from "@mui/material"
+import {
+    Alert,
+    Button,
+    Container,
+    Snackbar,
+    SnackbarCloseReason,
+    SnackbarContent,
+    Stack,
+    TextField,
+    Typography
+} from "@mui/material"
 import React, {useState} from "react";
 import {setCurrentUser} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
@@ -49,14 +59,14 @@ export default function AccountViewPage() {
                     autoHideDuration={5000}
                     onClose={handleCloseSnack}
                 >
-                    <SnackbarContent
-                        style={{
-                            backgroundColor: '#f8aa51',
-                            color: '#ffffff'
-                        }}
-                        message={volumeSnackMsg}
-                    />
+                    <Alert
+                        severity="warning"
+                        onClose={handleCloseSnack}
+                    >
+                        {volumeSnackMsg}
+                    </Alert>
                 </Snackbar>
+
             </Stack>
         </Container>
     )

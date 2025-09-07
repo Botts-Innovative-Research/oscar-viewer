@@ -67,8 +67,8 @@ export default function StateManager() {
     const [saveSnackMsg, setSaveSnackMsg] = useState<string>();
 
 
-    const [colorSaveStatus, setSaveColorStatus]= useState('');
-    const [colorLoadStatus, setLoadColorStatus]= useState('');
+    const [severityLoad, setSeverityLoad] = useState<'success' | 'error'>('success');
+    const [severitySave, setSeveritySave] = useState<'success' | 'error'>('success');
 
     const nodes = useSelector(selectNodes)
     const currentUser = useSelector(selectCurrentUser)
@@ -97,7 +97,7 @@ export default function StateManager() {
 
         if(!dsId){
             setSaveSnackMsg('Failed to find config datastream')
-            setSaveColorStatus('error')
+            setSeveritySave('error')
             setOpenSaveSnack(true);
         }
 
@@ -126,14 +126,14 @@ export default function StateManager() {
 
             if(response.ok){
                 setSaveSnackMsg('OSCAR Configuration Saved')
-                setSaveColorStatus('success')
+                setSeveritySave('success')
             }else {
                 setSaveSnackMsg('Failed to save OSCAR Configuration')
-                setSaveColorStatus('error')
+                setSeveritySave('error')
             }
         }catch(error){
             setSaveSnackMsg('Failed to save config')
-            setSaveColorStatus('error')
+            setSeveritySave('error')
         }
 
         setOpenSaveSnack(true);
@@ -152,7 +152,7 @@ export default function StateManager() {
 
             if(latestConfigData != null){
                 setLoadSnackMsg('OSCAR State Loaded')
-                setLoadColorStatus('success')
+                setSeverityLoad('success')
 
                 dispatch(setCurrentUser(latestConfigData[0].user));
 
@@ -162,7 +162,7 @@ export default function StateManager() {
 
         }else{
             setLoadSnackMsg('Failed to load OSCAR State')
-            setLoadColorStatus('error')
+            setSeverityLoad('error')
         }
         setOpenSnack(true)
         setActiveAlert(null)
@@ -298,17 +298,18 @@ export default function StateManager() {
                                             </Alert>
                                         )}
                                         <Snackbar
-                                            anchorOrigin={{vertical: 'top', horizontal: 'center'}}
-                                            open={openSaveSnack}
+                                            open={openSnack}
+                                            anchorOrigin={{ vertical:'top', horizontal:'center' }}
                                             autoHideDuration={5000}
                                             onClose={handleCloseSnack}
-                                            message={saveSnackMsg}
-                                            sx={{
-                                                '& .MuiSnackbarContent-root': {
-                                                    backgroundColor: colorSaveStatus === 'success' ? 'green' : 'red',
-                                                },
-                                            }}
-                                        />
+                                        >
+                                            <Alert
+                                                severity={severitySave}
+                                                onClose={handleCloseSnack}
+                                            >
+                                                {saveSnackMsg}
+                                            </Alert>
+                                        </Snackbar>
                                     </Stack>
                                 </CardContent>
                             </Card>
@@ -357,18 +358,20 @@ export default function StateManager() {
                                                 </Container>
                                             </Alert>
                                         )}
+                                 
                                         <Snackbar
-                                            anchorOrigin={{vertical: 'top', horizontal: 'center'}}
                                             open={openSnack}
+                                            anchorOrigin={{ vertical:'top', horizontal:'center' }}
                                             autoHideDuration={5000}
                                             onClose={handleCloseSnack}
-                                            message={loadSnackMsg}
-                                            sx={{
-                                                '& .MuiSnackbarContent-root': {
-                                                    backgroundColor: colorLoadStatus === 'success' ? 'green' : 'red',
-                                                },
-                                            }}
-                                        />
+                                        >
+                                            <Alert
+                                                severity={severityLoad}
+                                                onClose={handleCloseSnack}
+                                            >
+                                                {loadSnackMsg}
+                                            </Alert>
+                                        </Snackbar>
                                     </Stack>
                                 </CardContent>
                             </Card>
