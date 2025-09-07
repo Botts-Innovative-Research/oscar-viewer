@@ -1,8 +1,6 @@
 import {
     Alert,
     Button,
-    Card,
-    CardContent,
     Grid,
     Paper,
     Snackbar,
@@ -10,16 +8,11 @@ import {
     Stack,
     Typography
 } from "@mui/material";
-import ReportTypeSelect, {reportTypes} from "@/app/_components/reportgen/ReportTypeSelector";
+import ReportTypeSelect from "@/app/_components/reportgen/ReportTypeSelector";
 import {Download} from "@mui/icons-material";
 import React, {useState} from "react";
 import TimeRangeSelect from "@/app/_components/reportgen/TimeRangeSelector";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import ListItemText from "@mui/material/ListItemText";
-import {DateTimePicker} from "@mui/x-date-pickers";
 import NationalDatePicker from "@/app/_components/national/NationalDatePicker";
-
 
 
 export default function ReportGenerator(){
@@ -34,11 +27,18 @@ export default function ReportGenerator(){
 
 
     const handleGenerateReport = () => {
-
+        setIsGenerating(true);
         // do stuff
-        setSnackMessage("Successfully generated report!");
-        setSnackColorStatus("success");
-        setOpenSnack(true)
+        try{
+            setSnackMessage("Successfully generated report!");
+            setSnackColorStatus("success");
+        }catch(error){
+            setSnackMessage("Failed to generate report!");
+            setSnackColorStatus(error);
+        }finally {
+            setOpenSnack(true)
+            setIsGenerating(false)
+        }
     }
 
     const handleTimeRange = (value: string) => {
@@ -75,7 +75,7 @@ export default function ReportGenerator(){
                     <Grid item xs={12} sm={6}>
                         <TimeRangeSelect onSelect={handleTimeRange} timeRangeVal={selectedTimeRange} />
                         {
-                            selectedTimeRange === 'custom' ? <NationalDatePicker /> : null
+                            selectedTimeRange === 'custom' && <NationalDatePicker />
                         }
                     </Grid>
 
