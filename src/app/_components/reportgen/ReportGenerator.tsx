@@ -1,4 +1,15 @@
-import {Button, Card, CardContent, Grid, Paper, Stack, Typography} from "@mui/material";
+import {
+    Alert,
+    Button,
+    Card,
+    CardContent,
+    Grid,
+    Paper,
+    Snackbar,
+    SnackbarCloseReason,
+    Stack,
+    Typography
+} from "@mui/material";
 import ReportTypeSelect, {reportTypes} from "@/app/_components/reportgen/ReportTypeSelector";
 import {Download} from "@mui/icons-material";
 import React, {useState} from "react";
@@ -6,16 +17,28 @@ import TimeRangeSelect from "@/app/_components/reportgen/TimeRangeSelector";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
+import {DateTimePicker} from "@mui/x-date-pickers";
+import NationalDatePicker from "@/app/_components/national/NationalDatePicker";
 
 
 
 export default function ReportGenerator(){
     const[isGenerating, setIsGenerating] = useState(false);
-    const [selectedReportType, setSelectedReportType]= useState<string>(null);
-    const [selectedTimeRange, setSelectedTimeRange]= useState(null);
+
+    const [selectedReportType, setSelectedReportType]= useState<string | null>(null);
+    const [selectedTimeRange, setSelectedTimeRange]= useState<string | null>(null);
+
+    const [openSnack, setOpenSnack] = useState(false);
+    const [snackMessage, setSnackMessage] = useState<string>();
+    const [snackColorStatus, setSnackColorStatus] = useState("");
+
 
     const handleGenerateReport = () => {
-        console.log('generating report!')
+
+        // do stuff
+        setSnackMessage("Successfully generated report!");
+        setSnackColorStatus("success");
+        setOpenSnack(true)
     }
 
     const handleTimeRange = (value: string) => {
@@ -25,6 +48,14 @@ export default function ReportGenerator(){
     const handleReportTypeSelect = (value: string) => {
         setSelectedReportType(value);
     }
+
+    const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+
+        setOpenSnack(false);
+    };
 
     return(
         <Stack p={3} spacing={3}>
@@ -43,6 +74,9 @@ export default function ReportGenerator(){
 
                     <Grid item xs={12} sm={6}>
                         <TimeRangeSelect onSelect={handleTimeRange} timeRangeVal={selectedTimeRange} />
+                        {
+                            selectedTimeRange === 'custom' ? <NationalDatePicker /> : null
+                        }
                     </Grid>
 
                     <Grid item xs={12}>
@@ -59,29 +93,17 @@ export default function ReportGenerator(){
                     </Grid>
                 </Grid>
             </Paper>
+            <Snackbar
+                open={openSnack}
+                autoHideDuration={5000}
+                onClose={handleCloseSnack}
+                anchorOrigin={{ vertical:'top', horizontal:'center' }}
+            >
+                <Alert severity="success" onClose={handleCloseSnack}>
+                    {snackMessage}
+                </Alert>
+            </Snackbar>
 
-            <Card>
-                <CardContent>
-                    <Typography variant="h6">
-                        Available Report Types
-                    </Typography>
-
-                    <List dense>
-                        {
-                            reportTypes.map((type) => (
-                                <ListItem key={type.value} alignItems="flex-start" disableGutters>
-                                    <ListItemText
-                                       primary={ <Typography variant="subtitle2" fontWeight={600}>{type.label}</Typography>}
-                                        secondary={ <Typography variant="body2" color="text.secondary">{type.description}</Typography>}
-                                    />
-                                </ListItem>
-
-                                )
-                            )
-                        }
-                    </List>
-                </CardContent>
-            </Card>
         </Stack>
     )
 }

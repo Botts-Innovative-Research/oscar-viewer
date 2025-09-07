@@ -1,34 +1,28 @@
 "use client";
 
 import {FormControl, InputLabel, MenuItem, Select, SelectChangeEvent} from '@mui/material';
+import {useState} from "react";
 
 export const reportTypes = [
     {
         label: "RDS Site Report",
         value: "rdsSite",
-        description: "Total alarms, faults, occupancies, and statistics"
     },
     {
         label: "Lane Report",
         value: "lane",
-        description: "Total alarms, faults, occupancies, and statistics"
-
     },
     {
         label: "Alarm Event Report",
         value: "alarmEvent",
-        description: "Image, graphs, adjudication and statistics"
-
     },
     {
         label: "Event Report",
         value: "event",
-        description: "Charts for lanes, faults, alarm types, and occupancies"
     },
     {
         label: "Operations Report",
         value: "operations",
-        description: "Disposition, secondary inspections details and results"
     }
 ]
 
@@ -37,10 +31,12 @@ export default function ReportTypeSelect(props: {
     reportTypeVal: string
 }) {
 
+    const [reportType, setReportType] = useState("");
 
     const handleChange = (event: SelectChangeEvent) => {
         const val = event.target.value;
         props.onSelect(val)
+        setReportType(val);
     };
 
     return (
@@ -50,7 +46,7 @@ export default function ReportTypeSelect(props: {
                 variant="outlined"
                 id="label"
                 label="Report Type"
-                value={props.reportTypeVal}
+                value= {reportType}
                 onChange={handleChange}
                 MenuProps={{
                     MenuListProps: {
