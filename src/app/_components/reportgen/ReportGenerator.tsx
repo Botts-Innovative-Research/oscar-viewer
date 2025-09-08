@@ -23,7 +23,7 @@ export default function ReportGenerator(){
 
     const [openSnack, setOpenSnack] = useState(false);
     const [snackMessage, setSnackMessage] = useState<string>();
-    const [snackColorStatus, setSnackColorStatus] = useState("");
+    const [severity, setSeverity] = useState<'success' | 'error'>('success');
 
 
     const handleGenerateReport = () => {
@@ -31,10 +31,10 @@ export default function ReportGenerator(){
         // do stuff
         try{
             setSnackMessage("Successfully generated report!");
-            setSnackColorStatus("success");
+            setSeverity("success");
         }catch(error){
             setSnackMessage("Failed to generate report!");
-            setSnackColorStatus(error);
+            setSeverity(error);
         }finally {
             setOpenSnack(true)
             setIsGenerating(false)
@@ -99,7 +99,7 @@ export default function ReportGenerator(){
                 onClose={handleCloseSnack}
                 anchorOrigin={{ vertical:'top', horizontal:'center' }}
             >
-                <Alert severity="success" onClose={handleCloseSnack}>
+                <Alert severity={severity} onClose={handleCloseSnack}>
                     {snackMessage}
                 </Alert>
             </Snackbar>
