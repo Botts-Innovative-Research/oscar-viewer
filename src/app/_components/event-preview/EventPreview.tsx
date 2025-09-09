@@ -293,7 +293,6 @@ export function EventPreview() {
         const updatedVideo = tempDSMap.get("video") || [];
         const updatedOcc = tempDSMap.get("occ") || [];
 
-        console.log("tempDS: ", tempDSMap);
         setGammaDS(updatedGamma);
         setNeutronDS(updatedNeutron);
         setThresholdDS(updatedThreshold);
@@ -373,22 +372,9 @@ export function EventPreview() {
             console.log("Chart Not Ready, cannot start DataSynchronizer...");
         }
 
-        return()=>{
-            gammaDatasources.forEach(ds => {
-                ds.isConnected().then(ds.disconnect());
-            });
-            neutronDatasources.forEach(ds => {
-                ds.isConnected().then(ds.disconnect());
-            });
-            thresholdDatasources.forEach(ds => {
-                ds.isConnected().then(ds.disconnect());
-            });
-            occDatasources.forEach(ds => {
-                ds.isConnected().then(ds.disconnect());
-            });
-
-
-        }
+       return() => {
+            cleanupResources();
+       }
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
 
     useEffect(() => {
