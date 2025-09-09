@@ -6,6 +6,7 @@
 'use client'
 
 import {
+    Alert,
     Box,
     Button,
     IconButton,
@@ -105,7 +106,7 @@ export function EventPreview() {
     //snackbar
     const [adjSnackMsg, setAdjSnackMsg] = useState('');
     const [openSnack, setOpenSnack] = useState(false);
-    const [colorStatus, setColorStatus] = useState('')
+    const [severity, setSeverity] = useState<'success' | 'error'>('success');
 
     let latestGB = useSelector((state: RootState) => selectLatestGB(state));
 
@@ -163,11 +164,11 @@ export function EventPreview() {
 
             if(resp.ok){
                 setAdjSnackMsg('Adjudication Submitted Successfully')
-                setColorStatus('success')
+                setSeverity('success')
 
             }else{
                 setAdjSnackMsg('Adjudication Submission Failed. Check connection and form then try again.')
-                setColorStatus('error')
+                setSeverity('error')
             }
 
             // send command
@@ -178,7 +179,7 @@ export function EventPreview() {
 
             if (!occupancyObservation) {
                 setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
-                setColorStatus('error')
+                setSeverity('error')
                 setOpenSnack(true);
                 return;
             }
@@ -188,7 +189,7 @@ export function EventPreview() {
 
         } catch (error) {
             setAdjSnackMsg('Adjudication failed to submit.')
-            setColorStatus('error')
+            setSeverity('error')
         }finally{
             setOpenSnack(true)
             resetAdjudicationData();
@@ -325,56 +326,51 @@ export function EventPreview() {
 
     useEffect(() => {
         createDataSync();
+
+        return () => {
+            cleanupResources();
+        }
     }, [videoDatasources, syncRef, dataSyncCreated, datasourcesReady]);
 
 
 
     useEffect( () => {
+
         if (chartReady) {
-            console.log("Chart Ready, Starting DataSync");
-            gammaDatasources.forEach(async ds => {
-                ds.isConnected().then(ds.disconnect());
-                await ds.connect();
+            console.log("Chart Ready, connecting to datasources");
+            gammaDatasources.forEach(ds => {
+                ds.connect();
             });
-            neutronDatasources.forEach(async ds => {
-                ds.isConnected().then(ds.disconnect());
-                await ds.connect();
+            neutronDatasources.forEach(ds => {
+                ds.connect();
             });
-            thresholdDatasources.forEach(async ds => {
-                ds.isConnected().then(ds.disconnect());
-                await ds.connect();
+            thresholdDatasources.forEach(ds => {
+                ds.connect();
             });
-            occDatasources.forEach(async ds => {
-                ds.isConnected().then(ds.disconnect());
-                await ds.connect();
+            occDatasources.forEach(ds => {
+                ds.connect();
             });
 
             if(videoReady){
-
+                console.log("Video Ready, Starting DataSync")
                 syncRef.current.connect().then(() => {
                     console.log("DataSync Should Be Connected", syncRef.current);
-
-                    // setTimeout(()=>{
-                    //     pause();
-                    // }, 500)
                 });
-
-
                 if (syncRef.current.isConnected()) {
                     console.log("DataSync Connected!!!");
                 } else {
                     console.log("DataSync Not Connected... :(");
                 }
-
             }
 
         } else {
-            console.log("Chart Not Ready, cannot start DataSynchronizer...");
+            console.log("Chart Not Ready, cannot connect to charts or datasync");
         }
 
        return() => {
             cleanupResources();
        }
+
     }, [chartReady, syncRef, videoReady, dataSyncCreated, dataSyncReady, datasourcesReady]);
 
     useEffect(() => {
@@ -455,7 +451,6 @@ export function EventPreview() {
     },[syncRef, eventPreview.eventData.endTime]);
 
 
-
     const getFrameObservations = async(newStartTime: number)=>{
 
         for (const lane of laneMapRef.current.values()){
@@ -467,7 +462,6 @@ export function EventPreview() {
             }
         }
     }
-
 
     const videoViewRef = useRef<typeof VideoView>();
 
@@ -492,7 +486,6 @@ export function EventPreview() {
     }
 
     let savedFrame: { pktSize: number, pktData: Uint8Array, timestamp: number, roll: number } | null = null;
-
 
     //function to set frame data
     function setCanvasFrame(imageData: any){
@@ -657,18 +650,18 @@ export function EventPreview() {
                     </Button>
 
                     <Snackbar
-                        anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         open={openSnack}
+                        anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         autoHideDuration={5000}
                         onClose={handleCloseSnack}
-                        message={adjSnackMsg}
-                        sx={{
-                            '& .MuiSnackbarContent-root': {
-                                backgroundColor: colorStatus === 'success' ? 'green' : 'red',
-                            },
-                        }}
-                    />
-
+                    >
+                        <Alert
+                            severity={severity}
+                            onClose={handleCloseSnack}
+                        >
+                            {adjSnackMsg}
+                        </Alert>
+                    </Snackbar>
                     <Button
                         onClick={resetAdjudicationData}
                         variant={"contained"}
