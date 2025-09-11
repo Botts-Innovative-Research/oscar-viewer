@@ -108,6 +108,11 @@ export default function MapComponent() {
         for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
             const msgLaneName = laneName;
 
+            laneDSColl.addSubscribeHandlerToALLDSMatchingName('connectionRT', (message: any) => {
+                let connection = message.values[0].data.connection;
+                updateLocationList(msgLaneName, connection);
+            });
+
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
                 let alarmstate = message.values[0].data.alarmState;
                 updateLocationList(msgLaneName, alarmstate);
@@ -126,6 +131,7 @@ export default function MapComponent() {
             laneDSColl.addConnectToALLDSMatchingName("gammaRT");
             laneDSColl.addConnectToALLDSMatchingName("neutronRT");
             laneDSColl.addConnectToALLDSMatchingName("tamperRT");
+            laneDSColl.addConnectToALLDSMatchingName("connectionRT");
 
         }
 
@@ -135,6 +141,7 @@ export default function MapComponent() {
                 laneDSColl.addDisconnectToALLDSMatchingName("gammaRT");
                 laneDSColl.addDisconnectToALLDSMatchingName("neutronRT");
                 laneDSColl.addDisconnectToALLDSMatchingName("tamperRT");
+                laneDSColl.addDisconnectToALLDSMatchingName("connectionRT");
             }
         }
     }, [dataSourcesByLane]);
@@ -189,11 +196,13 @@ export default function MapComponent() {
                             dataSourceIds: [loc.getId()],
                             handler: function (rec: any) {
                                 if (location.status === 'Alarm') {
-                                    return  '/alarm.svg';
+                                    return  '/status/alarm.svg';
                                 } else if (location.status.includes('Fault')) {
-                                    return  '/fault.svg';
-                                } else{
-                                    return '/default.svg'
+                                    return  '/status/fault.svg';
+                                } else if(location.status === 'Offline') {
+                                    return '/status/offline.svg'
+                                } else {
+                                    return '/status/good.svg'
                                 }
                             }
                         },
