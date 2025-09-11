@@ -196,13 +196,13 @@ export default function MapComponent() {
                             dataSourceIds: [loc.getId()],
                             handler: function (rec: any) {
                                 if (location.status === 'Alarm') {
-                                    return  '/status/alarm.svg';
+                                    return  '/alarm.svg';
                                 } else if (location.status.includes('Fault')) {
-                                    return  '/status/fault.svg';
+                                    return  '/fault.svg';
                                 } else if(location.status === 'Offline') {
-                                    return '/status/offline.svg'
+                                    return '/offline.svg'
                                 } else {
-                                    return '/status/good.svg'
+                                    return '/default.svg'
                                 }
                             }
                         },
@@ -236,7 +236,7 @@ export default function MapComponent() {
     useEffect(() => {
         if (leafletViewRef.current) {
 
-            var latLngBounds = L.latLngBounds([[40.799311, -74.118464], [40.68202047785919, -74.33]]);
+            var latLngBounds = L.latLngBounds([[38.9761 + 3, -77.4875 + 3], [38.9761 - 3, -77.4875 - 3]]);
 
 
             const imageUrl = "/SiteMap.png";
