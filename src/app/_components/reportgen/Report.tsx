@@ -18,7 +18,7 @@ import ReportGenerationData, {sendSetReportCommand} from "@/lib/data/oscar/repor
 import {insertObservation} from "@/lib/data/osh/Node";
 
 
-export default function ReportGenerator(){
+export default function ReportGeneratorView(){
     const[isGenerating, setIsGenerating] = useState(false);
 
     const [selectedReportType, setSelectedReportType]= useState<string | null>(null);
