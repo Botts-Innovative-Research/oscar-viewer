@@ -14,8 +14,8 @@ import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import "leaflet/dist/leaflet.css"
 import {isGammaDatastream, isNeutronDatastream, isTamperDatastream} from "@/lib/data/oscar/Utilities";
 import {setCurrentLane} from "@/lib/state/LaneViewSlice";
-import {useRouter} from "next/dist/client/components/navigation";
 import {useAppDispatch} from "@/lib/state/Hooks";
+import L from "leaflet";
 
 
 export default function MapComponent() {
@@ -108,6 +108,11 @@ export default function MapComponent() {
         for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
             const msgLaneName = laneName;
 
+            laneDSColl.addSubscribeHandlerToALLDSMatchingName('connectionRT', (message: any) => {
+                let connection = message.values[0].data.connection;
+                updateLocationList(msgLaneName, connection);
+            });
+
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
                 let alarmstate = message.values[0].data.alarmState;
                 updateLocationList(msgLaneName, alarmstate);
@@ -126,6 +131,7 @@ export default function MapComponent() {
             laneDSColl.addConnectToALLDSMatchingName("gammaRT");
             laneDSColl.addConnectToALLDSMatchingName("neutronRT");
             laneDSColl.addConnectToALLDSMatchingName("tamperRT");
+            laneDSColl.addConnectToALLDSMatchingName("connectionRT");
 
         }
 
@@ -135,6 +141,7 @@ export default function MapComponent() {
                 laneDSColl.addDisconnectToALLDSMatchingName("gammaRT");
                 laneDSColl.addDisconnectToALLDSMatchingName("neutronRT");
                 laneDSColl.addDisconnectToALLDSMatchingName("tamperRT");
+                laneDSColl.addDisconnectToALLDSMatchingName("connectionRT");
             }
         }
     }, [dataSourcesByLane]);
@@ -156,7 +163,7 @@ export default function MapComponent() {
             let view = new LeafletView({
                 container: mapcontainer,
                 layers: [],
-
+                overlayLayers: [],
                 autoZoomOnFirstMarker: true
             });
             leafletViewRef.current = view;
@@ -192,7 +199,9 @@ export default function MapComponent() {
                                     return  '/alarm.svg';
                                 } else if (location.status.includes('Fault')) {
                                     return  '/fault.svg';
-                                } else{
+                                } else if(location.status === 'Offline') {
+                                    return '/offline.svg'
+                                } else {
                                     return '/default.svg'
                                 }
                             }
@@ -204,6 +213,7 @@ export default function MapComponent() {
                         labelOffset: [-5, -15],
                         iconSize: [16, 16],
                         description: getContent(location.status, location.laneName),
+
                     });
 
                     leafletViewRef.current?.addLayer(newPointMarker);
@@ -223,6 +233,35 @@ export default function MapComponent() {
 
         }
     }, [locationList, isInit]);
+
+    useEffect(() => {
+        if (leafletViewRef.current) {
+
+            var latLngBounds = L.latLngBounds([[34.752583, -86.709192], [34.749899, -86.705270]]);
+
+
+            const imageUrl = "/image.png";
+            // var imageUrl = 'https://maps.lib.utexas.edu/maps/historical/newark_nj_1922.jpg';
+
+            console.log("image overlay")
+
+            leafletViewRef.current.map.fitBounds(latLngBounds);
+
+            leafletViewRef.current.addImageOverlay(imageUrl, latLngBounds, {
+                opacity: 0.75,
+                interactive: false,
+                alt: "Image of site map",
+            })
+
+            leafletViewRef.current.map.invalidateSize();
+
+            leafletViewRef.current.map.on('click', (e) => {
+                console.log(e.latlng); // logs { lat, lng }
+            });
+
+        }
+
+    }, [isInit]);
 
 
     const updateLocationList = (laneName: string, newStatus: string) => {
