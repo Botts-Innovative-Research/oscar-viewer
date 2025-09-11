@@ -13,14 +13,6 @@ export const reportTypes = [
         value: "lane",
     },
     {
-        label: "Alarm Event Report",
-        value: "alarmEvent",
-    },
-    {
-        label: "Event Report",
-        value: "event",
-    },
-    {
         label: "Operations Report",
         value: "operations",
     }

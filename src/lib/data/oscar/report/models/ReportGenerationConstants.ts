@@ -40,21 +40,6 @@ export const ReportDatastreamConstant: any =
                 },
                 {
                     "type": "Category",
-                    "name": "eventType",
-                    "definition": "http://sensorml.com/ont/swe/property/EventType",
-                    "label": "Event Type",
-                    "constraint": {
-                        "values": [
-                            "Lane",
-                            "State of Health",
-                            "Alarm Type",
-                            "Occupancy",
-                            ""
-                        ]
-                    }
-                },
-                {
-                    "type": "Category",
                     "name": "timeRange",
                     "definition": "http://sensorml.com/ont/swe/property/TimeRange",
                     "label": "Time Range",

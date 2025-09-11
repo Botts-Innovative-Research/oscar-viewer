@@ -13,7 +13,6 @@ import {Download} from "@mui/icons-material";
 import React, {useState} from "react";
 import TimeRangeSelect from "@/app/_components/reportgen/TimeRangeSelector";
 import NationalDatePicker from "@/app/_components/national/NationalDatePicker";
-import EventTypeSelect from "@/app/_components/reportgen/EventTypeSelector";
 import ReportGenerationData, {sendSetReportCommand} from "@/lib/data/oscar/report/ReportGeneration";
 import {insertObservation} from "@/lib/data/osh/Node";
 
@@ -114,20 +113,10 @@ export default function ReportGeneratorView(){
                             />
                         </Grid>
 
-
-                        {selectedReportType == 'event' && (
-                            <Grid item xs={12} md={6}>
-                                <EventTypeSelect
-                                    onSelect={handleEventTypeSelect}
-                                    eventVal={selectedEventType}
-                                />
-                            </Grid>
-                        )}
-
                         <Grid item xs={12} md={6}>
-
                             <TimeRangeSelect onSelect={handleTimeRange} timeRangeVal={selectedTimeRange}/>
                         </Grid>
+
                         {selectedTimeRange === 'custom' && (
                             <Grid item xs={12} md={6}>
                                 <NationalDatePicker/>
