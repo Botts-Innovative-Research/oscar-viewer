@@ -1,6 +1,6 @@
 "use client";
 
-import {Grid, Paper, Stack, Typography} from "@mui/material";
+import {Button, Grid, Paper, Stack, Typography} from "@mui/material";
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import BackButton from "../_components/BackButton";
 import DataRow from "../_components/event-details/DataRow";
@@ -13,7 +13,8 @@ import Media from "@/app/_components/event-details/Media";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {selectEventPreview, setSelectedRowId} from "@/lib/state/EventPreviewSlice";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-
+import {PictureAsPdfRounded} from "@mui/icons-material";
+import {useReactToPrint} from "react-to-print";
 
 /**
  * Expects the following search params:
@@ -35,6 +36,9 @@ export default function EventDetailsPage() {
     const [occDatasources, setOccDS] = useState<typeof ConSysApi[]>([]);
     const [thresholdDatasources, setThresholdDS] = useState<typeof ConSysApi[]>([]);
     const [videoDatasources, setVideoDatasources] = useState<typeof ConSysApi[]>([]);
+
+    const contentRef = useRef<HTMLDivElement>(null);
+    const docTitle = eventPreview.eventData ? `eventdetails-${eventPreview.eventData.laneId}-${eventPreview.eventData.observationId}-${eventPreview.eventData.startTime}-${eventPreview.eventData.endTime}` : 'eventdetails';
 
 
     const collectDataSources = useCallback(async() => {
@@ -90,7 +94,11 @@ export default function EventDetailsPage() {
     }, [eventPreview, laneMapRef.current]);
 
 
-
+    const reactToPrintFn = useReactToPrint({
+        contentRef: contentRef,
+        documentTitle: docTitle,
+        onAfterPrint: () => console.log('Successfully saved as a PDF.')
+    });
 
     return (
         <Stack spacing={4} direction={"column"} sx={{width: "100%"}}>
@@ -100,6 +108,18 @@ export default function EventDetailsPage() {
                 </Grid>
                 <Grid item xs>
                     <Typography variant="h4">Event Details</Typography>
+                </Grid>
+                <Grid item xs={2}>
+                    <Button
+                        variant="outlined"
+                        startIcon={<PictureAsPdfRounded/>}
+                        onClick={() => {
+                            console.log('contentref: ', contentRef.current);
+                            reactToPrintFn()
+                        }}
+                    >
+                        Export as PDF
+                    </Button>
                 </Grid>
             </Grid>
 
