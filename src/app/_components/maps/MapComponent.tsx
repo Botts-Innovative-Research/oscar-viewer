@@ -14,8 +14,8 @@ import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import "leaflet/dist/leaflet.css"
 import {isGammaDatastream, isNeutronDatastream, isTamperDatastream} from "@/lib/data/oscar/Utilities";
 import {setCurrentLane} from "@/lib/state/LaneViewSlice";
-import {useRouter} from "next/dist/client/components/navigation";
 import {useAppDispatch} from "@/lib/state/Hooks";
+import L from "leaflet";
 
 
 export default function MapComponent() {
@@ -156,7 +156,7 @@ export default function MapComponent() {
             let view = new LeafletView({
                 container: mapcontainer,
                 layers: [],
-
+                overlayLayers: [],
                 autoZoomOnFirstMarker: true
             });
             leafletViewRef.current = view;
@@ -223,6 +223,34 @@ export default function MapComponent() {
 
         }
     }, [locationList, isInit]);
+
+    useEffect(() => {
+        if (leafletViewRef.current) {
+
+            var latLngBounds = L.latLngBounds([[40.799311, -74.118464], [40.68202047785919, -74.33]]);
+
+
+            const imageUrl = "/SiteMap.png";
+            // var imageUrl = 'https://maps.lib.utexas.edu/maps/historical/newark_nj_1922.jpg';
+
+            var errorOverlayUrl = 'https://cdn-icons-png.flaticon.com/512/110/110686.png';
+
+            console.log("image overlay")
+
+            leafletViewRef.current.map.fitBounds(latLngBounds);
+
+            leafletViewRef.current.addImageOverlay(imageUrl, latLngBounds, {
+                opacity: 0.75,
+                interactive: false,
+                alt: "Image of site map",
+                errorOverlayUrl: errorOverlayUrl
+            })
+
+            leafletViewRef.current.map.invalidateSize();
+
+        }
+
+    }, [isInit]);
 
 
     const updateLocationList = (laneName: string, newStatus: string) => {
