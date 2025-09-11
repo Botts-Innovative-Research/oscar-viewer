@@ -213,6 +213,7 @@ export default function MapComponent() {
                         labelOffset: [-5, -15],
                         iconSize: [16, 16],
                         description: getContent(location.status, location.laneName),
+
                     });
 
                     leafletViewRef.current?.addLayer(newPointMarker);
@@ -236,13 +237,11 @@ export default function MapComponent() {
     useEffect(() => {
         if (leafletViewRef.current) {
 
-            var latLngBounds = L.latLngBounds([[38.9761 + 3, -77.4875 + 3], [38.9761 - 3, -77.4875 - 3]]);
+            var latLngBounds = L.latLngBounds([[34.752583, -86.709192], [34.749899, -86.705270]]);
 
 
-            const imageUrl = "/SiteMap.png";
+            const imageUrl = "/image.png";
             // var imageUrl = 'https://maps.lib.utexas.edu/maps/historical/newark_nj_1922.jpg';
-
-            var errorOverlayUrl = 'https://cdn-icons-png.flaticon.com/512/110/110686.png';
 
             console.log("image overlay")
 
@@ -252,10 +251,13 @@ export default function MapComponent() {
                 opacity: 0.75,
                 interactive: false,
                 alt: "Image of site map",
-                errorOverlayUrl: errorOverlayUrl
             })
 
             leafletViewRef.current.map.invalidateSize();
+
+            leafletViewRef.current.map.on('click', (e) => {
+                console.log(e.latlng); // logs { lat, lng }
+            });
 
         }
 
