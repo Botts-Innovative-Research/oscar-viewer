@@ -15,7 +15,7 @@ import "leaflet/dist/leaflet.css"
 import {isGammaDatastream, isNeutronDatastream, isTamperDatastream} from "@/lib/data/oscar/Utilities";
 import {setCurrentLane} from "@/lib/state/LaneViewSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import L from "leaflet";
+import L, {LatLngExpression} from "leaflet";
 
 
 export default function MapComponent() {
@@ -31,6 +31,12 @@ export default function MapComponent() {
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
     const [locationList, setLocationList] = useState<LaneWithLocation[] | null>(null);
     const [dsLocations, setDsLocations] = useState([]);
+
+    const [siteMapDatastream, setSiteMapDatastream] = useState([]);
+
+    const [imageURL, setImageURL] = useState("");
+    const [imageBounds, setImageBounds]= useState<LatLngExpression[]>();
+
 
     const convertToMap = (obj: any) =>{
         if(!obj) return new Map();
@@ -67,12 +73,12 @@ export default function MapComponent() {
 
     },[laneMap, dsLocations]);
 
-    /*****************lane status datasources******************/
     const datasourceSetup = useCallback(async () => {
         // @ts-ignore
         let laneDSMap = new Map<string, LaneDSColl>();
 
         let locationDs: any[] = [];
+        let siteDS: any[] = [];
 
         for (let [laneid, lane] of laneMapRef.current.entries()) {
             laneDSMap.set(laneid, new LaneDSColl());
@@ -98,8 +104,19 @@ export default function MapComponent() {
                     laneDSColl.addDS('tamperRT', rtDS);
                 }
 
+                // need to get the site diagram path value/ url value,
+                // and then we need to get the site diagrams bounding UL and LR coordinates.
+
+                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/SiteDiagramPath")){
+                    laneDSColl.addDS('siteRT', rtDS);
+                }
+                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/SiteBoundingBox")){
+                    laneDSColl.addDS('boundingBoxBatch', batchDS);
+                }
+
             }
             setDsLocations(locationDs);
+            setSiteMapDatastream(siteDS);
             setDataSourcesByLane(laneDSMap);
         }
     }, [laneMapRef.current]);
@@ -236,29 +253,23 @@ export default function MapComponent() {
 
     useEffect(() => {
         if (leafletViewRef.current) {
+            // south west lat lon
+            // north east lat lon
 
-            var latLngBounds = L.latLngBounds([[34.752583, -86.709192], [34.749899, -86.705270]]);
+            // var latLngBounds = L.latLngBounds([[34.752583, -86.709192], [34.749899, -86.705270]]);
+            // const imageUrl = "/image.png";
 
-
-            const imageUrl = "/image.png";
-            // var imageUrl = 'https://maps.lib.utexas.edu/maps/historical/newark_nj_1922.jpg';
-
-            console.log("image overlay")
+            var latLngBounds = L.latLngBounds(imageBounds);
 
             leafletViewRef.current.map.fitBounds(latLngBounds);
 
-            leafletViewRef.current.addImageOverlay(imageUrl, latLngBounds, {
-                opacity: 0.75,
+            leafletViewRef.current.addImageOverlay(imageURL, latLngBounds, {
+                opacity: 0.65,
                 interactive: false,
                 alt: "Image of site map",
             })
 
             leafletViewRef.current.map.invalidateSize();
-
-            leafletViewRef.current.map.on('click', (e) => {
-                console.log(e.latlng); // logs { lat, lng }
-            });
-
         }
 
     }, [isInit]);
