@@ -247,6 +247,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 <AdjudicationSelect adjCode={adjudicationCode} onSelect={handleAdjudicationSelect} />
                 <IsotopeSelect isotopeValue={isotope} onSelect={handleIsotopeSelect}/>
             </Stack>
+
             <TextField
                 id="outlined-multiline-static"
                 label="Notes"
