@@ -16,6 +16,7 @@ import NationalDatePicker from "@/app/_components/national/NationalDatePicker";
 import ReportGenerationData, {sendSetReportCommand} from "@/lib/data/oscar/report/ReportGeneration";
 import {insertObservation} from "@/lib/data/osh/Node";
 
+//TODO: add a node dropdown and then whichever node they choose send the request to that endpoint
 
 export default function ReportGeneratorView(){
     const[isGenerating, setIsGenerating] = useState(false);
