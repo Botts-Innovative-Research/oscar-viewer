@@ -12,10 +12,17 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import { LaneWithLocation } from "types/new-types";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import "leaflet/dist/leaflet.css"
-import {isGammaDatastream, isNeutronDatastream, isTamperDatastream} from "@/lib/data/oscar/Utilities";
+import {
+    isGammaDatastream,
+    isNeutronDatastream,
+    isTamperDatastream,
+} from "@/lib/data/oscar/Utilities";
 import {setCurrentLane} from "@/lib/state/LaneViewSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import L, {LatLngExpression} from "leaflet";
+import {selectNodes} from "@/lib/state/OSHSlice";
+import {INode} from "@/lib/data/osh/Node";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 
 
 export default function MapComponent() {
@@ -31,11 +38,6 @@ export default function MapComponent() {
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
     const [locationList, setLocationList] = useState<LaneWithLocation[] | null>(null);
     const [dsLocations, setDsLocations] = useState([]);
-
-    const [siteMapDatastream, setSiteMapDatastream] = useState([]);
-
-    const [imageURL, setImageURL] = useState("");
-    const [imageBounds, setImageBounds]= useState<LatLngExpression[]>();
 
 
     const convertToMap = (obj: any) =>{
@@ -77,6 +79,7 @@ export default function MapComponent() {
         // @ts-ignore
         let laneDSMap = new Map<string, LaneDSColl>();
 
+
         let locationDs: any[] = [];
         let siteDS: any[] = [];
 
@@ -103,23 +106,12 @@ export default function MapComponent() {
                 if (isTamperDatastream(ds)) {
                     laneDSColl.addDS('tamperRT', rtDS);
                 }
-
-                // need to get the site diagram path value/ url value,
-                // and then we need to get the site diagrams bounding UL and LR coordinates.
-
-                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/SiteDiagramPath")){
-                    laneDSColl.addDS('siteRT', rtDS);
-                }
-                if(ds.properties.observedProperties[0].definition.includes("http://www.opengis.net/def/SiteBoundingBox")){
-                    laneDSColl.addDS('boundingBoxBatch', batchDS);
-                }
-
             }
             setDsLocations(locationDs);
-            setSiteMapDatastream(siteDS);
             setDataSourcesByLane(laneDSMap);
         }
     }, [laneMapRef.current]);
+
 
     const addSubscriptionCallbacks = useCallback(() => {
         for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
@@ -180,7 +172,7 @@ export default function MapComponent() {
             let view = new LeafletView({
                 container: mapcontainer,
                 layers: [],
-                overlayLayers: [],
+                imageOverlays: [],
                 autoZoomOnFirstMarker: true
             });
             leafletViewRef.current = view;
@@ -251,19 +243,75 @@ export default function MapComponent() {
         }
     }, [locationList, isInit]);
 
+
+    const nodes = useSelector((state: RootState) => selectNodes(state));
+
+        // need to get the site diagram path value/ url value,
+        // and then we need to get the site diagrams bounding UL and LR coordinates.
+
+
+    const [siteMapPath, setSiteMapPath] = useState<string>(null);
+    const [lowerLeftBound, setLowerLeftBound] = useState<LatLngExpression>(null);
+    const [upperRightBound, setUpperRightBound] = useState<LatLngExpression>(null);
     useEffect(() => {
-        if (leafletViewRef.current) {
+
+        if(!nodes) return;
+
+        nodes.forEach(async (node: INode) => {
+
+            await node.fetchOscarServiceSystem()
+
+            let system = node.oscarServiceSystem
+
+            console.log("nodes", node)
+            if(!system) console.warn("No oscar service system found");
+
+            let dataStreams = await node.fetchDataStream(system);
+
+            if(!dataStreams) console.warn("no datastreams");
+
+            for (const ds of dataStreams) {
+
+                if(ds.properties.outputName = "siteInfo"){
+                    let obsCollections = await ds.searchObservations(new ObservationFilter({resultTime: 'latest'}), 1);
+
+                    let results = await obsCollections.nextPage();
+                    console.log("results", results)
+
+                    let result = results[0];
+                    if(result){
+                        console.log("result", result)
+                        setSiteMapPath(result.result.siteDiagramPath);
+                        setLowerLeftBound([result.result.siteBoundingBox.lowerLeftBound.lon, result.result.siteBoundingBox.lowerLeftBound.lat]);
+                        setUpperRightBound([result.result.siteBoundingBox.upperRightBound.lon, result.result.siteBoundingBox.upperRightBound.lat]);
+
+                    }
+
+                }
+            }
+        })
+        // node.oscarService
+    }, [isInit]);
+
+
+    useEffect(() => {
+        if (leafletViewRef.current && siteMapPath != null && lowerLeftBound != null && upperRightBound != null) {
             // south west lat lon
             // north east lat lon
 
-            // var latLngBounds = L.latLngBounds([[34.752583, -86.709192], [34.749899, -86.705270]]);
-            // const imageUrl = "/image.png";
+            console.log("image", siteMapPath)
+            console.log("image", upperRightBound)
+            console.log("image", lowerLeftBound)
 
-            var latLngBounds = L.latLngBounds(imageBounds);
+            var latLngBounds = L.latLngBounds([lowerLeftBound, upperRightBound]);
+
+            // var latLngBounds = L.latLngBounds([[34.752583, -86.709192], [34.749899, -86.705270]]);
+
+            const imageUrl = "/image.png";
 
             leafletViewRef.current.map.fitBounds(latLngBounds);
 
-            leafletViewRef.current.addImageOverlay(imageURL, latLngBounds, {
+            leafletViewRef.current.addImageOverlay(imageUrl, latLngBounds, {
                 opacity: 0.65,
                 interactive: false,
                 alt: "Image of site map",
@@ -272,8 +320,7 @@ export default function MapComponent() {
             leafletViewRef.current.map.invalidateSize();
         }
 
-    }, [isInit]);
-
+    }, [isInit, lowerLeftBound, upperRightBound, siteMapPath]);
 
     const updateLocationList = (laneName: string, newStatus: string) => {
         setLocationList((prevState) => {

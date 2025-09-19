@@ -17,6 +17,7 @@ import Observations from "osh-js/source/core/consysapi/observation/Observations.
 import SystemFilter from "osh-js/source/core/consysapi/system/SystemFilter.js";
 import { ISystem } from "./Systems";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+
 const SYSTEM_UID_PREFIX = "urn:osh:system:";
 const DATABASE_PROCESS_UID_PREFIX = "urn:osh:process:occupancy:";
 
@@ -26,13 +27,12 @@ export interface INode {
     address: string,
     port: number,
     oshPathRoot: string,
-    sosEndpoint: string,
     csAPIEndpoint: string,
-    configsEndpoint: string,
     isSecure: boolean,
     auth: { username: string, password: string } | null,
     isDefaultNode: boolean
-    laneAdjMap?: Map<string, string>
+    laneAdjMap?: Map<string, string>,
+    oscarServiceSystem: any;
 
     getConnectedSystemsEndpoint(noProtocolPrefix: boolean): string,
 
@@ -47,6 +47,8 @@ export interface INode {
     fetchSystems(): Promise<any[]>,
 
     fetchLaneSystemsAndSubsystems(): Promise<Map<string, LaneMapEntry>>,
+
+    fetchOscarServiceSystem(): Promise<any>,
 
     fetchDatastreams(laneMap: Map<string, LaneMapEntry>): void,
 
@@ -68,6 +70,14 @@ export interface INode {
 
     getObservationsApi(): typeof Observations
 
+    getOscarServiceSystem(): typeof System
+
+    fetchDataStream(system: typeof System): Promise<any[]>
+
+    fetchLatestObservation(): Promise<any>
+
+    fetchObservationsWithFilter(observationFilter: typeof ObservationFilter): Promise<any[]>
+
 }
 
 export interface NodeOptions {
@@ -75,13 +85,12 @@ export interface NodeOptions {
     address: string,
     port: number,
     oshPathRoot?: string,
-    sosEndpoint?: string,
     csAPIEndpoint?: string,
-    configsEndpoint?: string,
     auth?: { username: string, password: string } | null,
     isSecure?: boolean,
     isDefaultNode?: boolean
-    laneAdjMap?: Map<string, string>
+    laneAdjMap?: Map<string, string>,
+    oscarServiceSystem?: typeof System
 }
 
 export class Node implements INode {
@@ -90,9 +99,7 @@ export class Node implements INode {
     address: string;
     port: number;
     oshPathRoot: string;
-    sosEndpoint: string;
     csAPIEndpoint: string;
-    configsEndpoint: string;
     isSecure: boolean;
     auth: { username: string, password: string } | null = null;
     isDefaultNode: boolean;
@@ -100,6 +107,7 @@ export class Node implements INode {
     dataStreamsApi: typeof DataStreams;
     systemsApi: typeof Systems;
     observationsApi: typeof Observations;
+    oscarServiceSystem: typeof System;
 
     constructor(options: NodeOptions) {
         this.id = "node-" + randomUUID();
@@ -107,9 +115,7 @@ export class Node implements INode {
         this.address = options.address;
         this.port = options.port;
         this.oshPathRoot = options.oshPathRoot || '/sensorhub';
-        this.sosEndpoint = options.sosEndpoint || '/sos';
         this.csAPIEndpoint = options.csAPIEndpoint || '/api';
-        this.configsEndpoint = options.configsEndpoint || '/configs';
         this.auth = options.auth || null;
         this.isSecure = options.isSecure || false;
         this.isDefaultNode = options.isDefaultNode || false;
@@ -118,7 +124,7 @@ export class Node implements INode {
         let apiConfig = {
             endpointUrl: `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`,
             tls: this.isSecure,
-            connectorOpts:{
+            connectorOpts: {
                 username: this.auth.username,
                 password: this.auth.password
             }
@@ -127,22 +133,27 @@ export class Node implements INode {
         this.dataStreamsApi = new DataStreams(apiConfig);
         this.systemsApi = new Systems(apiConfig);
         this.observationsApi = new Observations(apiConfig);
+        this.oscarServiceSystem = options.oscarServiceSystem || null;
 
     }
 
-    getObservationsApi(): typeof Observations{
+    getOscarServiceSystem() {
+        return this.oscarServiceSystem;
+    }
+
+    getObservationsApi(): typeof Observations {
         return this.observationsApi;
     }
 
-    async searchObservations(observationFilter: typeof ObservationFilter, pageSize: number = 10){
+    async searchObservations(observationFilter: typeof ObservationFilter, pageSize: number = 10) {
         return await this.getObservationsApi().searchObservations(observationFilter, pageSize);
     }
 
-    getSystemsApi(): typeof Systems{
+    getSystemsApi(): typeof Systems {
         return this.systemsApi;
     }
 
-    async searchSystems(systemFilter: typeof SystemFilter, pageSize: number = 10){
+    async searchSystems(systemFilter: typeof SystemFilter, pageSize: number = 10) {
         return await this.getSystemsApi().searchSystems(systemFilter, pageSize);
     }
 
@@ -150,16 +161,20 @@ export class Node implements INode {
         return this.dataStreamsApi;
     }
 
-    async searchDataStreams(dsFilter: typeof DataStreamFilter, pageSize: number = 10){
+    async searchDataStreams(dsFilter: typeof DataStreamFilter, pageSize: number = 10) {
         return await this.getDataStreamsApi().searchDataStreams(dsFilter, pageSize);
     }
 
-    setObservationsApi(apiConfig: string): typeof Observations{
+    setObservationsApi(apiConfig: string): typeof Observations {
         return new Observations(apiConfig)
     }
 
-    setSystemsApi(apiConfig: string): typeof Systems{
+    setSystemsApi(apiConfig: string): typeof Systems {
         return new Systems(apiConfig)
+    }
+
+    setOscarServiceSystem(system: typeof System){
+        this.oscarServiceSystem = system;
     }
 
     setDataStreamsApi(apiConfig: string): typeof DataStreams {
@@ -169,16 +184,14 @@ export class Node implements INode {
     getConnectedSystemsEndpoint(noProtocolPrefix: boolean = false) {
         let protocol = this.isSecure ? 'https' : 'http';
         // return `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
-        console.log("NODE TEST GET CSAPI ENDPOINT", this);
         return noProtocolPrefix ? `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`
             : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
     }
 
     getConfigEndpoint(noProtocolPrefix: boolean = false) {
         let protocol = this.isSecure ? 'https' : 'http';
-        console.log("NODE TEST GET CSAPI ENDPOINT", this);
-        return noProtocolPrefix ? `${this.address}:${this.port}${this.oshPathRoot}${this.configsEndpoint}`
-            : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.configsEndpoint}`;
+        return noProtocolPrefix ? `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`
+            : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
     }
 
     getBasicAuthHeader() {
@@ -186,25 +199,17 @@ export class Node implements INode {
         return {"Authorization": `Basic ${encoded}`};
     }
 
-    async fetchConfig() {
-        return
-    }
-
     async fetchLanes(): Promise<{ systems: typeof System[]; lanes: LaneMeta[] }> {
         let fetchedLanes: LaneMeta[] = [];
         let fetchedSystems: ISystem[] = [];
         // first, fetch the systems
         const systems_arr = await this.fetchSystems();
-        console.log("Systems:", systems_arr);
         for (let system of systems_arr) {
 
-            console.log("OUR System:", system);
             const newSystem = new System(system.id, system.properties.uid, system.properties.name, this, null);
-            console.log("New System:", newSystem);
             fetchedSystems.push(newSystem);
             // Test for lane signature in uid
             if (system.properties.uid.includes(SYSTEM_UID_PREFIX)) {
-                console.info("Found System matching lane signature");
                 const newLaneName = system.properties.name;
                 // Fetch subsystems
                 const subsystems = await newSystem.fetchSubsystems();
@@ -217,13 +222,11 @@ export class Node implements INode {
                 fetchedLanes.push(newLaneMeta);
             }
         }
-        console.log("LaneFetched these objects:", fetchedLanes, fetchedSystems);
         return {lanes: null, systems: systems_arr};
     }
 
     async checkForEndpoint() {
         let ep: string = `${this.getConnectedSystemsEndpoint()}`;
-        console.log("Checking for API endpoint: ", ep, this);
 
         const response = await fetch(ep, {
             method: 'GET',
@@ -235,7 +238,6 @@ export class Node implements INode {
         });
 
         if (response.ok) {
-            console.log("API Endpoint found: ", response);
             return true;
         } else {
             console.warn("Error checking for API endpoint: ", response);
@@ -255,10 +257,9 @@ export class Node implements INode {
         }
 
         let systems = await this.fetchSystems();
-        if(!systems || systems.length == 0) return;
+        if (!systems || systems.length == 0) return;
 
         let laneMap = new Map<string, LaneMapEntry>();
-        console.log("Systems retrieved:", systems);
 
         // filter into lanes
         for (let system of systems) {
@@ -288,6 +289,25 @@ export class Node implements INode {
         return laneMap;
     }
 
+    async fetchOscarServiceSystem(){
+        const isReachable = await this.checkForEndpoint();
+
+        if (!isReachable) {
+            console.warn("Node is not reachable, check endpoint properties");
+            return;
+        }
+
+        let systems = await this.fetchSystems();
+        if (!systems || systems.length == 0) return;
+
+        for(let system of systems){
+            if (system.properties.properties.uid.includes("urn:ornl:oscar:system:")) {
+                // todo add oscar service system some where
+                this.oscarServiceSystem = system;
+            }
+        }
+    }
+
     async fetchSystems(): Promise<any[]> {
         let systemsApi = this.getSystemsApi();
 
@@ -300,7 +320,6 @@ export class Node implements INode {
         }
 
         if (availableSystems.length > 0) {
-            // console.log("Systems from TK:", availableSystems);
             return availableSystems;
         } else {
             console.warn("No systems found, check endpoint properties for: ", this.address);
@@ -325,6 +344,15 @@ export class Node implements INode {
         }
     }
 
+    async fetchLatestObservation() {
+        let observationsApi = this.getObservationsApi();
+
+        let searchedObservations = await observationsApi.searchObservations(new ObservationFilter({resultTime: 'latest',}), 1);
+
+        let obsResult = await searchedObservations.nextPage();
+        return obsResult;
+    }
+
     async fetchObservationsWithFilter(observationFilter: typeof ObservationFilter): Promise<any[]> {
         let observationsApi = this.getObservationsApi();
 
@@ -345,7 +373,7 @@ export class Node implements INode {
 
     async fetchDatastreams(laneMap: Map<string, LaneMapEntry>) {
         for (const [, laneEntry] of laneMap) {
-            if(laneEntry.parentNode.id != this.id) continue;
+            if (laneEntry.parentNode.id != this.id) continue;
             try {
                 const datastreams = await laneEntry.laneSystem.searchDataStreams(undefined, 100);
                 while (datastreams.hasNext()) {
@@ -358,10 +386,22 @@ export class Node implements INode {
         }
     }
 
-    async fetchControlStreams(laneMap: Map<string, LaneMapEntry>){
+    async fetchDataStream(system: typeof System) {
+        let allDatastreams = [];
+        const datastreams = await system.searchDataStreams(undefined, 100);
+        while (datastreams.hasNext()) {
+            const datastreamResults = await datastreams.nextPage();
+            allDatastreams.push(...datastreamResults);
+        }
+
+        console.log("all ds", allDatastreams)
+        return allDatastreams;
+    }
+
+    async fetchControlStreams(laneMap: Map<string, LaneMapEntry>) {
         for (const [, laneEntry] of laneMap) {
 
-            if(laneEntry.parentNode.id != this.id) continue;
+            if (laneEntry.parentNode.id != this.id) continue;
             try {
                 const controlStreamCollection = await laneEntry.laneSystem.searchControlStreams(undefined, 100);
                 while (controlStreamCollection.hasNext()) {
@@ -375,79 +415,73 @@ export class Node implements INode {
         }
     }
 
-    async fetchProcessVideoDatastreams(laneMap: Map<string, LaneMapEntry>) {
-
-        const systems = await this.fetchSystems();
-        const databaseProcesses = systems.filter((system: any) => system.properties.properties.uid.includes(DATABASE_PROCESS_UID_PREFIX));
-
-        const videoDsMap = new Map<typeof DataStream, string>(); // <ds, laneName>
-        for(const [laneName, laneEntry] of laneMap) {
-            if(laneEntry.parentNode.id != this.id) continue;
-            const laneVideoStreams = laneEntry.datastreams.filter((ds) => isVideoDatastream(ds));
-            laneVideoStreams.forEach((videoDatastream) => videoDsMap.set(videoDatastream, laneName));
-        }
-
-        let allProcessVideostreamsMap = new Map<string, typeof DataStream>(); // <outputName, ds>
-
-        for(const process of databaseProcesses) {
-            const datastreamSearch = await process.searchDataStreams(undefined, 100);
-            while(datastreamSearch.hasNext()) {
-                const datastreamPage = await datastreamSearch.nextPage();
-                // find videostreams
-                // add to lane ds list
-                const videoDatastreams = datastreamPage.filter((datastream: typeof DataStream) => isVideoDatastream(datastream));
-                videoDatastreams.forEach((videoDatastream: typeof DataStream) => allProcessVideostreamsMap.set(videoDatastream.properties.outputName, videoDatastream));
-            }
-        }
-
-        for (const [videoDs, laneName] of videoDsMap) {
-            const videoStreamUID = videoDs.properties["system@link"].uid;
-            const videoStreamOutputName = videoDs.properties.outputName;
-            const processVideoStreamOutputName = `${videoStreamUID}:${videoStreamOutputName}`;
-
-            const processVideoDs = allProcessVideostreamsMap.get(processVideoStreamOutputName);
-
-            if(processVideoDs) {
-                laneMap.get(laneName).addDatastreams([processVideoDs]);
-            }
-        }
-    }
+    // async fetchProcessVideoDatastreams(laneMap: Map<string, LaneMapEntry>) {
+    //
+    //     const systems = await this.fetchSystems();
+    //     const databaseProcesses = systems.filter((system: any) => system.properties.properties.uid.includes(DATABASE_PROCESS_UID_PREFIX));
+    //
+    //     const videoDsMap = new Map<typeof DataStream, string>(); // <ds, laneName>
+    //     for (const [laneName, laneEntry] of laneMap) {
+    //         if (laneEntry.parentNode.id != this.id) continue;
+    //         const laneVideoStreams = laneEntry.datastreams.filter((ds) => isVideoDatastream(ds));
+    //         laneVideoStreams.forEach((videoDatastream) => videoDsMap.set(videoDatastream, laneName));
+    //     }
+    //
+    //     let allProcessVideostreamsMap = new Map<string, typeof DataStream>(); // <outputName, ds>
+    //
+    //     for (const process of databaseProcesses) {
+    //         const datastreamSearch = await process.searchDataStreams(undefined, 100);
+    //         while (datastreamSearch.hasNext()) {
+    //             const datastreamPage = await datastreamSearch.nextPage();
+    //             // find videostreams
+    //             // add to lane ds list
+    //             const videoDatastreams = datastreamPage.filter((datastream: typeof DataStream) => isVideoDatastream(datastream));
+    //             videoDatastreams.forEach((videoDatastream: typeof DataStream) => allProcessVideostreamsMap.set(videoDatastream.properties.outputName, videoDatastream));
+    //         }
+    //     }
+    //
+    //     for (const [videoDs, laneName] of videoDsMap) {
+    //         const videoStreamUID = videoDs.properties["system@link"].uid;
+    //         const videoStreamOutputName = videoDs.properties.outputName;
+    //         const processVideoStreamOutputName = `${videoStreamUID}:${videoStreamOutputName}`;
+    //
+    //         const processVideoDs = allProcessVideostreamsMap.get(processVideoStreamOutputName);
+    //
+    //         if (processVideoDs) {
+    //             laneMap.get(laneName).addDatastreams([processVideoDs]);
+    //         }
+    //     }
+    // }
 
     // TODO: clean this up and verify that we aren't duplicating systems or outputs
     async fetchOrCreateAdjudicationSystems(laneMap: Map<string, LaneMapEntry>) {
         let systems: typeof System[] = await this.fetchSystems();
 
-        if(!systems) return;
+        if (!systems) return;
 
-        console.log("[ADJ] Fetching systems for node: ", this, laneMap, systems);
         let adjSysAndDSMap: Map<string, string> = new Map();
         let laneAdjDsMap: Map<string, string> = new Map();
 
 
         for (const [laneName, laneEntry] of laneMap as Map<string, LaneMapEntry>) {
 
-            if(laneEntry.parentNode.id != this.id) continue;
+            if (laneEntry.parentNode.id != this.id) continue;
 
             let system = systems.find((sys: typeof System) => {
                 return sys.properties.properties.uid.includes("adjudication")
             });
 
-            console.log("[ADJ-INSERT] systems check", system)
             if (system) {
-                // console.log("[ADJ-INSERT] Found adjudication systems for lane: ", laneEntry, system);
                 // check for datastreams
                 let streamCollection: any = await system.searchDataStreams(new DataStreamFilter(), 1000);
 
-                console.log("stream collection:", streamCollection)
                 // if (datastreams.length > 0) {
                 if (streamCollection.hasNext()) {
                     let datastreams = await streamCollection.nextPage();
                     if (datastreams.length > 0) {
-                        console.log("[ADJ-INSERT] Found datastreams for adjudication system: ", datastreams);
                         adjSysAndDSMap.set(system.properties.id, datastreams[0].properties.id);
                         laneAdjDsMap.set(laneName, datastreams[0].properties.id);
                     } else {
-                        console.log("[ADJ-INSERT] No datastreams found for adjudication system: ", system);
 
                         let ep: string = `${this.getConnectedSystemsEndpoint()}/systems/${system.properties.id}/datastreams/`;
                         let dsId = await this.insertDatastream(ep, AdjudicationDatastreamConstant);
@@ -456,7 +490,6 @@ export class Node implements INode {
                     }
                 }
             } else {
-                console.log(`[ADJ-INSERT] No existing adjudication systems found, creating new system for lane" ${laneName}`);
                 let sysId = await laneEntry.insertAdjudicationSystem(laneName);
 
                 // insert datastreams
@@ -471,7 +504,6 @@ export class Node implements INode {
     }
 
     async insertSystem(systemJSON: any, ep: string): Promise<string> {
-        console.log("Inserting System: ", ep, JSON.stringify(systemJSON));
 
         const response = await fetch(ep, {
             method: 'POST',
@@ -484,7 +516,6 @@ export class Node implements INode {
         });
 
         if (response.ok) {
-            console.log("System Inserted: ", response.headers.get("Location"));
             let sysId = response.headers.get("Location").split("/").pop();
 
             return sysId;
@@ -494,9 +525,7 @@ export class Node implements INode {
     }
 
     async insertDatastream(endpoint: string, datastreamConstant: any): Promise<string> {
-        console.log("Inserting Datastream: ", endpoint, this);
 
-        console.log(JSON.stringify(datastreamConstant))
         const response = await fetch(endpoint, {
             method: 'POST',
             mode: 'cors',
@@ -508,7 +537,6 @@ export class Node implements INode {
         });
 
         if (response.ok) {
-            console.log("Datastream Inserted Response: ", response);
             let dsId = response.headers.get("Location").split("/").pop();
             return dsId;
         } else {
@@ -516,16 +544,13 @@ export class Node implements INode {
         }
     }
 
-
     insertSubSystem(systemJSON: any, parentSystemId: string): Promise<string> {
         return Promise.resolve("");
     }
 
 }
 
-
 export async function insertObservation(ep: any, observation: any, ){
-    console.log("Inserting new observation: ", observation)
     let resp = await fetch(ep, {
         method: "POST",
         headers: {

@@ -54,9 +54,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
                             address: node.address,
                             port: node.port,
                             oshPathRoot: node.oshPathRoot,
-                            sosEndpoint: node.sosEndpoint,
                             csAPIEndpoint: node.csAPIEndpoint,
-                            configsEndpoint: node.configsEndpoint,
                             auth: { username: node.username, password: node.password },
                             isSecure: node.isSecure,
                             isDefaultNode: node.isDefaultNode
@@ -114,8 +112,6 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             address: opt.address,
             port: opt.port,
             oshPathRoot: opt.oshPathRoot,
-            sosEndpoint: opt.sosEndpoint,
-            configsEndpoint: opt.configsEndpoint,
             csAPIEndpoint: opt.csAPIEndpoint,
             auth: {
                 username: opt?.auth?.username ? opt.auth.username : opt.username,
@@ -123,7 +119,8 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             },
             isSecure: opt.isSecure,
             isDefaultNode: opt.isDefaultNode,
-            laneAdjMap: opt.laneAdjMap
+            laneAdjMap: opt.laneAdjMap,
+            oscarServiceSystem: opt.oscarServiceSystem
         });
     }
 
@@ -138,8 +135,9 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
 
             if(!nodeLaneMap) return;
+            await node.fetchOscarServiceSystem();
             await node.fetchDatastreams(nodeLaneMap);
-            await node.fetchProcessVideoDatastreams(nodeLaneMap);
+            // await node.fetchProcessVideoDatastreams(nodeLaneMap);
             await node.fetchControlStreams(nodeLaneMap);
 
 
@@ -172,12 +170,14 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }
 
 
-    useEffect(() => {
-        testSysFetch();
-    }, [nodes.length]);
 
     useEffect(() => {
-        InitializeApplication();
+        const init = async () => {
+            await InitializeApplication();
+            await testSysFetch();
+        }
+
+        init();
     }, [nodes.length]);
 
 
@@ -198,9 +198,7 @@ export const initializeDefaultNode = () => (dispatch: AppDispatch) => {
         address: hostName,
         port: 8282,
         oshPathRoot: "/sensorhub",
-        sosEndpoint: "/sos",
         csAPIEndpoint: "/api",
-        configsEndpoint: "/configs",
         auth: { username: "admin", password: "oscar" },
         isSecure: false,
         isDefaultNode: true
