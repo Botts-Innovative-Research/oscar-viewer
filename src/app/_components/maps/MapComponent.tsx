@@ -12,10 +12,18 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import { LaneWithLocation } from "types/new-types";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import "leaflet/dist/leaflet.css"
-import {isGammaDatastream, isNeutronDatastream, isTamperDatastream} from "@/lib/data/oscar/Utilities";
+import {
+    isGammaDatastream,
+    isNeutronDatastream,
+    isTamperDatastream,
+} from "@/lib/data/oscar/Utilities";
 import {setCurrentLane} from "@/lib/state/LaneViewSlice";
-import {useRouter} from "next/dist/client/components/navigation";
 import {useAppDispatch} from "@/lib/state/Hooks";
+import L, {LatLngExpression} from "leaflet";
+import {selectNodes} from "@/lib/state/OSHSlice";
+import {INode} from "@/lib/data/osh/Node";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import {fileExists} from "next/dist/lib/file-exists";
 
 
 export default function MapComponent() {
@@ -31,6 +39,7 @@ export default function MapComponent() {
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
     const [locationList, setLocationList] = useState<LaneWithLocation[] | null>(null);
     const [dsLocations, setDsLocations] = useState([]);
+
 
     const convertToMap = (obj: any) =>{
         if(!obj) return new Map();
@@ -67,12 +76,13 @@ export default function MapComponent() {
 
     },[laneMap, dsLocations]);
 
-    /*****************lane status datasources******************/
     const datasourceSetup = useCallback(async () => {
         // @ts-ignore
         let laneDSMap = new Map<string, LaneDSColl>();
 
+
         let locationDs: any[] = [];
+        let siteDS: any[] = [];
 
         for (let [laneid, lane] of laneMapRef.current.entries()) {
             laneDSMap.set(laneid, new LaneDSColl());
@@ -97,16 +107,21 @@ export default function MapComponent() {
                 if (isTamperDatastream(ds)) {
                     laneDSColl.addDS('tamperRT', rtDS);
                 }
-
             }
             setDsLocations(locationDs);
             setDataSourcesByLane(laneDSMap);
         }
     }, [laneMapRef.current]);
 
+
     const addSubscriptionCallbacks = useCallback(() => {
         for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
             const msgLaneName = laneName;
+
+            laneDSColl.addSubscribeHandlerToALLDSMatchingName('connectionRT', (message: any) => {
+                let connection = message.values[0].data.connection;
+                updateLocationList(msgLaneName, connection);
+            });
 
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
                 let alarmstate = message.values[0].data.alarmState;
@@ -126,6 +141,7 @@ export default function MapComponent() {
             laneDSColl.addConnectToALLDSMatchingName("gammaRT");
             laneDSColl.addConnectToALLDSMatchingName("neutronRT");
             laneDSColl.addConnectToALLDSMatchingName("tamperRT");
+            laneDSColl.addConnectToALLDSMatchingName("connectionRT");
 
         }
 
@@ -135,6 +151,7 @@ export default function MapComponent() {
                 laneDSColl.addDisconnectToALLDSMatchingName("gammaRT");
                 laneDSColl.addDisconnectToALLDSMatchingName("neutronRT");
                 laneDSColl.addDisconnectToALLDSMatchingName("tamperRT");
+                laneDSColl.addDisconnectToALLDSMatchingName("connectionRT");
             }
         }
     }, [dataSourcesByLane]);
@@ -156,7 +173,7 @@ export default function MapComponent() {
             let view = new LeafletView({
                 container: mapcontainer,
                 layers: [],
-
+                imageOverlays: [],
                 autoZoomOnFirstMarker: true
             });
             leafletViewRef.current = view;
@@ -192,7 +209,9 @@ export default function MapComponent() {
                                     return  '/alarm.svg';
                                 } else if (location.status.includes('Fault')) {
                                     return  '/fault.svg';
-                                } else{
+                                } else if(location.status === 'Offline') {
+                                    return '/offline.svg'
+                                } else {
                                     return '/default.svg'
                                 }
                             }
@@ -204,6 +223,7 @@ export default function MapComponent() {
                         labelOffset: [-5, -15],
                         iconSize: [16, 16],
                         description: getContent(location.status, location.laneName),
+
                     });
 
                     leafletViewRef.current?.addLayer(newPointMarker);
@@ -224,6 +244,76 @@ export default function MapComponent() {
         }
     }, [locationList, isInit]);
 
+
+    const nodes = useSelector((state: RootState) => selectNodes(state));
+
+        // need to get the site diagram path value/ url value,
+        // and then we need to get the site diagrams bounding UL and LR coordinates.
+
+
+    const [siteMapPath, setSiteMapPath] = useState<string>(null);
+    const [lowerLeftBound, setLowerLeftBound] = useState<LatLngExpression>(null);
+    const [upperRightBound, setUpperRightBound] = useState<LatLngExpression>(null);
+    useEffect(() => {
+
+        if(!nodes) return;
+
+        nodes.forEach(async (node: INode) => {
+
+            await node.fetchOscarServiceSystem()
+
+            let system = node.oscarServiceSystem
+
+            if(!system) console.warn("No oscar service system found");
+
+            let dataStreams = await node.fetchDataStream(system);
+
+            if(!dataStreams) console.warn("no datastreams");
+
+            for (const ds of dataStreams) {
+
+                if(ds.properties.outputName = "siteInfo"){
+                    let obsCollections = await ds.searchObservations(new ObservationFilter({resultTime: 'latest'}), 1);
+
+                    let results = await obsCollections.nextPage();
+                    console.log("results", results)
+
+                    let result = results[0];
+                    if(result){
+                        console.log("result", result)
+                        setSiteMapPath(result.result.siteDiagramPath);
+                        setLowerLeftBound([result.result.siteBoundingBox.lowerLeftBound.lon, result.result.siteBoundingBox.lowerLeftBound.lat]);
+                        setUpperRightBound([result.result.siteBoundingBox.upperRightBound.lon, result.result.siteBoundingBox.upperRightBound.lat]);
+
+                    }
+
+                }
+            }
+        })
+    }, [isInit]);
+
+
+    useEffect(() => {
+        if (leafletViewRef.current && siteMapPath != null && lowerLeftBound != null && upperRightBound != null) {
+
+            var latLngBounds = L.latLngBounds([lowerLeftBound, upperRightBound]);
+
+            // const imageUrl = "/image.png";
+
+            //TODO: fix sitemap path to working and then she should be good
+
+            leafletViewRef.current.map.fitBounds(latLngBounds);
+
+            leafletViewRef.current.addImageOverlay(siteMapPath, latLngBounds, {
+                opacity: 0.65,
+                interactive: false,
+                alt: "Image of site map",
+            })
+
+            leafletViewRef.current.map.invalidateSize();
+        }
+
+    }, [isInit, lowerLeftBound, upperRightBound, siteMapPath]);
 
     const updateLocationList = (laneName: string, newStatus: string) => {
         setLocationList((prevState) => {

@@ -123,9 +123,7 @@ export default function NodeList({modeChangeCallback}: NodeListProps) {
                             address: node.address,
                             port: node.port,
                             oshPathRoot: node.oshPathRoot,
-                            sosEndpoint: node.sosEndpoint,
                             csAPIEndpoint: node.csAPIEndpoint,
-                            configsEndpoint: node.configsEndpoint,
                             auth: { username: node.username, password: node.password },
                             isSecure: node.isSecure,
                             isDefaultNode: node.isDefaultNode
