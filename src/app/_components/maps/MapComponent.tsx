@@ -23,6 +23,7 @@ import L, {LatLngExpression} from "leaflet";
 import {selectNodes} from "@/lib/state/OSHSlice";
 import {INode} from "@/lib/data/osh/Node";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import {fileExists} from "next/dist/lib/file-exists";
 
 
 export default function MapComponent() {
@@ -263,7 +264,6 @@ export default function MapComponent() {
 
             let system = node.oscarServiceSystem
 
-            console.log("nodes", node)
             if(!system) console.warn("No oscar service system found");
 
             let dataStreams = await node.fetchDataStream(system);
@@ -290,28 +290,21 @@ export default function MapComponent() {
                 }
             }
         })
-        // node.oscarService
     }, [isInit]);
 
 
     useEffect(() => {
         if (leafletViewRef.current && siteMapPath != null && lowerLeftBound != null && upperRightBound != null) {
-            // south west lat lon
-            // north east lat lon
-
-            console.log("image", siteMapPath)
-            console.log("image", upperRightBound)
-            console.log("image", lowerLeftBound)
 
             var latLngBounds = L.latLngBounds([lowerLeftBound, upperRightBound]);
 
-            // var latLngBounds = L.latLngBounds([[34.752583, -86.709192], [34.749899, -86.705270]]);
+            // const imageUrl = "/image.png";
 
-            const imageUrl = "/image.png";
+            //TODO: fix sitemap path to working and then she should be good
 
             leafletViewRef.current.map.fitBounds(latLngBounds);
 
-            leafletViewRef.current.addImageOverlay(imageUrl, latLngBounds, {
+            leafletViewRef.current.addImageOverlay(siteMapPath, latLngBounds, {
                 opacity: 0.65,
                 interactive: false,
                 alt: "Image of site map",
