@@ -133,3 +133,9 @@ export function isConfigurationDatastream(datastream: typeof DataStream): boolea
 
     return datastream.properties.observedProperties[0].definition.includes(CONFIG_DEF);
 }
+
+export function isSiteDiagramPathDatastream(datastream: typeof DataStream): boolean {
+    const DEF ="http://sensorml.com/ont/swe/property/SiteDiagramPath";
+
+    return datastream.properties.observedProperties[0].definition.includes(DEF);
+}

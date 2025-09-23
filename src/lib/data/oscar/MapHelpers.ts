@@ -3,7 +3,7 @@
 /***********const point marker layer*********************/
 export const commonMarker = {
     getLocation: (rec: any) =>({x: rec.location.lon, y: rec.location.lat, z: rec.location.alt}),
-    icon: '/circle.svg',
+    icon: '/offline.svg',
     zoomLevel: 12,
     iconAnchor: [16, 0],
     iconSize: [16, 16],
