@@ -51,7 +51,7 @@ export async function sendCommand(node: INode, controlStreamId: string, command:
     }
 }
 
-export function generateCommandJSON(startTimeDate: string, endDateTime: string, reportType: string, laneUID: string, eventId: string) {
+export function generateCommandJSON(startDateTime: string, endDateTime: string, reportType: string, laneUID: string, eventId: string) {
     return JSON.stringify({
         "params": {
             "startDateTime": startDateTime,

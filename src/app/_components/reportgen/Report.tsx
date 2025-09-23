@@ -66,6 +66,8 @@ export default function ReportGeneratorView(){
                 setSeverity("success");
             }
 
+
+
         } catch (error) {
             setSnackMessage("Report request failed to submit.");
             setSeverity("error");

@@ -164,7 +164,7 @@ export async function getConfigDataStreamID(node: INode): Promise<string>{
     }
 }
 
-export async function retrieveLatestConfigDataStream(node: INode) {
+export async function retrieveLatestConfigDataStream(node: any) {
 
     let localNode = await node.checkForEndpoint();
 
