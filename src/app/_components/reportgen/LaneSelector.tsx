@@ -6,31 +6,34 @@ import {INode} from "@/lib/data/osh/Node";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectNodes} from "@/lib/state/OSHSlice";
+import OSCARLaneSlice, {selectLanes} from "@/lib/state/OSCARLaneSlice";
+import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 
 
-export default function NodeSelect(props: {
+export default function LaneSelect(props: {
     onSelect: (value: string[] | string) => void,
-    node: INode
+    lane: any
 }) {
 
     const nodes = useSelector((state: RootState) => selectNodes(state));
 
-    const [selectedNode, setSelectedNode] = useState(null);
+    const lanes = useSelector((state: RootState) => selectLanes(state));
+    const [selectedLane, setSelectedLane] = useState(null);
 
     const handleChange = (event: SelectChangeEvent) => {
         const val = event.target.value;
         props.onSelect(val)
-        setSelectedNode(val);
+        setSelectedLane(val);
     };
 
     return (
         <FormControl size="small" fullWidth>
-            <InputLabel id="label">Node Selector</InputLabel>
+            <InputLabel id="label">Lane Selector</InputLabel>
             <Select
                 variant="outlined"
                 id="label"
-                label="Node"
-                value= {selectedNode}
+                label="Lane"
+                value= {selectedLane}
                 onChange={handleChange}
                 MenuProps={{
                     MenuListProps: {
@@ -59,7 +62,7 @@ export default function NodeSelect(props: {
                 }}
             >
                 {
-                    nodes.map((item: INode) => (
+                    lanes.map((item: any) => (
                         <MenuItem key={item.id} value={item.id}>
                             {item.name}
                         </MenuItem>

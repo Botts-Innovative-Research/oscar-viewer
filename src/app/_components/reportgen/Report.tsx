@@ -20,6 +20,7 @@ import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectNodes} from "@/lib/state/OSHSlice";
 import NodeSelect from "@/app/_components/reportgen/NodeSelector";
+import LaneSelect from "@/app/_components/reportgen/LaneSelector";
 
 
 export default function ReportGeneratorView(){
@@ -30,6 +31,7 @@ export default function ReportGeneratorView(){
     const [customStartTime, setCustomStartTime] = useState<Date | null>(null);
     const [customEndTime, setCustomEndTime] = useState<Date | null>(null);
     const [selectedNode, setSelectedNode] = useState(null);
+    const [selectedLane, setSelectedLane] = useState(null);
 
     const [openSnack, setOpenSnack] = useState(false);
     const [snackMessage, setSnackMessage] = useState<string>();
@@ -72,6 +74,10 @@ export default function ReportGeneratorView(){
             setIsGenerating(false)
             resetForm();
         }
+    }
+
+    const handleLaneSelect = (value: string) => {
+        setSelectedLane(value)
     }
 
     const handleNodeSelect = (value: string) => {
@@ -151,9 +157,13 @@ export default function ReportGeneratorView(){
                         />
                     </Grid>
 
+                    <Grid item xs={12} md={6}>
+                        <NodeSelect onSelect={handleNodeSelect} node={selectedNode} />
+                    </Grid>
+
                     {selectedReportType == "LANE" && (
                         <Grid item xs={12} md={6}>
-                            <NodeSelect onSelect={handleNodeSelect} node={selectedNode} />
+                            <LaneSelect onSelect={handleLaneSelect} lane={selectedLane} />
                         </Grid>
                     )}
                 </Grid>
