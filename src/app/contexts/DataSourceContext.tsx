@@ -24,7 +24,7 @@ export {DataSourceContext};
 
 export default function DataSourceProvider({children}: { children: ReactNode }) {
 
-    const configNode: Node = useSelector((state: RootState) => state.oshSlice.configNode);
+    const configNode = useSelector((state: RootState) => state.oshSlice.configNode);
     const dispatch = useAppDispatch();
     const nodes = useSelector((state: RootState) => state.oshSlice.nodes);
     const laneMapRef = useRef<Map<string, LaneMapEntry>>(new Map<string, LaneMapEntry>());
@@ -54,9 +54,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
                             address: node.address,
                             port: node.port,
                             oshPathRoot: node.oshPathRoot,
-                            sosEndpoint: node.sosEndpoint,
                             csAPIEndpoint: node.csAPIEndpoint,
-                            configsEndpoint: node.configsEndpoint,
                             auth: { username: node.username, password: node.password },
                             isSecure: node.isSecure,
                             isDefaultNode: node.isDefaultNode
@@ -114,8 +112,6 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             address: opt.address,
             port: opt.port,
             oshPathRoot: opt.oshPathRoot,
-            sosEndpoint: opt.sosEndpoint,
-            configsEndpoint: opt.configsEndpoint,
             csAPIEndpoint: opt.csAPIEndpoint,
             auth: {
                 username: opt?.auth?.username ? opt.auth.username : opt.username,
@@ -139,7 +135,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
             if(!nodeLaneMap) return;
             await node.fetchDatastreams(nodeLaneMap);
-            await node.fetchProcessVideoDatastreams(nodeLaneMap);
+            // await node.fetchProcessVideoDatastreams(nodeLaneMap);
             await node.fetchControlStreams(nodeLaneMap);
 
 
@@ -159,11 +155,11 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
 
         // fetch adjudication systems
-        let adjMap: Map<string, string> = new Map();
-        for(let node of newNodes){
-           adjMap = await node.fetchOrCreateAdjudicationSystems(allLanes);
-
-        }
+        // let adjMap: Map<string, string> = new Map();
+        // for(let node of newNodes){
+        //    adjMap = await node.fetchOrCreateAdjudicationSystems(allLanes);
+        //
+        // }
 
         // dispatch(setDatastreams(allDatastreams));
         dispatch(setLaneMap(allLanes));
@@ -198,9 +194,7 @@ export const initializeDefaultNode = () => (dispatch: AppDispatch) => {
         address: hostName,
         port: 8282,
         oshPathRoot: "/sensorhub",
-        sosEndpoint: "/sos",
         csAPIEndpoint: "/api",
-        configsEndpoint: "/configs",
         auth: { username: "admin", password: "oscar" },
         isSecure: false,
         isDefaultNode: true

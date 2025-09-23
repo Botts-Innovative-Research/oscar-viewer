@@ -1,13 +1,23 @@
 import {Grid} from "@mui/material";
 import {DateTimePicker, LocalizationProvider} from "@mui/x-date-pickers";
 import {AdapterDayjs} from "@mui/x-date-pickers/AdapterDayjs";
+
+import {RootState} from "@/lib/state/Store";
+import {selectEndDate, selectStartDate, setEndDate, setStartDate} from "@/lib/state/NationalViewSlice";
+
 import React, {useEffect, useState} from "react";
 import dayjs, {Dayjs} from "dayjs";
 
 
-export default function NationalDatePicker(){
+export default function NationalDatePicker({onCustomRangeChange, customStartTime, customEndTime}: {
+    onCustomRangeChange?: (range: { start: Date, end: Date }) => void,
+    customStartTime?:Date,
+    customEndTime?: Date
+}){
+
     const [startTime, setStartTime] = useState<Dayjs>();
     const [endTime, setEndTime] = useState<Dayjs>();
+
 
     useEffect(() => {
         setStartTime(dayjs().subtract(1, 'year'));
@@ -19,6 +29,7 @@ export default function NationalDatePicker(){
         if(newValue && endTime && newValue.isAfter(endTime)){
             setEndTime(newValue)
         }
+        customStartTime = newValue.toDate();
     };
 
     const handleEndTimeChange = (newValue: Dayjs) => {
@@ -26,6 +37,8 @@ export default function NationalDatePicker(){
             return;
         }
         setEndTime(newValue);
+        customEndTime = newValue.toDate();
+
     };
 
     return (
