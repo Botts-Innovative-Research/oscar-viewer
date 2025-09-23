@@ -182,8 +182,9 @@ export class NationalTableData implements INationalTableData {
     neutronAlarmCount: number;
     faultAlarmCount: number;
     tamperAlarmCount: number;
+    gammaNeutronAlarmCount: number;
 
-    constructor(id: number, siteName: string, occupancyCount: number, gammaCount: number, neutronCount: number, faultCount: number, tamperCount: number) {
+    constructor(id: number, siteName: string, occupancyCount: number, gammaCount: number, neutronCount: number, faultCount: number, tamperCount: number, gammaNeutronAlarmCount: number) {
         this.id = id;
         this.site = siteName;
         this.occupancyCount = occupancyCount;
@@ -191,6 +192,7 @@ export class NationalTableData implements INationalTableData {
         this.neutronAlarmCount = neutronCount;
         this.faultAlarmCount = faultCount;
         this.tamperAlarmCount = tamperCount;
+        this.gammaNeutronAlarmCount = gammaNeutronAlarmCount;
     }
 }
 
