@@ -4,7 +4,7 @@ import {Button, Container, Snackbar, SnackbarCloseReason, SnackbarContent, Stack
 import React, {useState} from "react";
 import {setCurrentUser} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {useRouter} from "next/dist/client/components/navigation";
+import {useRouter} from "next/navigation";
 
 export default function AccountViewPage() {
     const dispatch = useAppDispatch();
@@ -42,7 +42,7 @@ export default function AccountViewPage() {
                 <Typography variant="h4">Login</Typography>
                 <TextField autoComplete="new-username" fullWidth id="username" placeholder="Username" variant="outlined" onChange={onChangeUserName}/>
                 <TextField autoComplete="new-password" fullWidth id="password" placeholder="Password" variant="outlined" type="password"/>
-                <Button fullWidth variant="contained" color="success" onClick={onClickLogin}>Login</Button>
+                <Button fullWidth variant="contained" color="success" onClick={onClickLogin} name="login-btn">Login</Button>
                 <Snackbar
                     open={openSnack}
                     anchorOrigin={{ vertical:'top', horizontal:'center' }}
@@ -50,6 +50,7 @@ export default function AccountViewPage() {
                     onClose={handleCloseSnack}
                 >
                     <SnackbarContent
+                        id="volume-snackbar"
                         style={{
                             backgroundColor: '#f8aa51',
                             color: '#ffffff'

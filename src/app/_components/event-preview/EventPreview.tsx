@@ -620,17 +620,17 @@ export function EventPreview() {
                                 </div>
                             )
                             :
-                           (
-                               <div>
-                                   <Typography
-                                       variant="h6"
-                                       align="center"
-                                   >
-                                       No video data available.
-                                   </Typography>
-                               </div>
-                           )}
-                        </Box>
+                            (
+                                <div>
+                                    <Typography
+                                        variant="h6"
+                                        align="center"
+                                    >
+                                        No video data available.
+                                    </Typography>
+                                </div>
+                            )}
+                    </Box>
                 ) :
 
                 <Box
@@ -643,7 +643,7 @@ export function EventPreview() {
             <Stack spacing={2}>
                 <AdjudicationSelect
                     adjCode={adjudicationCode}
-                                    onSelect={handleAdjudicationCode}
+                    onSelect={handleAdjudicationCode}
                 />
                 <TextField
                     onChange={handleNotes}
@@ -654,9 +654,9 @@ export function EventPreview() {
                 />
                 <Stack
                     direction={"row"}
-                       spacing={10}
-                       sx={{width: "100%"}}
-                       justifyContent={"center"}
+                    spacing={10}
+                    sx={{width: "100%"}}
+                    justifyContent={"center"}
                 >
                     <Button
                         onClick={sendAdjudicationData}
