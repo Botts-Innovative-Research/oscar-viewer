@@ -5,7 +5,7 @@
       "dom",
       "es2015"
     ],
-    "module": "commonjs",
+    "module": "esnext",
     "noImplicitAny": true,
     "outDir": "./build/",
     "sourceMap": true,
@@ -42,7 +42,8 @@
     "./types/new-types.d.ts",
     "./types/osh-js.d.tsx",
     "new-types.d.ts",
-    "web/types/**/*.ts"
+    "web/types/**/*.ts",
+    "node_modules/cypress/types/mocha/index.d.ts"
   ],
   "exclude": [
     "node_modules"

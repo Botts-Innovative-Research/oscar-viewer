@@ -90,8 +90,6 @@ export default function EventDetailsPage() {
     }, [eventPreview, laneMapRef.current]);
 
 
-
-
     return (
         <Stack spacing={4} direction={"column"} sx={{width: "100%"}}>
             <Grid container spacing={2} alignItems="center">
@@ -104,7 +102,7 @@ export default function EventDetailsPage() {
             </Grid>
 
             <Paper variant='outlined' sx={{ width: '100%'}}>
-                <DataRow/>
+                <DataRow eventData={eventPreview.eventData}/>
             </Paper>
 
             { (gammaDatasources.length > 0 || neutronDatasources.length > 0 || thresholdDatasources.length > 0) && laneMapRef &&

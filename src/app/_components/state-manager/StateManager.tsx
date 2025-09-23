@@ -298,6 +298,7 @@ export default function StateManager() {
                                             </Alert>
                                         )}
                                         <Snackbar
+                                            id="save-snackbar"
                                             anchorOrigin={{vertical: 'top', horizontal: 'center'}}
                                             open={openSaveSnack}
                                             autoHideDuration={5000}
@@ -358,6 +359,7 @@ export default function StateManager() {
                                             </Alert>
                                         )}
                                         <Snackbar
+                                            id="load-snackbar"
                                             anchorOrigin={{vertical: 'top', horizontal: 'center'}}
                                             open={openSnack}
                                             autoHideDuration={5000}
