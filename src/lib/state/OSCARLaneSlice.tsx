@@ -12,13 +12,11 @@ enableMapSet();
 export interface IOSCARLaneSlice{
     lanes: LaneMeta[],
     laneMap: Map<string, LaneMapEntry>,
-    oscarService: any[]
 }
 
 const initialState: IOSCARLaneSlice ={
     lanes: [],
     laneMap: new Map<string, LaneMapEntry>(),
-    oscarService: []
 }
 
 
@@ -32,9 +30,6 @@ export const Slice = createSlice({
         setLaneMap: (state, action: PayloadAction<Map<string, LaneMapEntry>>) => {
             state.laneMap = (action.payload);
         },
-        setOscarService: (state, action: PayloadAction<[]>) => {
-            state.oscarService = (action.payload);
-        },
     }
 })
 
@@ -42,13 +37,10 @@ export const Slice = createSlice({
 export const {
     setLanes,
     setLaneMap,
-    setOscarService
 
 } = Slice.actions;
 
 export const selectLanes = (state: RootState) => state.laneSlice.lanes;
-export const selectOscarService = (state: RootState) => state.laneSlice.oscarService;
-
 export const selectLaneByName = (laneName: string) => (state: RootState) => {
     return state.laneSlice.lanes.find((lane: { name: string }) => lane.name === laneName);
 }

@@ -119,8 +119,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             },
             isSecure: opt.isSecure,
             isDefaultNode: opt.isDefaultNode,
-            laneAdjMap: opt.laneAdjMap,
-            oscarServiceSystem: opt.oscarServiceSystem
+            laneAdjMap: opt.laneAdjMap
         });
     }
 
@@ -135,7 +134,6 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
 
             if(!nodeLaneMap) return;
-            await node.fetchOscarServiceSystem();
             await node.fetchDatastreams(nodeLaneMap);
             // await node.fetchProcessVideoDatastreams(nodeLaneMap);
             await node.fetchControlStreams(nodeLaneMap);
@@ -170,14 +168,12 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }
 
 
+    useEffect(() => {
+        testSysFetch();
+    }, [nodes.length]);
 
     useEffect(() => {
-        const init = async () => {
-            await InitializeApplication();
-            await testSysFetch();
-        }
-
-        init();
+        InitializeApplication();
     }, [nodes.length]);
 
 
