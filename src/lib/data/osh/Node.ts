@@ -54,6 +54,8 @@ export interface INode {
 
     fetchControlStreams(laneMap: Map<string, LaneMapEntry>): Promise<any>,
 
+    fetchAllControlStreams(): Promise<any>,
+
     fetchProcessVideoDatastreams(laneMap: Map<string, LaneMapEntry>): void,
 
     insertSubSystem(systemJSON: any, parentSystemId: string): Promise<string>
@@ -369,6 +371,20 @@ export class Node implements INode {
                 console.error(`Error fetching control streams for system ${laneEntry.laneSystem.id}:`, error);
             }
         }
+    }
+
+    async fetchAllControlSteams(): Promise<any[]>{
+        let availableControlStreams = [];
+        const controlStreamCollection = await this.getControlStreamApi().searchControlStreams(undefined, 100);
+        while (controlStreamCollection.hasNext()) {
+            let controlStreamResults = await controlStreamCollection.nextPage();
+            availableControlStreams.push(...controlStreamResults);
+        }
+
+        if(availableControlStreams.length > 0)
+            return availableControlStreams;
+        else
+            console.warn("No control streams found for : ", this.address);
     }
 
     async fetchProcessVideoDatastreams(laneMap: Map<string, LaneMapEntry>) {

@@ -21,6 +21,8 @@ import {RootState} from "@/lib/state/Store";
 import {selectNodes} from "@/lib/state/OSHSlice";
 import NodeSelect from "@/app/_components/reportgen/NodeSelector";
 import LaneSelect from "@/app/_components/reportgen/LaneSelector";
+import ControlStreams from "osh-js/source/core/consysapi/controlstream/ControlStreams";
+import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 
 
 export default function ReportGeneratorView(){
@@ -30,7 +32,7 @@ export default function ReportGeneratorView(){
     const [selectedTimeRange, setSelectedTimeRange]= useState<string | null>(null);
     const [customStartTime, setCustomStartTime] = useState<Date | null>(null);
     const [customEndTime, setCustomEndTime] = useState<Date | null>(null);
-    const [selectedNode, setSelectedNode] = useState(null);
+    const [selectedNode, setSelectedNode] = useState<INode | null>(null);
     const [selectedLane, setSelectedLane] = useState(null);
 
     const [openSnack, setOpenSnack] = useState(false);
@@ -59,12 +61,16 @@ export default function ReportGeneratorView(){
 
 
         try {
-            const response = await insertObservation("endpoint", "observation");
+            if(!selectedNode) return;
 
-            if (response.ok) {
-                setSnackMessage("Report request submitted successfully.");
-                setSeverity("success");
-            }
+
+
+            // const response = await insertObservation("endpoint", "observation");
+
+            // if (response.ok) {
+            //     setSnackMessage("Report request submitted successfully.");
+            //     setSeverity("success");
+            // }
 
 
 
