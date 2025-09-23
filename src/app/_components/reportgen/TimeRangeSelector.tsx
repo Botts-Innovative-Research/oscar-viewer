@@ -11,7 +11,7 @@ const timeRanges = [
     },
     {
         label: "Last 7 Days",
-        value: 'lasy7days'
+        value: 'last7days'
     },
     {
         label: "Last 30 Days",

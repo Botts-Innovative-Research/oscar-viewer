@@ -4,27 +4,30 @@ import {AdapterDayjs} from "@mui/x-date-pickers/AdapterDayjs";
 import {useDispatch, useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectEndDate, selectStartDate, setEndDate, setStartDate} from "@/lib/state/NationalViewSlice";
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import dayjs, {Dayjs} from "dayjs";
 
 
-export default function NationalDatePicker(){
-    const dispatch = useDispatch();
+export default function NationalDatePicker({onCustomRangeChange, customStartTime, customEndTime}: {
+    onCustomRangeChange?: (range: { start: Date, end: Date }) => void,
+    customStartTime?:Date,
+    customEndTime?: Date
+}){
 
-    const savedStartDate = useSelector((state: RootState) => selectStartDate(state))
-    const savedEndDate = useSelector((state: RootState) => selectEndDate(state))
+    const [startTime, setStartTime] = useState<Dayjs>();
+    const [endTime, setEndTime] = useState<Dayjs>();
 
-
-    const [startTime, setStartTime] = useState<Dayjs>(dayjs(savedStartDate)); //dayjs().subtract(1, 'day')
-    const [endTime, setEndTime] = useState<Dayjs>(dayjs(savedEndDate)); //dayjs
+    useEffect(() => {
+        setStartTime(dayjs().subtract(1, 'year'));
+        setEndTime(dayjs().add(1, 'hour'));
+    }, []);
 
     const handleStartTimeChange = (newValue: Dayjs) => {
         setStartTime(newValue);
-        dispatch(setStartDate(newValue.toISOString()))
         if(newValue && endTime && newValue.isAfter(endTime)){
             setEndTime(newValue)
-            dispatch(setEndDate(newValue.toISOString()))
         }
+        customStartTime = newValue.toDate();
     };
 
     const handleEndTimeChange = (newValue: Dayjs) => {
@@ -32,8 +35,7 @@ export default function NationalDatePicker(){
             return;
         }
         setEndTime(newValue);
-        dispatch(setEndDate(newValue.toISOString()))
-
+        customEndTime = newValue.toDate();
     };
 
     return (

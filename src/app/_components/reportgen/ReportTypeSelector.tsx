@@ -6,15 +6,19 @@ import {useState} from "react";
 export const reportTypes = [
     {
         label: "RDS Site Report",
-        value: "rdsSite",
+        value: "RDS_SITE",
     },
     {
         label: "Lane Report",
-        value: "lane",
+        value: "LANE",
     },
     {
-        label: "Operations Report",
-        value: "operations",
+        label: "Adjudication Report",
+        value: "ADJUDICATION",
+    },
+    {
+        label: "Event Report",
+        value: "EVENT",
     }
 ]
 

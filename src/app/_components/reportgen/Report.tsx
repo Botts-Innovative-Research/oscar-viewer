@@ -1,8 +1,10 @@
 import {
     Alert,
     Button,
-    Grid,
-    Paper,
+    FormControl,
+    Grid, InputLabel,
+    MenuItem,
+    Paper, Select,
     Snackbar,
     SnackbarCloseReason,
     Stack,
@@ -13,35 +15,63 @@ import {Download} from "@mui/icons-material";
 import React, {useState} from "react";
 import TimeRangeSelect from "@/app/_components/reportgen/TimeRangeSelector";
 import NationalDatePicker from "@/app/_components/national/NationalDatePicker";
-import ReportGenerationData, {sendSetReportCommand} from "@/lib/data/oscar/report/ReportGeneration";
-import {insertObservation} from "@/lib/data/osh/Node";
+import {INode, insertObservation} from "@/lib/data/osh/Node";
+import {useSelector} from "react-redux";
+import {RootState} from "@/lib/state/Store";
+import {selectNodes} from "@/lib/state/OSHSlice";
 
-//TODO: add a node dropdown and then whichever node they choose send the request to that endpoint
 
 export default function ReportGeneratorView(){
     const[isGenerating, setIsGenerating] = useState(false);
 
     const [selectedReportType, setSelectedReportType]= useState<string | null>(null);
-    const [selectedEventType, setSelectedEventType]= useState<string | null>(null);
     const [selectedTimeRange, setSelectedTimeRange]= useState<string | null>(null);
+    const [customStartTime, setCustomStartTime] = useState<Date | null>(null);
+    const [customEndTime, setCustomEndTime] = useState<Date | null>(null);
+    const [selectedNode, setSelectedNode] = useState(null);
 
     const [openSnack, setOpenSnack] = useState(false);
     const [snackMessage, setSnackMessage] = useState<string>();
     const [severity, setSeverity] = useState<'success' | 'error'>('success');
 
-    const [customDates, setCustomDates] = useState();
 
-    const [reportData, setReportData] = useState<ReportGenerationData>();
+    const nodes = useSelector((state: RootState) => selectNodes(state));
+
 
     const handleGenerateReport = async() => {
+        if (selectedTimeRange === "custom" && (!customStartTime || !customEndTime)){
+            setSnackMessage("Please select both custom start and end dates.");
+            setSeverity("error");
+            setOpenSnack(true)
+        }
+
+        if (selectedReportType === "LANE" && !selectedNode){
+            setSnackMessage("Please select a node for the Lane Report.");
+            setSeverity("error");
+            setOpenSnack(true)
+        }
+
         setIsGenerating(true);
 
-        let tempData: ReportGenerationData = reportData;
+        let startTime, endTime = getTimeRange(selectedTimeRange);
 
-        let observation = tempData.createReportObservation();
 
-        await submitReport("", "");
+        try {
+            const response = await insertObservation("endpoint", "observation");
 
+            if (response.ok) {
+                setSnackMessage("Report request submitted successfully.");
+                setSeverity("success");
+            }
+
+        } catch (error) {
+            setSnackMessage("Report request failed to submit.");
+            setSeverity("error");
+        } finally {
+            setOpenSnack(true)
+            setIsGenerating(false)
+            resetForm();
+        }
     }
 
     const handleTimeRange = (value: string) => {
@@ -52,106 +82,134 @@ export default function ReportGeneratorView(){
         setSelectedReportType(value);
     }
 
-    const handleEventTypeSelect = (value: string) => {
-        setSelectedEventType(value);
-    }
 
     const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
-        if (reason === 'clickaway') {
+        if (reason === 'clickaway')
             return;
-        }
-
         setOpenSnack(false);
     };
 
     const resetForm = () => {
         setIsGenerating(false);
-        setSelectedEventType("");
+        // setSelectedEventType("");
+        setSelectedReportType("")
         setSelectedTimeRange("");
-        setSelectedEventType("");
-        // setCustomDates();
+        setCustomEndTime(null);
+        setCustomEndTime(null)
+
     }
 
+    const getTimeRange = (timeRange: string): {startTime: Date, endTime: Date} => {
+        const now = new Date();
+        let startTime: Date;
+        let endTime: Date = now;
 
-    const submitReport = async(endpoint: string, observation: any) => {
-        try {
-            const response = await insertObservation(endpoint, observation);
 
-            if (response.ok) {
-                setSnackMessage("Report request submitted successfully.");
-                setSeverity("success");
-            }
-
-            await sendSetReportCommand(null, null, null);
-
-        } catch (error) {
-            setSnackMessage("Report request failed to submit.");
-            setSeverity("error");
-        } finally {
-            setOpenSnack(true)
-            setIsGenerating(false)
-            resetForm();
+        switch(timeRange){
+            case "last24Hrs":
+                startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                break;
+            case "last7days":
+                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+            case "last30days":
+                startTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                break;
+            case "thisMonth":
+                startTime = new Date(now.getFullYear(), now.getMonth(), 1);
+                break;
+            case "custom":
+                startTime = customStartTime;
+                endTime = customEndTime;
+                break;
+            default:
+                startTime = now;
         }
-
+        return {startTime, endTime};
     }
 
-        return (
-            <Stack p={3} spacing={3}>
-                <Typography
-                    variant="h4"
-                    sx={{padding: 2}}
-                >
-                    Report Generator
-                </Typography>
 
-                <Paper sx={{padding: 3}}>
-                    <Grid container spacing={2}>
 
-                        <Grid item xs={12} md={6}>
-                            <ReportTypeSelect
-                                onSelect={handleReportTypeSelect}
-                                reportTypeVal={selectedReportType}
-                            />
-                        </Grid>
+    return (
+        <Stack p={3} spacing={3}>
+            <Typography variant="h4" sx={{padding: 2}}>
+                Generate Reports
+            </Typography>
 
-                        <Grid item xs={12} md={6}>
-                            <TimeRangeSelect onSelect={handleTimeRange} timeRangeVal={selectedTimeRange}/>
-                        </Grid>
+            <Paper sx={{padding: 3}}>
+                <Typography variant="h6" gutterBottom>Select Report Type</Typography>
+                <Grid container spacing={2}>
 
-                        {selectedTimeRange === 'custom' && (
-                            <Grid item xs={12} md={6}>
-                                <NationalDatePicker/>
-
-                            </Grid>
-                        )}
-
-                        <Grid item xs={12}>
-                            <Button
-                                variant="contained"
-                                size="large"
-                                fullWidth
-                                startIcon={<Download/>}
-                                onClick={handleGenerateReport}
-                                disabled={isGenerating || !selectedReportType || !selectedTimeRange}
-                            >
-                                {isGenerating ? 'Generating Report...' : 'Generate Report'}
-                            </Button>
-                        </Grid>
-
+                    <Grid item xs={12} md={6}>
+                        <ReportTypeSelect
+                            onSelect={handleReportTypeSelect}
+                            reportTypeVal={selectedReportType}
+                        />
                     </Grid>
-                </Paper>
-                <Snackbar
-                    open={openSnack}
-                    autoHideDuration={5000}
-                    onClose={handleCloseSnack}
-                    anchorOrigin={{vertical: 'top', horizontal: 'center'}}
-                >
-                    <Alert severity={severity} onClose={handleCloseSnack}>
-                        {snackMessage}
-                    </Alert>
-                </Snackbar>
 
-            </Stack>
-        )
+                    {selectedReportType == "LANE" && (
+                        <Grid item xs={12} md={6}>
+                            <FormControl size="small" fullWidth>
+                                <InputLabel id="node">Select Node</InputLabel>
+                                <Select labelId="node"
+                                        value={selectedNode}
+                                        onChange={(e) => setSelectedNode(e.target.value)}
+                                        >
+                                    {nodes.map((node: INode) => (
+                                        <MenuItem key={node.id} value={node.id}>
+                                            {node.name}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                    )}
+                </Grid>
+
+            </Paper>
+            <Paper sx={{padding: 3}}>
+                <Typography variant="h6" gutterBottom>Time Range</Typography>
+                <Grid container spacing={2}>
+                    <Grid item xs={12} md={6}>
+                        <TimeRangeSelect onSelect={handleTimeRange} timeRangeVal={selectedTimeRange}/>
+                    </Grid>
+
+                    {selectedTimeRange === 'custom' && (
+                        <Grid item xs={12} md={6}>
+                            <NationalDatePicker customStartTime={customStartTime} customEndTime={customEndTime}/>
+                        </Grid>
+                    )}
+                </Grid>
+
+            </Paper>
+            <Paper sx={{padding: 3}}>
+                <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                        <Button
+                            variant="contained"
+                            size="large"
+                            fullWidth
+                            startIcon={<Download/>}
+                            onClick={handleGenerateReport}
+                            disabled={isGenerating || !selectedReportType || !selectedTimeRange}
+                        >
+                            {isGenerating ? 'Generating Report...' : 'Generate Report'}
+                        </Button>
+                    </Grid>
+                </Grid>
+            </Paper>
+            <Snackbar
+                open={openSnack}
+                autoHideDuration={5000}
+                onClose={handleCloseSnack}
+                anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+            >
+                <Alert severity={severity} onClose={handleCloseSnack}>
+                    {snackMessage}
+                </Alert>
+            </Snackbar>
+
+        </Stack>
+    )
 
 }
