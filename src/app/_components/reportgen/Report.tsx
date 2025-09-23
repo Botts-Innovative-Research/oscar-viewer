@@ -19,6 +19,7 @@ import {INode, insertObservation} from "@/lib/data/osh/Node";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectNodes} from "@/lib/state/OSHSlice";
+import NodeSelect from "@/app/_components/reportgen/NodeSelector";
 
 
 export default function ReportGeneratorView(){
@@ -35,7 +36,6 @@ export default function ReportGeneratorView(){
     const [severity, setSeverity] = useState<'success' | 'error'>('success');
 
 
-    const nodes = useSelector((state: RootState) => selectNodes(state));
 
 
     const handleGenerateReport = async() => {
@@ -72,6 +72,10 @@ export default function ReportGeneratorView(){
             setIsGenerating(false)
             resetForm();
         }
+    }
+
+    const handleNodeSelect = (value: string) => {
+        setSelectedNode(value)
     }
 
     const handleTimeRange = (value: string) => {
@@ -149,19 +153,7 @@ export default function ReportGeneratorView(){
 
                     {selectedReportType == "LANE" && (
                         <Grid item xs={12} md={6}>
-                            <FormControl size="small" fullWidth>
-                                <InputLabel id="node">Select Node</InputLabel>
-                                <Select labelId="node"
-                                        value={selectedNode}
-                                        onChange={(e) => setSelectedNode(e.target.value)}
-                                        >
-                                    {nodes.map((node: INode) => (
-                                        <MenuItem key={node.id} value={node.id}>
-                                            {node.name}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
+                            <NodeSelect onSelect={handleNodeSelect} node={selectedNode} />
                         </Grid>
                     )}
                 </Grid>
