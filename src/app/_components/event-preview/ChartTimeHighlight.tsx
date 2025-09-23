@@ -55,6 +55,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
     const gammaChartBaseId = "chart-view-event-detail-gamma-";
     const neutronChartBaseId = "chart-view-event-detail-neutron-";
+    const nsigmaChartBaseId = "chart-view-event-detail-nsigma-";
 
     const [layers, setLayers] = useState<CurveLayers>();
 
@@ -196,7 +197,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         switch (eventData.status) {
             case "Gamma":
                 gammaId = gammaChartBaseId + eventData.id + "-" + props.modeType;
-                nsigmaId = "chart-view-event-detail-nsigma-" + eventData.id + "-" + props.modeType;
+                nsigmaId = nsigmaChartBaseId + eventData.id + "-" + props.modeType;
                 ids.push(gammaId, nsigmaId);
                 break;
             case "Neutron":
@@ -206,7 +207,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             case "Gamma & Neutron":
             case "None":
                 gammaId = gammaChartBaseId + eventData.id + "-" + props.modeType;
-                nsigmaId = "chart-view-event-detail-nsigma-" + eventData.id + "-" + props.modeType;
+                nsigmaId = nsigmaChartBaseId + eventData.id + "-" + props.modeType;
                 neutronId = neutronChartBaseId + eventData.id + "-" + props.modeType;
                 ids.push(gammaId, neutronId, nsigmaId);
                 break;
@@ -237,8 +238,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     }
 
     const renderCharts = (layers: CurveLayers, elementIds: string[]) => {
-
-        let nsigmaAvailable = false;
 
         if (layers.gamma && gammaChartViewRef.current) {
             const gammaLayers: any[] = [];
@@ -295,7 +294,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         }
 
         if (layers.nsigma && layers.threshNsigma && nSigmaChartViewRef.current) {
-            nsigmaAvailable = true;
 
             const nsigmaDiv = document.createElement("div");
             nsigmaDiv.id = elementIds.find(id => id.includes("nsigma"));

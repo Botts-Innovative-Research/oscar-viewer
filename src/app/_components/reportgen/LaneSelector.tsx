@@ -1,33 +1,39 @@
 "use client";
 
-import {FormControl, InputLabel, ListSubheader, MenuItem, Select, SelectChangeEvent} from '@mui/material';
-import {useEffect, useState} from 'react';
-import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
-import {IAdjudicationData} from "@/lib/data/oscar/adjudication/Adjudication";
+import {FormControl, InputLabel, MenuItem, Select, SelectChangeEvent} from '@mui/material';
+import {useState} from "react";
+import {INode} from "@/lib/data/osh/Node";
+import {useSelector} from "react-redux";
+import {RootState} from "@/lib/state/Store";
+import {selectNodes} from "@/lib/state/OSHSlice";
+import OSCARLaneSlice, {selectLanes} from "@/lib/state/OSCARLaneSlice";
+import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 
-const secondarySelectChoices=[
-    "NONE",
-    "COMPLETED",
-    "REQUESTED",
-]
-export default function SecondaryInspectionSelect(props: {
-    onSelect: (value: string) => void, // Return selected value
-    secondarySelectVal: string
+
+export default function LaneSelect(props: {
+    onSelect: (value: string[] | string) => void,
+    lane: any
 }) {
+
+    const nodes = useSelector((state: RootState) => selectNodes(state));
+
+    const lanes = useSelector((state: RootState) => selectLanes(state));
+    const [selectedLane, setSelectedLane] = useState(null);
 
     const handleChange = (event: SelectChangeEvent) => {
         const val = event.target.value;
         props.onSelect(val)
+        setSelectedLane(val);
     };
 
     return (
         <FormControl size="small" fullWidth>
-            <InputLabel id="label" >Secondary Inspection</InputLabel>
+            <InputLabel id="label">Lane Selector</InputLabel>
             <Select
                 variant="outlined"
                 id="label"
-                label="SecondarySelect"
-                value={props.secondarySelectVal}
+                label="Lane"
+                value= {selectedLane}
                 onChange={handleChange}
                 MenuProps={{
                     MenuListProps: {
@@ -37,7 +43,7 @@ export default function SecondaryInspectionSelect(props: {
                     }
                 }}
                 autoWidth
-                style={{minWidth: "12em"}}
+                style={{minWidth: "8em"}}
                 sx={{
                     color: "text.primary",
                     "& .MuiOutlinedInput-notchedOutline": {
@@ -55,13 +61,13 @@ export default function SecondaryInspectionSelect(props: {
                         },
                 }}
             >
-                {secondarySelectChoices.map((item) =>(
-                    <MenuItem key={item} value={item}>
-                        {item}
-                    </MenuItem>
-                ))
+                {
+                    lanes.map((item: any) => (
+                        <MenuItem key={item.id} value={item.id}>
+                            {item.name}
+                        </MenuItem>
+                    ))
                 }
-
             </Select>
         </FormControl>
     );

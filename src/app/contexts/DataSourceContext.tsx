@@ -24,7 +24,7 @@ export {DataSourceContext};
 
 export default function DataSourceProvider({children}: { children: ReactNode }) {
 
-    const configNode: Node = useSelector((state: RootState) => state.oshSlice.configNode);
+    const configNode = useSelector((state: RootState) => state.oshSlice.configNode);
     const dispatch = useAppDispatch();
     const nodes = useSelector((state: RootState) => state.oshSlice.nodes);
     const laneMapRef = useRef<Map<string, LaneMapEntry>>(new Map<string, LaneMapEntry>());
@@ -157,11 +157,11 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
 
         // fetch adjudication systems
-        let adjMap: Map<string, string> = new Map();
-        for(let node of newNodes){
-           adjMap = await node.fetchOrCreateAdjudicationSystems(allLanes);
-
-        }
+        // let adjMap: Map<string, string> = new Map();
+        // for(let node of newNodes){
+        //    adjMap = await node.fetchOrCreateAdjudicationSystems(allLanes);
+        //
+        // }
 
         // dispatch(setDatastreams(allDatastreams));
         dispatch(setLaneMap(allLanes));

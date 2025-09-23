@@ -30,7 +30,7 @@ import MediationIcon from '@mui/icons-material/Mediation';
 import {Button, Menu, MenuItem, Stack, Tooltip} from '@mui/material';
 import {useEffect, useState} from 'react';
 import Link from 'next/link';
-import {Label, SaveRounded} from "@mui/icons-material";
+import {Download, Label, SaveRounded} from "@mui/icons-material";
 import AlarmAudio from "@/app/_components/AlarmAudio";
 import {selectAlarmAudioVolume} from "@/lib/state/OSCARClientSlice";
 import {useSelector} from "react-redux";
@@ -160,6 +160,11 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
       icon: <MediationIcon />,
       href: "/national-view",
     },
+      {
+          title: "Report Generator",
+          icon: <Download />,
+          href: "/report",
+      },
   ]
 
   // Settings items for drawer

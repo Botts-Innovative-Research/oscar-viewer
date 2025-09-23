@@ -1,33 +1,48 @@
 "use client";
 
-import {FormControl, InputLabel, ListSubheader, MenuItem, Select, SelectChangeEvent} from '@mui/material';
-import {useEffect, useState} from 'react';
-import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
-import {IAdjudicationData} from "@/lib/data/oscar/adjudication/Adjudication";
+import {FormControl, InputLabel, MenuItem, Select, SelectChangeEvent} from '@mui/material';
+import {useState} from "react";
 
-const secondarySelectChoices=[
-    "NONE",
-    "COMPLETED",
-    "REQUESTED",
+export const reportTypes = [
+    {
+        label: "RDS Site Report",
+        value: "RDS_SITE",
+    },
+    {
+        label: "Lane Report",
+        value: "LANE",
+    },
+    {
+        label: "Adjudication Report",
+        value: "ADJUDICATION",
+    },
+    {
+        label: "Event Report",
+        value: "EVENT",
+    }
 ]
-export default function SecondaryInspectionSelect(props: {
-    onSelect: (value: string) => void, // Return selected value
-    secondarySelectVal: string
+
+export default function ReportTypeSelect(props: {
+    onSelect: (value: string[] | string) => void,
+    reportTypeVal: string
 }) {
+
+    const [reportType, setReportType] = useState("");
 
     const handleChange = (event: SelectChangeEvent) => {
         const val = event.target.value;
         props.onSelect(val)
+        setReportType(val);
     };
 
     return (
         <FormControl size="small" fullWidth>
-            <InputLabel id="label" >Secondary Inspection</InputLabel>
+            <InputLabel id="label">Report Type</InputLabel>
             <Select
                 variant="outlined"
                 id="label"
-                label="SecondarySelect"
-                value={props.secondarySelectVal}
+                label="Report Type"
+                value= {reportType}
                 onChange={handleChange}
                 MenuProps={{
                     MenuListProps: {
@@ -37,7 +52,7 @@ export default function SecondaryInspectionSelect(props: {
                     }
                 }}
                 autoWidth
-                style={{minWidth: "12em"}}
+                style={{minWidth: "8em"}}
                 sx={{
                     color: "text.primary",
                     "& .MuiOutlinedInput-notchedOutline": {
@@ -55,13 +70,13 @@ export default function SecondaryInspectionSelect(props: {
                         },
                 }}
             >
-                {secondarySelectChoices.map((item) =>(
-                    <MenuItem key={item} value={item}>
-                        {item}
-                    </MenuItem>
-                ))
+                {
+                    reportTypes.map((item) => (
+                        <MenuItem key={item.value} value={item.value}>
+                            {item.label}
+                        </MenuItem>
+                    ))
                 }
-
             </Select>
         </FormControl>
     );
