@@ -36,18 +36,13 @@ type ChartTypes ={
 Chart.register(...registerables, annotationPlugin);
 
 export class ChartInterceptProps {
-    setChartReady: Function;
     modeType: string;
-    currentTime?: any;
     datasources: { gamma: typeof ConSysApi, neutron: typeof ConSysApi, threshold: typeof ConSysApi };
     eventData: EventTableData;
     latestGB: number;
 }
 
 export default function ChartTimeHighlight(props: ChartInterceptProps) {
-
-    const [chartsReady, setChartsReady] = useState<boolean>(false);
-    const [isReadyToRender, setIsReadyToRender] = useState<boolean>(false);
 
     const gammaChartViewRef = useRef<HTMLDivElement | null>(null);
     const nSigmaChartViewRef = useRef<HTMLDivElement | null>(null);
@@ -68,6 +63,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     });
 
     const [toggleView, setToggleView] = useState("cps");
+
     const gammaToggleButtons = [
         <ToggleButton color= 'error' value={"cps"} key={"cps"} disabled={toggleView === 'cps'}>CPS</ToggleButton>,
         <ToggleButton color= 'secondary' value={"sigma"} key={"sigma"} disabled={toggleView === 'sigma'}>NSigma</ToggleButton>
@@ -80,17 +76,14 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             }, 300);
     }, [chartViews.gamma]);
 
-    const checkReadyToRender = useCallback(() => {
-        if (chartsReady) {
-            setIsReadyToRender(true);
-        } else {
-            setIsReadyToRender(false);
-        }
-    }, [chartsReady]);
 
     useEffect(() => {
 
-        if (!props.eventData || !props.datasources?.gamma || !props.datasources?.neutron) return; // || !props.latestGB
+        if (!props.eventData || !props.datasources?.gamma || !props.datasources?.neutron)
+        {
+            console.warn("no datasources or event data");
+            return;
+        }
 
         if(props.datasources?.threshold)
             setHasNsigma(true);
@@ -104,8 +97,16 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     }, [props.eventData]);
 
     useEffect(() => {
-        if (!layers && props.eventData) return;
 
+        if (!props.eventData) {
+            console.warn("No event data");
+            return;
+        }
+
+        if(!layers){
+            console.warn("No layers");
+            return;
+        }
         const elementIds = updateChartElIds(props.eventData);
 
         renderCharts(layers, elementIds);
@@ -113,80 +114,60 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
 
     useEffect(() => {
-        if(chartViews && props.currentTime){
-            annotateCharts(props.currentTime);
-        }
-    }, [props.currentTime, chartViews]);
-
-    useEffect(() => {
-        checkReadyToRender();
-    }, [chartsReady]);
-
-    useEffect(() => {
-        if (isReadyToRender) {
-            console.log("Chart is ready to render");
-            props.setChartReady(true);
-        }
-    }, [isReadyToRender]);
-
-    useEffect(() => {
-
-        if(chartViews?.gamma) {
+        if(chartViews?.gamma)
             chartViews.gamma.chart.update();
-        }
-        if(chartViews?.nsigma) {
-            chartViews.nsigma.chart.update();
-        }
-        if(chartViews?.neutron) {
-            chartViews.neutron.chart.update();
-        }
 
+        if(chartViews?.nsigma)
+            chartViews.nsigma.chart.update();
+
+        if(chartViews?.neutron)
+            chartViews.neutron.chart.update();
 
     }, [toggleView, chartViews]);
 
 
-    function annotateCharts(currTime: any){
-        if (currTime) {
-            let chartAnnotation = {
-                annotations: {
-                    verticalLine: {
-                        type: 'line',
-                        xMin: currTime,
-                        xMax: currTime,
-                        borderColor: 'yellow',
-                        borderWidth: 4,
-                        label: {
-                            enabled: true,
-                            content: 'Current Time'
-                        }
-                    }
-                }
-            };
-
-            if (chartViews?.gamma) {
-                const gchart = chartViews.gamma.chart;
-                gchart.options.plugins.annotation = chartAnnotation;
-
-                gchart.update();
-            }
-
-            if (chartViews?.nsigma) {
-                const nSigmachart = chartViews.nsigma.chart;
-                nSigmachart.options.plugins.annotation = chartAnnotation;
-                nSigmachart.update();
-            }
-
-            if (chartViews?.neutron) {
-                const nchart = chartViews.neutron.chart;
-                nchart.options.plugins.annotation = chartAnnotation;
-                nchart.update();
-            }
-
-            chartViews?.gamma?.chart.update();
-            chartViews?.nsigma?.chart.update();
-            chartViews?.neutron?.chart.update();
-        }
-    }
+    // function annotateCharts(currTime: any){
+    //     if (currTime) {
+    //         let chartAnnotation = {
+    //             annotations: {
+    //                 verticalLine: {
+    //                     type: 'line',
+    //                     xMin: currTime,
+    //                     xMax: currTime,
+    //                     borderColor: 'yellow',
+    //                     borderWidth: 4,
+    //                     label: {
+    //                         enabled: true,
+    //                         content: 'Current Time'
+    //                     }
+    //                 }
+    //             }
+    //         };
+    //
+    //         if (chartViews?.gamma) {
+    //             const gchart = chartViews.gamma.chart;
+    //             gchart.options.plugins.annotation = chartAnnotation;
+    //
+    //             gchart.update();
+    //         }
+    //
+    //         if (chartViews?.nsigma) {
+    //             const nSigmachart = chartViews.nsigma.chart;
+    //             nSigmachart.options.plugins.annotation = chartAnnotation;
+    //             nSigmachart.update();
+    //         }
+    //
+    //         if (chartViews?.neutron) {
+    //             const nchart = chartViews.neutron.chart;
+    //             nchart.options.plugins.annotation = chartAnnotation;
+    //             nchart.update();
+    //         }
+    //
+    //         chartViews?.gamma?.chart.update();
+    //         chartViews?.nsigma?.chart.update();
+    //         chartViews?.neutron?.chart.update();
+    //     }
+    // }
 
     function updateChartElIds(eventData: EventTableData): string[] {
         let ids: string[] = [];
@@ -239,7 +220,12 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
     const renderCharts = (layers: CurveLayers, elementIds: string[]) => {
 
-        if (layers.gamma && gammaChartViewRef.current) {
+        if(!layers){
+            console.error("No layers to render charts");
+            return;
+        }
+
+        if (layers?.gamma && gammaChartViewRef?.current) {
             const gammaLayers: any[] = [];
 
             if (layers.gamma) gammaLayers.push(layers.gamma);
@@ -264,12 +250,10 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             });
 
             setChartViews(prev => ({ ...prev, gamma: gammaChart }));
-            gammaChart.chart.update();
-
-            setChartViews(prev => ({ ...prev, gamma: gammaChart }));
 
         }
-        if (layers.neutron && neutronChartViewRef.current) {
+
+        if (layers?.neutron && neutronChartViewRef?.current) {
             const neutronDiv = document.createElement("div");
             neutronDiv.id = elementIds.find(id => id.includes("neutron"));
 
@@ -293,7 +277,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
         }
 
-        if (layers.nsigma && layers.threshNsigma && nSigmaChartViewRef.current) {
+        if (layers?.nsigma && layers?.threshNsigma && nSigmaChartViewRef?.current) {
 
             const nsigmaDiv = document.createElement("div");
             nsigmaDiv.id = elementIds.find(id => id.includes("nsigma"));
@@ -317,7 +301,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             setChartViews(prev => ({ ...prev, nsigma: nsigmaChart }));
         }
 
-        setChartsReady(true);
     };
 
 
@@ -329,35 +312,33 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     return (
         <Box display='flex' alignItems="center">
             <Grid container direction="column" spacing={2}>
-                {(props.eventData?.status === "Gamma"  && isReadyToRender) ? (
+                {(props.eventData?.status === "Gamma") ? (
                     <>
-
                         <Grid item style={{display: "flex", justifyContent: "center", width: "100%"}}>
                             {hasNsigma && (
-                            <ToggleButtonGroup
-                                size="small"
-                                orientation="horizontal"
-                                onChange={handleToggle}
-                                exclusive
-                                value={toggleView}
-                                sx={{
-                                    boxShadow: 1,
-                                    '& .MuiToggleButton-root': {
-                                        margin: 0.5,
-                                        padding: "5px",
-                                    },
-                                }}
-                            >
-                                {gammaToggleButtons}
-                            </ToggleButtonGroup>
+                                <ToggleButtonGroup
+                                    size="small"
+                                    orientation="horizontal"
+                                    onChange={handleToggle}
+                                    exclusive
+                                    value={toggleView}
+                                    sx={{
+                                        boxShadow: 1,
+                                        '& .MuiToggleButton-root': {
+                                            margin: 0.5,
+                                            padding: "5px",
+                                        },
+                                    }}
+                                >
+                                    {gammaToggleButtons}
+                                </ToggleButtonGroup>
                             )}
                         </Grid>
 
-
-                        <Grid item xs sx={{width: "100%", display: toggleView === 'cps' ? 'block' : 'none'}} ref={gammaChartViewRef}/>
+                        <Grid item xs sx={{width: "100%", display: toggleView === 'cps' ? 'block' : 'none'}} ref={gammaChartViewRef} />
 
                         {hasNsigma && (
-                        <Grid item xs sx={{width: "100%", display: toggleView === 'sigma' ? 'block' : 'none'}} ref={nSigmaChartViewRef}/>
+                            <Grid item xs sx={{width: "100%", display: toggleView === 'sigma' ? 'block' : 'none'}} ref={nSigmaChartViewRef} />
                         )}
                     </>
 

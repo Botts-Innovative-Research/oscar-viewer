@@ -30,9 +30,8 @@ import ObservationFilter from "osh-js/source/core/consysapi/observation/Observat
 import ConfigData, {
     getConfigDataStreamID, getConfigSystemID,
     retrieveLatestConfigDataStream
-} from "./Config";
+} from "@/lib/data/oscar/Config";
 import {RootState} from "@/lib/state/Store";
-
 
 export default function StateManager() {
     const dispatch = useAppDispatch();
@@ -45,8 +44,6 @@ export default function StateManager() {
         address: "localhost",
         port: 0,
         oshPathRoot: "/sensorhub",
-        sosEndpoint: "/sos",
-        configsEndpoint: "/config",
         csAPIEndpoint: "/api",
         auth: {username: "", password: ""},
         isSecure: false,
@@ -66,7 +63,6 @@ export default function StateManager() {
     const [loadSnackMsg, setLoadSnackMsg] = useState<string>();
     const [saveSnackMsg, setSaveSnackMsg] = useState<string>();
 
-
     const [colorSaveStatus, setSaveColorStatus]= useState('');
     const [colorLoadStatus, setLoadColorStatus]= useState('');
 
@@ -80,14 +76,12 @@ export default function StateManager() {
 
     const getConfigDataStream = useCallback(async () =>{
         if(defaultNode){
-            let configSystemId = await getConfigSystemID(defaultNode);
 
-            if(configSystemId){
-                let dsId = await getConfigDataStreamID(defaultNode);
-                setConfigDSId(dsId);
+            let configDataSteamId =  await getConfigDataStreamID(defaultNode)
+            if(configDataSteamId)
+                setConfigDSId(configDataSteamId);
 
-                return dsId;
-            }
+            return configDataSteamId;
         }
     },[defaultNode]);
 
@@ -115,7 +109,7 @@ export default function StateManager() {
 
         let observation = tempData.createConfigurationObservation();
 
-        const endpoint = defaultNode.getConfigEndpoint(false) + "/datastreams/" + dsId + "/observations";
+        const endpoint = defaultNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + dsId + "/observations";
 
         await submitConfig(endpoint, observation);
     }
@@ -144,7 +138,6 @@ export default function StateManager() {
     const handleLoadState = async () => {
 
         let latestConfigDs = await retrieveLatestConfigDataStream(targetNode);
-
 
         if(latestConfigDs){
 
@@ -177,7 +170,6 @@ export default function StateManager() {
 
      const fetchLatestConfigObservation = async(ds: any) =>{
         const observations = await ds.searchObservations(new ObservationFilter({ resultTime: 'latest'}), 1);
-
 
         let obsResult = await observations.nextPage();
         let configData = obsResult.map((obs: any) =>{
@@ -322,9 +314,6 @@ export default function StateManager() {
                                                    onChange={handleChangeLoadForm}/>
                                         <TextField label="Server Port" name="port" value={loadNodeOpts.port}
                                                    onChange={handleChangeLoadForm}/>
-                                        <TextField label="Server Endpoint" name="sosEndpoint"
-                                                   value={loadNodeOpts.oshPathRoot}
-                                                   onChange={handleChangeLoadForm}/>
                                         <TextField label="API Endpoint" name="csAPIEndpoint"
                                                    value={loadNodeOpts.csAPIEndpoint}
                                                    onChange={handleChangeLoadForm}/>
@@ -334,7 +323,6 @@ export default function StateManager() {
                                         <TextField label="Server Password" name="password"
                                                    value={loadNodeOpts.auth.password}
                                                    onChange={handleChangeLoadForm} type={"password"}/>
-
                                         <Button onClick={() => setActiveAlert('load')} variant={"contained"} color={"primary"}
                                                 disabled={activeAlert === 'load'}>
                                             Load State

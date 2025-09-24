@@ -23,6 +23,8 @@ import NodeSelect from "@/app/_components/reportgen/NodeSelector";
 import LaneSelect from "@/app/_components/reportgen/LaneSelector";
 import ControlStreams from "osh-js/source/core/consysapi/controlstream/ControlStreams";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
+import {isReportControlStream} from "@/lib/data/oscar/Utilities";
+import { generateCommandJSON } from "@/lib/data/oscar/ReportGeneration";
 
 
 export default function ReportGeneratorView(){
@@ -30,8 +32,8 @@ export default function ReportGeneratorView(){
 
     const [selectedReportType, setSelectedReportType]= useState<string | null>(null);
     const [selectedTimeRange, setSelectedTimeRange]= useState<string | null>(null);
-    const [customStartTime, setCustomStartTime] = useState<Date | null>(null);
-    const [customEndTime, setCustomEndTime] = useState<Date | null>(null);
+    const [customStartTime, setCustomStartTime] = useState<string | null>(null);
+    const [customEndTime, setCustomEndTime] = useState<string | null>(null);
     const [selectedNode, setSelectedNode] = useState<INode | null>(null);
     const [selectedLane, setSelectedLane] = useState(null);
 
@@ -49,30 +51,33 @@ export default function ReportGeneratorView(){
             setOpenSnack(true)
         }
 
-        if (selectedReportType === "LANE" && !selectedNode){
-            setSnackMessage("Please select a node for the Lane Report.");
+        if (selectedReportType === "LANE" && !selectedLane){
+            setSnackMessage("Please select a lane for the Lane Report.");
             setSeverity("error");
             setOpenSnack(true)
         }
 
         setIsGenerating(true);
 
-        let startTime, endTime = getTimeRange(selectedTimeRange);
+        let startTime = getTimeRange(selectedTimeRange).startTime;
+        let endTime = getTimeRange(selectedTimeRange).endTime;
 
 
         try {
             if(!selectedNode) return;
 
 
+            selectedNode.getControlStreamApi();
+            let streams = await selectedNode.fetchNodeControlStreams();
+            let controlstream = streams.filter((stream: any) => isReportControlStream(stream))
 
-            // const response = await insertObservation("endpoint", "observation");
+            let payload = generateCommandJSON(startTime, endTime, selectedReportType, selectedLane, null)
+            let response = controlstream.postCommand(payload)
 
-            // if (response.ok) {
-            //     setSnackMessage("Report request submitted successfully.");
-            //     setSeverity("success");
-            // }
-
-
+            if (response.ok) {
+                setSnackMessage("Report request submitted successfully.");
+                setSeverity("success");
+            }
 
         } catch (error) {
             setSnackMessage("Report request failed to submit.");
@@ -84,11 +89,11 @@ export default function ReportGeneratorView(){
         }
     }
 
-    const handleLaneSelect = (value: string) => {
+    const handleLaneSelect = (value: any) => {
         setSelectedLane(value)
     }
 
-    const handleNodeSelect = (value: string) => {
+    const handleNodeSelect = (value: any) => {
         setSelectedNode(value)
     }
 
@@ -117,32 +122,33 @@ export default function ReportGeneratorView(){
 
     }
 
-    const getTimeRange = (timeRange: string): {startTime: Date, endTime: Date} => {
-        const now = new Date();
-        let startTime: Date;
-        let endTime: Date = now;
+    const getTimeRange = (timeRange: string): {startTime: string, endTime: string} => {
+        const now = new Date()
+        let startTime: string;
+        let endTime: string = now.toISOString();
 
 
         switch(timeRange){
             case "last24Hrs":
-                startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
                 break;
             case "last7days":
-                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
                 break;
             case "last30days":
-                startTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                startTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
                 break;
             case "thisMonth":
-                startTime = new Date(now.getFullYear(), now.getMonth(), 1);
+                startTime = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
                 break;
-            case "custom":
-                startTime = customStartTime;
-                endTime = customEndTime;
-                break;
+            // case "custom":
+            //     startTime = customStartTime;
+            //     endTime = customEndTime;
+            //     break;
             default:
-                startTime = now;
+                startTime = now.toISOString();
         }
+
         return {startTime, endTime};
     }
 

@@ -4,12 +4,12 @@ import React, {createContext, MutableRefObject, ReactNode, useCallback, useEffec
 import {useSelector} from "react-redux";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {addNode, changeConfigNode, setNodes} from "@/lib/state/OSHSlice";
-import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
+import {setLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {AppDispatch, RootState} from "@/lib/state/Store";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
-import ConfigData, { retrieveLatestConfigDataStream } from "../_components/state-manager/Config";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import ConfigData, {retrieveLatestConfigDataStream} from "@/lib/data/oscar/Config";
 
 
 interface IDataSourceContext {
@@ -132,13 +132,14 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
         await Promise.all(newNodes.map(async (node: INode) => {
 
+            await node.authFileServer();
+
             let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
 
             if(!nodeLaneMap) return;
             await node.fetchOscarServiceSystem();
             await node.fetchDatastreams(nodeLaneMap);
-            // await node.fetchProcessVideoDatastreams(nodeLaneMap);
-            await node.fetchControlStreams(nodeLaneMap);
+            await node.fetchLaneControlStreams(nodeLaneMap);
 
 
             for (const [key, mapEntry] of nodeLaneMap.entries()) {

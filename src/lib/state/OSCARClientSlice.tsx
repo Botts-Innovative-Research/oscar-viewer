@@ -11,17 +11,12 @@ export interface IOSCARClientState {
     alarmAudioVolume: number,
 }
 
-
-
-
 const initialState: IOSCARClientState = {
     currentUser: 'testuser',
     quickActions: [],
     alertTimeoutSeconds: 10,
     alarmAudioVolume: 30
 }
-
-
 
 export const Slice = createSlice({
     name: 'ClientStateSlice',

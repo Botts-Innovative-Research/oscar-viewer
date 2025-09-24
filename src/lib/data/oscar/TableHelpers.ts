@@ -26,6 +26,7 @@ export class EventTableData implements IEventTableData {
     observationId: string;
     isAdjudicated: boolean;
     foiId: string;
+    videoFiles: string[]
 
     constructor(id: number, laneId: string, msgValue: any, observationId: string, foiId: string,  adjudicatedData: AdjudicationData | null = null) {
 
@@ -52,7 +53,24 @@ export class EventTableData implements IEventTableData {
         this.observationId = observationId;
         this.secondaryInspection = msgValue.secondaryInspection;
         this.foiId = foiId;
+        let videoPath = msgValue.videoFile
+
+        if(videoPath){
+            let splitPaths = videoPath.split(",");
+            console.log("split paths: ", splitPaths)
+
+            //TODO: videoFiles will be comma separated so split by comma and then add to array
+
+            let videoOutputPaths = splitPaths.map((path: string) => path.replace("./web", "http://localhost:8282"))
+
+            console.log("split", videoOutputPaths)
+            this.videoFiles = videoOutputPaths
+
+        }
     }
+
+    adjudicatedUser?: string;
+    adjudicatedCode?: number;
 
     setAdjudicationData(aData: AdjudicationData) {
         this.adjudicatedData = aData;
@@ -183,8 +201,9 @@ export class NationalTableData implements INationalTableData {
     faultAlarmCount: number;
     tamperAlarmCount: number;
     gammaNeutronAlarmCount: number;
+    nonAlarmingCount: number;
 
-    constructor(id: number, siteName: string, occupancyCount: number, gammaCount: number, neutronCount: number, faultCount: number, tamperCount: number, gammaNeutronAlarmCount: number) {
+    constructor(id: number, siteName: string, occupancyCount: number, gammaCount: number, neutronCount: number, faultCount: number, tamperCount: number, gammaNeutronAlarmCount: number, nonAlarmingCount: number) {
         this.id = id;
         this.site = siteName;
         this.occupancyCount = occupancyCount;
@@ -193,7 +212,10 @@ export class NationalTableData implements INationalTableData {
         this.faultAlarmCount = faultCount;
         this.tamperAlarmCount = tamperCount;
         this.gammaNeutronAlarmCount = gammaNeutronAlarmCount;
+        this.nonAlarmingCount = nonAlarmingCount;
     }
+
+
 }
 
 export class NationalTableDataCollection {
@@ -245,6 +267,4 @@ export class AlarmTableDataCollection {
     addData(data: AlarmTableData) {
         this.data.push(data);
     }
-
-
 }

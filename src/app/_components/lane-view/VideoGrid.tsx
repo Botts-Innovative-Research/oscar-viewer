@@ -57,31 +57,22 @@ export default function VideoGrid({videoDataSources}: {videoDataSources: typeof 
     }, [dataSources, selVideoIdx]);
 
     useEffect(() => {
-        // let isMounted = true;
 
         async function tryConnection(){
             if(dataSources && dataSources.length > 0 && selVideoIdx <= dataSources.length){
                 const currentVideo = dataSources[selVideoIdx];
 
                 const isConnected = await currentVideo.isConnected();
-                // if(!isMounted) return;
 
                 if(isConnected){
                     await currentVideo.disconnect()
-                    // if(!isMounted) return;
                 }
                 await currentVideo.connect();
-                // if(isMounted)
-                    console.log('Videostream Connected: ', currentVideo.name)
             }
         }
 
         tryConnection();
 
-        // return () =>{
-        //     console.log("lane view: unmounting video....")
-        //     isMounted = false;
-        // };
 
     }, [dataSources, selVideoIdx]);
 

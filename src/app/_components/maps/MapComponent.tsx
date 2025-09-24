@@ -276,12 +276,10 @@ export default function MapComponent() {
                     let obsCollections = await ds.searchObservations(new ObservationFilter({resultTime: 'latest'}), 1);
 
                     let results = await obsCollections.nextPage();
-                    console.log("results", results)
 
                     let result = results[0];
                     if(result){
-                        console.log("result", result)
-                        setSiteMapPath(result.result.siteDiagramPath);
+                        setSiteMapPath(result.result.siteDiagramPath); //todo: fix this
                         setLowerLeftBound([result.result.siteBoundingBox.lowerLeftBound.lon, result.result.siteBoundingBox.lowerLeftBound.lat]);
                         setUpperRightBound([result.result.siteBoundingBox.upperRightBound.lon, result.result.siteBoundingBox.upperRightBound.lat]);
 

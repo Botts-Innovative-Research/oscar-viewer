@@ -8,6 +8,7 @@ export  function createNeutronViewCurve(neutronDatasource: { id: any; }) {
     let nCurve = new CurveLayer({
         dataSourceIds: [neutronDatasource.id],
         getValues: (rec: any) => {
+            console.log("record: ", rec)
             return {x: rec.timestamp, y: rec.neutronGrossCount}
         },
         name: 'Neutron',
@@ -41,7 +42,6 @@ export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
         order: 2,
         fill: 1,
         maxValues: 500,
-
     });
 
     return thresholdCurve;
@@ -51,7 +51,10 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
 
     let gCurve = new CurveLayer({
         dataSourceIds: [gammaDatasource.id],
-        getValues: (rec: any) => ({ x: rec?.timestamp, y: rec?.gammaGrossCount}),
+        getValues: (rec: any) => {
+
+            return ({ x: rec.timestamp, y: rec.gammaGrossCount})
+        },
         name: "Gamma",
         borderWidth: 1.5,
         backgroundColor: "rgba(245, 166, 160, 0.1)",
@@ -62,9 +65,9 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
         order: 1,
         fill: 1,
         maxValues: 500,
-
     });
 
+    console.log("gcurve", gCurve)
     return gCurve;
 }
 
@@ -101,27 +104,24 @@ export function createNSigmaCalcViewCurve(gammaDatasource: any, latestGB: number
     return nCurve;
 }
 
-
 export async function getObservations(startTime: any, endTime: any, datastream: any){
 
     let lastestGammaBackground: number;
 
-    let res = await datastream.searchObservations(new ObservationFilter({resultTime: `${startTime}/${endTime}`}),1);
-    while(res.hasNext()){
-        let newObs = await res.nextPage();
+    let res = await datastream.searchObservations(new ObservationFilter({resultTime: `${startTime}/${endTime}`}), 1);
 
-        newObs.map((ob: any) =>{
-            const lastGB = ob.result.latestGammaBackground;
 
-            if(lastGB != null)
-                lastestGammaBackground = lastGB;
-        })
-    }
+    let newObs = await res.nextPage();
+
+    newObs.map((ob: any) =>{
+        const lastGB = ob.result.latestGammaBackground;
+
+        if(lastGB != null)
+            lastestGammaBackground = lastGB;
+    })
+
     return lastestGammaBackground;
 }
-
-
-
 
 export  function createThreshSigmaViewCurve(thresholdDatasource: { id: any; }) {
     if (!thresholdDatasource) return null;
