@@ -152,6 +152,7 @@ export default function EventTable({
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
         const id = prngFromStr(obs, laneEntry.laneName);
+        console.log("obs", obs)
         let newEvent: EventTableData = new EventTableData(id, laneEntry.laneName, obs.result, obs.id, obs.foiId);
 
         newEvent.setRPMSystemId(laneEntry.lookupSystemIdFromDataStreamId(obs[`datastream@id`]));

@@ -22,7 +22,6 @@ import {
     isTamperDatastream, isThresholdDatastream,
     isVideoDatastream
 } from "./Utilities";
-import {AdjudicationDatastreamConstant} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 
 class ILaneMeta {
     id: string;
@@ -149,22 +148,11 @@ export class LaneMapEntry {
                 continue;
             }
 
-            let mqttOptUrlArray = (dsObj.networkProperties.endpointUrl).split("/");
-
-            let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
-
-            let mqttOpts = {
-                prefix: this.parentNode.csAPIEndpoint,
-                endpointUrl: mqttOptUrl,
-                username: this.parentNode.auth.username,
-                password: this.parentNode.auth.password,
-            }
-
             try {
                 let dsRT: typeof ConSysApi = null;
                 let dsBatch: typeof ConSysApi = null;
 
-                if(isVideoDatastream(dsObj)){
+                if (isVideoDatastream(dsObj)) {
                     dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
                         protocol: dsObj.networkProperties.streamProtocol,
                         endpointUrl: dsObj.networkProperties.endpointUrl,
@@ -184,14 +172,12 @@ export class LaneMapEntry {
                         startTime: "2020-01-01T08:13:25.845Z",
                         endTime: "2055-01-01T08:13:25.845Z"
                     });
-                }else{
+                } else {
                     dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
                         endpointUrl: dsObj.networkProperties.endpointUrl,
                         resource: `/datastreams/${dsObj.properties.id}/observations`,
                         tls: dsObj.networkProperties.tls,
-                        // protocol: "mqtt",
                         protocol: dsObj.networkProperties.streamProtocol,
-                        mqttOpts: mqttOpts,
                         mode: Mode.REAL_TIME,
                         responseFormat: 'application/swe+json',
                     });
@@ -200,37 +186,13 @@ export class LaneMapEntry {
                         endpointUrl: dsObj.networkProperties.endpointUrl,
                         resource: `/datastreams/${dsObj.properties.id}/observations`,
                         tls: dsObj.networkProperties.tls,
-                        // protocol: "mqtt",
                         protocol: dsObj.networkProperties.streamProtocol,
-                        mqttOpts: mqttOpts,
                         mode: Mode.BATCH,
                         responseFormat: 'application/swe+json',
                         startTime: "2020-01-01T08:13:25.845Z",
                         endTime: "2055-01-01T08:13:25.845Z"
                     });
                 }
-
-                // const dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
-                //     protocol: "mqtt",
-                //     mqttOpts: mqttOpts,
-                //     endpointUrl: dsObj.networkProperties.endpointUrl,
-                //     resource: `/datastreams/${dsObj.properties.id}/observations`,
-                //     tls: dsObj.networkProperties.tls,
-                //     responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
-                //     mode: Mode.REAL_TIME,
-                // });
-
-                // const dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
-                //     protocol: "mqtt",
-                //     mqttOpts: mqttOpts,
-                //     endpointUrl: dsObj.networkProperties.endpointUrl,
-                //     resource: `/datastreams/${dsObj.properties.id}/observations`,
-                //     tls: dsObj.networkProperties.tls,
-                //     responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
-                //     mode: Mode.BATCH,
-                //     startTime: "2020-01-01T08:13:25.845Z",
-                //     endTime: "2055-01-01T08:13:25.845Z"
-                // });
 
                 rtArray.push(dsRT);
                 batchArray.push(dsBatch);
@@ -244,19 +206,8 @@ export class LaneMapEntry {
     }
 
     createReplayConSysApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
-        let mqttOptUrlArray = (datastream.networkProperties.endpointUrl).split("/");
-        let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
-
-        let mqttOpts = {
-            prefix: this.parentNode.csAPIEndpoint,
-            endpointUrl: mqttOptUrl,
-            username: this.parentNode.auth.username,
-            password: this.parentNode.auth.password,
-        }
         return new ConSysApi(`rtds-${datastream.properties.id}`, {
-            // protocol: "mqtt",
             protocol: datastream.networkProperties.streamProtocol,
-            mqttOpts: mqttOpts,
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
@@ -268,20 +219,9 @@ export class LaneMapEntry {
     }
 
     createBatchConSysApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
-        let mqttOptUrlArray = (datastream.networkProperties.endpointUrl).split("/");
-        let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
-
-        let mqttOpts = {
-            prefix: this.parentNode.csAPIEndpoint,
-            endpointUrl: mqttOptUrl,
-            username: this.parentNode.auth.username,
-            password: this.parentNode.auth.password,
-        }
 
         return new ConSysApi(`batchds-${datastream.properties.id}`, {
-            // protocol: "mqtt",
             protocol: datastream.networkProperties.streamProtocol,
-            mqttOpts: mqttOpts,
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
@@ -326,7 +266,6 @@ export class LaneMapEntry {
         dsMap.set('gamma', []);
         dsMap.set('neutron', []);
         dsMap.set('tamper', []);
-        dsMap.set('video', []);
         dsMap.set('gammaTrshld', []);
         dsMap.set('connection', []);
 
@@ -355,11 +294,6 @@ export class LaneMapEntry {
                 tamperArray.push(datasourceBatch);
             }
 
-            if(isVideoDatastream(ds)) {
-                let videoArray = dsMap.get('video')!;
-
-                videoArray.push(ds);
-            }
             if(isThresholdDatastream(ds)){
                 let gammaTrshldArray = dsMap.get('gammaTrshld')!;
                 gammaTrshldArray.push(datasourceBatch);
@@ -371,50 +305,6 @@ export class LaneMapEntry {
             }
         }
 
-
-        let ds = dsMap;
-
-        const videoDs = ds.get("video") || [];
-
-        const processVideoDs: typeof DataStream[] = [];
-        const regularVideoDs: typeof DataStream[] = [];
-
-        for(const ds of videoDs){
-
-            const uid = ds.properties['system@link'].uid;
-            const uidArray = uid.split(":");
-
-            if(uidArray.includes("process")){
-                processVideoDs.push(ds);
-            } else{
-                regularVideoDs.push(ds);
-            }
-        }
-
-        let validVideos: typeof DataStream[] = [];
-
-        if(processVideoDs.length > 0){
-
-            for(const videoDs of processVideoDs){
-                const video = await this.checkValidDataSource(videoDs, startTime, endTime)
-                if(video){
-                    validVideos.push(video);
-                }
-
-            }
-
-
-        }else if(processVideoDs.length == 0 && regularVideoDs.length > 0) {
-
-            for(const videoDs of regularVideoDs){
-                const video = await this.checkValidDataSource(videoDs, startTime, endTime)
-                if(video){
-                    validVideos.push(video);
-                }
-            }
-        }
-
-        dsMap.set("video", validVideos);
         return dsMap;
     }
 
@@ -460,36 +350,7 @@ export class LaneMapEntry {
         }
     }
 
-    async insertAdjudicationSystem(laneName: string) {
 
-        console.log("[ADJ] Inserting Adjudication System for lane: ", this);
-        let laneId = this.laneSystem.properties.properties.uid.split(":").pop();
-
-        let adJSysJSON = {
-            "type": "SimpleProcess",
-            "uniqueId": `urn:ornl:client:adjudication:${laneId}`,
-            "label": `Adjudication System - ${laneName}`,
-            "definition": "sosa:System"
-        }
-
-        console.log("[ADJ] Inserting Adjudication System: ", adJSysJSON);
-        let endpoint: string = `${this.parentNode.getConnectedSystemsEndpoint(false)}/systems/`;
-
-        let sysId: string = await this.parentNode.insertSystem(adJSysJSON, endpoint);
-        console.log("[ADJ] Inserted Adjudication System: ", sysId);
-        // let dsId = this.insertAdjudicationDataStream(laneName);
-        return sysId;
-    }
-
-    async insertAdjudicationDataStream(systemId: string) {
-        let endpoint: string = `${this.parentNode.getConnectedSystemsEndpoint(false)}/systems/` + systemId + '/datastreams/';
-
-        let dsRes = await this.parentNode.insertDatastream(endpoint, AdjudicationDatastreamConstant);
-        if (dsRes) {
-            console.log("[ADJ] Inserted Adjudication Datastream: ", dsRes);
-            this.adjDs = dsRes;
-        }
-    }
 
     async insertAdjudicationObservation(obsData: AdjudicationData, datastreamId: string) {
         let endpoint: string = `${this.parentNode.getConnectedSystemsEndpoint(false)}/datastreams/${datastreamId}/observations`;

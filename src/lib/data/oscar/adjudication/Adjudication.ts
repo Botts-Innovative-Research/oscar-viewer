@@ -89,7 +89,7 @@ export default class AdjudicationData implements IAdjudicationData {
         let obs = {
             "phenomenonTime": this.time,
             "result": {
-                "username": this.username != null ? this.username : "Unknown",
+                "username": "Unknown",
                 "feedback": this.feedback,
                 "adjudicationCode": this.adjudicationCode.label,
                 "isotopes": this.isotopes ??  "",

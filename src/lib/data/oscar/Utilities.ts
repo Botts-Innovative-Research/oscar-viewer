@@ -139,3 +139,15 @@ export function isSiteDiagramPathDatastream(datastream: typeof DataStream): bool
 
     return datastream.properties.observedProperties[0].definition.includes(DEF);
 }
+
+
+export function isReportControlStream(datastream: typeof DataStream): boolean {
+    const DEF = "http://sensorml.com/ont/swe/property/StartDateTime";
+
+    return datastream.properties.controlledProperties[0].definition.includes(DEF);
+}
+
+export function isAdjudicationControlStream(datastream: typeof DataStream): boolean {
+    const DEF = "http://sensorml.com/ont/swe/property/StartDateTime";
+    return datastream.properties.controlledProperties[0].definition.includes(DEF);
+}

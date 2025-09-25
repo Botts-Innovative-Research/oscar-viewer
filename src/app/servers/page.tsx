@@ -1,10 +1,10 @@
 "use client";
 
-// create form component
+
 import {Box, Stack} from "@mui/material";
 import React from "react";
-import NodeForm from "@/app/servers/NodeForm";
-import NodeList from "@/app/servers/NodeList";
+import NodeForm from "@/app/_components/servers/NodeForm";
+import NodeList from "@/app/_components/servers/NodeList";
 import {INode} from "@/lib/data/osh/Node";
 
 export default function Servers() {

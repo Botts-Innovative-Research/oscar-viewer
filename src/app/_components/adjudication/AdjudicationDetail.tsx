@@ -8,9 +8,6 @@
 import {
     Box,
     Button,
-    Checkbox,
-    FormControlLabel,
-    InputBase,
     Paper,
     Snackbar,
     SnackbarCloseReason,
@@ -39,13 +36,15 @@ import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelec
 import {updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
 import SecondaryInspectionSelect from "@/app/_components/adjudication/SecondaryInspectionSelect";
 import {insertObservation} from "@/lib/data/osh/Node";
+import DeleteOutline from "@mui/icons-material/DeleteOutline"
+import IconButton from "@mui/material/IconButton";
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
     const [comments, setComments] = useState<Comment[]>([]);
 
-    const [adjudicationCode, setAdjCode] = useState(AdjudicationCodes.codes[0]);
+    const [adjudicationCode, setAdjudicationCode] = useState(AdjudicationCodes.codes[0]);
     const [isotope, setIsotope] = useState<string[]>([]);
     const [secondaryInspection, setSecondaryInspection] = useState('');
 
@@ -53,10 +52,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const [feedback, setFeedback] = useState<string>("");
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
-    const currentUser = useSelector(selectCurrentUser);
-    const [associatedAdjudications, setAssociatedAdjudications] = useState<Comment[]>([]);
     const [shouldFetchLogs, setShouldFetchLogs] = useState<boolean>(false);
-    const adjudication = props.event ? new AdjudicationData(currentUser, props.event.occupancyId, props.event.rpmSystemId, new Date().toISOString()) : null;
+    const adjudication = props.event ? new AdjudicationData(null, props.event.occupancyId, props.event.rpmSystemId, new Date().toISOString()) : null;
     const [adjData, setAdjData] = useState<AdjudicationData>(adjudication);
 
     const dispatch = useDispatch();
@@ -70,14 +67,15 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     /**handle the file uploaded**/
     const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files === null) {
-
             return;
         }
+
         const files = Array.from(e.target.files);
         setUploadedFiles([...uploadedFiles, ...files]);
-        e.target.value = "";
-
     };
+    const handleFileDelete = (fileIndex: number) => {
+        setUploadedFiles((prevState) => prevState.filter((_, i) => i !== fileIndex));
+    }
 
     const handleAdjudicationSelect = (value: AdjudicationCode) => {
 
@@ -85,7 +83,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         tAdjData.adjudicationCode = AdjudicationCodes.getCodeObjByLabel(value.label);
 
         setAdjData(tAdjData);
-        setAdjCode(value);
+        setAdjudicationCode(value);
     }
 
     const handleIsotopeSelect = (value: string[]) => {
@@ -106,11 +104,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const {name, value, checked} = e.target;
+        const {name, value} = e.target;
 
         let tempAdjData = adjData;
-
-        tempAdjData.username = currentUser;
 
         if (name === 'vehicleId') {
             setVehicleId(value);
@@ -129,13 +125,15 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         setUploadedFiles([]);
         setSecondaryInspection('');
         setIsotope([]);
-        setAdjCode(AdjudicationCodes.codes[0]);
+        setAdjudicationCode(AdjudicationCodes.codes[0]);
         setFeedback('')
-
     }
 
     const sendAdjudicationData = async () => {
 
+        //TODO: first send to file server to the object store send file and wait for response with file paths url,
+        // update file paths in adjudication observation body with new urls for files
+        // then send command to set adjudicated
         if(adjData.adjudicationCode === null || !adjData.adjudicationCode || adjData.adjudicationCode === AdjudicationCodes.codes[0]){
             setAdjSnackMsg("Please selected a valid adjudication code before submitting.");
             setColorStatus('error');
@@ -185,9 +183,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 return;
             }
 
-
             await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.controlStreams[0].properties.id, generateCommandJSON(occupancyObservation[0].id, true));
-            // dispatch(updateSelectedEventAdjudication(comboData));
 
 
         }catch(error){
@@ -222,16 +218,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             <Typography variant="h5">Adjudication Report Form</Typography>
             <Stack direction={"row"} spacing={2} justifyContent={"start"} alignItems={"center"}>
-                {/*<Avatar>OP</Avatar>*/}
                 <Box>
                     <Stack direction="row" spacing={1}>
-                        <TextField
-                            label="Username"
-                            name="username"
-                            value={currentUser}
-                            onChange={handleChange}
-                            disabled
-                        />
                         <TextField
                             label="VehicleId"
                             name="vehicleId"
@@ -269,17 +257,31 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                             spacing={1}
                         >
                             {uploadedFiles.map((file, index) => (
-                                <Box display={"flex"} sx={{wordSpacing: 2}}>
-                                    <InsertDriveFileRoundedIcon/>
-                                    <Typography variant="body1">{file.name}</Typography>
-                                </Box>
+                                <Stack key={`${file}-${index}`} direction="row" spacing={2}>
+                                    <Box display={"flex"} sx={{wordSpacing: 2}}>
+                                        <InsertDriveFileRoundedIcon/>
+                                        <Typography variant="body1">{file.name}</Typography>
+                                    </Box>
+
+                                    <IconButton
+                                        onClick={() => handleFileDelete(index)}
+                                        sx={{
+                                            padding: "2px",
+                                            border: "1px solid",
+                                            borderRadius: "10px",
+                                            borderColor: "error.main",
+                                            backgroundColor: "inherit",
+                                            color: "error.main"
+                                        }}>
+                                        <DeleteOutline/>
+                                    </IconButton>
+                                </Stack>
                             ))}
                         </Stack>
                     </Paper>
                 )
             }
-            <Stack direction={"row"} spacing={2} justifyContent={"space-between"} alignItems={"center"}
-                   width={"100%"}>
+            <Stack direction={"row"} spacing={2} justifyContent={"space-between"} alignItems={"center"} width={"100%"}>
                 <Button
                     component="label"
                     startIcon={<UploadFileRoundedIcon/>}
@@ -294,23 +296,13 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                         borderColor: "secondary.main",
                         backgroundColor: "inherit",
                         color: "secondary.main"
-                    }}>
-                    Upload Files
-                    <InputBase
-                        disabled
-                        type="file"
-                        inputProps={{multiple: true}}
-                        onChange={handleFileUpload}
-                        inputRef={fileInputRef}
-                        sx={{display: "none"}}
-                    />
-                </Button>
+                    }}
+                >Upload Files<input type="file" multiple onChange={handleFileUpload} ref={fileInputRef} style={{display: "none"}} /></Button>
                 <Stack direction={"row"} spacing={2}>
-                    <SecondaryInspectionSelect secondarySelectVal={secondaryInspection} onSelect={handleInspectionSelect}/>
-                    {/*<FormControlLabel control={<Checkbox name="secondaryInspection" checked={secondaryInspection}*/}
-                    {/*                                     onChange={handleChange}/>} label="Secondary Inspection"/>*/}
-                    <Button disableElevation variant={"contained"} color={"success"}
-                            onClick={sendAdjudicationData}>Submit</Button>
+                    <SecondaryInspectionSelect secondarySelectVal={secondaryInspection} onSelect={handleInspectionSelect} />
+                    <Button disableElevation variant={"contained"} color={"success"} onClick={sendAdjudicationData}>
+                        Submit
+                    </Button>
                     <Snackbar
                         anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         open={openSnack}
@@ -324,9 +316,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                         }}
                     />
                 </Stack>
-
             </Stack>
         </Stack>
     );
 }
-

@@ -1,10 +1,9 @@
 "use client";
 
-import {Grid, Paper} from "@mui/material";
+import {Box, Grid, Paper} from "@mui/material";
 import LaneStatus, { LaneStatusProps } from "../_components/dashboard/LaneStatus";
 
 import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
-import dynamic from "next/dynamic";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
@@ -18,8 +17,9 @@ import {
 } from "@/lib/data/oscar/Utilities";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useAppDispatch} from "@/lib/state/Hooks";
+import QuickView from "../_components/dashboard/QuickView";
+import dynamic from "next/dynamic";
 import CircularProgress from "@mui/material/CircularProgress";
-import Box from "@mui/material/Box";
 
 export default function DashboardPage() {
     const laneMap = useSelector((state: RootState) => selectLaneMap(state))
@@ -29,16 +29,6 @@ export default function DashboardPage() {
     const dispatch = useAppDispatch();
     const [statusList, setStatusList] = useState<LaneStatusProps[]>([]);
     const idVal = useRef(1);
-
-    const QuickView = useMemo(() => dynamic(
-        () => import('@/app/_components/dashboard/QuickView'),
-        {
-            loading: () => <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center', minHeight: '100vh'}}><CircularProgress/></Box>,
-            ssr: false
-        }
-    ), [])
-
-
 
     const datasourceSetup = useCallback(async () => {
         // @ts-ignore
@@ -93,7 +83,6 @@ export default function DashboardPage() {
 
             const newMap = new Map(laneDSMap)
 
-
             setDataSourcesByLane(newMap);
             dispatch(setLaneMap(laneMap))
         }
@@ -106,6 +95,14 @@ export default function DashboardPage() {
         datasourceSetup();
     }, [laneMapRef, laneMapRef.current.size]);
 
+    const QuickView = useMemo(() => dynamic(
+        () => import('@/app/_components/dashboard/QuickView'),
+        {
+            loading: () => <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center', minHeight: '100vh'}}><CircularProgress/></Box>,
+            ssr: false
+        }
+    ), [])
+
 
 
     return (
@@ -115,7 +112,6 @@ export default function DashboardPage() {
                     <Paper variant='outlined' sx={{height: "auto", minHeight: 275, padding: 1}}>
                         <LaneStatus dataSourcesByLane={dataSourcesByLane} initialLanes={statusList}/>
                     </Paper>
-
 
                     <Paper variant='outlined' sx={{flexGrow: 1, padding: 2, overflow: "hidden"}}>
                         <EventTable tableMode={'alarmtable'} laneMap={laneMap}/>
@@ -132,3 +128,5 @@ export default function DashboardPage() {
         </Grid>
     );
 }
+
+
