@@ -6,7 +6,7 @@ import {INode} from "@/lib/data/osh/Node";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectNodes} from "@/lib/state/OSHSlice";
-import OSCARLaneSlice, {selectLanes} from "@/lib/state/OSCARLaneSlice";
+import OSCARLaneSlice, {selectLaneMap, selectLanes} from "@/lib/state/OSCARLaneSlice";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 
 
@@ -17,13 +17,14 @@ export default function LaneSelect(props: {
 
     const nodes = useSelector((state: RootState) => selectNodes(state));
 
-    const lanes = useSelector((state: RootState) => selectLanes(state));
-    const [selectedLane, setSelectedLane] = useState(null);
+    const laneMap = useSelector((state: RootState) => selectLaneMap(state));
+
+    // const [selectedLane, setSelectedLane] = useState<string>("");
 
     const handleChange = (event: SelectChangeEvent) => {
         const val = event.target.value;
         props.onSelect(val)
-        setSelectedLane(val);
+        // setSelectedLane(val);
     };
 
     return (
@@ -32,8 +33,8 @@ export default function LaneSelect(props: {
             <Select
                 variant="outlined"
                 id="label"
-                label="Lane"
-                value= {selectedLane}
+                label="Lane Selector"
+                value= {props.lane || ""}
                 onChange={handleChange}
                 MenuProps={{
                     MenuListProps: {
@@ -61,13 +62,11 @@ export default function LaneSelect(props: {
                         },
                 }}
             >
-                {
-                    lanes.map((item: any) => (
-                        <MenuItem key={item.id} value={item.id}>
-                            {item.name}
-                        </MenuItem>
-                    ))
-                }
+                {Array.from(laneMap.entries()).map(([key, value]) => (
+                    <MenuItem key={value.laneSystem.properties.properties.uid} value={value.laneSystem.properties.properties.uid}>
+                        {key}
+                    </MenuItem>
+                ))}
             </Select>
         </FormControl>
     );

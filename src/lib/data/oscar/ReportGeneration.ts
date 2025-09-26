@@ -29,7 +29,7 @@ export class ReportGenerationCommand {
 }
 
 
-export async function sendCommand(node: INode, controlStreamId: string, command: ReportGenerationCommand | string) {
+export async function sendReportCommand(node: INode, controlStreamId: string, command: ReportGenerationCommand | string) {
     console.log("[Report Generation] Report Body:", command);
     let ep = node.getConnectedSystemsEndpoint(false) + `/controlstreams/${controlStreamId}/commands`
     let response = await fetch(ep, {
@@ -41,14 +41,15 @@ export async function sendCommand(node: INode, controlStreamId: string, command:
         mode: 'cors',
         body: command instanceof ReportGenerationCommand ? command.getJsonString() : command
     })
-    if (response.ok) {
-        let json = await response.json();
-        console.log("[Report Generation] Command Response", json)
+    return response;
+    // if (response.ok) {
+    //     let json = await response.json();
+    //     console.log("[Report Generation] Command Response", json)
 
 
-    } else {
-        console.warn("[Report Generation] report command failed", response)
-    }
+    // } else {
+    //     console.warn("[Report Generation] report command failed", response)
+    // }
 }
 
 export function generateCommandJSON(startDateTime: string, endDateTime: string, reportType: string, laneUID: string, eventId: string) {

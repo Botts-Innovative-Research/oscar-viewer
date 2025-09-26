@@ -24,15 +24,13 @@ export const reportTypes = [
 
 export default function ReportTypeSelect(props: {
     onSelect: (value: string[] | string) => void,
-    reportTypeVal: string
+    report: string
 }) {
 
-    const [reportType, setReportType] = useState("");
 
     const handleChange = (event: SelectChangeEvent) => {
         const val = event.target.value;
         props.onSelect(val)
-        setReportType(val);
     };
 
     return (
@@ -42,7 +40,7 @@ export default function ReportTypeSelect(props: {
                 variant="outlined"
                 id="label"
                 label="Report Type"
-                value= {reportType}
+                value= {props.report || ""}
                 onChange={handleChange}
                 MenuProps={{
                     MenuListProps: {
