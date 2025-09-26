@@ -73,16 +73,14 @@ export default function LaneVideoPlayback({videos, modeType, startTime, endTime,
     const handleTimeUpdate = (video: HTMLVideoElement) => {
         if (!startTime || !endTime || isUpdatingFromSlider) return;
 
-        const eventStartMs = new Date(startTime).getTime();
-        const eventEndMs = new Date(endTime).getTime();
-        const eventDurationMs = eventEndMs - eventStartMs;
+        const eventStart = new Date(startTime).getTime();
+        const eventEnd = new Date(endTime).getTime();
+        const eventDuration = eventEnd - eventStart;
 
         if (video.duration) {
-            // Calculate the relative position in the video (0-1)
-            const relativePosition = video.currentTime / video.duration;
+            const sliderPosition = video.currentTime / video.duration;
 
-            // Convert to event time
-            const eventTimeMs = eventStartMs + (relativePosition * eventDurationMs);
+            const eventTimeMs = eventStart + (sliderPosition * eventDuration);
 
             onVideoTimeUpdate?.(eventTimeMs);
         }
