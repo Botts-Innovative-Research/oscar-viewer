@@ -1,7 +1,7 @@
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
-import TimeController from "@/app/_components/TimeController";
+// import TimeController from "@/app/_components/TimeController";
 import React, {useRef, useState} from "react";
 import ChartTimeHighlight from "@/app/_components/event-preview/ChartTimeHighlight";
 import {useSelector} from "react-redux";
@@ -35,7 +35,7 @@ export default function EventMedia({datasources, eventData, mode}: {datasources:
 
 
     const handleVideoTimeUpdate = (timeMs: number) => {
-        if (!videoIsPlaying) return;
+        if ( !videoIsPlaying ) return;
         setSyncTime(timeMs);
         setVideoCurrentTime(timeMs);
     };
@@ -52,48 +52,86 @@ export default function EventMedia({datasources, eventData, mode}: {datasources:
         selectedIndex.current = page;
     }
 
-    return(
-        <Paper variant='outlined' sx={{ width: "100%" , padding: 2}}>
-            <Box sx={{ width: "100%", height: "100%"}}>
+    if ( mode === "preview" ){
+        return(
+            <Paper variant='outlined' sx={{ width: "100%" , padding: 2 }}>
+                <Box sx={{ width: "100%", height: "100%" }}>
+                    <ChartTimeHighlight
+                        datasources={{
+                            gamma: datasources.gamma,
+                            neutron: datasources.neutron,
+                            threshold: datasources.threshold
+                        }}
+                        modeType={mode}
+                        eventData={eventData}
+                        latestGB={latestGB}
+                        currentTime={videoCurrentTime}
+                    />
+                </Box>
+                <Box sx={{ width: "100%", height: "100%" }}>
+                    <LaneVideoPlayback
+                        videos={eventData?.videoFiles}
+                        modeType={mode}
+                        startTime={eventData.startTime}
+                        endTime={eventData.endTime}
+                        syncTime={videoCurrentTime}
+                        isPlaying={videoIsPlaying}
+                        onVideoTimeUpdate={handleVideoTimeUpdate}
+                        onSelectedVideoIdxChange={handleUpdatingPage}
+                    />
+                </Box>
+                {/*    <TimeController*/}
+                {/*        handleCommitChange={handleCommitChange}*/}
+                {/*        pause={handlePause}*/}
+                {/*        play={handlePlay}*/}
+                {/*        syncTime={syncTime}*/}
+                {/*        startTime={eventData.startTime}*/}
+                {/*        endTime={eventData.endTime}*/}
+                {/*        onTimeUpdate={handleTimeControllerUpdate}*/}
+                {/*        onPlayStateChange={handlePlayStateChange}*/}
+                {/*    />*/}
 
-                <ChartTimeHighlight
-                    datasources={{
-                        gamma: datasources.gamma,
-                        neutron: datasources.neutron,
-                        threshold: datasources.threshold
-                    }}
-                    modeType={mode}
-                    eventData={eventData}
-                    latestGB={latestGB}
-                    currentTime={videoCurrentTime}
-                />
+            </Paper>
+        )
+    }
 
-            </Box>
-            <Box sx={{ width: "100%", height: "100%"}}>
-
-                <LaneVideoPlayback
-                    videos={eventData?.videoFiles}
-                    modeType={mode}
-                    startTime={eventData.startTime}
-                    endTime={eventData.endTime}
-                    syncTime={videoCurrentTime}
-                    isPlaying={videoIsPlaying}
-                    onVideoTimeUpdate={handleVideoTimeUpdate}
-                    onSelectedVideoIdxChange={handleUpdatingPage}
-                />
-            </Box>
-                    {/*    <TimeController*/}
-                    {/*        handleCommitChange={handleCommitChange}*/}
-                    {/*        pause={handlePause}*/}
-                    {/*        play={handlePlay}*/}
-                    {/*        syncTime={syncTime}*/}
-                    {/*        startTime={eventData.startTime}*/}
-                    {/*        endTime={eventData.endTime}*/}
-                    {/*        onTimeUpdate={handleTimeControllerUpdate}*/}
-                    {/*        onPlayStateChange={handlePlayStateChange}*/}
-                    {/*    />*/}
-
-
-        </Paper>
-    )
+    if ( mode === "details" ) {
+        return (
+            <Paper variant='outlined' sx={{ width: "100%" , padding: 2 }}>
+                <Box>
+                    <Grid container
+                          direction="row"
+                          spacing={2}
+                          justifyContent={"center"}
+                    >
+                        <Grid item xs={12} md={6}>
+                            <ChartTimeHighlight
+                                datasources={{
+                                    gamma: datasources.gamma,
+                                    neutron: datasources.neutron,
+                                    threshold: datasources.threshold
+                                }}
+                                modeType={mode}
+                                eventData={eventData}
+                                latestGB={latestGB}
+                                currentTime={videoCurrentTime}
+                            />
+                        </Grid>
+                        <Grid item xs={12}  md={6}>
+                            <LaneVideoPlayback
+                                videos={eventData?.videoFiles}
+                                modeType={mode}
+                                startTime={eventData.startTime}
+                                endTime={eventData.endTime}
+                                syncTime={videoCurrentTime}
+                                isPlaying={videoIsPlaying}
+                                onVideoTimeUpdate={handleVideoTimeUpdate}
+                                onSelectedVideoIdxChange={handleUpdatingPage}
+                            />
+                        </Grid>
+                    </Grid>
+                </Box>
+            </Paper>
+        )
+    }
 }
