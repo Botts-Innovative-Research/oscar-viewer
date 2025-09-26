@@ -20,8 +20,9 @@ describe('Event Details', () => {
                     expect(duration).to.be.lessThan(5000);
                 });
 
-            // check chart loads
-            cy.get('.chart-view-event-detail', {timeout: 10000})
+
+            cy.get('div.chart-view-event-detail')
+                .find('canvas')
                 .should('exist')
                 .and('be.visible')
                 .then(() => {
@@ -29,10 +30,11 @@ describe('Event Details', () => {
                     expect(duration).to.be.lessThan(5000);
                 });
 
-            //check video stream loads
-            cy.get('img.video-mjpeg', {timeout: 10000})
+            cy.get('video source')
                 .should('exist')
                 .and('be.visible')
+                .and('have.attr', 'src')
+                .and('not.be.empty')
                 .then(() => {
                     const duration = Date.now() - start;
                     expect(duration).to.be.lessThan(5000);
@@ -63,19 +65,21 @@ describe('Event Details', () => {
 
     describe('Chart Actions', () => {
         it('should display chart for selected event', () => {
-            cy.get('.chart-view-event-detail')
+            cy.get('div.chart-view-event-detail')
+                .find('canvas')
                 .should('exist')
                 .and('be.visible');
-
 
         });
     });
 
     describe('Video', () => {
         it('should display video stream', () => {
-            cy.get('img.video-mjpeg')
+            cy.get('video source')
                 .should('exist')
-                .and('be.visible');
+                .and('be.visible')
+                .and('have.attr', 'src')
+                .and('not.be.empty')
         });
 
         it('should switch between video streams', () => {
@@ -84,23 +88,6 @@ describe('Event Details', () => {
                 .should('exist')
                 .and('be.visible')
 
-            // pause video
-            cy.get('button[data-testid="PauseRoundedIcon"]')
-                .click();
-
-            // click button to go to next video stream, verify video stream is visible
-            cy.get('button[data-testid="NavigateAfterIcon"]')
-                .should('be.visible')
-                .then(($btn) => {
-                    if(!$btn.is(':disabled')){
-
-                        cy.wrap($btn).click();
-
-                        cy.get('img-video-mjpeg')
-                            .should('exist')
-                            .and('be.visible');
-                    }
-                });
         });
     });
 

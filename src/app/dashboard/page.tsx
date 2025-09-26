@@ -17,7 +17,6 @@ import {
 } from "@/lib/data/oscar/Utilities";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import QuickView from "../_components/dashboard/QuickView";
 import dynamic from "next/dynamic";
 import CircularProgress from "@mui/material/CircularProgress";
 

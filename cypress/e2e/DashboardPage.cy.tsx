@@ -88,16 +88,15 @@ describe('Dashboard', () => {
                     .should('be.visible');
 
                 //TODO: chart displayed
-                cy.get('.chart-view-event-detail')
+                cy.get('div.chart-view-event-detail')
+                    .find('canvas')
                     .should('exist')
-                    .and('be.visible')
-                    .find('canvas, svg')
-                    .should('exist');
+                    .and('be.visible');
                 // check if chart has stuff on it? possible get canvas and check if pixels are available?
                 // can also look into legends
 
                 //TODO: video available
-                cy.get('img.video-mjpeg', { timeout: 4000 })
+                cy.get('video source')
                     .should('exist')
                     .and('be.visible')
                     .and('have.attr', 'src')

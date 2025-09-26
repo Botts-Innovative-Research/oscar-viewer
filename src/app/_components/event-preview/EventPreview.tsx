@@ -17,12 +17,11 @@ import {
 } from "@mui/material";
 import OpenInFullRoundedIcon from "@mui/icons-material/OpenInFullRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
+import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useSelector} from "react-redux";
 import {
     selectEventPreview,
-    selectLatestGB,
     setEventPreview,
     setSelectedRowId,
     setShouldForceAlarmTableDeselect
@@ -30,7 +29,6 @@ import {
 import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/dist/client/components/navigation";
-import ChartTimeHighlight from "@/app/_components/event-preview/ChartTimeHighlight";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import AdjudicationData, {
@@ -44,9 +42,9 @@ import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {setSelectedEvent, updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 import { setEventData } from "@/lib/state/EventDetailsSlice";
-import {RootState} from "@/lib/state/Store";
 import CircularProgress from "@mui/material/CircularProgress";
 import {insertObservation} from "@/lib/data/osh/Node";
+import EventMedia from "@/app/_components/event-preview/EventMedia";
 
 export function EventPreview() {
     const dispatch = useAppDispatch();
@@ -62,9 +60,9 @@ export function EventPreview() {
     const currentUser = useSelector(selectCurrentUser);
 
     // Chart Specifics
-    const [gammaDatasources, setGammaDS] = useState<typeof ConSysApi[]>([]);
-    const [neutronDatasources, setNeutronDS] = useState<typeof ConSysApi[]>([]);
-    const [thresholdDatasources, setThresholdDS] = useState<typeof ConSysApi[]>([]);
+    const [gammaDatasources, setGammaDatasources] = useState<typeof ConSysApi[]>([]);
+    const [neutronDatasources, setNeutronDatasources] = useState<typeof ConSysApi[]>([]);
+    const [thresholdDatasources, setThresholdDatasources] = useState<typeof ConSysApi[]>([]);
 
     // Adjudication Specifics
     const [adjFormData, setAdjFormData] = useState<IAdjudicationData | null>();
@@ -77,7 +75,6 @@ export function EventPreview() {
     const [openSnack, setOpenSnack] = useState(false);
     const [colorStatus, setColorStatus] = useState('')
 
-    let latestGB = useSelector((state: RootState) => selectLatestGB(state));
 
     const handleAdjudicationCode = (value: AdjudicationCode) => {
         let newAdjData: IAdjudicationData = {
@@ -227,13 +224,14 @@ export function EventPreview() {
         if (!eventPreview.eventData?.laneId || !laneMapRef.current) return;
 
         let currentLane = eventPreview.eventData.laneId;
+
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
         if (!currLaneEntry) {
             console.error("LaneMapEntry not found for:", currentLane);
             return;
         }
 
-        let tempDSMap = new Map<string, typeof ConSysApi[]>();
+        let tempDSMap: Map<string, typeof ConSysApi[]>;
 
         let datasources = await currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
 
@@ -244,9 +242,9 @@ export function EventPreview() {
         const updatedNeutron = tempDSMap.get("neutron") || [];
         const updatedThreshold = tempDSMap.get("gammaTrshld") || [];
 
-        setGammaDS(updatedGamma);
-        setNeutronDS(updatedNeutron);
-        setThresholdDS(updatedThreshold);
+        setGammaDatasources(updatedGamma);
+        setNeutronDatasources(updatedNeutron);
+        setThresholdDatasources(updatedThreshold);
 
         setDatasourcesReady(true);
     }, [eventPreview, laneMapRef]);
@@ -256,14 +254,12 @@ export function EventPreview() {
         await collectDataSources();
     }
 
-    useEffect( () => {
+    useEffect(() => {
         gammaDatasources.forEach(ds => ds.connect());
         neutronDatasources.forEach(ds => ds.connect());
         thresholdDatasources.forEach(ds => ds.connect());
 
     }, [datasourcesReady]);
-
-
 
     const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason) => {
         if (reason === 'clickaway') {
@@ -311,26 +307,17 @@ export function EventPreview() {
             </Stack>
 
             { datasourcesReady ? (
-                    <Box>
-                        <ChartTimeHighlight
-                            datasources={{
-                                gamma: gammaDatasources[0],
-                                neutron: neutronDatasources[0],
-                                threshold: thresholdDatasources[0]
-                            }}
-                            modeType="preview"
-                            eventData={eventPreview.eventData}
-                            latestGB={latestGB}
-                        />
-
-
-                        <video autoPlay controls height="320" width="100%">
-                            {eventPreview?.eventData?.videoFiles?.map((video, index) => (
-                                <source key={index} src={video.trim()} type="video/mp4" />
-                            ))}
-                            Your browser does not support the video tag.
-                        </video>
-                    </Box>
+                <Box>
+                    <EventMedia
+                        datasources={{
+                            gamma: gammaDatasources[0],
+                            neutron: neutronDatasources[0],
+                            threshold: thresholdDatasources[0]
+                        }}
+                        mode={"preview"}
+                        eventData={eventPreview.eventData}
+                    />
+                </Box>
 
                 ) :
                 <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}>
