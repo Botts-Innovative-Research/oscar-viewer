@@ -13,7 +13,7 @@ import { LaneWithLocation } from "types/new-types";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import "leaflet/dist/leaflet.css"
 import {
-    isGammaDatastream,
+    isGammaDatastream, isLocationDatastream,
     isNeutronDatastream,
     isTamperDatastream,
 } from "@/lib/data/oscar/Utilities";
@@ -23,7 +23,6 @@ import L, {LatLngExpression} from "leaflet";
 import {selectNodes} from "@/lib/state/OSHSlice";
 import {INode} from "@/lib/data/osh/Node";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
-import {fileExists} from "next/dist/lib/file-exists";
 
 
 export default function MapComponent() {
@@ -58,8 +57,11 @@ export default function MapComponent() {
                 if (laneMapToMap.has(key)) {
                     let ds: LaneMapEntry = laneMapToMap.get(key);
 
+                    console.log("ds", ds)
+
                     dsLocations.map((dss) => {
-                        const locationSources = ds.datasourcesBatch.filter((item) => (item.properties.resource === ("/datastreams/" + dss.properties.id + "/observations")))
+                        const locationSources = ds.datasourcesBatch.filter((item) =>
+                            (item.properties.resource === ("/datastreams/" + dss.properties.id + "/observations")))
 
                         const laneWithLocation: LaneWithLocation = {
                             laneName: key,
@@ -71,6 +73,7 @@ export default function MapComponent() {
                     });
                 }
             });
+            console.log("locations", locations);
             setLocationList(locations);
         }
 
@@ -79,10 +82,7 @@ export default function MapComponent() {
     const datasourceSetup = useCallback(async () => {
         // @ts-ignore
         let laneDSMap = new Map<string, LaneDSColl>();
-
-
         let locationDs: any[] = [];
-        let siteDS: any[] = [];
 
         for (let [laneid, lane] of laneMapRef.current.entries()) {
             laneDSMap.set(laneid, new LaneDSColl());
@@ -232,16 +232,6 @@ export default function MapComponent() {
             });
         }
 
-        return () => {
-            if(!isInit || !locationList || locationList.length === 0) return;
-
-            console.log("Unmounted Map: disconnecting from location datasources")
-
-            locationList.forEach((location) => {
-                location.locationSources.map((src: any) => src.disconnect());
-            });
-
-        }
     }, [locationList, isInit]);
 
 
@@ -254,8 +244,8 @@ export default function MapComponent() {
     const [siteMapPath, setSiteMapPath] = useState<string>(null);
     const [lowerLeftBound, setLowerLeftBound] = useState<LatLngExpression>(null);
     const [upperRightBound, setUpperRightBound] = useState<LatLngExpression>(null);
-    useEffect(() => {
 
+    useEffect(() => {
         if(!nodes) return;
 
         nodes.forEach(async (node: INode) => {
@@ -264,7 +254,7 @@ export default function MapComponent() {
 
             let system = node.oscarServiceSystem
 
-            if(!system) console.warn("No oscar service system found");
+            if(!system) console.error("No oscar service system found");
 
             let dataStreams = await node.fetchDataStream(system);
 
@@ -279,7 +269,8 @@ export default function MapComponent() {
 
                     let result = results[0];
                     if(result){
-                        setSiteMapPath(result.result.siteDiagramPath); //todo: fix this
+                        setSiteMapPath("/image.png"); //todo: fix this
+                        // setSiteMapPath(result.result.siteDiagramPath); //todo: fix this
                         setLowerLeftBound([result.result.siteBoundingBox.lowerLeftBound.lon, result.result.siteBoundingBox.lowerLeftBound.lat]);
                         setUpperRightBound([result.result.siteBoundingBox.upperRightBound.lon, result.result.siteBoundingBox.upperRightBound.lat]);
 
@@ -303,7 +294,7 @@ export default function MapComponent() {
             leafletViewRef.current.map.fitBounds(latLngBounds);
 
             leafletViewRef.current.addImageOverlay(siteMapPath, latLngBounds, {
-                opacity: 0.65,
+                opacity: 0.45,
                 interactive: false,
                 alt: "Image of site map",
             })

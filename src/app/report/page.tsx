@@ -10,10 +10,8 @@ import Report from "@/app/_components/reportgen/Report";
 
 export default function ReportViewPage() {
     return (
-        <Box>
-            <Paper variant='outlined' sx={{width: "100%"}}>
-                <Report/>
-            </Paper>
+        <Box sx={{margin: 2, width: '100%', height: "100%", padding: 2}}>
+            <Report/>
         </Box>
     )
 }

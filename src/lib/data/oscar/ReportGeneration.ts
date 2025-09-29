@@ -42,14 +42,6 @@ export async function sendReportCommand(node: INode, controlStreamId: string, co
         body: command instanceof ReportGenerationCommand ? command.getJsonString() : command
     })
     return response;
-    // if (response.ok) {
-    //     let json = await response.json();
-    //     console.log("[Report Generation] Command Response", json)
-
-
-    // } else {
-    //     console.warn("[Report Generation] report command failed", response)
-    // }
 }
 
 export function generateCommandJSON(startDateTime: string, endDateTime: string, reportType: string, laneUID: string, eventId: string) {

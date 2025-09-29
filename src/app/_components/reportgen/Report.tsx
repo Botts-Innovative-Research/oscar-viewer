@@ -1,48 +1,45 @@
 import {
-    Alert,
-    Button,
-    Grid,
-    Paper,
+    Alert, Box,
+    Button, Card, Grid,
     Snackbar,
-    SnackbarCloseReason,
+    SnackbarCloseReason, Paper,
     Stack,
     Typography
 } from "@mui/material";
 import ReportTypeSelect from "@/app/_components/reportgen/ReportTypeSelector";
 import {Download} from "@mui/icons-material";
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import TimeRangeSelect from "@/app/_components/reportgen/TimeRangeSelector";
 import NationalDatePicker from "@/app/_components/national/NationalDatePicker";
 import {INode} from "@/lib/data/osh/Node";;
 import NodeSelect from "@/app/_components/reportgen/NodeSelector";
 import LaneSelect from "@/app/_components/reportgen/LaneSelector";
-import ControlStreams from "osh-js/source/core/consysapi/controlstream/ControlStreams";
-import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
-import {isReportControlStream} from "@/lib/data/oscar/Utilities";
 import {generateCommandJSON, sendReportCommand} from "@/lib/data/oscar/ReportGeneration";
-import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import EventTypeSelect from "@/app/_components/reportgen/EventTypeSelector";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectNodes} from "@/lib/state/OSHSlice";
+import {isReportControlStream} from "@/lib/data/oscar/Utilities";
 
 
 export default function ReportGeneratorView(){
     const[isGenerating, setIsGenerating] = useState(false);
 
-    const [selectedReportType, setSelectedReportType]= useState<string | null>(null);
-    const [selectedTimeRange, setSelectedTimeRange]= useState<string | null>(null);
-    const [customStartTime, setCustomStartTime] = useState<string | null>(null);
-    const [customEndTime, setCustomEndTime] = useState<string | null>(null);
+    const [selectedReportType, setSelectedReportType]= useState<string | null>("");
+    const [selectedTimeRange, setSelectedTimeRange]= useState<string | null>("");
+    const [customStartTime, setCustomStartTime] = useState<string | null>("");
+    const [customEndTime, setCustomEndTime] = useState<string | null>("");
     const [selectedNode, setSelectedNode] = useState<INode | null>(null);
-    const [selectedLaneUID, setSelectedLaneUID] = useState<string | null>(null);
-    const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+    const [selectedLaneUID, setSelectedLaneUID] = useState<string | null>("");
+    const [selectedEvent, setSelectedEvent] = useState<string | null>("");
     const nodes = useSelector((state: RootState) => selectNodes(state));
-
 
     const [openSnack, setOpenSnack] = useState(false);
     const [snackMessage, setSnackMessage] = useState<string>();
     const [severity, setSeverity] = useState<'success' | 'error'>('success');
+
+    // const [generatedURL, setGeneratedURL] = useState<string | null>(null);
+    const [generatedURL, setGeneratedURL] = useState<string | null>("http://localhost:8282/reports/RDS_SITE_2025-09-25T19:57:56.762Z_2025-09-26T19:57:56.762Z.pdf");
 
     const handleGenerateReport = async() => {
         if (selectedTimeRange === "custom" && (!customStartTime || !customEndTime)){
@@ -70,25 +67,27 @@ export default function ReportGeneratorView(){
             console.log("streams", streams);
 
             let controlstream = streams.find((stream: any) => isReportControlStream(stream))
-
-
-            console.log("controlStream", controlstream);
-
+            console.log("controlstream", controlstream);
             if(!controlstream){
-                setSnackMessage("[REPORT] No control stream found");
+                console.error("no report control streams");
+                return;
+            }
+
+            let response = await sendReportCommand(selectedNode, controlstream.properties.id, generateCommandJSON(startTime, endTime, selectedReportType, selectedLaneUID, selectedEvent));
+
+
+            if (!response.ok) {
+                setSnackMessage("Report request failed to submit.");
                 setSeverity("error");
                 return;
             }
-            let payload = generateCommandJSON(startTime, endTime, selectedReportType, selectedLaneUID, null)
-            // let response = controlstream.postCommand(payload)
 
-            let response = await sendReportCommand(selectedNode, controlstream.properties.id, payload);
+            let reportUrl = await response.json();
+            setGeneratedURL(selectedNode.isSecure ? `https://${selectedNode.address}:${selectedNode.port}/reports/${reportUrl[0].reportUrl}` : `http://${selectedNode.address}:${selectedNode.port}/reports/${reportUrl[0].reportUrl}`);
 
-            console.log(response.json)
-            if (response.ok) {
-                setSnackMessage("Report request submitted successfully. ");
-                setSeverity("success");
-            }
+
+            setSnackMessage("Report created successfully");
+            setSeverity("success");
 
         } catch (error) {
             setSnackMessage("Report request failed to submit.");
@@ -100,15 +99,6 @@ export default function ReportGeneratorView(){
         }
     }
 
-    // useEffect(() => {
-    //     if (customStartTime && customEndTime) {
-    //         setStartDate(customStartTime);
-    //         setEndDate(customEndTime);
-    //     } else {
-    //         setStartDate(null);
-    //         setEndDate(null);
-    //     }
-    // }, [customStartTime, customEndTime]);
 
     const handleLaneSelect = (value: any) => {
         setSelectedLaneUID(value)
@@ -145,8 +135,7 @@ export default function ReportGeneratorView(){
         setSelectedNode(null);
         setSelectedLaneUID("");
         setCustomEndTime("");
-        setCustomEndTime("")
-
+        setCustomStartTime("")
     }
 
     const getTimeRange = (timeRange: string): {startTime: string, endTime: string} => {
@@ -175,63 +164,44 @@ export default function ReportGeneratorView(){
             default:
                 startTime = now.toISOString();
         }
-
         return {startTime, endTime};
     }
 
 
+    const handleCustomStartTime = (value: string) => {
+        setCustomStartTime(value)
+    }
+    const handleCustomEndTime = (value: string) => {
+        setCustomEndTime(value)
+    }
+
     return (
-        <Stack p={3} spacing={3}>
-            <Typography variant="h4" sx={{padding: 2}}>
-                Generate Reports
-            </Typography>
 
-            <Paper sx={{padding: 3}}>
-                <Typography variant="h6" gutterBottom>Select Report Type</Typography>
-                <Grid container spacing={2}>
+        <Box sx={{ padding: 4}} >
+            <Grid container spacing={4}>
+                <Grid item xs={12} md={5}>
+                    <Typography variant="h5" align="center" gutterBottom>
+                        Generate A Report
+                    </Typography>
 
-                    <Grid item xs={12} md={6}>
-                        <ReportTypeSelect
-                            onSelect={handleReportTypeSelect}
-                            report={selectedReportType}
-                        />
-                    </Grid>
-
-                    <Grid item xs={12} md={6}>
+                    <Stack spacing={3}>
                         <NodeSelect onSelect={handleNodeSelect} node={selectedNode?.id} />
-                    </Grid>
+                        <ReportTypeSelect onSelect={handleReportTypeSelect} report={selectedReportType} />
 
-                    {selectedReportType == "LANE" && (
-                        <Grid item xs={12} md={6}>
+                        {selectedReportType == "LANE" && (
                             <LaneSelect onSelect={handleLaneSelect} lane={selectedLaneUID} />
-                        </Grid>
-                    )}
-                    {selectedReportType == "EVENT" && (
-                        <Grid item xs={12} md={6}>
+                        )}
+
+                        {selectedReportType == "EVENT" && (
                             <EventTypeSelect onSelect={handleEventTypeSelect} event={selectedEvent} />
-                        </Grid>
-                    )}
-                </Grid>
+                        )}
 
-            </Paper>
-            <Paper sx={{padding: 3}}>
-                <Typography variant="h6" gutterBottom>Time Range</Typography>
-                <Grid container spacing={2}>
-                    <Grid item xs={12} md={6}>
-                        <TimeRangeSelect onSelect={handleTimeRange} timeRange={selectedTimeRange}/>
-                    </Grid>
+                        <TimeRangeSelect onSelect={handleTimeRange} timeRange={selectedTimeRange} />
 
-                    {selectedTimeRange === 'custom' && (
-                        <Grid item xs={12} md={6}>
-                            <NationalDatePicker customStartTime={customStartTime} customEndTime={customEndTime}/>
-                        </Grid>
-                    )}
-                </Grid>
+                        {selectedTimeRange === 'custom' && (
+                            <NationalDatePicker customStartTime={customStartTime} customEndTime={customEndTime} onCustomStartChange={handleCustomStartTime} onCustomEndChange={handleCustomEndTime}/>
+                        )}
 
-            </Paper>
-            <Paper sx={{padding: 3}}>
-                <Grid container spacing={2}>
-                    <Grid item xs={12}>
                         <Button
                             variant="contained"
                             size="large"
@@ -242,9 +212,37 @@ export default function ReportGeneratorView(){
                         >
                             {isGenerating ? 'Generating Report...' : 'Generate Report'}
                         </Button>
-                    </Grid>
+                    </Stack>
                 </Grid>
-            </Paper>
+
+                <Grid item xs={12} md={7}>
+                    <Paper elevation={3} sx={{ padding: 2, height: "100%" }}>
+                        <Typography variant="h5" align="center" gutterBottom>
+                            Generated Report
+                        </Typography>
+
+                        {generatedURL ? (
+                            <Box sx={{ height: "800px", border: "1px solid #ccc", borderRadius: 2, overflow: "hidden"}}>
+                                <iframe width="100%" height="100%" src={generatedURL} style={{ border: "none"}} />
+
+                            </Box>
+                            ) :
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    textAlign: 'center'
+                                }}
+                            >
+                                <Typography variant="body1">
+                                    Please generate a report to view and download it here.
+                                </Typography>
+                            </Box>}
+                    </Paper>
+                </Grid>
+            </Grid>
+
             <Snackbar
                 open={openSnack}
                 autoHideDuration={5000}
@@ -255,7 +253,8 @@ export default function ReportGeneratorView(){
                     {snackMessage}
                 </Alert>
             </Snackbar>
-        </Stack>
+        </Box>
+
     )
 
 }
