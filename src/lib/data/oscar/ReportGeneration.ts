@@ -44,14 +44,14 @@ export async function sendReportCommand(node: INode, controlStreamId: string, co
     return response;
 }
 
-export function generateCommandJSON(startDateTime: string, endDateTime: string, reportType: string, laneUID: string, eventId: string) {
+export function generateCommandJSON(startDateTime: string, endDateTime: string, reportType: string, laneUID: string[], eventType: string) {
     return JSON.stringify({
         "params": {
             "startDateTime": startDateTime,
             "endDateTime": endDateTime,
             "reportType": reportType,
             "laneUID": laneUID,
-            "eventId": eventId
+            "eventType": eventType
         }
     })
 }

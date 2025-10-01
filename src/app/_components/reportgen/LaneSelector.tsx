@@ -11,7 +11,7 @@ import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 
 
 export default function LaneSelect(props: {
-    onSelect: (value: string[] | string) => void,
+    onSelect: (value: string[]) => void,
     lane: any
 }) {
 
@@ -22,8 +22,11 @@ export default function LaneSelect(props: {
     // const [selectedLane, setSelectedLane] = useState<string>("");
 
     const handleChange = (event: SelectChangeEvent) => {
-        const val = event.target.value;
-        props.onSelect(val)
+        const {target: {value},} = event;
+        let laneVal = typeof value === 'string' ? value.split(', ') : value;
+
+        // const val = event.target.value;
+        props.onSelect(laneVal)
         // setSelectedLane(val);
     };
 
@@ -34,8 +37,10 @@ export default function LaneSelect(props: {
                 variant="outlined"
                 id="label"
                 label="Lane Selector"
-                value= {props.lane || ""}
+                value= {props.lane}
+                multiple
                 onChange={handleChange}
+                renderValue={(selected) => selected.join(', ')}
                 MenuProps={{
                     MenuListProps: {
                         style: {

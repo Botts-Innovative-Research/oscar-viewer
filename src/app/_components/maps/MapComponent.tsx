@@ -34,18 +34,21 @@ export default function MapComponent() {
     const {laneMapRef} = useContext(DataSourceContext);
     const dispatch = useAppDispatch();
 
+    const nodes = useSelector((state: RootState) => selectNodes(state));
+
     const [isInit, setIsInt] = useState(false);
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
     const [locationList, setLocationList] = useState<LaneWithLocation[] | null>(null);
     const [dsLocations, setDsLocations] = useState([]);
-
+    const [siteMapPath, setSiteMapPath] = useState<string>(null);
+    const [lowerLeftBound, setLowerLeftBound] = useState<LatLngExpression>(null);
+    const [upperRightBound, setUpperRightBound] = useState<LatLngExpression>(null);
 
     const convertToMap = (obj: any) =>{
         if(!obj) return new Map();
         if(obj instanceof Map) return obj;
         return new Map(Object.entries(obj));
     }
-
 
     useEffect(() =>{
         if(locationList == null || locationList.length === 0 && laneMap.size > 0) {
@@ -77,7 +80,7 @@ export default function MapComponent() {
             setLocationList(locations);
         }
 
-    },[laneMap, dsLocations]);
+    }, [laneMap, dsLocations]);
 
     const datasourceSetup = useCallback(async () => {
         // @ts-ignore
@@ -235,16 +238,6 @@ export default function MapComponent() {
     }, [locationList, isInit]);
 
 
-    const nodes = useSelector((state: RootState) => selectNodes(state));
-
-        // need to get the site diagram path value/ url value,
-        // and then we need to get the site diagrams bounding UL and LR coordinates.
-
-
-    const [siteMapPath, setSiteMapPath] = useState<string>(null);
-    const [lowerLeftBound, setLowerLeftBound] = useState<LatLngExpression>(null);
-    const [upperRightBound, setUpperRightBound] = useState<LatLngExpression>(null);
-
     useEffect(() => {
         if(!nodes) return;
 
@@ -269,8 +262,7 @@ export default function MapComponent() {
 
                     let result = results[0];
                     if(result){
-                        setSiteMapPath("/image.png"); //todo: fix this
-                        // setSiteMapPath(result.result.siteDiagramPath); //todo: fix this
+                        setSiteMapPath(getSiteDiagramPath(result.result.siteDiagramPath, node));
                         setLowerLeftBound([result.result.siteBoundingBox.lowerLeftBound.lon, result.result.siteBoundingBox.lowerLeftBound.lat]);
                         setUpperRightBound([result.result.siteBoundingBox.upperRightBound.lon, result.result.siteBoundingBox.upperRightBound.lat]);
 
@@ -282,14 +274,15 @@ export default function MapComponent() {
     }, [isInit]);
 
 
+    const getSiteDiagramPath = (path: string, node: INode) => {
+        return node.isSecure ? "https://" + node.address + ":" + node.port + node.oshPathRoot + "/buckets/sitemap/" + path : "http://" + node.address + ":" + node.port + node.oshPathRoot + "/buckets/sitemap/" + path;
+    }
+
     useEffect(() => {
         if (leafletViewRef.current && siteMapPath != null && lowerLeftBound != null && upperRightBound != null) {
 
             var latLngBounds = L.latLngBounds([lowerLeftBound, upperRightBound]);
 
-            // const imageUrl = "/image.png";
-
-            //TODO: fix sitemap path to working and then she should be good
 
             leafletViewRef.current.map.fitBounds(latLngBounds);
 

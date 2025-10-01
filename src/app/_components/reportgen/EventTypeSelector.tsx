@@ -6,7 +6,7 @@ import {useState} from "react";
 export const eventTypes = [
     {
         label: "Alarms and Occupancies",
-        value: "ALARMS_OCC",
+        value: "ALARMS_OCCUPANCIES",
     },
     {
         label: "Alarms",

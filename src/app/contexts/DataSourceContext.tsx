@@ -132,6 +132,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
         await Promise.all(newNodes.map(async (node: INode) => {
 
+            //COMMENT THIS LINE OUT WHEN TESTING IN DEV MODE
             await node.authFileServer();
 
             let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
