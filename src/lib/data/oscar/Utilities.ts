@@ -6,6 +6,7 @@
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
 import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
+import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 
 /**
  *
@@ -89,47 +90,47 @@ export function isVideoDatastream(datastream: typeof DataStream): boolean {
 }
 
 export function isGammaDatastream(datastream: typeof DataStream): boolean {
-    const ALARM_DEF = "http://www.opengis.net/def/alarm";
-    const GAMMA_COUNT_DEF = "http://www.opengis.net/def/gamma-gross-count";
+    const ALARM_DEF = "http://www.opengis.net/def/Alarm";
+    const GAMMA_COUNT_DEF = "http://www.opengis.net/def/GammaGrossCount";
 
     return datastream.properties.observedProperties[0].definition.includes(ALARM_DEF)
         && datastream.properties.observedProperties[1].definition.includes(GAMMA_COUNT_DEF);
 }
 
 export function isNeutronDatastream(datastream: typeof DataStream): boolean {
-    const ALARM_DEF = "http://www.opengis.net/def/alarm";
-    const NEUTRON_COUNT_DEF = "http://www.opengis.net/def/neutron-gross-count";
+    const ALARM_DEF = "http://www.opengis.net/def/Alarm";
+    const NEUTRON_COUNT_DEF = "http://www.opengis.net/def/NeutronGrossCount";
 
     return datastream.properties.observedProperties[0].definition.includes(ALARM_DEF)
         && datastream.properties.observedProperties[1].definition.includes(NEUTRON_COUNT_DEF);
 }
 
 export function isTamperDatastream(datastream: typeof DataStream): boolean {
-    const TAMPER_STATUS_DEF = "http://www.opengis.net/def/tamper-status";
+    const TAMPER_STATUS_DEF = "http://www.opengis.net/def/TamperStatus";
 
     return datastream.properties.observedProperties[0].definition.includes(TAMPER_STATUS_DEF);
 }
 
 export function isOccupancyDatastream(datastream: typeof DataStream): boolean {
-    const OCCUPANCY_PILLAR_DEF = "http://www.opengis.net/def/pillar-occupancy-count";
+    const OCCUPANCY_PILLAR_DEF = "http://www.opengis.net/def/PillarOccupancyCount";
 
     return datastream.properties.observedProperties[0].definition.includes(OCCUPANCY_PILLAR_DEF);
 }
 
 export function isConnectionDatastream(datastream: typeof DataStream): boolean {
-    const CONNECTION_DEF ="http://www.opengis.net/def/connection-status";
+    const CONNECTION_DEF ="http://www.opengis.net/def/ConnectionStatus";
 
     return datastream.properties.observedProperties[0].definition.includes(CONNECTION_DEF);
 }
 
 export function isThresholdDatastream(datastream: typeof DataStream): boolean {
-    const THRESHOLD_DEF ="http://www.opengis.net/def/threshold";
+    const THRESHOLD_DEF ="http://www.opengis.net/def/Threshold";
 
     return datastream.properties.observedProperties[0].definition.includes(THRESHOLD_DEF);
 }
 
 export function isConfigurationDatastream(datastream: typeof DataStream): boolean {
-    const CONFIG_DEF ="http://www.opengis.net/def/threshold";
+    const CONFIG_DEF ="http://www.opengis.net/def/";
 
     return datastream.properties.observedProperties[0].definition.includes(CONFIG_DEF);
 }
@@ -141,10 +142,18 @@ export function isSiteDiagramPathDatastream(datastream: typeof DataStream): bool
 }
 
 
-export function isReportControlStream(controlStream: typeof DataStream): boolean {
-    const DEF = "http://sensorml.com/ont/swe/property/StartDateTime";
+export function isReportControlStream(controlStream: typeof ControlStream): boolean {
+    const DEF = "http://sensorml.com/ont/swe/property/ReportType";
 
-    return controlStream.properties.controlledProperties[0].definition.includes(DEF);
+    const properties = controlStream.properties.controlledProperties;
+    if (properties.length == 0)
+        return false;
+
+    const definition = properties[0].definition;
+    if (definition == undefined)
+        return false;
+
+    return definition.includes(DEF);
 }
 
 export function isAdjudicationControlStream(datastream: typeof DataStream): boolean {

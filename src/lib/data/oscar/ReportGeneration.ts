@@ -18,11 +18,11 @@ export class ReportGenerationCommand {
     getJsonString() {
         return JSON.stringify({
                 "params": {
+                    "reportType": this.reportType,
                     "startDateTime": this.startDateTime,
                     "endDateTime": this.endDateTime,
-                    "reportType": this.reportType,
                     "laneUID": this.laneUID,
-                    "eventId": this.eventId
+                    "eventType": this.eventId
                 }
             })
     }
@@ -44,12 +44,12 @@ export async function sendReportCommand(node: INode, controlStreamId: string, co
     return response;
 }
 
-export function generateCommandJSON(startDateTime: string, endDateTime: string, reportType: string, laneUID: string[], eventType: string) {
+export function generateCommandJSON(startDateTime: string, endDateTime: string, reportType: string, laneUID: string, eventType: string) {
     return JSON.stringify({
         "params": {
+            "reportType": reportType,
             "startDateTime": startDateTime,
             "endDateTime": endDateTime,
-            "reportType": reportType,
             "laneUID": laneUID,
             "eventType": eventType
         }

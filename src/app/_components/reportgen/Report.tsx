@@ -1,6 +1,6 @@
 import {
     Alert, Box,
-    Button, Card, Grid,
+    Button, Grid,
     Snackbar,
     SnackbarCloseReason, Paper,
     Stack,
@@ -11,7 +11,7 @@ import {Download} from "@mui/icons-material";
 import React, {useState} from "react";
 import TimeRangeSelect from "@/app/_components/reportgen/TimeRangeSelector";
 import NationalDatePicker from "@/app/_components/national/NationalDatePicker";
-import {INode} from "@/lib/data/osh/Node";;
+import {INode} from "@/lib/data/osh/Node";
 import NodeSelect from "@/app/_components/reportgen/NodeSelector";
 import LaneSelect from "@/app/_components/reportgen/LaneSelector";
 import {generateCommandJSON, sendReportCommand} from "@/lib/data/oscar/ReportGeneration";
@@ -20,6 +20,7 @@ import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectNodes} from "@/lib/state/OSHSlice";
 import {isReportControlStream} from "@/lib/data/oscar/Utilities";
+import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 
 
 export default function ReportGeneratorView(){
@@ -30,16 +31,14 @@ export default function ReportGeneratorView(){
     const [customStartTime, setCustomStartTime] = useState<string | null>("");
     const [customEndTime, setCustomEndTime] = useState<string | null>("");
     const [selectedNode, setSelectedNode] = useState<INode | null>(null);
-    const [selectedLaneUID, setSelectedLaneUID] = useState<string[] | null>([]);
+    const [selectedLaneUID, setSelectedLaneUID] = useState([]);
     const [selectedEvent, setSelectedEvent] = useState<string | null>("");
     const nodes = useSelector((state: RootState) => selectNodes(state));
 
     const [openSnack, setOpenSnack] = useState(false);
     const [snackMessage, setSnackMessage] = useState<string>();
     const [severity, setSeverity] = useState<'success' | 'error'>('success');
-
-    // const [generatedURL, setGeneratedURL] = useState<string | null>(null);
-    const [generatedURL, setGeneratedURL] = useState<string | null>("http://localhost:8282/reports/RDS_SITE_2025-09-25T19:57:56.762Z_2025-09-26T19:57:56.762Z.pdf");
+    const [generatedURL, setGeneratedURL] = useState<string | null>("");
 
     const handleGenerateReport = async() => {
         if (selectedTimeRange === "custom" && (!customStartTime || !customEndTime)){
@@ -54,7 +53,6 @@ export default function ReportGeneratorView(){
             setOpenSnack(true)
         }
 
-
         let startTime = getTimeRange(selectedTimeRange).startTime;
         let endTime = getTimeRange(selectedTimeRange).endTime;
 
@@ -66,15 +64,15 @@ export default function ReportGeneratorView(){
             let streams = await selectedNode.fetchNodeControlStreams();
             console.log("streams", streams);
 
-            let controlstream = streams.find((stream: any) => isReportControlStream(stream))
-            console.log("controlstream", controlstream);
-            if(!controlstream){
+            let controlStream = streams.find((stream: typeof ControlStream) => isReportControlStream(stream))
+            console.log("controlStream", controlStream);
+
+            if (!controlStream){
                 console.error("no report control streams");
                 return;
             }
 
-            let response = await sendReportCommand(selectedNode, controlstream.properties.id, generateCommandJSON(startTime, endTime, selectedReportType, selectedLaneUID, selectedEvent));
-
+            let response = await sendReportCommand(selectedNode, controlStream.properties.id, generateCommandJSON(startTime, endTime, selectedReportType, "hey", "ALARMS"));
 
             if (!response.ok) {
                 setSnackMessage("Report request failed to submit.");
@@ -83,8 +81,7 @@ export default function ReportGeneratorView(){
             }
 
             let reportUrl = await response.json();
-            setGeneratedURL(selectedNode.isSecure ? `https://${selectedNode.address}:${selectedNode.port}/reports/${reportUrl[0].reportUrl}` : `http://${selectedNode.address}:${selectedNode.port}/reports/${reportUrl[0].reportUrl}`);
-
+            setGeneratedURL(selectedNode.isSecure ? `https://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/reports/${reportUrl[0].reportUrl}` : `http://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/reports/${reportUrl[0].reportUrl}`);
 
             setSnackMessage("Report created successfully");
             setSeverity("success");
@@ -100,9 +97,8 @@ export default function ReportGeneratorView(){
     }
 
 
-    const handleLaneSelect = (value: any) => {
-        let laneUIDs = value.join(', ');
-        setSelectedLaneUID(laneUIDs)
+    const handleLaneSelect = (value: string[]) => {
+        setSelectedLaneUID(value)
     }
 
     const handleEventTypeSelect = (value: any) => {
@@ -189,7 +185,7 @@ export default function ReportGeneratorView(){
                         <NodeSelect onSelect={handleNodeSelect} node={selectedNode?.id} />
                         <ReportTypeSelect onSelect={handleReportTypeSelect} report={selectedReportType} />
 
-                        {selectedReportType == "LANE" && (
+                        {selectedReportType != "RDS_SITE" && (
                             <LaneSelect onSelect={handleLaneSelect} lane={selectedLaneUID} />
                         )}
 

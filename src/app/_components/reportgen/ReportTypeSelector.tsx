@@ -68,6 +68,7 @@ export default function ReportTypeSelect(props: {
                         },
                 }}
             >
+
                 {
                     reportTypes.map((item) => (
                         <MenuItem key={item.value} value={item.value}>
