@@ -80,8 +80,9 @@ export default function ReportGeneratorView(){
                 return;
             }
 
-            let reportUrl = await response.json();
-            setGeneratedURL(selectedNode.isSecure ? `https://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/reports/${reportUrl[0].reportUrl}` : `http://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/reports/${reportUrl[0].reportUrl}`);
+            let reportPath = await response.json();
+            console.log("report URL:", reportPath)
+            setGeneratedURL(selectedNode.isSecure ? `https://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/reports/${reportPath[0].reportPath}` : `http://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/reports/${reportPath[0].reportPath}`);
 
             setSnackMessage("Report created successfully");
             setSeverity("success");
