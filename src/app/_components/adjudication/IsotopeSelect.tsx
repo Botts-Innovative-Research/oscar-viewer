@@ -66,15 +66,15 @@ export default function IsotopeSelect(props: {
       }else{
           props.onSelect(isoValue);
       }
-      // setIsotope(isoValue); // Set local isotope
 
   };
 
   return (
       <FormControl size="small" fullWidth>
-        <InputLabel id="label" sx={{"&.MuiInputLabel-root":{color: "inherit"}}}>Isotope</InputLabel>
+        <InputLabel id="label">Isotope</InputLabel>
         <Select
             label="Isotope"
+            variant="outlined"
             id="label"
             multiple
             value={props.isotopeValue}
@@ -108,7 +108,8 @@ export default function IsotopeSelect(props: {
         >
             {isotopeChoices.map((item) =>(
                 <MenuItem key={item} value={item}>
-                    {item}
+                    <Checkbox checked={props.isotopeValue.includes(item)} />
+                    <ListItemText primary={item}/>
                 </MenuItem>
                 ))
             }

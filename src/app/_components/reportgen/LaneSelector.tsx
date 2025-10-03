@@ -8,13 +8,13 @@ import ListItemText from "@mui/material/ListItemText";
 
 
 export default function LaneSelect(props: {
-    onSelect: (value: string[]) => void,
-    lane?: string[]
+    onSelect: (value: string[]) => void, // Return selected value
+    lane: string[]
 }) {
 
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
 
-    const handleChange = (event: SelectChangeEvent) => {
+    const handleChange = (event: SelectChangeEvent<string[]>) => {
         const {target: {value},} = event;
 
         let laneVal = typeof value === 'string' ? value.split(', ') : value;
@@ -29,9 +29,9 @@ export default function LaneSelect(props: {
                 id="label"
                 label="Lane Selector"
                 multiple
-                value= {Array.isArray(props.lane) ? props.lane : []}
+                value= {props.lane}
                 onChange={handleChange}
-                renderValue={(selected) => Array.isArray(selected) ? selected.join(', '): ''}
+                renderValue={(selected) => selected.join(', ')}
                 MenuProps={{
                     MenuListProps: {
                         style: {
@@ -59,7 +59,7 @@ export default function LaneSelect(props: {
                 }}
             >
 
-                {Array.from(laneMap.entries()).map(([key, value]) => (
+                {Array.from(laneMap, ([key, value]) => (
                     <MenuItem key={key} value={value.laneSystem.properties.properties.uid}>
                         <Checkbox checked={props.lane?.includes(value.laneSystem.properties.properties.uid)} />
                         <ListItemText primary={key}/>

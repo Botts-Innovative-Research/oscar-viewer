@@ -31,7 +31,7 @@ export default function ReportGeneratorView(){
     const [customStartTime, setCustomStartTime] = useState<string | null>("");
     const [customEndTime, setCustomEndTime] = useState<string | null>("");
     const [selectedNode, setSelectedNode] = useState<INode | null>(null);
-    const [selectedLaneUID, setSelectedLaneUID] = useState([]);
+    const [selectedLaneUID, setSelectedLaneUID] = useState<string[]>([]);
     const [selectedEvent, setSelectedEvent] = useState<string | null>("");
     const nodes = useSelector((state: RootState) => selectNodes(state));
 
@@ -99,6 +99,7 @@ export default function ReportGeneratorView(){
 
 
     const handleLaneSelect = (value: string[]) => {
+        let valueString = value.join(', ');
         setSelectedLaneUID(value)
     }
 
