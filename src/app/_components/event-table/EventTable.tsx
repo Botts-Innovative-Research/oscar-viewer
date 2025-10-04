@@ -33,7 +33,7 @@ import {
 } from "@/lib/state/EventDataSlice";
 import {useRouter} from "next/dist/client/components/navigation";
 import {getObservations} from "@/app/utils/ChartUtils";
-import {isThresholdDatastream} from "@/lib/data/oscar/Utilities";
+import {isThresholdDatastream, OCCUPANCY_PILLAR_DEF} from "@/lib/data/oscar/Utilities";
 import {convertToMap, hashString} from "@/app/utils/Utils";
 import {selectNodes} from "@/lib/state/OSHSlice";
 
@@ -80,8 +80,6 @@ export default function EventTable({
     const dispatch = useAppDispatch();
     const router = useRouter();
 
-    const observedProperty = "http://www.opengis.net/def/pillar-occupancy-count";
-
 
     async function doFetch(laneMap: Map<string, LaneMapEntry>) {
         let allFetchedResults: EventTableData[] = [];
@@ -110,7 +108,7 @@ export default function EventTable({
 
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
-        let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty(observedProperty);
+        let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
 
         if (!occDS) {
             return;
@@ -127,7 +125,7 @@ export default function EventTable({
 
         const observationFilter = new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`});
 
-        let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty(observedProperty);
+        let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
         if(!occDS) return;
 
         occDS.streamObservations(observationFilter, (observation: any) => {
@@ -152,7 +150,6 @@ export default function EventTable({
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
         const id = prngFromStr(obs, laneEntry.laneName);
-        console.log("obs", obs)
         let newEvent: EventTableData = new EventTableData(id, laneEntry.laneName, obs.result, obs.id, obs.foiId);
 
         newEvent.setRPMSystemId(laneEntry.lookupSystemIdFromDataStreamId(obs[`datastream@id`]));

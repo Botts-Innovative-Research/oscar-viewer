@@ -3,160 +3,138 @@
  * All Rights Reserved
  */
 
-import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
-import {LaneMeta} from "@/lib/data/oscar/LaneCollection";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
-
-/**
- *
- * @param laneDatastreams map of lane name to specific datastreams
- * @param datasource singular ConSysApi Datasource
- * @param sourceToStreamMap map of datasource id to datastream id, from state, typically
- */
-export function associateDatasourceToLane(laneDatastreams: Map<string, typeof DataStream>, datasource: typeof ConSysApi, sourceToStreamMap: Map<string, string>) {
-    let newLaneDSPair = {laneName: "", datasource: datasource};
-    for (let [laneName, datastreams] of laneDatastreams) {
-        for (let ds of datastreams) {
-            if (sourceToStreamMap.has(ds.id)) {
-                newLaneDSPair.laneName = laneName;
-                break;
-            }
-        }
-    }
-}
-
-export function datastreamsOfSystemIdsArray(systemsIds: string[], datastreamsMap: Map<string, typeof DataStream>): typeof DataStream[] {
-    let dsArr: typeof DataStream[] = Array.from(datastreamsMap.values());
-    let matchingDatastreams: typeof DataStream[] = [];
-    let filtered = dsArr.filter(ds => systemsIds.includes(ds.parentSystemId));
-    return filtered;
-}
-
-export function getDatastreamsOfLanes(lanes: LaneMeta[], datastreamsMap: Map<string, typeof DataStream>): Map<string, typeof DataStream[]> {
-    let laneDatastreams: Map<string, typeof DataStream[]> = new Map<string, typeof DataStream[]>();
-    for (let lane of lanes) {
-        let dsOfLane = datastreamsOfSystemIdsArray(lane.systemIds, datastreamsMap);
-        laneDatastreams.set(lane.name, dsOfLane);
-    }
-    return laneDatastreams;
-}
-
-export function getDatasourcesOfLane(laneDatastreams: Map<string, typeof DataStream[]>, datasources: typeof ConSysApi[], dsToDatastreamMap: Map<string, string>): Map<string, typeof ConSysApi> {
-    let laneDatasources: Map<string, typeof ConSysApi> = new Map<string, typeof ConSysApi>();
-    let dsKeys = Array.from(dsToDatastreamMap.keys());
-    let lanes = Array.from(laneDatastreams.keys());
-    // create a map with keys that match the lane names
-
-
-    for (let dsKey of dsKeys) {
-        let keyInLane: string = null;
-        // the keys are '[dataStreamId]-datastream'
-        let streamIDFromKey = dsKey.split("-")[0];
-        for (let lane of lanes) {
-            // is the datastream in the lane?
-            let streamsOfLane = laneDatastreams.get(lane);
-            if (streamsOfLane.some(stream => stream.id === streamIDFromKey)) {
-                keyInLane = lane;
-                break;
-            }
-        }
-        if (keyInLane !== null) {
-            let ds = datasources.find(ds => ds.name === dsKey);
-            let newArr = laneDatasources.get(keyInLane) ? laneDatasources.get(keyInLane) : [];
-            newArr.push(ds);
-            laneDatasources.set(keyInLane, newArr);
-        }
-    }
-
-    return laneDatasources;
-}
+import ConnectedSystemsApi from "osh-js/source/core/consysapi/ConnectedSystemsApi";
+import {
+    ADJ_DEF,
+    ALARM_DEF, CONFIG_DEF,
+    CONNECTION_DEF, GAMMA_COUNT_DEF, LOCATION_VECTOR_DEF,
+    NEUTRON_COUNT_DEF,
+    OCCUPANCY_PILLAR_DEF, RASTER_IMAGE_DEF, REPORT_DEF, SENSOR_LOCATION_DEF,
+    SITE_DIAGRAM_DEF, SPEED_DEF,
+    TAMPER_STATUS_DEF,
+    THRESHOLD_DEF, VIDEO_FRAME_DEF
+} from "@/lib/data/Constants";
 
 
 export function isLocationDatastream(datastream: typeof DataStream): boolean {
-    const SENSOR_LOCATION_DEF = "http://www.opengis.net/def/property/OGC/0/SensorLocation";
-    const LOCATION_VECTOR_DEF = 'http://sensorml.com/ont/swe/property/LocationVector';
+    if (!hasDefinitionProperties(datastream))
+        return false;
 
     return datastream.properties.observedProperties[0].definition.includes(SENSOR_LOCATION_DEF)
         || datastream.properties.observedProperties[0].definition.includes(LOCATION_VECTOR_DEF);
 }
 
 export function isVideoDatastream(datastream: typeof DataStream): boolean {
-    const RASTER_IMAGE_DEF = "http://sensorml.com/ont/swe/property/RasterImage";
-    const VIDEO_FRAME_DEF = "http://sensorml.com/ont/swe/property/VideoFrame";
+
+    if (!hasDefinitionProperties(datastream))
+        return false;
 
     return datastream.properties.observedProperties[0].definition.includes(RASTER_IMAGE_DEF)
     || datastream.properties.observedProperties[0].definition.includes(VIDEO_FRAME_DEF);
 }
 
 export function isGammaDatastream(datastream: typeof DataStream): boolean {
-    const ALARM_DEF = "http://www.opengis.net/def/Alarm";
-    const GAMMA_COUNT_DEF = "http://www.opengis.net/def/GammaGrossCount";
+
+    if (!hasDefinitionProperties(datastream))
+        return false;
 
     return datastream.properties.observedProperties[0].definition.includes(ALARM_DEF)
         && datastream.properties.observedProperties[1].definition.includes(GAMMA_COUNT_DEF);
 }
 
 export function isNeutronDatastream(datastream: typeof DataStream): boolean {
-    const ALARM_DEF = "http://www.opengis.net/def/Alarm";
-    const NEUTRON_COUNT_DEF = "http://www.opengis.net/def/NeutronGrossCount";
+
+    if (!hasDefinitionProperties(datastream))
+        return false;
 
     return datastream.properties.observedProperties[0].definition.includes(ALARM_DEF)
         && datastream.properties.observedProperties[1].definition.includes(NEUTRON_COUNT_DEF);
 }
 
 export function isTamperDatastream(datastream: typeof DataStream): boolean {
-    const TAMPER_STATUS_DEF = "http://www.opengis.net/def/TamperStatus";
+
+    if (!hasDefinitionProperties(datastream))
+        return false;
 
     return datastream.properties.observedProperties[0].definition.includes(TAMPER_STATUS_DEF);
 }
 
 export function isOccupancyDatastream(datastream: typeof DataStream): boolean {
-    const OCCUPANCY_PILLAR_DEF = "http://www.opengis.net/def/PillarOccupancyCount";
+    if (!hasDefinitionProperties(datastream))
+        return false;
 
     return datastream.properties.observedProperties[0].definition.includes(OCCUPANCY_PILLAR_DEF);
 }
 
 export function isConnectionDatastream(datastream: typeof DataStream): boolean {
-    const CONNECTION_DEF ="http://www.opengis.net/def/ConnectionStatus";
+
+    if (!hasDefinitionProperties(datastream))
+        return false;
 
     return datastream.properties.observedProperties[0].definition.includes(CONNECTION_DEF);
 }
 
+export function isSpeedDatastream(datastream: typeof DataStream): boolean {
+
+    if (!hasDefinitionProperties(datastream))
+        return false;
+
+    return datastream.properties.observedProperties[0].definition.includes(SPEED_DEF);
+}
+
 export function isThresholdDatastream(datastream: typeof DataStream): boolean {
-    const THRESHOLD_DEF ="http://www.opengis.net/def/Threshold";
+
+    if (!hasDefinitionProperties(datastream))
+        return false;
 
     return datastream.properties.observedProperties[0].definition.includes(THRESHOLD_DEF);
 }
 
 export function isConfigurationDatastream(datastream: typeof DataStream): boolean {
-    const CONFIG_DEF ="http://www.opengis.net/def/";
+    if (!hasDefinitionProperties(datastream))
+        return false;
 
     return datastream.properties.observedProperties[0].definition.includes(CONFIG_DEF);
 }
 
 export function isSiteDiagramPathDatastream(datastream: typeof DataStream): boolean {
-    const DEF ="http://sensorml.com/ont/swe/property/SiteDiagramPath";
 
-    return datastream.properties.observedProperties[0].definition.includes(DEF);
+
+    if (!hasDefinitionProperties(datastream))
+        return false;
+
+    return datastream.properties.controlledProperties[0].definition.includes(SITE_DIAGRAM_DEF);
 }
 
 
 export function isReportControlStream(controlStream: typeof ControlStream): boolean {
-    const DEF = "http://sensorml.com/ont/swe/property/ReportType";
 
-    const properties = controlStream.properties.controlledProperties;
-    if (properties.length == 0)
+    if (!hasDefinitionProperties(controlStream))
         return false;
 
-    const definition = properties[0].definition;
-    if (definition == undefined)
-        return false;
-
-    return definition.includes(DEF);
+    return controlStream.properties.controlledProperties[0].definition.includes(REPORT_DEF);
 }
 
 export function isAdjudicationControlStream(datastream: typeof DataStream): boolean {
-    const DEF = "";
-    return datastream.properties.controlledProperties[0].definition.includes(DEF);
+    return datastream.properties.controlledProperties[0].definition.includes(ADJ_DEF);
+}
+
+
+export function hasDefinitionProperties(stream: typeof ConnectedSystemsApi){
+    if (stream.properties.length == 0)
+        return false;
+
+    let definition = null;
+
+    if (stream instanceof ControlStream)
+        definition = stream.properties.controlledProperties[0].definition;
+    else if (stream instanceof DataStream)
+        definition = stream.properties.observedProperties[0].definition
+
+    if (definition == undefined)
+        return false;
+
+    return true;
 }

@@ -77,5 +77,20 @@ export enum Protocols {
     WSS = "wss"
 }
 
-// Functions that are reusable
 
+export const SENSOR_LOCATION_DEF = "http://www.opengis.net/def/property/OGC/0/SensorLocation";
+export const LOCATION_VECTOR_DEF = 'http://sensorml.com/ont/swe/property/LocationVector';
+export const RASTER_IMAGE_DEF = "http://sensorml.com/ont/swe/property/RasterImage";
+export const VIDEO_FRAME_DEF = "http://sensorml.com/ont/swe/property/VideoFrame";
+export const ALARM_DEF = "http://www.opengis.net/def/Alarm";
+export const GAMMA_COUNT_DEF = "http://www.opengis.net/def/GammaGrossCount";
+export const NEUTRON_COUNT_DEF = "http://www.opengis.net/def/NeutronGrossCount";
+export const TAMPER_STATUS_DEF = "http://www.opengis.net/def/TamperStatus";
+export const OCCUPANCY_PILLAR_DEF = "http://www.opengis.net/def/PillarOccupancyCount";
+export const CONNECTION_DEF ="http://www.opengis.net/def/ConnectionStatus";
+export const THRESHOLD_DEF ="http://www.opengis.net/def/Threshold";
+export const REPORT_DEF = "http://sensorml.com/ont/swe/property/ReportType";
+export const ADJ_DEF = "http://sensorml.com/ont/swe/property";
+export const SPEED_DEF = "http://www.opengis.net/def/SpeedTime";
+export const CONFIG_DEF ="http://www.opengis.net/def/Config";
+export const SITE_DIAGRAM_DEF ="http://sensorml.com/ont/swe/property/SiteDiagramPath";

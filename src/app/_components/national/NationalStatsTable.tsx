@@ -8,6 +8,7 @@ import { NationalTableDataCollection} from "@/lib/data/oscar/TableHelpers";
 import {DataGrid, GridColDef} from "@mui/x-data-grid";
 import {Box} from "@mui/material";
 import CustomToolbar from "@/app/_components/CustomToolbar";
+import {GAMMA_COUNT_DEF, NEUTRON_COUNT_DEF, OCCUPANCY_PILLAR_DEF, TAMPER_STATUS_DEF} from "@/lib/data/Constants";
 
 
 export default function StatTable(){
@@ -18,10 +19,7 @@ export default function StatTable(){
     const idVal = useRef(0);
     const natlTableRef = useRef<NationalTableDataCollection>(new NationalTableDataCollection());
 
-    const occObservedProperty = "http://www.opengis.net/def/pillar-occupancy-count";
-    const gammaObservedProperty = "http://www.opengis.net/def/gamma-gross-count";
-    const neutronObservedProperty = "http://www.opengis.net/def/neutron-gross-count";
-    const tamperObservedProperty = "http://www.opengis.net/def/tamper-status";
+
 
     useEffect(() => {
         // reset
@@ -72,10 +70,10 @@ export default function StatTable(){
 
         console.log(`Processing node: ${node.name}`);
 
-        let occFilter = new ObservationFilter({observedProperty: occObservedProperty});
-        let gammaFilter = new ObservationFilter({observedProperty: gammaObservedProperty});
-        let neutronFilter = new ObservationFilter({observedProperty: neutronObservedProperty});
-        let tamperFilter = new ObservationFilter({observedProperty: tamperObservedProperty});
+        let occFilter = new ObservationFilter({observedProperty: OCCUPANCY_PILLAR_DEF});
+        let gammaFilter = new ObservationFilter({observedProperty: GAMMA_COUNT_DEF});
+        let neutronFilter = new ObservationFilter({observedProperty: NEUTRON_COUNT_DEF});
+        let tamperFilter = new ObservationFilter({observedProperty: TAMPER_STATUS_DEF});
 
         try {
             let occObservations = await node.fetchObservationsWithFilter(occFilter);
