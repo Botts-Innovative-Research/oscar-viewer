@@ -33,9 +33,9 @@ import {
 } from "@/lib/state/EventDataSlice";
 import {useRouter} from "next/dist/client/components/navigation";
 import {getObservations} from "@/app/utils/ChartUtils";
-import {isThresholdDatastream, OCCUPANCY_PILLAR_DEF} from "@/lib/data/oscar/Utilities";
+import {isThresholdDatastream} from "@/lib/data/oscar/Utilities";
 import {convertToMap, hashString} from "@/app/utils/Utils";
-import {selectNodes} from "@/lib/state/OSHSlice";
+import {OCCUPANCY_PILLAR_DEF} from "@/lib/data/Constants";
 
 
 interface TableProps {
