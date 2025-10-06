@@ -5,14 +5,20 @@ import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import ListItemText from "@mui/material/ListItemText";
+import {INode} from "@/lib/data/osh/Node";
+import {useEffect, useState} from "react";
+import {selectNodes} from "@/lib/state/OSHSlice";
 
 
 export default function LaneSelect(props: {
     onSelect: (value: string[]) => void, // Return selected value
-    lane: string[]
+    lane: string[],
+    selectedNode: INode
 }) {
 
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
+
+    const [lanes, setLanes] = useState([]);
 
     const handleChange = (event: SelectChangeEvent<string[]>) => {
         const {target: {value},} = event;
@@ -20,6 +26,24 @@ export default function LaneSelect(props: {
         let laneVal = typeof value === 'string' ? value.split(', ') : value;
         props.onSelect(laneVal)
     };
+
+    useEffect(() => {
+        let tempLanes: any[] = [];
+        if (props.selectedNode) {
+
+            laneMap.forEach(lane => {
+                console.log("node", props.selectedNode);
+                console.log("node-lane", lane)
+                if(props.selectedNode.id == lane.parentNode.id){
+                    tempLanes.push(lane);
+                }
+            })
+
+            setLanes(tempLanes);
+        } else {
+            setLanes([]);
+        }
+    }, [props.selectedNode, laneMap]);
 
     return (
         <FormControl size="small" fullWidth>
@@ -59,12 +83,14 @@ export default function LaneSelect(props: {
                 }}
             >
 
-                {Array.from(laneMap, ([key, value]) => (
-                    <MenuItem key={key} value={value.laneSystem.properties.properties.uid}>
-                        <Checkbox checked={props.lane?.includes(value.laneSystem.properties.properties.uid)} />
-                        <ListItemText primary={key}/>
-                    </MenuItem>
-                ))}
+                {lanes.map((lane: any) => (
+                        <MenuItem key={lane.laneSystem.properties.properties.uid} value={lane.laneSystem.properties.properties.uid}>
+                            <Checkbox checked={props.lane?.includes(lane.laneSystem.properties.properties.uid)} />
+                            <ListItemText primary={lane.laneName} secondary={lane.laneSystem.properties.properties.uid} />
+                        </MenuItem>
+                    ))
+                }
+
 
             </Select>
         </FormControl>

@@ -185,21 +185,27 @@ export default function ReportGeneratorView(){
 
                     <Stack spacing={3}>
                         <NodeSelect onSelect={handleNodeSelect} node={selectedNode?.id} />
-                        <ReportTypeSelect onSelect={handleReportTypeSelect} report={selectedReportType} />
 
-                        {selectedReportType != "RDS_SITE" && (
-                            <LaneSelect onSelect={handleLaneSelect} lane={selectedLaneUID} />
+                        {selectedNode && (
+                            <>
+                                <ReportTypeSelect onSelect={handleReportTypeSelect} report={selectedReportType} />
+
+                                {["ADJUDICATION", "EVENT", "LANE"].includes(selectedReportType) && (
+                                    <LaneSelect onSelect={handleLaneSelect} lane={selectedLaneUID} selectedNode={selectedNode}/>
+                                )}
+
+                                {selectedReportType == "EVENT" && (
+                                    <EventTypeSelect onSelect={handleEventTypeSelect} event={selectedEvent} />
+                                )}
+
+                                <TimeRangeSelect onSelect={handleTimeRange} timeRange={selectedTimeRange} />
+
+                                {selectedTimeRange === 'custom' && (
+                                    <NationalDatePicker customStartTime={customStartTime} customEndTime={customEndTime} onCustomStartChange={handleCustomStartTime} onCustomEndChange={handleCustomEndTime}/>
+                                )}
+                            </>
                         )}
 
-                        {selectedReportType == "EVENT" && (
-                            <EventTypeSelect onSelect={handleEventTypeSelect} event={selectedEvent} />
-                        )}
-
-                        <TimeRangeSelect onSelect={handleTimeRange} timeRange={selectedTimeRange} />
-
-                        {selectedTimeRange === 'custom' && (
-                            <NationalDatePicker customStartTime={customStartTime} customEndTime={customEndTime} onCustomStartChange={handleCustomStartTime} onCustomEndChange={handleCustomEndTime}/>
-                        )}
 
                         <Button
                             variant="contained"
@@ -207,10 +213,11 @@ export default function ReportGeneratorView(){
                             fullWidth
                             startIcon={<Download/>}
                             onClick={handleGenerateReport}
-                            disabled={isGenerating || !selectedReportType || !selectedTimeRange}
+                            disabled={isGenerating || !selectedReportType || !selectedTimeRange || !selectedNode}
                         >
                             {isGenerating ? 'Generating Report...' : 'Generate Report'}
                         </Button>
+
                     </Stack>
                 </Grid>
 

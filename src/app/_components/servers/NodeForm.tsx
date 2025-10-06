@@ -28,6 +28,7 @@ import ConfigData, {
 } from "@/lib/data/oscar/Config";
 import {selectCurrentUser, setCurrentUser} from "@/lib/state/OSCARClientSlice";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import {hashString} from "@/app/utils/Utils";
 
 
 export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {

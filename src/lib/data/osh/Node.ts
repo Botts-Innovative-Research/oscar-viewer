@@ -21,6 +21,7 @@ import Commands from "osh-js/source/core/consysapi/command/Commands"
 import CommandStreamFilter from "osh-js/source/core/consysapi/command/CommandStreamFilter"
 import Command from "osh-js/source/core/consysapi/command/Command"
 import {ISystem} from "@/lib/data/osh/Systems";
+import {hashString} from "@/app/utils/Utils";
 
 const SYSTEM_UID_PREFIX = "urn:osh:system:";
 const DATABASE_PROCESS_UID_PREFIX = "urn:osh:process:occupancy:";
@@ -109,7 +110,7 @@ export class Node implements INode {
     controlStreamApi: typeof ControlStreams;
 
     constructor(options: NodeOptions) {
-        this.id = "node-" + randomUUID();
+        this.id = "node-" + hashString(options.address + "-" + options.port);
         this.name = options.name;
         this.address = options.address;
         this.port = options.port;
