@@ -5,8 +5,9 @@ import React, {useEffect, useState} from "react";
 import dayjs, {Dayjs} from "dayjs";
 
 
-export default function NationalDatePicker({onCustomRangeChange, customStartTime, customEndTime}: {
-    onCustomRangeChange?: (range: { start: string, end: string }) => void,
+export default function NationalDatePicker({onCustomStartChange, onCustomEndChange, customStartTime, customEndTime}: {
+    onCustomStartChange?: (value: string) => void,
+    onCustomEndChange?: (value: string) => void,
     customStartTime?: string,
     customEndTime?: string
 }){
@@ -26,6 +27,7 @@ export default function NationalDatePicker({onCustomRangeChange, customStartTime
             setEndTime(newValue)
         }
         customStartTime = newValue.toDate().toISOString();
+        onCustomStartChange(customStartTime);
     };
 
     const handleEndTimeChange = (newValue: Dayjs) => {
@@ -34,7 +36,7 @@ export default function NationalDatePicker({onCustomRangeChange, customStartTime
         }
         setEndTime(newValue);
         customEndTime = newValue.toDate().toISOString();
-
+        onCustomStartChange(customEndTime);
     };
 
     return (

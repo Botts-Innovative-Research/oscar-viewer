@@ -1,35 +1,26 @@
 "use client";
 
 import {FormControl, InputLabel, MenuItem, Select, SelectChangeEvent} from '@mui/material';
-import {useState} from 'react';
+import {useState} from "react";
 
-const timeRanges = [
+export const eventTypes = [
     {
-        label: "Last 24 Hours",
-        value: "last24Hrs",
-
+        label: "Alarms and Occupancies",
+        value: "ALARMS_OCCUPANCIES",
     },
     {
-        label: "Last 7 Days",
-        value: 'last7days'
+        label: "Alarms",
+        value: "ALARMS",
     },
     {
-        label: "Last 30 Days",
-        value: 'last30days'
+        label: "State of Health",
+        value: "SOH",
     },
-    {
-        label: "This Month",
-        value: 'thisMonth'
-    },
-    {
-        label: 'Custom Range',
-        value: 'custom'
-    }
 ]
 
-export default function TimeRangeSelect(props: {
+export default function EventTypeSelect(props: {
     onSelect: (value: string[] | string) => void,
-    timeRange: string
+    event: string
 }) {
 
     const handleChange = (event: SelectChangeEvent) => {
@@ -39,12 +30,12 @@ export default function TimeRangeSelect(props: {
 
     return (
         <FormControl size="small" fullWidth>
-            <InputLabel id="label">Time Range</InputLabel>
+            <InputLabel id="label">Event Type</InputLabel>
             <Select
                 variant="outlined"
                 id="label"
-                label="TimeRange"
-                value={props.timeRange}
+                label="Event Type"
+                value= {props.event || ""}
                 onChange={handleChange}
                 MenuProps={{
                     MenuListProps: {
@@ -73,9 +64,9 @@ export default function TimeRangeSelect(props: {
                 }}
             >
                 {
-                    timeRanges.map((range) => (
-                        <MenuItem key={range.value} value={range.value}>
-                            {range.label}
+                    eventTypes.map((item) => (
+                        <MenuItem key={item.value} value={item.value}>
+                            {item.label}
                         </MenuItem>
                     ))
                 }

@@ -1,30 +1,49 @@
 "use client";
 
-import {FormControl, InputLabel, MenuItem, Select, SelectChangeEvent} from '@mui/material';
-import {useState} from "react";
-import {INode} from "@/lib/data/osh/Node";
+import {Checkbox, FormControl, InputLabel, MenuItem, OutlinedInput, Select, SelectChangeEvent} from '@mui/material';
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
+import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
+import ListItemText from "@mui/material/ListItemText";
+import {INode} from "@/lib/data/osh/Node";
+import {useEffect, useState} from "react";
 import {selectNodes} from "@/lib/state/OSHSlice";
-import OSCARLaneSlice, {selectLanes} from "@/lib/state/OSCARLaneSlice";
-import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 
 
 export default function LaneSelect(props: {
-    onSelect: (value: string[] | string) => void,
-    lane: any
+    onSelect: (value: string[]) => void, // Return selected value
+    lane: string[],
+    selectedNode: INode
 }) {
 
-    const nodes = useSelector((state: RootState) => selectNodes(state));
+    const laneMap = useSelector((state: RootState) => selectLaneMap(state));
 
-    const lanes = useSelector((state: RootState) => selectLanes(state));
-    const [selectedLane, setSelectedLane] = useState(null);
+    const [lanes, setLanes] = useState([]);
 
-    const handleChange = (event: SelectChangeEvent) => {
-        const val = event.target.value;
-        props.onSelect(val)
-        setSelectedLane(val);
+    const handleChange = (event: SelectChangeEvent<string[]>) => {
+        const {target: {value},} = event;
+
+        let laneVal = typeof value === 'string' ? value.split(', ') : value;
+        props.onSelect(laneVal)
     };
+
+    useEffect(() => {
+        let tempLanes: any[] = [];
+        if (props.selectedNode) {
+
+            laneMap.forEach(lane => {
+                console.log("node", props.selectedNode);
+                console.log("node-lane", lane)
+                if(props.selectedNode.id == lane.parentNode.id){
+                    tempLanes.push(lane);
+                }
+            })
+
+            setLanes(tempLanes);
+        } else {
+            setLanes([]);
+        }
+    }, [props.selectedNode, laneMap]);
 
     return (
         <FormControl size="small" fullWidth>
@@ -32,9 +51,11 @@ export default function LaneSelect(props: {
             <Select
                 variant="outlined"
                 id="label"
-                label="Lane"
-                value= {selectedLane}
+                label="Lane Selector"
+                multiple
+                value= {props.lane}
                 onChange={handleChange}
+                renderValue={(selected) => selected.join(', ')}
                 MenuProps={{
                     MenuListProps: {
                         style: {
@@ -61,13 +82,16 @@ export default function LaneSelect(props: {
                         },
                 }}
             >
-                {
-                    lanes.map((item: any) => (
-                        <MenuItem key={item.id} value={item.id}>
-                            {item.name}
+
+                {lanes.map((lane: any) => (
+                        <MenuItem key={lane.laneSystem.properties.properties.uid} value={lane.laneSystem.properties.properties.uid}>
+                            <Checkbox checked={props.lane?.includes(lane.laneSystem.properties.properties.uid)} />
+                            <ListItemText primary={lane.laneName} secondary={lane.laneSystem.properties.properties.uid} />
                         </MenuItem>
                     ))
                 }
+
+
             </Select>
         </FormControl>
     );

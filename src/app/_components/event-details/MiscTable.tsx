@@ -8,6 +8,7 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import {selectEventData, selectSpeed, setSpeed} from "@/lib/state/EventDetailsSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
+import {isSpeedDatastream} from "@/lib/data/oscar/Utilities";
 
 
 export default function MiscTable({currentTime}: {currentTime: string}) {
@@ -24,7 +25,7 @@ export default function MiscTable({currentTime}: {currentTime: string}) {
     if (eventData) {
       let lme = laneMapRef.current.get(eventData.laneId);
 
-      let speedDS = lme.datastreams.find(ds => ds.properties.observedProperties[0].definition.includes('http://www.opengis.net/def/speed-time'));
+      let speedDS = lme.datastreams.find(ds => isSpeedDatastream(ds));
 
       let initialRes = await speedDS.searchObservations(new ObservationFilter({ resultTime: `${eventData?.startTime}/${eventData?.endTime}`}), 25000);
 

@@ -18,8 +18,13 @@ import {Box} from "@mui/material";
 import {DataGrid, GridCellParams, gridClasses, GridColDef} from "@mui/x-data-grid";
 import CustomToolbar from "@/app/_components/CustomToolbar";
 import {selectCurrentLane} from "@/lib/state/LaneViewSlice";
-import {isGammaDatastream, isNeutronDatastream, isTamperDatastream} from "@/lib/data/oscar/Utilities";
+import {
+    isGammaDatastream,
+    isNeutronDatastream,
+    isTamperDatastream,
+} from "@/lib/data/oscar/Utilities";
 import { convertToMap } from "@/app/utils/Utils";
+import {ALARM_DEF, TAMPER_STATUS_DEF} from "@/lib/data/Constants";
 
 
 interface TableProps {laneMap: Map<string, LaneMapEntry>;}
@@ -39,25 +44,20 @@ export default function StatusTables({laneMap}: TableProps){
 
         let hasGamma = false;
         let hasNeutron = false;
-        let alarmObsProperty;
-        let tamperObsProperty;
         let hasTamper = false;
-        let allStatusResults: AlarmTableData[] = [];
 
+        let allStatusResults: AlarmTableData[] = [];
 
         laneMap.forEach((entry: LaneMapEntry) => {
             entry.datastreams.forEach((ds: typeof DataStream) => {
                 if (!hasGamma && isGammaDatastream(ds)) {
                     hasGamma = true;
-                    alarmObsProperty = ds.properties.observedProperties[0].definition;
                 }
                 if (!hasNeutron && isNeutronDatastream(ds)) {
                     hasNeutron = true;
-                    alarmObsProperty = ds.properties.observedProperties[0].definition;
                 }
                 if (!hasTamper && isTamperDatastream(ds)) {
                     hasTamper = true;
-                    tamperObsProperty = ds.properties.observedProperties[0].definition;
 
                 }
             });
@@ -65,15 +65,15 @@ export default function StatusTables({laneMap}: TableProps){
 
 
         if (hasGamma || hasNeutron) {
-            const faultResults = await doFetch(laneMap, alarmObsProperty);
+            const faultResults = await doFetch(laneMap, ALARM_DEF);
             allStatusResults.push(...faultResults);
-            doStream(laneMap, alarmObsProperty);
+            doStream(laneMap, ALARM_DEF);
         }
 
         if (hasTamper) {
-            const tamperResults = await doFetch(laneMap, tamperObsProperty);
+            const tamperResults = await doFetch(laneMap, TAMPER_STATUS_DEF);
             allStatusResults.push(...tamperResults);
-            doStream(laneMap, tamperObsProperty);
+            doStream(laneMap, TAMPER_STATUS_DEF);
         }
 
         dispatch(setLaneViewLogData(allStatusResults));
@@ -187,21 +187,21 @@ export default function StatusTables({laneMap}: TableProps){
         laneMap = convertToMap(laneMap);
         dataStreamSetup(laneMap);
 
-        return () => {
-          console.log("Lane View: StatusTables unmounted, cleaning up resources")
-            laneMap.forEach((entry) => {
-
-                let alarmDs: typeof DataStream = entry.findDataStreamByObsProperty("http://www.opengis.net/def/alarm")
-                let tamperDs: typeof DataStream = entry.findDataStreamByObsProperty("http://www.opengis.net/def/tamper-status")
-
-                if(alarmDs)
-                    alarmDs.stream().disconnect();
-
-                if(tamperDs)
-                    tamperDs.stream().disconnect();
-
-            });
-        };
+        // return () => {
+        //   console.log("Lane View: StatusTables unmounted, cleaning up resources")
+        //     laneMap.forEach((entry) => {
+        //
+        //         let alarmDs: typeof DataStream = entry.findDataStreamByObsProperty(ALARM_DEF)
+        //         let tamperDs: typeof DataStream = entry.findDataStreamByObsProperty(TAMPER_STATUS_DEF)
+        //
+        //         if(alarmDs)
+        //             alarmDs.stream().disconnect();
+        //
+        //         if(tamperDs)
+        //             tamperDs.stream().disconnect();
+        //
+        //     });
+        // };
     }, [laneMap]);
 
 
