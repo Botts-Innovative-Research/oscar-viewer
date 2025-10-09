@@ -13,7 +13,8 @@ import {
     isConnectionDatastream,
     isGammaDatastream,
     isNeutronDatastream,
-    isTamperDatastream, isThresholdDatastream,
+    isTamperDatastream,
+    isThresholdDatastream,
 } from "@/lib/data/oscar/Utilities";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useAppDispatch} from "@/lib/state/Hooks";
@@ -56,12 +57,15 @@ export default function DashboardPage() {
                 if(isGammaDatastream(ds)){
                     laneDSColl.addDS('gammaRT', rtDS);
                 }
+
                 if(isNeutronDatastream(ds)){
                     laneDSColl.addDS('neutronRT', rtDS);
                 }
+
                 if(isTamperDatastream(ds)){
                     laneDSColl.addDS('tamperRT', rtDS);
                 }
+
                 if(isConnectionDatastream(ds)){
                     laneDSColl.addDS('connectionRT', rtDS);
                 }
@@ -83,6 +87,7 @@ export default function DashboardPage() {
             const newMap = new Map(laneDSMap)
 
             setDataSourcesByLane(newMap);
+            console.log("laneMap", laneMap)
             dispatch(setLaneMap(laneMap))
         }
         setStatusList(prevState => [...newStatusList,

@@ -60,8 +60,6 @@ export default function MapComponent() {
                 if (laneMapToMap.has(key)) {
                     let ds: LaneMapEntry = laneMapToMap.get(key);
 
-                    console.log("ds", ds)
-
                     dsLocations.map((dss) => {
                         const locationSources = ds.datasourcesBatch.filter((item) =>
                             (item.properties.resource === ("/datastreams/" + dss.properties.id + "/observations")))
@@ -76,7 +74,6 @@ export default function MapComponent() {
                     });
                 }
             });
-            console.log("locations", locations);
             setLocationList(locations);
         }
 
@@ -148,15 +145,14 @@ export default function MapComponent() {
 
         }
 
-        return () => {
-            console.log("Cleaning up map datasources...")
-            for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
-                laneDSColl.addDisconnectToALLDSMatchingName("gammaRT");
-                laneDSColl.addDisconnectToALLDSMatchingName("neutronRT");
-                laneDSColl.addDisconnectToALLDSMatchingName("tamperRT");
-                laneDSColl.addDisconnectToALLDSMatchingName("connectionRT");
-            }
-        }
+        // return () => {
+        //     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
+        //         laneDSColl.addDisconnectToALLDSMatchingName("gammaRT");
+        //         laneDSColl.addDisconnectToALLDSMatchingName("neutronRT");
+        //         laneDSColl.addDisconnectToALLDSMatchingName("tamperRT");
+        //         laneDSColl.addDisconnectToALLDSMatchingName("connectionRT");
+        //     }
+        // }
     }, [dataSourcesByLane]);
 
     useEffect(() => {

@@ -32,10 +32,7 @@ import {useRouter} from "next/dist/client/components/navigation";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import AdjudicationData, {
-    fetchOccupancyObservation,
-    generateCommandJSON,
     IAdjudicationData,
-    sendSetAdjudicatedCommand
 } from "@/lib/data/oscar/adjudication/Adjudication";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
@@ -43,8 +40,12 @@ import {setSelectedEvent, updateSelectedEventAdjudication} from "@/lib/state/Eve
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 import { setEventData } from "@/lib/state/EventDetailsSlice";
 import CircularProgress from "@mui/material/CircularProgress";
-import {insertObservation} from "@/lib/data/osh/Node";
 import EventMedia from "@/app/_components/event-preview/EventMedia";
+import SecondaryInspectionSelect from "@/app/_components/adjudication/SecondaryInspectionSelect";
+import {generateAdjudicationCommandJSON, sendCommand} from "@/lib/data/oscar/OSCARCommands";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
+import {isAdjudicationControlStream} from "@/lib/data/oscar/Utilities";
 
 export function EventPreview() {
     const dispatch = useAppDispatch();
@@ -69,6 +70,7 @@ export function EventPreview() {
     const [notes, setNotes] = useState<string>("");
     const [adjudicationCode, setAdjudicationCode] = useState<AdjudicationCode>(AdjudicationCodes.codes[0]);
     const [adjudication, setAdjudication] = useState<AdjudicationData | null>();
+    const [secondaryInspection, setSecondaryInspection] = useState<"NONE" | "COMPLETED"| "REQUESTED" | "">("");
 
     //snackbar
     const [adjSnackMsg, setAdjSnackMsg] = useState('');
@@ -84,7 +86,7 @@ export function EventPreview() {
             feedback: notes,
             adjudicationCode: value,
             isotopes: "",
-            secondaryInspectionStatus: "NONE",
+            secondaryInspectionStatus: secondaryInspection,
             filePaths: "",
             occupancyId: eventPreview.eventData.occupancyId,
             alarmingSystemUid: eventPreview.eventData.rpmSystemId
@@ -94,6 +96,7 @@ export function EventPreview() {
 
         adjudicationData.setFeedback(notes);
         adjudicationData.setAdjudicationCode(value);
+        adjudicationData.setSecondaryInspectionStatus(secondaryInspection)
         setAdjudicationCode(value);
         setAdjFormData(newAdjData);
         setAdjudication(adjudicationData);
@@ -110,37 +113,27 @@ export function EventPreview() {
 
         comboData.setFeedback(notes);
         comboData.setTime(phenomenonTime);
+        comboData.setSecondaryInspectionStatus(secondaryInspection);
 
-        let observation = comboData.createAdjudicationObservation();
 
         // send to server
         const currentLane = eventPreview.eventData.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-        const adjDsID = currLaneEntry.parentNode.laneAdjMap.get(currentLane);
-        const endpoint = currLaneEntry.parentNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + adjDsID + "/observations";
 
 
-        await submitAdjudication(endpoint, observation, currLaneEntry, comboData, eventPreview)
+        await submitAdjudication(currLaneEntry, comboData)
     }
 
-    const submitAdjudication = async(endpoint: string, observation: any, currLaneEntry: LaneMapEntry, comboData: any, eventPreview: any) =>{
-        try {
-            const resp = await insertObservation(endpoint, observation);
 
-            if(resp.ok){
-                setAdjSnackMsg('Adjudication Submitted Successfully')
-                setColorStatus('success')
+    const submitAdjudication = async(currLaneEntry: any, tempAdjData: any) => {
 
-            }else{
-                setAdjSnackMsg('Adjudication Submission Failed. Check connection and form then try again.')
-                setColorStatus('error')
-            }
+        try{
 
-            // send command
-            // we can use endTime as it is the same a resultTime in testing, this may not be true in practice but this is a stop-gap fix anyway
-            let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == eventPreview.eventData.dataStreamId );
-            let occupancyObservation = await fetchOccupancyObservation(ds, eventPreview.eventData.startTime, eventPreview.eventData.endTime)
+            let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == eventPreview.eventData.dataStreamId);
 
+            let query = await ds.fetchObservations(new ObservationFilter({resultTime: `${eventPreview.eventData.startTime}/${eventPreview.eventData.startTime}`}), 1)
+
+            var occupancyObservation = await query.nextPage();
 
             if (!occupancyObservation) {
                 setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
@@ -149,10 +142,27 @@ export function EventPreview() {
                 return;
             }
 
-            await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.controlStreams[0].properties.id, generateCommandJSON(occupancyObservation[0].id, true));
-            dispatch(updateSelectedEventAdjudication(comboData));
+            let streams = await currLaneEntry.parentNode.fetchNodeControlStreams();
 
-        } catch (error) {
+            let adjControlStream = streams.find((stream: typeof ControlStream) => isAdjudicationControlStream(stream));
+
+            if (!adjControlStream){
+                console.error("no report control streams");
+                return;
+            }
+
+            const response = await sendCommand(currLaneEntry.parentNode, adjControlStream.properties.id, generateAdjudicationCommandJSON(tempAdjData.feedback, tempAdjData.adjudicationCode, tempAdjData.isotopes, tempAdjData.secondaryInspectionStatus, tempAdjData.filePath, tempAdjData.occupancyId, tempAdjData.vehicleId));
+
+            if (!response.ok) {
+                setAdjSnackMsg('Adjudication failed to submit.')
+                setColorStatus('error')
+                return;
+            }
+
+            dispatch(updateSelectedEventAdjudication(tempAdjData));
+            // TODO: adjudication status after submission
+
+        }catch(error){
             setAdjSnackMsg('Adjudication failed to submit.')
             setColorStatus('error')
         }finally{
@@ -160,7 +170,9 @@ export function EventPreview() {
             resetAdjudicationData();
             handleCloseRounded();
         }
+
     }
+
 
     const resetAdjudicationData = () => {
         disconnectDSArray(gammaDatasources);
@@ -179,6 +191,10 @@ export function EventPreview() {
         }));
         dispatch(setShouldForceAlarmTableDeselect(true))
         dispatch(setSelectedRowId(null))
+    }
+
+    const handleInspectionSelect = (value: "NONE" | "REQUESTED" | "COMPLETED") => {
+        setSecondaryInspection(value);
     }
 
     const handleExpand = () => {
@@ -307,17 +323,17 @@ export function EventPreview() {
             </Stack>
 
             { datasourcesReady ? (
-                <Box>
-                    <EventMedia
-                        datasources={{
-                            gamma: gammaDatasources[0],
-                            neutron: neutronDatasources[0],
-                            threshold: thresholdDatasources[0]
-                        }}
-                        mode={"preview"}
-                        eventData={eventPreview.eventData}
-                    />
-                </Box>
+                    <Box>
+                        <EventMedia
+                            datasources={{
+                                gamma: gammaDatasources[0],
+                                neutron: neutronDatasources[0],
+                                threshold: thresholdDatasources[0]
+                            }}
+                            mode={"preview"}
+                            eventData={eventPreview.eventData}
+                        />
+                    </Box>
 
                 ) :
                 <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}>
@@ -329,6 +345,12 @@ export function EventPreview() {
                     adjCode={adjudicationCode}
                     onSelect={handleAdjudicationCode}
                 />
+
+                <SecondaryInspectionSelect
+                    secondarySelectVal={secondaryInspection}
+                    onSelect={handleInspectionSelect}
+                />
+
                 <TextField
                     onChange={handleNotes}
                     id="outlined-multiline-static"
@@ -336,12 +358,14 @@ export function EventPreview() {
                     multiline
                     rows={4}
                 />
+
                 <Stack
                     direction={"row"}
                     spacing={10}
                     sx={{width: "100%"}}
                     justifyContent={"center"}
                 >
+
                     <Button
                         onClick={sendAdjudicationData}
                         variant={"contained"}

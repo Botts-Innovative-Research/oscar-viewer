@@ -14,7 +14,7 @@ import NationalDatePicker from "@/app/_components/national/NationalDatePicker";
 import {INode} from "@/lib/data/osh/Node";
 import NodeSelect from "@/app/_components/reportgen/NodeSelector";
 import LaneSelect from "@/app/_components/reportgen/LaneSelector";
-import {generateCommandJSON, sendReportCommand} from "@/lib/data/oscar/ReportGeneration";
+import {generateReportCommandJSON, sendCommand} from "@/lib/data/oscar/OSCARCommands";
 import EventTypeSelect from "@/app/_components/reportgen/EventTypeSelector";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
@@ -72,7 +72,7 @@ export default function ReportGeneratorView(){
                 return;
             }
 
-            let response = await sendReportCommand(selectedNode, controlStream.properties.id, generateCommandJSON(startTime, endTime, selectedReportType, "hey", "ALARMS"));
+            let response = await sendCommand(selectedNode, controlStream.properties.id, generateReportCommandJSON(startTime, endTime, selectedReportType, selectedLaneUID.toString(), selectedEvent));
 
             if (!response.ok) {
                 setSnackMessage("Report request failed to submit.");
@@ -80,9 +80,8 @@ export default function ReportGeneratorView(){
                 return;
             }
 
-            let reportPath = await response.json();
-            console.log("report URL:", reportPath)
-            setGeneratedURL(selectedNode.isSecure ? `https://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${reportPath[0].reportPath}` : `http://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${reportPath[0].reportPath}`);
+            let reportResult = await response.json();
+            setGeneratedURL(selectedNode.isSecure ? `https://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${reportResult[0].reportPath}` : `http://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${reportResult[0].reportPath}`);
 
             setSnackMessage("Report created successfully");
             setSeverity("success");
@@ -120,7 +119,7 @@ export default function ReportGeneratorView(){
         setSelectedReportType(value);
     }
 
-    const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
+    const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason) => {
         if (reason === 'clickaway')
             return;
         setOpenSnack(false);
@@ -165,7 +164,6 @@ export default function ReportGeneratorView(){
         }
         return {startTime, endTime};
     }
-
 
     const handleCustomStartTime = (value: string) => {
         setCustomStartTime(value)

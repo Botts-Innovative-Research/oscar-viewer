@@ -21,23 +21,20 @@ import InsertDriveFileRoundedIcon from '@mui/icons-material/InsertDriveFileRound
 import React, {ChangeEvent, useContext, useRef, useState} from "react";
 import IsotopeSelect from "./IsotopeSelect";
 import AdjudicationLog from "./AdjudicationLog"
-import AdjudicationData, {
-    fetchOccupancyObservation,
-    generateCommandJSON,
-    sendSetAdjudicatedCommand
-} from "@/lib/data/oscar/adjudication/Adjudication";
-import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";
-import {useDispatch, useSelector} from "react-redux";
+import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
+import {useDispatch} from "react-redux";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
-import {updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
 import SecondaryInspectionSelect from "@/app/_components/adjudication/SecondaryInspectionSelect";
-import {insertObservation} from "@/lib/data/osh/Node";
 import DeleteOutline from "@mui/icons-material/DeleteOutline"
 import IconButton from "@mui/material/IconButton";
+import {generateAdjudicationCommandJSON, sendCommand} from "@/lib/data/oscar/OSCARCommands";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import {isAdjudicationControlStream} from "@/lib/data/oscar/Utilities";
+import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
 
@@ -58,7 +55,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const dispatch = useDispatch();
 
-
     //snackbar
     const [adjSnackMsg, setAdjSnackMsg] = useState('');
     const [colorStatus, setColorStatus] = useState('');
@@ -78,7 +74,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     }
 
     const handleAdjudicationSelect = (value: AdjudicationCode) => {
-
         let tAdjData: AdjudicationData = adjData;
         tAdjData.adjudicationCode = AdjudicationCodes.getCodeObjByLabel(value.label);
 
@@ -87,7 +82,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     }
 
     const handleIsotopeSelect = (value: string[]) => {
-
         let valueString = value.join(', ');
         let tAdjData = adjData;
         tAdjData.isotopes = valueString;
@@ -129,11 +123,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         setFeedback('')
     }
 
-    const sendAdjudicationData = async () => {
-
-        //TODO: first send to file server to the object store send file and wait for response with file paths url,
-        // update file paths in adjudication observation body with new urls for files
-        // then send command to set adjudicated
+    const handleAdjudication = async () => {
         if(adjData.adjudicationCode === null || !adjData.adjudicationCode || adjData.adjudicationCode === AdjudicationCodes.codes[0]){
             setAdjSnackMsg("Please selected a valid adjudication code before submitting.");
             setColorStatus('error');
@@ -143,38 +133,25 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
         let phenomenonTime = new Date().toISOString();
         let tempAdjData: AdjudicationData = adjData;
-
         tempAdjData.setTime(phenomenonTime);
 
-        let observation = tempAdjData.createAdjudicationObservation();
 
         // send to server
         const currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-        const adjDsID = currLaneEntry.parentNode.laneAdjMap.get(currentLane);
-        const endpoint = currLaneEntry.parentNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + adjDsID + "/observations";
 
-        await submitAdjudication(endpoint, observation, currLaneEntry, tempAdjData)
+        await submitAdjudication(currLaneEntry, tempAdjData)
     }
 
-
-    const submitAdjudication = async(endpoint: string, observation: any, currLaneEntry: any, tempAdjData: any) => {
+    const submitAdjudication = async(currLaneEntry: any, tempAdjData: any) => {
 
         try{
-            const resp = await insertObservation(endpoint, observation)
-
-            if(resp.ok){
-                setAdjSnackMsg('Adjudication Submitted Successfully')
-                setColorStatus('success')
-                dispatch(updateSelectedEventAdjudication(tempAdjData))
-            }else{
-                setAdjSnackMsg('Adjudication Submission Failed. Check connection and form then try again.')
-                setColorStatus('error')
-            }
-
 
             let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == props.event.dataStreamId);
-            let occupancyObservation = await fetchOccupancyObservation(ds, props.event.startTime, props.event.endTime)
+
+            let query = await ds.fetchObservations(new ObservationFilter({resultTime: `${props.event.startTime}/${props.event.startTime}`}), 1)
+
+            var occupancyObservation = await query.nextPage();
 
             if (!occupancyObservation) {
                 setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
@@ -183,8 +160,24 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 return;
             }
 
-            await sendSetAdjudicatedCommand(currLaneEntry.parentNode, currLaneEntry.controlStreams[0].properties.id, generateCommandJSON(occupancyObservation[0].id, true));
+            let streams = await currLaneEntry.parentNode.fetchNodeControlStreams();
 
+            let adjControlStream = streams.find((stream: typeof ControlStream) => isAdjudicationControlStream(stream));
+
+            if (!adjControlStream){
+                console.error("no report control streams");
+                return;
+            }
+
+            const response = await sendCommand(currLaneEntry.parentNode, adjControlStream.properties.id, generateAdjudicationCommandJSON(tempAdjData.feedback, tempAdjData.adjudicationCode, tempAdjData.isotopes, tempAdjData.secondaryInspectionStatus, tempAdjData.filePath, tempAdjData.occupancyId, tempAdjData.vehicleId));
+
+            if (!response.ok) {
+                setAdjSnackMsg('Adjudication failed to submit.')
+                setColorStatus('error')
+                return;
+            }
+
+            // TODO: adjudication status after submission
 
         }catch(error){
             setAdjSnackMsg('Adjudication failed to submit.')
@@ -297,10 +290,27 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                         backgroundColor: "inherit",
                         color: "secondary.main"
                     }}
-                >Upload Files<input type="file" multiple onChange={handleFileUpload} ref={fileInputRef} style={{display: "none"}} /></Button>
+                >
+                    Upload Files
+                    <input
+                        type="file"
+                        multiple
+                        onChange={handleFileUpload}
+                        ref={fileInputRef}
+                        style={{display: "none"}}
+                    />
+                </Button>
                 <Stack direction={"row"} spacing={2}>
-                    <SecondaryInspectionSelect secondarySelectVal={secondaryInspection} onSelect={handleInspectionSelect} />
-                    <Button disableElevation variant={"contained"} color={"success"} onClick={sendAdjudicationData}>
+                    <SecondaryInspectionSelect
+                        secondarySelectVal={secondaryInspection}
+                        onSelect={handleInspectionSelect}
+                    />
+                    <Button
+                        disableElevation
+                        variant={"contained"}
+                        color={"success"}
+                        onClick={handleAdjudication}
+                    >
                         Submit
                     </Button>
                     <Snackbar

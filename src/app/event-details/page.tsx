@@ -76,7 +76,6 @@ export default function EventDetailsPage() {
     }, [eventPreview, laneMapRef.current]);
 
 
-
     useEffect(() => {
         gammaDatasources.forEach(ds => ds.connect());
         neutronDatasources.forEach(ds => ds.connect());

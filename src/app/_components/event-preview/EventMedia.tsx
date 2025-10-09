@@ -1,7 +1,6 @@
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
-// import TimeController from "@/app/_components/TimeController";
 import React, {useRef, useState} from "react";
 import ChartTimeHighlight from "@/app/_components/event-preview/ChartTimeHighlight";
 import {useSelector} from "react-redux";
@@ -19,34 +18,11 @@ export default function EventMedia({datasources, eventData, mode}: {datasources:
     const [syncTime, setSyncTime] = useState<number | null>(null);
     const selectedIndex = useRef<number>(0)
 
-    // const handlePlay = () => {
-    //     setVideoIsPlaying(true);
-    // };
-    //
-    // const handlePause = () => {
-    //     setVideoIsPlaying(false);
-    // };
-    //
-    // const handleCommitChange = (event: Event, newValue: number | number[]) => {
-    //     const timeValue = Array.isArray(newValue) ? newValue[0] : newValue;
-    //     setSyncTime(timeValue);
-    //     setVideoCurrentTime(timeValue);
-    // };
-
-
     const handleVideoTimeUpdate = (timeMs: number) => {
         if ( !videoIsPlaying ) return;
         setSyncTime(timeMs);
         setVideoCurrentTime(timeMs);
     };
-
-    // const handleTimeControllerUpdate = (timeMs: number) => {
-    //     setVideoCurrentTime(timeMs);
-    // };
-    //
-    // const handlePlayStateChange = (isPlaying: boolean) => {
-    //     setVideoIsPlaying(isPlaying);
-    // };
 
     const handleUpdatingPage = (page: number)=> {
         selectedIndex.current = page;
@@ -80,17 +56,6 @@ export default function EventMedia({datasources, eventData, mode}: {datasources:
                         onSelectedVideoIdxChange={handleUpdatingPage}
                     />
                 </Box>
-                {/*    <TimeController*/}
-                {/*        handleCommitChange={handleCommitChange}*/}
-                {/*        pause={handlePause}*/}
-                {/*        play={handlePlay}*/}
-                {/*        syncTime={syncTime}*/}
-                {/*        startTime={eventData.startTime}*/}
-                {/*        endTime={eventData.endTime}*/}
-                {/*        onTimeUpdate={handleTimeControllerUpdate}*/}
-                {/*        onPlayStateChange={handlePlayStateChange}*/}
-                {/*    />*/}
-
             </Paper>
         )
     }

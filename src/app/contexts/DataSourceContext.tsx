@@ -133,7 +133,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         await Promise.all(newNodes.map(async (node: INode) => {
 
             //COMMENT THIS LINE OUT WHEN TESTING IN DEV MODE
-            await node.authFileServer();
+            // await node.authFileServer();
 
             let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
 
@@ -158,12 +158,6 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         }));
 
 
-        // fetch adjudication systems
-        // let adjMap: Map<string, string> = new Map();
-        // for(let node of newNodes){
-        //    adjMap = await node.fetchOrCreateAdjudicationSystems(allLanes);
-        //
-        // }
 
         // dispatch(setDatastreams(allDatastreams));
         dispatch(setLaneMap(allLanes));

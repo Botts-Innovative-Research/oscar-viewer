@@ -13,8 +13,6 @@
  *
  */
 
-import { INode } from "./osh/Node";
-
 // Playback States========================================================
 export enum PlaybackState {
     PLAY,
@@ -77,20 +75,25 @@ export enum Protocols {
     WSS = "wss"
 }
 
+const smlUri = "http://sensorml.com/ont/swe/property/";
+const radUri = "http://www.opengis.net/def/"
 
 export const SENSOR_LOCATION_DEF = "http://www.opengis.net/def/property/OGC/0/SensorLocation";
-export const LOCATION_VECTOR_DEF = 'http://sensorml.com/ont/swe/property/LocationVector';
-export const RASTER_IMAGE_DEF = "http://sensorml.com/ont/swe/property/RasterImage";
-export const VIDEO_FRAME_DEF = "http://sensorml.com/ont/swe/property/VideoFrame";
-export const ALARM_DEF = "http://www.opengis.net/def/Alarm";
-export const GAMMA_COUNT_DEF = "http://www.opengis.net/def/GammaGrossCount";
-export const NEUTRON_COUNT_DEF = "http://www.opengis.net/def/NeutronGrossCount";
-export const TAMPER_STATUS_DEF = "http://www.opengis.net/def/TamperStatus";
-export const OCCUPANCY_PILLAR_DEF = "http://www.opengis.net/def/PillarOccupancyCount";
-export const CONNECTION_DEF ="http://www.opengis.net/def/ConnectionStatus";
-export const THRESHOLD_DEF ="http://www.opengis.net/def/Threshold";
-export const REPORT_DEF = "http://sensorml.com/ont/swe/property/ReportType";
-export const ADJ_DEF = "http://sensorml.com/ont/swe/property";
-export const SPEED_DEF = "http://www.opengis.net/def/SpeedTime";
-export const CONFIG_DEF ="http://www.opengis.net/def/Config";
-export const SITE_DIAGRAM_DEF ="http://sensorml.com/ont/swe/property/SiteDiagramPath";
+export const LOCATION_VECTOR_DEF = smlUri + "LocationVector";
+export const RASTER_IMAGE_DEF = smlUri + "RasterImage";
+export const VIDEO_FRAME_DEF = smlUri + "VideoFrame";
+export const CONFIG_DEF =  smlUri + "Config";
+export const SITE_DIAGRAM_DEF = smlUri + "SiteDiagramPath";
+export const REPORT_DEF = smlUri + "ReportType";
+
+// rad specific
+export const ALARM_DEF =  radUri + "Alarm";
+export const GAMMA_COUNT_DEF =  radUri + "GammaGrossCount";
+export const NEUTRON_COUNT_DEF =  radUri + "NeutronGrossCount";
+export const TAMPER_STATUS_DEF =  radUri + "TamperStatus";
+export const OCCUPANCY_PILLAR_DEF =  radUri + "PillarOccupancyCount";
+export const CONNECTION_DEF =  radUri + "ConnectionStatus";
+export const THRESHOLD_DEF =  radUri + "Threshold";
+export const ADJ_DEF =  radUri + "Adjudication";
+export const SPEED_DEF = radUri + "SpeedTime";
+export const NATIONAL_DEF =  radUri + "AllTime";
