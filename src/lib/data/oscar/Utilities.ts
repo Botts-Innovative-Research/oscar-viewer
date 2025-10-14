@@ -120,7 +120,6 @@ export function isNationalControlStream(controlStream: typeof ControlStream): bo
     if (!hasDefinitionProperties(controlStream))
         return false;
 
-    console.log("control stream", controlStream.properties.controlledProperties.length);
     return controlStream.properties.controlledProperties[0].definition.includes(START_DEF) &&
         controlStream.properties.controlledProperties[1].definition.includes(END_DEF) &&
         controlStream.properties.controlledProperties.length == 2;

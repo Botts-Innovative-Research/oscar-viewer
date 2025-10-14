@@ -41,6 +41,8 @@ export class NationalGenerationCommand {
 
 export function generateNationalCommandJSON(startDateTime: string, endDateTime: string,) {
 
+    console.log("start", startDateTime)
+    console.log("end", endDateTime)
     return JSON.stringify({
         "params": {
             "startDateTime": startDateTime != null ? startDateTime : null,

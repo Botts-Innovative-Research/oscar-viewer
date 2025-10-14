@@ -29,11 +29,21 @@ export default function NationalViewPage() {
     const [customEndTime, setCustomEndTime] = useState<string | null>();
 
     const [selectedTimeRangeCounts, setSelectedTimeRangeCounts] = useState<INationalTableData[]>([]);
+
     const nodes = useSelector(selectNodes);
     const idVal = useRef(0);
+
     const timeRangeCache = useRef<Map<string, INationalTableData[]>>(new Map());
 
     const handleRefreshStats = async() => {
+
+        const tempRangeData: Map<string, INationalTableData[]> = new Map();
+
+        const ranges = ["allTime", "daily", "monthly", "weekly", "custom"];
+
+        ranges.forEach(range => {
+            tempRangeData.set(range, []);
+        });
 
         if (selectedTimeRange == "custom" && (!customStartTime || !customEndTime)) {
             setSnackMessage("Please select both custom start and end dates.");
@@ -45,14 +55,8 @@ export default function NationalViewPage() {
             setIsRefreshing(true);
 
             for (const node of nodes) {
-                console.log("node", node);
                 let streams = await node.fetchNodeControlStreams();
-
-                console.log("streams: ", streams)
-
                 let controlStream = streams.find((stream: typeof ControlStream) => isNationalControlStream(stream));
-
-                console.log("control stream: ", controlStream)
 
                 if (!controlStream){
                     setSnackMessage("No control stream found.");
@@ -67,11 +71,62 @@ export default function NationalViewPage() {
                     setSeverity("error");
                 }
 
+                let respJson = await response.json();
+
+                console.log("respJson", respJson);
+
+                if (selectedTimeRange == "custom") {
+                    setSnackMessage("Refreshing the custom time range stats");
+                    setSeverity("success");
+                    setOpenSnack(true);
+
+                    let results = respJson.results[0].data;
+
+                    const list = tempRangeData.get("custom");
+                    list.push({
+                        id: idVal.current++,
+                        site: node.name,
+                        numGammaAlarms: results.numGammaAlarms,
+                        numNeutronAlarms: results.numNeutronAlarms,
+                        numGammaNeutronAlarms: results.numGammaNeutronAlarms,
+                        numOccupancies: results.numOccupancies,
+                        numTampers: results.numTampers,
+                        numGammaFaults: results.numGammaFaults,
+                        numNeutronFaults: results.numNeutronFaults,
+                        numFaults: results.numFaults,
+                    });
+
+                } else {
+
+                    const allRangeCounts = await fetchAllTimeRangesForNode(node);
+
+                    ranges.forEach(range => {
+                        const list = tempRangeData.get(range);
+                        list.push ({
+                            id: idVal.current++,
+                            site: node.name,
+                            numGammaAlarms: allRangeCounts[range].numGammaAlarms,
+                            numNeutronAlarms: allRangeCounts[range].numNeutronAlarms,
+                            numGammaNeutronAlarms: allRangeCounts[range].numGammaNeutronAlarms,
+                            numOccupancies: allRangeCounts[range].numOccupancies,
+                            numTampers: allRangeCounts[range].numTampers,
+                            numGammaFaults: allRangeCounts[range].numGammaFaults,
+                            numNeutronFaults: allRangeCounts[range].numNeutronFaults,
+                            numFaults: allRangeCounts[range].numFaults,
+                        });
+                    })
+                }
+
                 setSnackMessage("Refreshing the stats");
                 setSeverity("success");
             }
 
-            fetchAllObservationData(nodes);
+            for (const [range, counts] of tempRangeData.entries()) {
+                timeRangeCache.current.set(range, counts);
+            }
+
+            setSelectedTimeRangeCounts(tempRangeData.get(selectedTimeRange));
+
         } catch (error) {
             setSnackMessage("Failed to refresh the statistics");
             setSeverity("error");
@@ -93,13 +148,12 @@ export default function NationalViewPage() {
     }
 
     const handleCustomStartTime = (value: string) => {
-        setCustomStartTime(value)
+         setCustomStartTime(value)
     }
 
     const handleCustomEndTime = (value: string) => {
         setCustomEndTime(value)
     }
-
 
     useEffect(() => {
         if (nodes && nodes.length > 0){
@@ -113,48 +167,6 @@ export default function NationalViewPage() {
             setSelectedTimeRangeCounts(cached)
         }
     }, [selectedTimeRange]);
-
-    const fetchAllObservationData = async (nodeList: any[])=>  {
-        const tempRangeData: Map<string, INationalTableData[]> = new Map();
-
-        const ranges = ["allTime", "daily", "monthly", "weekly"];
-
-        ranges.forEach(range => {
-            tempRangeData.set(range, []);
-        });
-
-        for (const node of nodeList) {
-            try {
-                const allRangeCounts = await fetchAllTimeRangesForNode(node);
-
-                ranges.forEach(range => {
-                    const list = tempRangeData.get(range);
-                    list.push ({
-                        id: idVal.current++,
-                        site: node.name,
-                        numGammaAlarms: allRangeCounts[range].numGammaAlarms,
-                        numNeutronAlarms: allRangeCounts[range].numNeutronAlarms,
-                        numGammaNeutronAlarms: allRangeCounts[range].numGammaNeutronAlarms,
-                        numOccupancies: allRangeCounts[range].numOccupancies,
-                        numTampers: allRangeCounts[range].numTampers,
-                        numGammaFaults: allRangeCounts[range].numGammaFaults,
-                        numNeutronFaults: allRangeCounts[range].numNeutronFaults,
-                        numFaults: allRangeCounts[range].numFaults,
-                    });
-                })
-            } catch (error) {
-                setSnackMessage(`Error processing node ${node.name}:`);
-                setSeverity("error");
-                setOpenSnack(true)
-            }
-        }
-
-        for (const [range, counts] of tempRangeData.entries()) {
-            timeRangeCache.current.set(range, counts);
-        }
-
-        setSelectedTimeRangeCounts(tempRangeData.get(selectedTimeRange));
-    }
 
     const fetchAllTimeRangesForNode = async(node: any): Promise<any> => {
         setSnackMessage("Fetching counts for stats!")
@@ -172,6 +184,7 @@ export default function NationalViewPage() {
 
         var result = observation[0].properties.result;
 
+        console.log("hey res: ", result)
         const parse = (result: any) => ({
             numOccupancies: result.numOccupancies ?? 0,
             numGammaAlarms: result.numGammaAlarms?? 0,
@@ -188,6 +201,7 @@ export default function NationalViewPage() {
             monthly: parse(result.monthly),
             weekly: parse(result.weekly),
             daily: parse(result.daily),
+            custom: parse(result.custom ?? {})
         };
     }
 
@@ -201,31 +215,38 @@ export default function NationalViewPage() {
             <Stack
                 spacing={3}
                 direction="row"
+                alignItems="center"
+                flexWrap="wrap"
             >
-                <TimeRangeSelect
-                    onSelect={handleTimeRange}
-                    timeRange={selectedTimeRange}
-                />
+                <Paper>
+                    <TimeRangeSelect
+                        onSelect={handleTimeRange}
+                        timeRange={selectedTimeRange}
+                    />
+                </Paper>
+
 
                 {selectedTimeRange === 'custom' && (
-                    <NationalDatePicker
-                        customStartTime={customStartTime}
-                        customEndTime={customEndTime}
-                        onCustomStartChange={handleCustomStartTime}
-                        onCustomEndChange={handleCustomEndTime}
-                    />
+                    <Paper>
+                        <NationalDatePicker
+                            onCustomStartChange={handleCustomStartTime}
+                            onCustomEndChange={handleCustomEndTime}
+                        />
+                    </Paper>
+
                 )}
 
-                <Button
-                    variant="contained"
-                    size="large"
-                    onClick={handleRefreshStats}
-                    startIcon={<RefreshRounded/>}
-                    fullWidth
-                    disabled={isRefreshing}
+                <Paper>
+                    <Button
+                        variant="contained"
+                        size="large"
+                        onClick={handleRefreshStats}
+                        startIcon={<RefreshRounded/>}
+                        disabled={isRefreshing}
                     >
-                    { isRefreshing ? 'Refreshing Stats...' : 'Refresh Stats'}
-                </Button>
+                        { isRefreshing ? 'Refreshing Stats...' : 'Refresh Stats'}
+                    </Button>
+                </Paper>
             </Stack>
 
             <br/>
