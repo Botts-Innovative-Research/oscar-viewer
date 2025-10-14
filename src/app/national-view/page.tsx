@@ -33,8 +33,6 @@ export default function NationalViewPage() {
     const idVal = useRef(0);
     const timeRangeCache = useRef<Map<string, INationalTableData[]>>(new Map());
 
-    const [isInitialLoad, setIsInitialLoad] = useState(false);
-
     const handleRefreshStats = async() => {
 
         if (selectedTimeRange == "custom" && (!customStartTime || !customEndTime)) {
@@ -84,11 +82,6 @@ export default function NationalViewPage() {
         }
     }
 
-    useEffect(() => {
-        if (isInitialLoad)
-            handleRefreshStats();
-    }, [isInitialLoad]);
-
     const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason) => {
         if (reason === 'clickaway')
             return;
@@ -111,7 +104,6 @@ export default function NationalViewPage() {
     useEffect(() => {
         if (nodes && nodes.length > 0){
             handleRefreshStats();
-
         }
     }, [nodes]);
 
