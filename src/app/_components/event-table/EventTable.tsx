@@ -12,7 +12,7 @@ import {
 } from "@/lib/state/EventPreviewSlice";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
-import {AlarmTableData, EventTableData} from "@/lib/data/oscar/TableHelpers";
+import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {
     DataGrid,
     GridActionsCellItem,
@@ -446,7 +446,7 @@ export default function EventTable({
                     // },
                     // assign color styling to selected row
                     [`.${gridClasses.row}.selected-row`]: {
-                        backgroundColor: 'rgba(33,150,243,0.5)',
+                        backgroundColor: 'rgba(33, 150, 243, 0.5)',
                     },
                     // Assign styling to 'Status' column based on className
                     [`.${gridClasses.cell}.highlightGamma`]: {

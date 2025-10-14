@@ -1,18 +1,34 @@
 "use client";
 
-import {FormControl, InputLabel, ListSubheader, MenuItem, Select, SelectChangeEvent} from '@mui/material';
-import {useEffect, useState} from 'react';
-import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
-import {IAdjudicationData} from "@/lib/data/oscar/adjudication/Adjudication";
+import {FormControl, InputLabel, MenuItem, Select, SelectChangeEvent} from '@mui/material';
+import {useState} from 'react';
 
-const secondarySelectChoices=[
-    "NONE",
-    "COMPLETED",
-    "REQUESTED",
+const timeRanges = [
+    {
+        label: "All Time",
+        value: "allTime",
+    },
+    {
+        label: "Monthly",
+        value: "monthly",
+    },
+    {
+        label: "Weekly",
+        value: 'weekly'
+    },
+    {
+        label: "Daily",
+        value: "daily"
+    },
+    {
+        label: "Custom Range",
+        value: "custom"
+    }
 ]
-export default function SecondaryInspectionSelect(props: {
-    onSelect: (value: string) => void, // Return selected value
-    secondarySelectVal: string
+
+export default function TimeRangeSelect(props: {
+    onSelect: (value: string[] | string) => void,
+    timeRange: string
 }) {
 
     const handleChange = (event: SelectChangeEvent) => {
@@ -21,13 +37,13 @@ export default function SecondaryInspectionSelect(props: {
     };
 
     return (
-        <FormControl size="small" fullWidth>
-            <InputLabel id="label" >Secondary Inspection</InputLabel>
+        <FormControl size="small">
+            <InputLabel id="label">Time Range</InputLabel>
             <Select
                 variant="outlined"
                 id="label"
-                label="Secondary Inspection"
-                value={props.secondarySelectVal}
+                label="TimeRange"
+                value={props.timeRange}
                 onChange={handleChange}
                 MenuProps={{
                     MenuListProps: {
@@ -37,7 +53,7 @@ export default function SecondaryInspectionSelect(props: {
                     }
                 }}
                 autoWidth
-                style={{minWidth: "12em"}}
+                style={{minWidth: "8em"}}
                 sx={{
                     color: "text.primary",
                     "& .MuiOutlinedInput-notchedOutline": {
@@ -55,13 +71,13 @@ export default function SecondaryInspectionSelect(props: {
                         },
                 }}
             >
-                {secondarySelectChoices.map((item) =>(
-                    <MenuItem key={item} value={item}>
-                        {item}
-                    </MenuItem>
-                ))
+                {
+                    timeRanges.map((range) => (
+                        <MenuItem key={range.value} value={range.value}>
+                            {range.label}
+                        </MenuItem>
+                    ))
                 }
-
             </Select>
         </FormControl>
     );

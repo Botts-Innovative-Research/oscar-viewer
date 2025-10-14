@@ -8,11 +8,9 @@ import {randomUUID} from "osh-js/source/core/utils/Utils";
 import System from "osh-js/source/core/consysapi/system/System.js";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
 import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js";
-import {INode, insertObservation} from "@/lib/data/osh/Node";
+import {INode} from "@/lib/data/osh/Node";
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
-import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
-import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 
 import {
     isConnectionDatastream,
@@ -22,6 +20,7 @@ import {
     isTamperDatastream, isThresholdDatastream,
     isVideoDatastream
 } from "./Utilities";
+import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 
 class ILaneMeta {
     id: string;
@@ -55,7 +54,7 @@ export class LaneMapEntry {
     datasourcesRealtime: any[];
     parentNode: INode;
     laneSystem: typeof System;
-    private adjDs: string;
+    // private adjDs: string;
     // adjControlStreamId: string;
     laneName: string;
     controlStreams: any[]
@@ -308,6 +307,8 @@ export class LaneMapEntry {
         return dsMap;
     }
 
+
+
     async checkValidDataSource(ds: typeof DataStream, startTime: string, endTime: string): Promise<typeof ConSysApi> {
         let datasourceReplay = this.createReplayConSysApiFromDataStream(ds, startTime, endTime);
 
@@ -350,16 +351,6 @@ export class LaneMapEntry {
         }
     }
 
-
-
-    async insertAdjudicationObservation(obsData: AdjudicationData, datastreamId: string) {
-        let endpoint: string = `${this.parentNode.getConnectedSystemsEndpoint(false)}/datastreams/${datastreamId}/observations`;
-
-        let obsRes = await insertObservation(endpoint, obsData);
-        if (obsRes) {
-            console.log("[ADJ] Inserted Adjudication Observation: ", obsRes);
-        }
-    }
 }
 
 export class LaneDSColl {

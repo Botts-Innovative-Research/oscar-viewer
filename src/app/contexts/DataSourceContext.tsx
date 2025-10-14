@@ -158,12 +158,6 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         }));
 
 
-        // fetch adjudication systems
-        // let adjMap: Map<string, string> = new Map();
-        // for(let node of newNodes){
-        //    adjMap = await node.fetchOrCreateAdjudicationSystems(allLanes);
-        //
-        // }
 
         // dispatch(setDatastreams(allDatastreams));
         dispatch(setLaneMap(allLanes));

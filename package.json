@@ -80,7 +80,7 @@
     "nouislider": "^15.6.1",
     "ol": "^10.1.0",
     "ol-layerswitcher": "^4.1.2",
-    "osh-js": "git+https@github.com:kalynstricklin/osh-js.git#add-img-overlay",
+    "osh-js": "^3.1.0",
     "patch-package": "^6.5.0",
     "path-browserify": "^1.0.1",
     "react": "^18.3.1",

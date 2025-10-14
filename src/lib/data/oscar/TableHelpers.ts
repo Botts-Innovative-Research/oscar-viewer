@@ -195,27 +195,27 @@ export class EventTableDataCollection {
 export class NationalTableData implements INationalTableData {
     id: number;
     site: string;
-    occupancyCount: number;
-    gammaAlarmCount: number;
-    neutronAlarmCount: number;
-    faultAlarmCount: number;
-    tamperAlarmCount: number;
-    gammaNeutronAlarmCount: number;
-    nonAlarmingCount: number;
+    numOccupancies: number;
+    numGammaAlarms: number;
+    numNeutronAlarms: number;
+    numGammaNeutronAlarms: number;
+    numFaults: number;
+    numGammaFaults: number;
+    numNeutronFaults: number;
+    numTampers: number;
 
-    constructor(id: number, siteName: string, occupancyCount: number, gammaCount: number, neutronCount: number, faultCount: number, tamperCount: number, gammaNeutronAlarmCount: number, nonAlarmingCount: number) {
+    constructor(id: number, siteName: string, occupancyCount: number, faultCount: number, gammaCount: number, neutronCount: number, gammaFaultCount: number, neutronFaultCount: number, tamperCount: number, gammaNeutronAlarmCount: number) {
         this.id = id;
         this.site = siteName;
-        this.occupancyCount = occupancyCount;
-        this.gammaAlarmCount = gammaCount;
-        this.neutronAlarmCount = neutronCount;
-        this.faultAlarmCount = faultCount;
-        this.tamperAlarmCount = tamperCount;
-        this.gammaNeutronAlarmCount = gammaNeutronAlarmCount;
-        this.nonAlarmingCount = nonAlarmingCount;
+        this.numOccupancies = occupancyCount;
+        this.numGammaAlarms = gammaCount;
+        this.numNeutronAlarms = neutronCount;
+        this.numGammaNeutronAlarms = gammaNeutronAlarmCount;
+        this.numFaults = faultCount;
+        this.numGammaFaults = gammaFaultCount;
+        this.numNeutronFaults = neutronFaultCount;
+        this.numTampers = tamperCount;
     }
-
-
 }
 
 export class NationalTableDataCollection {
@@ -232,8 +232,6 @@ export class NationalTableDataCollection {
     addData(data: NationalTableData) {
         this.data.push(data);
     }
-
-
 }
 
 

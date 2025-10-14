@@ -15,7 +15,6 @@ import {
 import {useEffect, useState} from 'react';
 
 const isotopeChoices=[
-    "",
     "Unknown",
     "Neptunium",
     "Plutonium",

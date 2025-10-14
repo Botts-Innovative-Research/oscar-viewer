@@ -26,15 +26,16 @@ export interface IEventTableData {
 }
 
 export interface INationalTableData {
-  id: number; // Unique ID for event
-  site: string;
-  occupancyCount: number;
-  gammaAlarmCount: number;
-  neutronAlarmCount: number;
-  faultAlarmCount: number;
-  nonAlarmingCount: number;
-  tamperAlarmCount: number;
-  gammaNeutronAlarmCount: number;
+    id: number; // Unique ID for event
+    site: string;
+    numOccupancies: number;
+    numGammaAlarms: number;
+    numNeutronAlarms: number;
+    numGammaNeutronAlarms: number;
+    numFaults: number;
+    numGammaFaults: number;
+    numNeutronFaults: number;
+    numTampers: number;
 }
 
 
