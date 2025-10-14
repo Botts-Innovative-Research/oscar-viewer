@@ -25,14 +25,15 @@ export default function NationalViewPage() {
 
     const [selectedTimeRange, setSelectedTimeRange]= useState("allTime");
 
-    const [customStartTime, setCustomStartTime] = useState<string | null>("");
-    const [customEndTime, setCustomEndTime] = useState<string | null>("");
+    const [customStartTime, setCustomStartTime] = useState<string | null>();
+    const [customEndTime, setCustomEndTime] = useState<string | null>();
 
     const [selectedTimeRangeCounts, setSelectedTimeRangeCounts] = useState<INationalTableData[]>([]);
     const nodes = useSelector(selectNodes);
     const idVal = useRef(0);
     const timeRangeCache = useRef<Map<string, INationalTableData[]>>(new Map());
 
+    const [isInitialLoad, setIsInitialLoad] = useState(false);
 
     const handleRefreshStats = async() => {
 
@@ -46,9 +47,14 @@ export default function NationalViewPage() {
             setIsRefreshing(true);
 
             for (const node of nodes) {
+                console.log("node", node);
                 let streams = await node.fetchNodeControlStreams();
 
+                console.log("streams: ", streams)
+
                 let controlStream = streams.find((stream: typeof ControlStream) => isNationalControlStream(stream));
+
+                console.log("control stream: ", controlStream)
 
                 if (!controlStream){
                     setSnackMessage("No control stream found.");
@@ -63,13 +69,11 @@ export default function NationalViewPage() {
                     setSeverity("error");
                 }
 
-                let refreshResults = await response.json();
-                // todo: do stuff with results
-
                 setSnackMessage("Refreshing the stats");
                 setSeverity("success");
             }
 
+            fetchAllObservationData(nodes);
         } catch (error) {
             setSnackMessage("Failed to refresh the statistics");
             setSeverity("error");
@@ -79,6 +83,11 @@ export default function NationalViewPage() {
             setOpenSnack(true);
         }
     }
+
+    useEffect(() => {
+        if (isInitialLoad)
+            handleRefreshStats();
+    }, [isInitialLoad]);
 
     const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason) => {
         if (reason === 'clickaway')
@@ -101,7 +110,8 @@ export default function NationalViewPage() {
 
     useEffect(() => {
         if (nodes && nodes.length > 0){
-            fetchAllObservationData(nodes);
+            handleRefreshStats();
+
         }
     }, [nodes]);
 
@@ -115,7 +125,7 @@ export default function NationalViewPage() {
     const fetchAllObservationData = async (nodeList: any[])=>  {
         const tempRangeData: Map<string, INationalTableData[]> = new Map();
 
-        const ranges = ["allTime", "monthly", "weekly", "daily"];
+        const ranges = ["allTime", "daily", "monthly", "weekly"];
 
         ranges.forEach(range => {
             tempRangeData.set(range, []);
@@ -141,7 +151,9 @@ export default function NationalViewPage() {
                     });
                 })
             } catch (error) {
-                console.error(`Error processing node ${node.name}: `, error);
+                setSnackMessage(`Error processing node ${node.name}:`);
+                setSeverity("error");
+                setOpenSnack(true)
             }
         }
 
@@ -153,14 +165,20 @@ export default function NationalViewPage() {
     }
 
     const fetchAllTimeRangesForNode = async(node: any): Promise<any> => {
+        setSnackMessage("Fetching counts for stats!")
+        setSeverity('success');
+        setOpenSnack(true);
+
         const filter = new ObservationFilter({ observedProperty: NATIONAL_DEF, resultTime: "latest" });
         const observation = await node.fetchLatestObservationWithFilter(filter);
 
         if (observation == null) {
-            console.error("no observations found");
+            setSnackMessage("no observations found")
+            setSeverity('error');
+            setOpenSnack(true);
         }
 
-        var result = observation.properties.result;
+        var result = observation[0].properties.result;
 
         const parse = (result: any) => ({
             numOccupancies: result.numOccupancies ?? 0,

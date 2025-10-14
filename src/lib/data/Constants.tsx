@@ -96,4 +96,6 @@ export const CONNECTION_DEF =  radUri + "ConnectionStatus";
 export const THRESHOLD_DEF =  radUri + "Threshold";
 export const ADJ_DEF =  radUri + "Adjudication";
 export const SPEED_DEF = radUri + "SpeedTime";
-export const NATIONAL_DEF =  radUri + "AllTime";
+export const NATIONAL_DEF =  radUri + "NumOccupancies";
+export const START_DEF =  "http://sensorml.com/ont/swe/property/StartDateTime";
+export const END_DEF =  "http://sensorml.com/ont/swe/property/EndDateTime";

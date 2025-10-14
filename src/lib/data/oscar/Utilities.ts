@@ -9,10 +9,10 @@ import ConnectedSystemsApi from "osh-js/source/core/consysapi/ConnectedSystemsAp
 import {
     ADJ_DEF,
     ALARM_DEF, CONFIG_DEF,
-    CONNECTION_DEF, GAMMA_COUNT_DEF, LOCATION_VECTOR_DEF, NATIONAL_DEF,
+    CONNECTION_DEF, END_DEF, GAMMA_COUNT_DEF, LOCATION_VECTOR_DEF, NATIONAL_DEF,
     NEUTRON_COUNT_DEF,
     OCCUPANCY_PILLAR_DEF, RASTER_IMAGE_DEF, REPORT_DEF, SENSOR_LOCATION_DEF,
-    SITE_DIAGRAM_DEF, SPEED_DEF,
+    SITE_DIAGRAM_DEF, SPEED_DEF, START_DEF,
     TAMPER_STATUS_DEF,
     THRESHOLD_DEF, VIDEO_FRAME_DEF
 } from "@/lib/data/Constants";
@@ -117,11 +117,13 @@ export function isReportControlStream(controlStream: typeof ControlStream): bool
     return controlStream.properties.controlledProperties[0].definition.includes(REPORT_DEF);
 }
 export function isNationalControlStream(controlStream: typeof ControlStream): boolean {
-
     if (!hasDefinitionProperties(controlStream))
         return false;
 
-    return controlStream.properties.controlledProperties[0].definition.includes(NATIONAL_DEF);
+    console.log("control stream", controlStream.properties.controlledProperties.length);
+    return controlStream.properties.controlledProperties[0].definition.includes(START_DEF) &&
+        controlStream.properties.controlledProperties[1].definition.includes(END_DEF) &&
+        controlStream.properties.controlledProperties.length == 2;
 }
 
 export function isAdjudicationControlStream(datastream: typeof DataStream): boolean {

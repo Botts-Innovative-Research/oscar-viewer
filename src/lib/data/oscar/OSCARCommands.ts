@@ -2,8 +2,9 @@ import {INode} from "@/lib/data/osh/Node";
 
 
 export async function sendCommand(node: INode, controlStreamId: string, command: any) {
-    console.log("[Report Generation] Report Body:", command);
+    console.log("[Command Generation] Body:", command);
     let ep = node.getConnectedSystemsEndpoint(false) + `/controlstreams/${controlStreamId}/commands`
+
     let response = await fetch(ep, {
         method: "POST",
         headers: {
@@ -11,8 +12,9 @@ export async function sendCommand(node: INode, controlStreamId: string, command:
             'Content-Type': 'application/json'
         },
         mode: 'cors',
-        body: command.getJsonString()
-    })
+        body: command
+    });
+
     return response;
 }
 
@@ -38,14 +40,14 @@ export class NationalGenerationCommand {
 
 
 export function generateNationalCommandJSON(startDateTime: string, endDateTime: string,) {
+
     return JSON.stringify({
         "params": {
-            "startDateTime": startDateTime,
-            "endDateTime": endDateTime,
+            "startDateTime": startDateTime != null ? startDateTime : null,
+            "endDateTime": endDateTime != null ? endDateTime : null,
         }
     })
 }
-
 
 export class ReportGenerationCommand {
     startDateTime: string;
