@@ -1,9 +1,13 @@
 import {INode} from "@/lib/data/osh/Node";
+import {AdjudicationCode} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 
 
 export async function sendCommand(node: INode, controlStreamId: string, command: any) {
     console.log("[Command Generation] Body:", command);
     let ep = node.getConnectedSystemsEndpoint(false) + `/controlstreams/${controlStreamId}/commands`
+
+    console.log("ep", ep)
+    console.log("command", command)
 
     let response = await fetch(ep, {
         method: "POST",
@@ -14,6 +18,8 @@ export async function sendCommand(node: INode, controlStreamId: string, command:
         mode: 'cors',
         body: command
     });
+
+    console.log("response: ", response)
 
     return response;
 }
@@ -93,18 +99,22 @@ export function generateReportCommandJSON(startDateTime: string, endDateTime: st
 
 export class AdjudicationCommand {
     feedback: string;
-    adjudicationCode: string;
+    adjudicationCode: number;
     isotopes: string;
     secondaryInspectionStatus: string;
+    isotopesCount: number;
+    filePathsCount: number;
     filePaths: string;
     occupancyId: string;
     vehicleId: string;
 
 
-    constructor(feedback: string, adjudicationCode: string, isotopes: string, secondaryInspectionStatus: string, filePaths: string, occupancyId: string, vehicleId: string) {
+    constructor(feedback: string, adjudicationCode: number, isotopes: string, secondaryInspectionStatus: string, filePaths: string, occupancyId: string, vehicleId: string) {
         this.feedback = feedback;
         this.adjudicationCode = adjudicationCode;
         this.isotopes = isotopes;
+        this.isotopesCount = isotopes.length;
+        this.filePathsCount = filePaths.length;
         this.secondaryInspectionStatus = secondaryInspectionStatus;
         this.filePaths = filePaths;
         this.occupancyId = occupancyId;
@@ -117,8 +127,10 @@ export class AdjudicationCommand {
                 "params": {
                     "feedback": this.feedback,
                     "adjudicationCode": this.adjudicationCode,
+                    "isotopesCount": this.isotopesCount,
                     "isotopes": this.isotopes,
                     "secondaryInspectionStatus": this.secondaryInspectionStatus,
+                    "filePathCount": this.filePathsCount,
                     "filePaths": this.filePaths,
                     "occupancyId": this.occupancyId,
                     "vehicleId": this.vehicleId
@@ -127,13 +139,15 @@ export class AdjudicationCommand {
     }
 }
 
-export function generateAdjudicationCommandJSON(feedback: string, adjudicationCode: string, isotopes: string, secondaryInspectionStatus: string, filePaths: string, occupancyId: string, vehicleId: string) {
-    return JSON.stringify({
+export function generateAdjudicationCommandJSON(feedback: string, adjudicationCode: AdjudicationCode, isotopes: string, secondaryInspectionStatus: string, filePaths: string, occupancyId: string, vehicleId: string) {
+   return JSON.stringify({
         "params": {
             "feedback": feedback,
-            "adjudicationCode": adjudicationCode,
+            "adjudicationCode": adjudicationCode.code,
+            "isotopesCount": isotopes.length,
             "isotopes": isotopes,
             "secondaryInspectionStatus": secondaryInspectionStatus,
+            "filePathCount": filePaths.length,
             "filePaths": filePaths,
             "occupancyId": occupancyId,
             "vehicleId": vehicleId

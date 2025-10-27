@@ -10,9 +10,9 @@ export interface IAdjudicationData {
     username: string
     feedback: string
     adjudicationCode: AdjudicationCode
-    isotopes: string
+    isotopes: string[]
     secondaryInspectionStatus: string
-    filePaths: string
+    filePaths: string[]
     occupancyId: string
     alarmingSystemUid: string,
     vehicleId?: string
@@ -25,15 +25,15 @@ export default class AdjudicationData implements IAdjudicationData {
     username: string
     feedback: string
     adjudicationCode: AdjudicationCode
-    isotopes: string
+    isotopes: string[]
     secondaryInspectionStatus: string
     // secondaryInspectionStatus: "NONE" | "REQUESTED" | "COMPLETED"
-    filePaths: string
+    filePaths: string[]
     occupancyId: string
     alarmingSystemUid: string
     vehicleId?: string
 
-    constructor(username: string, occupancyId: string, alarmingSystemUid: string, time: string) {
+    constructor(time: string, username: string, occupancyId: string, alarmingSystemUid: string) {
         this.time = time;
         this.username = username;
         this.occupancyId = occupancyId;
@@ -42,8 +42,8 @@ export default class AdjudicationData implements IAdjudicationData {
         this.secondaryInspectionStatus = "NONE";
         this.id = randomUUID();
         this.feedback= '';
-        this.isotopes= '';
-        this.filePaths= '';
+        this.isotopes= [];
+        this.filePaths= [];
     }
 
 
@@ -55,7 +55,7 @@ export default class AdjudicationData implements IAdjudicationData {
         this.feedback = feedback;
     }
 
-    setIsotopes(isotopes: string) {
+    setIsotopes(isotopes: string[]) {
         this.isotopes = isotopes;
     }
 
@@ -63,7 +63,7 @@ export default class AdjudicationData implements IAdjudicationData {
         this.secondaryInspectionStatus = secondaryInspectionStatus;
     }
 
-    setFilePaths(filePaths: string) {
+    setFilePaths(filePaths: string[]) {
         this.filePaths = filePaths;
     }
 

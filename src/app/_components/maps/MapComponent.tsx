@@ -14,7 +14,7 @@ import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import "leaflet/dist/leaflet.css"
 import {
     isGammaDatastream, isLocationDatastream,
-    isNeutronDatastream,
+    isNeutronDatastream, isSiteDiagramPathDatastream,
     isTamperDatastream,
 } from "@/lib/data/oscar/Utilities";
 import {setCurrentLane} from "@/lib/state/LaneViewSlice";
@@ -247,23 +247,21 @@ export default function MapComponent() {
 
             let dataStreams = await node.fetchDataStream(system);
 
-            if(!dataStreams) console.warn("no datastreams");
+            if(!dataStreams)
+                console.warn("no datastreams");
 
             for (const ds of dataStreams) {
-
-                if(ds.properties.outputName = "siteInfo"){
+                if(isSiteDiagramPathDatastream(ds)){
                     let obsCollections = await ds.searchObservations(new ObservationFilter({resultTime: 'latest'}), 1);
 
                     let results = await obsCollections.nextPage();
 
                     let result = results[0];
-                    if(result){
+                    if(result != undefined){
                         setSiteMapPath(getSiteDiagramPath(result.result.siteDiagramPath, node));
                         setLowerLeftBound([result.result.siteBoundingBox.lowerLeftBound.lon, result.result.siteBoundingBox.lowerLeftBound.lat]);
                         setUpperRightBound([result.result.siteBoundingBox.upperRightBound.lon, result.result.siteBoundingBox.upperRightBound.lat]);
-
                     }
-
                 }
             }
         })

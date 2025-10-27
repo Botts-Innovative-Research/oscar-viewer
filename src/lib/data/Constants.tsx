@@ -78,7 +78,7 @@ export enum Protocols {
 const smlUri = "http://sensorml.com/ont/swe/property/";
 const radUri = "http://www.opengis.net/def/"
 
-export const SENSOR_LOCATION_DEF = "http://www.opengis.net/def/property/OGC/0/SensorLocation";
+export const SENSOR_LOCATION_DEF = radUri + "property/OGC/0/SensorLocation";
 export const LOCATION_VECTOR_DEF = smlUri + "LocationVector";
 export const RASTER_IMAGE_DEF = smlUri + "RasterImage";
 export const VIDEO_FRAME_DEF = smlUri + "VideoFrame";
@@ -94,8 +94,8 @@ export const TAMPER_STATUS_DEF =  radUri + "TamperStatus";
 export const OCCUPANCY_PILLAR_DEF =  radUri + "PillarOccupancyCount";
 export const CONNECTION_DEF =  radUri + "ConnectionStatus";
 export const THRESHOLD_DEF =  radUri + "Threshold";
-export const ADJ_DEF =  radUri + "Adjudication";
+export const ADJ_DEF =  smlUri + "Feedback";
 export const SPEED_DEF = radUri + "SpeedTime";
 export const NATIONAL_DEF =  radUri + "NumOccupancies";
-export const START_DEF =  "http://sensorml.com/ont/swe/property/StartDateTime";
-export const END_DEF =  "http://sensorml.com/ont/swe/property/EndDateTime";
+export const START_DEF =  smlUri + "StartDateTime";
+export const END_DEF =  smlUri + "EndDateTime";

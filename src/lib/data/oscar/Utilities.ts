@@ -101,11 +101,10 @@ export function isConfigurationDatastream(datastream: typeof DataStream): boolea
 
 export function isSiteDiagramPathDatastream(datastream: typeof DataStream): boolean {
 
-
     if (!hasDefinitionProperties(datastream))
         return false;
 
-    return datastream.properties.controlledProperties[0].definition.includes(SITE_DIAGRAM_DEF);
+    return datastream.properties.observedProperties[0].definition.includes(SITE_DIAGRAM_DEF);
 }
 
 
@@ -125,8 +124,11 @@ export function isNationalControlStream(controlStream: typeof ControlStream): bo
         controlStream.properties.controlledProperties.length == 2;
 }
 
-export function isAdjudicationControlStream(datastream: typeof DataStream): boolean {
-    return datastream.properties.controlledProperties[0].definition.includes(ADJ_DEF);
+export function isAdjudicationControlStream(controlStream: typeof ControlStream): boolean {
+    if (!hasDefinitionProperties(controlStream))
+        return false;
+
+    return controlStream.properties.controlledProperties[0].definition.includes(ADJ_DEF);
 }
 
 

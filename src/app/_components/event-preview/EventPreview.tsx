@@ -85,18 +85,23 @@ export function EventPreview() {
             username: currentUser,
             feedback: notes,
             adjudicationCode: value,
-            isotopes: "",
+            isotopes: [],
             secondaryInspectionStatus: secondaryInspection,
-            filePaths: "",
+            filePaths: [],
             occupancyId: eventPreview.eventData.occupancyId,
             alarmingSystemUid: eventPreview.eventData.rpmSystemId
         }
 
-        let adjudicationData = new AdjudicationData(new Date().toISOString(), currentUser, eventPreview.eventData.occupancyId, eventPreview.eventData.rpmSystemId);
+        let adjudicationData = new AdjudicationData(
+            new Date().toISOString(),
+            currentUser,
+            eventPreview.eventData.occupancyId,
+            eventPreview.eventData.rpmSystemId
+        );
 
         adjudicationData.setFeedback(notes);
         adjudicationData.setAdjudicationCode(value);
-        adjudicationData.setSecondaryInspectionStatus(secondaryInspection)
+
         setAdjudicationCode(value);
         setAdjFormData(newAdjData);
         setAdjudication(adjudicationData);
@@ -115,23 +120,19 @@ export function EventPreview() {
         comboData.setTime(phenomenonTime);
         comboData.setSecondaryInspectionStatus(secondaryInspection);
 
-
         // send to server
         const currentLane = eventPreview.eventData.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-
-
         await submitAdjudication(currLaneEntry, comboData)
     }
 
 
-    const submitAdjudication = async(currLaneEntry: any, tempAdjData: any) => {
+    const submitAdjudication = async(currLaneEntry: any, comboData: any) => {
 
         try{
-
             let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == eventPreview.eventData.dataStreamId);
 
-            let query = await ds.fetchObservations(new ObservationFilter({resultTime: `${eventPreview.eventData.startTime}/${eventPreview.eventData.startTime}`}), 1)
+            let query = await ds.searchObservations(new ObservationFilter({resultTime: `${eventPreview.eventData.startTime}/${eventPreview.eventData.endTime}`}), 1)
 
             var occupancyObservation = await query.nextPage();
 
@@ -146,12 +147,28 @@ export function EventPreview() {
 
             let adjControlStream = streams.find((stream: typeof ControlStream) => isAdjudicationControlStream(stream));
 
+
             if (!adjControlStream){
                 console.error("no report control streams");
                 return;
             }
 
-            const response = await sendCommand(currLaneEntry.parentNode, adjControlStream.properties.id, generateAdjudicationCommandJSON(tempAdjData.feedback, tempAdjData.adjudicationCode, tempAdjData.isotopes, tempAdjData.secondaryInspectionStatus, tempAdjData.filePath, tempAdjData.occupancyId, tempAdjData.vehicleId));
+            let cmdJson = generateAdjudicationCommandJSON(
+                comboData.feedback,
+                comboData.adjudicationCode,
+                comboData.isotopes,
+                comboData.secondaryInspectionStatus,
+                comboData.filePath,
+                comboData.occupancyId,
+                comboData.vehicleId
+            )
+
+            const response = await sendCommand(
+                currLaneEntry.parentNode,
+                adjControlStream.properties.id,
+                cmdJson
+            );
+
 
             if (!response.ok) {
                 setAdjSnackMsg('Adjudication failed to submit.')
@@ -159,8 +176,11 @@ export function EventPreview() {
                 return;
             }
 
-            dispatch(updateSelectedEventAdjudication(tempAdjData));
-            // TODO: adjudication status after submission
+            dispatch(updateSelectedEventAdjudication(comboData));
+
+            setAdjSnackMsg('Adjudication successful for Occupancy ID: ' + eventPreview.eventData.occupancyId);
+            setColorStatus('success')
+
 
         }catch(error){
             setAdjSnackMsg('Adjudication failed to submit.')
@@ -170,9 +190,7 @@ export function EventPreview() {
             resetAdjudicationData();
             handleCloseRounded();
         }
-
     }
-
 
     const resetAdjudicationData = () => {
         disconnectDSArray(gammaDatasources);
