@@ -6,10 +6,8 @@ export async function sendCommand(node: INode, controlStreamId: string, command:
     console.log("[Command Generation] Body:", command);
     let ep = node.getConnectedSystemsEndpoint(false) + `/controlstreams/${controlStreamId}/commands`
 
-    console.log("ep", ep)
-    console.log("command", command)
 
-    let response = await fetch(ep, {
+    return await fetch(ep, {
         method: "POST",
         headers: {
             ...node.getBasicAuthHeader(),
@@ -18,10 +16,6 @@ export async function sendCommand(node: INode, controlStreamId: string, command:
         mode: 'cors',
         body: command
     });
-
-    console.log("response: ", response)
-
-    return response;
 }
 
 

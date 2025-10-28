@@ -14,7 +14,6 @@ import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 
 
-
 export default function Media({datasources, currentLane}: {datasources: any, currentLane: string}) {
 
     const [chartReady, setChartReady] = useState<boolean>(false);
@@ -24,7 +23,6 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
     const [videoStreams, setVideoStreams] = useState<typeof ControlStream[]>([]);
     const [currentPage, setCurrentPage] = useState(0);
 
-    const [currentNode, setCurrentNode] = useState(null);
 
     // send command to ffmpeg driver to start the video stream
     // returns the path the playlist file MU8 file
