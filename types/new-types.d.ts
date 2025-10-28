@@ -22,7 +22,7 @@ export interface IEventTableData {
   adjudicatedCode?: number; // Adjudication code for event
   isAdjudicated?: boolean;
   foiId: string;
-  videoFiles: string[]
+  videoPaths: string[]
 }
 
 export interface INationalTableData {

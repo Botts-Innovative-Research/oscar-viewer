@@ -99,3 +99,4 @@ export const SPEED_DEF = radUri + "SpeedTime";
 export const NATIONAL_DEF =  radUri + "NumOccupancies";
 export const START_DEF =  smlUri + "StartDateTime";
 export const END_DEF =  smlUri + "EndDateTime";
+export const HLS_VIDEO_DEF =  smlUri + "StreamControl";

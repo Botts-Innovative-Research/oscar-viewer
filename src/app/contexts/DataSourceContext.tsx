@@ -157,15 +157,10 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             })
         }));
 
-
-
         // dispatch(setDatastreams(allDatastreams));
         dispatch(setLaneMap(allLanes));
         laneMapRef.current = allLanes;
-
     }
-
-
 
     useEffect(() => {
         const init = async () => {
@@ -175,7 +170,6 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
         init();
     }, [nodes.length]);
-
 
     return (
         <>

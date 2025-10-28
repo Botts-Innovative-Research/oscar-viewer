@@ -26,7 +26,7 @@ export class EventTableData implements IEventTableData {
     observationId: string;
     isAdjudicated: boolean;
     foiId: string;
-    videoFiles: string[]
+    videoPaths: string[]
 
     constructor(id: number, laneId: string, msgValue: any, observationId: string, foiId: string,  adjudicatedData: AdjudicationData | null = null) {
 
@@ -53,20 +53,7 @@ export class EventTableData implements IEventTableData {
         this.observationId = observationId;
         this.secondaryInspection = msgValue.secondaryInspection;
         this.foiId = foiId;
-        let videoPath = msgValue.videoFile
-
-        if(videoPath){
-            let splitPaths = videoPath.split(",");
-            console.log("split paths: ", splitPaths)
-
-            //TODO: videoFiles will be comma separated so split by comma and then add to array
-
-            let videoOutputPaths = splitPaths.map((path: string) => path.replace("./web", "http://localhost:8282"))
-
-            console.log("split", videoOutputPaths)
-            this.videoFiles = videoOutputPaths
-
-        }
+        this.videoPaths = msgValue.videoPaths
     }
 
     adjudicatedUser?: string;

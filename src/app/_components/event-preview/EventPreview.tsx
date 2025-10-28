@@ -149,7 +149,7 @@ export function EventPreview() {
 
 
             if (!adjControlStream){
-                console.error("no report control streams");
+                console.error("no adjudication control streams");
                 return;
             }
 
@@ -343,6 +343,7 @@ export function EventPreview() {
             { datasourcesReady ? (
                     <Box>
                         <EventMedia
+                            selectedNode={laneMapRef.current.get(eventPreview.eventData.laneId).parentNode}
                             datasources={{
                                 gamma: gammaDatasources[0],
                                 neutron: neutronDatasources[0],
