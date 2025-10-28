@@ -3,7 +3,6 @@
  * All Rights Reserved
  */
 
-// create form component
 import {
     Box,
     Button,
@@ -16,19 +15,9 @@ import {
     Typography
 } from "@mui/material";
 import React, {useEffect, useState} from "react";
-import {addNode, selectNodes, setNodes, updateNode} from "@/lib/state/OSHSlice";
+import {addNode, updateNode} from "@/lib/state/OSHSlice";
 import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {useSelector} from "react-redux";
-import {RootState} from "@/lib/state/Store";
-import ConfigData, {
-    getConfigDataStreamID,
-    getConfigSystemID,
-    retrieveLatestConfigDataStream
-} from "@/lib/data/oscar/Config";
-import {selectCurrentUser, setCurrentUser} from "@/lib/state/OSCARClientSlice";
-import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
-import {hashString} from "@/app/utils/Utils";
 
 
 export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
@@ -40,10 +29,6 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     const [openSnack, setOpenSnack] = useState(false);
     const [nodeSnackMsg, setNodeSnackMsg] = useState("");
     const [colorStatus, setColorStatus] = useState("");
-
-    const defaultNode = useSelector((state: RootState) => state.oshSlice.configNode);
-    const currentUser = useSelector(selectCurrentUser)
-    const nodes = useSelector((state: RootState) => selectNodes(state));
 
     const dispatch = useAppDispatch();
 
@@ -99,9 +84,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         } else {
             dispatch(addNode(newNode));
             modeChangeCallback(false, null);
-
         }
-
     }
 
     const handleAddSave = async(e: React.FormEvent)=> {
@@ -122,129 +105,11 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
         // update the list of nodes using the edit/update
         handleButtonAction(e);
-
-
-        // send request to save new/updated nodes to the configs
-        // const response = await saveNodesToConfig();
-        //
-        //
-        // if (response.ok) {
-        //     setNodeSnackMsg('OSCAR Configuration Saved')
-        //     setColorStatus('success')
-        //     setOpenSnack(true);
-        //
-        //     // load the new config
-        //     await handleLoadState();
-        //
-        //
-        // } else {
-        //     setNodeSnackMsg('Failed to save OSCAR Configuration.')
-        //     setColorStatus('error')
-        //     setOpenSnack(true);
-        // }
-    }
-
-
-    const saveNodesToConfig = async() => {
-        //default node is the local node running on the machine unless updated :p
-        if(defaultNode){
-            let configSysId = await getConfigSystemID(defaultNode);
-
-            if(configSysId){
-                let dsId = await getConfigDataStreamID(defaultNode);
-
-                if(!dsId){
-                    setNodeSnackMsg('Failed to find config datastream')
-                    setColorStatus('error')
-                    setOpenSnack(true);
-                }
-
-                let phenomenonTime = new Date().toISOString();
-
-                const user =  currentUser|| "Unknown";
-
-
-                const nodesList = isEditNode
-                    ? nodes.map((n: any) => n.id === newNode.id ? newNode : n)
-                    : [...nodes, newNode];
-
-                // const tempData = new ConfigData(
-                //     phenomenonTime,
-                //     dsId || "",
-                //     user,
-                //     nodesList,
-                //     nodesList.length
-                // );
-                //
-                // let observation = tempData.createConfigurationObservation();
-                //
-                // const endpoint = defaultNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + dsId + "/observations";
-
-                // return await insertObservation(endpoint, observation);
-
-            }
-        }
-    }
-
-
-
-    const handleLoadState = async () => {
-
-        let latestConfigDs = await retrieveLatestConfigDataStream(defaultNode);
-
-        if(latestConfigDs){
-
-            let latestConfigData = await fetchLatestConfigObservation(latestConfigDs);
-
-            if(latestConfigData != null){
-                setNodeSnackMsg('OSCAR State Loaded')
-                setColorStatus('success')
-
-                dispatch(setCurrentUser(latestConfigData[0].user));
-
-                let nodes = latestConfigData[0].nodes;
-
-                nodes = nodes.map((node: any)=>{
-                    return new Node(
-                        {
-                            name: node.name,
-                            address: node.address,
-                            port: node.port,
-                            oshPathRoot: node.oshPathRoot,
-                            csAPIEndpoint: node.csAPIEndpoint,
-                            auth: { username: node.username, password: node.password },
-                            isSecure: node.isSecure,
-                            isDefaultNode: node.isDefaultNode
-                        }
-                    )
-                })
-
-                dispatch(setNodes(nodes));
-            }
-
-        }else{
-            setNodeSnackMsg('Failed to load OSCAR State')
-            setColorStatus('error')
-        }
-        setOpenSnack(true)
-    }
-
-    const fetchLatestConfigObservation = async(ds: any) =>{
-        const observations = await ds.searchObservations(new ObservationFilter({ resultTime: 'latest'}), 1);
-
-        let obsResult = await observations.nextPage();
-        let configData = obsResult.map((obs: any) =>{
-            let data = new ConfigData(obs.phenomenonTime, obs.id, obs.result.user, obs.result.nodes, obs.result.numNodes)
-            return data;
-        })
-
-        return configData;
     }
 
     if (!newNode) {
         return <Container><Typography variant="h4" align="center">Loading...</Typography></Container>
     }
-
 
     const handleCloseSnack = (
         event: React.SyntheticEvent | Event,
@@ -285,16 +150,28 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
     return (
         <Card sx={{margin: 2, width: '100%'}}>
-            <Typography variant="h4" align="center"
-                        sx={{margin: 2}}>{isEditNode ? "Edit Node" : "Add a New Server"}</Typography>
+            <Typography
+                variant="h4"
+                align="left"
+                sx={{margin: 2}}
+            >
+                {
+                    isEditNode ? "Edit Node" : "Add a New Server"
+                }
+            </Typography>
+
             <Box component="form" sx={{margin: 2}}>
                 <Stack spacing={4}>
                     {isEditNode ? <Typography variant={"h6"}>Editing Node: {editNode.id}</Typography> : null}
                     <TextField label="Name" name="name" value={newNode.name} onChange={handleChange}/>
                     <TextField label="Address" name="address" value={newNode.address} onChange={handleChange}/>
                     <TextField label="Port" name="port" value={newNode.port} onChange={handleChange}/>
-                    <TextField label="CS API Endpoint" name="csAPIEndpoint" value={newNode.csAPIEndpoint}
-                               onChange={handleChange}/>
+                    <TextField
+                        label="CS API Endpoint"
+                        name="csAPIEndpoint"
+                        value={newNode.csAPIEndpoint}
+                        onChange={handleChange}
+                    />
                     <TextField label="Username" name="username" value={newNode.auth.username} onChange={handleChange}/>
                     <TextField label="Password" name="password" type={"password"} value={newNode.auth.password}
                                onChange={handleChange}/>
