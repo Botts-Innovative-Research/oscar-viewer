@@ -19,7 +19,7 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
     const [chartReady, setChartReady] = useState<boolean>(false);
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
 
-    const [videoSource, setVideoSource] = useState("");
+    const [videoSource, setVideoSource] = useState(null);
     const [videoStreams, setVideoStreams] = useState<typeof ControlStream[]>([]);
     const [currentPage, setCurrentPage] = useState(0);
 
@@ -46,6 +46,7 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
         const startStream = async () => {
             const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
 
+            currLaneEntry.parentNode.authFileServer();
             const response = await sendCommand(currLaneEntry.parentNode, currentStream.properties.id, generateHLSVideoCommandJSON("startStream"));
 
             if (!response.ok) {
@@ -56,6 +57,8 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
             const responseJson = await response.json();
 
             const streamPath = responseJson?.results?.[0]?.data?.streamPath;
+
+
             if (streamPath)
                 setVideoSource(streamPath);
         }
@@ -174,10 +177,12 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
                                     flexShrink: 0
                                 }}
                             >
-                                <HLSVideoComponent
-                                    videoSource={videoSource}
-                                    selectedNode={laneMapRef.current.get(currentLane).parentNode}
-                                />
+                                {videoSource != null && (
+                                    <HLSVideoComponent
+                                        videoSource={videoSource}
+                                        selectedNode={laneMapRef.current.get(currentLane).parentNode}
+                                    />
+                                )}
                             </Stack>
 
                             <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={currentPage === videoStreams.length - 1}>

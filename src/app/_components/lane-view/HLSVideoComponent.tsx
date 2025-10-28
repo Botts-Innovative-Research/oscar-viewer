@@ -20,6 +20,8 @@ export default function HLSVideoComponent({videoSource, selectedNode}: {videoSou
             ? `https://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${videoSource}`
             : `http://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${videoSource}`
 
+        console.log("src: ", src);
+
         // if (Hls.isSupported()) {
         //     const hls = new Hls();
         //     hls.loadSource(src);
@@ -34,21 +36,33 @@ export default function HLSVideoComponent({videoSource, selectedNode}: {videoSou
 
             const Hls = (await import('hls.js')).default;
 
+            const encoded = btoa(`${selectedNode.auth.username}:${selectedNode.auth.password}`);
+
+
             var hlsjsConfig = {
                 xhrSetup: function(xhr: any, url: any) {
-                    xhr.setRequestHeader(selectedNode.getBasicAuthHeader())
-                    // xhr.setRequestHeader('Authorization', 'Bearer' + btoa(`${selectedNode.auth.username}:${selectedNode.auth.password}`))
+                    xhr.setRequestHeader("Authorization", `Basic ${encoded}`);
                     xhr.withCredentials = true;
                 }
             }
+
+
             if (Hls.isSupported()) {
                 // const hls = new Hls();
                 const hls = new Hls(hlsjsConfig);
+                hls.on(Hls.Events.ERROR, function (event, data) {
+                    console.error("HLS error:", data);
+                });
 
                 hls.loadSource(src);
-                hls.attachMedia(videoRef.current!);
-            } else if (videoRef.current!.canPlayType('application/vnd.apple.mpegURL')) {
-                videoRef.current!.src = src;
+                hls.attachMedia(videoRef.current);
+
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    videoRef.current?.play();
+                });
+            } else if (videoRef.current.canPlayType('application/vnd.apple.mpegURL')) {
+                videoRef.current.src = src;
+                videoRef.current.play();
             }
         };
 
@@ -62,7 +76,6 @@ export default function HLSVideoComponent({videoSource, selectedNode}: {videoSou
             ref={videoRef}
             width="100%"
             height="500px"
-            controls
         />
     )
 }
