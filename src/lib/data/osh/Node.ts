@@ -143,12 +143,7 @@ export class Node implements INode {
             }
         });
 
-        if (response.ok) {
-            return true;
-        } else {
-            console.warn("Error checking for File Server endpoint: ", response);
-            return false;
-        }
+      return response.ok
 
     }
     getOscarServiceSystem() {
@@ -211,8 +206,8 @@ export class Node implements INode {
 
     getFileServerEndpoint(noProtocolPrefix: boolean = false) {
         let protocol = this.isSecure ? 'https' : 'http';
-        return noProtocolPrefix ? `${this.address}:${this.port}/video`
-            : `${protocol}://${this.address}:${this.port}/video`;
+        return noProtocolPrefix ? `${this.address}:${this.port}${this.oshPathRoot}/buckets`
+            : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}/buckets`;
     }
 
     getBasicAuthHeader() {
@@ -407,8 +402,6 @@ export class Node implements INode {
             if (laneEntry.parentNode.id != this.id) continue;
             try {
                 const datastreams = await laneEntry.laneSystem.searchDataStreams(undefined, 100);
-                console.log("laneEntry.laneSystem: ", laneEntry.laneSystem)
-                console.log("datastreams: ", datastreams)
                 while (datastreams.hasNext()) {
                     const datastreamResults = await datastreams.nextPage();
                     laneEntry.addDatastreams(datastreamResults);

@@ -118,6 +118,7 @@ export default function EventDetailsPage() {
 
             { datasourcesReady ? (
                 <EventMedia
+                    selectedNode={laneMapRef.current.get(eventPreview.eventData.laneId).parentNode}
                     datasources={{
                         gamma: gammaDatasources[0],
                         neutron: neutronDatasources[0],
@@ -139,7 +140,6 @@ export default function EventDetailsPage() {
             <Paper variant='outlined' sx={{width: "100%"}}>
                 <AdjudicationDetail event={eventPreview.eventData}/>
             </Paper>
-
         </Stack>
     );
 }

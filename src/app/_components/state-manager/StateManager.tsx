@@ -24,7 +24,7 @@ import { selectDefaultNode, selectNodes, setNodes} from "@/lib/state/OSHSlice";
 import React, {useCallback, useEffect, useState} from "react";
 import { selectCurrentUser, setCurrentUser} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {Node, NodeOptions, insertObservation} from "@/lib/data/osh/Node";
+import {Node, NodeOptions} from "@/lib/data/osh/Node";
 import Divider from "@mui/material/Divider";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import ConfigData, {
@@ -99,40 +99,40 @@ export default function StateManager() {
 
         const user = currentUser || "Unknown";
 
-        const tempData = new ConfigData(
-            phenomenonTime,
-            configDSId || "",
-            user,
-            nodes,
-            nodes.length
-        );
+        // const tempData = new ConfigData(
+        //     phenomenonTime,
+        //     configDSId || "",
+        //     user,
+        //     nodes,
+        //     nodes.length
+        // );
+        //
+        // let observation = tempData.createConfigurationObservation();
+        //
+        // const endpoint = defaultNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + dsId + "/observations";
 
-        let observation = tempData.createConfigurationObservation();
-
-        const endpoint = defaultNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + dsId + "/observations";
-
-        await submitConfig(endpoint, observation);
+        // await submitConfig(endpoint, observation);
     }
 
-    const submitConfig = async(endpoint: string, observation: any) => {
-        try{
-            const response = await insertObservation(endpoint, observation);
-
-            if(response.ok){
-                setSaveSnackMsg('OSCAR Configuration Saved')
-                setSaveColorStatus('success')
-            }else {
-                setSaveSnackMsg('Failed to save OSCAR Configuration')
-                setSaveColorStatus('error')
-            }
-        }catch(error){
-            setSaveSnackMsg('Failed to save config')
-            setSaveColorStatus('error')
-        }
-
-        setOpenSaveSnack(true);
-        setActiveAlert(null)
-    }
+    // const submitConfig = async(endpoint: string, observation: any) => {
+    //     try{
+    //         const response = await insertObservation(endpoint, observation);
+    //
+    //         if(response.ok){
+    //             setSaveSnackMsg('OSCAR Configuration Saved')
+    //             setSaveColorStatus('success')
+    //         }else {
+    //             setSaveSnackMsg('Failed to save OSCAR Configuration')
+    //             setSaveColorStatus('error')
+    //         }
+    //     }catch(error){
+    //         setSaveSnackMsg('Failed to save config')
+    //         setSaveColorStatus('error')
+    //     }
+    //
+    //     setOpenSaveSnack(true);
+    //     setActiveAlert(null)
+    // }
 
 
     const handleLoadState = async () => {
@@ -224,7 +224,7 @@ export default function StateManager() {
     };
 
     const handleSaveLoadState = async() =>{
-        await saveConfigState();
+        // await saveConfigState();
         await handleLoadState();
 
     }

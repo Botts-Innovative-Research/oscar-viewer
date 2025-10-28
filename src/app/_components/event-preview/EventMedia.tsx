@@ -10,7 +10,7 @@ import Box from "@mui/material/Box";
 import {Grid, Paper} from "@mui/material";
 
 
-export default function EventMedia({datasources, eventData, mode}: {datasources: typeof ConSysApi, eventData: EventTableData, mode: string},) {
+export default function EventMedia({selectedNode, datasources, eventData, mode}: {selectedNode: any, datasources: typeof ConSysApi, eventData: EventTableData, mode: string},) {
     let latestGB = useSelector((state: RootState) => selectLatestGB(state));
 
     const [videoCurrentTime, setVideoCurrentTime] = useState<number | null>(null);
@@ -46,7 +46,8 @@ export default function EventMedia({datasources, eventData, mode}: {datasources:
                 </Box>
                 <Box sx={{ width: "100%", height: "100%" }}>
                     <LaneVideoPlayback
-                        videos={eventData?.videoFiles}
+                        selectedNode={selectedNode}
+                        videos={eventData?.videoPaths}
                         modeType={mode}
                         startTime={eventData.startTime}
                         endTime={eventData.endTime}
@@ -84,7 +85,8 @@ export default function EventMedia({datasources, eventData, mode}: {datasources:
                         </Grid>
                         <Grid item xs={12}  md={6}>
                             <LaneVideoPlayback
-                                videos={eventData?.videoFiles}
+                                selectedNode={selectedNode}
+                                videos={eventData?.videoPaths}
                                 modeType={mode}
                                 startTime={eventData.startTime}
                                 endTime={eventData.endTime}

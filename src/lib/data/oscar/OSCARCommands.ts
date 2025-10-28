@@ -6,10 +6,8 @@ export async function sendCommand(node: INode, controlStreamId: string, command:
     console.log("[Command Generation] Body:", command);
     let ep = node.getConnectedSystemsEndpoint(false) + `/controlstreams/${controlStreamId}/commands`
 
-    console.log("ep", ep)
-    console.log("command", command)
 
-    let response = await fetch(ep, {
+    return await fetch(ep, {
         method: "POST",
         headers: {
             ...node.getBasicAuthHeader(),
@@ -18,10 +16,6 @@ export async function sendCommand(node: INode, controlStreamId: string, command:
         mode: 'cors',
         body: command
     });
-
-    console.log("response: ", response)
-
-    return response;
 }
 
 
@@ -36,7 +30,7 @@ export class NationalGenerationCommand {
 
     getJsonString() {
         return JSON.stringify({
-            "params": {
+            "parameters": {
                 "startDateTime": this.startDateTime,
                 "endDateTime": this.endDateTime,
             }
@@ -50,7 +44,7 @@ export function generateNationalCommandJSON(startDateTime: string, endDateTime: 
     console.log("start", startDateTime)
     console.log("end", endDateTime)
     return JSON.stringify({
-        "params": {
+        "parameters": {
             "startDateTime": startDateTime != null ? startDateTime : null,
             "endDateTime": endDateTime != null ? endDateTime : null,
         }
@@ -74,7 +68,7 @@ export class ReportGenerationCommand {
 
     getJsonString() {
         return JSON.stringify({
-                "params": {
+                "parameters": {
                     "reportType": this.reportType,
                     "startDateTime": this.startDateTime,
                     "endDateTime": this.endDateTime,
@@ -124,7 +118,7 @@ export class AdjudicationCommand {
     getJsonString() {
         return JSON.stringify(
             {
-                "params": {
+                "parameters": {
                     "feedback": this.feedback,
                     "adjudicationCode": this.adjudicationCode,
                     "isotopesCount": this.isotopesCount,
@@ -141,7 +135,7 @@ export class AdjudicationCommand {
 
 export function generateAdjudicationCommandJSON(feedback: string, adjudicationCode: AdjudicationCode, isotopes: string, secondaryInspectionStatus: string, filePaths: string, occupancyId: string, vehicleId: string) {
    return JSON.stringify({
-        "params": {
+        "parameters": {
             "feedback": feedback,
             "adjudicationCode": adjudicationCode.code,
             "isotopesCount": isotopes.length,
@@ -151,6 +145,14 @@ export function generateAdjudicationCommandJSON(feedback: string, adjudicationCo
             "filePaths": filePaths,
             "occupancyId": occupancyId,
             "vehicleId": vehicleId
+        }
+    })
+}
+
+export function generateHLSVideoCommandJSON(streamControl: string) {
+    return JSON.stringify({
+        "parameters": {
+            "streamControl": streamControl
         }
     })
 }

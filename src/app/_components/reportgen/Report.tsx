@@ -199,7 +199,7 @@ export default function ReportGeneratorView(){
                                 <TimeRangeSelect onSelect={handleTimeRange} timeRange={selectedTimeRange} />
 
                                 {selectedTimeRange === 'custom' && (
-                                    <NationalDatePicker customStartTime={customStartTime} customEndTime={customEndTime} onCustomStartChange={handleCustomStartTime} onCustomEndChange={handleCustomEndTime}/>
+                                    <NationalDatePicker onCustomStartChange={handleCustomStartTime} onCustomEndChange={handleCustomEndTime}/>
                                 )}
                             </>
                         )}

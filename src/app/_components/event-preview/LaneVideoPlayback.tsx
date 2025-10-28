@@ -11,6 +11,7 @@ import '../../../Styles.css';
 
 
 export class LaneVideoPlaybackProps {
+    selectedNode: any
     videos: string[]
     modeType: string;
     startTime?: string;
@@ -21,14 +22,11 @@ export class LaneVideoPlaybackProps {
     onSelectedVideoIdxChange?: (index: number) => void;
 }
 
-export default function LaneVideoPlayback({videos, modeType, startTime, endTime, syncTime, isPlaying, onVideoTimeUpdate, onSelectedVideoIdxChange}: LaneVideoPlaybackProps) {
+export default function LaneVideoPlayback({selectedNode, videos, modeType, startTime, endTime, syncTime, isPlaying, onVideoTimeUpdate, onSelectedVideoIdxChange}: LaneVideoPlaybackProps) {
     const [videoHeight, setVideoHeight] = useState("320px");
-
     const videoRefs = useRef<HTMLVideoElement[]>([]);
     const [videoDuration, setVideoDuration] = useState<number>(0);
-
     const [isUpdatingFromSlider, setIsUpdatingFromSlider] = useState(false);
-
     const [selVideoIdx, setSelVidIdx] = useState<number>(0);
 
     useEffect(() => {
@@ -156,7 +154,7 @@ export default function LaneVideoPlayback({videos, modeType, startTime, endTime,
                                     muted
                                     playsInline
                                 >
-                                    <source src={video.trim()} type="video/mp4" />
+                                    <source src={selectedNode.isSecure ? `https://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${video.trim()}` : `http://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${video.trim()}`} type="video/mp4" />
                                     Your browser does not support the video tag.
                                 </video>
                             );

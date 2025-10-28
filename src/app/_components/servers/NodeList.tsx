@@ -10,7 +10,7 @@ import {Box, Button, Card} from "@mui/material";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
-import {INode, insertObservation, Node} from "@/lib/data/osh/Node";
+import {INode, Node} from "@/lib/data/osh/Node";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import React from "react";
 import ConfigData, {
@@ -40,12 +40,12 @@ export default function NodeList({modeChangeCallback}: NodeListProps) {
         dispatch(removeNode(nodeID));
         modeChangeCallback(false, null);
         // send request to save new/updated nodes to the configs
-        const response = await saveNodesToConfig(nodeID);
-
-        if (response.ok) {
-            // load the new config
-            await handleLoadState();
-        }
+        // const response = await saveNodesToConfig(nodeID);
+        //
+        // if (response.ok) {
+        //     // load the new config
+        //     await handleLoadState();
+        // }
     }
 
 
@@ -76,12 +76,12 @@ export default function NodeList({modeChangeCallback}: NodeListProps) {
                     nodesList.length
                 );
 
-                let observation = tempData.createConfigurationObservation();
-
-                const endpoint = defaultNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + dsId + "/observations";
-                const response = await insertObservation(endpoint, observation);
-
-                return response;
+                // let observation = tempData.createConfigurationObservation();
+                //
+                // const endpoint = defaultNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + dsId + "/observations";
+                // const response = await insertObservation(endpoint, observation);
+                //
+                // return response;
 
             }
         }

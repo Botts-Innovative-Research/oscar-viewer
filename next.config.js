@@ -11,6 +11,10 @@ module.exports = {
             ...config.resolve.fallback,
             fs: false,
         }
+        config.resolve.alias = {
+            ...config.resolve.alias,
+            'hls.js': 'hls.js/dist/hls.min.js',
+        };
         config.module.rules.push({
             test: /\.worker\.js$/,
             use: { loader: 'worker-loader' },

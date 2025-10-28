@@ -17,7 +17,7 @@ import {
 } from "@mui/material";
 import React, {useEffect, useState} from "react";
 import {addNode, selectNodes, setNodes, updateNode} from "@/lib/state/OSHSlice";
-import {INode, insertObservation, Node, NodeOptions} from "@/lib/data/osh/Node";
+import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
@@ -125,23 +125,23 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
 
         // send request to save new/updated nodes to the configs
-        const response = await saveNodesToConfig();
-
-
-        if (response.ok) {
-            setNodeSnackMsg('OSCAR Configuration Saved')
-            setColorStatus('success')
-            setOpenSnack(true);
-
-            // load the new config
-            await handleLoadState();
-
-
-        } else {
-            setNodeSnackMsg('Failed to save OSCAR Configuration.')
-            setColorStatus('error')
-            setOpenSnack(true);
-        }
+        // const response = await saveNodesToConfig();
+        //
+        //
+        // if (response.ok) {
+        //     setNodeSnackMsg('OSCAR Configuration Saved')
+        //     setColorStatus('success')
+        //     setOpenSnack(true);
+        //
+        //     // load the new config
+        //     await handleLoadState();
+        //
+        //
+        // } else {
+        //     setNodeSnackMsg('Failed to save OSCAR Configuration.')
+        //     setColorStatus('error')
+        //     setOpenSnack(true);
+        // }
     }
 
 
@@ -168,19 +168,19 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                     ? nodes.map((n: any) => n.id === newNode.id ? newNode : n)
                     : [...nodes, newNode];
 
-                const tempData = new ConfigData(
-                    phenomenonTime,
-                    dsId || "",
-                    user,
-                    nodesList,
-                    nodesList.length
-                );
+                // const tempData = new ConfigData(
+                //     phenomenonTime,
+                //     dsId || "",
+                //     user,
+                //     nodesList,
+                //     nodesList.length
+                // );
+                //
+                // let observation = tempData.createConfigurationObservation();
+                //
+                // const endpoint = defaultNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + dsId + "/observations";
 
-                let observation = tempData.createConfigurationObservation();
-
-                const endpoint = defaultNode.getConnectedSystemsEndpoint(false) + "/datastreams/" + dsId + "/observations";
-
-                return await insertObservation(endpoint, observation);
+                // return await insertObservation(endpoint, observation);
 
             }
         }
