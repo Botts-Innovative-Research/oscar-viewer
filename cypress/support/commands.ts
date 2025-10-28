@@ -124,12 +124,12 @@ Cypress.Commands.add('visitEventsPage', () => {
     cy.url().should('include', '/event-log');
 });
 
-Cypress.Commands.add('visitConfigPage', () => {
-    cy.visit('/');
-    cy.get('[data-testid="SaveRoundedIcon"]').click();
-
-    cy.url().should('include', '/savestate/');
-});
+// Cypress.Commands.add('visitConfigPage', () => {
+//     cy.visit('/');
+//     cy.get('[data-testid="SaveRoundedIcon"]').click();
+//
+//     cy.url().should('include', '/savestate/');
+// });
 
 Cypress.Commands.add('visitServerPage', () => {
     cy.visit('/');

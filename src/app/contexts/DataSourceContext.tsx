@@ -8,8 +8,7 @@ import {setLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {AppDispatch, RootState} from "@/lib/state/Store";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
-import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
-import ConfigData, {retrieveLatestConfigDataStream} from "@/lib/data/oscar/Config";
+
 
 
 interface IDataSourceContext {
@@ -31,46 +30,9 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
 
     useEffect(() => {
-        dispatch(initializeDefaultNode());
-    }, []);
-
-
-    const handleLoadState = async () => {
-
-        let latestConfigDs = await retrieveLatestConfigDataStream(configNode);
-
-        if (latestConfigDs) {
-
-            let latestConfigData = await fetchLatestConfigObservation(latestConfigDs);
-
-            if(latestConfigData != null){
-                let nodes = latestConfigData.nodes;
-
-
-                nodes = nodes.map((node: any)=>{
-                    return new Node(
-                        {
-                            name: node.name,
-                            address: node.address,
-                            port: node.port,
-                            oshPathRoot: node.oshPathRoot,
-                            csAPIEndpoint: node.csAPIEndpoint,
-                            auth: { username: node.username, password: node.password },
-                            isSecure: node.isSecure,
-                            isDefaultNode: node.isDefaultNode
-                        }
-                    )
-                })
-
-                dispatch(setNodes(nodes));
-            }else{
-                console.warn("Failed to Load Oscar State: latest observation from config data is null")
-            }
-
-        } else {
-            console.warn('Failed to load OSCAR State')
-        }
-    }
+        if (!nodes || nodes.length == 0)
+            dispatch(initializeDefaultNode());
+    }, [nodes]);
 
 
     const InitializeApplication = useCallback(async () => {
@@ -78,66 +40,24 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         if (!configNode) {
             // if no default node, then just grab the first node in the list and try to use that
             if (nodes.length > 0) {
-                if (nodes[0].isDefaultNode) {
-                    dispatch(changeConfigNode(nodes[0]));
-                    return; // force a rerender...
-                }
+                const defaultNode = nodes.find((n) => n.isDefaultNode || nodes[0])
+
+                dispatch(changeConfigNode(defaultNode))
             }
-            console.error("No config node found in state. Cannot initialize application.");
         }
-        else{
-            console.log("Config Node found: Loading state...")
-            await handleLoadState();
-        }
-    }, [nodes.length]);
+    }, [nodes, configNode]);
 
-    const fetchLatestConfigObservation = async(ds: any) =>{
-        const observations = await ds.searchObservations(new ObservationFilter({ resultTime: 'latest'}), 1);
-
-        let obsResult = await observations.nextPage();
-
-        if(!obsResult) return;
-
-        let configData = obsResult.map((obs: any) =>{
-            let data = new ConfigData(obs.phenomenonTime, obs.id, obs.result.user, obs.result.nodes, obs.result.numNodes)
-            return data;
-        })
-
-        return configData[0];
-    }
-
-    function mapNodeFromConfig(opt: any): Node{
-        return new Node({
-            name: opt.name,
-            address: opt.address,
-            port: opt.port,
-            oshPathRoot: opt.oshPathRoot,
-            csAPIEndpoint: opt.csAPIEndpoint,
-            auth: {
-                username: opt?.auth?.username ? opt.auth.username : opt.username,
-                password: opt?.auth?.password ? opt.auth.password : opt.password,
-            },
-            isSecure: opt.isSecure,
-            isDefaultNode: opt.isDefaultNode,
-            laneAdjMap: opt.laneAdjMap,
-            oscarServiceSystem: opt.oscarServiceSystem
-        });
-    }
 
     const testSysFetch = async () => {
 
-        let newNodes = nodes.map(mapNodeFromConfig);
-
         let allLanes: Map<string, LaneMapEntry> = new Map();
 
-        await Promise.all(newNodes.map(async (node: INode) => {
-
-            //COMMENT THIS LINE OUT WHEN TESTING IN DEV MODE
-            await node.authFileServer();
-
+        await Promise.all(nodes.map(async (node: INode) => {
+            console.log("node", node)
             let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
-
             if(!nodeLaneMap) return;
+
+            await node.authFileServer();
             await node.fetchOscarServiceSystem();
             await node.fetchDatastreams(nodeLaneMap);
             await node.fetchLaneControlStreams(nodeLaneMap);
@@ -151,13 +71,9 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
                 }
             }
 
-
-            nodeLaneMap.forEach((value: LaneMapEntry, key: string) =>{
-                allLanes.set(key,value);
-            })
+            nodeLaneMap.forEach((value: LaneMapEntry, key: string) =>allLanes.set(key,value));
         }));
 
-        // dispatch(setDatastreams(allDatastreams));
         dispatch(setLaneMap(allLanes));
         laneMapRef.current = allLanes;
     }
@@ -167,16 +83,13 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             await InitializeApplication();
             await testSysFetch();
         }
-
         init();
-    }, [nodes.length]);
+    }, [nodes]);
 
     return (
-        <>
-            <DataSourceContext.Provider value={{laneMapRef}}>
-                {children}
-            </DataSourceContext.Provider>
-        </>
+        <DataSourceContext.Provider value={{laneMapRef}}>
+            {children}
+        </DataSourceContext.Provider>
     );
 };
 

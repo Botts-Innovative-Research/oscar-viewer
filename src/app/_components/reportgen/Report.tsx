@@ -228,7 +228,6 @@ export default function ReportGeneratorView(){
                         {generatedURL ? (
                             <Box sx={{ height: "800px", border: "1px solid #ccc", borderRadius: 2, overflow: "hidden"}}>
                                 <iframe width="100%" height="100%" src={generatedURL} style={{ border: "none"}} />
-
                             </Box>
                             ) :
                             <Box
