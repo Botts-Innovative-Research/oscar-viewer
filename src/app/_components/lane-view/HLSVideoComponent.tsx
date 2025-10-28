@@ -1,8 +1,9 @@
 "use client";
 
 import React, {useEffect, useRef} from 'react';
+import {INode} from "@/lib/data/osh/Node";
 
-export default function HLSVideoComponent({videoSource, selectedNode}: {videoSource: string, selectedNode: any}) {
+export default function HLSVideoComponent({videoSource, selectedNode}: {videoSource: string, selectedNode: INode}) {
 
     const videoRef = useRef(null);
 
@@ -33,8 +34,17 @@ export default function HLSVideoComponent({videoSource, selectedNode}: {videoSou
 
             const Hls = (await import('hls.js')).default;
 
+            var hlsjsConfig = {
+                xhrSetup: function(xhr: any, url: any) {
+                    xhr.setRequestHeader(selectedNode.getBasicAuthHeader())
+                    // xhr.setRequestHeader('Authorization', 'Bearer' + btoa(`${selectedNode.auth.username}:${selectedNode.auth.password}`))
+                    xhr.withCredentials = true;
+                }
+            }
             if (Hls.isSupported()) {
-                const hls = new Hls();
+                // const hls = new Hls();
+                const hls = new Hls(hlsjsConfig);
+
                 hls.loadSource(src);
                 hls.attachMedia(videoRef.current!);
             } else if (videoRef.current!.canPlayType('application/vnd.apple.mpegURL')) {

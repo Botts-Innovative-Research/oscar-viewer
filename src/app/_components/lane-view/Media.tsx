@@ -21,6 +21,10 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
 
     const [videoSource, setVideoSource] = useState("");
+    const [videoStreams, setVideoStreams] = useState<typeof ControlStream[]>([]);
+    const [currentPage, setCurrentPage] = useState(0);
+
+    const [currentNode, setCurrentNode] = useState(null);
 
     // send command to ffmpeg driver to start the video stream
     // returns the path the playlist file MU8 file
@@ -28,75 +32,75 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
     // hls js
 
     useEffect(() => {
-        sendStartHLSCommand();
-
-        return () => {
-            sendEndHLSCommand();
-        }
-    }, []);
-
-    const sendStartHLSCommand = async() =>  {
-        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-
-        let streams = await currLaneEntry.parentNode.fetchNodeControlStreams();
-
-        let videoControlStream = streams.find((stream: typeof ControlStream) => isHLSVideoControlStream(stream));
-
-        if (!videoControlStream){
-            console.error("no video control stream");
-            return;
-        }
-
-        const response = await sendCommand(
-            currLaneEntry.parentNode,
-            videoControlStream.properties.id,
-            generateHLSVideoCommandJSON("startStream")
-        )
-
-        if(!response.ok) {
-            console.log("failed to get live video stream to start")
-            return;
-        }
-
-        let responseJson = await response.json();
-
-        if (!responseJson)
-            return;
-
-        console.log(responseJson.results)
-
-        let videoResults = responseJson?.results[0]?.data?.streamPath;
-        if (videoResults != null)
-            setVideoSource(videoResults);
-    }
-
-
-    const sendEndHLSCommand = async() =>  {
-        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-
-        let streams = await currLaneEntry.parentNode.fetchNodeControlStreams();
-
-        let videoControlStream = streams.find((stream: typeof ControlStream) => isHLSVideoControlStream(stream));
-
-        if (!videoControlStream){
-            console.error("no video control stream");
-            return;
-        }
-
-        const response = await sendCommand(
-            currLaneEntry.parentNode,
-            videoControlStream.properties.id,
-            generateHLSVideoCommandJSON("endStream")
-        )
-
-        if(!response.ok) {
-            console.log("Error: Failed to stop live stream of video!")
-            return;
-        }
-    }
+        fetchVideoControlStreams()
+    }, [currentLane]);
 
     useEffect(() => {
 
+        if (videoStreams.length === 0)
+            return;
+
+        const currentStream = videoStreams[currentPage];
+        if (!currentStream)
+            return;
+
+
+        const startStream = async () => {
+            const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+
+            const response = await sendCommand(currLaneEntry.parentNode, currentStream.properties.id, generateHLSVideoCommandJSON("startStream"));
+
+            if (!response.ok) {
+                console.error("Failed to start stream");
+                return;
+            }
+
+            const responseJson = await response.json();
+
+            const streamPath = responseJson?.results?.[0]?.data?.streamPath;
+            if (streamPath)
+                setVideoSource(streamPath);
+        }
+
+        const stopPreviousStream = async () => {
+            const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+
+            const prevStream = videoStreams[currentPage - 1];
+            if (!prevStream)
+                return;
+
+            await sendCommand(currLaneEntry.parentNode, prevStream.properties.id, generateHLSVideoCommandJSON("endStream"));
+        }
+
+        stopPreviousStream().then(startStream);
+
+        return () => {
+            sendCommand(laneMapRef.current.get(currentLane).parentNode, currentStream.properties.id, generateHLSVideoCommandJSON("endStream"));
+        }
+        // sendStartHLSCommand();
+        //
+        // return () => {
+        //     sendEndHLSCommand();
+        // }
+    }, [currentPage, videoStreams]);
+
+    const fetchVideoControlStreams = async () => {
+        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+
+        let streams = await currLaneEntry.parentNode.fetchNodeControlStreams();
+
+        let videoControlStreams = streams.filter((stream: typeof ControlStream) => isHLSVideoControlStream(stream));
+
+        if (!videoControlStreams || videoControlStreams.length == 0){
+            console.error("no video control stream");
+            return;
+        }
+
+        setVideoStreams(videoControlStreams)
+    }
+
+
+    useEffect(() => {
         async function connectDataSources(){
             if(!chartReady) return;
 
@@ -122,11 +126,15 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
     }, [datasources, chartReady]);
 
     const handleNextPage = () =>{
-
+        if (currentPage < videoStreams.length - 1) {
+            setCurrentPage(prev => prev + 1);
+        }
     }
 
     const handlePreviousPage = () =>{
-
+        if (currentPage > 0) {
+            setCurrentPage(prev => prev - 1)
+        }
     }
 
     return (
@@ -152,7 +160,7 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
                             justifyContent: "center",
                             alignItems: "center",
                         }}>
-                            <IconButton onClick={handlePreviousPage} sx={{margin: 2, cursor: 'pointer'}}>
+                            <IconButton onClick={handlePreviousPage} sx={{margin: 2, cursor: 'pointer'}} disabled={currentPage === 0}>
                                 <NavigateBeforeIcon/>
                             </IconButton>
                             <Stack
@@ -174,7 +182,7 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
                                 />
                             </Stack>
 
-                            <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}}>
+                            <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={currentPage === videoStreams.length - 1}>
                                 <NavigateNextIcon/>
                             </IconButton>
                         </Box>
