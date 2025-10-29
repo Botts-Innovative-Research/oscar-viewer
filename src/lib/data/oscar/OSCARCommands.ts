@@ -6,7 +6,6 @@ export async function sendCommand(node: INode, controlStreamId: string, command:
     console.log("[Command Generation] Body:", command);
     let ep = node.getConnectedSystemsEndpoint(false) + `/controlstreams/${controlStreamId}/commands`
 
-
     return await fetch(ep, {
         method: "POST",
         headers: {
@@ -81,7 +80,7 @@ export class ReportGenerationCommand {
 
 export function generateReportCommandJSON(startDateTime: string, endDateTime: string, reportType: string, laneUID: string, eventType: string) {
     return JSON.stringify({
-        "params": {
+        "parameters": {
             "reportType": reportType,
             "startDateTime": startDateTime,
             "endDateTime": endDateTime,
@@ -133,26 +132,27 @@ export class AdjudicationCommand {
     }
 }
 
-export function generateAdjudicationCommandJSON(feedback: string, adjudicationCode: AdjudicationCode, isotopes: string, secondaryInspectionStatus: string, filePaths: string, occupancyId: string, vehicleId: string) {
-   return JSON.stringify({
+export function generateAdjudicationCommandJSON(feedback: string, adjudicationCode: AdjudicationCode, isotopes: string[], secondaryInspectionStatus: string, filePaths: string[], observationId: string, vehicleId: string) {
+
+    return JSON.stringify({
         "parameters": {
             "feedback": feedback,
             "adjudicationCode": adjudicationCode.code,
-            "isotopesCount": isotopes.length,
-            "isotopes": isotopes,
+            "isotopesCount": isotopes?.length ?? 0,
+            "isotopes": isotopes ?? [],
             "secondaryInspectionStatus": secondaryInspectionStatus,
-            "filePathCount": filePaths.length,
-            "filePaths": filePaths,
-            "occupancyId": occupancyId,
-            "vehicleId": vehicleId
+            "filePathCount": filePaths?.length ?? 0,
+            "filePaths": filePaths ?? [],
+            "occupancyId": observationId,
+            "vehicleId": vehicleId ?? ""
         }
     })
 }
 
-export function generateHLSVideoCommandJSON(streamControl: string) {
+export function generateHLSVideoCommandJSON(streamControl: boolean) {
     return JSON.stringify({
         "parameters": {
-            "streamControl": streamControl
+            "streamControl": streamControl ? "startStream" : "endStream"
         }
     })
 }

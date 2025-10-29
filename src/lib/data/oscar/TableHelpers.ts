@@ -11,7 +11,8 @@ export class EventTableData implements IEventTableData {
     id: number;
     secondaryInspection?: string;
     laneId: string;
-    occupancyId: string;
+    observationId: string; // observation ID
+    occupancyCount: string; // occupancy count in result
     startTime: string;
     endTime: string;
     maxGamma?: number;
@@ -23,7 +24,6 @@ export class EventTableData implements IEventTableData {
     laneSystemId?: string; // lane system id
     rpmSystemId?: string; // rpm id
     dataStreamId?: string;
-    observationId: string;
     isAdjudicated: boolean;
     foiId: string;
     videoPaths: string[]
@@ -32,7 +32,7 @@ export class EventTableData implements IEventTableData {
 
         this.id = id
         this.laneId = laneId
-        this.occupancyId = msgValue.occupancyCount;
+        this.occupancyCount = msgValue.occupancyCount;
         this.startTime = msgValue.startTime;
         this.endTime = msgValue.endTime;
         this.maxGamma = msgValue.maxGamma > -1 ? msgValue.maxGamma : null;

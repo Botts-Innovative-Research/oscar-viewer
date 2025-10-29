@@ -13,9 +13,9 @@ import { LaneWithLocation } from "types/new-types";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import "leaflet/dist/leaflet.css"
 import {
-    isGammaDatastream, isLocationDatastream,
-    isNeutronDatastream, isSiteDiagramPathDatastream,
-    isTamperDatastream,
+    isGammaDataStream, isLocationDataStream,
+    isNeutronDataStream, isSiteDiagramPathDataStream,
+    isTamperDataStream,
 } from "@/lib/data/oscar/Utilities";
 import {setCurrentLane} from "@/lib/state/LaneViewSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
@@ -93,18 +93,18 @@ export default function MapComponent() {
                 let batchDS = lane.datasourcesBatch[idx];
                 let laneDSColl = laneDSMap.get(laneid);
 
-                if (isLocationDatastream(ds)) {
+                if (isLocationDataStream(ds)) {
                     laneDSColl.addDS('locBatch', batchDS);
                     locationDs.push(ds);
                 }
 
-                if (isGammaDatastream(ds)) {
+                if (isGammaDataStream(ds)) {
                     laneDSColl.addDS('gammaRT', rtDS);
                 }
-                if (isNeutronDatastream(ds)) {
+                if (isNeutronDataStream(ds)) {
                     laneDSColl.addDS('neutronRT', rtDS);
                 }
-                if (isTamperDatastream(ds)) {
+                if (isTamperDataStream(ds)) {
                     laneDSColl.addDS('tamperRT', rtDS);
                 }
             }
@@ -251,7 +251,7 @@ export default function MapComponent() {
                 console.warn("no datastreams");
 
             for (const ds of dataStreams) {
-                if(isSiteDiagramPathDatastream(ds)){
+                if(isSiteDiagramPathDataStream(ds)){
                     let obsCollections = await ds.searchObservations(new ObservationFilter({resultTime: 'latest'}), 1);
 
                     let results = await obsCollections.nextPage();

@@ -12,7 +12,7 @@ export interface IEventTableData {
   id: number; // Unique ID for event
   secondaryInspection?: string;
   laneId: string; // Lane ID
-  occupancyId: string;  // Occupancy ID
+  occupancyCount: string;  // Occupancy ID
   startTime: string;  // Start time of occupancy/event
   endTime: string;  // End time of occupancy/event
   maxGamma?: number; // Max gamma count

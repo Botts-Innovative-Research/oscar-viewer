@@ -19,9 +19,9 @@ import {DataGrid, GridCellParams, gridClasses, GridColDef} from "@mui/x-data-gri
 import CustomToolbar from "@/app/_components/CustomToolbar";
 import {selectCurrentLane} from "@/lib/state/LaneViewSlice";
 import {
-    isGammaDatastream,
-    isNeutronDatastream,
-    isTamperDatastream,
+    isGammaDataStream,
+    isNeutronDataStream,
+    isTamperDataStream,
 } from "@/lib/data/oscar/Utilities";
 import { convertToMap } from "@/app/utils/Utils";
 import {ALARM_DEF, TAMPER_STATUS_DEF} from "@/lib/data/Constants";
@@ -50,13 +50,13 @@ export default function StatusTables({laneMap}: TableProps){
 
         laneMap.forEach((entry: LaneMapEntry) => {
             entry.datastreams.forEach((ds: typeof DataStream) => {
-                if (!hasGamma && isGammaDatastream(ds)) {
+                if (!hasGamma && isGammaDataStream(ds)) {
                     hasGamma = true;
                 }
-                if (!hasNeutron && isNeutronDatastream(ds)) {
+                if (!hasNeutron && isNeutronDataStream(ds)) {
                     hasNeutron = true;
                 }
-                if (!hasTamper && isTamperDatastream(ds)) {
+                if (!hasTamper && isTamperDataStream(ds)) {
                     hasTamper = true;
 
                 }

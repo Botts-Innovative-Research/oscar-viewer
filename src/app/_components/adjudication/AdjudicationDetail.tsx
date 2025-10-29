@@ -22,7 +22,6 @@ import React, {ChangeEvent, useContext, useRef, useState} from "react";
 import IsotopeSelect from "./IsotopeSelect";
 import AdjudicationLog from "./AdjudicationLog"
 import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
-import {useDispatch} from "react-redux";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
@@ -50,12 +49,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
     const [shouldFetchLogs, setShouldFetchLogs] = useState<boolean>(false);
-    const adjudication = props.event ? new AdjudicationData(null, props.event.occupancyId, props.event.rpmSystemId, new Date().toISOString()) : null;
+
+    const adjudication = props.event ? new AdjudicationData(new Date().toISOString(), props.event.occupancyCount, props.event.observationId, props.event.rpmSystemId) : null;
+
     const [adjData, setAdjData] = useState<AdjudicationData>(adjudication);
 
-    const dispatch = useDispatch();
-
-    //snackbar
     const [adjSnackMsg, setAdjSnackMsg] = useState('');
     const [colorStatus, setColorStatus] = useState('');
     const [openSnack, setOpenSnack] = useState(false);
@@ -69,6 +67,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         const files = Array.from(e.target.files);
         setUploadedFiles([...uploadedFiles, ...files]);
     };
+
     const handleFileDelete = (fileIndex: number) => {
         setUploadedFiles((prevState) => prevState.filter((_, i) => i !== fileIndex));
     }
@@ -84,13 +83,12 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const handleIsotopeSelect = (value: string[]) => {
         let valueString = value.join(', ');
         let tAdjData = adjData;
-        tAdjData.isotopes = valueString;
+        tAdjData.isotopes.push(valueString);
         setIsotope(value);
         setAdjData(tAdjData);
     }
 
     const handleInspectionSelect = (value: string) => {
-
         let tAdjData = adjData;
         tAdjData.secondaryInspectionStatus = value;
         setSecondaryInspection(value);
@@ -123,7 +121,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         setFeedback('')
     }
 
-    const handleAdjudication = async () => {
+    const sendAdjudicationData = async () => {
         if(adjData.adjudicationCode === null || !adjData.adjudicationCode || adjData.adjudicationCode === AdjudicationCodes.codes[0]){
             setAdjSnackMsg("Please selected a valid adjudication code before submitting.");
             setColorStatus('error');
@@ -131,15 +129,20 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             return;
         }
 
-        let phenomenonTime = new Date().toISOString();
-        let tempAdjData: AdjudicationData = adjData;
-        tempAdjData.setTime(phenomenonTime);
+        const phenomenonTime = new Date().toISOString();
 
+        let tempAdjData: AdjudicationData = adjData;
+
+        tempAdjData.setTime(phenomenonTime);
+        tempAdjData.setFilePaths(adjData.filePaths);
+        tempAdjData.setAdjudicationCode(adjData.adjudicationCode);
+        tempAdjData.setVehicleId(adjData.vehicleId);
+        tempAdjData.setFeedback(adjData.feedback);
+        tempAdjData.setIsotopes(adjData.isotopes);
 
         // send to server
         const currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-
         await submitAdjudication(currLaneEntry, tempAdjData)
     }
 
@@ -149,10 +152,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == props.event.dataStreamId);
 
-            let query = await ds.fetchObservations(new ObservationFilter({resultTime: `${props.event.startTime}/${props.event.startTime}`}), 1)
+            let query = await ds.searchObservations(new ObservationFilter({resultTime: `${props.event.startTime}/${props.event.endTime}`}), 1)
 
-            var occupancyObservation = await query.nextPage();
-
+            const occupancyObservation = await query.nextPage();
             if (!occupancyObservation) {
                 setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
                 setColorStatus('error')
@@ -163,21 +165,33 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             let streams = await currLaneEntry.parentNode.fetchNodeControlStreams();
 
             let adjControlStream = streams.find((stream: typeof ControlStream) => isAdjudicationControlStream(stream));
-
             if (!adjControlStream){
-                console.error("no report control streams");
+                console.error("Failed: cannot find adjudication control stream for occupancy.");
                 return;
             }
 
-            const response = await sendCommand(currLaneEntry.parentNode, adjControlStream.properties.id, generateAdjudicationCommandJSON(tempAdjData.feedback, tempAdjData.adjudicationCode, tempAdjData.isotopes, tempAdjData.secondaryInspectionStatus, tempAdjData.filePath, tempAdjData.occupancyId, tempAdjData.vehicleId));
+            const response = await sendCommand(
+                currLaneEntry.parentNode,
+                adjControlStream.properties.id,
+                generateAdjudicationCommandJSON(
+                    tempAdjData.feedback,
+                    tempAdjData.adjudicationCode,
+                    tempAdjData.isotopes,
+                    tempAdjData.secondaryInspectionStatus,
+                    tempAdjData.filePaths,
+                    tempAdjData.observationId,
+                    tempAdjData.vehicleId
+                )
+            );
 
             if (!response.ok) {
                 setAdjSnackMsg('Adjudication failed to submit.')
                 setColorStatus('error')
                 return;
-            }
+        }
 
-            // TODO: adjudication status after submission
+            setAdjSnackMsg('Adjudication successful for Occupancy ID: ' + props.event.occupancyCount);
+            setColorStatus('success')
 
         }catch(error){
             setAdjSnackMsg('Adjudication failed to submit.')
@@ -195,10 +209,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     }
 
     const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
-        if (reason === 'clickaway') {
+        if (reason === 'clickaway')
             return;
-        }
-
         setOpenSnack(false);
     };
 
@@ -309,7 +321,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                         disableElevation
                         variant={"contained"}
                         color={"success"}
-                        onClick={handleAdjudication}
+                        onClick={sendAdjudicationData}
                     >
                         Submit
                     </Button>

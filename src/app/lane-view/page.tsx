@@ -12,10 +12,10 @@ import {RootState} from "@/lib/state/Store";
 import React, {useCallback, useContext, useEffect, useState} from "react";
 import {
 
-    isGammaDatastream,
-    isNeutronDatastream,
-    isTamperDatastream,
-    isThresholdDatastream, isVideoDatastream
+    isGammaDataStream,
+    isNeutronDataStream,
+    isTamperDataStream,
+    isThresholdDataStream, isVideoDataStream
 } from "@/lib/data/oscar/Utilities";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useAppDispatch} from "@/lib/state/Hooks";
@@ -71,25 +71,25 @@ export default function LaneViewPage() {
             const ds = lane.datastreams[i]
             let rtDS = lane.datasourcesRealtime[i];
 
-            if (isGammaDatastream(ds)) {
+            if (isGammaDataStream(ds)) {
                 laneDsCollection.addDS('gammaRT', rtDS);
                 setGammaDS(rtDS)
             }
-            if (isNeutronDatastream(ds)) {
+            if (isNeutronDataStream(ds)) {
 
                 laneDsCollection.addDS('neutronRT', rtDS);
                 setNeutronDS(rtDS);
             }
-            if (isTamperDatastream(ds)) {
+            if (isTamperDataStream(ds)) {
                 laneDsCollection.addDS('tamperRT', rtDS);
                 setTamperDS(rtDS)
 
             }
-            if (isThresholdDatastream(ds)) {
+            if (isThresholdDataStream(ds)) {
                 laneDsCollection?.addDS('gammaTrshldRT', rtDS);
                 setThresholdDS(rtDS);
             }
-            if (isVideoDatastream(ds)) {
+            if (isVideoDataStream(ds)) {
                 const dsSystemId = ds.properties['system@id'];
 
                 for(let system of lane.systems) {

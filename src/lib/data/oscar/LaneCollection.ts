@@ -13,12 +13,12 @@ import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
 
 import {
-    isConnectionDatastream,
-    isGammaDatastream,
-    isNeutronDatastream,
-    isOccupancyDatastream,
-    isTamperDatastream, isThresholdDatastream,
-    isVideoDatastream
+    isConnectionDataStream,
+    isGammaDataStream,
+    isNeutronDataStream,
+    isOccupancyDataStream,
+    isTamperDataStream, isThresholdDataStream,
+    isVideoDataStream
 } from "./Utilities";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 
@@ -82,19 +82,19 @@ export class LaneMapEntry {
         this.systems.push(...systems);
     }
 
-    addDatastream(datastream: any) {
+    addDataStream(datastream: any) {
         this.datastreams.push(datastream);
     }
 
-    addDatastreams(datastreams: any[]) {
+    addDataStreams(datastreams: any[]) {
         this.datastreams.push(...datastreams);
     }
 
-    addDatasource(datasource: any) {
+    addDataSource(datasource: any) {
         this.datasources.push(datasource);
     }
 
-    addDatasources(datasources: any[]) {
+    addDataSources(datasources: any[]) {
         this.datasources.push(...datasources);
     }
     setLaneName(name: string){
@@ -105,10 +105,10 @@ export class LaneMapEntry {
         this.controlStreams.push(...controlStreams)
     }
 
-    async getAdjudicationDatastream(dsId: string) {
+    async getAdjudicationDataStream(dsId: string) {
         let isSecure = this.parentNode.isSecure;
         let url = this.parentNode.getConnectedSystemsEndpoint(true);
-        console.log("[ADJ-log] Creating Adjudication Datastream: ", this, url);
+        console.log("[ADJ-log] Creating Adjudication DataStream: ", this, url);
 
         let dsApi = new DataStreams({
             // streamProtocol: isSecure ? "https" : "http",
@@ -120,7 +120,7 @@ export class LaneMapEntry {
             },
         });
         let datastream = await dsApi.getDataStreamById(dsId);
-        console.log("[ADJ-log] Adjudication Datastream: ", datastream);
+        console.log("[ADJ-log] Adjudication DataStream: ", datastream);
         return datastream;
     }
 
@@ -151,7 +151,7 @@ export class LaneMapEntry {
                 let dsRT: typeof ConSysApi = null;
                 let dsBatch: typeof ConSysApi = null;
 
-                if (isVideoDatastream(dsObj)) {
+                if (isVideoDataStream(dsObj)) {
                     dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
                         protocol: dsObj.networkProperties.streamProtocol,
                         endpointUrl: dsObj.networkProperties.endpointUrl,
@@ -210,7 +210,7 @@ export class LaneMapEntry {
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
-            responseFormat: isVideoDatastream(datastream) ? 'application/swe+binary' : 'application/swe+json',
+            responseFormat: isVideoDataStream(datastream) ? 'application/swe+binary' : 'application/swe+json',
             mode: Mode.REPLAY,
             startTime: startTime,
             endTime: endTime
@@ -224,7 +224,7 @@ export class LaneMapEntry {
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
-            responseFormat: isVideoDatastream(datastream) ? 'application/swe+binary' : 'application/swe+json',
+            responseFormat: isVideoDataStream(datastream) ? 'application/swe+binary' : 'application/swe+json',
             mode: Mode.BATCH,
             startTime: startTime,
             endTime: endTime
@@ -272,33 +272,33 @@ export class LaneMapEntry {
 
             const datasourceBatch = this.createBatchConSysApiFromDataStream(ds, startTime, endTime);
 
-            if (isOccupancyDatastream(ds)) {
+            if (isOccupancyDataStream(ds)) {
                 let occArray = dsMap.get('occ')!;
 
                 occArray.push(datasourceBatch);
             }
 
-            if(isGammaDatastream(ds)){
+            if(isGammaDataStream(ds)){
                 let gammaArray = dsMap.get('gamma')!;
                 gammaArray.push(datasourceBatch);
             }
 
-            if(isNeutronDatastream(ds)){
+            if(isNeutronDataStream(ds)){
                 let neutronArray = dsMap.get('neutron')!;
                 neutronArray.push(datasourceBatch);
             }
 
-            if(isTamperDatastream(ds)){
+            if(isTamperDataStream(ds)){
                 let tamperArray = dsMap.get('tamper')!;
                 tamperArray.push(datasourceBatch);
             }
 
-            if(isThresholdDatastream(ds)){
+            if(isThresholdDataStream(ds)){
                 let gammaTrshldArray = dsMap.get('gammaTrshld')!;
                 gammaTrshldArray.push(datasourceBatch);
             }
 
-            if(isConnectionDatastream(ds)){
+            if(isConnectionDataStream(ds)){
                 let connectionArray = dsMap.get('connection')!;
                 connectionArray.push(datasourceBatch);
             }

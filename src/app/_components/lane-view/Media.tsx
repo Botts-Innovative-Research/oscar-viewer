@@ -46,8 +46,7 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
         const startStream = async () => {
             const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
 
-            currLaneEntry.parentNode.authFileServer();
-            const response = await sendCommand(currLaneEntry.parentNode, currentStream.properties.id, generateHLSVideoCommandJSON("startStream"));
+            const response = await sendCommand(currLaneEntry.parentNode, currentStream.properties.id, generateHLSVideoCommandJSON(true));
 
             if (!response.ok) {
                 console.error("Failed to start stream");
@@ -70,13 +69,13 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
             if (!prevStream)
                 return;
 
-            await sendCommand(currLaneEntry.parentNode, prevStream.properties.id, generateHLSVideoCommandJSON("endStream"));
+            await sendCommand(currLaneEntry.parentNode, prevStream.properties.id, generateHLSVideoCommandJSON(false));
         }
 
         stopPreviousStream().then(startStream);
 
         return () => {
-            sendCommand(laneMapRef.current.get(currentLane).parentNode, currentStream.properties.id, generateHLSVideoCommandJSON("endStream"));
+            sendCommand(laneMapRef.current.get(currentLane).parentNode, currentStream.properties.id, generateHLSVideoCommandJSON(false));
         }
         // sendStartHLSCommand();
         //
@@ -177,7 +176,7 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
                                     flexShrink: 0
                                 }}
                             >
-                                {videoSource != null && (
+                                {videoSource != null && laneMapRef.current.get(currentLane).parentNode != null &&(
                                     <HLSVideoComponent
                                         videoSource={videoSource}
                                         selectedNode={laneMapRef.current.get(currentLane).parentNode}

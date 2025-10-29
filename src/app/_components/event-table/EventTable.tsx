@@ -33,7 +33,7 @@ import {
 } from "@/lib/state/EventDataSlice";
 import {useRouter} from "next/dist/client/components/navigation";
 import {getObservations} from "@/app/utils/ChartUtils";
-import {isThresholdDatastream} from "@/lib/data/oscar/Utilities";
+import {isThresholdDataStream} from "@/lib/data/oscar/Utilities";
 import {convertToMap, hashString} from "@/app/utils/Utils";
 import {OCCUPANCY_PILLAR_DEF} from "@/lib/data/Constants";
 
@@ -227,7 +227,7 @@ export default function EventTable({
             flex: 1,
         },
         {
-            field: 'occupancyId',
+            field: 'occupancyCount',
             headerName: 'Occupancy ID',
             type: 'string',
             minWidth: 125,
@@ -362,7 +362,7 @@ export default function EventTable({
 
     async function getLatestGB(eventData: any){
         for (const lane of laneMap.values()){
-            let datastreams = lane.datastreams.filter((ds: any) => isThresholdDatastream(ds));
+            let datastreams = lane.datastreams.filter((ds: any) => isThresholdDataStream(ds));
 
             let gammaThreshDs = datastreams.find((ds: typeof DataStream) => ds.properties["system@id"] == eventData.rpmSystemId);
 
