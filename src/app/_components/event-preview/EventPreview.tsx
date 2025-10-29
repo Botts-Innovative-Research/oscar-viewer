@@ -89,7 +89,7 @@ export function EventPreview() {
             isotopes: [],
             secondaryInspectionStatus: secondaryInspection,
             filePaths: [],
-            observationId: eventPreview.eventData.observationId,
+            occupancyObsId: eventPreview.eventData.occupancyObsId,
             alarmingSystemUid: eventPreview.eventData.rpmSystemId
         }
 
@@ -97,7 +97,7 @@ export function EventPreview() {
         let adjudicationData = new AdjudicationData(
             new Date().toISOString(),
             eventPreview.eventData.occupancyCount,
-            eventPreview.eventData.observationId,
+            eventPreview.eventData.occupancyObsId,
             eventPreview.eventData.rpmSystemId
         );
 
@@ -161,7 +161,7 @@ export function EventPreview() {
                     comboData.isotopes,
                     comboData.secondaryInspectionStatus,
                     comboData.filePaths,
-                    comboData.observationId,
+                    comboData.occupancyObsId,
                     comboData.vehicleId
                 )
             );

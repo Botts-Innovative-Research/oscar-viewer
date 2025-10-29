@@ -50,16 +50,12 @@ export default function StatusTables({laneMap}: TableProps){
 
         laneMap.forEach((entry: LaneMapEntry) => {
             entry.datastreams.forEach((ds: typeof DataStream) => {
-                if (!hasGamma && isGammaDataStream(ds)) {
+                if (!hasGamma && isGammaDataStream(ds))
                     hasGamma = true;
-                }
-                if (!hasNeutron && isNeutronDataStream(ds)) {
+                if (!hasNeutron && isNeutronDataStream(ds))
                     hasNeutron = true;
-                }
-                if (!hasTamper && isTamperDataStream(ds)) {
+                if (!hasTamper && isTamperDataStream(ds))
                     hasTamper = true;
-
-                }
             });
         });
 
@@ -118,7 +114,7 @@ export default function StatusTables({laneMap}: TableProps){
 
         const results: AlarmTableData[] = [];
 
-        let obsCollection = await ds.searchObservations(observationFilter, 15);
+        let obsCollection = await ds.searchObservations(observationFilter, 10000);
         const result = await handleObservations(obsCollection, laneEntry, false);
         results.push(...result);
 
@@ -186,22 +182,6 @@ export default function StatusTables({laneMap}: TableProps){
     useEffect(() => {
         laneMap = convertToMap(laneMap);
         dataStreamSetup(laneMap);
-
-        // return () => {
-        //   console.log("Lane View: StatusTables unmounted, cleaning up resources")
-        //     laneMap.forEach((entry) => {
-        //
-        //         let alarmDs: typeof DataStream = entry.findDataStreamByObsProperty(ALARM_DEF)
-        //         let tamperDs: typeof DataStream = entry.findDataStreamByObsProperty(TAMPER_STATUS_DEF)
-        //
-        //         if(alarmDs)
-        //             alarmDs.stream().disconnect();
-        //
-        //         if(tamperDs)
-        //             tamperDs.stream().disconnect();
-        //
-        //     });
-        // };
     }, [laneMap]);
 
 

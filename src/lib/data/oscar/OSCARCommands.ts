@@ -95,11 +95,11 @@ export class AdjudicationCommand {
     isotopesCount: number;
     filePathsCount: number;
     filePaths: string;
-    occupancyId: string;
+    occupancyObsId: string;
     vehicleId: string;
 
 
-    constructor(feedback: string, adjudicationCode: number, isotopes: string, secondaryInspectionStatus: string, filePaths: string, occupancyId: string, vehicleId: string) {
+    constructor(feedback: string, adjudicationCode: number, isotopes: string, secondaryInspectionStatus: string, filePaths: string, occupancyObsId: string, vehicleId: string) {
         this.feedback = feedback;
         this.adjudicationCode = adjudicationCode;
         this.isotopes = isotopes;
@@ -107,7 +107,7 @@ export class AdjudicationCommand {
         this.filePathsCount = filePaths.length;
         this.secondaryInspectionStatus = secondaryInspectionStatus;
         this.filePaths = filePaths;
-        this.occupancyId = occupancyId;
+        this.occupancyObsId = occupancyObsId;
         this.vehicleId = vehicleId;
     }
 
@@ -121,14 +121,14 @@ export class AdjudicationCommand {
                 "secondaryInspectionStatus": this.secondaryInspectionStatus,
                 "filePathCount": this.filePathsCount,
                 "filePaths": this.filePaths,
-                "occupancyObsId": this.occupancyId,
+                "occupancyObsId": this.occupancyObsId,
                 "vehicleId": this.vehicleId
             }
         })
     }
 }
 
-export function generateAdjudicationCommandJSON(feedback: string, adjudicationCode: AdjudicationCode, isotopes: string[], secondaryInspectionStatus: string, filePaths: string[], observationId: string, vehicleId: string) {
+export function generateAdjudicationCommandJSON(feedback: string, adjudicationCode: AdjudicationCode, isotopes: string[], secondaryInspectionStatus: string, filePaths: string[], occupancyObsId: string, vehicleId: string) {
 
     return JSON.stringify({
         "parameters": {
@@ -139,7 +139,7 @@ export function generateAdjudicationCommandJSON(feedback: string, adjudicationCo
             "secondaryInspectionStatus": secondaryInspectionStatus,
             "filePathCount": filePaths?.length ?? 0,
             "filePaths": filePaths ?? [],
-            "occupancyId": observationId,
+            "occupancyObsId": occupancyObsId,
             "vehicleId": vehicleId ?? ""
         }
     })

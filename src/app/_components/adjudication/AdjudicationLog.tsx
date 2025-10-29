@@ -142,7 +142,7 @@ export default function AdjudicationLog(props: {
         //
         //     let adjDataArr = cmdRes.map((obs: any) => {
         //         let results = obs.results;
-        //         let data = new AdjudicationData(obs.phenomenonTime, results.data.occupancyCount, results.data.observationId, results.data.alarmingSystemUid);
+        //         let data = new AdjudicationData(obs.phenomenonTime, results.data.occupancyCount, results.data.occupancyObsId, results.data.alarmingSystemUid);
         //         data.setFeedback(results.data.feedback);
         //         data.setIsotopes(results.data.isotopes);
         //         data.setSecondaryInspectionStatus(results.data.secondaryInspectionStatus);
@@ -166,7 +166,7 @@ export default function AdjudicationLog(props: {
     }, []);
 
     useEffect(() => {
-        let filteredLog = adjLog.filter((adjData) => props.event.observationId.toString() === adjData.observationId);
+        let filteredLog = adjLog.filter((adjData) => props.event.occupancyObsId.toString() === adjData.occupancyObsId);
         setFilteredLog(filteredLog);
     }, [adjLog, onlySameObs]);
 

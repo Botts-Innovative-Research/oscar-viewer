@@ -69,12 +69,6 @@ type Chart={
   chartReady: boolean;
 }
 
-type VideoPlayback={
-  videoSources: typeof ConSysApi[];
-  videoReady: boolean;
-  dataSync: typeof DataSynchronizer;
-  addSource: number;
-}
 
 type SelectedEvent = {
   startTime: string;
@@ -101,14 +95,4 @@ export interface LaneStatusItem {
   gammaSources: typeof ConSysApi[],
   neutronSources: typeof ConSysApi[],
   tamperSources: typeof ConSysApi[]
-}
-
-export interface Comment{
-  user: string;
-  vehicleId: string;
-  notes: string;
-  files: File[];
-  adjudication: any;
-  isotope: any;
-  secondaryInspection?: boolean;
 }

@@ -17,10 +17,10 @@ import {
     isGammaDataStream,
     isNeutronDataStream,
     isOccupancyDataStream,
-    isTamperDataStream, isThresholdDataStream,
+    isTamperDataStream,
+    isThresholdDataStream,
     isVideoDataStream
 } from "./Utilities";
-import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 
 class ILaneMeta {
     id: string;
@@ -54,8 +54,6 @@ export class LaneMapEntry {
     datasourcesRealtime: any[];
     parentNode: INode;
     laneSystem: typeof System;
-    // private adjDs: string;
-    // adjControlStreamId: string;
     laneName: string;
     controlStreams: any[]
 

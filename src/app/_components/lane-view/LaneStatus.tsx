@@ -22,7 +22,6 @@ export default function LaneStatus(props: LaneStatusProps) {
   const idVal = useRef(1);
   const [laneStatus, setLaneStatus] = useState<LaneStatusType>();
 
-
   const currentLane = useSelector((state: RootState) => state.laneView.currentLane);
 
 
@@ -86,12 +85,6 @@ export default function LaneStatus(props: LaneStatusProps) {
       fetchLatestStatus();
 
     addSubscriptionCallbacks();
-
-    return() => {
-      props.dataSourcesByLane.addDisconnectToALLDSMatchingName("gammaRT");
-      props.dataSourcesByLane.addDisconnectToALLDSMatchingName("neutronRT");
-      props.dataSourcesByLane.addDisconnectToALLDSMatchingName("tamperRT");
-    }
   }, [props.dataSourcesByLane]);
 
   function updateStatus(laneName: string, newState: string){

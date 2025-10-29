@@ -50,7 +50,7 @@ export default function AdjudicationReportForm(props: { event: EventTableData })
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
     const [shouldFetchLogs, setShouldFetchLogs] = useState<boolean>(false);
 
-    const adjudication = props.event ? new AdjudicationData(new Date().toISOString(), props.event.occupancyCount, props.event.observationId, props.event.rpmSystemId) : null;
+    const adjudication = props.event ? new AdjudicationData(new Date().toISOString(), props.event.occupancyCount, props.event.occupancyObsId, props.event.rpmSystemId) : null;
 
     const [adjData, setAdjData] = useState<AdjudicationData>(adjudication);
 
@@ -179,7 +179,7 @@ export default function AdjudicationReportForm(props: { event: EventTableData })
                     tempAdjData.isotopes,
                     tempAdjData.secondaryInspectionStatus,
                     tempAdjData.filePaths,
-                    tempAdjData.observationId,
+                    tempAdjData.occupancyObsId,
                     tempAdjData.vehicleId
                 )
             );

@@ -11,7 +11,7 @@ export class EventTableData implements IEventTableData {
     id: number;
     secondaryInspection?: string;
     laneId: string;
-    observationId: string; // observation ID
+    occupancyObsId: string; // observation ID
     occupancyCount: string; // occupancy count in result
     startTime: string;
     endTime: string;
@@ -28,7 +28,7 @@ export class EventTableData implements IEventTableData {
     videoPaths: string[];
     adjudicatedIds: string[];
 
-    constructor(id: number, laneId: string, msgValue: any, observationId: string, foiId: string,  adjudicatedData: AdjudicationData | null = null) {
+    constructor(id: number, laneId: string, msgValue: any, occupancyObsId: string, foiId: string,  adjudicatedData: AdjudicationData | null = null) {
 
         this.id = id
         this.laneId = laneId
@@ -49,10 +49,9 @@ export class EventTableData implements IEventTableData {
             this.status = "None"
         }
         this.adjudicatedData = adjudicatedData ? adjudicatedData : new AdjudicationData("N/A", "N/A", "N/A", "N/A");
-        this.observationId = observationId;
+        this.occupancyObsId = occupancyObsId;
         this.foiId = foiId;
         this.videoPaths = msgValue.videoPaths;
-        console.log("msgValue", msgValue)
         this.adjudicatedIds = msgValue.adjudicatedIds;
         this.secondaryInspection = this.setSecondaryStatus(msgValue.adjudicatedIds); //TODO: reference adjudicatedIds to get secondary status
     }
@@ -103,8 +102,8 @@ export class EventTableData implements IEventTableData {
         this.foiId = foiId;
     }
 
-    setObservationId(id: string) {
-        this.observationId = id;
+    setOccupancyObsId(id: string) {
+        this.occupancyObsId = id;
     }
 
     setSecondaryStatus(adjudicatedIds: string[]){

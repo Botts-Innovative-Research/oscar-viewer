@@ -157,7 +157,7 @@ export default function EventTable({
         // newEvent.setLaneSystemId(laneEntry.lookupParentSystemFromSystemId(newEvent.rpmSystemId));
         newEvent.setDataStreamId(obs["datastream@id"]);
         newEvent.setFoiId(obs["foi@id"]);
-        newEvent.setObservationId(obs.id);
+        newEvent.setOccupancyObsId(obs.id);
 
         return newEvent;
     }
@@ -216,7 +216,7 @@ export default function EventTable({
         {
             field: 'secondaryInspection',
             headerName: 'Secondary Inspection',
-            type: 'boolean',
+            type: 'string',
             minWidth: 125,
             flex: 1,
             filterable: viewSecondary
