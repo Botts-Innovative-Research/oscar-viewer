@@ -32,7 +32,7 @@ export default function ReportGeneratorView(){
     const [customEndTime, setCustomEndTime] = useState<string | null>("");
     const [selectedNode, setSelectedNode] = useState<INode | null>(null);
     const [selectedLaneUID, setSelectedLaneUID] = useState<string[]>([]);
-    const [selectedEvent, setSelectedEvent] = useState<string | null>("");
+    const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
     const nodes = useSelector((state: RootState) => selectNodes(state));
 
     const [openSnack, setOpenSnack] = useState(false);
@@ -69,7 +69,11 @@ export default function ReportGeneratorView(){
                 return;
             }
 
-            let response = await sendCommand(selectedNode, controlStream.properties.id, generateReportCommandJSON(startTime, endTime, selectedReportType, selectedLaneUID.toString(), selectedEvent));
+            let response = await sendCommand(
+                selectedNode,
+                controlStream.properties.id,
+                generateReportCommandJSON(startTime, endTime, selectedReportType, selectedLaneUID.toString(), selectedEvent)
+            );
 
             if (!response.ok) {
                 setSnackMessage("Report request failed to submit.");
@@ -78,7 +82,8 @@ export default function ReportGeneratorView(){
             }
 
             let reportResult = await response.json();
-            setGeneratedURL(selectedNode.isSecure ? `https://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${reportResult[0].reportPath}` : `http://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${reportResult[0].reportPath}`);
+            console.log("report result", reportResult.results[0].data.reportPath);
+            setGeneratedURL(selectedNode.isSecure ? `https://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${reportResult.results[0].data.reportPath}` : `http://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${reportResult.results[0].data.reportPath}`);
 
             setSnackMessage("Report created successfully");
             setSeverity("success");
@@ -124,13 +129,13 @@ export default function ReportGeneratorView(){
 
     const resetForm = () => {
         setIsGenerating(false);
-        setSelectedEvent("");
-        setSelectedReportType("")
-        setSelectedTimeRange("");
+        setSelectedEvent(null);
+        setSelectedReportType(null)
+        setSelectedTimeRange(null);
         setSelectedNode(null);
         setSelectedLaneUID([]);
-        setCustomEndTime("");
-        setCustomStartTime("")
+        setCustomEndTime(null);
+        setCustomStartTime(null);
     }
 
     const getTimeRange = (timeRange: string): {startTime: string, endTime: string} => {

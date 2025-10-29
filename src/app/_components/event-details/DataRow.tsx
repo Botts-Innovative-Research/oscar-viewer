@@ -1,9 +1,7 @@
 "use client";
 
 import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from "@mui/material";
-import {useSelector} from "react-redux";
 import {styled, Theme} from "@mui/material/styles";
-import {selectEventData} from "@/lib/state/EventDetailsSlice";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 
 

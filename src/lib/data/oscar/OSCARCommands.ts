@@ -81,8 +81,8 @@ export function generateReportCommandJSON(startDateTime: string, endDateTime: st
             "reportType": reportType,
             "startDateTime": startDateTime,
             "endDateTime": endDateTime,
-            "laneUID": laneUID,
-            "eventType": eventType
+            "laneUID": laneUID ?? "NONE",
+            "eventType": eventType ?? "NONE"
         }
     })
 }
