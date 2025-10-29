@@ -274,7 +274,6 @@ export class LaneMapEntry {
 
             if (isOccupancyDataStream(ds)) {
                 let occArray = dsMap.get('occ')!;
-
                 occArray.push(datasourceBatch);
             }
 
@@ -303,54 +302,8 @@ export class LaneMapEntry {
                 connectionArray.push(datasourceBatch);
             }
         }
-
         return dsMap;
     }
-
-
-
-    async checkValidDataSource(ds: typeof DataStream, startTime: string, endTime: string): Promise<typeof ConSysApi> {
-        let datasourceReplay = this.createReplayConSysApiFromDataStream(ds, startTime, endTime);
-
-        let dsApi = this.parentNode.getDataStreamsApi();
-        const result = await dsApi.getDataStreamById(ds.properties.id);
-        console.log("[IS-VIDEO] result from dsapi: ", result);
-
-        let validStartTime, validEndTime: string | null;
-
-        validStartTime = result?.properties?.resultTime[0];
-        validEndTime = result?.properties?.resultTime[1];
-
-        // // Ensure startTime and endTime are within the datastream's valid data time
-        if (validStartTime && validEndTime) {
-            const validStart = new Date(validStartTime);
-            const validEnd = new Date(validEndTime);
-
-            const eventStart = new Date(startTime);
-            const eventEnd = new Date(endTime);
-
-            validStart.setSeconds(validStart.getSeconds() - 1); //acount for ms difference
-            validEnd.setSeconds(validEnd.getSeconds() + 1); // account for ms difference
-
-            //compare events start and end time with ds valid times
-            if (eventStart >= validStart && eventEnd <= validEnd) {
-                console.info(`[IS-VIDEO] Found valid datastream ${validStart} - ${validEnd}`, ds)
-
-                const observations = await ds.searchObservations(new ObservationFilter({resultTime: `${startTime}/${endTime}`}), 1);
-                console.log("[IS-VIDEO] observations", observations)
-
-                let obs = await observations.nextPage();
-                console.log("[IS-VIDEO] obs", obs)
-                if(obs.length > 0)
-                    return datasourceReplay;
-            } else {
-                console.warn(`[IS-VIDEO] Data within interval ${validStart} - ${validEnd} not found for datasource`);
-            }
-        } else {
-            console.warn("[IS-VIDEO] No valid time found for datasource ", ds.properties.id);
-        }
-    }
-
 }
 
 export class LaneDSColl {
@@ -366,8 +319,6 @@ export class LaneDSColl {
     locBatch: typeof ConSysApi[];
     gammaTrshldBatch: typeof ConSysApi[];
     gammaTrshldRT: typeof ConSysApi[];
-    videoRT: typeof ConSysApi[];
-    videoBatch: typeof ConSysApi[];
     adjRT: typeof ConSysApi[];
     adjBatch: typeof ConSysApi[];
     connectionRT: typeof ConSysApi[];
@@ -388,8 +339,6 @@ export class LaneDSColl {
         this.gammaTrshldBatch = [];
         this.gammaTrshldRT = [];
         this.connectionRT = [];
-        this.videoRT = [];
-        this.videoBatch = [];
         this.adjRT = [];
         this.adjBatch = [];
         this.connectionBatch =[];
@@ -411,7 +360,6 @@ export class LaneDSColl {
             'gammaTrshldBatch',
             'adjBatch',
             'connectionBatch',
-            'videoBatch',
             'occRT',
             'gammaRT',
             'neutronRT',
@@ -419,7 +367,6 @@ export class LaneDSColl {
             'locRT',
             'gammaTrshldRT',
             'connectionRT',
-            'videoRT',
             'adjRT'
         ]
     }
@@ -434,7 +381,6 @@ export class LaneDSColl {
             'gammaTrshldBatch',
             'adjBatch',
             'connectionBatch',
-            'videoBatch'
         ]
     }
 
@@ -447,7 +393,6 @@ export class LaneDSColl {
             'locRT',
             'gammaTrshldRT',
             'connectionRT',
-            'videoRT',
             'adjRT'
         ];
     }

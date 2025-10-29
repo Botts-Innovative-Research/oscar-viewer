@@ -20,8 +20,6 @@ export default function HLSVideoComponent({videoSource, selectedNode}: {videoSou
             ? `https://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${videoSource}`
             : `http://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${videoSource}`
 
-        console.log("src: ", src);
-
         // if (Hls.isSupported()) {
         //     const hls = new Hls();
         //     hls.loadSource(src);

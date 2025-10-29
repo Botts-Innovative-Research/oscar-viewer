@@ -142,6 +142,7 @@ export default function EventTable({
             let obsResults = await obsCollection.nextPage();
             obsResults.map((obs: any) => {
                 let result = eventFromObservation(obs, laneEntry);
+
                 observations.push(result);
             })
         }
@@ -164,7 +165,8 @@ export default function EventTable({
     function unadjudicatedFilteredList(tableData: EventTableData[]) {
         if (!tableData) return [];
         return tableData.filter((entry) => {
-            if (entry.isAdjudicated) return false;
+            // if (entry.isAdjudicated) return false;
+            if (entry.adjudicatedIds.length > 0) return false;
             return entry.adjudicatedData.adjudicationCode.code === 0;
 
         })
@@ -283,9 +285,9 @@ export default function EventTable({
             flex: 1.2,
         },
         {
-            field: 'isAdjudicated',
+            field: 'adjudicatedIds',
             headerName: 'Adjudicated',
-            valueFormatter: (params) => params ? "Yes" : "No",
+            valueFormatter: (params: any) => params.length > 0 ? "Yes" : "No",
             minWidth: 100,
             flex: 1,
             filterable: viewAdjudicated
@@ -319,7 +321,7 @@ export default function EventTable({
         const excludeFields: string[] = [];
         // Exclude fields based on component parameters
         if (!viewSecondary) excludeFields.push('secondaryInspection');
-        if (!viewAdjudicated) excludeFields.push('isAdjudicated');
+        if (!viewAdjudicated) excludeFields.push('adjudicatedIds');
         // if (!viewAdjudicated) excludeFields.push('adjudicatedCode');
 
         return columns
@@ -397,7 +399,7 @@ export default function EventTable({
                         // Manage visible columns in table based on component parameters
                         columnVisibilityModel: {
                             secondaryInspection: viewSecondary,
-                            isAdjudicated: viewAdjudicated,
+                            adjudicatedIds: viewAdjudicated,
                             // adjudicatedCode: viewAdjudicated,
                         },
 

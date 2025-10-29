@@ -62,11 +62,8 @@ export default function ReportGeneratorView(){
 
             setIsGenerating(true);
             let streams = await selectedNode.fetchNodeControlStreams();
-            console.log("streams", streams);
 
             let controlStream = streams.find((stream: typeof ControlStream) => isReportControlStream(stream))
-            console.log("controlStream", controlStream);
-
             if (!controlStream){
                 console.error("no report control streams");
                 return;

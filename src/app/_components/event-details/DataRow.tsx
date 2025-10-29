@@ -12,10 +12,7 @@ const StatusTableCell = styled(TableCell)(({theme, status}: { theme: Theme, stat
     backgroundColor: status === 'Gamma' ? theme.palette.error.main : status === 'Neutron' ? theme.palette.info.main : status === 'Gamma & Neutron' ? theme.palette.secondary.main : 'transparent',
 }));
 
-
 export default function DataRow({eventData}: {eventData: EventTableData}) {
-    // const eventData = useSelector(selectEventData);
-
     return (
         <TableContainer>
             <Table sx={{minWidth: 650}} aria-label="simple table">
@@ -39,7 +36,7 @@ export default function DataRow({eventData}: {eventData: EventTableData}) {
                                   sx={{'&:last-child td, &:last-child th': {border: 0, textAlign: "center"}}}>
                             <TableCell>{eventData?.secondaryInspection}</TableCell>
                             <TableCell>{eventData?.laneId}</TableCell>
-                            <TableCell>{eventData?.occupancyId}</TableCell>
+                            <TableCell>{eventData?.occupancyCount}</TableCell>
                             <TableCell>{eventData?.startTime}</TableCell>
                             <TableCell>{eventData?.endTime}</TableCell>
                             <TableCell>{eventData?.maxGamma}</TableCell>
@@ -47,7 +44,7 @@ export default function DataRow({eventData}: {eventData: EventTableData}) {
                             <StatusTableCell status={eventData?.status || 'Unknown'}>
                                 {eventData?.status || 'Unknown'}
                             </StatusTableCell>
-                            <TableCell>{eventData.isAdjudicated ? "Yes" : "No"}</TableCell>
+                            <TableCell>{eventData?.adjudicatedIds.length > 0 ? "Yes" : "No"}</TableCell>
                         </TableRow>
                     ) : (
                         <TableRow>

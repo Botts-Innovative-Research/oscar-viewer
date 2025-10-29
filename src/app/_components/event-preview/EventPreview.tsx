@@ -79,8 +79,6 @@ export function EventPreview() {
 
 
     const handleAdjudicationCode = (value: AdjudicationCode) => {
-
-        console.log("event data", eventPreview.eventData);
         let newAdjData: IAdjudicationData = {
             occupancyCount: eventPreview.eventData.occupancyCount,
             time: new Date().toISOString(),

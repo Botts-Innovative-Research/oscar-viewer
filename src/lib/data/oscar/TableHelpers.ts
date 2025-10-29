@@ -24,9 +24,9 @@ export class EventTableData implements IEventTableData {
     laneSystemId?: string; // lane system id
     rpmSystemId?: string; // rpm id
     dataStreamId?: string;
-    isAdjudicated: boolean;
     foiId: string;
-    videoPaths: string[]
+    videoPaths: string[];
+    adjudicatedIds: string[];
 
     constructor(id: number, laneId: string, msgValue: any, observationId: string, foiId: string,  adjudicatedData: AdjudicationData | null = null) {
 
@@ -49,11 +49,12 @@ export class EventTableData implements IEventTableData {
             this.status = "None"
         }
         this.adjudicatedData = adjudicatedData ? adjudicatedData : new AdjudicationData("N/A", "N/A", "N/A", "N/A");
-        this.isAdjudicated = msgValue.isAdjudicated;
         this.observationId = observationId;
-        this.secondaryInspection = msgValue.secondaryInspection;
         this.foiId = foiId;
-        this.videoPaths = msgValue.videoPaths
+        this.videoPaths = msgValue.videoPaths;
+        console.log("msgValue", msgValue)
+        this.adjudicatedIds = msgValue.adjudicatedIds;
+        this.secondaryInspection = this.setSecondaryStatus(msgValue.adjudicatedIds); //TODO: reference adjudicatedIds to get secondary status
     }
 
     adjudicatedUser?: string;
@@ -64,8 +65,9 @@ export class EventTableData implements IEventTableData {
     }
 
     // addSecondaryInspection(aDataSecondary: AdjudicationData) {
-    //     this.secondaryInspection = true;
-    //     this.adjudicatedData.secondaryInspectionStatus = true
+    //     // this.secondaryInspection = true;
+    //     // this.adjudicatedData.secondaryInspectionStatus = true;
+    //     this.secondaryInspection = aDataSecondary.secondaryInspectionStatus;
     // }
 
     setSecondaryInspection(inspection: string){
@@ -105,9 +107,8 @@ export class EventTableData implements IEventTableData {
         this.observationId = id;
     }
 
-    private hashEntry(){
-        // let sTHex = this.startTime.toString(16);
-
+    setSecondaryStatus(adjudicatedIds: string[]){
+        return "NONE";
     }
 }
 

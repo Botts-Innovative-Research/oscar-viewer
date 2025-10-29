@@ -39,9 +39,6 @@ export class NationalGenerationCommand {
 
 
 export function generateNationalCommandJSON(startDateTime: string, endDateTime: string,) {
-
-    console.log("start", startDateTime)
-    console.log("end", endDateTime)
     return JSON.stringify({
         "parameters": {
             "startDateTime": startDateTime != null ? startDateTime : null,
@@ -115,20 +112,19 @@ export class AdjudicationCommand {
     }
 
     getJsonString() {
-        return JSON.stringify(
-            {
-                "parameters": {
-                    "feedback": this.feedback,
-                    "adjudicationCode": this.adjudicationCode,
-                    "isotopesCount": this.isotopesCount,
-                    "isotopes": this.isotopes,
-                    "secondaryInspectionStatus": this.secondaryInspectionStatus,
-                    "filePathCount": this.filePathsCount,
-                    "filePaths": this.filePaths,
-                    "occupancyId": this.occupancyId,
-                    "vehicleId": this.vehicleId
-                }
-            })
+        return JSON.stringify({
+            "parameters": {
+                "feedback": this.feedback,
+                "adjudicationCode": this.adjudicationCode,
+                "isotopesCount": this.isotopesCount,
+                "isotopes": this.isotopes,
+                "secondaryInspectionStatus": this.secondaryInspectionStatus,
+                "filePathCount": this.filePathsCount,
+                "filePaths": this.filePaths,
+                "occupancyObsId": this.occupancyId,
+                "vehicleId": this.vehicleId
+            }
+        })
     }
 }
 

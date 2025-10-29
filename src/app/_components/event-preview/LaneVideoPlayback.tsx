@@ -8,6 +8,7 @@ import {Box, IconButton, Typography} from "@mui/material";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import '../../../Styles.css';
+import CircularProgress from "@mui/material/CircularProgress";
 
 
 export class LaneVideoPlaybackProps {
@@ -171,7 +172,9 @@ export default function LaneVideoPlayback({selectedNode, videos, modeType, start
                 </div>
                 )
                 : (
-                    <Typography>No Video Available</Typography>
+                    <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}>
+                        <Typography>No Video Available</Typography>
+                    </Box>
                 )}
         </Box>
 

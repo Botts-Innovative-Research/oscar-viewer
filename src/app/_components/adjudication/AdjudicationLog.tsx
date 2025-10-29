@@ -1,6 +1,5 @@
 "use client";
 
-import {Comment} from "../../../../types/new-types";
 import React, {useContext, useEffect, useState} from "react";
 import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
@@ -10,9 +9,6 @@ import { Stack, Typography} from "@mui/material";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {isAdjudicationControlStream} from "@/lib/data/oscar/Utilities";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
-import {AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
-import System from "osh-js/source/core/consysapi/system/System";
-import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
 
 const locale = navigator.language || 'en-US';
 
@@ -78,7 +74,6 @@ const logColumns: GridColDef<AdjudicationData>[] = [
 ];
 
 export default function AdjudicationLog(props: {
-    comments: Comment[];
     event: EventTableData;
     shouldFetch: boolean;
     onFetch: () => void;

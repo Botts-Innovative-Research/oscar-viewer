@@ -117,7 +117,6 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
 
         return () => {
             if(!chartReady){
-                console.log("Media unmounted, cleaning up resources")
                 datasources?.neutron?.disconnect();
                 datasources?.gamma?.disconnect();
                 datasources?.threshold?.disconnect();
