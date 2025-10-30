@@ -9,6 +9,7 @@ import { Stack, Typography} from "@mui/material";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {isAdjudicationControlStream} from "@/lib/data/oscar/Utilities";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
+import {AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 
 const locale = navigator.language || 'en-US';
 
@@ -134,28 +135,28 @@ export default function AdjudicationLog(props: {
         //     console.log("commadn Result", cmdResult);
         // }
 
-        // let commandStatuses = await adjudicationControlStream.searchStatus(undefined, 10000);
-        //
-        // while (commandStatuses.hasNext()) {
-        //     let cmdRes = await commandStatuses.nextPage();
-        //     console.log("cmd res", cmdRes)
-        //
-        //     let adjDataArr = cmdRes.map((obs: any) => {
-        //         let results = obs.results;
-        //         let data = new AdjudicationData(obs.phenomenonTime, results.data.occupancyCount, results.data.occupancyObsId, results.data.alarmingSystemUid);
-        //         data.setFeedback(results.data.feedback);
-        //         data.setIsotopes(results.data.isotopes);
-        //         data.setSecondaryInspectionStatus(results.data.secondaryInspectionStatus);
-        //         data.setAdjudicationCode(AdjudicationCodes.getCodeObjByIndex(results.data.adjudicationCode));
-        //         data.setVehicleId(results.data.vehicleId);
-        //         data.setFilePaths(results.data.filePaths)
-        //         data.setTime(obs.phenomenonTime)
-        //         data.setUser(results.data.username)
-        //         return data
-        //     });
-        //     setAdjLog(adjDataArr);
-        // }
-        // props.onFetch();
+        let commandStatuses = await adjudicationControlStream.searchStatus(undefined, 10000);
+
+        while (commandStatuses.hasNext()) {
+            let cmdRes = await commandStatuses.nextPage();
+            console.log("cmd res", cmdRes)
+
+            let adjDataArr = cmdRes.map((obs: any) => {
+                let results = obs.results;
+                let data = new AdjudicationData(obs.phenomenonTime, results.data.occupancyCount, results.data.occupancyObsId, results.data.alarmingSystemUid);
+                data.setFeedback(results.data.feedback);
+                data.setIsotopes(results.data.isotopes);
+                data.setSecondaryInspectionStatus(results.data.secondaryInspectionStatus);
+                data.setAdjudicationCode(AdjudicationCodes.getCodeObjByIndex(results.data.adjudicationCode));
+                data.setVehicleId(results.data.vehicleId);
+                data.setFilePaths(results.data.filePaths)
+                data.setTime(obs.phenomenonTime)
+                data.setUser(results.data.username)
+                return data
+            });
+            setAdjLog(adjDataArr);
+        }
+        props.onFetch();
     }
 
     useEffect(() => {
