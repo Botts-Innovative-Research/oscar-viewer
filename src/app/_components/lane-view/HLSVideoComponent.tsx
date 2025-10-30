@@ -2,6 +2,7 @@
 
 import React, {useEffect, useRef} from 'react';
 import {INode} from "@/lib/data/osh/Node";
+import {ErrorTypes} from "hls.js";
 
 export default function HLSVideoComponent({videoSource, selectedNode}: {videoSource: string, selectedNode: INode}) {
 
@@ -22,15 +23,6 @@ export default function HLSVideoComponent({videoSource, selectedNode}: {videoSou
 
         console.log("src: ", src);
 
-        // if (Hls.isSupported()) {
-        //     const hls = new Hls();
-        //     hls.loadSource(src);
-        //     hls.attachMedia(videoRef.current);
-        // }
-        // else if (videoRef.current.canPlayType('application/vnd.apple.mpegURL')) {
-        //     videoRef.current.src = src;
-        // }
-
         const loadHls = async () => {
             if (typeof window === 'undefined') return;
 
@@ -39,19 +31,27 @@ export default function HLSVideoComponent({videoSource, selectedNode}: {videoSou
             const encoded = btoa(`${selectedNode.auth.username}:${selectedNode.auth.password}`);
 
 
-            var hlsjsConfig = {
-                xhrSetup: function(xhr: any, url: any) {
+            const hlsjsConfig = {
+                xhrSetup: function (xhr: XMLHttpRequest, url: string) {
                     xhr.setRequestHeader("Authorization", `Basic ${encoded}`);
+                    xhr.setRequestHeader("Cache-Control", "no-cache");
                     xhr.withCredentials = true;
-                }
-            }
+                },
+            };
 
 
             if (Hls.isSupported()) {
                 // const hls = new Hls();
                 const hls = new Hls(hlsjsConfig);
                 hls.on(Hls.Events.ERROR, function (event, data) {
-                    console.error("HLS error:", data);
+                    // console.error("HLS error:", data);
+                    console.warn("Failed to load manifest, attempting retry...")
+                    if (data.type == ErrorTypes.NETWORK_ERROR) {
+                        setTimeout(() => {
+                            hls.loadSource(src);
+                            hls.startLoad();
+                        }, 500);
+                    }
                 });
 
                 hls.loadSource(src);
@@ -68,7 +68,7 @@ export default function HLSVideoComponent({videoSource, selectedNode}: {videoSou
 
         loadHls();
 
-    }, [videoSource, selectedNode]);
+    }, []);
 
     return (
         <video
