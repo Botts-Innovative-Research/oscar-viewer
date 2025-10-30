@@ -31,8 +31,6 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
 
     return() => {
       if(timersRef.current){
-        console.log("Dashboard: Lane Status unmounted, cleaning up timers")
-
         // clean up timers
         for(const timeout of timersRef.current.values()){
           clearTimeout(timeout);

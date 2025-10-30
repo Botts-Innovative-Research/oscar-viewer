@@ -24,6 +24,8 @@ export interface IOSHSlice {
 
 
 function loadNodesFromLocalStorage(): INode[] {
+    if (typeof window === "undefined") return [];
+
     try {
         const stored = localStorage.getItem("osh_nodes");
         if (!stored) return [];
@@ -38,6 +40,8 @@ function loadNodesFromLocalStorage(): INode[] {
 }
 
 function loadConfigNodeFromStorage(): INode | null {
+    if (typeof window === "undefined") return [];
+
     try {
         const stored = localStorage.getItem("osh_config_node");
         if (!stored) return null;
