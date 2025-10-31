@@ -12,6 +12,7 @@ import HLSVideoComponent from "./HLSVideoComponent";
 import IconButton from "@mui/material/IconButton";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import {LiveVideoError} from "@/lib/data/Errors";
 
 
 export default function Media({datasources, currentLane}: {datasources: any, currentLane: string}) {
@@ -31,7 +32,7 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
 
     useEffect(() => {
         fetchVideoControlStreams()
-    }, [currentLane]);
+    }, []);
 
     useEffect(() => {
 
@@ -94,7 +95,7 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
 
         if (!videoControlStreams || videoControlStreams.length == 0){
             console.error("no video control stream");
-            return;
+            throw new LiveVideoError("No video control stream available.");
         }
 
         setVideoStreams(videoControlStreams)
