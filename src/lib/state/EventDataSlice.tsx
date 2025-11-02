@@ -41,18 +41,18 @@ export const Slice = createSlice({
         setEventLogData: (state, action: PayloadAction<EventTableData[]>) => {
             state.eventLog = action.payload;
             // action.payload.forEach((eventData) => {
-            //     state.eventLog.set(eventData.observationId, eventData);
+            //     state.eventLog.set(eventData.occupancyObsId, eventData);
             // })
         },
         setSelectedEvent: (state, action: PayloadAction<EventTableData>) => {
             state.selectedEvent = action.payload;
         },
         addEventToLog: (state, action: PayloadAction<EventTableData>) => {
-            let checkForEntry = state.eventLog.some((evtData)=> evtData.observationId === action.payload.observationId);
+            let checkForEntry = state.eventLog.some((evtData)=> evtData.occupancyObsId === action.payload.occupancyObsId);
             let currentLog = [...state.eventLog];
             currentLog.push(action.payload);
             state.eventLog = currentLog;
-            // state.eventLog.set(action.payload.observationId, action.payload);
+            // state.eventLog.set(action.payload.occupancyObsId, action.payload);
         },
         updateSelectedEventAdjudication: (state, action: PayloadAction<AdjudicationData>) => {
             if(state.selectedEvent){

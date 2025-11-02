@@ -32,8 +32,6 @@ export default function LaneSelect(props: {
         if (props.selectedNode) {
 
             laneMap.forEach(lane => {
-                console.log("node", props.selectedNode);
-                console.log("node-lane", lane)
                 if(props.selectedNode.id == lane.parentNode.id){
                     tempLanes.push(lane);
                 }

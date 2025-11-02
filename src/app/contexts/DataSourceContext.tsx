@@ -53,13 +53,12 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         let allLanes: Map<string, LaneMapEntry> = new Map();
 
         await Promise.all(nodes.map(async (node: INode) => {
-            console.log("node", node)
             let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
             if(!nodeLaneMap) return;
 
-            await node.authFileServer();
+            // await node.authFileServer();
             await node.fetchOscarServiceSystem();
-            await node.fetchDatastreams(nodeLaneMap);
+            await node.fetchDataStreams(nodeLaneMap);
             await node.fetchLaneControlStreams(nodeLaneMap);
 
 

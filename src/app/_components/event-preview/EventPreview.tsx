@@ -80,22 +80,24 @@ export function EventPreview() {
 
     const handleAdjudicationCode = (value: AdjudicationCode) => {
         let newAdjData: IAdjudicationData = {
+            occupancyCount: eventPreview.eventData.occupancyCount,
             time: new Date().toISOString(),
             id: randomUUID(),
-            username: currentUser,
+            username: "",
             feedback: notes,
             adjudicationCode: value,
             isotopes: [],
             secondaryInspectionStatus: secondaryInspection,
             filePaths: [],
-            occupancyId: eventPreview.eventData.occupancyId,
+            occupancyObsId: eventPreview.eventData.occupancyObsId,
             alarmingSystemUid: eventPreview.eventData.rpmSystemId
         }
 
+
         let adjudicationData = new AdjudicationData(
             new Date().toISOString(),
-            currentUser,
-            eventPreview.eventData.occupancyId,
+            eventPreview.eventData.occupancyCount,
+            eventPreview.eventData.occupancyObsId,
             eventPreview.eventData.rpmSystemId
         );
 
@@ -134,8 +136,7 @@ export function EventPreview() {
 
             let query = await ds.searchObservations(new ObservationFilter({resultTime: `${eventPreview.eventData.startTime}/${eventPreview.eventData.endTime}`}), 1)
 
-            var occupancyObservation = await query.nextPage();
-
+            const occupancyObservation = await query.nextPage();
             if (!occupancyObservation) {
                 setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
                 setColorStatus('error')
@@ -146,29 +147,25 @@ export function EventPreview() {
             let streams = await currLaneEntry.parentNode.fetchNodeControlStreams();
 
             let adjControlStream = streams.find((stream: typeof ControlStream) => isAdjudicationControlStream(stream));
-
-
             if (!adjControlStream){
-                console.error("no adjudication control streams");
+                console.error("Failed: cannot find adjudication control stream for occupancy.");
                 return;
             }
 
-            let cmdJson = generateAdjudicationCommandJSON(
-                comboData.feedback,
-                comboData.adjudicationCode,
-                comboData.isotopes,
-                comboData.secondaryInspectionStatus,
-                comboData.filePath,
-                comboData.occupancyId,
-                comboData.vehicleId
-            )
-
+            console.log("comboData", comboData);
             const response = await sendCommand(
                 currLaneEntry.parentNode,
                 adjControlStream.properties.id,
-                cmdJson
+                generateAdjudicationCommandJSON(
+                    comboData.feedback,
+                    comboData.adjudicationCode,
+                    comboData.isotopes,
+                    comboData.secondaryInspectionStatus,
+                    comboData.filePaths,
+                    comboData.occupancyObsId,
+                    comboData.vehicleId
+                )
             );
-
 
             if (!response.ok) {
                 setAdjSnackMsg('Adjudication failed to submit.')
@@ -178,12 +175,12 @@ export function EventPreview() {
 
             dispatch(updateSelectedEventAdjudication(comboData));
 
-            setAdjSnackMsg('Adjudication successful for Occupancy ID: ' + eventPreview.eventData.occupancyId);
+            setAdjSnackMsg('Adjudication successful for Occupancy ID: ' + eventPreview.eventData.occupancyCount);
             setColorStatus('success')
 
 
         }catch(error){
-            setAdjSnackMsg('Adjudication failed to submit.')
+            console.error( error)
             setColorStatus('error')
         }finally{
             setOpenSnack(true)
@@ -238,13 +235,13 @@ export function EventPreview() {
     };
 
     useEffect(() => {
-        if (eventPreview.eventData?.occupancyId !== prevEventIdRef.current) {
+        if (eventPreview.eventData?.occupancyCount !== prevEventIdRef.current) {
 
             if (prevEventIdRef.current) {
                 cleanupResources();
             }
 
-            prevEventIdRef.current = eventPreview.eventData?.occupancyId;
+            prevEventIdRef.current = eventPreview.eventData?.occupancyCount;
 
             if (eventPreview.eventData?.laneId && laneMapRef.current) {
                 callCollectDataSources();
@@ -252,7 +249,7 @@ export function EventPreview() {
             }
         }
 
-    }, [eventPreview.eventData?.occupancyId]);
+    }, [eventPreview.eventData?.occupancyCount]);
 
     const collectDataSources = useCallback(async() => {
         if (!eventPreview.eventData?.laneId || !laneMapRef.current) return;
@@ -321,7 +318,7 @@ export function EventPreview() {
                     <Typography
                         variant="h6"
                     >
-                        Occupancy ID: {eventPreview.eventData.occupancyId}
+                        Occupancy ID: {eventPreview.eventData.occupancyCount}
                     </Typography>
                     <IconButton
                         onClick={handleExpand}

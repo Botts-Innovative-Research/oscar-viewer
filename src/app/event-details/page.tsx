@@ -29,7 +29,7 @@ export default function EventDetailsPage() {
     const [thresholdDatasources, setThresholdDatasources] = useState<typeof ConSysApi[]>([]);
 
     const contentRef = useRef<HTMLDivElement>(null);
-    const docTitle = eventPreview.eventData ? `eventdetails-${eventPreview.eventData.laneId}-${eventPreview.eventData.observationId}-${eventPreview.eventData.startTime}-${eventPreview.eventData.endTime}` : 'eventdetails';
+    const docTitle = eventPreview.eventData ? `eventdetails-${eventPreview.eventData.laneId}-${eventPreview.eventData.occupancyObsId}-${eventPreview.eventData.startTime}-${eventPreview.eventData.endTime}` : 'eventdetails';
 
 
     const collectDataSources = useCallback(async() => {

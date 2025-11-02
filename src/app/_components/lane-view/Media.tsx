@@ -43,12 +43,10 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
         if (!currentStream)
             return;
 
-
         const startStream = async () => {
             const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
 
-            currLaneEntry.parentNode.authFileServer();
-            const response = await sendCommand(currLaneEntry.parentNode, currentStream.properties.id, generateHLSVideoCommandJSON("startStream"));
+            const response = await sendCommand(currLaneEntry.parentNode, currentStream.properties.id, generateHLSVideoCommandJSON(true));
 
             if (!response.ok) {
                 console.error("Failed to start stream");
@@ -59,7 +57,7 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
 
             const streamPath = responseJson?.results?.[0]?.data?.streamPath;
 
-
+            console.log("stream Path", streamPath);
             if (streamPath)
                 setVideoSource(streamPath);
         }
@@ -71,19 +69,14 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
             if (!prevStream)
                 return;
 
-            await sendCommand(currLaneEntry.parentNode, prevStream.properties.id, generateHLSVideoCommandJSON("endStream"));
+            await sendCommand(currLaneEntry.parentNode, prevStream.properties.id, generateHLSVideoCommandJSON(false));
         }
 
         stopPreviousStream().then(startStream);
 
         return () => {
-            sendCommand(laneMapRef.current.get(currentLane).parentNode, currentStream.properties.id, generateHLSVideoCommandJSON("endStream"));
+            sendCommand(laneMapRef.current.get(currentLane).parentNode, currentStream.properties.id, generateHLSVideoCommandJSON(false));
         }
-        // sendStartHLSCommand();
-        //
-        // return () => {
-        //     sendEndHLSCommand();
-        // }
     }, [currentPage, videoStreams]);
 
     const fetchVideoControlStreams = async () => {
@@ -119,7 +112,6 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
 
         return () => {
             if(!chartReady){
-                console.log("Media unmounted, cleaning up resources")
                 datasources?.neutron?.disconnect();
                 datasources?.gamma?.disconnect();
                 datasources?.threshold?.disconnect();
@@ -178,12 +170,12 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
                                     flexShrink: 0
                                 }}
                             >
-                                {videoSource != null && (
-                                    <HLSVideoComponent
-                                        videoSource={videoSource}
-                                        selectedNode={laneMapRef.current.get(currentLane).parentNode}
-                                    />
-                                )}
+                                {videoSource && laneMapRef.current?.get(currentLane)?.parentNode && (
+                                        <HLSVideoComponent
+                                            videoSource={videoSource}
+                                            selectedNode={laneMapRef.current.get(currentLane).parentNode}
+                                        />
+                                    )}
                             </Stack>
 
                             <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={currentPage === videoStreams.length - 1}>

@@ -7,11 +7,9 @@ import {INode} from "@/lib/data/osh/Node";
 
 const laneMapTransform = createTransform(
     (inboundState: Map<string, LaneMapEntry>) => {
-        console.log('lane map inbound: ', inboundState)
         return Array.from(inboundState.entries());
     },
     (outboundState: [string, LaneMapEntry][]) => {
-        console.log('lane map outboundState: ', outboundState)
         return new Map(outboundState);
     },
     {

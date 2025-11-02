@@ -184,7 +184,6 @@ export default function NationalViewPage() {
 
         var result = observation[0].properties.result;
 
-        console.log("hey res: ", result)
         const parse = (result: any) => ({
             numOccupancies: result.numOccupancies ?? 0,
             numGammaAlarms: result.numGammaAlarms?? 0,

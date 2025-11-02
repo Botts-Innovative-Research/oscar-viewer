@@ -11,7 +11,8 @@ export class EventTableData implements IEventTableData {
     id: number;
     secondaryInspection?: string;
     laneId: string;
-    occupancyId: string;
+    occupancyObsId: string; // observation ID
+    occupancyCount: string; // occupancy count in result
     startTime: string;
     endTime: string;
     maxGamma?: number;
@@ -23,16 +24,15 @@ export class EventTableData implements IEventTableData {
     laneSystemId?: string; // lane system id
     rpmSystemId?: string; // rpm id
     dataStreamId?: string;
-    observationId: string;
-    isAdjudicated: boolean;
     foiId: string;
-    videoPaths: string[]
+    videoPaths: string[];
+    adjudicatedIds: string[];
 
-    constructor(id: number, laneId: string, msgValue: any, observationId: string, foiId: string,  adjudicatedData: AdjudicationData | null = null) {
+    constructor(id: number, laneId: string, msgValue: any, occupancyObsId: string, foiId: string,  adjudicatedData: AdjudicationData | null = null) {
 
         this.id = id
         this.laneId = laneId
-        this.occupancyId = msgValue.occupancyCount;
+        this.occupancyCount = msgValue.occupancyCount;
         this.startTime = msgValue.startTime;
         this.endTime = msgValue.endTime;
         this.maxGamma = msgValue.maxGamma > -1 ? msgValue.maxGamma : null;
@@ -49,11 +49,11 @@ export class EventTableData implements IEventTableData {
             this.status = "None"
         }
         this.adjudicatedData = adjudicatedData ? adjudicatedData : new AdjudicationData("N/A", "N/A", "N/A", "N/A");
-        this.isAdjudicated = msgValue.isAdjudicated;
-        this.observationId = observationId;
-        this.secondaryInspection = msgValue.secondaryInspection;
+        this.occupancyObsId = occupancyObsId;
         this.foiId = foiId;
-        this.videoPaths = msgValue.videoPaths
+        this.videoPaths = msgValue.videoPaths;
+        this.adjudicatedIds = msgValue.adjudicatedIds;
+        this.secondaryInspection = this.setSecondaryStatus(msgValue.adjudicatedIds); //TODO: reference adjudicatedIds to get secondary status
     }
 
     adjudicatedUser?: string;
@@ -64,8 +64,9 @@ export class EventTableData implements IEventTableData {
     }
 
     // addSecondaryInspection(aDataSecondary: AdjudicationData) {
-    //     this.secondaryInspection = true;
-    //     this.adjudicatedData.secondaryInspectionStatus = true
+    //     // this.secondaryInspection = true;
+    //     // this.adjudicatedData.secondaryInspectionStatus = true;
+    //     this.secondaryInspection = aDataSecondary.secondaryInspectionStatus;
     // }
 
     setSecondaryInspection(inspection: string){
@@ -101,13 +102,12 @@ export class EventTableData implements IEventTableData {
         this.foiId = foiId;
     }
 
-    setObservationId(id: string) {
-        this.observationId = id;
+    setOccupancyObsId(id: string) {
+        this.occupancyObsId = id;
     }
 
-    private hashEntry(){
-        // let sTHex = this.startTime.toString(16);
-
+    setSecondaryStatus(adjudicatedIds: string[]){
+        return "NONE";
     }
 }
 
