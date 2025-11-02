@@ -78,6 +78,14 @@ export default class AdjudicationData implements IAdjudicationData {
         this.adjudicationCode = adjudicationCode;
     }
 
+    setOccupancyCount(count: string){
+        this.occupancyCount = count;
+    }
+
+    setOccupancyObsId(id: string) {
+        this.occupancyObsId = id;
+    }
+
     setVehicleId(vehicleId: string){
         this.vehicleId = vehicleId;
     }

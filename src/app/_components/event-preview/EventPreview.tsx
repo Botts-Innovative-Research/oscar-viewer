@@ -152,6 +152,7 @@ export function EventPreview() {
                 return;
             }
 
+            console.log("comboData", comboData);
             const response = await sendCommand(
                 currLaneEntry.parentNode,
                 adjControlStream.properties.id,

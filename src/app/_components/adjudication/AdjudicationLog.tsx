@@ -97,60 +97,23 @@ export default function AdjudicationLog(props: {
         if (!adjudicationControlStream)
             return
 
-        // let systems = await currLaneEntry.parentNode.fetchSystems();
-        //
-        // let rpmSystem: typeof System = systems.find((sys) => sys.properties.id == "0g0g");
-        // console.log("rpmSystem", rpmSystem)
-        //
-        // let controlStream = await rpmSystem.getControlStreamById("0g0g");
-        // console.log("controlStream", controlStream)
-        //
-        // let status = await controlStream.searchStatus(undefined, 1000);
-        // while (status.hasNext()) {
-        //     console.log("status", status);
-        //     let result = await status.nextPage();
-        //     console.log("Result", result);
-        // }
-
-        // let cmds= await rpmSystem.searchControlStreams(undefined, 1000);
-
-        //
-        // while (cmds.hasNext()) {
-        //     let cmdRes = await cmds.nextPage();
-        //
-        //     console.log("cmd res", cmdRes);
-        //     let adjControlStream = cmdRes.find((cmd: any) => cmd.properties.id === "0g0g")
-        //
-        //     console.log("adj control stream", adjControlStream)
-        //
-        // }
-
-        // let cmd: typeof Command = await adjudicationControlStream.getCommandById("0g0opas4p033f4fnl0", undefined);
-        //
-        //
-        // let commandStatus = await cmd.searchStatus(undefined, 1000);
-        // while (commandStatus.hasNext()) {
-        //     let cmdResult = await commandStatus.nextPage();
-        //
-        //     console.log("commadn Result", cmdResult);
-        // }
-
         let commandStatuses = await adjudicationControlStream.searchStatus(undefined, 10000);
 
         while (commandStatuses.hasNext()) {
             let cmdRes = await commandStatuses.nextPage();
-            console.log("cmd res", cmdRes)
 
             let adjDataArr = cmdRes.map((obs: any) => {
-                let results = obs.results;
-                let data = new AdjudicationData(obs.phenomenonTime, results.data.occupancyCount, results.data.occupancyObsId, results.data.alarmingSystemUid);
+                let results = obs.results[0];
+                let data = new AdjudicationData(obs.reportTime, results.data.occupancyCount, results.data.occupancyObsId, results.data.alarmingSystemUid);
                 data.setFeedback(results.data.feedback);
                 data.setIsotopes(results.data.isotopes);
                 data.setSecondaryInspectionStatus(results.data.secondaryInspectionStatus);
                 data.setAdjudicationCode(AdjudicationCodes.getCodeObjByIndex(results.data.adjudicationCode));
                 data.setVehicleId(results.data.vehicleId);
                 data.setFilePaths(results.data.filePaths)
-                data.setTime(obs.phenomenonTime)
+                data.setTime(obs.reportTime)
+                data.setOccupancyCount(props.event.occupancyCount);
+                data.setOccupancyObsId(results.data.occupancyObsId);
                 data.setUser(results.data.username)
                 return data
             });
@@ -158,13 +121,6 @@ export default function AdjudicationLog(props: {
         }
         props.onFetch();
     }
-
-    useEffect(() => {
-
-
-        fetchObservations();
-
-    }, []);
 
     useEffect(() => {
         let filteredLog = adjLog.filter((adjData) => props.event.occupancyObsId.toString() === adjData.occupancyObsId);
