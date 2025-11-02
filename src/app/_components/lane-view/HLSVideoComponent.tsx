@@ -3,6 +3,7 @@
 import React, {useEffect, useRef} from 'react';
 import {INode} from "@/lib/data/osh/Node";
 import {ErrorTypes} from "hls.js";
+import {LiveVideoError} from "@/lib/data/Errors";
 
 export default function HLSVideoComponent({videoSource, selectedNode}: {videoSource: string, selectedNode: INode}) {
 
@@ -17,9 +18,9 @@ export default function HLSVideoComponent({videoSource, selectedNode}: {videoSou
     useEffect(() => {
         if (!videoSource || !selectedNode || !videoRef.current) return;
 
-        const src = selectedNode.isSecure
-            ? `https://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${videoSource}`
-            : `http://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${videoSource}`;
+        const tls = selectedNode.isSecure ? "s" : "";
+        const src = `http${tls}://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${videoSource}`
+
 
         let hls: any;
 
@@ -50,6 +51,8 @@ export default function HLSVideoComponent({videoSource, selectedNode}: {videoSou
                             hls.loadSource(src);
                             hls.startLoad();
                         }, 500);
+                    } else {
+                        throw new LiveVideoError("Error playing HLS stream:" + data.error.message);
                     }
                 });
 
