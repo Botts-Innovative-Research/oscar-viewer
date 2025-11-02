@@ -13,7 +13,8 @@ export interface IAdjudicationData {
     isotopes: string[]
     secondaryInspectionStatus: string
     filePaths: string[]
-    occupancyId: string
+    occupancyObsId: string,
+    occupancyCount: string,
     alarmingSystemUid: string,
     vehicleId?: string
 }
@@ -22,30 +23,36 @@ export interface IAdjudicationData {
 export default class AdjudicationData implements IAdjudicationData {
     time: string;
     id: string;
-    username: string
     feedback: string
     adjudicationCode: AdjudicationCode
     isotopes: string[]
     secondaryInspectionStatus: string
     // secondaryInspectionStatus: "NONE" | "REQUESTED" | "COMPLETED"
     filePaths: string[]
-    occupancyId: string
+    occupancyObsId: string // observation ID
     alarmingSystemUid: string
     vehicleId?: string
+    username: string
+    occupancyCount: string;
 
-    constructor(time: string, username: string, occupancyId: string, alarmingSystemUid: string) {
+    constructor(time: string, occupancyCount: string, occupancyObsId: string, alarmingSystemUid: string) {
         this.time = time;
-        this.username = username;
-        this.occupancyId = occupancyId;
         this.alarmingSystemUid = alarmingSystemUid;
         this.adjudicationCode = AdjudicationCodes.getCodeObjByIndex(0);
         this.secondaryInspectionStatus = "NONE";
+        this.occupancyObsId = occupancyObsId
         this.id = randomUUID();
         this.feedback= '';
         this.isotopes= [];
-        this.filePaths= [];
+        this.filePaths = [];
+        this.username = '';
+        this.occupancyCount = occupancyCount;
     }
 
+
+    setUser(user: string) {
+        this.username = user;
+    }
 
     setTime(isoTime: string) {
         this.time = isoTime;
@@ -69,6 +76,14 @@ export default class AdjudicationData implements IAdjudicationData {
 
     setAdjudicationCode(adjudicationCode: AdjudicationCode) {
         this.adjudicationCode = adjudicationCode;
+    }
+
+    setOccupancyCount(count: string){
+        this.occupancyCount = count;
+    }
+
+    setOccupancyObsId(id: string) {
+        this.occupancyObsId = id;
     }
 
     setVehicleId(vehicleId: string){

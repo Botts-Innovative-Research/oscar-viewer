@@ -6,7 +6,6 @@ export async function sendCommand(node: INode, controlStreamId: string, command:
     console.log("[Command Generation] Body:", command);
     let ep = node.getConnectedSystemsEndpoint(false) + `/controlstreams/${controlStreamId}/commands`
 
-
     return await fetch(ep, {
         method: "POST",
         headers: {
@@ -40,9 +39,6 @@ export class NationalGenerationCommand {
 
 
 export function generateNationalCommandJSON(startDateTime: string, endDateTime: string,) {
-
-    console.log("start", startDateTime)
-    console.log("end", endDateTime)
     return JSON.stringify({
         "parameters": {
             "startDateTime": startDateTime != null ? startDateTime : null,
@@ -81,12 +77,12 @@ export class ReportGenerationCommand {
 
 export function generateReportCommandJSON(startDateTime: string, endDateTime: string, reportType: string, laneUID: string, eventType: string) {
     return JSON.stringify({
-        "params": {
+        "parameters": {
             "reportType": reportType,
             "startDateTime": startDateTime,
             "endDateTime": endDateTime,
-            "laneUID": laneUID,
-            "eventType": eventType
+            "laneUID": laneUID ?? "NONE",
+            "eventType": eventType ?? "NONE"
         }
     })
 }
@@ -99,11 +95,11 @@ export class AdjudicationCommand {
     isotopesCount: number;
     filePathsCount: number;
     filePaths: string;
-    occupancyId: string;
+    occupancyObsId: string;
     vehicleId: string;
 
 
-    constructor(feedback: string, adjudicationCode: number, isotopes: string, secondaryInspectionStatus: string, filePaths: string, occupancyId: string, vehicleId: string) {
+    constructor(feedback: string, adjudicationCode: number, isotopes: string, secondaryInspectionStatus: string, filePaths: string, occupancyObsId: string, vehicleId: string) {
         this.feedback = feedback;
         this.adjudicationCode = adjudicationCode;
         this.isotopes = isotopes;
@@ -111,48 +107,48 @@ export class AdjudicationCommand {
         this.filePathsCount = filePaths.length;
         this.secondaryInspectionStatus = secondaryInspectionStatus;
         this.filePaths = filePaths;
-        this.occupancyId = occupancyId;
+        this.occupancyObsId = occupancyObsId;
         this.vehicleId = vehicleId;
     }
 
     getJsonString() {
-        return JSON.stringify(
-            {
-                "parameters": {
-                    "feedback": this.feedback,
-                    "adjudicationCode": this.adjudicationCode,
-                    "isotopesCount": this.isotopesCount,
-                    "isotopes": this.isotopes,
-                    "secondaryInspectionStatus": this.secondaryInspectionStatus,
-                    "filePathCount": this.filePathsCount,
-                    "filePaths": this.filePaths,
-                    "occupancyId": this.occupancyId,
-                    "vehicleId": this.vehicleId
-                }
-            })
+        return JSON.stringify({
+            "parameters": {
+                "feedback": this.feedback,
+                "adjudicationCode": this.adjudicationCode,
+                "isotopesCount": this.isotopesCount,
+                "isotopes": this.isotopes,
+                "secondaryInspectionStatus": this.secondaryInspectionStatus,
+                "filePathCount": this.filePathsCount,
+                "filePaths": this.filePaths,
+                "occupancyObsId": this.occupancyObsId,
+                "vehicleId": this.vehicleId
+            }
+        })
     }
 }
 
-export function generateAdjudicationCommandJSON(feedback: string, adjudicationCode: AdjudicationCode, isotopes: string, secondaryInspectionStatus: string, filePaths: string, occupancyId: string, vehicleId: string) {
-   return JSON.stringify({
+export function generateAdjudicationCommandJSON(feedback: string, adjudicationCode: AdjudicationCode, isotopes: string[], secondaryInspectionStatus: string, filePaths: string[], occupancyObsId: string, vehicleId: string) {
+
+    return JSON.stringify({
         "parameters": {
             "feedback": feedback,
             "adjudicationCode": adjudicationCode.code,
-            "isotopesCount": isotopes.length,
-            "isotopes": isotopes,
+            "isotopesCount": isotopes?.length ?? 0,
+            "isotopes": isotopes ?? [],
             "secondaryInspectionStatus": secondaryInspectionStatus,
-            "filePathCount": filePaths.length,
-            "filePaths": filePaths,
-            "occupancyId": occupancyId,
-            "vehicleId": vehicleId
+            "filePathCount": filePaths?.length ?? 0,
+            "filePaths": filePaths ?? [],
+            "occupancyObsId": occupancyObsId,
+            "vehicleId": vehicleId ?? ""
         }
     })
 }
 
-export function generateHLSVideoCommandJSON(streamControl: string) {
+export function generateHLSVideoCommandJSON(streamControl: boolean) {
     return JSON.stringify({
         "parameters": {
-            "streamControl": streamControl
+            "streamControl": streamControl ? "startStream" : "endStream"
         }
     })
 }

@@ -12,7 +12,7 @@ export interface IEventTableData {
   id: number; // Unique ID for event
   secondaryInspection?: string;
   laneId: string; // Lane ID
-  occupancyId: string;  // Occupancy ID
+  occupancyCount: string;  // Occupancy ID
   startTime: string;  // Start time of occupancy/event
   endTime: string;  // End time of occupancy/event
   maxGamma?: number; // Max gamma count
@@ -20,9 +20,9 @@ export interface IEventTableData {
   status: string; // Alarm status -> enum?
   adjudicatedUser?: string; // User ID that adjudicated event
   adjudicatedCode?: number; // Adjudication code for event
-  isAdjudicated?: boolean;
   foiId: string;
   videoPaths: string[]
+  adjudicatedIds: string[]
 }
 
 export interface INationalTableData {
@@ -69,12 +69,6 @@ type Chart={
   chartReady: boolean;
 }
 
-type VideoPlayback={
-  videoSources: typeof ConSysApi[];
-  videoReady: boolean;
-  dataSync: typeof DataSynchronizer;
-  addSource: number;
-}
 
 type SelectedEvent = {
   startTime: string;
@@ -101,14 +95,4 @@ export interface LaneStatusItem {
   gammaSources: typeof ConSysApi[],
   neutronSources: typeof ConSysApi[],
   tamperSources: typeof ConSysApi[]
-}
-
-export interface Comment{
-  user: string;
-  vehicleId: string;
-  notes: string;
-  files: File[];
-  adjudication: any;
-  isotope: any;
-  secondaryInspection?: boolean;
 }

@@ -31,8 +31,6 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
 
     return() => {
       if(timersRef.current){
-        console.log("Dashboard: Lane Status unmounted, cleaning up timers")
-
         // clean up timers
         for(const timeout of timersRef.current.values()){
           clearTimeout(timeout);
@@ -51,17 +49,17 @@ export default function LaneStatus(props: {dataSourcesByLane: any, initialLanes:
       });
 
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
-        const state = message.values[0].data.alarmState;
+          const state = message.values[0].data.alarmState;
         updateStatus(laneName, state);
       });
 
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
-        const state = message.values[0].data.alarmState;
+          const state = message.values[0].data.alarmState;
         updateStatus(laneName, state);
       });
 
       laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
-        const state = message.values[0].data.tamperStatus;
+          const state = message.values[0].data.tamperStatus;
         updateStatus(laneName, (state ? 'Tamper': 'TamperOff'));
       });
 

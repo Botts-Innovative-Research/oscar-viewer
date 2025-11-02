@@ -18,7 +18,7 @@ import {
 } from "@/lib/data/Constants";
 
 
-export function isLocationDatastream(datastream: typeof DataStream): boolean {
+export function isLocationDataStream(datastream: typeof DataStream): boolean {
     if (!hasDefinitionProperties(datastream))
         return false;
 
@@ -26,7 +26,7 @@ export function isLocationDatastream(datastream: typeof DataStream): boolean {
         || datastream.properties.observedProperties[0].definition.includes(LOCATION_VECTOR_DEF);
 }
 
-export function isVideoDatastream(datastream: typeof DataStream): boolean {
+export function isVideoDataStream(datastream: typeof DataStream): boolean {
 
     if (!hasDefinitionProperties(datastream))
         return false;
@@ -35,7 +35,7 @@ export function isVideoDatastream(datastream: typeof DataStream): boolean {
     || datastream.properties.observedProperties[0].definition.includes(VIDEO_FRAME_DEF);
 }
 
-export function isGammaDatastream(datastream: typeof DataStream): boolean {
+export function isGammaDataStream(datastream: typeof DataStream): boolean {
 
     if (!hasDefinitionProperties(datastream))
         return false;
@@ -44,7 +44,7 @@ export function isGammaDatastream(datastream: typeof DataStream): boolean {
         && datastream.properties.observedProperties[1].definition.includes(GAMMA_COUNT_DEF);
 }
 
-export function isNeutronDatastream(datastream: typeof DataStream): boolean {
+export function isNeutronDataStream(datastream: typeof DataStream): boolean {
 
     if (!hasDefinitionProperties(datastream))
         return false;
@@ -53,7 +53,7 @@ export function isNeutronDatastream(datastream: typeof DataStream): boolean {
         && datastream.properties.observedProperties[1].definition.includes(NEUTRON_COUNT_DEF);
 }
 
-export function isTamperDatastream(datastream: typeof DataStream): boolean {
+export function isTamperDataStream(datastream: typeof DataStream): boolean {
 
     if (!hasDefinitionProperties(datastream))
         return false;
@@ -61,14 +61,14 @@ export function isTamperDatastream(datastream: typeof DataStream): boolean {
     return datastream.properties.observedProperties[0].definition.includes(TAMPER_STATUS_DEF);
 }
 
-export function isOccupancyDatastream(datastream: typeof DataStream): boolean {
+export function isOccupancyDataStream(datastream: typeof DataStream): boolean {
     if (!hasDefinitionProperties(datastream))
         return false;
 
     return datastream.properties.observedProperties[0].definition.includes(OCCUPANCY_PILLAR_DEF);
 }
 
-export function isConnectionDatastream(datastream: typeof DataStream): boolean {
+export function isConnectionDataStream(datastream: typeof DataStream): boolean {
 
     if (!hasDefinitionProperties(datastream))
         return false;
@@ -76,7 +76,7 @@ export function isConnectionDatastream(datastream: typeof DataStream): boolean {
     return datastream.properties.observedProperties[0].definition.includes(CONNECTION_DEF);
 }
 
-export function isSpeedDatastream(datastream: typeof DataStream): boolean {
+export function isSpeedDataStream(datastream: typeof DataStream): boolean {
 
     if (!hasDefinitionProperties(datastream))
         return false;
@@ -84,7 +84,7 @@ export function isSpeedDatastream(datastream: typeof DataStream): boolean {
     return datastream.properties.observedProperties[0].definition.includes(SPEED_DEF);
 }
 
-export function isThresholdDatastream(datastream: typeof DataStream): boolean {
+export function isThresholdDataStream(datastream: typeof DataStream): boolean {
 
     if (!hasDefinitionProperties(datastream))
         return false;
@@ -92,14 +92,14 @@ export function isThresholdDatastream(datastream: typeof DataStream): boolean {
     return datastream.properties.observedProperties[0].definition.includes(THRESHOLD_DEF);
 }
 
-export function isConfigurationDatastream(datastream: typeof DataStream): boolean {
+export function isConfigurationDataStream(datastream: typeof DataStream): boolean {
     if (!hasDefinitionProperties(datastream))
         return false;
 
     return datastream.properties.observedProperties[0].definition.includes(CONFIG_DEF);
 }
 
-export function isSiteDiagramPathDatastream(datastream: typeof DataStream): boolean {
+export function isSiteDiagramPathDataStream(datastream: typeof DataStream): boolean {
 
     if (!hasDefinitionProperties(datastream))
         return false;
@@ -130,6 +130,7 @@ export function isAdjudicationControlStream(controlStream: typeof ControlStream)
 
     return controlStream.properties.controlledProperties[0].definition.includes(ADJ_DEF);
 }
+
 
 export function isHLSVideoControlStream(controlStream: typeof ControlStream): boolean {
     if (!hasDefinitionProperties(controlStream))

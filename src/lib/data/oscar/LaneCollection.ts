@@ -13,14 +13,14 @@ import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
 
 import {
-    isConnectionDatastream,
-    isGammaDatastream,
-    isNeutronDatastream,
-    isOccupancyDatastream,
-    isTamperDatastream, isThresholdDatastream,
-    isVideoDatastream
+    isConnectionDataStream,
+    isGammaDataStream,
+    isNeutronDataStream,
+    isOccupancyDataStream,
+    isTamperDataStream,
+    isThresholdDataStream,
+    isVideoDataStream
 } from "./Utilities";
-import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 
 class ILaneMeta {
     id: string;
@@ -54,8 +54,6 @@ export class LaneMapEntry {
     datasourcesRealtime: any[];
     parentNode: INode;
     laneSystem: typeof System;
-    // private adjDs: string;
-    // adjControlStreamId: string;
     laneName: string;
     controlStreams: any[]
 
@@ -82,19 +80,19 @@ export class LaneMapEntry {
         this.systems.push(...systems);
     }
 
-    addDatastream(datastream: any) {
+    addDataStream(datastream: any) {
         this.datastreams.push(datastream);
     }
 
-    addDatastreams(datastreams: any[]) {
+    addDataStreams(datastreams: any[]) {
         this.datastreams.push(...datastreams);
     }
 
-    addDatasource(datasource: any) {
+    addDataSource(datasource: any) {
         this.datasources.push(datasource);
     }
 
-    addDatasources(datasources: any[]) {
+    addDataSources(datasources: any[]) {
         this.datasources.push(...datasources);
     }
     setLaneName(name: string){
@@ -105,10 +103,10 @@ export class LaneMapEntry {
         this.controlStreams.push(...controlStreams)
     }
 
-    async getAdjudicationDatastream(dsId: string) {
+    async getAdjudicationDataStream(dsId: string) {
         let isSecure = this.parentNode.isSecure;
         let url = this.parentNode.getConnectedSystemsEndpoint(true);
-        console.log("[ADJ-log] Creating Adjudication Datastream: ", this, url);
+        console.log("[ADJ-log] Creating Adjudication DataStream: ", this, url);
 
         let dsApi = new DataStreams({
             // streamProtocol: isSecure ? "https" : "http",
@@ -120,7 +118,7 @@ export class LaneMapEntry {
             },
         });
         let datastream = await dsApi.getDataStreamById(dsId);
-        console.log("[ADJ-log] Adjudication Datastream: ", datastream);
+        console.log("[ADJ-log] Adjudication DataStream: ", datastream);
         return datastream;
     }
 
@@ -151,7 +149,7 @@ export class LaneMapEntry {
                 let dsRT: typeof ConSysApi = null;
                 let dsBatch: typeof ConSysApi = null;
 
-                if (isVideoDatastream(dsObj)) {
+                if (isVideoDataStream(dsObj)) {
                     dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
                         protocol: dsObj.networkProperties.streamProtocol,
                         endpointUrl: dsObj.networkProperties.endpointUrl,
@@ -210,7 +208,7 @@ export class LaneMapEntry {
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
-            responseFormat: isVideoDatastream(datastream) ? 'application/swe+binary' : 'application/swe+json',
+            responseFormat: isVideoDataStream(datastream) ? 'application/swe+binary' : 'application/swe+json',
             mode: Mode.REPLAY,
             startTime: startTime,
             endTime: endTime
@@ -224,7 +222,7 @@ export class LaneMapEntry {
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
-            responseFormat: isVideoDatastream(datastream) ? 'application/swe+binary' : 'application/swe+json',
+            responseFormat: isVideoDataStream(datastream) ? 'application/swe+binary' : 'application/swe+json',
             mode: Mode.BATCH,
             startTime: startTime,
             endTime: endTime
@@ -272,85 +270,38 @@ export class LaneMapEntry {
 
             const datasourceBatch = this.createBatchConSysApiFromDataStream(ds, startTime, endTime);
 
-            if (isOccupancyDatastream(ds)) {
+            if (isOccupancyDataStream(ds)) {
                 let occArray = dsMap.get('occ')!;
-
                 occArray.push(datasourceBatch);
             }
 
-            if(isGammaDatastream(ds)){
+            if(isGammaDataStream(ds)){
                 let gammaArray = dsMap.get('gamma')!;
                 gammaArray.push(datasourceBatch);
             }
 
-            if(isNeutronDatastream(ds)){
+            if(isNeutronDataStream(ds)){
                 let neutronArray = dsMap.get('neutron')!;
                 neutronArray.push(datasourceBatch);
             }
 
-            if(isTamperDatastream(ds)){
+            if(isTamperDataStream(ds)){
                 let tamperArray = dsMap.get('tamper')!;
                 tamperArray.push(datasourceBatch);
             }
 
-            if(isThresholdDatastream(ds)){
+            if(isThresholdDataStream(ds)){
                 let gammaTrshldArray = dsMap.get('gammaTrshld')!;
                 gammaTrshldArray.push(datasourceBatch);
             }
 
-            if(isConnectionDatastream(ds)){
+            if(isConnectionDataStream(ds)){
                 let connectionArray = dsMap.get('connection')!;
                 connectionArray.push(datasourceBatch);
             }
         }
-
         return dsMap;
     }
-
-
-
-    async checkValidDataSource(ds: typeof DataStream, startTime: string, endTime: string): Promise<typeof ConSysApi> {
-        let datasourceReplay = this.createReplayConSysApiFromDataStream(ds, startTime, endTime);
-
-        let dsApi = this.parentNode.getDataStreamsApi();
-        const result = await dsApi.getDataStreamById(ds.properties.id);
-        console.log("[IS-VIDEO] result from dsapi: ", result);
-
-        let validStartTime, validEndTime: string | null;
-
-        validStartTime = result?.properties?.resultTime[0];
-        validEndTime = result?.properties?.resultTime[1];
-
-        // // Ensure startTime and endTime are within the datastream's valid data time
-        if (validStartTime && validEndTime) {
-            const validStart = new Date(validStartTime);
-            const validEnd = new Date(validEndTime);
-
-            const eventStart = new Date(startTime);
-            const eventEnd = new Date(endTime);
-
-            validStart.setSeconds(validStart.getSeconds() - 1); //acount for ms difference
-            validEnd.setSeconds(validEnd.getSeconds() + 1); // account for ms difference
-
-            //compare events start and end time with ds valid times
-            if (eventStart >= validStart && eventEnd <= validEnd) {
-                console.info(`[IS-VIDEO] Found valid datastream ${validStart} - ${validEnd}`, ds)
-
-                const observations = await ds.searchObservations(new ObservationFilter({resultTime: `${startTime}/${endTime}`}), 1);
-                console.log("[IS-VIDEO] observations", observations)
-
-                let obs = await observations.nextPage();
-                console.log("[IS-VIDEO] obs", obs)
-                if(obs.length > 0)
-                    return datasourceReplay;
-            } else {
-                console.warn(`[IS-VIDEO] Data within interval ${validStart} - ${validEnd} not found for datasource`);
-            }
-        } else {
-            console.warn("[IS-VIDEO] No valid time found for datasource ", ds.properties.id);
-        }
-    }
-
 }
 
 export class LaneDSColl {
@@ -366,8 +317,6 @@ export class LaneDSColl {
     locBatch: typeof ConSysApi[];
     gammaTrshldBatch: typeof ConSysApi[];
     gammaTrshldRT: typeof ConSysApi[];
-    videoRT: typeof ConSysApi[];
-    videoBatch: typeof ConSysApi[];
     adjRT: typeof ConSysApi[];
     adjBatch: typeof ConSysApi[];
     connectionRT: typeof ConSysApi[];
@@ -388,8 +337,6 @@ export class LaneDSColl {
         this.gammaTrshldBatch = [];
         this.gammaTrshldRT = [];
         this.connectionRT = [];
-        this.videoRT = [];
-        this.videoBatch = [];
         this.adjRT = [];
         this.adjBatch = [];
         this.connectionBatch =[];
@@ -411,7 +358,6 @@ export class LaneDSColl {
             'gammaTrshldBatch',
             'adjBatch',
             'connectionBatch',
-            'videoBatch',
             'occRT',
             'gammaRT',
             'neutronRT',
@@ -419,7 +365,6 @@ export class LaneDSColl {
             'locRT',
             'gammaTrshldRT',
             'connectionRT',
-            'videoRT',
             'adjRT'
         ]
     }
@@ -434,7 +379,6 @@ export class LaneDSColl {
             'gammaTrshldBatch',
             'adjBatch',
             'connectionBatch',
-            'videoBatch'
         ]
     }
 
@@ -447,7 +391,6 @@ export class LaneDSColl {
             'locRT',
             'gammaTrshldRT',
             'connectionRT',
-            'videoRT',
             'adjRT'
         ];
     }

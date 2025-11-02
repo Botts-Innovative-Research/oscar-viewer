@@ -10,11 +10,11 @@ import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
 import EventTable from "@/app/_components/event-table/EventTable";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import {
-    isConnectionDatastream,
-    isGammaDatastream,
-    isNeutronDatastream,
-    isTamperDatastream,
-    isThresholdDatastream,
+    isConnectionDataStream,
+    isGammaDataStream,
+    isNeutronDataStream,
+    isTamperDataStream,
+    isThresholdDataStream,
 } from "@/lib/data/oscar/Utilities";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useAppDispatch} from "@/lib/state/Hooks";
@@ -54,25 +54,20 @@ export default function DashboardPage() {
 
                 let laneDSColl = laneDSMap.get(laneid);
 
-                if(isGammaDatastream(ds)){
+                if(isGammaDataStream(ds))
                     laneDSColl.addDS('gammaRT', rtDS);
-                }
 
-                if(isNeutronDatastream(ds)){
+                if(isNeutronDataStream(ds))
                     laneDSColl.addDS('neutronRT', rtDS);
-                }
 
-                if(isTamperDatastream(ds)){
+                if(isTamperDataStream(ds))
                     laneDSColl.addDS('tamperRT', rtDS);
-                }
 
-                if(isConnectionDatastream(ds)){
+                if(isConnectionDataStream(ds))
                     laneDSColl.addDS('connectionRT', rtDS);
-                }
 
-                if(isThresholdDatastream(ds)){
+                if(isThresholdDataStream(ds))
                     laneDSColl.addDS('gammaTrshldRT', rtDS);
-                }
             });
 
             newStatusList.push({
@@ -87,7 +82,6 @@ export default function DashboardPage() {
             const newMap = new Map(laneDSMap)
 
             setDataSourcesByLane(newMap);
-            console.log("laneMap", laneMap)
             dispatch(setLaneMap(laneMap))
         }
         setStatusList(prevState => [...newStatusList,
@@ -107,24 +101,22 @@ export default function DashboardPage() {
         }
     ), [])
 
-
-
     return (
         <Grid container spacing={2} direction={"column"}>
             <Grid item container spacing={2} style={{flexBasis: '33.33%', flexGrow: 0, flexShrink: 0}}>
                 <Grid item xs={8} sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
                     <Paper variant='outlined' sx={{height: "auto", minHeight: 275, padding: 1}}>
-                        <LaneStatus dataSourcesByLane={dataSourcesByLane} initialLanes={statusList}/>
+                        <LaneStatus dataSourcesByLane={dataSourcesByLane} initialLanes={statusList} />
                     </Paper>
 
                     <Paper variant='outlined' sx={{flexGrow: 1, padding: 2, overflow: "hidden"}}>
-                        <EventTable tableMode={'alarmtable'} laneMap={laneMap}/>
+                        <EventTable tableMode={'alarmtable'} laneMap={laneMap} />
                     </Paper>
                 </Grid>
 
                 <Grid item xs={4}>
                     <Paper variant='outlined' sx={{height: "100%"}}>
-                        <QuickView/>
+                        <QuickView />
                     </Paper>
                 </Grid>
 

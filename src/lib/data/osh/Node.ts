@@ -40,7 +40,7 @@ export interface INode {
 
     fetchSystems(): Promise<any[]>,
 
-    fetchDatastreams(laneMap: Map<string, LaneMapEntry>): void,
+    fetchDataStreams(laneMap: Map<string, LaneMapEntry>): void,
 
     fetchLaneSystemsAndSubsystems(): Promise<Map<string, LaneMapEntry>>,
 
@@ -264,7 +264,6 @@ export class Node implements INode {
     async fetchLaneSystemsAndSubsystems(): Promise<Map<string, LaneMapEntry>> {
 
         // check if node is reachable first
-        // let isReachable = OSHSliceWriterReader.checkForEndpoint(this);
         const isReachable = await this.checkForEndpoint();
 
         if (!isReachable) {
@@ -397,14 +396,14 @@ export class Node implements INode {
         }
     }
 
-    async fetchDatastreams(laneMap: Map<string, LaneMapEntry>) {
+    async fetchDataStreams(laneMap: Map<string, LaneMapEntry>) {
         for (const [, laneEntry] of laneMap) {
             if (laneEntry.parentNode.id != this.id) continue;
             try {
                 const datastreams = await laneEntry.laneSystem.searchDataStreams(undefined, 100);
                 while (datastreams.hasNext()) {
                     const datastreamResults = await datastreams.nextPage();
-                    laneEntry.addDatastreams(datastreamResults);
+                    laneEntry.addDataStreams(datastreamResults);
                 }
             } catch (error) {
                 console.error(`Error fetching datastreams for system ${laneEntry.laneSystem.id}:`, error);
