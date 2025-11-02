@@ -144,6 +144,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         tempAdjData.setVehicleId(adjData.vehicleId);
         tempAdjData.setFeedback(adjData.feedback);
         tempAdjData.setIsotopes(adjData.isotopes);
+        tempAdjData.setOccupancyObsId(adjData.occupancyObsId);
 
         // send to server
         const currentLane = props.event.laneId;
