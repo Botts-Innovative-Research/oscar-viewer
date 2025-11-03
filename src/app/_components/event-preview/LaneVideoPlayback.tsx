@@ -30,13 +30,21 @@ export default function LaneVideoPlayback({selectedNode, videos, modeType, start
     const [isUpdatingFromSlider, setIsUpdatingFromSlider] = useState(false);
     const [selVideoIdx, setSelVidIdx] = useState<number>(0);
 
+    const [tls, setTls] = useState("");
     useEffect(() => {
         if(modeType === 'detail'){
             setVideoHeight("500px")
         }else if (modeType=== 'preview'){
             setVideoHeight("300px")
         }
-    }, [modeType, videos]);
+
+        if (!selectedNode)
+            return;
+
+        let tls = selectedNode.isSecure ? 'https' : 'http';
+        setTls(tls)
+
+    }, [modeType, videos, selectedNode]);
 
     useEffect(() => {
         videoRefs.current.forEach(video => {
@@ -155,7 +163,7 @@ export default function LaneVideoPlayback({selectedNode, videos, modeType, start
                                     muted
                                     playsInline
                                 >
-                                    <source src={selectedNode.isSecure ? `https://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${video.trim()}` : `http://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${video.trim()}`} type="video/mp4" />
+                                    <source src={`${tls}://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${video.trim()}`} type="video/mp4" />
                                     Your browser does not support the video tag.
                                 </video>
                             );
