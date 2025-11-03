@@ -12,7 +12,7 @@ import {
 } from "@/lib/state/EventPreviewSlice";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
-import {EventTableData} from "@/lib/data/oscar/TableHelpers";
+import {AlarmTableData, EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {
     DataGrid,
     GridActionsCellItem,
@@ -35,7 +35,8 @@ import {useRouter} from "next/dist/client/components/navigation";
 import {getObservations} from "@/app/utils/ChartUtils";
 import {isThresholdDataStream} from "@/lib/data/oscar/Utilities";
 import {convertToMap, hashString} from "@/app/utils/Utils";
-import {OCCUPANCY_PILLAR_DEF} from "@/lib/data/Constants";
+import {ALARM_DEF, OCCUPANCY_PILLAR_DEF} from "@/lib/data/Constants";
+import {DataStreamError} from "@/lib/data/Errors";
 
 
 interface TableProps {
@@ -80,24 +81,30 @@ export default function EventTable({
     const dispatch = useAppDispatch();
     const router = useRouter();
 
+    const [pageSize, setPageSize] = useState(15);
+    const [loading, setLoading] = useState(false);
+    const [paginationModel, setPaginationModel]= useState({page: 0, pageSize: pageSize});
+    const [rowCount, setRowCount] = useState(100);
+    const [currentPage, setCurrentPage] = useState(0);
+    const [obsCurrentPage, setObsCurrentPage] = useState(0);
 
-    async function doFetch(laneMap: Map<string, LaneMapEntry>) {
-        let allFetchedResults: EventTableData[] = [];
+
+    async function fetchPage(laneMap: Map<string, LaneMapEntry>, currentPage: number, pageSize: number){
+        let pageResults: EventTableData[] = [];
         let promiseGroup: Promise<void>[] = [];
 
         laneMap.forEach((entry: LaneMapEntry, laneName: string) => {
             let promise = (async () => {
-                let startTimeForObs = new Date();
-                startTimeForObs.setFullYear(startTimeForObs.getFullYear() - 1);
-                let fetchedResults = await fetchObservations(entry, startTimeForObs.toISOString(), 'now')
-                allFetchedResults = [...allFetchedResults, ...fetchedResults];
+
+                let fetchedResults = await fetchObservations(entry, currentPage, pageSize);
+                pageResults.push(...fetchedResults)
 
             })();
             promiseGroup.push(promise);
         });
 
         await Promise.all(promiseGroup);
-        dispatch(setEventLogData(allFetchedResults))
+        dispatch(setEventLogData(pageResults))
     }
 
     function doStream(laneMap: Map<string, LaneMapEntry>) {
@@ -106,17 +113,28 @@ export default function EventTable({
         })
     }
 
-    async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
-        const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
-        let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
+    function getTotalObservationCount() {
+        return 10000; // this updates the row count will need to fetch  /count
+    }
 
-        if (!occDS) {
+    async function fetchObservations(entry: LaneMapEntry, currentPage: number, pageSize: number) {
+        const resultsFetched: EventTableData[] = [];
+
+        let datastream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
+
+        if (!datastream)
             return;
-        }
 
-        let obsCollection = await occDS.searchObservations(observationFilter, 15);
+        let timeStart = new Date();
+        timeStart.setFullYear(timeStart.getFullYear() - 1);
 
-        return await handleObservations(obsCollection, laneEntry);
+        const observationFilter = new ObservationFilter(
+            { resultTime: `${timeStart.toISOString()}/now` }
+        );
+
+        let obsCollection = await datastream.searchObservations(observationFilter, pageSize);
+
+        return await handleObservations(obsCollection, entry, currentPage);
     }
 
     async function streamObservations(laneEntry: LaneMapEntry) {
@@ -134,18 +152,41 @@ export default function EventTable({
         });
     }
 
+    console.log("paginationModel", paginationModel)
+
+
     // @ts-ignore
-    async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry): Promise<EventTableData[]> {
+    async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry, currentPage: number): Promise<EventTableData[]> {
         let observations: EventTableData[] = [];
 
-        while (obsCollection.hasNext()) {
+        console.log("obsCollection", obsCollection)
+
+        if (paginationModel.page >= currentPage && obsCollection.hasNext()) {
+
             let obsResults = await obsCollection.nextPage();
+
+            console.log("obsResults", obsResults)
             obsResults.map((obs: any) => {
                 let result = eventFromObservation(obs, laneEntry);
-
                 observations.push(result);
             })
+
+            setObsCurrentPage(obsCollection.currentPage);
+
+        } else if (paginationModel.page < currentPage && obsCollection.hasPrevious()) {
+
+            let obsResults = await obsCollection.previousPage();
+
+            console.log("obsResults", obsResults)
+            obsResults.map((obs: any) => {
+                let result = eventFromObservation(obs, laneEntry);
+                observations.push(result);
+            })
+
+            setObsCurrentPage(obsCollection.currentPage);
+
         }
+        setCurrentPage(obsCollection.currentPage);
         return observations;
     }
 
@@ -188,9 +229,9 @@ export default function EventTable({
     }, [laneMap, laneMap.size]);
 
     const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
-        await doFetch(laneMap);
-        doStream(laneMap);
-    }, [laneMap]);
+        await fetchPage(laneMap, paginationModel.page, paginationModel.pageSize);
+        // doStream(laneMap);
+    }, [laneMap, paginationModel.page, paginationModel.pageSize]);
 
     useEffect(() => {
         let filteredData: EventTableData[] = [];
@@ -386,6 +427,13 @@ export default function EventTable({
         <Box sx={{height: 800, width: '100%'}}>
             <DataGrid
                 rows={filteredTableData}
+                pagination
+                paginationMode="server"
+                loading={loading}
+                paginationModel={paginationModel}
+                onPaginationModelChange={setPaginationModel}
+                rowCount={rowCount}
+                autosizeOnMount
                 columns={columns}
                 onRowClick={handleRowSelection}
                 rowSelectionModel={selectionModel}
