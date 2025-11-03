@@ -103,25 +103,6 @@ export class LaneMapEntry {
         this.controlStreams.push(...controlStreams)
     }
 
-    async getAdjudicationDataStream(dsId: string) {
-        let isSecure = this.parentNode.isSecure;
-        let url = this.parentNode.getConnectedSystemsEndpoint(true);
-        console.log("[ADJ-log] Creating Adjudication DataStream: ", this, url);
-
-        let dsApi = new DataStreams({
-            // streamProtocol: isSecure ? "https" : "http",
-            endpointUrl: `${url}`,
-            tls: isSecure,
-            connectorOpts: {
-                username: this.parentNode.auth.username,
-                password: this.parentNode.auth.password
-            },
-        });
-        let datastream = await dsApi.getDataStreamById(dsId);
-        console.log("[ADJ-log] Adjudication DataStream: ", datastream);
-        return datastream;
-    }
-
     resetDatasources() {
         for (let ds of this.datasourcesRealtime) {
             ds.disconnect();

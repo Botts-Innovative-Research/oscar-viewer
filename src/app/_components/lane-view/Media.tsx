@@ -36,6 +36,7 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
 
     useEffect(() => {
 
+
         if (videoStreams.length === 0)
             return;
 
@@ -57,7 +58,8 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
 
             const streamPath = responseJson?.results?.[0]?.data?.streamPath;
 
-            console.log("stream Path", streamPath);
+            console.log("streamPath", streamPath);
+
             if (streamPath)
                 setVideoSource(streamPath);
         }
@@ -82,9 +84,9 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
     const fetchVideoControlStreams = async () => {
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
 
-        let streams = await currLaneEntry.parentNode.fetchNodeControlStreams();
+        let videoControlStreams = currLaneEntry.controlStreams.filter((stream: typeof ControlStream) => isHLSVideoControlStream(stream));
+        console.log("videoControlStreams", videoControlStreams);
 
-        let videoControlStreams = streams.filter((stream: typeof ControlStream) => isHLSVideoControlStream(stream));
 
         if (!videoControlStreams || videoControlStreams.length == 0){
             console.error("no video control stream");
@@ -130,6 +132,8 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
             setCurrentPage(prev => prev - 1)
         }
     }
+
+
 
     return (
         <Paper variant='outlined' sx={{ width: "100%" }}>
