@@ -273,17 +273,23 @@ export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEnt
         const observationFilter = new ObservationFilter({resultTime: `${startTime.toISOString()}/now`});
 
         let tamperDs: typeof DataStream = laneEntry.findDataStreamByObsProperty(TAMPER_STATUS_DEF);
-        let faultDS: typeof DataStream = laneEntry.findDataStreamByObsProperty(ALARM_DEF);
+        let faultDs: typeof DataStream = laneEntry.findDataStreamByObsProperty(ALARM_DEF);
 
         const results: AlarmTableData[] = [];
 
-        let faultDsCol = await faultDS.searchObservations(observationFilter, 10000);
-        const faultRes = await handleObservations(faultDsCol, laneEntry, false);
-        results.push(...faultRes);
+        if (faultDs) {
+            let faultDsCol = await faultDs.searchObservations(observationFilter, 10000);
+            const faultRes = await handleObservations(faultDsCol, laneEntry, false);
+            results.push(...faultRes);
 
-        let tamperDsCol = await tamperDs.searchObservations(observationFilter, 10000);
-        const tamperRes = await handleObservations(tamperDsCol, laneEntry, false);
-        results.push(...tamperRes)
+        }
+
+        if (tamperDs) {
+            let tamperDsCol = await tamperDs.searchObservations(observationFilter, 10000);
+            const tamperRes = await handleObservations(tamperDsCol, laneEntry, false);
+            results.push(...tamperRes)
+        }
+
 
         return results;
 
@@ -299,31 +305,32 @@ export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEnt
         let futureTime = new Date();
         futureTime.setFullYear(futureTime.getFullYear() + 1);
 
-        let ds: typeof DataStream = laneEntry.findDataStreamByObsProperty(ALARM_DEF);
-        if(!ds) return;
+        let faultDs: typeof DataStream = laneEntry.findDataStreamByObsProperty(ALARM_DEF);
+        if (faultDs) {
+            faultDs.streamObservations(new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`}), (obs: any) => {
+                let state = obs[0].result.alarmState;
 
-        ds.streamObservations(new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`}), (obs: any) => {
-            let state = obs[0].result.alarmState;
+                if(["Scan", "Background", "Alarm"].includes(state)) return;
 
-            if(["Scan", "Background", "Alarm"].includes(state)) return;
+                let result = eventFromObservation(obs[0], laneEntry.laneName);
 
-            let result = eventFromObservation(obs[0], laneEntry.laneName);
-
-            if (result){
-                dispatch(addEventToLaneViewLog(result));
-            }
-        })
+                if (result){
+                    dispatch(addEventToLaneViewLog(result));
+                }
+            })
+        }
 
         let tamperDs: typeof DataStream = laneEntry.findDataStreamByObsProperty(TAMPER_STATUS_DEF);
-        if(!tamperDs) return;
+        if (tamperDs) {
+            tamperDs.streamObservations(new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`}), (obs: any) => {
+                let result = eventFromObservation(obs[0], laneEntry.laneName);
 
-        tamperDs.streamObservations(new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`}), (obs: any) => {
-            let result = eventFromObservation(obs[0], laneEntry.laneName);
+                if (result){
+                    dispatch(addEventToLaneViewLog(result));
+                }
+            })
+        }
 
-            if (result){
-                dispatch(addEventToLaneViewLog(result));
-            }
-        })
     }
 
     // @ts-ignore
