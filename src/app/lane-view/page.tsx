@@ -11,18 +11,16 @@ import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {RootState} from "@/lib/state/Store";
 import React, {useCallback, useContext, useEffect, useState} from "react";
 import {
-
-    isGammaDatastream,
-    isNeutronDatastream,
-    isTamperDatastream,
-    isThresholdDatastream, isVideoDatastream
+    isGammaDataStream,
+    isNeutronDataStream,
+    isTamperDataStream,
+    isThresholdDataStream
 } from "@/lib/data/oscar/Utilities";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {selectLastToggleState, setToggleState} from "@/lib/state/LaneViewSlice";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import StatusTable from "../_components/lane-view/StatusTable";
-
 
 
 export default function LaneViewPage() {
@@ -37,7 +35,6 @@ export default function LaneViewPage() {
     const [gammaDS, setGammaDS] =  useState<typeof ConSysApi>();
     const [neutronDS, setNeutronDS] =  useState<typeof ConSysApi>();
     const [thresholdDS, setThresholdDS] = useState<typeof ConSysApi>();
-    const [videoDS, setVideoDS] =  useState<typeof ConSysApi[]>([]);
     const [tamperDS, setTamperDS] =  useState<typeof ConSysApi>();
 
     const [dataSourcesByLane, setDataSourcesByLane] = useState<LaneDSColl>(null);
@@ -58,8 +55,6 @@ export default function LaneViewPage() {
 
         let laneDsCollection = new LaneDSColl();
 
-        const updatedVideo: typeof ConSysApi[] = [];
-
         const lane = laneMapRef.current.get(currentLane);
 
         if (!lane) {
@@ -71,38 +66,23 @@ export default function LaneViewPage() {
             const ds = lane.datastreams[i]
             let rtDS = lane.datasourcesRealtime[i];
 
-            if (isGammaDatastream(ds)) {
+            if (isGammaDataStream(ds)) {
                 laneDsCollection.addDS('gammaRT', rtDS);
                 setGammaDS(rtDS)
             }
-            if (isNeutronDatastream(ds)) {
-
+            if (isNeutronDataStream(ds)) {
                 laneDsCollection.addDS('neutronRT', rtDS);
                 setNeutronDS(rtDS);
             }
-            if (isTamperDatastream(ds)) {
+            if (isTamperDataStream(ds)) {
                 laneDsCollection.addDS('tamperRT', rtDS);
                 setTamperDS(rtDS)
-
             }
-            if (isThresholdDatastream(ds)) {
+            if (isThresholdDataStream(ds)) {
                 laneDsCollection?.addDS('gammaTrshldRT', rtDS);
                 setThresholdDS(rtDS);
             }
-            if (isVideoDatastream(ds)) {
-                const dsSystemId = ds.properties['system@id'];
-
-                for(let system of lane.systems) {
-                    if(system.properties.id === dsSystemId) {
-                        updatedVideo.push(rtDS)
-                        laneDsCollection.addDS('videoRT', rtDS)
-                    }
-                }
-
-            }
         }
-
-        setVideoDS(updatedVideo);
 
         setDataSourcesByLane(laneDsCollection);
 
@@ -141,7 +121,6 @@ export default function LaneViewPage() {
                         gamma: gammaDS,
                         neutron: neutronDS,
                         threshold: thresholdDS,
-                        video: videoDS
                     }}
 
                     currentLane={currentLane}
@@ -151,7 +130,7 @@ export default function LaneViewPage() {
 
             <Grid item container spacing={2} sx={{ width: "100%" }}>
                 <Paper variant='outlined' sx={{ width: "100%", height: "100%", padding: 2}}>
-                    <Grid container direction="column">
+                    <Grid container direction="column" sx={{ width: "100%"}}>
                         <Grid item sx={{ display: "flex", justifyContent: "center", padding: 1 }}>
                             <ToggleButtonGroup
                                 size="small"

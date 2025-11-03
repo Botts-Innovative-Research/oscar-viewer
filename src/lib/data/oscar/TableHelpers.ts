@@ -11,7 +11,8 @@ export class EventTableData implements IEventTableData {
     id: number;
     secondaryInspection?: string;
     laneId: string;
-    occupancyId: string;
+    occupancyObsId: string; // observation ID
+    occupancyCount: string; // occupancy count in result
     startTime: string;
     endTime: string;
     maxGamma?: number;
@@ -23,15 +24,15 @@ export class EventTableData implements IEventTableData {
     laneSystemId?: string; // lane system id
     rpmSystemId?: string; // rpm id
     dataStreamId?: string;
-    observationId: string;
-    isAdjudicated: boolean;
     foiId: string;
+    videoPaths: string[];
+    adjudicatedIds: string[];
 
-    constructor(id: number, laneId: string, msgValue: any, observationId: string, foiId: string,  adjudicatedData: AdjudicationData | null = null) {
+    constructor(id: number, laneId: string, msgValue: any, occupancyObsId: string, foiId: string,  adjudicatedData: AdjudicationData | null = null) {
 
         this.id = id
         this.laneId = laneId
-        this.occupancyId = msgValue.occupancyCount;
+        this.occupancyCount = msgValue.occupancyCount;
         this.startTime = msgValue.startTime;
         this.endTime = msgValue.endTime;
         this.maxGamma = msgValue.maxGamma > -1 ? msgValue.maxGamma : null;
@@ -48,19 +49,24 @@ export class EventTableData implements IEventTableData {
             this.status = "None"
         }
         this.adjudicatedData = adjudicatedData ? adjudicatedData : new AdjudicationData("N/A", "N/A", "N/A", "N/A");
-        this.isAdjudicated = msgValue.isAdjudicated;
-        this.observationId = observationId;
-        this.secondaryInspection = msgValue.secondaryInspection;
+        this.occupancyObsId = occupancyObsId;
         this.foiId = foiId;
+        this.videoPaths = msgValue.videoPaths;
+        this.adjudicatedIds = msgValue.adjudicatedIds;
+        this.secondaryInspection = this.setSecondaryStatus(msgValue.adjudicatedIds); //TODO: reference adjudicatedIds to get secondary status
     }
+
+    adjudicatedUser?: string;
+    adjudicatedCode?: number;
 
     setAdjudicationData(aData: AdjudicationData) {
         this.adjudicatedData = aData;
     }
 
     // addSecondaryInspection(aDataSecondary: AdjudicationData) {
-    //     this.secondaryInspection = true;
-    //     this.adjudicatedData.secondaryInspectionStatus = true
+    //     // this.secondaryInspection = true;
+    //     // this.adjudicatedData.secondaryInspectionStatus = true;
+    //     this.secondaryInspection = aDataSecondary.secondaryInspectionStatus;
     // }
 
     setSecondaryInspection(inspection: string){
@@ -96,13 +102,12 @@ export class EventTableData implements IEventTableData {
         this.foiId = foiId;
     }
 
-    setObservationId(id: string) {
-        this.observationId = id;
+    setOccupancyObsId(id: string) {
+        this.occupancyObsId = id;
     }
 
-    private hashEntry(){
-        // let sTHex = this.startTime.toString(16);
-
+    setSecondaryStatus(adjudicatedIds: string[]){
+        return "NONE";
     }
 }
 
@@ -177,22 +182,26 @@ export class EventTableDataCollection {
 export class NationalTableData implements INationalTableData {
     id: number;
     site: string;
-    occupancyCount: number;
-    gammaAlarmCount: number;
-    neutronAlarmCount: number;
-    faultAlarmCount: number;
-    tamperAlarmCount: number;
-    gammaNeutronAlarmCount: number;
+    numOccupancies: number;
+    numGammaAlarms: number;
+    numNeutronAlarms: number;
+    numGammaNeutronAlarms: number;
+    numFaults: number;
+    numGammaFaults: number;
+    numNeutronFaults: number;
+    numTampers: number;
 
-    constructor(id: number, siteName: string, occupancyCount: number, gammaCount: number, neutronCount: number, faultCount: number, tamperCount: number, gammaNeutronAlarmCount: number) {
+    constructor(id: number, siteName: string, occupancyCount: number, faultCount: number, gammaCount: number, neutronCount: number, gammaFaultCount: number, neutronFaultCount: number, tamperCount: number, gammaNeutronAlarmCount: number) {
         this.id = id;
         this.site = siteName;
-        this.occupancyCount = occupancyCount;
-        this.gammaAlarmCount = gammaCount;
-        this.neutronAlarmCount = neutronCount;
-        this.faultAlarmCount = faultCount;
-        this.tamperAlarmCount = tamperCount;
-        this.gammaNeutronAlarmCount = gammaNeutronAlarmCount;
+        this.numOccupancies = occupancyCount;
+        this.numGammaAlarms = gammaCount;
+        this.numNeutronAlarms = neutronCount;
+        this.numGammaNeutronAlarms = gammaNeutronAlarmCount;
+        this.numFaults = faultCount;
+        this.numGammaFaults = gammaFaultCount;
+        this.numNeutronFaults = neutronFaultCount;
+        this.numTampers = tamperCount;
     }
 }
 
@@ -210,8 +219,6 @@ export class NationalTableDataCollection {
     addData(data: NationalTableData) {
         this.data.push(data);
     }
-
-
 }
 
 
@@ -245,6 +252,4 @@ export class AlarmTableDataCollection {
     addData(data: AlarmTableData) {
         this.data.push(data);
     }
-
-
 }

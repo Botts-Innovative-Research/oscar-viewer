@@ -9,18 +9,20 @@ import {selectNodes} from "@/lib/state/OSHSlice";
 
 
 export default function NodeSelect(props: {
-    onSelect: (value: string[] | string) => void,
-    node: INode
+    onSelect: (value: INode) => void,
+    node: string
 }) {
 
     const nodes = useSelector((state: RootState) => selectNodes(state));
 
-    const [selectedNode, setSelectedNode] = useState(null);
-
     const handleChange = (event: SelectChangeEvent) => {
         const val = event.target.value;
-        props.onSelect(val)
-        setSelectedNode(val);
+
+        const selectedNode = nodes.find((node: INode) => node.id == val);
+        if (selectedNode) {
+            props.onSelect(selectedNode.id)
+        }
+
     };
 
     return (
@@ -29,8 +31,8 @@ export default function NodeSelect(props: {
             <Select
                 variant="outlined"
                 id="label"
-                label="Node"
-                value= {selectedNode}
+                label="Node Selector"
+                value= {props.node || ""}
                 onChange={handleChange}
                 MenuProps={{
                     MenuListProps: {

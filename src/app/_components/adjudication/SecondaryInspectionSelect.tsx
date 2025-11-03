@@ -26,7 +26,7 @@ export default function SecondaryInspectionSelect(props: {
             <Select
                 variant="outlined"
                 id="label"
-                label="SecondarySelect"
+                label="Secondary Inspection"
                 value={props.secondarySelectVal}
                 onChange={handleChange}
                 MenuProps={{

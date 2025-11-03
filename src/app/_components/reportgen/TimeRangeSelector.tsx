@@ -29,15 +29,12 @@ const timeRanges = [
 
 export default function TimeRangeSelect(props: {
     onSelect: (value: string[] | string) => void,
-    timeRangeVal: string
+    timeRange: string
 }) {
-
-    const [timeRange, setTimeRange] = useState("")
 
     const handleChange = (event: SelectChangeEvent) => {
         const val = event.target.value;
         props.onSelect(val)
-        setTimeRange(val)
     };
 
     return (
@@ -47,7 +44,7 @@ export default function TimeRangeSelect(props: {
                 variant="outlined"
                 id="label"
                 label="TimeRange"
-                value={timeRange}
+                value={props.timeRange}
                 onChange={handleChange}
                 MenuProps={{
                     MenuListProps: {

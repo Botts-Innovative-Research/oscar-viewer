@@ -12,7 +12,7 @@ import {
 } from "@/lib/state/EventPreviewSlice";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
-import {AlarmTableData, EventTableData} from "@/lib/data/oscar/TableHelpers";
+import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {
     DataGrid,
     GridActionsCellItem,
@@ -33,9 +33,9 @@ import {
 } from "@/lib/state/EventDataSlice";
 import {useRouter} from "next/dist/client/components/navigation";
 import {getObservations} from "@/app/utils/ChartUtils";
-import {isThresholdDatastream} from "@/lib/data/oscar/Utilities";
+import {isThresholdDataStream} from "@/lib/data/oscar/Utilities";
 import {convertToMap, hashString} from "@/app/utils/Utils";
-import {selectNodes} from "@/lib/state/OSHSlice";
+import {OCCUPANCY_PILLAR_DEF} from "@/lib/data/Constants";
 
 
 interface TableProps {
@@ -80,8 +80,6 @@ export default function EventTable({
     const dispatch = useAppDispatch();
     const router = useRouter();
 
-    const observedProperty = "http://www.opengis.net/def/pillar-occupancy-count";
-
 
     async function doFetch(laneMap: Map<string, LaneMapEntry>) {
         let allFetchedResults: EventTableData[] = [];
@@ -110,7 +108,7 @@ export default function EventTable({
 
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
-        let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty(observedProperty);
+        let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
 
         if (!occDS) {
             return;
@@ -127,7 +125,7 @@ export default function EventTable({
 
         const observationFilter = new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`});
 
-        let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty(observedProperty);
+        let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
         if(!occDS) return;
 
         occDS.streamObservations(observationFilter, (observation: any) => {
@@ -144,6 +142,7 @@ export default function EventTable({
             let obsResults = await obsCollection.nextPage();
             obsResults.map((obs: any) => {
                 let result = eventFromObservation(obs, laneEntry);
+
                 observations.push(result);
             })
         }
@@ -158,7 +157,7 @@ export default function EventTable({
         // newEvent.setLaneSystemId(laneEntry.lookupParentSystemFromSystemId(newEvent.rpmSystemId));
         newEvent.setDataStreamId(obs["datastream@id"]);
         newEvent.setFoiId(obs["foi@id"]);
-        newEvent.setObservationId(obs.id);
+        newEvent.setOccupancyObsId(obs.id);
 
         return newEvent;
     }
@@ -166,7 +165,8 @@ export default function EventTable({
     function unadjudicatedFilteredList(tableData: EventTableData[]) {
         if (!tableData) return [];
         return tableData.filter((entry) => {
-            if (entry.isAdjudicated) return false;
+            // if (entry.isAdjudicated) return false;
+            if (entry.adjudicatedIds.length > 0) return false;
             return entry.adjudicatedData.adjudicationCode.code === 0;
 
         })
@@ -216,7 +216,7 @@ export default function EventTable({
         {
             field: 'secondaryInspection',
             headerName: 'Secondary Inspection',
-            type: 'boolean',
+            type: 'string',
             minWidth: 125,
             flex: 1,
             filterable: viewSecondary
@@ -229,7 +229,7 @@ export default function EventTable({
             flex: 1,
         },
         {
-            field: 'occupancyId',
+            field: 'occupancyCount',
             headerName: 'Occupancy ID',
             type: 'string',
             minWidth: 125,
@@ -285,9 +285,9 @@ export default function EventTable({
             flex: 1.2,
         },
         {
-            field: 'isAdjudicated',
+            field: 'adjudicatedIds',
             headerName: 'Adjudicated',
-            valueFormatter: (params) => params ? "Yes" : "No",
+            valueFormatter: (params: any) => params.length > 0 ? "Yes" : "No",
             minWidth: 100,
             flex: 1,
             filterable: viewAdjudicated
@@ -321,7 +321,7 @@ export default function EventTable({
         const excludeFields: string[] = [];
         // Exclude fields based on component parameters
         if (!viewSecondary) excludeFields.push('secondaryInspection');
-        if (!viewAdjudicated) excludeFields.push('isAdjudicated');
+        if (!viewAdjudicated) excludeFields.push('adjudicatedIds');
         // if (!viewAdjudicated) excludeFields.push('adjudicatedCode');
 
         return columns
@@ -364,7 +364,7 @@ export default function EventTable({
 
     async function getLatestGB(eventData: any){
         for (const lane of laneMap.values()){
-            let datastreams = lane.datastreams.filter((ds: any) => isThresholdDatastream(ds));
+            let datastreams = lane.datastreams.filter((ds: any) => isThresholdDataStream(ds));
 
             let gammaThreshDs = datastreams.find((ds: typeof DataStream) => ds.properties["system@id"] == eventData.rpmSystemId);
 
@@ -383,7 +383,7 @@ export default function EventTable({
 
 
     return (
-        <Box sx={{flex: 1, width: '100%', height: 800}}>
+        <Box sx={{height: 800, width: '100%'}}>
             <DataGrid
                 rows={filteredTableData}
                 columns={columns}
@@ -399,7 +399,7 @@ export default function EventTable({
                         // Manage visible columns in table based on component parameters
                         columnVisibilityModel: {
                             secondaryInspection: viewSecondary,
-                            isAdjudicated: viewAdjudicated,
+                            adjudicatedIds: viewAdjudicated,
                             // adjudicatedCode: viewAdjudicated,
                         },
 
@@ -448,7 +448,7 @@ export default function EventTable({
                     // },
                     // assign color styling to selected row
                     [`.${gridClasses.row}.selected-row`]: {
-                        backgroundColor: 'rgba(33,150,243,0.5)',
+                        backgroundColor: 'rgba(33, 150, 243, 0.5)',
                     },
                     // Assign styling to 'Status' column based on className
                     [`.${gridClasses.cell}.highlightGamma`]: {

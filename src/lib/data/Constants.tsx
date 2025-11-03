@@ -13,8 +13,6 @@
  *
  */
 
-import { INode } from "./osh/Node";
-
 // Playback States========================================================
 export enum PlaybackState {
     PLAY,
@@ -77,5 +75,28 @@ export enum Protocols {
     WSS = "wss"
 }
 
-// Functions that are reusable
+const smlUri = "http://sensorml.com/ont/swe/property/";
+const radUri = "http://www.opengis.net/def/"
 
+export const SENSOR_LOCATION_DEF = radUri + "property/OGC/0/SensorLocation";
+export const LOCATION_VECTOR_DEF = smlUri + "LocationVector";
+export const RASTER_IMAGE_DEF = smlUri + "RasterImage";
+export const VIDEO_FRAME_DEF = smlUri + "VideoFrame";
+export const CONFIG_DEF =  smlUri + "Config";
+export const SITE_DIAGRAM_DEF = smlUri + "SiteDiagramPath";
+export const REPORT_DEF = smlUri + "ReportType";
+
+// rad specific
+export const ALARM_DEF =  radUri + "Alarm";
+export const GAMMA_COUNT_DEF =  radUri + "GammaGrossCount";
+export const NEUTRON_COUNT_DEF =  radUri + "NeutronGrossCount";
+export const TAMPER_STATUS_DEF =  radUri + "TamperStatus";
+export const OCCUPANCY_PILLAR_DEF =  radUri + "PillarOccupancyCount";
+export const CONNECTION_DEF =  radUri + "ConnectionStatus";
+export const THRESHOLD_DEF =  radUri + "Threshold";
+export const ADJ_DEF =  smlUri + "Feedback";
+export const SPEED_DEF = radUri + "SpeedTime";
+export const NATIONAL_DEF =  radUri + "NumOccupancies";
+export const START_DEF =  smlUri + "StartDateTime";
+export const END_DEF =  smlUri + "EndDateTime";
+export const HLS_VIDEO_DEF =  smlUri + "StreamControl";

@@ -1,25 +1,25 @@
 "use client";
 
-import {Grid, Paper} from "@mui/material";
+import {Box, Grid, Paper} from "@mui/material";
 import LaneStatus, { LaneStatusProps } from "../_components/dashboard/LaneStatus";
 
 import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
-import dynamic from "next/dynamic";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
 import EventTable from "@/app/_components/event-table/EventTable";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import {
-    isConnectionDatastream,
-    isGammaDatastream,
-    isNeutronDatastream,
-    isTamperDatastream, isThresholdDatastream,
+    isConnectionDataStream,
+    isGammaDataStream,
+    isNeutronDataStream,
+    isTamperDataStream,
+    isThresholdDataStream,
 } from "@/lib/data/oscar/Utilities";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useAppDispatch} from "@/lib/state/Hooks";
+import dynamic from "next/dynamic";
 import CircularProgress from "@mui/material/CircularProgress";
-import Box from "@mui/material/Box";
 
 export default function DashboardPage() {
     const laneMap = useSelector((state: RootState) => selectLaneMap(state))
@@ -29,16 +29,6 @@ export default function DashboardPage() {
     const dispatch = useAppDispatch();
     const [statusList, setStatusList] = useState<LaneStatusProps[]>([]);
     const idVal = useRef(1);
-
-    const QuickView = useMemo(() => dynamic(
-        () => import('@/app/_components/dashboard/QuickView'),
-        {
-            loading: () => <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center', minHeight: '100vh'}}><CircularProgress/></Box>,
-            ssr: false
-        }
-    ), [])
-
-
 
     const datasourceSetup = useCallback(async () => {
         // @ts-ignore
@@ -64,22 +54,20 @@ export default function DashboardPage() {
 
                 let laneDSColl = laneDSMap.get(laneid);
 
-                if(isGammaDatastream(ds)){
+                if(isGammaDataStream(ds))
                     laneDSColl.addDS('gammaRT', rtDS);
-                }
-                if(isNeutronDatastream(ds)){
-                    laneDSColl.addDS('neutronRT', rtDS);
-                }
-                if(isTamperDatastream(ds)){
-                    laneDSColl.addDS('tamperRT', rtDS);
-                }
-                if(isConnectionDatastream(ds)){
-                    laneDSColl.addDS('connectionRT', rtDS);
-                }
 
-                if(isThresholdDatastream(ds)){
+                if(isNeutronDataStream(ds))
+                    laneDSColl.addDS('neutronRT', rtDS);
+
+                if(isTamperDataStream(ds))
+                    laneDSColl.addDS('tamperRT', rtDS);
+
+                if(isConnectionDataStream(ds))
+                    laneDSColl.addDS('connectionRT', rtDS);
+
+                if(isThresholdDataStream(ds))
                     laneDSColl.addDS('gammaTrshldRT', rtDS);
-                }
             });
 
             newStatusList.push({
@@ -93,7 +81,6 @@ export default function DashboardPage() {
 
             const newMap = new Map(laneDSMap)
 
-
             setDataSourcesByLane(newMap);
             dispatch(setLaneMap(laneMap))
         }
@@ -106,25 +93,30 @@ export default function DashboardPage() {
         datasourceSetup();
     }, [laneMapRef, laneMapRef.current.size]);
 
-
+    const QuickView = useMemo(() => dynamic(
+        () => import('@/app/_components/dashboard/QuickView'),
+        {
+            loading: () => <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center', minHeight: '100vh'}}><CircularProgress/></Box>,
+            ssr: false
+        }
+    ), [])
 
     return (
         <Grid container spacing={2} direction={"column"}>
             <Grid item container spacing={2} style={{flexBasis: '33.33%', flexGrow: 0, flexShrink: 0}}>
                 <Grid item xs={8} sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
                     <Paper variant='outlined' sx={{height: "auto", minHeight: 275, padding: 1}}>
-                        <LaneStatus dataSourcesByLane={dataSourcesByLane} initialLanes={statusList}/>
+                        <LaneStatus dataSourcesByLane={dataSourcesByLane} initialLanes={statusList} />
                     </Paper>
 
-
                     <Paper variant='outlined' sx={{flexGrow: 1, padding: 2, overflow: "hidden"}}>
-                        <EventTable tableMode={'alarmtable'} laneMap={laneMap}/>
+                        <EventTable tableMode={'alarmtable'} laneMap={laneMap} />
                     </Paper>
                 </Grid>
 
                 <Grid item xs={4}>
                     <Paper variant='outlined' sx={{height: "100%"}}>
-                        <QuickView/>
+                        <QuickView />
                     </Paper>
                 </Grid>
 
@@ -132,3 +124,5 @@ export default function DashboardPage() {
         </Grid>
     );
 }
+
+

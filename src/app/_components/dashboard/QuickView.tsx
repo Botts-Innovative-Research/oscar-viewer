@@ -5,7 +5,8 @@ import { useSelector } from "react-redux";
 import {selectEventPreview} from "@/lib/state/EventPreviewSlice";
 import { EventPreview } from "@/app/_components/event-preview/EventPreview";
 import MapComponent from '../maps/MapComponent';
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import CircularProgress from "@mui/material/CircularProgress";
 
 export default function QuickView() {
     const eventPreview = useSelector(selectEventPreview);
@@ -19,7 +20,9 @@ export default function QuickView() {
         return (
             <Grid item xs={4}>
                 <Paper variant='outlined' sx={{height: "100%"}}>
-                    <Box>Loading...</Box>
+                    <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}>
+                        <CircularProgress/>
+                    </Box>
                 </Paper>
             </Grid>
         )

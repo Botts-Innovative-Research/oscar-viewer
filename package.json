@@ -1,6 +1,6 @@
 {
-  "name": "OpenSensorViewer",
-  "version": "1.1.0",
+  "name": "OSCARViewer",
+  "version": "2.1.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -10,7 +10,8 @@
     "dev": "next dev",
     "lint": "next lint",
     "start-exported": "npx serve@latest web",
-    "test": "cypress run"
+    "test": "cypress run --e2e",
+    "test:all": "cypress run --e2e --spec 'cypress/e2e/all-specs.cy.tsx'"
   },
   "keywords": [
     "OpenSensorHub",
@@ -57,6 +58,7 @@
     "@mui/x-data-grid": "^7.11.1",
     "@mui/x-date-pickers": "^7.20.0",
     "@reduxjs/toolkit": "^2.2.7",
+    "@sentry/nextjs": "^10.22.0",
     "@types/react-dom": "^18.0.9",
     "@types/react-redux": "^7.1.24",
     "antd": "^5.21.4",
@@ -69,6 +71,7 @@
     "dayjs": "^1.11.13",
     "file-loader": "^6.2.0",
     "flatted": "^3.3.3",
+    "hls.js": "^1.6.13",
     "html-plugin": "^0.1.0",
     "html-webpack-tags-plugin": "^3.0.2",
     "https-browserify": "^1.0.0",
@@ -79,7 +82,7 @@
     "nouislider": "^15.6.1",
     "ol": "^10.1.0",
     "ol-layerswitcher": "^4.1.2",
-    "osh-js": "git+https@github.com:kalynstricklin/osh-js.git#add-img-overlay",
+    "osh-js": "^3.1.2",
     "patch-package": "^6.5.0",
     "path-browserify": "^1.0.1",
     "react": "^18.3.1",

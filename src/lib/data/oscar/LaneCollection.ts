@@ -8,21 +8,19 @@ import {randomUUID} from "osh-js/source/core/utils/Utils";
 import System from "osh-js/source/core/consysapi/system/System.js";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
 import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js";
-import {INode, insertObservation} from "@/lib/data/osh/Node";
+import {INode} from "@/lib/data/osh/Node";
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
-import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
-import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 
 import {
-    isConnectionDatastream,
-    isGammaDatastream,
-    isNeutronDatastream,
-    isOccupancyDatastream,
-    isTamperDatastream, isThresholdDatastream,
-    isVideoDatastream
+    isConnectionDataStream,
+    isGammaDataStream,
+    isNeutronDataStream,
+    isOccupancyDataStream,
+    isTamperDataStream,
+    isThresholdDataStream,
+    isVideoDataStream
 } from "./Utilities";
-import {AdjudicationDatastreamConstant} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 
 class ILaneMeta {
     id: string;
@@ -56,8 +54,6 @@ export class LaneMapEntry {
     datasourcesRealtime: any[];
     parentNode: INode;
     laneSystem: typeof System;
-    private adjDs: string;
-    // adjControlStreamId: string;
     laneName: string;
     controlStreams: any[]
 
@@ -84,19 +80,19 @@ export class LaneMapEntry {
         this.systems.push(...systems);
     }
 
-    addDatastream(datastream: any) {
+    addDataStream(datastream: any) {
         this.datastreams.push(datastream);
     }
 
-    addDatastreams(datastreams: any[]) {
+    addDataStreams(datastreams: any[]) {
         this.datastreams.push(...datastreams);
     }
 
-    addDatasource(datasource: any) {
+    addDataSource(datasource: any) {
         this.datasources.push(datasource);
     }
 
-    addDatasources(datasources: any[]) {
+    addDataSources(datasources: any[]) {
         this.datasources.push(...datasources);
     }
     setLaneName(name: string){
@@ -107,10 +103,10 @@ export class LaneMapEntry {
         this.controlStreams.push(...controlStreams)
     }
 
-    async getAdjudicationDatastream(dsId: string) {
+    async getAdjudicationDataStream(dsId: string) {
         let isSecure = this.parentNode.isSecure;
         let url = this.parentNode.getConnectedSystemsEndpoint(true);
-        console.log("[ADJ-log] Creating Adjudication Datastream: ", this, url);
+        console.log("[ADJ-log] Creating Adjudication DataStream: ", this, url);
 
         let dsApi = new DataStreams({
             // streamProtocol: isSecure ? "https" : "http",
@@ -122,7 +118,7 @@ export class LaneMapEntry {
             },
         });
         let datastream = await dsApi.getDataStreamById(dsId);
-        console.log("[ADJ-log] Adjudication Datastream: ", datastream);
+        console.log("[ADJ-log] Adjudication DataStream: ", datastream);
         return datastream;
     }
 
@@ -149,22 +145,11 @@ export class LaneMapEntry {
                 continue;
             }
 
-            let mqttOptUrlArray = (dsObj.networkProperties.endpointUrl).split("/");
-
-            let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
-
-            let mqttOpts = {
-                prefix: this.parentNode.csAPIEndpoint,
-                endpointUrl: mqttOptUrl,
-                username: this.parentNode.auth.username,
-                password: this.parentNode.auth.password,
-            }
-
             try {
                 let dsRT: typeof ConSysApi = null;
                 let dsBatch: typeof ConSysApi = null;
 
-                if(isVideoDatastream(dsObj)){
+                if (isVideoDataStream(dsObj)) {
                     dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
                         protocol: dsObj.networkProperties.streamProtocol,
                         endpointUrl: dsObj.networkProperties.endpointUrl,
@@ -184,14 +169,12 @@ export class LaneMapEntry {
                         startTime: "2020-01-01T08:13:25.845Z",
                         endTime: "2055-01-01T08:13:25.845Z"
                     });
-                }else{
+                } else {
                     dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
                         endpointUrl: dsObj.networkProperties.endpointUrl,
                         resource: `/datastreams/${dsObj.properties.id}/observations`,
                         tls: dsObj.networkProperties.tls,
-                        // protocol: "mqtt",
                         protocol: dsObj.networkProperties.streamProtocol,
-                        mqttOpts: mqttOpts,
                         mode: Mode.REAL_TIME,
                         responseFormat: 'application/swe+json',
                     });
@@ -200,37 +183,13 @@ export class LaneMapEntry {
                         endpointUrl: dsObj.networkProperties.endpointUrl,
                         resource: `/datastreams/${dsObj.properties.id}/observations`,
                         tls: dsObj.networkProperties.tls,
-                        // protocol: "mqtt",
                         protocol: dsObj.networkProperties.streamProtocol,
-                        mqttOpts: mqttOpts,
                         mode: Mode.BATCH,
                         responseFormat: 'application/swe+json',
                         startTime: "2020-01-01T08:13:25.845Z",
                         endTime: "2055-01-01T08:13:25.845Z"
                     });
                 }
-
-                // const dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
-                //     protocol: "mqtt",
-                //     mqttOpts: mqttOpts,
-                //     endpointUrl: dsObj.networkProperties.endpointUrl,
-                //     resource: `/datastreams/${dsObj.properties.id}/observations`,
-                //     tls: dsObj.networkProperties.tls,
-                //     responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
-                //     mode: Mode.REAL_TIME,
-                // });
-
-                // const dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
-                //     protocol: "mqtt",
-                //     mqttOpts: mqttOpts,
-                //     endpointUrl: dsObj.networkProperties.endpointUrl,
-                //     resource: `/datastreams/${dsObj.properties.id}/observations`,
-                //     tls: dsObj.networkProperties.tls,
-                //     responseFormat: isVideoDatastream(dsObj) ? 'application/swe+binary' : 'application/swe+json',
-                //     mode: Mode.BATCH,
-                //     startTime: "2020-01-01T08:13:25.845Z",
-                //     endTime: "2055-01-01T08:13:25.845Z"
-                // });
 
                 rtArray.push(dsRT);
                 batchArray.push(dsBatch);
@@ -244,23 +203,12 @@ export class LaneMapEntry {
     }
 
     createReplayConSysApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
-        let mqttOptUrlArray = (datastream.networkProperties.endpointUrl).split("/");
-        let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
-
-        let mqttOpts = {
-            prefix: this.parentNode.csAPIEndpoint,
-            endpointUrl: mqttOptUrl,
-            username: this.parentNode.auth.username,
-            password: this.parentNode.auth.password,
-        }
         return new ConSysApi(`rtds-${datastream.properties.id}`, {
-            // protocol: "mqtt",
             protocol: datastream.networkProperties.streamProtocol,
-            mqttOpts: mqttOpts,
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
-            responseFormat: isVideoDatastream(datastream) ? 'application/swe+binary' : 'application/swe+json',
+            responseFormat: isVideoDataStream(datastream) ? 'application/swe+binary' : 'application/swe+json',
             mode: Mode.REPLAY,
             startTime: startTime,
             endTime: endTime
@@ -268,24 +216,13 @@ export class LaneMapEntry {
     }
 
     createBatchConSysApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
-        let mqttOptUrlArray = (datastream.networkProperties.endpointUrl).split("/");
-        let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
-
-        let mqttOpts = {
-            prefix: this.parentNode.csAPIEndpoint,
-            endpointUrl: mqttOptUrl,
-            username: this.parentNode.auth.username,
-            password: this.parentNode.auth.password,
-        }
 
         return new ConSysApi(`batchds-${datastream.properties.id}`, {
-            // protocol: "mqtt",
             protocol: datastream.networkProperties.streamProtocol,
-            mqttOpts: mqttOpts,
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
-            responseFormat: isVideoDatastream(datastream) ? 'application/swe+binary' : 'application/swe+json',
+            responseFormat: isVideoDataStream(datastream) ? 'application/swe+binary' : 'application/swe+json',
             mode: Mode.BATCH,
             startTime: startTime,
             endTime: endTime
@@ -326,7 +263,6 @@ export class LaneMapEntry {
         dsMap.set('gamma', []);
         dsMap.set('neutron', []);
         dsMap.set('tamper', []);
-        dsMap.set('video', []);
         dsMap.set('gammaTrshld', []);
         dsMap.set('connection', []);
 
@@ -334,170 +270,37 @@ export class LaneMapEntry {
 
             const datasourceBatch = this.createBatchConSysApiFromDataStream(ds, startTime, endTime);
 
-            if (isOccupancyDatastream(ds)) {
+            if (isOccupancyDataStream(ds)) {
                 let occArray = dsMap.get('occ')!;
-
                 occArray.push(datasourceBatch);
             }
 
-            if(isGammaDatastream(ds)){
+            if(isGammaDataStream(ds)){
                 let gammaArray = dsMap.get('gamma')!;
                 gammaArray.push(datasourceBatch);
             }
 
-            if(isNeutronDatastream(ds)){
+            if(isNeutronDataStream(ds)){
                 let neutronArray = dsMap.get('neutron')!;
                 neutronArray.push(datasourceBatch);
             }
 
-            if(isTamperDatastream(ds)){
+            if(isTamperDataStream(ds)){
                 let tamperArray = dsMap.get('tamper')!;
                 tamperArray.push(datasourceBatch);
             }
 
-            if(isVideoDatastream(ds)) {
-                let videoArray = dsMap.get('video')!;
-
-                videoArray.push(ds);
-            }
-            if(isThresholdDatastream(ds)){
+            if(isThresholdDataStream(ds)){
                 let gammaTrshldArray = dsMap.get('gammaTrshld')!;
                 gammaTrshldArray.push(datasourceBatch);
             }
 
-            if(isConnectionDatastream(ds)){
+            if(isConnectionDataStream(ds)){
                 let connectionArray = dsMap.get('connection')!;
                 connectionArray.push(datasourceBatch);
             }
         }
-
-
-        let ds = dsMap;
-
-        const videoDs = ds.get("video") || [];
-
-        const processVideoDs: typeof DataStream[] = [];
-        const regularVideoDs: typeof DataStream[] = [];
-
-        for(const ds of videoDs){
-
-            const uid = ds.properties['system@link'].uid;
-            const uidArray = uid.split(":");
-
-            if(uidArray.includes("process")){
-                processVideoDs.push(ds);
-            } else{
-                regularVideoDs.push(ds);
-            }
-        }
-
-        let validVideos: typeof DataStream[] = [];
-
-        if(processVideoDs.length > 0){
-
-            for(const videoDs of processVideoDs){
-                const video = await this.checkValidDataSource(videoDs, startTime, endTime)
-                if(video){
-                    validVideos.push(video);
-                }
-
-            }
-
-
-        }else if(processVideoDs.length == 0 && regularVideoDs.length > 0) {
-
-            for(const videoDs of regularVideoDs){
-                const video = await this.checkValidDataSource(videoDs, startTime, endTime)
-                if(video){
-                    validVideos.push(video);
-                }
-            }
-        }
-
-        dsMap.set("video", validVideos);
         return dsMap;
-    }
-
-    async checkValidDataSource(ds: typeof DataStream, startTime: string, endTime: string): Promise<typeof ConSysApi> {
-        let datasourceReplay = this.createReplayConSysApiFromDataStream(ds, startTime, endTime);
-
-        let dsApi = this.parentNode.getDataStreamsApi();
-        const result = await dsApi.getDataStreamById(ds.properties.id);
-        console.log("[IS-VIDEO] result from dsapi: ", result);
-
-        let validStartTime, validEndTime: string | null;
-
-        validStartTime = result?.properties?.resultTime[0];
-        validEndTime = result?.properties?.resultTime[1];
-
-        // // Ensure startTime and endTime are within the datastream's valid data time
-        if (validStartTime && validEndTime) {
-            const validStart = new Date(validStartTime);
-            const validEnd = new Date(validEndTime);
-
-            const eventStart = new Date(startTime);
-            const eventEnd = new Date(endTime);
-
-            validStart.setSeconds(validStart.getSeconds() - 1); //acount for ms difference
-            validEnd.setSeconds(validEnd.getSeconds() + 1); // account for ms difference
-
-            //compare events start and end time with ds valid times
-            if (eventStart >= validStart && eventEnd <= validEnd) {
-                console.info(`[IS-VIDEO] Found valid datastream ${validStart} - ${validEnd}`, ds)
-
-                const observations = await ds.searchObservations(new ObservationFilter({resultTime: `${startTime}/${endTime}`}), 1);
-                console.log("[IS-VIDEO] observations", observations)
-
-                let obs = await observations.nextPage();
-                console.log("[IS-VIDEO] obs", obs)
-                if(obs.length > 0)
-                    return datasourceReplay;
-            } else {
-                console.warn(`[IS-VIDEO] Data within interval ${validStart} - ${validEnd} not found for datasource`);
-            }
-        } else {
-            console.warn("[IS-VIDEO] No valid time found for datasource ", ds.properties.id);
-        }
-    }
-
-    async insertAdjudicationSystem(laneName: string) {
-
-        console.log("[ADJ] Inserting Adjudication System for lane: ", this);
-        let laneId = this.laneSystem.properties.properties.uid.split(":").pop();
-
-        let adJSysJSON = {
-            "type": "SimpleProcess",
-            "uniqueId": `urn:ornl:client:adjudication:${laneId}`,
-            "label": `Adjudication System - ${laneName}`,
-            "definition": "sosa:System"
-        }
-
-        console.log("[ADJ] Inserting Adjudication System: ", adJSysJSON);
-        let endpoint: string = `${this.parentNode.getConnectedSystemsEndpoint(false)}/systems/`;
-
-        let sysId: string = await this.parentNode.insertSystem(adJSysJSON, endpoint);
-        console.log("[ADJ] Inserted Adjudication System: ", sysId);
-        // let dsId = this.insertAdjudicationDataStream(laneName);
-        return sysId;
-    }
-
-    async insertAdjudicationDataStream(systemId: string) {
-        let endpoint: string = `${this.parentNode.getConnectedSystemsEndpoint(false)}/systems/` + systemId + '/datastreams/';
-
-        let dsRes = await this.parentNode.insertDatastream(endpoint, AdjudicationDatastreamConstant);
-        if (dsRes) {
-            console.log("[ADJ] Inserted Adjudication Datastream: ", dsRes);
-            this.adjDs = dsRes;
-        }
-    }
-
-    async insertAdjudicationObservation(obsData: AdjudicationData, datastreamId: string) {
-        let endpoint: string = `${this.parentNode.getConnectedSystemsEndpoint(false)}/datastreams/${datastreamId}/observations`;
-
-        let obsRes = await insertObservation(endpoint, obsData);
-        if (obsRes) {
-            console.log("[ADJ] Inserted Adjudication Observation: ", obsRes);
-        }
     }
 }
 
@@ -514,8 +317,6 @@ export class LaneDSColl {
     locBatch: typeof ConSysApi[];
     gammaTrshldBatch: typeof ConSysApi[];
     gammaTrshldRT: typeof ConSysApi[];
-    videoRT: typeof ConSysApi[];
-    videoBatch: typeof ConSysApi[];
     adjRT: typeof ConSysApi[];
     adjBatch: typeof ConSysApi[];
     connectionRT: typeof ConSysApi[];
@@ -536,8 +337,6 @@ export class LaneDSColl {
         this.gammaTrshldBatch = [];
         this.gammaTrshldRT = [];
         this.connectionRT = [];
-        this.videoRT = [];
-        this.videoBatch = [];
         this.adjRT = [];
         this.adjBatch = [];
         this.connectionBatch =[];
@@ -559,7 +358,6 @@ export class LaneDSColl {
             'gammaTrshldBatch',
             'adjBatch',
             'connectionBatch',
-            'videoBatch',
             'occRT',
             'gammaRT',
             'neutronRT',
@@ -567,7 +365,6 @@ export class LaneDSColl {
             'locRT',
             'gammaTrshldRT',
             'connectionRT',
-            'videoRT',
             'adjRT'
         ]
     }
@@ -582,7 +379,6 @@ export class LaneDSColl {
             'gammaTrshldBatch',
             'adjBatch',
             'connectionBatch',
-            'videoBatch'
         ]
     }
 
@@ -595,7 +391,6 @@ export class LaneDSColl {
             'locRT',
             'gammaTrshldRT',
             'connectionRT',
-            'videoRT',
             'adjRT'
         ];
     }

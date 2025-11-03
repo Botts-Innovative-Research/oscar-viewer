@@ -1,5 +1,5 @@
 import { defineConfig } from "cypress";
-import webpack from "@cypress/webpack-dev-server";
+// import webpack from "@cypress/webpack-dev-server";
 // @ts-ignore
 import path from 'path'
 
@@ -37,7 +37,7 @@ export default defineConfig({
     },
 
     e2e: {
-        baseUrl: 'http://localhost:3000',
+        baseUrl: 'http://localhost:8282',
         setupNodeEvents(on, config) {
             // implement node event listeners here
         },
