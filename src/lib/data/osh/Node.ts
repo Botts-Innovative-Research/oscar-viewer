@@ -423,14 +423,12 @@ export class Node implements INode {
 
     async fetchLaneControlStreams(laneMap: Map<string, LaneMapEntry>) {
         for (const [, laneEntry] of laneMap) {
-
             if (laneEntry.parentNode.id != this.id) continue;
             try {
-                const controlStreamCollection = await laneEntry.laneSystem.searchControlStreams(undefined, 100);
-                while (controlStreamCollection.hasNext()) {
-                    const controlStreamResults = await controlStreamCollection.nextPage();
+                const controlStreams = await laneEntry.laneSystem.searchControlStreams(undefined, 100);
+                while (controlStreams.hasNext()) {
+                    const controlStreamResults = await controlStreams.nextPage();
                     laneEntry.addControlStreams(controlStreamResults);
-
                 }
             } catch (error) {
                 console.error(`Error fetching control streams for system ${laneEntry.laneSystem.id}:`, error);
