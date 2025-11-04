@@ -15,7 +15,7 @@ import "leaflet/dist/leaflet.css"
 import {
     isGammaDataStream, isLocationDataStream,
     isNeutronDataStream, isSiteDiagramPathDataStream,
-    isTamperDataStream,
+    isTamperDataStream
 } from "@/lib/data/oscar/Utilities";
 import {setCurrentLane} from "@/lib/state/LaneViewSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
@@ -236,14 +236,14 @@ export default function MapComponent() {
 
     useEffect(() => {
         if(!nodes) return;
-
         nodes.forEach(async (node: INode) => {
 
             await node.fetchOscarServiceSystem()
 
-            let system = node.oscarServiceSystem
+            let system = node.oscarServiceSystem;
 
-            if(!system) console.error("No oscar service system found");
+            if(!system)
+                console.error("No oscar service system found");
 
             let dataStreams = await node.fetchDataStream(system);
 
@@ -269,7 +269,7 @@ export default function MapComponent() {
 
 
     const getSiteDiagramPath = (path: string, node: INode) => {
-        return node.isSecure ? `https://${node.address}:${node.port}${node.oshPathRoot}/buckets/sitemap/${path}` : `http://${node.address}:${node.port}${node.oshPathRoot}/buckets/sitemap/${path}`;
+        return node.isSecure ? `https://${node.address}:${node.port}${node.oshPathRoot}/buckets/${path}` : `http://${node.address}:${node.port}${node.oshPathRoot}/buckets/${path}`;
     }
 
     useEffect(() => {
