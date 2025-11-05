@@ -1,6 +1,6 @@
 import './AccountViewPage.cy';
 import './DashboardPage.cy';
-// import './EventDetailsPage.cy';
+import './EventDetailsPage.cy';
 import './EventLogPage.cy';
 import './LaneViewPage.cy';
 import './NationalViewPage.cy';
