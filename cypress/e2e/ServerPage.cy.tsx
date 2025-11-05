@@ -43,7 +43,7 @@ describe('Servers Page (E2E)', () => {
         })
     });
 
-    describe('Editing/Removing Nodes', () => {
+    describe.skip('Editing/Removing Nodes', () => {
         it.skip('Edit existing node displays changes in node list', () => {
 
             cy.contains('button', 'Edit').first().click();

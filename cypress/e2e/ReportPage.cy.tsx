@@ -25,7 +25,8 @@ describe('Report Page (E2E)', () => {
 
 
     const generateReport = () => {
-        cy.contains('button', 'Generate Report').click();
+        cy.wait(200);
+        cy.contains('button', 'Generate Report').should('not.be.disabled').click();
     };
 
     const verifyReportGeneration = () => {
