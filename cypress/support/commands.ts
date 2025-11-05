@@ -100,7 +100,7 @@ Cypress.Commands.add('visitNationalPage', () => {
 
     cy.url().should('include', '/national-view');
 
-    cy.contains('National View:')
+    cy.contains('National View')
         .should('be.visible');
 });
 
