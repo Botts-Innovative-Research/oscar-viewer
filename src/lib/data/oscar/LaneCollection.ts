@@ -125,6 +125,17 @@ export class LaneMapEntry {
                 console.warn("Skipping invalid datastream:", dsObj);
                 continue;
             }
+            console.log("dsobj endpointurl:", dsObj.networkProperties.endpointUrl)
+            let mqttOptUrlArray = (dsObj.networkProperties.endpointUrl).split("/");
+            let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
+            console.log("mqtt endpointurl:", mqttOptUrl)
+
+            let mqttOpts = {
+                prefix: this.parentNode.csAPIEndpoint,
+                endpointUrl: mqttOptUrl,
+                username: this.parentNode.auth.username,
+                password: this.parentNode.auth.password,
+            }
 
             try {
                 let dsRT: typeof ConSysApi = null;
@@ -132,7 +143,9 @@ export class LaneMapEntry {
 
                 if (isVideoDataStream(dsObj)) {
                     dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
-                        protocol: dsObj.networkProperties.streamProtocol,
+                        // protocol: dsObj.networkProperties.streamProtocol,
+                        protocol: 'mqtt',
+                        mqttOpts: mqttOpts,
                         endpointUrl: dsObj.networkProperties.endpointUrl,
                         resource: `/datastreams/${dsObj.properties.id}/observations`,
                         tls: dsObj.networkProperties.tls,
@@ -141,7 +154,9 @@ export class LaneMapEntry {
                     });
 
                     dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
-                        protocol: dsObj.networkProperties.streamProtocol,
+                        // protocol: dsObj.networkProperties.streamProtocol,
+                        protocol: 'mqtt',
+                        mqttOpts: mqttOpts,
                         endpointUrl: dsObj.networkProperties.endpointUrl,
                         resource: `/datastreams/${dsObj.properties.id}/observations`,
                         tls: dsObj.networkProperties.tls,
@@ -155,7 +170,9 @@ export class LaneMapEntry {
                         endpointUrl: dsObj.networkProperties.endpointUrl,
                         resource: `/datastreams/${dsObj.properties.id}/observations`,
                         tls: dsObj.networkProperties.tls,
-                        protocol: dsObj.networkProperties.streamProtocol,
+                        // protocol: dsObj.networkProperties.streamProtocol,
+                        protocol: 'mqtt',
+                        mqttOpts: mqttOpts,
                         mode: Mode.REAL_TIME,
                         responseFormat: 'application/swe+json',
                     });
@@ -164,7 +181,9 @@ export class LaneMapEntry {
                         endpointUrl: dsObj.networkProperties.endpointUrl,
                         resource: `/datastreams/${dsObj.properties.id}/observations`,
                         tls: dsObj.networkProperties.tls,
-                        protocol: dsObj.networkProperties.streamProtocol,
+                        // protocol: dsObj.networkProperties.streamProtocol,
+                        protocol: 'mqtt',
+                        mqttOpts: mqttOpts,
                         mode: Mode.BATCH,
                         responseFormat: 'application/swe+json',
                         startTime: "2020-01-01T08:13:25.845Z",
@@ -184,8 +203,19 @@ export class LaneMapEntry {
     }
 
     createReplayConSysApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
+        let mqttOptUrlArray = (datastream.networkProperties.endpointUrl).split("/");
+        let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
+
+        let mqttOpts = {
+            prefix: this.parentNode.csAPIEndpoint,
+            endpointUrl: mqttOptUrl,
+            username: this.parentNode.auth.username,
+            password: this.parentNode.auth.password,
+        }
         return new ConSysApi(`rtds-${datastream.properties.id}`, {
-            protocol: datastream.networkProperties.streamProtocol,
+            // protocol: datastream.networkProperties.streamProtocol,
+            protocol: 'mqtt',
+            mqttOpts: mqttOpts,
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
@@ -198,8 +228,20 @@ export class LaneMapEntry {
 
     createBatchConSysApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
 
+        let mqttOptUrlArray = (datastream.networkProperties.endpointUrl).split("/");
+        let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
+
+        let mqttOpts = {
+            prefix: this.parentNode.csAPIEndpoint,
+            endpointUrl: mqttOptUrl,
+            username: this.parentNode.auth.username,
+            password: this.parentNode.auth.password,
+        }
+
         return new ConSysApi(`batchds-${datastream.properties.id}`, {
-            protocol: datastream.networkProperties.streamProtocol,
+            // protocol: datastream.networkProperties.streamProtocol,
+            protocol: 'mqtt',
+            mqttOpts: mqttOpts,
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
