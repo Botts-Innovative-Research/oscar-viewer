@@ -214,14 +214,6 @@ export default function EventTable({
     // Column definition for EventTable
     const columns: GridColDef<EventTableData>[] = [
         {
-            field: 'secondaryInspection',
-            headerName: 'Secondary Inspection',
-            type: 'string',
-            minWidth: 125,
-            flex: 1,
-            filterable: viewSecondary
-        },
-        {
             field: 'laneId',
             headerName: 'Lane ID',
             type: 'string',
@@ -320,7 +312,7 @@ export default function EventTable({
     const getColumnList = () => {
         const excludeFields: string[] = [];
         // Exclude fields based on component parameters
-        if (!viewSecondary) excludeFields.push('secondaryInspection');
+        // if (!viewSecondary) excludeFields.push('secondaryInspection');
         if (!viewAdjudicated) excludeFields.push('adjudicatedIds');
         // if (!viewAdjudicated) excludeFields.push('adjudicatedCode');
 

@@ -125,12 +125,11 @@ export class LaneMapEntry {
                 console.warn("Skipping invalid datastream:", dsObj);
                 continue;
             }
-            console.log("dsobj endpointurl:", dsObj.networkProperties.endpointUrl)
             let mqttOptUrlArray = (dsObj.networkProperties.endpointUrl).split("/");
             let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
-            console.log("mqtt endpointurl:", mqttOptUrl)
 
             let mqttOpts = {
+                shared: true,
                 prefix: this.parentNode.csAPIEndpoint,
                 endpointUrl: mqttOptUrl,
                 username: this.parentNode.auth.username,
