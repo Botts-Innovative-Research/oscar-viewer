@@ -35,9 +35,10 @@ declare global {
       visitMapPage(): Chainable<any>;
       visitAccountPage(): Chainable<any>;
       visitEventsPage(): Chainable<any>;
-      visitConfigPage(): Chainable<any>;
       visitServerPage(): Chainable<any>;
       visitLaneViewPage(): Chainable<any>;
+      visitReportPage(): Chainable<any>;
+
     }
   }
 }

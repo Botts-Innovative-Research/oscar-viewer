@@ -37,13 +37,12 @@
 // }
 
 
-
 Cypress.Commands.add('selectRapiscanEvent', () => {
     cy.get('.MuiDataGrid-row').then(($rows) => {
         const selectedRow = $rows.filter('.selected-row');
         if (selectedRow.length === 0) {
             cy.get('.MuiDataGrid-row')
-                .contains('[data-field="laneId"]', 'Rapiscan')
+                .contains('[data-field="laneId"]', 'Rap Lane')
                 .closest('.MuiDataGrid-row')
                 .click();
         }
@@ -69,7 +68,7 @@ Cypress.Commands.add('selectAspectEvent', () => {
         const selectedRow = $rows.filter('.selected-row');
         if (selectedRow.length === 0) {
             cy.get('.MuiDataGrid-row')
-                .filter(':contains("Aspect")')
+                .filter(':contains("Aspect Lane")')
                 .first()
                 // .contains('[data-field="laneId"]', 'Aspect')
                 // .closest('.MuiDataGrid-row')
@@ -101,7 +100,7 @@ Cypress.Commands.add('visitNationalPage', () => {
 
     cy.url().should('include', '/national-view');
 
-    cy.contains('National View:')
+    cy.contains('National View')
         .should('be.visible');
 });
 
@@ -124,13 +123,6 @@ Cypress.Commands.add('visitEventsPage', () => {
     cy.url().should('include', '/event-log');
 });
 
-// Cypress.Commands.add('visitConfigPage', () => {
-//     cy.visit('/');
-//     cy.get('[data-testid="SaveRoundedIcon"]').click();
-//
-//     cy.url().should('include', '/savestate/');
-// });
-
 Cypress.Commands.add('visitServerPage', () => {
     cy.visit('/');
     cy.get('[data-testid="CloudRoundedIcon"]').click();
@@ -142,17 +134,23 @@ Cypress.Commands.add('visitLaneViewPage', () => {
     cy.visit('/');
     cy.visitDashboardPage();
 
-    cy.get('[data-testid="CheckCircleIcon"]')
+    cy.get('[data-testid="CheckCircleIcon"]').get('[aria-label="Rap Lane"]')
         .should('be.visible')
-        .click();
-
-    cy.get('[aria-label="Rapiscan"]')
-        .should('be.visible').first()
         .click();
 
     cy.url().should('include', '/lane-view/');
 
     cy.contains('Lane View: ').should('be.visible');
+});
+
+Cypress.Commands.add('visitReportPage', () => {
+    cy.visit('/');
+    cy.get('[data-testid="DownloadIcon"]').click();
+
+    cy.url().should('include', '/report');
+
+    cy.contains('Reports')
+        .should('be.visible');
 });
 
 

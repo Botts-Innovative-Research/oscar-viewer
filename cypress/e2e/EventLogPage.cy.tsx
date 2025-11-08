@@ -1,4 +1,3 @@
-import {afterEach} from "mocha";
 
 describe('Event Log', () => {
     before(() => {
@@ -18,36 +17,27 @@ describe('Event Log', () => {
                 });
         });
 
-        it.skip('FE-PERF-005 - View details of a non-alarming occupancy.', () => {
-
-            //click first row in table that status is None
+        it('FE-PERF-005 - View details of a non-alarming occupancy.', () => {
+            // this may fail but i have seen it pass on occasion, need to work on this one
             cy.selectNoneEvent();
 
-            cy.get('[data-field="Menu"]')
-                .get('[data-testid="MoreVertIcon"]')
-                .click();
-                // .get('[data-field="Menu"').click({ force: true })
-                // .get('[data-testid="MortVertIcon"]')
-                // .click({ force: true })
+            cy.wait(500);
 
-
-            // menu is displayed to navigate to details
-            cy.get('.MuiList-root .MuiDataGrid-menulist')
-                .should('be.visible');
-
-            cy.get('.MuiMenuItem-root')
-                .contains('Details')
+            cy.get('.MuiDataGrid-row.selected-row', { timeout: 10000 })
+                .find('[data-field="Menu"] button[aria-label="more"]')
+                .should('exist')
                 .click({force: true});
 
-            // event details page is opened
-            cy.url().should('include', '/event-details/');
 
-            // navigate back
-            cy.contains('button', 'Back')
-                .click();
+            cy.get('body .MuiMenuItem-root')
+                .contains('Details')
+                .should('be.visible')
+                .click({ force: true });
 
+            cy.url().should('include', '/event-details');
+            cy.wait(2000);
+            cy.contains('button', 'Back').click();
             cy.url().should('include', '/event-log');
-
         });
 
         it('FE-PERF-004 - Apply Filter to the past alarms view', () => {
@@ -68,10 +58,14 @@ describe('Event Log', () => {
             // set filter to Gamma
             cy.get('.MuiDataGrid-filterForm input[placeholder="Filter value"]')
                 .clear()
-                .type('Gamma');
+                .type('Gamma{enter}');
 
             // verify only gamma events are displayed in table
             cy.get('.MuiDataGrid-row').contains('Gamma');
+
+            cy.get('.MuiDataGrid-filterForm input[placeholder="Filter value"]')
+                .clear();
+
         });
 
         // afterEach(() => {
