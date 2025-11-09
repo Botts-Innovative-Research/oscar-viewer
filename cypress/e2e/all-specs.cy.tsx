@@ -1,4 +1,3 @@
-import './AccountViewPage.cy';
 import './DashboardPage.cy';
 import './EventDetailsPage.cy';
 import './EventLogPage.cy';

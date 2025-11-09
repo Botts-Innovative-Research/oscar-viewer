@@ -138,12 +138,13 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
     setDrawerOpen(false);
   };
 
+
   // Menu items for drawer
   const menuItems = [
     {
       title: "Dashboard",
       icon: <DashboardRoundedIcon />,
-      href: "/dashboard",
+      href: "/",
     },
     {
       title: "Events",
@@ -169,11 +170,6 @@ export default function Navbar({ children }: { children: React.ReactNode }) {
 
   // Settings items for drawer
   const settingsItems = [
-    {
-      title: "Account",
-      icon: <AccountCircleRoundedIcon />,
-      href: "/",
-    },
     {
       title: "Servers",
       icon: <CloudRoundedIcon />,

@@ -33,7 +33,6 @@ declare global {
       visitDashboardPage(): Chainable<any>;
       visitNationalPage(): Chainable<any>;
       visitMapPage(): Chainable<any>;
-      visitAccountPage(): Chainable<any>;
       visitEventsPage(): Chainable<any>;
       visitServerPage(): Chainable<any>;
       visitLaneViewPage(): Chainable<any>;

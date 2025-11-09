@@ -91,7 +91,7 @@ Cypress.Commands.add('visitDashboardPage', () => {
     cy.visit('/');
     cy.get('[data-testid="DashboardRoundedIcon"]').click();
 
-    cy.url().should('include', '/dashboard');
+    cy.url().should('include', '/');
 });
 
 Cypress.Commands.add('visitNationalPage', () => {
@@ -108,12 +108,6 @@ Cypress.Commands.add('visitMapPage', () => {
     cy.visit('/');
     cy.get('[data-testid="LocationOnRoundedIcon"]').click();
     cy.url().should('include', '/map/');
-});
-
-Cypress.Commands.add('visitAccountPage', () => {
-    cy.get('[data-testid="AccountCircleRoundedIcon"]').click();
-
-    cy.url().should('include', '/');
 });
 
 Cypress.Commands.add('visitEventsPage', () => {

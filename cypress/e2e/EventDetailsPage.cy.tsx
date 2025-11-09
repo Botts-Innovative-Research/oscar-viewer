@@ -144,7 +144,7 @@ describe('Event Details', () => {
         it('should navigate back to dashboard', () => {
             cy.contains('button', 'Back')
                 .click();
-            cy.url().should('include', '/dashboard');
+            cy.url().should('include', '/');
         });
     });
 });
