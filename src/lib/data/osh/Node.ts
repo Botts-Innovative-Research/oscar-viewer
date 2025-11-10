@@ -16,6 +16,7 @@ import ControlStreams from "osh-js/source/core/consysapi/controlstream/ControlSt
 import {ISystem} from "@/lib/data/osh/Systems";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import { hashString } from "@/app/utils/Utils";
+import {LatLngExpression} from "leaflet";
 
 const SYSTEM_UID_PREFIX = "urn:osh:system:";
 
@@ -31,6 +32,9 @@ export interface INode {
     isDefaultNode: boolean
     laneAdjMap?: Map<string, string>,
     oscarServiceSystem: any;
+    siteMapPath: string;
+    lowerLeftBound: LatLngExpression;
+    upperRightBound: LatLngExpression;
 
     getConnectedSystemsEndpoint(noProtocolPrefix: boolean): string,
 
@@ -71,6 +75,10 @@ export interface INode {
     getObservationsApi(): typeof Observations
 
     authFileServer(): any
+
+    setSiteMapPath(path: string): void
+    setUpperRightBox(latLong: LatLngExpression): void
+    setLowerLeftBox(latLong: LatLngExpression): void
 }
 
 export interface NodeOptions {
@@ -83,7 +91,7 @@ export interface NodeOptions {
     isSecure?: boolean,
     isDefaultNode?: boolean
     laneAdjMap?: Map<string, string>,
-    oscarServiceSystem?: typeof System
+    oscarServiceSystem?: typeof System,
 }
 
 export class Node implements INode {
@@ -97,6 +105,9 @@ export class Node implements INode {
     auth: { username: string, password: string } | null = null;
     isDefaultNode: boolean;
     laneAdjMap: Map<string, string> = new Map<string, string>();
+    siteMapPath: string;
+    lowerLeftBound: LatLngExpression;
+    upperRightBound: LatLngExpression;
 
     dataStreamsApi: typeof DataStreams;
     systemsApi: typeof Systems;
@@ -129,6 +140,7 @@ export class Node implements INode {
         this.observationsApi = new Observations(apiConfig);
         this.controlStreamApi = new ControlStreams(apiConfig);
         this.oscarServiceSystem = options.oscarServiceSystem || null;
+
     }
 
     async authFileServer() {
@@ -160,6 +172,18 @@ export class Node implements INode {
 
     getSystemsApi(): typeof Systems {
         return this.systemsApi;
+    }
+
+    setSiteMapPath(path: string) {
+        this.siteMapPath = path;
+    }
+
+    setLowerLeftBox(latLon: LatLngExpression) {
+        this.lowerLeftBound = latLon;
+    }
+
+    setUpperRightBox(latLon: LatLngExpression) {
+        this.upperRightBound = latLon;
     }
 
     async searchObservations(observationFilter: typeof ObservationFilter, pageSize: number = 10) {

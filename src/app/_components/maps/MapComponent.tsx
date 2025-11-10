@@ -19,18 +19,17 @@ import {
 } from "@/lib/data/oscar/Utilities";
 import {setCurrentLane} from "@/lib/state/LaneViewSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import L, {LatLngExpression} from "leaflet";
+import L from "leaflet";
 import {selectNodes} from "@/lib/state/OSHSlice";
 import {INode} from "@/lib/data/osh/Node";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import { convertToMap } from "@/app/utils/Utils";
 
 
 export default function MapComponent() {
     const mapcontainer: string = "mapcontainer";
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
-
     const leafletViewRef = useRef<typeof LeafletView | null>(null);
-
     const {laneMapRef} = useContext(DataSourceContext);
     const dispatch = useAppDispatch();
 
@@ -40,15 +39,7 @@ export default function MapComponent() {
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
     const [locationList, setLocationList] = useState<LaneWithLocation[] | null>(null);
     const [dsLocations, setDsLocations] = useState([]);
-    const [siteMapPath, setSiteMapPath] = useState<string>(null);
-    const [lowerLeftBound, setLowerLeftBound] = useState<LatLngExpression>(null);
-    const [upperRightBound, setUpperRightBound] = useState<LatLngExpression>(null);
 
-    const convertToMap = (obj: any) =>{
-        if(!obj) return new Map();
-        if(obj instanceof Map) return obj;
-        return new Map(Object.entries(obj));
-    }
 
     useEffect(() =>{
         if(locationList == null || locationList.length === 0 && laneMap.size > 0) {
@@ -144,15 +135,6 @@ export default function MapComponent() {
             laneDSColl.addConnectToALLDSMatchingName("connectionRT");
 
         }
-
-        // return () => {
-        //     for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
-        //         laneDSColl.addDisconnectToALLDSMatchingName("gammaRT");
-        //         laneDSColl.addDisconnectToALLDSMatchingName("neutronRT");
-        //         laneDSColl.addDisconnectToALLDSMatchingName("tamperRT");
-        //         laneDSColl.addDisconnectToALLDSMatchingName("connectionRT");
-        //     }
-        // }
     }, [dataSourcesByLane]);
 
     useEffect(() => {
@@ -165,7 +147,6 @@ export default function MapComponent() {
         if(!isInit)
             datasourceSetup();
     }, [isInit]);
-
 
     useEffect(() => {
         if (!leafletViewRef.current && !isInit) {
@@ -233,63 +214,72 @@ export default function MapComponent() {
 
     }, [locationList, isInit]);
 
-
-    useEffect(() => {
-        if(!nodes) return;
-        nodes.forEach(async (node: INode) => {
-
-            await node.fetchOscarServiceSystem()
-
-            let system = node.oscarServiceSystem;
-
-            if(!system)
-                console.error("No oscar service system found");
-
-            let dataStreams = await node.fetchDataStream(system);
-
-            if(!dataStreams)
-                console.warn("no datastreams");
-
-            for (const ds of dataStreams) {
-                if(isSiteDiagramPathDataStream(ds)){
-                    let obsCollections = await ds.searchObservations(new ObservationFilter({resultTime: 'latest'}), 1);
-
-                    let results = await obsCollections.nextPage();
-
-                    let result = results[0];
-                    if(result != undefined){
-                        setSiteMapPath(getSiteDiagramPath(result.result.siteDiagramPath, node));
-                        setLowerLeftBound([result.result.siteBoundingBox.lowerLeftBound.lon, result.result.siteBoundingBox.lowerLeftBound.lat]);
-                        setUpperRightBound([result.result.siteBoundingBox.upperRightBound.lon, result.result.siteBoundingBox.upperRightBound.lat]);
-                    }
-                }
-            }
-        })
-    }, [isInit]);
-
-
     const getSiteDiagramPath = (path: string, node: INode) => {
         return node.isSecure ? `https://${node.address}:${node.port}${node.oshPathRoot}/buckets/${path}` : `http://${node.address}:${node.port}${node.oshPathRoot}/buckets/${path}`;
     }
 
     useEffect(() => {
-        if (leafletViewRef.current && siteMapPath != null && lowerLeftBound != null && upperRightBound != null) {
+        if (!leafletViewRef.current) {
+            return;
+        }
+        const addImageOverlay = async (node: INode, path: string, urb: any, llb: any) => {
 
-            var latLngBounds = L.latLngBounds([lowerLeftBound, upperRightBound]);
+            const bounds = L.latLngBounds([llb, urb]);
+            console.log("urb", urb);
+            console.log("lrb", llb);
+            console.log("sitemap", path);
+            console.log("bounds", bounds);
 
-
-            leafletViewRef.current.map.fitBounds(latLngBounds);
-
-            leafletViewRef.current.addImageOverlay(siteMapPath, latLngBounds, {
+            leafletViewRef.current.map.fitBounds(bounds);
+            leafletViewRef.current.addImageOverlay(path, bounds, {
                 opacity: 0.45,
                 interactive: false,
-                alt: "Image of site map",
-            })
+                alt: `SiteMap for ${node.name}-${node.id}`,
+            });
 
             leafletViewRef.current.map.invalidateSize();
         }
 
-    }, [isInit, lowerLeftBound, upperRightBound, siteMapPath]);
+        nodes.forEach(async (node: INode) => {
+            let path = node.siteMapPath;
+            let llb = node.lowerLeftBound;
+            let urb = node.upperRightBound;
+
+            if (!path || !urb || !llb) {
+                let oscarSystem = await node.getOscarServiceSystem();
+                let oscarSystemDatastreams = [];
+                let dataStreamsCol = await oscarSystem.searchDataStreams(undefined, 10);
+                while (dataStreamsCol.hasNext()) {
+                    const datastreamResults = await dataStreamsCol.nextPage();
+                    oscarSystemDatastreams.push(...datastreamResults);
+                }
+
+                for (const ds of oscarSystemDatastreams) {
+                    if (isSiteDiagramPathDataStream(ds)) {
+                        let obsCollections = await ds.searchObservations(new ObservationFilter({resultTime: 'latest'}), 1);
+                        let results = await obsCollections.nextPage();
+                        let result = results[0];
+
+                        if (result != undefined) {
+                            path = getSiteDiagramPath(result.result.siteDiagramPath, node);
+                            llb = [result.result.siteBoundingBox.lowerLeftBound.lon, result.result.siteBoundingBox.lowerLeftBound.lat]
+                            urb = [result.result.siteBoundingBox.upperRightBound.lon, result.result.siteBoundingBox.upperRightBound.lat]
+                            node.setSiteMapPath(path);
+                            node.setLowerLeftBox(llb);
+                            node.setUpperRightBox(urb);
+
+                        }
+                    } else {
+                        console.warn("No sitemap, or bounds provided.")
+                        return;
+                    }
+                }
+            }
+
+            addImageOverlay(node, path, urb, llb)
+        })
+
+    }, [isInit, nodes]);
 
     const updateLocationList = (laneName: string, newStatus: string) => {
         setLocationList((prevState) => {
