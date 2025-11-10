@@ -1,6 +1,6 @@
 "use client"
 
-import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {useCallback, useEffect, useState} from "react";
 import {Box} from "@mui/material";
 import {useSelector} from "react-redux";
@@ -36,6 +36,7 @@ import {getObservations} from "@/app/utils/ChartUtils";
 import {isThresholdDataStream} from "@/lib/data/oscar/Utilities";
 import {convertToMap, hashString} from "@/app/utils/Utils";
 import {OCCUPANCY_PILLAR_DEF} from "@/lib/data/Constants";
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 
 
 interface TableProps {
@@ -46,6 +47,7 @@ interface TableProps {
     viewLane?: boolean;
     viewAdjudicated?: boolean;
     laneMap: Map<string, LaneMapEntry>;
+
 }
 
 
@@ -67,8 +69,7 @@ export default function EventTable({
                                        viewLane = false,
                                        viewAdjudicated = false,
                                        laneMap,
-                                       currentLane
-
+                                       currentLane,
                                    }: TableProps) {
 
     const selectedRowId = useSelector(selectSelectedRowId);
@@ -119,6 +120,7 @@ export default function EventTable({
         return await handleObservations(obsCollection, laneEntry);
     }
 
+
     async function streamObservations(laneEntry: LaneMapEntry) {
         let futureTime = new Date();
         futureTime.setFullYear(futureTime.getFullYear() + 1);
@@ -129,7 +131,6 @@ export default function EventTable({
         if(!occDS) return;
 
         console.log("occds", occDS);
-        occDS.properties.streamProtocol = "mqtt";
 
 
         occDS.streamObservations(observationFilter, (observation: any) => {
