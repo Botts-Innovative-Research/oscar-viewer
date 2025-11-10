@@ -10,6 +10,7 @@ import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {isAdjudicationControlStream} from "@/lib/data/oscar/Utilities";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import {AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
+import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
 
 const locale = navigator.language || 'en-US';
 
@@ -17,6 +18,12 @@ const logColumns: GridColDef<AdjudicationData>[] = [
     {
         field: 'occupancyCount',
         headerName: 'Occupancy ID',
+        width: 200,
+        type: 'string',
+    },
+    {
+        field: 'username',
+        headerName: 'User',
         width: 200,
         type: 'string',
     },
@@ -82,10 +89,11 @@ export default function AdjudicationLog(props: {
 
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
     const [adjLog, setAdjLog] = useState<AdjudicationData[]>([]);
-    const [onlySameObs, setOnlySameObs] = useState(false);
     const [filteredLog, setFilteredLog] = useState<AdjudicationData[]>([]);
+    const [laneAdjControlStream, setLaneAdjControlStream] = useState<typeof ControlStream>();
 
-    async function fetchObservations() {
+
+    async function getControlStream(){
         const currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
 
@@ -97,24 +105,47 @@ export default function AdjudicationLog(props: {
         if (!adjudicationControlStream)
             return
 
-        let commandStatuses = await adjudicationControlStream.searchStatus(undefined, 10000);
+        setLaneAdjControlStream(adjudicationControlStream);
+    }
+
+    useEffect(() => {
+        getControlStream();
+    }, [props.event.laneId]);
+
+    useEffect(() => {
+        if (laneAdjControlStream)
+            fetchObservations(laneAdjControlStream);
+    }, [laneAdjControlStream]);
+
+
+    async function fetchObservations(controlStream: typeof ControlStream) {
+
+        let commandStatuses = await controlStream.searchStatus(new ControlStreamFilter({}), 10000);
 
         while (commandStatuses.hasNext()) {
             let cmdRes = await commandStatuses.nextPage();
 
-            let adjDataArr = cmdRes.map((obs: any) => {
-                let results = obs.results[0];
-                let data = new AdjudicationData(obs.reportTime, results.data.occupancyCount, results.data.occupancyObsId, results.data.alarmingSystemUid);
-                data.setFeedback(results.data.feedback);
-                data.setIsotopes(results.data.isotopes);
-                data.setSecondaryInspectionStatus(results.data.secondaryInspectionStatus);
-                data.setAdjudicationCode(AdjudicationCodes.getCodeObjByIndex(results.data.adjudicationCode));
-                data.setVehicleId(results.data.vehicleId);
-                data.setFilePaths(results.data.filePaths)
+            let completedAdjData =  cmdRes.filter((obs: any) => obs.statusCode === "COMPLETED");
+
+            console.log("cmdRed", cmdRes);
+            console.log("completedAdjData", completedAdjData)
+            let adjDataArr = completedAdjData.map((obs: any) => {
+
+                if (!obs?.results)
+                    return null;
+
+                let results = obs?.results[0].data;
+                let data = new AdjudicationData(obs.reportTime, props.event.occupancyCount, results.occupancyObsId, results.alarmingSystemUid);
+                data.setFeedback(results.feedback);
+                data.setIsotopes(results.isotopes ?? NaN);
+                data.setSecondaryInspectionStatus(results.secondaryInspectionStatus);
+                data.setAdjudicationCode(AdjudicationCodes.getCodeObjByIndex(results.adjudicationCode));
+                data.setVehicleId(results.vehicleId ?? NaN);
+                data.setFilePaths(results.filePaths ?? NaN)
                 data.setTime(obs.reportTime)
                 data.setOccupancyCount(props.event.occupancyCount);
-                data.setOccupancyObsId(results.data.occupancyObsId);
-                data.setUser(results.data.username)
+                data.setOccupancyObsId(results.occupancyObsId);
+                data.setUser(results.username ?? NaN)
                 return data
             });
             setAdjLog(adjDataArr);
@@ -123,21 +154,19 @@ export default function AdjudicationLog(props: {
     }
 
     useEffect(() => {
-        let filteredLog = adjLog.filter((adjData) => props.event.occupancyObsId.toString() === adjData.occupancyObsId);
+        console.log("adj log", adjLog)
+        let filteredLog = adjLog.filter((adjData) => adjData?.occupancyObsId ==  props.event.occupancyObsId);
         setFilteredLog(filteredLog);
-    }, [adjLog, onlySameObs]);
+    }, [adjLog]);
 
     useEffect(() => {
         if (props.shouldFetch) {
             setTimeout(() => {
-                fetchObservations();
+                fetchObservations(laneAdjControlStream);
             }, 10000);
         }
     }, [props.shouldFetch]);
 
-    function toggleOnlySameObs() {
-        setOnlySameObs(prevState => !prevState);
-    }
 
     return (
         <>
