@@ -1,7 +1,6 @@
 
 describe('Dashboard', () => {
     before(() => {
-        cy.visit('/dashboard/');
         cy.intercept('GET', '**/api/**', { log: false });
     });
 
@@ -155,7 +154,7 @@ describe('Dashboard', () => {
             cy.wait(500);
 
             cy.contains('button', 'Back').click();
-            cy.url().should('include', '/dashboard');
+            cy.url().should('include', '/');
         });
 
         it('should close event preview when button clicked', () => {
@@ -307,7 +306,7 @@ describe('Dashboard', () => {
             cy.wait(500);
 
             cy.contains('button', 'Back').click();
-            cy.url().should('include', '/dashboard');
+            cy.url().should('include', '/');
         });
 
         it('should close an Asepct event preview when button clicked', () => {
@@ -344,7 +343,7 @@ describe('Dashboard', () => {
 
             cy.wait(500);
             cy.contains('button', 'Back').click();
-            cy.url().should('include', '/dashboard');
+            cy.url().should('include', '/');
         });
 
         it('should navigate to an aspect lane', () => {
@@ -361,7 +360,7 @@ describe('Dashboard', () => {
 
             cy.wait(500);
             cy.contains('button', 'Back').click();
-            cy.url().should('include', '/dashboard');
+            cy.url().should('include', '/');
         });
     });
 
