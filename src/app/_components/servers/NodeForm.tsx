@@ -130,8 +130,19 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
         const endpoint = `${node.getConnectedSystemsEndpoint()}`;
 
+        const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
+
+        const options: RequestInit = {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${encoded}`
+            },
+            mode: 'cors',
+        }
+
         try {
-            const response = await fetch(endpoint);
+            const response = await fetch(endpoint, options);
             if (response.ok) {
                 setNodeSnackMsg(`Successfully connected to server at ${node.address}`);
                 setColorStatus('success')
