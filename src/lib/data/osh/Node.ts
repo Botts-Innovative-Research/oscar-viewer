@@ -133,6 +133,8 @@ export class Node implements INode {
             endpointUrl: `${this.address}:${this.port}${this.oshPathRoot}`,
             username: this.auth.username,
             password: this.auth.password,
+            shared: true,
+
         }
 
         let apiConfig = {

@@ -20,14 +20,19 @@ export default function StoreProvider({children,}: {
         storeRef.current = store
     }
 
-    useEffect(() => {
-        console.log("Persistor state after rehydration:", persistor.getState());
-    }, []);
+    // useEffect(() => {
+    //     console.log("Persistor state after rehydration:", persistor.getState());
+    // }, []);
 
     return (
-        // <Provider store={storeRef.current}>
         <Provider store={store}>
-            <PersistGate loading={<Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center', minHeight: '100vh'}}><CircularProgress/></Box>} persistor={persistor}>
+            <PersistGate
+                loading={<Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center', minHeight: '100vh'}}><CircularProgress/></Box>}
+                persistor={persistor}
+                onBeforeLift={() => {
+                    console.log("Redux persist rehydration complete");
+                }}
+            >
                 {children}
             </PersistGate>
         </Provider>

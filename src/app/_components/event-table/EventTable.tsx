@@ -128,10 +128,16 @@ export default function EventTable({
         let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
         if(!occDS) return;
 
+        console.log("occds", occDS);
+        occDS.properties.streamProtocol = "mqtt";
+
+
         occDS.streamObservations(observationFilter, (observation: any) => {
+            console.log("Received MQTT message:", observation);
             let resultEvent = eventFromObservation(observation[0], laneEntry);
             dispatch(addEventToLog(resultEvent));
         });
+        occDS.connect();
     }
 
     // @ts-ignore
