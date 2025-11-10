@@ -129,15 +129,14 @@ export class Node implements INode {
 
 
         let mqttOpts = {
+            shared: true,
             prefix: this.csAPIEndpoint,
             endpointUrl: `${this.address}:${this.port}${this.oshPathRoot}`,
             username: this.auth.username,
             password: this.auth.password,
-            shared: true,
-
         }
 
-        let apiConfig = {
+        let networkProperties = {
             endpointUrl: `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`,
             tls: this.isSecure,
             streamProtocol: "mqtt",
@@ -148,10 +147,10 @@ export class Node implements INode {
             }
         }
 
-        this.dataStreamsApi = new DataStreams(apiConfig);
-        this.systemsApi = new Systems(apiConfig);
-        this.observationsApi = new Observations(apiConfig);
-        this.controlStreamApi = new ControlStreams(apiConfig);
+        this.dataStreamsApi = new DataStreams(networkProperties);
+        this.systemsApi = new Systems(networkProperties);
+        this.observationsApi = new Observations(networkProperties);
+        this.controlStreamApi = new ControlStreams(networkProperties);
         this.oscarServiceSystem = options.oscarServiceSystem || null;
 
     }

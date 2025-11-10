@@ -33,10 +33,12 @@ import {
 } from "@/lib/state/EventDataSlice";
 import {useRouter} from "next/dist/client/components/navigation";
 import {getObservations} from "@/app/utils/ChartUtils";
-import {isThresholdDataStream} from "@/lib/data/oscar/Utilities";
+import {isThresholdDataStream, isVideoDataStream} from "@/lib/data/oscar/Utilities";
 import {convertToMap, hashString} from "@/app/utils/Utils";
 import {OCCUPANCY_PILLAR_DEF} from "@/lib/data/Constants";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
+import {Mode} from "osh-js/source/core/datasource/Mode";
+import {EventType} from "osh-js/source/core/event/EventType";
 
 
 interface TableProps {
@@ -104,7 +106,16 @@ export default function EventTable({
     function doStream(laneMap: Map<string, LaneMapEntry>) {
         laneMap.forEach((entry) => {
             streamObservations(entry);
+
+            let occupancyDataSource: typeof  ConSysApi = entry.datasourcesRealtime.find((ds: any) => ds.name.includes("occupancy"));
+            // occupancyDataSource.connect();
+            reconnect(occupancyDataSource);
         })
+    }
+
+    async function reconnect(datasource: typeof ConSysApi) {
+        if (datasource && !datasource.isConnected)
+            await datasource.connect();
     }
 
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
@@ -130,15 +141,11 @@ export default function EventTable({
         let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
         if(!occDS) return;
 
-        console.log("occds", occDS);
-
-
-        occDS.streamObservations(observationFilter, (observation: any) => {
-            console.log("Received MQTT message:", observation);
-            let resultEvent = eventFromObservation(observation[0], laneEntry);
+        occDS.streamObservations(observationFilter, (message: any) => {
+            console.log("message", message)
+            let resultEvent = eventFromObservation(message[0], laneEntry);
             dispatch(addEventToLog(resultEvent));
         });
-        occDS.connect();
     }
 
     // @ts-ignore
@@ -157,6 +164,7 @@ export default function EventTable({
     }
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
+
         const id = prngFromStr(obs, laneEntry.laneName);
         let newEvent: EventTableData = new EventTableData(id, laneEntry.laneName, obs.result, obs.id, obs.foiId);
 
@@ -192,11 +200,12 @@ export default function EventTable({
     useEffect(() => {
         laneMap = convertToMap(laneMap);
         dataStreamSetup(laneMap);
+
+        doStream(laneMap);
     }, [laneMap, laneMap.size]);
 
     const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
         await doFetch(laneMap);
-        doStream(laneMap);
     }, [laneMap]);
 
     useEffect(() => {
