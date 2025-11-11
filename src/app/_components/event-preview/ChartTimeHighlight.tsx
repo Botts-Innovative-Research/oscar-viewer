@@ -95,7 +95,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         };
 
         init();
-    }, [props.eventData, props.latestGB]);
+    }, [props.eventData, props.latestGB, props.datasources]);
 
     useEffect(() => {
         if (!props.eventData) {

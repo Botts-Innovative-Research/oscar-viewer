@@ -1,4 +1,3 @@
-
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 
