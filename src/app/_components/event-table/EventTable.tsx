@@ -167,13 +167,6 @@ export default function EventTable({
     }, [stableLaneMap]);
 
     useEffect(() => {
-        async function initStreaming(datastream) {
-            datastream.streamObservations(undefined, (msg: any) => {
-                console.log("Message:", msg);
-                const event = eventFromObservation(msg[0], entry);
-                dispatch(addEventToLog(event));
-            });
-        }
 
         for (const entry of stableLaneMap.values()) {
             const occStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
@@ -194,6 +187,13 @@ export default function EventTable({
         }
     }, [stableLaneMap]);
 
+    async function initStreaming(datastream) {
+        datastream.streamObservations(undefined, (msg: any) => {
+            console.log("Message:", msg);
+            const event = eventFromObservation(msg[0], entry);
+            dispatch(addEventToLog(event));
+        });
+    }
 
     // useEffect(() => {
     //     for (const entry of stableLaneMap.values()) {
