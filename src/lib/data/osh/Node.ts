@@ -127,7 +127,6 @@ export class Node implements INode {
         this.isDefaultNode = options.isDefaultNode || false;
 
 
-
         let mqttOpts = {
             shared: true,
             prefix: this.csAPIEndpoint,

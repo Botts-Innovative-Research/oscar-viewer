@@ -101,29 +101,34 @@ export default function EventTable({
         dispatch(setEventLogData(allFetchedResults))
     }
 
-    function doStream(laneMap: Map<string, LaneMapEntry>) {
+    async function doStream(laneMap: Map<string, LaneMapEntry>) {
         laneMap.forEach((entry) => {
-            let futureTime = new Date();
-            futureTime.setFullYear(futureTime.getFullYear() + 1);
+            // let futureTime = new Date();
+            // futureTime.setFullYear(futureTime.getFullYear() + 1);
+            //
+            // const observationFilter = new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`});
 
-            const observationFilter = new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`});
+            let dataStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
+            if(!dataStream)
+                return;
 
-            let occDS: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
-            if(!occDS) return;
-
-            occDS.streamObservations(undefined, (message: any) => {
+            dataStream.streamObservations(undefined, (message: any) => {
                 console.log("message", message)
                 let resultEvent = eventFromObservation(message[0], entry);
                 dispatch(addEventToLog(resultEvent));
             });
+
+            let occupancyDataSource: typeof ConSysApi = entry.datasourcesRealtime.find((ds: any) => ds.name.includes("occupancy"));
+            occupancyDataSource.connect();
         })
 
+
     }
 
-    async function reconnect(datasource: typeof ConSysApi) {
-        if (datasource && !datasource.isConnected)
-            datasource.connect();
-    }
+    // async function reconnect(datasource: typeof ConSysApi) {
+    //     if (datasource && !datasource.isConnected)
+    //         datasource.connect();
+    // }
 
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
@@ -137,8 +142,6 @@ export default function EventTable({
 
         return await handleObservations(obsCollection, laneEntry);
     }
-
-
 
     // @ts-ignore
     async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry): Promise<EventTableData[]> {
@@ -196,12 +199,30 @@ export default function EventTable({
         doStream(laneMap);
 
         laneMap.forEach((entry) => {
-            let occupancyDataSource: typeof  ConSysApi = entry.datasourcesRealtime.find((ds: any) => ds.name.includes("occupancy"));
+            let occupancyDataSource: typeof ConSysApi = entry.datasourcesRealtime.find((ds: any) => ds.name.includes("occupancy"));
 
-            console.log("occds", occupancyDataSource)
             occupancyDataSource.connect();
+            // checkConnection(occupancyDataSource)
         });
     }, [laneMap]);
+
+    // function checkConnection(dataSource: typeof ConSysApi) {
+    //
+    //     if (dataSource.isConnected()){
+    //         setIsConnected(true)
+    //         return;
+    //
+    //     }
+    //
+    //     dataSource.connect();
+    //
+    //     setTimeout(() => {
+    //         if (!dataSource.isConnected()){
+    //
+    //             checkConnection(dataSource)
+    //         }
+    //     }, 5000)
+    // }
 
     const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
         await doFetch(laneMap);
