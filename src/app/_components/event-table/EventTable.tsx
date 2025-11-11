@@ -170,7 +170,7 @@ export default function EventTable({
 
         if (!stableLaneMap)
             return;
-        
+
         const connectedSources = [];
 
         for (const entry of stableLaneMap.values()) {
@@ -178,7 +178,7 @@ export default function EventTable({
             if (!occStream)
                 continue;
 
-            datastream.streamObservations(undefined, (msg: any) => {
+            occStream.streamObservations(undefined, (msg: any) => {
                 console.log("Message:", msg);
                 const event = eventFromObservation(msg[0], entry);
                 dispatch(addEventToLog(event));
