@@ -173,7 +173,7 @@ export default function EventTable({
             if (!occStream)
                 continue;
 
-            initStreaming(occStream);
+            initStreaming(occStream, entry);
 
             const occSource: typeof ConSysApi = entry.datasourcesRealtime?.find(
                 (ds: any) => {
@@ -187,85 +187,13 @@ export default function EventTable({
         }
     }, [stableLaneMap]);
 
-    async function initStreaming(datastream) {
+    async function initStreaming(datastream: typeof DataStream, entry: LaneMapEntry) {
         datastream.streamObservations(undefined, (msg: any) => {
             console.log("Message:", msg);
             const event = eventFromObservation(msg[0], entry);
             dispatch(addEventToLog(event));
         });
     }
-
-    // useEffect(() => {
-    //     for (const entry of stableLaneMap.values()) {
-    //         const occupancyDataStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
-    //         if (!occupancyDataStream) continue;
-    //
-    //         streamObservations(occupancyDataStream);
-    //
-    //         const mqttOpts = {
-    //             shared: true,
-    //             prefix: "/api",
-    //             endpointUrl: `${entry.parentNode.address}:${entry.parentNode.port}${entry.parentNode.oshPathRoot}`,
-    //             username: entry.parentNode.username,
-    //             password: entry.parentNode.password,
-    //         };
-    //
-    //         const dataSource  = new ConSysApi(`rt-${occupancyDataStream.properties.id}`, {
-    //             endpointUrl:`${entry.parentNode.address}:${entry.parentNode.port}${entry.parentNode.oshPathRoot}${entry.parentNode.csAPIEndpoint}`,
-    //             resource: `/datastreams/${occupancyDataStream.properties.id}/observations`,
-    //             tls: false,
-    //             protocol: "mqtt",
-    //             mqttOpts: mqttOpts,
-    //             mode: Mode.REAL_TIME,
-    //         });
-    //
-    //         dataSource.connect();
-    //     }
-    // }, [stableLaneMap]);
-
-    // async function streamObservations(occupancyDataStream) {
-    //     occupancyDataStream.streamObservations(undefined, (message: any) => {
-    //         console.log("Stream message", message);
-    //         const resultEvent = eventFromObservation(message[0], entry);
-    //         dispatch(addEventToLog(resultEvent));
-    //     });
-    //
-    // }
-    //
-    // useEffect(() => {
-    //
-    //     stableLaneMap.forEach((entry) => {
-    //
-    //         const occupancyDataStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
-    //         if(!occupancyDataStream) return;
-    //
-    //         streamObservations(occupancyDataStream);
-    //
-    //         const occupancyDataSource: typeof ConSysApi = entry.datasourcesRealtime.find((ds: any) => {
-    //             let dsId = ds.properties.resource.split("/");
-    //             return dsId[2] === occupancyDataStream.properties.id;
-    //         });
-    //
-    //         if (!occupancyDataSource)
-    //             return;
-    //
-    //         occupancyDataSource.connect();
-    //     });
-    //
-    //     return () => {
-    //         stableLaneMap.forEach((entry) => {
-    //             entry.datasourcesRealtime?.forEach((ds: any) => ds.disconnect?.());
-    //         });
-    //     };
-    // }, [stableLaneMap]);
-    //
-    // async function streamObservations(occupancyDataStream: typeof DataStream){
-    //     occupancyDataStream.streamObservations(undefined, (message: any) => {
-    //         console.log("message", message)
-    //         let resultEvent = eventFromObservation(message[0], entry);
-    //         dispatch(addEventToLog(resultEvent));
-    //     });
-    // }
 
     const initialize = useCallback(async (map: Map<string, LaneMapEntry>) => {
         await doFetch(map);
