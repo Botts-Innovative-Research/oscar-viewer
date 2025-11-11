@@ -167,7 +167,6 @@ export default function EventTable({
     }, [stableLaneMap]);
 
     useEffect(() => {
-
         if (!stableLaneMap)
             return;
 
@@ -192,11 +191,17 @@ export default function EventTable({
             );
             if (!occSource)
                 continue;
-            occSource.connect();
+            // occSource.connect();
+
             connectedSources.push(occSource);
         }
 
+       connectedSources.forEach((src) => {
+           src.connect();
+       })
+
         return () => {
+            console.log("Unmounted: Cleaning up streaming connections")
             connectedSources.forEach(src => {
                 if (src.isConnected())
                     src.disconnect();
