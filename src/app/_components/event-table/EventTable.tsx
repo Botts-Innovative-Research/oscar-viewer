@@ -107,7 +107,7 @@ export default function EventTable({
 
         if (!occDS) return;
 
-        let obsCollection = await occDS.searchObservations(observationFilter, 15);
+        let obsCollection = await occDS.searchObservations(observationFilter, 60);
 
         return await handleObservations(obsCollection, laneEntry);
     }
@@ -161,26 +161,41 @@ export default function EventTable({
         return filteredData;
     }
 
-
     useEffect(() => {
         initialize(stableLaneMap);
     }, [stableLaneMap]);
 
-    useEffect(() => {
-        if (!stableLaneMap)
-            return;
 
-        const connectedSources = [];
+    useEffect(() => {
+
+        if (stableLaneMap.size === 0) {
+            console.log("No lanes in map, skipping streaming setup");
+            return;
+        }
+
+        const connectedSources: any[] = [];
 
         for (const entry of stableLaneMap.values()) {
+            console.log("Processing lane:", entry.laneName);
+
             const occStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
-            if (!occStream)
+            console.log("occStream found:", occStream, occStream?.properties?.id);
+
+            if (!occStream) {
+                console.log("No occStream for lane:", entry.laneName);
                 continue;
+            }
 
             occStream.streamObservations(undefined, (msg: any) => {
-                console.log("Message:", msg);
-                const event = eventFromObservation(msg[0], entry);
-                dispatch(addEventToLog(event));
+                console.log("STREAMING MESSAGE RECEIVED:", msg);
+
+                try {
+                    const event = eventFromObservation(msg[0], entry);
+                    console.log("Event created:", event);
+                    dispatch(addEventToLog(event));
+                } catch (err) {
+                    console.error("Error creating event from observation:", err);
+                }
             });
 
             const occSource: typeof ConSysApi = entry.datasourcesRealtime?.find(
@@ -189,24 +204,24 @@ export default function EventTable({
                     return parts && parts[2] === occStream.properties.id;
                 }
             );
-            if (!occSource)
+
+            console.log("occSource found:", occSource);
+            if (!occSource) {
+                console.log("No occSource found for datastream:", occStream.properties.id);
                 continue;
-            // occSource.connect();
+            }
 
-            connectedSources.push(occSource);
+            console.log("Attempting to connect occSource...");
+            try {
+                occSource.connect();
+                console.log("Connect called successfully");
+                connectedSources.push(occSource);
+            } catch (err) {
+                console.error("Error connecting occSource:", err);
+            }
         }
+        console.log("Total connected sources:", connectedSources.length);
 
-       connectedSources.forEach((src) => {
-           src.connect();
-       })
-
-        return () => {
-            console.log("Unmounted: Cleaning up streaming connections")
-            connectedSources.forEach(src => {
-                if (src.isConnected())
-                    src.disconnect();
-            })
-        }
     }, [stableLaneMap]);
 
     const initialize = useCallback(async (map: Map<string, LaneMapEntry>) => {
