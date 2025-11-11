@@ -168,12 +168,21 @@ export default function EventTable({
 
     useEffect(() => {
 
+        if (!stableLaneMap)
+            return;
+        
+        const connectedSources = [];
+
         for (const entry of stableLaneMap.values()) {
             const occStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
             if (!occStream)
                 continue;
 
-            initStreaming(occStream, entry);
+            datastream.streamObservations(undefined, (msg: any) => {
+                console.log("Message:", msg);
+                const event = eventFromObservation(msg[0], entry);
+                dispatch(addEventToLog(event));
+            });
 
             const occSource: typeof ConSysApi = entry.datasourcesRealtime?.find(
                 (ds: any) => {
@@ -184,16 +193,16 @@ export default function EventTable({
             if (!occSource)
                 continue;
             occSource.connect();
+            connectedSources.push(occSource);
+        }
+
+        return () => {
+            connectedSources.forEach(src => {
+                if (src.isConnected())
+                    src.disconnect();
+            })
         }
     }, [stableLaneMap]);
-
-    async function initStreaming(datastream: typeof DataStream, entry: LaneMapEntry) {
-        datastream.streamObservations(undefined, (msg: any) => {
-            console.log("Message:", msg);
-            const event = eventFromObservation(msg[0], entry);
-            dispatch(addEventToLog(event));
-        });
-    }
 
     const initialize = useCallback(async (map: Map<string, LaneMapEntry>) => {
         await doFetch(map);
