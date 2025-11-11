@@ -57,7 +57,6 @@ interface TableProps {
  * Gathers occupancy data both historical and real-time and creates TableEventData entries, which are passed into
  * the child components for further use
  * @param tableMode
- * @param viewSecondary Show 'Secondary Inspection' column, default FALSE
  * @param viewMenu Show three-dot menu button, default FALSE
  * @param viewLane Show 'View Lane' option in menu, default FALSE
  * @param viewAdjudicated shows Adjudicated status in the event log , not shown in the alarm table
@@ -66,7 +65,6 @@ interface TableProps {
  */
 export default function EventTable({
                                        tableMode,
-                                       viewSecondary = false,
                                        // viewMenu = false,
                                        viewLane = false,
                                        viewAdjudicated = false,
@@ -105,17 +103,26 @@ export default function EventTable({
 
     function doStream(laneMap: Map<string, LaneMapEntry>) {
         laneMap.forEach((entry) => {
-            streamObservations(entry);
+            let futureTime = new Date();
+            futureTime.setFullYear(futureTime.getFullYear() + 1);
 
-            let occupancyDataSource: typeof  ConSysApi = entry.datasourcesRealtime.find((ds: any) => ds.name.includes("occupancy"));
-            // occupancyDataSource.connect();
-            reconnect(occupancyDataSource);
+            const observationFilter = new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`});
+
+            let occDS: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
+            if(!occDS) return;
+
+            occDS.streamObservations(undefined, (message: any) => {
+                console.log("message", message)
+                let resultEvent = eventFromObservation(message[0], entry);
+                dispatch(addEventToLog(resultEvent));
+            });
         })
+
     }
 
     async function reconnect(datasource: typeof ConSysApi) {
         if (datasource && !datasource.isConnected)
-            await datasource.connect();
+            datasource.connect();
     }
 
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
@@ -132,21 +139,6 @@ export default function EventTable({
     }
 
 
-    async function streamObservations(laneEntry: LaneMapEntry) {
-        let futureTime = new Date();
-        futureTime.setFullYear(futureTime.getFullYear() + 1);
-
-        const observationFilter = new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`});
-
-        let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
-        if(!occDS) return;
-
-        occDS.streamObservations(observationFilter, (message: any) => {
-            console.log("message", message)
-            let resultEvent = eventFromObservation(message[0], laneEntry);
-            dispatch(addEventToLog(resultEvent));
-        });
-    }
 
     // @ts-ignore
     async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry): Promise<EventTableData[]> {
@@ -202,7 +194,14 @@ export default function EventTable({
         dataStreamSetup(laneMap);
 
         doStream(laneMap);
-    }, [laneMap, laneMap.size]);
+
+        laneMap.forEach((entry) => {
+            let occupancyDataSource: typeof  ConSysApi = entry.datasourcesRealtime.find((ds: any) => ds.name.includes("occupancy"));
+
+            console.log("occds", occupancyDataSource)
+            occupancyDataSource.connect();
+        });
+    }, [laneMap]);
 
     const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
         await doFetch(laneMap);
@@ -406,7 +405,6 @@ export default function EventTable({
                     columns: {
                         // Manage visible columns in table based on component parameters
                         columnVisibilityModel: {
-                            secondaryInspection: viewSecondary,
                             adjudicatedIds: viewAdjudicated,
                             // adjudicatedCode: viewAdjudicated,
                         },
