@@ -1,7 +1,7 @@
 "use client"
 
-import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {useCallback, useEffect, useState} from "react";
+import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import {useCallback, useEffect, useState, useMemo} from "react";
 import {Box} from "@mui/material";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
@@ -33,12 +33,11 @@ import {
 } from "@/lib/state/EventDataSlice";
 import {useRouter} from "next/dist/client/components/navigation";
 import {getObservations} from "@/app/utils/ChartUtils";
-import {isThresholdDataStream, isVideoDataStream} from "@/lib/data/oscar/Utilities";
+import {isThresholdDataStream} from "@/lib/data/oscar/Utilities";
 import {convertToMap, hashString} from "@/app/utils/Utils";
 import {OCCUPANCY_PILLAR_DEF} from "@/lib/data/Constants";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import {Mode} from "osh-js/source/core/datasource/Mode";
-import {EventType} from "osh-js/source/core/event/EventType";
 
 
 interface TableProps {
@@ -81,6 +80,7 @@ export default function EventTable({
     const dispatch = useAppDispatch();
     const router = useRouter();
 
+    const stableLaneMap = useMemo(() => convertToMap(laneMap), [laneMap.size]);
 
     async function doFetch(laneMap: Map<string, LaneMapEntry>) {
         let allFetchedResults: EventTableData[] = [];
@@ -101,51 +101,11 @@ export default function EventTable({
         dispatch(setEventLogData(allFetchedResults))
     }
 
-    async function doStream(laneMap: Map<string, LaneMapEntry>) {
-        laneMap.forEach((entry) => {
-            // let futureTime = new Date();
-            // futureTime.setFullYear(futureTime.getFullYear() + 1);
-            //
-            // const observationFilter = new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`});
-
-
-            let dataStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
-            if(!dataStream)
-                return;
-
-            dataStream.streamObservations(undefined, (message: any) => {
-                console.log("message", message)
-                let resultEvent = eventFromObservation(message[0], entry);
-                dispatch(addEventToLog(resultEvent));
-            });
-
-            console.log('datastream', dataStream)
-
-            let occupancyDataSource: typeof ConSysApi = entry.datasourcesRealtime.find((ds: any) => {
-                let dsId = ds.properties.resource.split("/");
-                console.log("dsId", dsId)
-                return dsId[2] === dataStream.properties.id;
-            });
-
-
-            console.log("consysapi ", occupancyDataSource)
-            // if (occupancyDataSource) {
-            //     occupancyDataSource.connect();
-            // }
-
-            occupancyDataSource.connect();
-        })
-
-    }
-
-
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
         let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
 
-        if (!occDS) {
-            return;
-        }
+        if (!occDS) return;
 
         let obsCollection = await occDS.searchObservations(observationFilter, 15);
 
@@ -201,41 +161,115 @@ export default function EventTable({
         return filteredData;
     }
 
+
     useEffect(() => {
-        laneMap = convertToMap(laneMap);
-        dataStreamSetup(laneMap);
+        initialize(stableLaneMap);
+    }, [stableLaneMap]);
 
-        doStream(laneMap);
+    useEffect(() => {
+        async function initStreaming(datastream) {
+            datastream.streamObservations(undefined, (msg: any) => {
+                console.log("Message:", msg);
+                const event = eventFromObservation(msg[0], entry);
+                dispatch(addEventToLog(event));
+            });
+        }
 
-        // laneMap.forEach((entry) => {
-        //     let occupancyDataSource: typeof ConSysApi = entry.datasourcesRealtime.find((ds: any) => ds.name.includes("occupancy"));
-        //
-        //     occupancyDataSource.connect();
-        //     // checkConnection(occupancyDataSource)
-        // });
-    }, [laneMap]);
+        for (const entry of stableLaneMap.values()) {
+            const occStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
+            if (!occStream)
+                continue;
 
-    // function checkConnection(dataSource: typeof ConSysApi) {
+            initStreaming(occStream);
+
+            const occSource: typeof ConSysApi = entry.datasourcesRealtime?.find(
+                (ds: any) => {
+                    const parts = ds.properties.resource?.split("/");
+                    return parts && parts[2] === occStream.properties.id;
+                }
+            );
+            if (!occSource)
+                continue;
+            occSource.connect();
+        }
+    }, [stableLaneMap]);
+
+
+    // useEffect(() => {
+    //     for (const entry of stableLaneMap.values()) {
+    //         const occupancyDataStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
+    //         if (!occupancyDataStream) continue;
     //
-    //     if (dataSource.isConnected()){
-    //         setIsConnected(true)
-    //         return;
+    //         streamObservations(occupancyDataStream);
     //
+    //         const mqttOpts = {
+    //             shared: true,
+    //             prefix: "/api",
+    //             endpointUrl: `${entry.parentNode.address}:${entry.parentNode.port}${entry.parentNode.oshPathRoot}`,
+    //             username: entry.parentNode.username,
+    //             password: entry.parentNode.password,
+    //         };
+    //
+    //         const dataSource  = new ConSysApi(`rt-${occupancyDataStream.properties.id}`, {
+    //             endpointUrl:`${entry.parentNode.address}:${entry.parentNode.port}${entry.parentNode.oshPathRoot}${entry.parentNode.csAPIEndpoint}`,
+    //             resource: `/datastreams/${occupancyDataStream.properties.id}/observations`,
+    //             tls: false,
+    //             protocol: "mqtt",
+    //             mqttOpts: mqttOpts,
+    //             mode: Mode.REAL_TIME,
+    //         });
+    //
+    //         dataSource.connect();
     //     }
+    // }, [stableLaneMap]);
+
+    // async function streamObservations(occupancyDataStream) {
+    //     occupancyDataStream.streamObservations(undefined, (message: any) => {
+    //         console.log("Stream message", message);
+    //         const resultEvent = eventFromObservation(message[0], entry);
+    //         dispatch(addEventToLog(resultEvent));
+    //     });
     //
-    //     dataSource.connect();
+    // }
     //
-    //     setTimeout(() => {
-    //         if (!dataSource.isConnected()){
+    // useEffect(() => {
     //
-    //             checkConnection(dataSource)
-    //         }
-    //     }, 5000)
+    //     stableLaneMap.forEach((entry) => {
+    //
+    //         const occupancyDataStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
+    //         if(!occupancyDataStream) return;
+    //
+    //         streamObservations(occupancyDataStream);
+    //
+    //         const occupancyDataSource: typeof ConSysApi = entry.datasourcesRealtime.find((ds: any) => {
+    //             let dsId = ds.properties.resource.split("/");
+    //             return dsId[2] === occupancyDataStream.properties.id;
+    //         });
+    //
+    //         if (!occupancyDataSource)
+    //             return;
+    //
+    //         occupancyDataSource.connect();
+    //     });
+    //
+    //     return () => {
+    //         stableLaneMap.forEach((entry) => {
+    //             entry.datasourcesRealtime?.forEach((ds: any) => ds.disconnect?.());
+    //         });
+    //     };
+    // }, [stableLaneMap]);
+    //
+    // async function streamObservations(occupancyDataStream: typeof DataStream){
+    //     occupancyDataStream.streamObservations(undefined, (message: any) => {
+    //         console.log("message", message)
+    //         let resultEvent = eventFromObservation(message[0], entry);
+    //         dispatch(addEventToLog(resultEvent));
+    //     });
     // }
 
-    const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
-        await doFetch(laneMap);
-    }, [laneMap]);
+    const initialize = useCallback(async (map: Map<string, LaneMapEntry>) => {
+        await doFetch(map);
+    }, []);
 
     useEffect(() => {
         let filteredData: EventTableData[] = [];
@@ -417,7 +451,6 @@ export default function EventTable({
         const baseId = `${obs.result?.occupancyCount}${laneName}${obs.result?.startTime}${obs.result?.endTime}`;
         return hashString(baseId);
     }
-
 
     return (
         <Box sx={{height: 800, width: '100%'}}>
