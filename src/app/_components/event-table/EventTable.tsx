@@ -108,6 +108,7 @@ export default function EventTable({
             //
             // const observationFilter = new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`});
 
+
             let dataStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
             if(!dataStream)
                 return;
@@ -118,17 +119,25 @@ export default function EventTable({
                 dispatch(addEventToLog(resultEvent));
             });
 
-            let occupancyDataSource: typeof ConSysApi = entry.datasourcesRealtime.find((ds: any) => ds.name.includes("occupancy"));
+            console.log('datastream', dataStream)
+
+            let occupancyDataSource: typeof ConSysApi = entry.datasourcesRealtime.find((ds: any) => {
+                let dsId = ds.properties.resource.split("/");
+                console.log("dsId", dsId)
+                return dsId[2] === dataStream.properties.id;
+            });
+
+
+            console.log("consysapi ", occupancyDataSource)
+            // if (occupancyDataSource) {
+            //     occupancyDataSource.connect();
+            // }
+
             occupancyDataSource.connect();
         })
 
-
     }
 
-    // async function reconnect(datasource: typeof ConSysApi) {
-    //     if (datasource && !datasource.isConnected)
-    //         datasource.connect();
-    // }
 
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
@@ -198,12 +207,12 @@ export default function EventTable({
 
         doStream(laneMap);
 
-        laneMap.forEach((entry) => {
-            let occupancyDataSource: typeof ConSysApi = entry.datasourcesRealtime.find((ds: any) => ds.name.includes("occupancy"));
-
-            occupancyDataSource.connect();
-            // checkConnection(occupancyDataSource)
-        });
+        // laneMap.forEach((entry) => {
+        //     let occupancyDataSource: typeof ConSysApi = entry.datasourcesRealtime.find((ds: any) => ds.name.includes("occupancy"));
+        //
+        //     occupancyDataSource.connect();
+        //     // checkConnection(occupancyDataSource)
+        // });
     }, [laneMap]);
 
     // function checkConnection(dataSource: typeof ConSysApi) {

@@ -28,17 +28,17 @@ export default function LaneStatus(props: LaneStatusProps) {
   const addSubscriptionCallbacks = useCallback(() => {
 
     props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("gammaRT", (message: any) => {
-      const state = message.values[0].data.result.alarmState;
+      const state = message.values[0].data.alarmState;
       updateStatus(currentLane, state);
     })
 
     props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("neutronRT", (message: any) => {
-      const state = message.values[0].data.result.alarmState;
+      const state = message.values[0].data.alarmState;
       updateStatus(currentLane, state);
     })
 
     props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("tamperRT", (message: any) => {
-      const state = message.values[0].data.result.tamperStatus;
+      const state = message.values[0].data.tamperStatus;
       if(state){
         updateStatus(currentLane, 'Tamper')
       }
