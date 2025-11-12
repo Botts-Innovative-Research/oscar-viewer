@@ -75,21 +75,12 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             setTimeout(() => {
                 chartViews.gamma.chart.update();
             }, 300);
-    }, [chartViews.gamma]);
 
-    // useEffect(() => {
-    //     if ( chartViews.neutron )
-    //         setTimeout(() => {
-    //             chartViews.neutron.chart.update();
-    //         }, 300);
-    // }, [chartViews.neutron]);
-    //
-    // useEffect(() => {
-    //     if ( chartViews.nsigma )
-    //         setTimeout(() => {
-    //             chartViews.nsigma.chart.update();
-    //         }, 300);
-    // }, [chartViews.nsigma]);
+        if ( chartViews.nsigma )
+            setTimeout(() => {
+                chartViews.nsigma.chart.update();
+            }, 300);
+    }, [chartViews.gamma, chartViews.nsigma]);
 
 
     useEffect(() => {
@@ -300,6 +291,8 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
             nSigmaChartViewRef.current.innerHTML = "";
             nSigmaChartViewRef.current.appendChild(nsigmaDiv);
+
+            console.log("layers.nsigma", layers.nsigma)
 
             const nsigmaChart = new ChartJsView({
                 container: nsigmaDiv.id,

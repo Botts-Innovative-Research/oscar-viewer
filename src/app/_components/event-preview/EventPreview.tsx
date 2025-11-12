@@ -267,12 +267,12 @@ export function EventPreview() {
         let datasources = await currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
 
         setLocalDSMap(datasources);
-        tempDSMap = datasources;
 
-        const updatedGamma = tempDSMap.get("gamma") || [];
-        const updatedNeutron = tempDSMap.get("neutron") || [];
-        const updatedThreshold = tempDSMap.get("gammaTrshld") || [];
+        const updatedGamma = datasources.get("gamma") || [];
+        const updatedNeutron = datasources.get("neutron") || [];
+        const updatedThreshold = datasources.get("gammaTrshld") || [];
 
+        console.log("datasources", datasources)
         setGammaDatasources(updatedGamma);
         setNeutronDatasources(updatedNeutron);
         setThresholdDatasources(updatedThreshold);

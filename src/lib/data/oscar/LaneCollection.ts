@@ -264,7 +264,7 @@ export class LaneMapEntry {
         let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
 
         let mqttOpts = {
-            shared: false,
+            shared: true,
             prefix: this.parentNode.csAPIEndpoint,
             endpointUrl: mqttOptUrl,
             username: this.parentNode.auth.username,

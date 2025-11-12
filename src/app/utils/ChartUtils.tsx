@@ -78,11 +78,8 @@ export function createNSigmaCalcViewCurve(gammaDatasource: any, latestGB: number
     let nCurve = new CurveLayer({
         dataSourceIds: [gammaDatasource.id],
         getValues: (rec: any) => {
-
-            if(rec.gammaGrossCount && latestGB != null){
-
-                let nSigmaValue: number = (rec?.gammaGrossCount - latestGB) / Math.sqrt(latestGB)
-
+            if (latestGB != null) {
+                let nSigmaValue: number = (rec.gammaGrossCount - latestGB) / Math.sqrt(latestGB)
                 return {x: rec.timestamp, y: nSigmaValue}
             }
 
