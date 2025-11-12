@@ -29,7 +29,7 @@ export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
     let thresholdCurve = new CurveLayer({
         dataSourceIds: [thresholdDatasource.id],
         getValues: (rec: any) =>{
-            return {x: rec?.timestamp, y: rec?.threshold}
+            return {x: rec.timestamp, y: rec.threshold}
         } ,
         name: "Threshold",
         backgroundColor: "rgba(194, 160, 201, 0.3)",
