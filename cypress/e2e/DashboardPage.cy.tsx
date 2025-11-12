@@ -1,6 +1,7 @@
 
 describe('Dashboard', () => {
     before(() => {
+        cy.visit("/");
         cy.intercept('GET', '**/api/**', { log: false });
     });
 
