@@ -126,19 +126,30 @@ export class Node implements INode {
         this.isSecure = options.isSecure || false;
         this.isDefaultNode = options.isDefaultNode || false;
 
-        let apiConfig = {
+
+        let mqttOpts = {
+            shared: false,
+            prefix: this.csAPIEndpoint,
+            endpointUrl: `${this.address}:${this.port}${this.oshPathRoot}`,
+            username: this.auth.username,
+            password: this.auth.password,
+        }
+
+        let networkProperties = {
             endpointUrl: `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`,
             tls: this.isSecure,
+            streamProtocol: "mqtt",
+            mqttOpts: mqttOpts,
             connectorOpts: {
                 username: this.auth.username,
                 password: this.auth.password
             }
         }
 
-        this.dataStreamsApi = new DataStreams(apiConfig);
-        this.systemsApi = new Systems(apiConfig);
-        this.observationsApi = new Observations(apiConfig);
-        this.controlStreamApi = new ControlStreams(apiConfig);
+        this.dataStreamsApi = new DataStreams(networkProperties);
+        this.systemsApi = new Systems(networkProperties);
+        this.observationsApi = new Observations(networkProperties);
+        this.controlStreamApi = new ControlStreams(networkProperties);
         this.oscarServiceSystem = options.oscarServiceSystem || null;
 
     }

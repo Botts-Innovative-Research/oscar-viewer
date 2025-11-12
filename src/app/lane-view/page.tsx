@@ -64,21 +64,26 @@ export default function LaneViewPage() {
 
         for(let i = 0; i < lane.datastreams.length; i++) {
             const ds = lane.datastreams[i]
-            let rtDS = lane.datasourcesRealtime[i];
+
+            const rtDS = lane.datasourcesRealtime[i];
 
             if (isGammaDataStream(ds)) {
+                rtDS.properties.mqttOpts.shared = false
                 laneDsCollection.addDS('gammaRT', rtDS);
                 setGammaDS(rtDS)
             }
             if (isNeutronDataStream(ds)) {
+                rtDS.properties.mqttOpts.shared = false
                 laneDsCollection.addDS('neutronRT', rtDS);
                 setNeutronDS(rtDS);
             }
             if (isTamperDataStream(ds)) {
+                rtDS.properties.mqttOpts.shared = false
                 laneDsCollection.addDS('tamperRT', rtDS);
                 setTamperDS(rtDS)
             }
             if (isThresholdDataStream(ds)) {
+                rtDS.properties.mqttOpts.shared = false
                 laneDsCollection?.addDS('gammaTrshldRT', rtDS);
                 setThresholdDS(rtDS);
             }
@@ -108,10 +113,8 @@ export default function LaneViewPage() {
             <Grid item container spacing={2} sx={{ width: "100%" }}>
                 <Paper variant='outlined' sx={{ width: "100%"}}>
                     {dataSourcesByLane &&
-
                         <LaneStatus dataSourcesByLane={dataSourcesByLane}/>
                     }
-
                 </Paper>
             </Grid>
 
@@ -150,7 +153,7 @@ export default function LaneViewPage() {
                             </ToggleButtonGroup>
                         </Grid>
                         <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'occupancy' ? 'block' : 'none' }}>
-                            <EventTable tableMode={'lanelog'} laneMap={laneMap} viewLane viewSecondary viewAdjudicated currentLane={currentLane}/>
+                            <EventTable tableMode={'lanelog'} laneMap={laneMap} viewLane viewAdjudicated currentLane={currentLane}/>
                         </Grid>
                         <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'fault' ? 'block' : 'none' }}>
                             <StatusTable laneMap={laneMap}/>

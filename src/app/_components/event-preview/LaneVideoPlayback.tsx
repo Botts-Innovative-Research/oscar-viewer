@@ -17,24 +17,25 @@ export class LaneVideoPlaybackProps {
     modeType: string;
     startTime?: string;
     endTime?: string;
-    syncTime?: number;
     isPlaying?: boolean;
+    syncTime: number;
     onVideoTimeUpdate?: (timeMs: number) => void;
     onSelectedVideoIdxChange?: (index: number) => void;
 }
 
-export default function LaneVideoPlayback({selectedNode, videos, modeType, startTime, endTime, syncTime, isPlaying, onVideoTimeUpdate, onSelectedVideoIdxChange}: LaneVideoPlaybackProps) {
+export default function LaneVideoPlayback({selectedNode, videos, modeType, startTime, endTime, isPlaying, syncTime, onVideoTimeUpdate, onSelectedVideoIdxChange}: LaneVideoPlaybackProps) {
     const [videoHeight, setVideoHeight] = useState("320px");
     const videoRefs = useRef<HTMLVideoElement[]>([]);
     const [videoDuration, setVideoDuration] = useState<number>(0);
     const [isUpdatingFromSlider, setIsUpdatingFromSlider] = useState(false);
     const [selVideoIdx, setSelVidIdx] = useState<number>(0);
-
     const [tls, setTls] = useState("");
+
+
     useEffect(() => {
-        if(modeType === 'detail'){
+        if ( modeType === 'detail' ){
             setVideoHeight("500px")
-        }else if (modeType=== 'preview'){
+        } else if ( modeType=== 'preview' ){
             setVideoHeight("300px")
         }
 
@@ -48,8 +49,8 @@ export default function LaneVideoPlayback({selectedNode, videos, modeType, start
 
     useEffect(() => {
         videoRefs.current.forEach(video => {
-            if (video) {
-                if (isPlaying) {
+            if ( video ) {
+                if ( isPlaying ) {
                     video.play();
                 } else {
                     video.pause();
@@ -58,41 +59,70 @@ export default function LaneVideoPlayback({selectedNode, videos, modeType, start
         });
     }, [isPlaying]);
 
+
     useEffect(() => {
-        if (syncTime && startTime && endTime && !isUpdatingFromSlider) {
-            const videoStart = new Date(startTime).getTime();
-            const videoEnd = new Date(endTime).getTime();
-            const videoDuration = videoEnd - videoStart;
+        if ( !syncTime || !startTime || !endTime ) return;
 
-            const relativePosition = (syncTime - videoStart) / videoDuration;
+        syncVideoToEventTime(syncTime);
 
-            videoRefs.current.forEach(video => {
-                if (video && video.duration) {
-                    const videoTime = relativePosition * video.duration;
-                    if (Math.abs(video.currentTime - videoTime) > 0.5) {
-                        video.currentTime = Math.max(0, Math.min(videoTime, video.duration));
-                    }
+    }, [syncTime]);
+
+    const syncVideoToEventTime = (eventTimeMs: number) => {
+        const eventStartMs = new Date(startTime).getTime();
+        const eventEndMs = new Date(endTime).getTime();
+        const eventDurationMs = eventEndMs - eventStartMs;
+
+        const fraction = ( eventTimeMs - eventStartMs ) / eventDurationMs;
+
+        videoRefs.current.forEach(video => {
+            if ( video && video.duration ) {
+                const targetTime = fraction * video.duration;
+                if ( Math.abs( video.currentTime - targetTime ) > 0.25 ) {
+                    video.currentTime = Math.max(0, Math.min(targetTime, video.duration));
                 }
-            });
-        }
-    }, [syncTime, startTime, endTime, isUpdatingFromSlider]);
+            }
+        });
+    }
+
+
+    // const handleTimeUpdate = (video: HTMLVideoElement) => {
+    //     if ( !startTime || !endTime || isUpdatingFromSlider ) return;
+    //
+    //     const eventStartMs = new Date(startTime).getTime();
+    //     const eventEndMs = new Date(endTime).getTime();
+    //     const eventDurationMs = eventEndMs - eventStartMs;
+    //
+    //
+    //     if ( video.duration && video.currentTime >= 0 ) {
+    //
+    //         const videoFraction = video.currentTime / video.duration;
+    //         const eventTimeMs = eventStartMs + videoFraction * eventDurationMs;
+    //
+    //         onVideoTimeUpdate?.(eventTimeMs);
+    //     }
+    // };
+
+    const lastUpdateRef = useRef<number>(0);
 
     const handleTimeUpdate = (video: HTMLVideoElement) => {
-        if (!startTime || !endTime || isUpdatingFromSlider) return;
+        if ( !startTime || !endTime || isUpdatingFromSlider ) return;
 
-        const eventStart = new Date(startTime).getTime();
-        const eventEnd = new Date(endTime).getTime();
-        const eventDuration = eventEnd - eventStart;
+        const eventStartMs = new Date(startTime).getTime();
+        const eventEndMs = new Date(endTime).getTime();
+        const eventDurationMs = eventEndMs - eventStartMs;
 
-        if (video.duration) {
-            const sliderPosition = video.currentTime / video.duration;
+        if ( video.duration && video.currentTime >= 0 ) {
+            const videoFraction = video.currentTime / video.duration;
+            const eventTimeMs = eventStartMs + videoFraction * eventDurationMs;
 
-            const eventTimeMs = eventStart + (sliderPosition * eventDuration);
-
-            onVideoTimeUpdate?.(eventTimeMs);
+            // Only update every 100ms to prevent flooding
+            const now = Date.now();
+            if (now - lastUpdateRef.current > 100) {
+                onVideoTimeUpdate?.(eventTimeMs);
+                lastUpdateRef.current = now;
+            }
         }
     };
-
     const handleLoadedMetadata = (video: HTMLVideoElement) => {
         if (video.duration && videoDuration === 0) {
             setVideoDuration(video.duration);
@@ -100,7 +130,7 @@ export default function LaneVideoPlayback({selectedNode, videos, modeType, start
     };
 
     const handleVideoRef = useCallback((element: HTMLVideoElement | null, index: number) => {
-        if (element) {
+        if ( element ) {
             videoRefs.current[index] = element;
 
             element.addEventListener('loadedmetadata', () => handleLoadedMetadata(element));
@@ -128,7 +158,6 @@ export default function LaneVideoPlayback({selectedNode, videos, modeType, start
             return page;
         })
     };
-
 
     const startIdx = selVideoIdx * 1;
     const endIdx = startIdx + 1;

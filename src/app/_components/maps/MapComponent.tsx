@@ -248,6 +248,8 @@ export default function MapComponent() {
             if (!path || !urb || !llb) {
                 let oscarSystem = await node.getOscarServiceSystem();
                 let oscarSystemDatastreams = [];
+                if (!oscarSystem)
+                    return;
                 let dataStreamsCol = await oscarSystem.searchDataStreams(undefined, 10);
                 while (dataStreamsCol.hasNext()) {
                     const datastreamResults = await dataStreamsCol.nextPage();

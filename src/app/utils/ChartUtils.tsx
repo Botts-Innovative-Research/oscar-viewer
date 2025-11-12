@@ -1,4 +1,3 @@
-
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 
@@ -29,7 +28,9 @@ export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
 
     let thresholdCurve = new CurveLayer({
         dataSourceIds: [thresholdDatasource.id],
-        getValues: (rec: any) => ({x: rec?.timestamp, y: rec?.threshold}),
+        getValues: (rec: any) =>{
+            return {x: rec.timestamp, y: rec.threshold}
+        } ,
         name: "Threshold",
         backgroundColor: "rgba(194, 160, 201, 0.3)",
         lineColor: '#9b27b0',
@@ -77,11 +78,8 @@ export function createNSigmaCalcViewCurve(gammaDatasource: any, latestGB: number
     let nCurve = new CurveLayer({
         dataSourceIds: [gammaDatasource.id],
         getValues: (rec: any) => {
-
-            if(rec.gammaGrossCount && latestGB != null){
-
-                let nSigmaValue: number = (rec?.gammaGrossCount - latestGB) / Math.sqrt(latestGB)
-
+            if (latestGB != null) {
+                let nSigmaValue: number = (rec.gammaGrossCount - latestGB) / Math.sqrt(latestGB)
                 return {x: rec.timestamp, y: nSigmaValue}
             }
 

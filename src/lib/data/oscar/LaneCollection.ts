@@ -7,7 +7,6 @@ import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasou
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import System from "osh-js/source/core/consysapi/system/System.js";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
-import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js";
 import {INode} from "@/lib/data/osh/Node";
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
@@ -95,11 +94,12 @@ export class LaneMapEntry {
     addDataSources(datasources: any[]) {
         this.datasources.push(...datasources);
     }
-    setLaneName(name: string){
+
+    setLaneName(name: string) {
         this.laneName = name;
     }
 
-    addControlStreams(controlStreams: any[]){
+    addControlStreams(controlStreams: any[]) {
         this.controlStreams.push(...controlStreams)
     }
 
@@ -125,6 +125,17 @@ export class LaneMapEntry {
                 console.warn("Skipping invalid datastream:", dsObj);
                 continue;
             }
+            let mqttOptUrlArray = (dsObj.networkProperties.endpointUrl).split("/");
+            let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
+
+
+            let mqttOpts = {
+                shared: true,
+                prefix: this.parentNode.csAPIEndpoint,
+                endpointUrl: mqttOptUrl,
+                username: this.parentNode.auth.username,
+                password: this.parentNode.auth.password,
+            }
 
             try {
                 let dsRT: typeof ConSysApi = null;
@@ -132,7 +143,8 @@ export class LaneMapEntry {
 
                 if (isVideoDataStream(dsObj)) {
                     dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
-                        protocol: dsObj.networkProperties.streamProtocol,
+                        protocol: 'mqtt',
+                        mqttOpts: mqttOpts,
                         endpointUrl: dsObj.networkProperties.endpointUrl,
                         resource: `/datastreams/${dsObj.properties.id}/observations`,
                         tls: dsObj.networkProperties.tls,
@@ -141,7 +153,8 @@ export class LaneMapEntry {
                     });
 
                     dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
-                        protocol: dsObj.networkProperties.streamProtocol,
+                        protocol: 'mqtt',
+                        mqttOpts: mqttOpts,
                         endpointUrl: dsObj.networkProperties.endpointUrl,
                         resource: `/datastreams/${dsObj.properties.id}/observations`,
                         tls: dsObj.networkProperties.tls,
@@ -150,25 +163,63 @@ export class LaneMapEntry {
                         startTime: "2020-01-01T08:13:25.845Z",
                         endTime: "2055-01-01T08:13:25.845Z"
                     });
-                } else {
+                }
+                else if (isOccupancyDataStream(dsObj)) {
+                    dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
+                        mqttOpts: {
+                            shared: false,
+                            prefix: this.parentNode.csAPIEndpoint,
+                            endpointUrl: mqttOptUrl,
+                            username: this.parentNode.auth.username,
+                            password: this.parentNode.auth.password,
+                        },
+                        endpointUrl: dsObj.networkProperties.endpointUrl,
+                        resource: `/datastreams/${dsObj.properties.id}/observations`,
+                        tls: dsObj.networkProperties.tls,
+                        protocol: 'mqtt',
+                        mode: Mode.REAL_TIME,
+                        responseFormat: 'application/swe+json'
+                    });
+
+                    dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
+                        mqttOpts: {
+                            shared: false,
+                            prefix: this.parentNode.csAPIEndpoint,
+                            endpointUrl: mqttOptUrl,
+                            username: this.parentNode.auth.username,
+                            password: this.parentNode.auth.password,
+                        },
+                        endpointUrl: dsObj.networkProperties.endpointUrl,
+                        resource: `/datastreams/${dsObj.properties.id}/observations`,
+                        tls: dsObj.networkProperties.tls,
+                        protocol: 'mqtt',
+                        mode: Mode.BATCH,
+                        responseFormat: 'application/swe+json',
+                        startTime: "2020-01-01T08:13:25.845Z",
+                        endTime: "2055-01-01T08:13:25.845Z",
+                    });
+                }
+                else {
                     dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
                         endpointUrl: dsObj.networkProperties.endpointUrl,
                         resource: `/datastreams/${dsObj.properties.id}/observations`,
                         tls: dsObj.networkProperties.tls,
-                        protocol: dsObj.networkProperties.streamProtocol,
+                        protocol: 'mqtt',
                         mode: Mode.REAL_TIME,
                         responseFormat: 'application/swe+json',
+                        mqttOpts: mqttOpts,
                     });
 
                     dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
                         endpointUrl: dsObj.networkProperties.endpointUrl,
                         resource: `/datastreams/${dsObj.properties.id}/observations`,
                         tls: dsObj.networkProperties.tls,
-                        protocol: dsObj.networkProperties.streamProtocol,
+                        protocol: 'mqtt',
                         mode: Mode.BATCH,
                         responseFormat: 'application/swe+json',
                         startTime: "2020-01-01T08:13:25.845Z",
-                        endTime: "2055-01-01T08:13:25.845Z"
+                        endTime: "2055-01-01T08:13:25.845Z",
+                        mqttOpts: mqttOpts,
                     });
                 }
 
@@ -184,8 +235,19 @@ export class LaneMapEntry {
     }
 
     createReplayConSysApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
+        let mqttOptUrlArray = (datastream.networkProperties.endpointUrl).split("/");
+        let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
+
+        let mqttOpts = {
+            shared: true,
+            prefix: this.parentNode.csAPIEndpoint,
+            endpointUrl: mqttOptUrl,
+            username: this.parentNode.auth.username,
+            password: this.parentNode.auth.password,
+        }
         return new ConSysApi(`rtds-${datastream.properties.id}`, {
-            protocol: datastream.networkProperties.streamProtocol,
+            protocol: 'mqtt',
+            mqttOpts: mqttOpts,
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
@@ -198,8 +260,20 @@ export class LaneMapEntry {
 
     createBatchConSysApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
 
+        let mqttOptUrlArray = (datastream.networkProperties.endpointUrl).split("/");
+        let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
+
+        let mqttOpts = {
+            shared: true,
+            prefix: this.parentNode.csAPIEndpoint,
+            endpointUrl: mqttOptUrl,
+            username: this.parentNode.auth.username,
+            password: this.parentNode.auth.password,
+        }
+
         return new ConSysApi(`batchds-${datastream.properties.id}`, {
-            protocol: datastream.networkProperties.streamProtocol,
+            protocol: 'mqtt',
+            mqttOpts: mqttOpts,
             endpointUrl: datastream.networkProperties.endpointUrl,
             resource: `/datastreams/${datastream.properties.id}/observations`,
             tls: datastream.networkProperties.tls,
@@ -221,14 +295,14 @@ export class LaneMapEntry {
         return this.systems.find((sys) => sys.properties.id === dataStream.properties["system@id"]).properties.id;
     }
 
-    findDataStreamByObsProperty(obsProperty: string){
-        let stream: typeof DataStream = this.datastreams.find((ds)=> {
-            let hasProp = ds.properties.observedProperties.some((prop: any)=> prop.definition === obsProperty)
+    findDataStreamByObsProperty(obsProperty: string) {
+        let stream: typeof DataStream = this.datastreams.find((ds) => {
+            let hasProp = ds.properties.observedProperties.some((prop: any) => prop.definition === obsProperty)
             return hasProp;
         });
         return stream;
     }
-    
+
 
     /**
      * Retrieves datastreams within the specified time range and categorizes them by event detail types.
@@ -237,7 +311,7 @@ export class LaneMapEntry {
      * @param {number} endTime - The end time of the range for datastreams.
      * @return {Map<string, typeof ConSysApi[]>} A map categorizing the replayed datastreams by their event detail types.
      */
-    async getDatastreamsForEventDetail(startTime: string, endTime: string): Promise<Map<string, typeof ConSysApi[]>>{
+    async getDatastreamsForEventDetail(startTime: string, endTime: string): Promise<Map<string, typeof ConSysApi[]>> {
 
         let dsMap: Map<string, typeof ConSysApi[]> = new Map();
         dsMap.set('occ', []);
@@ -253,30 +327,31 @@ export class LaneMapEntry {
 
             if (isOccupancyDataStream(ds)) {
                 let occArray = dsMap.get('occ')!;
+
                 occArray.push(datasourceBatch);
             }
 
-            if(isGammaDataStream(ds)){
+            if (isGammaDataStream(ds)) {
                 let gammaArray = dsMap.get('gamma')!;
                 gammaArray.push(datasourceBatch);
             }
 
-            if(isNeutronDataStream(ds)){
+            if (isNeutronDataStream(ds)) {
                 let neutronArray = dsMap.get('neutron')!;
                 neutronArray.push(datasourceBatch);
             }
 
-            if(isTamperDataStream(ds)){
+            if (isTamperDataStream(ds)) {
                 let tamperArray = dsMap.get('tamper')!;
                 tamperArray.push(datasourceBatch);
             }
 
-            if(isThresholdDataStream(ds)){
+            if (isThresholdDataStream(ds)) {
                 let gammaTrshldArray = dsMap.get('gammaTrshld')!;
                 gammaTrshldArray.push(datasourceBatch);
             }
 
-            if(isConnectionDataStream(ds)){
+            if (isConnectionDataStream(ds)) {
                 let connectionArray = dsMap.get('connection')!;
                 connectionArray.push(datasourceBatch);
             }
@@ -320,7 +395,7 @@ export class LaneDSColl {
         this.connectionRT = [];
         this.adjRT = [];
         this.adjBatch = [];
-        this.connectionBatch =[];
+        this.connectionBatch = [];
         this.connectionRT = [];
     }
 
@@ -329,7 +404,7 @@ export class LaneDSColl {
         return this[propName];
     }
 
-    getAllDSArrayNames(): string[]{
+    getAllDSArrayNames(): string[] {
         return [
             'occBatch',
             'gammaBatch',
@@ -350,7 +425,7 @@ export class LaneDSColl {
         ]
     }
 
-    getBatchDSArrayNames(): string[]{
+    getBatchDSArrayNames(): string[] {
         return [
             'occBatch',
             'gammaBatch',
@@ -385,10 +460,10 @@ export class LaneDSColl {
         }
     }
 
-    addSubscriptionToDS(dsArrayNames: string[], handler: Function){
-        for(const name of dsArrayNames){
+    addSubscriptionToDS(dsArrayNames: string[], handler: Function) {
+        for (const name of dsArrayNames) {
             const dsArray = this.getDSArray(name);
-            for(const ds of dsArray){
+            for (const ds of dsArray) {
                 ds.subscribe(handler, [EventType.DATA]);
             }
         }
@@ -403,12 +478,12 @@ export class LaneDSColl {
     }
 
     addSubscribeHandlerToALLDSMatchingName(dsCollName: string, handler: Function) {
-        if(!this) return;
+        if (!this) return;
         this.addSubscriptionToDS([dsCollName], handler);
     }
 
-    async connectToDS(dsArrayNames: string[]){
-        for(const name of dsArrayNames) {
+    async connectToDS(dsArrayNames: string[]) {
+        for (const name of dsArrayNames) {
             const dsArray = this.getDSArray(name);
             for (const ds of dsArray) {
                 await ds.connect()
@@ -416,8 +491,8 @@ export class LaneDSColl {
         }
     }
 
-    async disconnectToDS(dsArrayNames: string[]){
-        for(const name of dsArrayNames) {
+    async disconnectToDS(dsArrayNames: string[]) {
+        for (const name of dsArrayNames) {
             const dsArray = this.getDSArray(name);
             for (const ds of dsArray) {
                 await ds.disconnect()
@@ -426,17 +501,17 @@ export class LaneDSColl {
     }
 
     async addConnectToALLDSMatchingName(dsCollName: string) {
-        if(!this) return;
+        if (!this) return;
         await this.connectToDS([dsCollName]);
     }
 
     async addDisconnectToALLDSMatchingName(dsCollName: string) {
-        if(!this) return;
+        if (!this) return;
         await this.disconnectToDS([dsCollName]);
     }
 
     async connectAllDS() {
-       await this.connectToDS(this.getAllDSArrayNames());
+        await this.connectToDS(this.getAllDSArrayNames());
     }
 
     async disconnectAllDS() {

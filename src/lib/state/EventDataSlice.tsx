@@ -48,11 +48,18 @@ export const Slice = createSlice({
             state.selectedEvent = action.payload;
         },
         addEventToLog: (state, action: PayloadAction<EventTableData>) => {
-            let checkForEntry = state.eventLog.some((evtData)=> evtData.occupancyObsId === action.payload.occupancyObsId);
-            let currentLog = [...state.eventLog];
-            currentLog.push(action.payload);
-            state.eventLog = currentLog;
+            // let checkForEntry = state.eventLog.some((evtData)=> evtData.occupancyObsId === action.payload.occupancyObsId);
+            // let currentLog = [...state.eventLog];
+            // currentLog.push(action.payload);
+            // state.eventLog = currentLog;
             // state.eventLog.set(action.payload.occupancyObsId, action.payload);
+
+            // const exists = state.eventLog.some(
+            //     evtData => evtData.occupancyObsId === action.payload.occupancyObsId
+            // );
+            // if (!exists) {
+                state.eventLog = [...state.eventLog, action.payload];
+            // }
         },
         updateSelectedEventAdjudication: (state, action: PayloadAction<AdjudicationData>) => {
             if(state.selectedEvent){

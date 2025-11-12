@@ -21,31 +21,29 @@ export class ChartInterceptProps {
     setChartReady: Function;
 }
 
-export default function ChartLane(props: ChartInterceptProps){
+export default function ChartLane({laneName, datasources, setChartReady}: ChartInterceptProps){
 
     const gammaChartID = "chart-view-gamma";
     const neutronChartID = "chart-view-neutron";
 
     const [gammaCurve, setGammaCurve] = useState<typeof CurveLayer>();
     const [neutronCurve, setNeutronCurve] = useState<typeof CurveLayer>();
-    const [isReadyToRender, setIsReadyToRender] = useState<boolean>(false);
 
     const gammaChartViewRef = useRef<typeof ChartJsView | null>(null);
     const neutronChartViewRef = useRef<typeof ChartJsView | null>(null);
 
 
-    const createCurveLayers = useCallback(() => {
-        if(props.datasources.gamma)
-            setGammaCurve(createGammaViewCurve(props.datasources.gamma));
+    useEffect(() => {
+        if(datasources.gamma)
+            setGammaCurve(createGammaViewCurve(datasources.gamma));
 
-        if(props.datasources.neutron)
-            setNeutronCurve(createNeutronViewCurve(props.datasources.neutron));
+        if(datasources.neutron)
+            setNeutronCurve(createNeutronViewCurve(datasources.neutron));
 
-    },[props.datasources]);
+    }, [datasources.gamma, datasources.neutron]);
 
     const checkForMountableAndCreateCharts = useCallback(() => {
-
-        if (!isReadyToRender && gammaCurve && !gammaChartViewRef.current) {
+        if (gammaCurve && !gammaChartViewRef.current) {
             const container = document.getElementById(gammaChartID);
 
             if (container) {
@@ -102,7 +100,7 @@ export default function ChartLane(props: ChartInterceptProps){
             }
         }
 
-        if (!isReadyToRender && neutronCurve && !neutronChartViewRef.current) {
+        if (neutronCurve && !neutronChartViewRef.current) {
             const containerN = document.getElementById(neutronChartID);
 
             if (containerN) {
@@ -159,71 +157,16 @@ export default function ChartLane(props: ChartInterceptProps){
             }
         }
 
-        if(!isReadyToRender && (gammaCurve || neutronCurve)){
-            setIsReadyToRender(true);
-            // props.setChartReady(true);
+        if (gammaCurve || neutronCurve) {
+            setChartReady(true);
         }
 
-    }, [gammaCurve, neutronCurve, isReadyToRender, props.setChartReady]);
-
-    const checkForProvidedDataSources = useCallback(() => {
-        if (!props.datasources) {
-            console.warn("No DataSources provided for ChartTimeHighlight");
-            return false;
-        }
-        return true;
-
-    }, [props.datasources]);
-
-    const checkReadyToRender = useCallback(() => {
-        if (props.setChartReady()) {
-            setIsReadyToRender(true);
-        } else {
-            setIsReadyToRender(false);
-        }
-    }, [ props.setChartReady]);
+    }, [gammaCurve, neutronCurve, setChartReady]);
 
     useEffect(() => {
         checkForMountableAndCreateCharts();
     }, [checkForMountableAndCreateCharts]);
 
-    useEffect(() => {
-        if (checkForProvidedDataSources()) {
-            createCurveLayers();
-        }
-    }, [props]);
-
-    useEffect(() => {
-        checkReadyToRender();
-    }, [ props.setChartReady]);
-
-    useEffect(() => {
-        if (isReadyToRender) {
-            console.log("Lane View: Chart is ready to render");
-            props.setChartReady(true);
-        }
-    }, [isReadyToRender]);
-
-    useEffect(() => {
-        return() => {
-            console.log("Charts unmounted, cleaning up resources");
-
-            if(gammaChartViewRef.current != null){
-                gammaChartViewRef.current.destroy();
-                gammaChartViewRef.current = undefined;
-            }
-
-            if(neutronChartViewRef.current != null){
-                neutronChartViewRef.current.destroy();
-                neutronChartViewRef.current = undefined;
-            }
-
-            setGammaCurve(null);
-            setNeutronCurve(null);
-            setIsReadyToRender(false);
-            props.setChartReady(false);
-        };
-    }, []);
 
     return (
         <Box display='flex' alignItems="center">

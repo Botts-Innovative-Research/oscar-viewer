@@ -71,21 +71,26 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     ];
 
     useEffect(() => {
-        if (chartViews.gamma)
+        if ( chartViews.gamma )
             setTimeout(() => {
                 chartViews.gamma.chart.update();
             }, 300);
-    }, [chartViews.gamma]);
+
+        if ( chartViews.nsigma )
+            setTimeout(() => {
+                chartViews.nsigma.chart.update();
+            }, 300);
+    }, [chartViews.gamma, chartViews.nsigma]);
 
 
     useEffect(() => {
 
-        if (!props.eventData || !props.datasources?.gamma || !props.datasources?.neutron) {
+        if ( !props.eventData || !props.datasources?.gamma || !props.datasources?.neutron ) {
             console.warn("no datasources or event data");
             return;
         }
 
-        if (props.datasources?.threshold && props?.latestGB)
+        if ( props.datasources?.threshold && props?.latestGB )
             setHasNsigma(true);
 
 
@@ -95,21 +100,29 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         };
 
         init();
-    }, [props.eventData, props.latestGB]);
+    }, [props.eventData, props.latestGB, props.datasources]);
+
+    const chartsInitializedRef = useRef(false);
 
     useEffect(() => {
-        if (!props.eventData) {
+        if ( !props.eventData ) {
             console.warn("No event data");
             return;
         }
 
-        if (!layers) {
+        if ( !layers ) {
             console.warn("No layers");
             return;
         }
+
+        if (chartsInitializedRef.current)
+            return;
+
         const elementIds = updateChartElIds(props.eventData);
 
         renderCharts(layers, elementIds);
+        chartsInitializedRef.current = true;
+
     }, [layers, props.eventData]);
 
     useEffect(() => {
@@ -118,60 +131,50 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         }
     }, [props.currentTime, chartViews]);
 
-    useEffect(() => {
-        if (chartViews?.gamma)
-            chartViews.gamma.chart.update();
-
-        if (chartViews?.nsigma)
-            chartViews.nsigma.chart.update();
-
-        if (chartViews?.neutron)
-            chartViews.neutron.chart.update();
-
-    }, [toggleView, chartViews]);
 
 
     function annotateCharts(currTime: any) {
-        if (currTime) {
-            let chartAnnotation = {
-                annotations: {
-                    verticalLine: {
-                        type: 'line',
-                        xMin: currTime,
-                        xMax: currTime,
-                        borderColor: 'yellow',
-                        borderWidth: 4,
-                        label: {
-                            enabled: true,
-                            content: 'Current Time'
-                        }
+        if (!currTime) return;
+
+        const timeVal = new Date(currTime);
+
+        let chartAnnotation = {
+            annotations: {
+                verticalLine: {
+                    type: 'line',
+                    xMin: timeVal,
+                    xMax: timeVal,
+                    borderColor: 'yellow',
+                    borderWidth: 4,
+                    label: {
+                        enabled: true,
+                        content: 'Current Time'
                     }
                 }
-            };
-
-            if (chartViews?.gamma) {
-                const gchart = chartViews.gamma.chart;
-                gchart.options.plugins.annotation = chartAnnotation;
-
-                gchart.update();
             }
+        };
 
-            if (chartViews?.nsigma) {
-                const nSigmachart = chartViews.nsigma.chart;
-                nSigmachart.options.plugins.annotation = chartAnnotation;
-                nSigmachart.update();
-            }
-
-            if (chartViews?.neutron) {
-                const nchart = chartViews.neutron.chart;
-                nchart.options.plugins.annotation = chartAnnotation;
-                nchart.update();
-            }
-
-            chartViews?.gamma?.chart.update();
-            chartViews?.nsigma?.chart.update();
-            chartViews?.neutron?.chart.update();
+        if (chartViews?.gamma) {
+            const gchart = chartViews.gamma.chart;
+            gchart.options.plugins.annotation = chartAnnotation;
+            gchart.update();
         }
+
+        if (chartViews?.nsigma) {
+            const nSigmachart = chartViews.nsigma.chart;
+            nSigmachart.options.plugins.annotation = chartAnnotation;
+            nSigmachart.update();
+        }
+
+        if (chartViews?.neutron) {
+            const nchart = chartViews.neutron.chart;
+            nchart.options.plugins.annotation = chartAnnotation;
+            nchart.update();
+        }
+
+            // chartViews?.gamma?.chart.update();
+            // chartViews?.nsigma?.chart.update();
+            // chartViews?.neutron?.chart.update();
     }
 
     function updateChartElIds(eventData: EventTableData): string[] {
@@ -250,7 +253,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             });
 
             setChartViews(prev => ({...prev, gamma: gammaChart}));
-
         }
 
         if (layers?.neutron && neutronChartViewRef?.current) {
@@ -290,6 +292,8 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             nSigmaChartViewRef.current.innerHTML = "";
             nSigmaChartViewRef.current.appendChild(nsigmaDiv);
 
+            console.log("layers.nsigma", layers.nsigma)
+
             const nsigmaChart = new ChartJsView({
                 container: nsigmaDiv.id,
                 layers: [layers.nsigma, layers.threshNsigma],
@@ -311,7 +315,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             setChartViews(prev => ({...prev, nsigma: nsigmaChart}));
         }
     };
-
 
     const handleToggle = (event: React.MouseEvent<HTMLElement>, newView: string) => {
         setToggleView(newView);

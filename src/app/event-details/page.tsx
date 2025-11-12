@@ -89,7 +89,6 @@ export default function EventDetailsPage() {
         onAfterPrint: () => console.log('Successfully saved as a PDF.')
     });
 
-
     return (
         <Stack spacing={4} direction={"column"} sx={{width: "100%"}}>
             <Grid container spacing={2} alignItems="center">

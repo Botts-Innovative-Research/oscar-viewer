@@ -1,7 +1,7 @@
 "use client"
 
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {useCallback, useEffect, useState} from "react";
+import {useCallback, useEffect, useState, useMemo} from "react";
 import {Box} from "@mui/material";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
@@ -36,6 +36,8 @@ import {getObservations} from "@/app/utils/ChartUtils";
 import {isThresholdDataStream} from "@/lib/data/oscar/Utilities";
 import {convertToMap, hashString} from "@/app/utils/Utils";
 import {OCCUPANCY_PILLAR_DEF} from "@/lib/data/Constants";
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
+import {Mode} from "osh-js/source/core/datasource/Mode";
 
 
 interface TableProps {
@@ -46,6 +48,7 @@ interface TableProps {
     viewLane?: boolean;
     viewAdjudicated?: boolean;
     laneMap: Map<string, LaneMapEntry>;
+
 }
 
 
@@ -53,7 +56,6 @@ interface TableProps {
  * Gathers occupancy data both historical and real-time and creates TableEventData entries, which are passed into
  * the child components for further use
  * @param tableMode
- * @param viewSecondary Show 'Secondary Inspection' column, default FALSE
  * @param viewMenu Show three-dot menu button, default FALSE
  * @param viewLane Show 'View Lane' option in menu, default FALSE
  * @param viewAdjudicated shows Adjudicated status in the event log , not shown in the alarm table
@@ -62,13 +64,11 @@ interface TableProps {
  */
 export default function EventTable({
                                        tableMode,
-                                       viewSecondary = false,
                                        // viewMenu = false,
                                        viewLane = false,
                                        viewAdjudicated = false,
                                        laneMap,
-                                       currentLane
-
+                                       currentLane,
                                    }: TableProps) {
 
     const selectedRowId = useSelector(selectSelectedRowId);
@@ -80,6 +80,7 @@ export default function EventTable({
     const dispatch = useAppDispatch();
     const router = useRouter();
 
+    const stableLaneMap = useMemo(() => convertToMap(laneMap), [laneMap.size]);
 
     async function doFetch(laneMap: Map<string, LaneMapEntry>) {
         let allFetchedResults: EventTableData[] = [];
@@ -100,38 +101,15 @@ export default function EventTable({
         dispatch(setEventLogData(allFetchedResults))
     }
 
-    function doStream(laneMap: Map<string, LaneMapEntry>) {
-        laneMap.forEach((entry) => {
-            streamObservations(entry);
-        })
-    }
-
     async function fetchObservations(laneEntry: LaneMapEntry, timeStart: string, timeEnd: string) {
         const observationFilter = new ObservationFilter({resultTime: `${timeStart}/${timeEnd}`});
         let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
 
-        if (!occDS) {
-            return;
-        }
+        if (!occDS) return;
 
-        let obsCollection = await occDS.searchObservations(observationFilter, 15);
+        let obsCollection = await occDS.searchObservations(observationFilter, 60);
 
         return await handleObservations(obsCollection, laneEntry);
-    }
-
-    async function streamObservations(laneEntry: LaneMapEntry) {
-        let futureTime = new Date();
-        futureTime.setFullYear(futureTime.getFullYear() + 1);
-
-        const observationFilter = new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`});
-
-        let occDS: typeof DataStream = laneEntry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
-        if(!occDS) return;
-
-        occDS.streamObservations(observationFilter, (observation: any) => {
-            let resultEvent = eventFromObservation(observation[0], laneEntry);
-            dispatch(addEventToLog(resultEvent));
-        });
     }
 
     // @ts-ignore
@@ -150,6 +128,7 @@ export default function EventTable({
     }
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
+
         const id = prngFromStr(obs, laneEntry.laneName);
         let newEvent: EventTableData = new EventTableData(id, laneEntry.laneName, obs.result, obs.id, obs.foiId);
 
@@ -183,14 +162,64 @@ export default function EventTable({
     }
 
     useEffect(() => {
-        laneMap = convertToMap(laneMap);
-        dataStreamSetup(laneMap);
-    }, [laneMap, laneMap.size]);
+        initialize(stableLaneMap);
+    }, [stableLaneMap]);
 
-    const dataStreamSetup = useCallback(async (laneMap: Map<string, LaneMapEntry>) => {
-        await doFetch(laneMap);
-        doStream(laneMap);
-    }, [laneMap]);
+
+    useEffect(() => {
+
+        if (stableLaneMap.size === 0) {
+            console.log("No lanes in map, skipping streaming setup");
+            return;
+        }
+
+        const connectedSources: any[] = [];
+
+        for (const entry of stableLaneMap.values()) {
+
+            const occStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
+
+            if (!occStream) {
+                console.log("No occStream for lane:", entry.laneName);
+                continue;
+            }
+
+            occStream.streamObservations(undefined, (msg: any) => {
+
+                try {
+                    const event = eventFromObservation(msg[0], entry);
+                    console.log("Event created:", event);
+                    dispatch(addEventToLog(event));
+                } catch (err) {
+                    console.error("Error creating event from observation:", err);
+                }
+            });
+
+            const occSource: typeof ConSysApi = entry.datasourcesRealtime?.find(
+                (ds: any) => {
+                    const parts = ds.properties.resource?.split("/");
+                    return parts && parts[2] === occStream.properties.id;
+                }
+            );
+
+            if (!occSource) {
+                console.log("No occSource found for datastream:", occStream.properties.id);
+                continue;
+            }
+
+            try {
+                occSource.connect();
+                connectedSources.push(occSource);
+            } catch (err) {
+                console.error("Error connecting occSource:", err);
+            }
+        }
+
+    }, [stableLaneMap]);
+
+    const initialize = useCallback(async (map: Map<string, LaneMapEntry>) => {
+        await doFetch(map);
+    }, []);
 
     useEffect(() => {
         let filteredData: EventTableData[] = [];
@@ -213,14 +242,6 @@ export default function EventTable({
 
     // Column definition for EventTable
     const columns: GridColDef<EventTableData>[] = [
-        {
-            field: 'secondaryInspection',
-            headerName: 'Secondary Inspection',
-            type: 'string',
-            minWidth: 125,
-            flex: 1,
-            filterable: viewSecondary
-        },
         {
             field: 'laneId',
             headerName: 'Lane ID',
@@ -320,7 +341,7 @@ export default function EventTable({
     const getColumnList = () => {
         const excludeFields: string[] = [];
         // Exclude fields based on component parameters
-        if (!viewSecondary) excludeFields.push('secondaryInspection');
+        // if (!viewSecondary) excludeFields.push('secondaryInspection');
         if (!viewAdjudicated) excludeFields.push('adjudicatedIds');
         // if (!viewAdjudicated) excludeFields.push('adjudicatedCode');
 
@@ -381,7 +402,6 @@ export default function EventTable({
         return hashString(baseId);
     }
 
-
     return (
         <Box sx={{height: 800, width: '100%'}}>
             <DataGrid
@@ -398,7 +418,6 @@ export default function EventTable({
                     columns: {
                         // Manage visible columns in table based on component parameters
                         columnVisibilityModel: {
-                            secondaryInspection: viewSecondary,
                             adjudicatedIds: viewAdjudicated,
                             // adjudicatedCode: viewAdjudicated,
                         },

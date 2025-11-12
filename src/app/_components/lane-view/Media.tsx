@@ -24,19 +24,11 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
     const [videoStreams, setVideoStreams] = useState<typeof ControlStream[]>([]);
     const [currentPage, setCurrentPage] = useState(0);
 
-
-    // send command to ffmpeg driver to start the video stream
-    // returns the path the playlist file MU8 file
-    // put that in teh video element perf
-    // hls js
-
     useEffect(() => {
         fetchVideoControlStreams()
     }, []);
 
     useEffect(() => {
-
-
         if (videoStreams.length === 0)
             return;
 
@@ -57,8 +49,6 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
             const responseJson = await response.json();
 
             const streamPath = responseJson?.results?.[0]?.data?.streamPath;
-
-            console.log("streamPath", streamPath);
 
             if (streamPath)
                 setVideoSource(streamPath);
@@ -85,8 +75,6 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
 
         let videoControlStreams = currLaneEntry.controlStreams.filter((stream: typeof ControlStream) => isHLSVideoControlStream(stream));
-        console.log("videoControlStreams", videoControlStreams);
-
 
         if (!videoControlStreams || videoControlStreams.length == 0){
             console.error("no video control stream");
@@ -98,13 +86,10 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
 
 
     useEffect(() => {
+        if (!datasources)
+            return;
+
         async function connectDataSources(){
-            if(!chartReady) return;
-
-            datasources?.neutron?.disconnect();
-            datasources?.gamma?.disconnect();
-            datasources?.threshold?.disconnect();
-
             await datasources?.neutron?.connect();
             await datasources?.gamma?.connect();
             await datasources?.threshold?.connect();
@@ -113,13 +98,12 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
         connectDataSources();
 
         return () => {
-            if(!chartReady){
-                datasources?.neutron?.disconnect();
-                datasources?.gamma?.disconnect();
-                datasources?.threshold?.disconnect();
-            }
-        };
-    }, [datasources, chartReady]);
+            datasources?.neutron?.disconnect();
+            datasources?.gamma?.disconnect();
+            datasources?.threshold?.disconnect();
+        }
+
+    }, [datasources, currentLane]);
 
     const handleNextPage = () =>{
         if (currentPage < videoStreams.length - 1) {
@@ -132,8 +116,6 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
             setCurrentPage(prev => prev - 1)
         }
     }
-
-
 
     return (
         <Paper variant='outlined' sx={{ width: "100%" }}>
