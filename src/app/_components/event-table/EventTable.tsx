@@ -176,10 +176,8 @@ export default function EventTable({
         const connectedSources: any[] = [];
 
         for (const entry of stableLaneMap.values()) {
-            console.log("Processing lane:", entry.laneName);
 
             const occStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
-            console.log("occStream found:", occStream, occStream?.properties?.id);
 
             if (!occStream) {
                 console.log("No occStream for lane:", entry.laneName);
@@ -187,7 +185,6 @@ export default function EventTable({
             }
 
             occStream.streamObservations(undefined, (msg: any) => {
-                console.log("STREAMING MESSAGE RECEIVED:", msg);
 
                 try {
                     const event = eventFromObservation(msg[0], entry);
@@ -205,22 +202,18 @@ export default function EventTable({
                 }
             );
 
-            console.log("occSource found:", occSource);
             if (!occSource) {
                 console.log("No occSource found for datastream:", occStream.properties.id);
                 continue;
             }
 
-            console.log("Attempting to connect occSource...");
             try {
                 occSource.connect();
-                console.log("Connect called successfully");
                 connectedSources.push(occSource);
             } catch (err) {
                 console.error("Error connecting occSource:", err);
             }
         }
-        console.log("Total connected sources:", connectedSources.length);
 
     }, [stableLaneMap]);
 

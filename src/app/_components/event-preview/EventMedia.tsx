@@ -15,12 +15,10 @@ export default function EventMedia({selectedNode, datasources, eventData, mode}:
 
     const [videoCurrentTime, setVideoCurrentTime] = useState<number | null>(null);
     const [videoIsPlaying, setVideoIsPlaying] = useState(true);
-    const [syncTime, setSyncTime] = useState<number | null>(null);
     const selectedIndex = useRef<number>(0)
 
     const handleVideoTimeUpdate = (timeMs: number) => {
         if ( !videoIsPlaying ) return;
-        setSyncTime(timeMs);
         setVideoCurrentTime(timeMs);
     };
 
@@ -51,8 +49,8 @@ export default function EventMedia({selectedNode, datasources, eventData, mode}:
                         modeType={mode}
                         startTime={eventData.startTime}
                         endTime={eventData.endTime}
-                        syncTime={videoCurrentTime}
                         isPlaying={videoIsPlaying}
+                        syncTime={videoCurrentTime}
                         onVideoTimeUpdate={handleVideoTimeUpdate}
                         onSelectedVideoIdxChange={handleUpdatingPage}
                     />
