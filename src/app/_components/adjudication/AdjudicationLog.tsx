@@ -120,7 +120,7 @@ export default function AdjudicationLog(props: {
 
     async function fetchObservations(controlStream: typeof ControlStream) {
 
-        let commandStatuses = await controlStream.searchStatus(new ControlStreamFilter({}), 10000);
+        let commandStatuses = await controlStream.searchStatus(new ControlStreamFilter({}), 100);
 
         while (commandStatuses.hasNext()) {
             let cmdRes = await commandStatuses.nextPage();
