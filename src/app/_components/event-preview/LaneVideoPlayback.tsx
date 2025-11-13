@@ -84,24 +84,6 @@ export default function LaneVideoPlayback({selectedNode, videos, modeType, start
         });
     }
 
-
-    // const handleTimeUpdate = (video: HTMLVideoElement) => {
-    //     if ( !startTime || !endTime || isUpdatingFromSlider ) return;
-    //
-    //     const eventStartMs = new Date(startTime).getTime();
-    //     const eventEndMs = new Date(endTime).getTime();
-    //     const eventDurationMs = eventEndMs - eventStartMs;
-    //
-    //
-    //     if ( video.duration && video.currentTime >= 0 ) {
-    //
-    //         const videoFraction = video.currentTime / video.duration;
-    //         const eventTimeMs = eventStartMs + videoFraction * eventDurationMs;
-    //
-    //         onVideoTimeUpdate?.(eventTimeMs);
-    //     }
-    // };
-
     const lastUpdateRef = useRef<number>(0);
 
     const handleTimeUpdate = (video: HTMLVideoElement) => {
@@ -131,6 +113,7 @@ export default function LaneVideoPlayback({selectedNode, videos, modeType, start
 
     const handleVideoRef = useCallback((element: HTMLVideoElement | null, index: number) => {
         if ( element ) {
+            console.log("index", index)
             videoRefs.current[index] = element;
 
             element.addEventListener('loadedmetadata', () => handleLoadedMetadata(element));
@@ -184,8 +167,8 @@ export default function LaneVideoPlayback({selectedNode, videos, modeType, start
                         {visibleVideo.map((video, index) => {
                             return (
                                 <video
-                                    key={index}
-                                    ref={(el) => handleVideoRef(el, index)}
+                                    key={`video-${selVideoIdx}`}
+                                    ref={(el) => handleVideoRef(el, selVideoIdx)}
                                     width="100%"
                                     height={videoHeight}
                                     controls

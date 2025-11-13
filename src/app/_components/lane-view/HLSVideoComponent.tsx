@@ -11,10 +11,6 @@ export default function HLSVideoComponent({videoSource, selectedNode}: {videoSou
     const hlsRef: MutableRefObject<Hls> = useRef(null);
     const MAX_RETRIES = 50;
     let currentRetry = 0;
-    // send command to ffmpeg driver to start the video stream
-    // returns the path the playlist file MU8 file
-    // put that in teh video element perf
-    // hls js
 
     useEffect(() => {
         if (!videoSource || !selectedNode || !videoRef.current)
@@ -41,11 +37,9 @@ export default function HLSVideoComponent({videoSource, selectedNode}: {videoSou
 
 
             if (Hls.isSupported()) {
-                // const hls = new Hls();
                 const hls = new Hls(hlsjsConfig);
                 hlsRef.current = hls;
                 hls.on(Hls.Events.ERROR, function (event, data) {
-                    // console.error("HLS error:", data);
                     console.warn("Failed to load manifest, attempting retry #" + currentRetry);
                     if (data.type == ErrorTypes.NETWORK_ERROR) {
                         if (data.error.message.includes("(status 404)")) {
