@@ -24,6 +24,7 @@ import {selectNodes} from "@/lib/state/OSHSlice";
 import {INode} from "@/lib/data/osh/Node";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import { convertToMap } from "@/app/utils/Utils";
+import DataStreamFilter from "osh-js/source/core/consysapi/datastream/DataStreamFilter.js";
 
 
 export default function MapComponent() {
@@ -250,7 +251,7 @@ export default function MapComponent() {
                 let oscarSystemDatastreams = [];
                 if (!oscarSystem)
                     return;
-                let dataStreamsCol = await oscarSystem.searchDataStreams(undefined, 10);
+                let dataStreamsCol = await oscarSystem.searchDataStreams(new DataStreamFilter({ validTime: "latest" }), 10);
                 while (dataStreamsCol.hasNext()) {
                     const datastreamResults = await dataStreamsCol.nextPage();
                     oscarSystemDatastreams.push(...datastreamResults);

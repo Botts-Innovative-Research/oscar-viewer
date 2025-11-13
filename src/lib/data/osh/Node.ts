@@ -197,40 +197,8 @@ export class Node implements INode {
         this.upperRightBound = latLon;
     }
 
-    async searchObservations(observationFilter: typeof ObservationFilter, pageSize: number = 10) {
-        return await this.getObservationsApi().searchObservations(observationFilter, pageSize);
-    }
-
-    async searchSystems(systemFilter: typeof SystemFilter, pageSize: number = 10) {
-        return await this.getSystemsApi().searchSystems(systemFilter, pageSize);
-    }
-
     getDataStreamsApi(): typeof DataStreams {
         return this.dataStreamsApi;
-    }
-
-    async searchDataStreams(dsFilter: typeof DataStreamFilter, pageSize: number = 10) {
-        return await this.getDataStreamsApi().searchDataStreams(dsFilter, pageSize);
-    }
-
-    setObservationsApi(apiConfig: string): typeof Observations {
-        return new Observations(apiConfig)
-    }
-
-    setSystemsApi(apiConfig: string): typeof Systems {
-        return new Systems(apiConfig)
-    }
-
-    setOscarServiceSystem(system: typeof System){
-        this.oscarServiceSystem = system;
-    }
-
-    setDataStreamsApi(apiConfig: string): typeof DataStreams {
-        return new DataStreams(apiConfig);
-    }
-
-    setControlStreamApi(apiConfig: string): typeof ControlStreams {
-        return new ControlStreams(apiConfig);
     }
 
     getConnectedSystemsEndpoint(noProtocolPrefix: boolean = false) {
@@ -435,7 +403,7 @@ export class Node implements INode {
         for (const [, laneEntry] of laneMap) {
             if (laneEntry.parentNode.id != this.id) continue;
             try {
-                const datastreams = await laneEntry.laneSystem.searchDataStreams(undefined, 100);
+                const datastreams = await laneEntry.laneSystem.searchDataStreams(new DataStreamFilter({ validTime: "latest" }), 100);
                 while (datastreams.hasNext()) {
                     const datastreamResults = await datastreams.nextPage();
                     laneEntry.addDataStreams(datastreamResults);
@@ -448,7 +416,7 @@ export class Node implements INode {
 
     async fetchDataStream(system: typeof System) {
         let allDatastreams = [];
-        const datastreams = await system.searchDataStreams(undefined, 100);
+        const datastreams = await system.searchDataStreams(new DataStreamFilter({ validTime: "latest" }), 100);
         while (datastreams.hasNext()) {
             const datastreamResults = await datastreams.nextPage();
             allDatastreams.push(...datastreamResults);
