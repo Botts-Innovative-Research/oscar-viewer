@@ -188,7 +188,6 @@ export default function EventTable({
 
                 try {
                     const event = eventFromObservation(msg[0], entry);
-                    console.log("Event created:", event);
                     dispatch(addEventToLog(event));
                 } catch (err) {
                     console.error("Error creating event from observation:", err);

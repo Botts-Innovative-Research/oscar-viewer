@@ -81,7 +81,6 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
 
         let videoControlStreams = currLaneEntry.controlStreams.filter((stream: typeof ControlStream) => isHLSVideoControlStream(stream));
 
-        console.log("video control streams", videoControlStreams)
         if (!videoControlStreams || videoControlStreams.length == 0){
             console.error("no video control stream");
             throw new LiveVideoError("No video control stream available.");
@@ -96,7 +95,6 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
             return acc;
         }, []);
 
-        console.log("unique video streams", uniqueVideoControlStreams)
         setVideoStreams(uniqueVideoControlStreams)
     }
 
