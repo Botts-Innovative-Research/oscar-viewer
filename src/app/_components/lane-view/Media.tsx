@@ -33,6 +33,9 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
             return;
 
         const currentStream = videoStreams[currentPage];
+
+        console.log("curr stream", currentStream);
+
         if (!currentStream)
             return;
 
@@ -52,6 +55,8 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
 
             if (streamPath)
                 setVideoSource(streamPath);
+            console.log("response", responseJson)
+            console.log("stream path", streamPath)
         }
 
         const stopPreviousStream = async () => {
@@ -76,12 +81,23 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
 
         let videoControlStreams = currLaneEntry.controlStreams.filter((stream: typeof ControlStream) => isHLSVideoControlStream(stream));
 
+        console.log("video control streams", videoControlStreams)
         if (!videoControlStreams || videoControlStreams.length == 0){
             console.error("no video control stream");
             throw new LiveVideoError("No video control stream available.");
         }
 
-        setVideoStreams(videoControlStreams)
+        let uniqueVideoControlStreams = videoControlStreams.reduce((acc: typeof ControlStream[], stream: typeof ControlStream) => {
+            const id = stream.properties?.id;
+            if (!id) return acc;
+            if (!acc.find(s => s.properties.id === id)) {
+                acc.push(stream);
+            }
+            return acc;
+        }, []);
+
+        console.log("unique video streams", uniqueVideoControlStreams)
+        setVideoStreams(uniqueVideoControlStreams)
     }
 
 
