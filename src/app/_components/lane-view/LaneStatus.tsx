@@ -13,53 +13,58 @@ import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {EventType} from "osh-js/source/core/event/EventType";
 
-interface LaneStatusProps{
-  dataSourcesByLane: LaneDSColl;
+interface LaneStatusProps {
+    dataSourcesByLane: LaneDSColl;
 }
 
 export default function LaneStatus(props: LaneStatusProps) {
-  const dispatch = useAppDispatch();
-  const idVal = useRef(1);
-  const [laneStatus, setLaneStatus] = useState<LaneStatusType>();
+    const dispatch = useAppDispatch();
+    const idVal = useRef(1);
+    const [laneStatus, setLaneStatus] = useState<LaneStatusType>();
 
-  const currentLane = useSelector((state: RootState) => state.laneView.currentLane);
+    const currentLane = useSelector((state: RootState) => state.laneView.currentLane);
 
 
-  const addSubscriptionCallbacks = useCallback(() => {
+    const addSubscriptionCallbacks = useCallback(() => {
 
-    props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("gammaRT", (message: any) => {
-      const state = message.values[0].data.alarmState;
-      updateStatus(currentLane, state);
-    })
+        props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("gammaRT", (message: any) => {
+            const state = message.values[0].data.alarmState;
+            updateStatus(currentLane, state);
+        })
 
-    props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("neutronRT", (message: any) => {
-      const state = message.values[0].data.alarmState;
-      updateStatus(currentLane, state);
-    })
+        props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("neutronRT", (message: any) => {
+            const state = message.values[0].data.alarmState;
+            updateStatus(currentLane, state);
+        })
 
-    props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("tamperRT", (message: any) => {
-      const state = message.values[0].data.tamperStatus;
-      if(state){
-        updateStatus(currentLane, 'Tamper')
-      }
-    })
+        props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("tamperRT", (message: any) => {
+            const state = message.values[0].data.tamperStatus;
+            if (state) {
+                updateStatus(currentLane, 'Tamper')
+            }
+        })
 
-    props.dataSourcesByLane.addConnectToALLDSMatchingName("gammaRT");
-    props.dataSourcesByLane.addConnectToALLDSMatchingName("neutronRT");
-    props.dataSourcesByLane.addConnectToALLDSMatchingName("tamperRT");
+        props.dataSourcesByLane.addConnectToALLDSMatchingName("gammaRT");
+        props.dataSourcesByLane.addConnectToALLDSMatchingName("neutronRT");
+        props.dataSourcesByLane.addConnectToALLDSMatchingName("tamperRT");
 
+        return () => {
+            props.dataSourcesByLane.addDisconnectToALLDSMatchingName("gammaRT");
+            props.dataSourcesByLane.addDisconnectToALLDSMatchingName("neutronRT");
+            props.dataSourcesByLane.addDisconnectToALLDSMatchingName("tamperRT");
+        }
     }, [props.dataSourcesByLane]);
 
 
-  async function fetchLatestStatus() {
+    async function fetchLatestStatus() {
 
-    const currentLaneDatasources: LaneDSColl = props.dataSourcesByLane;
+        const currentLaneDatasources: LaneDSColl = props.dataSourcesByLane;
 
-    // Just use gamma datasource bc all lanes should have it, and gamma "Background" state is the most common
-    const gammaDatasource = currentLaneDatasources.gammaRT[0];
-    if(!gammaDatasource) return;
+        // Just use gamma datasource bc all lanes should have it, and gamma "Background" state is the most common
+        const gammaDatasource = currentLaneDatasources.gammaRT[0];
+        if (!gammaDatasource) return;
 
-    const gammaDataStreamId = gammaDatasource.properties.resource.split('/')[2];
+        const gammaDataStreamId = gammaDatasource.properties.resource.split('/')[2];
 
         const dsAPI = new DataStreams({
             endpointUrl: `${gammaDatasource.properties.endpointUrl}`,
@@ -69,22 +74,22 @@ export default function LaneStatus(props: LaneStatusProps) {
             streamProtocol: 'mqtt'
         });
 
-    const gammaDataStream = await dsAPI.getDataStreamById(gammaDataStreamId);
-    const latestObservationQuery = await gammaDataStream.searchObservations(new ObservationFilter({ resultTime: 'latest'}), 1);
-    const latestObservationArray = await latestObservationQuery.nextPage();
-    const latestObservation = latestObservationArray[0];
+        const gammaDataStream = await dsAPI.getDataStreamById(gammaDataStreamId);
+        const latestObservationQuery = await gammaDataStream.searchObservations(new ObservationFilter({resultTime: 'latest'}), 1);
+        const latestObservationArray = await latestObservationQuery.nextPage();
+        const latestObservation = latestObservationArray[0];
 
-    const initialLaneStatus: LaneStatusType = {
-      id: -1,
-      name: currentLane,
-      status: latestObservation.result.alarmState
+        const initialLaneStatus: LaneStatusType = {
+            id: -1,
+            name: currentLane,
+            status: latestObservation.result.alarmState
+        }
+        setLaneStatus(initialLaneStatus);
     }
-    setLaneStatus(initialLaneStatus);
-  }
 
-  useEffect(() => {
-    if(props.dataSourcesByLane)
-      fetchLatestStatus();
+    useEffect(() => {
+        if (props.dataSourcesByLane)
+            fetchLatestStatus();
 
         addSubscriptionCallbacks();
     }, [props.dataSourcesByLane]);
@@ -102,11 +107,11 @@ export default function LaneStatus(props: LaneStatusProps) {
         dispatch(setLastLaneStatus(newStatus))
     }
 
-  return (
-      <>
-        {laneStatus && (
-            <LaneItem key={laneStatus.id} id={laneStatus.id} name={laneStatus.name} status={laneStatus.status} />
-        )}
-      </>
-  );
+    return (
+        <>
+            {laneStatus && (
+                <LaneItem key={laneStatus.id} id={laneStatus.id} name={laneStatus.name} status={laneStatus.status}/>
+            )}
+        </>
+    );
 }

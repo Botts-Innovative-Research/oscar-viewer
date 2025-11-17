@@ -167,6 +167,7 @@ export default function EventTable({
 
 
     useEffect(() => {
+        let occSource: typeof ConSysApi;
 
         if (stableLaneMap.size === 0) {
             console.log("No lanes in map, skipping streaming setup");
@@ -194,7 +195,7 @@ export default function EventTable({
                 }
             });
 
-            const occSource: typeof ConSysApi = entry.datasourcesRealtime?.find(
+            occSource = entry.datasourcesRealtime?.find(
                 (ds: any) => {
                     const parts = ds.properties.resource?.split("/");
                     return parts && parts[2] === occStream.properties.id;
@@ -212,8 +213,14 @@ export default function EventTable({
             } catch (err) {
                 console.error("Error connecting occSource:", err);
             }
+
         }
 
+        return ()=> {
+            if (occSource.isConnected()) {
+                occSource.disconnect();
+            }
+        }
     }, [stableLaneMap]);
 
     const initialize = useCallback(async (map: Map<string, LaneMapEntry>) => {

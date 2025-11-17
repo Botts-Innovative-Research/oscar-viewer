@@ -136,6 +136,16 @@ export default function MapComponent() {
             laneDSColl.addConnectToALLDSMatchingName("connectionRT");
 
         }
+
+        return ()=> {
+            for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
+                laneDSColl.addDisconnectToALLDSMatchingName("gammaRT");
+                laneDSColl.addDisconnectToALLDSMatchingName("neutronRT");
+                laneDSColl.addDisconnectToALLDSMatchingName("tamperRT");
+                laneDSColl.addDisconnectToALLDSMatchingName("connectionRT");
+
+            }
+        }
     }, [dataSourcesByLane]);
 
     useEffect(() => {
@@ -170,7 +180,7 @@ export default function MapComponent() {
     }, [isInit]);
 
     useEffect(() => {
-        if(locationList && locationList.length > 0 && isInit){
+        if (locationList && locationList.length > 0 && isInit) {
             locationList.forEach((location) => {
                 location.locationSources.forEach((loc: any) => {
                     let newPointMarker = new PointMarkerLayer({
@@ -213,6 +223,19 @@ export default function MapComponent() {
             });
         }
 
+        return () => {
+            if (locationList && locationList.length > 0) {
+                locationList.forEach((location) => {
+
+                    location.locationSources.map((src: any) =>{
+                        if (src.isConnected()){
+                            src.disconnect();
+                        }
+                    });
+                });
+            }
+        }
+
     }, [locationList, isInit]);
 
     const getSiteDiagramPath = (path: string, node: INode) => {
@@ -226,10 +249,6 @@ export default function MapComponent() {
         const addImageOverlay = async (node: INode, path: string, urb: any, llb: any) => {
 
             const bounds = L.latLngBounds([llb, urb]);
-            console.log("urb", urb);
-            console.log("lrb", llb);
-            console.log("sitemap", path);
-            console.log("bounds", bounds);
 
             leafletViewRef.current.map.fitBounds(bounds);
             leafletViewRef.current.addImageOverlay(path, bounds, {

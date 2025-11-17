@@ -81,6 +81,11 @@ export default function EventDetailsPage() {
         neutronDatasources.forEach(ds => ds.connect());
         thresholdDatasources.forEach(ds => ds.connect());
 
+        return () => {
+            gammaDatasources.forEach(ds => ds.disconnect());
+            neutronDatasources.forEach(ds => ds.disconnect());
+            thresholdDatasources.forEach(ds => ds.disconnect());
+        }
     }, [datasourcesReady]);
 
     const reactToPrintFn = useReactToPrint({
