@@ -83,6 +83,15 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
             laneDSColl.addConnectToALLDSMatchingName('gammaRT');
         }
 
+        return () => {
+            for (let [laneName, laneDSColl] of props.dataSourcesByLane.entries()) {
+                laneDSColl.addDisconnectToALLDSMatchingName('connectionRT');
+                laneDSColl.addDisconnectToALLDSMatchingName('tamperRT');
+                laneDSColl.addDisconnectToALLDSMatchingName('neutronRT');
+                laneDSColl.addDisconnectToALLDSMatchingName('gammaRT');
+            }
+        }
+
     }, [props.dataSourcesByLane]);
 
     useEffect(() => {

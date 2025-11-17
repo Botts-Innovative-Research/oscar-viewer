@@ -136,6 +136,16 @@ export default function MapComponent() {
             laneDSColl.addConnectToALLDSMatchingName("connectionRT");
 
         }
+
+        return ()=> {
+            for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
+                laneDSColl.addDisconnectToALLDSMatchingName("gammaRT");
+                laneDSColl.addDisconnectToALLDSMatchingName("neutronRT");
+                laneDSColl.addDisconnectToALLDSMatchingName("tamperRT");
+                laneDSColl.addDisconnectToALLDSMatchingName("connectionRT");
+
+            }
+        }
     }, [dataSourcesByLane]);
 
     useEffect(() => {
@@ -213,6 +223,17 @@ export default function MapComponent() {
             });
         }
 
+        return () => {
+            locationList.forEach((location) => {
+
+                location.locationSources.map((src: any) =>{
+                    if (src.isConnected()){
+                        src.disconnect();
+                    }
+                });
+            });
+        }
+
     }, [locationList, isInit]);
 
     const getSiteDiagramPath = (path: string, node: INode) => {
@@ -226,10 +247,6 @@ export default function MapComponent() {
         const addImageOverlay = async (node: INode, path: string, urb: any, llb: any) => {
 
             const bounds = L.latLngBounds([llb, urb]);
-            console.log("urb", urb);
-            console.log("lrb", llb);
-            console.log("sitemap", path);
-            console.log("bounds", bounds);
 
             leafletViewRef.current.map.fitBounds(bounds);
             leafletViewRef.current.addImageOverlay(path, bounds, {
