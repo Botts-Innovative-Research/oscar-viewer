@@ -180,7 +180,7 @@ export default function MapComponent() {
     }, [isInit]);
 
     useEffect(() => {
-        if(locationList && locationList.length > 0 && isInit){
+        if (locationList && locationList.length > 0 && isInit) {
             locationList.forEach((location) => {
                 location.locationSources.forEach((loc: any) => {
                     let newPointMarker = new PointMarkerLayer({
@@ -224,14 +224,16 @@ export default function MapComponent() {
         }
 
         return () => {
-            locationList.forEach((location) => {
+            if (locationList && locationList.length > 0) {
+                locationList.forEach((location) => {
 
-                location.locationSources.map((src: any) =>{
-                    if (src.isConnected()){
-                        src.disconnect();
-                    }
+                    location.locationSources.map((src: any) =>{
+                        if (src.isConnected()){
+                            src.disconnect();
+                        }
+                    });
                 });
-            });
+            }
         }
 
     }, [locationList, isInit]);
