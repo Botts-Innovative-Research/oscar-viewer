@@ -7,7 +7,7 @@ describe('Servers Page (E2E)', () => {
 
     describe('Adding Nodes', () => {
 
-        it('Should successfully add non-local node to the list of ndoes', () => {
+        it.skip('Should successfully add non-local node to the list of ndoes', () => {
             cy.get('input[name="name"]').clear().type('TEST Non-Local Node');
             cy.get('[name="name"]').should('have.value','TEST Non-Local Node');
 

@@ -3,7 +3,6 @@ describe('Event Log', () => {
     before(() => {
         cy.visitEventsPage();
         cy.intercept('GET', '**/api/**', { log: false });
-
     });
 
     describe('Performance Testing', () => {

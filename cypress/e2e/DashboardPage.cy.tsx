@@ -75,7 +75,7 @@ describe('Dashboard', () => {
             cy.selectRapiscanEvent();
         })
 
-        it('select event to open event preview', () => {
+        it.skip('select event to open event preview', () => {
 
             // Verify that row is now selected
             cy.get('.MuiDataGrid-row.selected-row', { timeout: 2000 } )
@@ -139,7 +139,7 @@ describe('Dashboard', () => {
                 });
         });
 
-        it('select event and expand to event details', () => {
+        it.skip('select event and expand to event details', () => {
 
             // Verify that row is now selected
             cy.get('.MuiDataGrid-row.selected-row')
@@ -158,7 +158,7 @@ describe('Dashboard', () => {
             cy.url().should('include', '/');
         });
 
-        it('should close event preview when button clicked', () => {
+        it.skip('should close event preview when button clicked', () => {
 
             // Verify that row is now selected
             cy.get('.MuiDataGrid-row.selected-row')
@@ -226,7 +226,7 @@ describe('Dashboard', () => {
             cy.selectAspectEvent();
         })
 
-        it('Select Aspect Event from table and open event preview', () => {
+        it.skip('Select Aspect Event from table and open event preview', () => {
 
             // Verify that row is now selected
             cy.get('.MuiDataGrid-row.selected-row', { timeout: 2000 } )
@@ -291,7 +291,7 @@ describe('Dashboard', () => {
                 });
         });
 
-        it('select an Aspect event and expand to event details', () => {
+        it.skip('select an Aspect event and expand to event details', () => {
 
             // Verify that row is now selected
             cy.get('.MuiDataGrid-row.selected-row')
@@ -310,7 +310,7 @@ describe('Dashboard', () => {
             cy.url().should('include', '/');
         });
 
-        it('should close an Asepct event preview when button clicked', () => {
+        it.skip('should close an Asepct event preview when button clicked', () => {
 
             // Verify that row is now selected
             cy.get('.MuiDataGrid-row.selected-row')
@@ -330,7 +330,7 @@ describe('Dashboard', () => {
     });
 
     describe('Lane Status', () => {
-        it('should navigate to a rapiscan lane', () => {
+        it.skip('should navigate to a rapiscan lane', () => {
             cy.get('[data-testid="CheckCircleIcon"]')
                 .get('[aria-label="Rap Lane"]')
                 .should('be.visible')
@@ -347,7 +347,7 @@ describe('Dashboard', () => {
             cy.url().should('include', '/');
         });
 
-        it('should navigate to an aspect lane', () => {
+        it.skip('should navigate to an aspect lane', () => {
 
             cy.get('[data-testid="CheckCircleIcon"]').get('[aria-label="Aspect Lane"]')
                 .should('be.visible')

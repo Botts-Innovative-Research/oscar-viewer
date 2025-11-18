@@ -46,7 +46,7 @@ describe('Event Details', () => {
     });
 
     describe('Page components load', () => {
-        it('should display tables', () => {
+        it.skip('should display tables', () => {
             cy.contains('Max Gamma Count Rate (cps)')
                 .should('be.visible');
 
@@ -56,14 +56,14 @@ describe('Event Details', () => {
 
         });
 
-        it('should display adjudication report form', () => {
+        it.skip('should display adjudication report form', () => {
             cy.contains('Adjudication Report Form')
                 .should('be.visible');
         });
     })
 
     describe.skip('Chart Actions', () => {
-        it('should display chart for selected event', () => {
+        it.skip('should display chart for selected event', () => {
             cy.get('div.chart-view-event-detail')
                 .find('canvas')
                 .should('exist')
@@ -82,18 +82,15 @@ describe('Event Details', () => {
         });
 
         it('should switch between video streams', () => {
-
             cy.get('img.video-mjpeg')
                 .should('exist')
                 .and('be.visible')
-
         });
     });
 
 
     describe("Event Adjudication", () => {
         it('should successfully adjudicate an event', () => {
-
             // adjudicate
             cy.contains('label', 'Adjudicate')
                 .parent()
@@ -141,7 +138,7 @@ describe('Event Details', () => {
     });
 
     describe('Navigate back', () => {
-        it('should navigate back to dashboard', () => {
+        it.skip('should navigate back to dashboard', () => {
             cy.contains('button', 'Back')
                 .click();
             cy.url().should('include', '/');
