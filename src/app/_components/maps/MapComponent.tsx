@@ -52,8 +52,8 @@ export default function MapComponent() {
                 if (laneMapToMap.has(key)) {
                     let ds: LaneMapEntry = laneMapToMap.get(key);
 
-                    dsLocations.map((dss) => {
-                        const locationSources = ds.datasourcesBatch.filter((item) =>
+                    dsLocations.map((dss: any) => {
+                        const locationSources = ds.datasourcesBatch.filter((item: any) =>
                             (item.properties.resource === ("/datastreams/" + dss.properties.id + "/observations")))
 
                         const laneWithLocation: LaneWithLocation = {
@@ -143,7 +143,6 @@ export default function MapComponent() {
                 laneDSColl.addDisconnectToALLDSMatchingName("neutronRT");
                 laneDSColl.addDisconnectToALLDSMatchingName("tamperRT");
                 laneDSColl.addDisconnectToALLDSMatchingName("connectionRT");
-
             }
         }
     }, [dataSourcesByLane]);
@@ -181,7 +180,7 @@ export default function MapComponent() {
 
     useEffect(() => {
         if (locationList && locationList.length > 0 && isInit) {
-            locationList.forEach((location) => {
+            locationList.forEach((location: any) => {
                 location.locationSources.forEach((loc: any) => {
                     let newPointMarker = new PointMarkerLayer({
                         name: location.laneName,
@@ -225,7 +224,7 @@ export default function MapComponent() {
 
         return () => {
             if (locationList && locationList.length > 0) {
-                locationList.forEach((location) => {
+                locationList.forEach((location: any) => {
 
                     location.locationSources.map((src: any) =>{
                         if (src.isConnected()){
@@ -304,8 +303,8 @@ export default function MapComponent() {
     }, [isInit, nodes]);
 
     const updateLocationList = (laneName: string, newStatus: string) => {
-        setLocationList((prevState) => {
-            const updatedList = prevState.map((data) =>
+        setLocationList((prevState: any) => {
+            const updatedList = prevState.map((data: any) =>
                 data.laneName === laneName ? {...data, status: newStatus} : data
             );
 

@@ -128,7 +128,7 @@ export class Node implements INode {
 
 
         let mqttOpts = {
-            shared: false,
+            shared: true,
             prefix: this.csAPIEndpoint,
             endpointUrl: `${this.address}:${this.port}${this.oshPathRoot}`,
             username: this.auth.username,

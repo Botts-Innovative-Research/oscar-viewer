@@ -55,7 +55,6 @@ export default function LaneStatus(props: LaneStatusProps) {
         }
     }, [props.dataSourcesByLane]);
 
-
     async function fetchLatestStatus() {
 
         const currentLaneDatasources: LaneDSColl = props.dataSourcesByLane;
@@ -88,10 +87,15 @@ export default function LaneStatus(props: LaneStatusProps) {
     }
 
     useEffect(() => {
-        if (props.dataSourcesByLane)
-            fetchLatestStatus();
+        if (!props.dataSourcesByLane)
+            return;
 
-        addSubscriptionCallbacks();
+        const cleanup = addSubscriptionCallbacks();
+
+        // fetchLatestStatus();
+
+        return cleanup();
+
     }, [props.dataSourcesByLane]);
 
     function updateStatus(laneName: string, newState: string) {

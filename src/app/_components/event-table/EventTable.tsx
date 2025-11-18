@@ -166,61 +166,95 @@ export default function EventTable({
     }, [stableLaneMap]);
 
 
-    useEffect(() => {
-        let occSource: typeof ConSysApi;
+    // useEffect(() => {
+    //     let occSource: typeof ConSysApi
+    //     if (stableLaneMap.size == 0) return;
+    //
+    //
+    //     async function connect() {
+    //         for (const entry of stableLaneMap.values()) {
+    //             occSource = entry.datasourcesRealtime?.find((ds: any) => {
+    //
+    //                     // const parts = ds.properties.resource?.split("/");
+    //                     // return parts && parts[2] === occStream.properties.id;
+    //                     return ds.name.includes("occupancy")
+    //                 }
+    //             );
+    //
+    //             if (!occSource) {
+    //                 console.log("No occSource found for datastream:");
+    //                 continue;
+    //             }
+    //
+    //             try {
+    //                 console.log("Occ Source connecting", occSource);
+    //                 await occSource.connect();
+    //             } catch (err) {
+    //                 console.error("Error connecting occSource:", err);
+    //             }
+    //         }
+    //     }
+    //     connect();
+    //
+    //     async function disconnect() {
+    //         if (await occSource.isConnected()) {
+    //             await occSource.disconnect();
+    //         }
+    //     }
+    //
+    //     return () => {
+    //       disconnect();
+    //     }
+    // }, [stableLaneMap]);
 
+
+    useEffect(() => {
         if (stableLaneMap.size === 0) {
             console.log("No lanes in map, skipping streaming setup");
             return;
         }
 
-        const connectedSources: any[] = [];
+        async function connectAndSubscribe() {
+            for (const entry of stableLaneMap.values()) {
+                const occStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
 
-        for (const entry of stableLaneMap.values()) {
+                if (!occStream) {
+                    console.log("No occStream for lane:", entry.laneName);
+                    continue;
+                }
 
-            const occStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
+                occStream.streamObservations(undefined, (msg: any) => {
+                    try {
+                        const event = eventFromObservation(msg[0], entry);
+                        console.log("event", event)
+                        dispatch(addEventToLog(event));
+                    } catch (err) {
+                        console.error("Error creating event from observation:", err);
+                    }
+                });
 
-            if (!occStream) {
-                console.log("No occStream for lane:", entry.laneName);
-                continue;
-            }
+                occSource = entry.datasourcesRealtime?.find((ds: any) => {
+                        const parts = ds.properties.resource?.split("/");
+                        return parts && parts[2] === occStream.properties.id;
+                        // return ds.name.includes("occupancy")
+                    }
+                );
 
-            occStream.streamObservations(undefined, (msg: any) => {
+                if (!occSource) {
+                    console.log("No occSource found for datastream:");
+                    continue;
+                }
 
                 try {
-                    const event = eventFromObservation(msg[0], entry);
-                    dispatch(addEventToLog(event));
+                    console.log("Occ Source connecting", occSource);
+                    await occSource.connect();
                 } catch (err) {
-                    console.error("Error creating event from observation:", err);
+                    console.error("Error connecting occSource:", err);
                 }
-            });
-
-            occSource = entry.datasourcesRealtime?.find(
-                (ds: any) => {
-                    const parts = ds.properties.resource?.split("/");
-                    return parts && parts[2] === occStream.properties.id;
-                }
-            );
-
-            if (!occSource) {
-                console.log("No occSource found for datastream:", occStream.properties.id);
-                continue;
             }
-
-            try {
-                occSource.connect();
-                connectedSources.push(occSource);
-            } catch (err) {
-                console.error("Error connecting occSource:", err);
-            }
-
         }
 
-        return ()=> {
-            if (occSource.isConnected()) {
-                occSource.disconnect();
-            }
-        }
+
     }, [stableLaneMap]);
 
     const initialize = useCallback(async (map: Map<string, LaneMapEntry>) => {

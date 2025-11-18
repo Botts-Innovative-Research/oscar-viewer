@@ -18,237 +18,7 @@ import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
 import {selectNodes} from "@/lib/state/OSHSlice";
 import {INode} from "@/lib/data/osh/Node";
 import Observations from "osh-js/source/core/consysapi/observation/Observations";
-
-
-//PAGINATED need to figure out the predicate filter for getting rid of the background/scan/alarm statuses and only showing results for the faults/tampers
-// export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEntry>}){
-//     const locale = navigator.language || 'en-US';
-//
-//     const [loading, setLoading] = useState(false);
-//     const pageSize = 15
-//     const [paginationModel, setPaginationModel]= useState({page: 0, pageSize: pageSize});
-//     const [rowCount, setRowCount] = useState(0);
-//     const [currentPage, setCurrentPage] = useState(0);
-//     const [previousPage, setPreviousPage] = useState(0);
-//     const obsCollectionRef = useRef(null);
-//
-//     const dispatch = useAppDispatch();
-//     const [data, setData] = useState<AlarmTableData[]>([]);
-//     const tableData = useSelector((state: RootState) => selectLaneViewLog(state));
-//     const currentLane = useSelector(selectCurrentLane);
-//
-//     const nodes = useSelector(selectNodes);
-//
-//     const columns: GridColDef<AlarmTableData>[] = [
-//         {
-//             field: 'laneId',
-//             headerName: 'Lane ID',
-//             type: 'string',
-//             minWidth: 100,
-//             flex: 1,
-//         },
-//         {
-//             field: 'timestamp',
-//             headerName: 'Timestamp',
-//             valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
-//                 year: 'numeric',
-//                 month: 'numeric',
-//                 day: 'numeric',
-//                 hour: 'numeric',
-//                 minute: 'numeric',
-//                 second: 'numeric'
-//             }),
-//             minWidth: 200,
-//             flex: 2,
-//         },
-//         {
-//             field: 'status',
-//             headerName: 'Status',
-//             type: 'string',
-//             minWidth: 150,
-//             flex: 1,
-//         },
-//     ];
-//
-//
-//     useEffect(() => {
-//         fetchPage(laneMap, paginationModel.page, paginationModel.pageSize);
-//     }, [laneMap, paginationModel.page, paginationModel.pageSize]);
-//
-//     async function fetchPage(laneMap: Map<string, LaneMapEntry>, currentPage: number, pageSize: number) {
-//         let pageResults: AlarmTableData[] = [];
-//
-//         let promiseGroup: Promise<void>[] = [];
-//
-//         laneMap.forEach((entry: LaneMapEntry, laneName: string) => {
-//             let promise = (async () => {
-//
-//                 const alarmDataStream: typeof DataStream = entry.findDataStreamByObsProperty(ALARM_DEF);
-//                 const tamperDataStream: typeof DataStream = entry.findDataStreamByObsProperty(TAMPER_STATUS_DEF);
-//
-//                 let results = await fetchObservations(alarmDataStream, tamperDataStream, currentPage, pageSize);
-//                 pageResults.push(...results);
-//
-//             })();
-//             promiseGroup.push(promise);
-//         });
-//
-//         await Promise.all(promiseGroup);
-//
-//         dispatch(setLaneViewLogData(pageResults));
-//
-//         setData(pageResults);
-//
-//         // fetch total amount of observations
-//         setRowCount(getTotalObservationCount())
-//     }
-//
-//     function getTotalObservationCount() {
-//         //http://localhost:8282/sensorhub/api/observations/count?dataStream=0k0g,0k20
-//         return 5212;
-//     }
-//
-//     async function fetchObservations(alarmDataStream: typeof DataStream, tamperDataStream: typeof DataStream, page: number, pageSize: number) {
-//         const resultsFetched: AlarmTableData[] = [];
-//
-//         // const startTime = new Date().setFullYear(new Date().getFullYear() - 1);
-//
-//         const observationFilter = new ObservationFilter({
-//             // observedProperty: [ALARM_DEF, TAMPER_STATUS_DEF],
-//             dataStream: [alarmDataStream.properties.id, tamperDataStream.properties.id],
-//             // resultTime: "latest"
-//         });
-//
-//
-//         for (const node of nodes) {
-//             let observationApi: typeof Observations = await node.getObservationsApi();
-//
-//             let observationCollection = await observationApi.searchObservations(observationFilter, pageSize);
-//
-//             console.log("obscol", observationCollection);
-//             const results = await handleObservations(observationCollection, page)
-//             resultsFetched.push(...results);
-//         }
-//
-//         // let alarmDataStream: typeof DataStream = laneEntry.findDataStreamByObsProperty(ALARM_DEF);
-//         // let tamperDataStream: typeof DataStream = laneEntry.findDataStreamByObsProperty(TAMPER_STATUS_DEF);
-//         //
-//         // let obsCollection = await alarmDataStream.searchObservations(undefined, pageSize);
-//
-//         return resultsFetched;
-//     }
-//
-//     const [obsCurrentPage, setObsCurrentPage] = useState(0);
-//
-//     async function handleObservations(obsCollection: any, page: number): Promise<AlarmTableData[]> {
-//         let observations: AlarmTableData[] = [];
-//
-//         // while (obsCollection.hasNext()) {
-//         //     let obsResults = await obsCollection.nextPage();
-//         //     obsResults.map((obs: any) => {
-//         //         const state = obs?.result?.alarmState;
-//         //         console.log("HELLO OBS: ", obs);
-//         //
-//         //         if (["Scan", "Background", "Alarm"].includes(state)) return;
-//         //
-//         //         let result = eventFromObservation(obs);
-//         //
-//         //         if(result){
-//         //             observations.push(result);
-//         //             dispatch(addEventToLaneViewLog(result));
-//         //         }
-//         //     })
-//         // }
-//         let results = await obsCollection.page(paginationModel.page + 1);
-//
-//         setObsCurrentPage(obsCollection.currentPage);
-//
-//         console.log("Results from fetch: ", results);
-//         console.log(`Pagination page ${paginationModel.page} vs obs collection page ${obsCollection.currentPage}`);
-//         if(paginationModel.page >= previousPage && obsCollection.hasNext()){
-//             results = await obsCollection.nextPage();
-//             setObsCurrentPage(obsCollection.currentPage);
-//         }else if(paginationModel.page < previousPage && obsCollection.hasPrevious()){
-//             results = await obsCollection.previousPage();
-//             setObsCurrentPage(obsCollection.currentPage);
-//         }
-//
-//         results.map((obs: any) => {
-//             const state = obs.properties?.result?.alarmState;
-//
-//             // if (["Scan", "Background", "Alarm"].includes(state)) return;
-//
-//             let result = eventFromObservation(obs);
-//
-//             if(result){
-//                 observations.push(result);
-//                 dispatch(addEventToLaneViewLog(result));
-//             }
-//         })
-//         return observations;
-//     }
-//
-//     function eventFromObservation(obs: any): AlarmTableData {
-//         // let date = (new Date(obs.timestamp)).toISOString();
-//
-//         if(obs?.properties?.result?.alarmState){
-//             let state = obs.properties.result.alarmState;
-//
-//             return new AlarmTableData(randomUUID(), currentLane, state, obs.properties.resultTime);
-//
-//         }else if(obs.properties.result?.tamperStatus){
-//             console.log("event frm obs", obs);
-//
-//             return new AlarmTableData(randomUUID(), currentLane, 'Tamper', new Date().toISOString());
-//         }
-//     }
-//
-//
-//     console.log("table data", data)
-//
-//     return(
-//         <Box sx={{height: 800, width: '100%'}}>
-//             <DataGrid
-//                 rows={data}
-//                 columns={columns}
-//                 pagination
-//                 paginationMode="server"
-//                 loading={loading}
-//                 paginationModel={paginationModel}
-//                 onPaginationModelChange={setPaginationModel}
-//                 rowCount={rowCount}
-//                 pageSizeOptions={[15, 30, 50]}
-//                 slots={{ toolbar: CustomToolbar }}
-//                 autosizeOnMount
-//                 getCellClassName={(params: GridCellParams<any, any, string>) => {
-//                     // Assign className for styling to 'Status' column based on value
-//                     if (params.value.includes("Gamma")) return "highlightGamma";
-//                     if (params.value.includes('Neutron')) return "highlightNeutron";
-//                     else if (params.value === "Tamper") return "highlightTamper";
-//                     else
-//                         return '';
-//                 }}
-//
-//                 sx={{
-//                     // Assign styling to 'Status' column based on className
-//                     [`.${gridClasses.cell}.highlightGamma`]: {
-//                         backgroundColor: "error.main",
-//                         color: "error.contrastText",
-//                     },
-//                     [`.${gridClasses.cell}.highlightNeutron`]: {
-//                         backgroundColor: "info.main",
-//                         color: "info.contrastText",
-//                     },
-//                     [`.${gridClasses.cell}.highlightTamper`]: {
-//                         backgroundColor: "secondary.main",
-//                         color: "secondary.contrastText",
-//                     },
-//                     border: "none",
-//                 }}
-//             />
-//         </Box>
-//     )
-// }
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 
 
 export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEntry>}){
@@ -278,14 +48,14 @@ export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEnt
         const results: AlarmTableData[] = [];
 
         if (faultDs) {
-            let faultDsCol = await faultDs.searchObservations(observationFilter, 10000);
+            let faultDsCol = await faultDs.searchObservations(observationFilter, 1000);
             const faultRes = await handleObservations(faultDsCol, laneEntry, false);
             results.push(...faultRes);
 
         }
 
         if (tamperDs) {
-            let tamperDsCol = await tamperDs.searchObservations(observationFilter, 10000);
+            let tamperDsCol = await tamperDs.searchObservations(observationFilter, 1000);
             const tamperRes = await handleObservations(tamperDsCol, laneEntry, false);
             results.push(...tamperRes)
         }
@@ -300,6 +70,7 @@ export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEnt
             streamObservations(entry);
         });
     }
+
 
     async function streamObservations(laneEntry: LaneMapEntry) {
         let futureTime = new Date();
@@ -320,6 +91,16 @@ export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEnt
             })
         }
 
+        let faultDatasource: typeof ConSysApi = laneEntry.datasourcesRealtime.find((ds: typeof ConSysApi) => {
+            const parts = ds.properties.resource?.split("/");
+            return parts && parts[2] === faultDs.properties.id;
+        });
+        if (!faultDatasource){
+            console.log("Couldn't find a fault datasource");
+            return;
+        }
+        faultDatasource.connect();
+
         let tamperDs: typeof DataStream = laneEntry.findDataStreamByObsProperty(TAMPER_STATUS_DEF);
         if (tamperDs) {
             tamperDs.streamObservations(new ObservationFilter({resultTime: `now/${futureTime.toISOString()}`}), (obs: any) => {
@@ -331,6 +112,15 @@ export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEnt
             })
         }
 
+        let tamperDatasource: typeof ConSysApi = laneEntry.datasourcesRealtime.find((ds: typeof ConSysApi) => {
+            const parts = ds.properties.resource?.split("/");
+            return parts && parts[2] === tamperDs.properties.id;
+        });
+        if (!tamperDatasource){
+            console.log("Couldn't find a tamper datasource");
+            return;
+        }
+        tamperDatasource.connect();
     }
 
     // @ts-ignore
@@ -368,8 +158,10 @@ export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEnt
     }
 
     useEffect(() => {
+        if (!laneMap || laneMap.size === 0 ) return;
+
         setup()
-    }, [laneMap]);
+    }, [JSON.stringify([...laneMap.keys()])]);
 
     const setup = useCallback(async()=> {
         if (!laneMap) return;

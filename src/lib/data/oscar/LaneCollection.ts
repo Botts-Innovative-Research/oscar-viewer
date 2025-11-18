@@ -164,41 +164,41 @@ export class LaneMapEntry {
                         endTime: "2055-01-01T08:13:25.845Z"
                     });
                 }
-                else if (isOccupancyDataStream(dsObj)) {
-                    dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
-                        mqttOpts: {
-                            shared: false,
-                            prefix: this.parentNode.csAPIEndpoint,
-                            endpointUrl: mqttOptUrl,
-                            username: this.parentNode.auth.username,
-                            password: this.parentNode.auth.password,
-                        },
-                        endpointUrl: dsObj.networkProperties.endpointUrl,
-                        resource: `/datastreams/${dsObj.properties.id}/observations`,
-                        tls: dsObj.networkProperties.tls,
-                        protocol: 'mqtt',
-                        mode: Mode.REAL_TIME,
-                        responseFormat: 'application/swe+json'
-                    });
-
-                    dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
-                        mqttOpts: {
-                            shared: false,
-                            prefix: this.parentNode.csAPIEndpoint,
-                            endpointUrl: mqttOptUrl,
-                            username: this.parentNode.auth.username,
-                            password: this.parentNode.auth.password,
-                        },
-                        endpointUrl: dsObj.networkProperties.endpointUrl,
-                        resource: `/datastreams/${dsObj.properties.id}/observations`,
-                        tls: dsObj.networkProperties.tls,
-                        protocol: 'mqtt',
-                        mode: Mode.BATCH,
-                        responseFormat: 'application/swe+json',
-                        startTime: "2020-01-01T08:13:25.845Z",
-                        endTime: "2055-01-01T08:13:25.845Z",
-                    });
-                }
+                // else if (isOccupancyDataStream(dsObj)) {
+                //     dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
+                //         mqttOpts: {
+                //             shared: true,
+                //             prefix: this.parentNode.csAPIEndpoint,
+                //             endpointUrl: mqttOptUrl,
+                //             username: this.parentNode.auth.username,
+                //             password: this.parentNode.auth.password,
+                //         },
+                //         endpointUrl: dsObj.networkProperties.endpointUrl,
+                //         resource: `/datastreams/${dsObj.properties.id}/observations`,
+                //         tls: dsObj.networkProperties.tls,
+                //         protocol: 'mqtt',
+                //         mode: Mode.REAL_TIME,
+                //         responseFormat: 'application/swe+json'
+                //     });
+                //
+                //     dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
+                //         mqttOpts: {
+                //             shared: true,
+                //             prefix: this.parentNode.csAPIEndpoint,
+                //             endpointUrl: mqttOptUrl,
+                //             username: this.parentNode.auth.username,
+                //             password: this.parentNode.auth.password,
+                //         },
+                //         endpointUrl: dsObj.networkProperties.endpointUrl,
+                //         resource: `/datastreams/${dsObj.properties.id}/observations`,
+                //         tls: dsObj.networkProperties.tls,
+                //         protocol: 'mqtt',
+                //         mode: Mode.BATCH,
+                //         responseFormat: 'application/swe+json',
+                //         startTime: "2020-01-01T08:13:25.845Z",
+                //         endTime: "2055-01-01T08:13:25.845Z",
+                //     });
+                // }
                 else {
                     dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
                         endpointUrl: dsObj.networkProperties.endpointUrl,
@@ -469,6 +469,7 @@ export class LaneDSColl {
         }
     }
 
+
     addSubscribeHandlerToAllBatchDS(handler: Function) {
         this.addSubscriptionToDS(this.getBatchDSArrayNames(), handler);
     }
@@ -481,6 +482,8 @@ export class LaneDSColl {
         if (!this) return;
         this.addSubscriptionToDS([dsCollName], handler);
     }
+
+
 
     async connectToDS(dsArrayNames: string[]) {
         for (const name of dsArrayNames) {
