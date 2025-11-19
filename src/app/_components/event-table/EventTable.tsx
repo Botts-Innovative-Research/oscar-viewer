@@ -38,6 +38,7 @@ import {convertToMap, hashString} from "@/app/utils/Utils";
 import {OCCUPANCY_PILLAR_DEF} from "@/lib/data/Constants";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import {Mode} from "osh-js/source/core/datasource/Mode";
+import {EventType} from "osh-js/source/core/event/EventType";
 
 
 interface TableProps {
@@ -119,24 +120,28 @@ export default function EventTable({
         while (obsCollection.hasNext()) {
             let obsResults = await obsCollection.nextPage();
             obsResults.map((obs: any) => {
-                let result = eventFromObservation(obs, laneEntry);
-
+                let result = eventFromObservation(obs, laneEntry, false);
                 observations.push(result);
             })
         }
         return observations;
     }
 
-    function eventFromObservation(obs: any, laneEntry: LaneMapEntry): EventTableData {
-
+    function eventFromObservation(obs: any, laneEntry: LaneMapEntry, isLive: boolean): EventTableData {
         const id = prngFromStr(obs, laneEntry.laneName);
-        let newEvent: EventTableData = new EventTableData(id, laneEntry.laneName, obs.result, obs.id, obs.foiId);
+        let newEvent: EventTableData;
+        if (isLive) {
+            newEvent = new EventTableData(id, laneEntry.laneName, obs, null, obs.foiId);
+            newEvent.setFoiId(obs["foi@id"]);
+        } else {
+            newEvent = new EventTableData(id, laneEntry.laneName, obs.result , obs.id, obs.foiId);
 
-        newEvent.setRPMSystemId(laneEntry.lookupSystemIdFromDataStreamId(obs[`datastream@id`]));
-        // newEvent.setLaneSystemId(laneEntry.lookupParentSystemFromSystemId(newEvent.rpmSystemId));
-        newEvent.setDataStreamId(obs["datastream@id"]);
-        newEvent.setFoiId(obs["foi@id"]);
-        newEvent.setOccupancyObsId(obs.id);
+            newEvent.setRPMSystemId(laneEntry.lookupSystemIdFromDataStreamId(obs[`datastream@id`]));
+            // newEvent.setLaneSystemId(laneEntry.lookupParentSystemFromSystemId(newEvent.rpmSystemId));
+            newEvent.setDataStreamId(obs["datastream@id"]);
+            newEvent.setFoiId(obs["foi@id"]);
+            newEvent.setOccupancyObsId(obs.id);
+        }
 
         return newEvent;
     }
@@ -147,7 +152,6 @@ export default function EventTable({
             // if (entry.isAdjudicated) return false;
             if (entry.adjudicatedIds.length > 0) return false;
             return entry.adjudicatedData.adjudicationCode.code === 0;
-
         })
     }
 
@@ -167,14 +171,11 @@ export default function EventTable({
 
 
     useEffect(() => {
-        let occSource: typeof ConSysApi;
-
         if (stableLaneMap.size === 0) {
             console.log("No lanes in map, skipping streaming setup");
             return;
         }
-
-        const connectedSources: any[] = [];
+        const connectedSources: typeof ConSysApi[] = [];
 
         for (const entry of stableLaneMap.values()) {
 
@@ -185,17 +186,7 @@ export default function EventTable({
                 continue;
             }
 
-            occStream.streamObservations(undefined, (msg: any) => {
-
-                try {
-                    const event = eventFromObservation(msg[0], entry);
-                    dispatch(addEventToLog(event));
-                } catch (err) {
-                    console.error("Error creating event from observation:", err);
-                }
-            });
-
-            occSource = entry.datasourcesRealtime?.find(
+            const occSource = entry.datasourcesRealtime?.find(
                 (ds: any) => {
                     const parts = ds.properties.resource?.split("/");
                     return parts && parts[2] === occStream.properties.id;
@@ -207,6 +198,17 @@ export default function EventTable({
                 continue;
             }
 
+            occSource.subscribe((msg: any) => {
+                try {
+                    const event = eventFromObservation(msg.values[0].data, entry, true);
+                    const dsObsPath = occSource.properties.resource;
+                    event.setDataStreamId(dsObsPath.split("/")[2]);
+                    dispatch(addEventToLog(event));
+                } catch (err) {
+                    console.error("Error creating event from observation:", err);
+                }
+            }, [EventType.DATA])
+
             try {
                 occSource.connect();
                 connectedSources.push(occSource);
@@ -216,11 +218,15 @@ export default function EventTable({
 
         }
 
-        return ()=> {
-            if (occSource.isConnected()) {
-                occSource.disconnect();
-            }
-        }
+        // return ()=> {
+        //     async function disconnect() {
+        //         for (const source of connectedSources) {
+        //             if (await source.isConnected())
+        //                 await source.disconnect();
+        //         }
+        //     }
+        //     disconnect();
+        // }
     }, [stableLaneMap]);
 
     const initialize = useCallback(async (map: Map<string, LaneMapEntry>) => {
@@ -234,9 +240,12 @@ export default function EventTable({
         } else if (tableMode === 'eventlog') {
             filteredData = tableData
         }else if(tableMode === 'lanelog'){
-
             filteredData = laneEventList(tableData);
         }
+
+        filteredData = filteredData.filter((item, index, self) =>
+            index === self.findIndex((t) => t.id === item.id)
+        );
         setFilteredTableData(filteredData);
     }, [tableData]);
 

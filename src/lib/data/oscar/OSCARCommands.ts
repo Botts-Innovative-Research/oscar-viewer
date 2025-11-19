@@ -136,7 +136,7 @@ export function generateAdjudicationCommandJSON(feedback: string, adjudicationCo
             "adjudicationCode": adjudicationCode.code,
             "isotopesCount": isotopes?.length ?? 0,
             "isotopes": isotopes ?? [],
-            "secondaryInspectionStatus": secondaryInspectionStatus,
+            "secondaryInspectionStatus": secondaryInspectionStatus == "" ? "NONE" : secondaryInspectionStatus,
             "filePathCount": filePaths?.length ?? 0,
             "filePaths": filePaths ?? [],
             "occupancyObsId": occupancyObsId,

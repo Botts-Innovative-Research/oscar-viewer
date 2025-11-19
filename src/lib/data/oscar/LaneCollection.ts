@@ -167,7 +167,7 @@ export class LaneMapEntry {
                 else if (isOccupancyDataStream(dsObj)) {
                     dsRT = new ConSysApi(`rtds - ${dsObj.properties.name}`, {
                         mqttOpts: {
-                            shared: false,
+                            shared: true,
                             prefix: this.parentNode.csAPIEndpoint,
                             endpointUrl: mqttOptUrl,
                             username: this.parentNode.auth.username,
@@ -183,7 +183,7 @@ export class LaneMapEntry {
 
                     dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
                         mqttOpts: {
-                            shared: false,
+                            shared: true,
                             prefix: this.parentNode.csAPIEndpoint,
                             endpointUrl: mqttOptUrl,
                             username: this.parentNode.auth.username,

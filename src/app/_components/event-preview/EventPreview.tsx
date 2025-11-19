@@ -93,7 +93,6 @@ export function EventPreview() {
             alarmingSystemUid: eventPreview.eventData.rpmSystemId
         }
 
-
         let adjudicationData = new AdjudicationData(
             new Date().toISOString(),
             eventPreview.eventData.occupancyCount,
@@ -115,6 +114,13 @@ export function EventPreview() {
     }
 
     const sendAdjudicationData = async () => {
+        if (!adjudication) {
+            setAdjSnackMsg('Please fill out the adjudication fields.');
+            setColorStatus('error')
+            setOpenSnack(true);
+            return;
+        }
+
         const phenomenonTime = new Date().toISOString();
         const comboData = adjudication;
 
@@ -130,19 +136,8 @@ export function EventPreview() {
 
 
     const submitAdjudication = async(currLaneEntry: any, comboData: any) => {
-
         try{
             let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == eventPreview.eventData.dataStreamId);
-
-            let query = await ds.searchObservations(new ObservationFilter({resultTime: `${eventPreview.eventData.startTime}/${eventPreview.eventData.endTime}`}), 1)
-
-            const occupancyObservation = await query.nextPage();
-            if (!occupancyObservation) {
-                setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
-                setColorStatus('error')
-                setOpenSnack(true);
-                return;
-            }
 
             let streams = await currLaneEntry.parentNode.fetchNodeControlStreams();
 
@@ -152,7 +147,29 @@ export function EventPreview() {
                 return;
             }
 
-            console.log("comboData", comboData);
+            // If no occupancy obs ID (from live data) we can fetch it before adjudicating based on the latest occupancyCount match
+            if (comboData.occupancyObsId == null) {
+                const startTime = new Date();
+                startTime.setDate(startTime.getDate() - 1);
+                const timeFilter = `${startTime.toISOString()}/now`;
+                let query = await ds.searchObservations(new ObservationFilter({
+                    resultTime: timeFilter,
+                    filter: `occupancyCount=${comboData.occupancyCount}`
+                }), 10000 /* this is a patch until PostGIS supports pre-fetch value predicate filtering. may need to also sort this by time */ )
+
+                const occupancyObservation: any[] = await query.nextPage();
+                if (occupancyObservation.length == 0) {
+                    setAdjSnackMsg('Failed to adjudicate occupancy. Please refresh the page and try again.');
+                    setColorStatus('error')
+                    setOpenSnack(true);
+                    return;
+                }
+
+                comboData.occupancyObsId = occupancyObservation[0].id;
+
+            }
+            // console.log("Occupancy obs id after fetching obs id", comboData.occupancyObsId);
+
             const response = await sendCommand(
                 currLaneEntry.parentNode,
                 adjControlStream.properties.id,
@@ -177,12 +194,10 @@ export function EventPreview() {
 
             setAdjSnackMsg('Adjudication successful for Occupancy ID: ' + eventPreview.eventData.occupancyCount);
             setColorStatus('success')
-
-
-        }catch(error){
+        } catch(error) {
             console.error( error)
             setColorStatus('error')
-        }finally{
+        } finally {
             setOpenSnack(true)
             resetAdjudicationData();
             handleCloseRounded();
@@ -221,9 +236,9 @@ export function EventPreview() {
     }
 
     function disconnectDSArray(dsArray: typeof ConSysApi[]) {
-        dsArray.forEach(ds => {
-            ds.disconnect();
-        });
+        // dsArray.forEach(ds => {
+        //     ds.disconnect();
+        // });
     }
 
     const cleanupResources = () => {
