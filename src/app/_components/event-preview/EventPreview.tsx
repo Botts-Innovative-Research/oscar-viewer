@@ -58,7 +58,6 @@ export function EventPreview() {
 
     const [localDSMap, setLocalDSMap] = useState<Map<string, typeof ConSysApi[]>>(new Map<string, typeof ConSysApi[]>());
     const [datasourcesReady, setDatasourcesReady] = useState<boolean>(false);
-    const currentUser = useSelector(selectCurrentUser);
 
     // Chart Specifics
     const [gammaDatasources, setGammaDatasources] = useState<typeof ConSysApi[]>([]);
@@ -149,15 +148,13 @@ export function EventPreview() {
 
             // If no occupancy obs ID (from live data) we can fetch it before adjudicating based on the latest occupancyCount match
             if (comboData.occupancyObsId == null) {
-                const startTime = new Date();
-                startTime.setDate(startTime.getDate() - 1);
-                const timeFilter = `${startTime.toISOString()}/now`;
+
                 let query = await ds.searchObservations(new ObservationFilter({
-                    resultTime: timeFilter,
-                    filter: `occupancyCount=${comboData.occupancyCount}`
-                }), 10000 /* this is a patch until PostGIS supports pre-fetch value predicate filtering. may need to also sort this by time */ )
+                    filter: `startTime=${eventPreview.eventData.startTime},endTime=${eventPreview.eventData.endTime}`
+                }), 10000);
 
                 const occupancyObservation: any[] = await query.nextPage();
+
                 if (occupancyObservation.length == 0) {
                     setAdjSnackMsg('Failed to adjudicate occupancy. Please refresh the page and try again.');
                     setColorStatus('error')
@@ -165,10 +162,13 @@ export function EventPreview() {
                     return;
                 }
 
+                eventPreview.eventData.occupancyObsId = occupancyObservation[0].id;
+                eventPreview.eventData.rpmSystemId = ds.properties["system@id"];
                 comboData.occupancyObsId = occupancyObservation[0].id;
+                comboData.alarmingSystemUid = ds.properties["system@id"];
+
 
             }
-            // console.log("Occupancy obs id after fetching obs id", comboData.occupancyObsId);
 
             const response = await sendCommand(
                 currLaneEntry.parentNode,
@@ -194,20 +194,16 @@ export function EventPreview() {
 
             setAdjSnackMsg('Adjudication successful for Occupancy ID: ' + eventPreview.eventData.occupancyCount);
             setColorStatus('success')
+
         } catch(error) {
             console.error( error)
             setColorStatus('error')
         } finally {
-            setOpenSnack(true)
-            resetAdjudicationData();
-            handleCloseRounded();
+            setOpenSnack(true);
         }
     }
 
     const resetAdjudicationData = () => {
-        disconnectDSArray(gammaDatasources);
-        disconnectDSArray(neutronDatasources);
-        disconnectDSArray(thresholdDatasources);
         setAdjFormData(null);
         setAdjudication(null);
         setNotes("");
@@ -221,6 +217,7 @@ export function EventPreview() {
         }));
         dispatch(setShouldForceAlarmTableDeselect(true))
         dispatch(setSelectedRowId(null))
+        resetAdjudicationData();
     }
 
     const handleInspectionSelect = (value: "NONE" | "REQUESTED" | "COMPLETED") => {
@@ -235,25 +232,12 @@ export function EventPreview() {
         router.push("/event-details");
     }
 
-    function disconnectDSArray(dsArray: typeof ConSysApi[]) {
-        // dsArray.forEach(ds => {
-        //     ds.disconnect();
-        // });
-    }
-
-    const cleanupResources = () => {
-        disconnectDSArray(gammaDatasources);
-        disconnectDSArray(neutronDatasources);
-        disconnectDSArray(thresholdDatasources);
-
-        setDatasourcesReady(false);
-    };
 
     useEffect(() => {
         if (eventPreview.eventData?.occupancyCount !== prevEventIdRef.current) {
 
             if (prevEventIdRef.current) {
-                cleanupResources();
+                setDatasourcesReady(false);
             }
 
             prevEventIdRef.current = eventPreview.eventData?.occupancyCount;
@@ -277,8 +261,6 @@ export function EventPreview() {
             return;
         }
 
-        let tempDSMap: Map<string, typeof ConSysApi[]>;
-
         let datasources = await currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
 
         setLocalDSMap(datasources);
@@ -287,7 +269,6 @@ export function EventPreview() {
         const updatedNeutron = datasources.get("neutron") || [];
         const updatedThreshold = datasources.get("gammaTrshld") || [];
 
-        console.log("datasources", datasources)
         setGammaDatasources(updatedGamma);
         setNeutronDatasources(updatedNeutron);
         setThresholdDatasources(updatedThreshold);
@@ -304,12 +285,6 @@ export function EventPreview() {
         gammaDatasources.forEach(ds => ds.connect());
         neutronDatasources.forEach(ds => ds.connect());
         thresholdDatasources.forEach(ds => ds.connect());
-
-        return () => {
-            gammaDatasources.forEach(ds => ds.disconnect());
-            neutronDatasources.forEach(ds => ds.disconnect());
-            thresholdDatasources.forEach(ds => ds.disconnect());
-        }
     }, [datasourcesReady]);
 
     const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason) => {
@@ -317,6 +292,7 @@ export function EventPreview() {
             return;
         }
         setOpenSnack(false);
+        handleCloseRounded();
     };
 
     return (
@@ -417,7 +393,7 @@ export function EventPreview() {
                     <Snackbar
                         anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         open={openSnack}
-                        autoHideDuration={5000}
+                        autoHideDuration={1500}
                         onClose={handleCloseSnack}
                         message={adjSnackMsg}
                         sx={{

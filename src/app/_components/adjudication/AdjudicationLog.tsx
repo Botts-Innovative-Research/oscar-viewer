@@ -127,7 +127,6 @@ export default function AdjudicationLog(props: {
 
             let completedAdjData =  cmdRes.filter((obs: any) => obs.statusCode === "COMPLETED");
 
-            console.log("cmdRed", cmdRes);
             console.log("completedAdjData", completedAdjData)
             let adjDataArr = completedAdjData.map((obs: any) => {
 
@@ -154,7 +153,6 @@ export default function AdjudicationLog(props: {
     }
 
     useEffect(() => {
-        console.log("adj log", adjLog)
         let filteredLog = adjLog.filter((adjData) => adjData?.occupancyObsId ==  props.event.occupancyObsId);
         setFilteredLog(filteredLog);
     }, [adjLog]);

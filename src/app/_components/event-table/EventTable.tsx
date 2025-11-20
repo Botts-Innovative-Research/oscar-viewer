@@ -149,8 +149,6 @@ export default function EventTable({
     function unadjudicatedFilteredList(tableData: EventTableData[]) {
         if (!tableData) return [];
         return tableData.filter((entry) => {
-            // if (entry.isAdjudicated) return false;
-            if (entry.adjudicatedIds.length > 0) return false;
             return entry.adjudicatedData.adjudicationCode.code === 0;
         })
     }
@@ -183,7 +181,7 @@ export default function EventTable({
 
             if (!occStream) {
                 console.log("No occStream for lane:", entry.laneName);
-                continue;
+                return;
             }
 
             const occSource = entry.datasourcesRealtime?.find(
@@ -195,7 +193,7 @@ export default function EventTable({
 
             if (!occSource) {
                 console.log("No occSource found for datastream:", occStream.properties.id);
-                continue;
+                return;
             }
 
             occSource.subscribe((msg: any) => {
@@ -217,16 +215,6 @@ export default function EventTable({
             }
 
         }
-
-        // return ()=> {
-        //     async function disconnect() {
-        //         for (const source of connectedSources) {
-        //             if (await source.isConnected())
-        //                 await source.disconnect();
-        //         }
-        //     }
-        //     disconnect();
-        // }
     }, [stableLaneMap]);
 
     const initialize = useCallback(async (map: Map<string, LaneMapEntry>) => {
