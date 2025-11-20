@@ -111,16 +111,16 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
 
         connectDataSources();
 
-        return () => {
-            if (datasources?.neutron?.isConnected())
-                datasources.neutron.disconnect();
-
-            if (datasources?.gamma?.isConnected())
-                datasources.gamma.disconnect();
-
-            if (datasources?.threshold?.isConnected())
-                datasources.threshold.disconnect();
-        }
+        // return () => {
+        //     if (datasources?.neutron?.isConnected())
+        //         datasources.neutron.disconnect();
+        //
+        //     if (datasources?.gamma?.isConnected())
+        //         datasources.gamma.disconnect();
+        //
+        //     if (datasources?.threshold?.isConnected())
+        //         datasources.threshold.disconnect();
+        // }
 
     }, [datasources, currentLane]);
 

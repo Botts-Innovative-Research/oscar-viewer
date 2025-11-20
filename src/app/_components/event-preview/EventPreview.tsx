@@ -58,7 +58,6 @@ export function EventPreview() {
 
     const [localDSMap, setLocalDSMap] = useState<Map<string, typeof ConSysApi[]>>(new Map<string, typeof ConSysApi[]>());
     const [datasourcesReady, setDatasourcesReady] = useState<boolean>(false);
-    const currentUser = useSelector(selectCurrentUser);
 
     // Chart Specifics
     const [gammaDatasources, setGammaDatasources] = useState<typeof ConSysApi[]>([]);
@@ -93,7 +92,6 @@ export function EventPreview() {
             alarmingSystemUid: eventPreview.eventData.rpmSystemId
         }
 
-
         let adjudicationData = new AdjudicationData(
             new Date().toISOString(),
             eventPreview.eventData.occupancyCount,
@@ -115,6 +113,13 @@ export function EventPreview() {
     }
 
     const sendAdjudicationData = async () => {
+        if (!adjudication) {
+            setAdjSnackMsg('Please fill out the adjudication fields.');
+            setColorStatus('error')
+            setOpenSnack(true);
+            return;
+        }
+
         const phenomenonTime = new Date().toISOString();
         const comboData = adjudication;
 
@@ -130,19 +135,8 @@ export function EventPreview() {
 
 
     const submitAdjudication = async(currLaneEntry: any, comboData: any) => {
-
         try{
             let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == eventPreview.eventData.dataStreamId);
-
-            let query = await ds.searchObservations(new ObservationFilter({resultTime: `${eventPreview.eventData.startTime}/${eventPreview.eventData.endTime}`}), 1)
-
-            const occupancyObservation = await query.nextPage();
-            if (!occupancyObservation) {
-                setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
-                setColorStatus('error')
-                setOpenSnack(true);
-                return;
-            }
 
             let streams = await currLaneEntry.parentNode.fetchNodeControlStreams();
 
@@ -152,7 +146,30 @@ export function EventPreview() {
                 return;
             }
 
-            console.log("comboData", comboData);
+            // If no occupancy obs ID (from live data) we can fetch it before adjudicating based on the latest occupancyCount match
+            if (comboData.occupancyObsId == null) {
+
+                let query = await ds.searchObservations(new ObservationFilter({
+                    filter: `startTime=${eventPreview.eventData.startTime},endTime=${eventPreview.eventData.endTime}`
+                }), 10000);
+
+                const occupancyObservation: any[] = await query.nextPage();
+
+                if (occupancyObservation.length == 0) {
+                    setAdjSnackMsg('Failed to adjudicate occupancy. Please refresh the page and try again.');
+                    setColorStatus('error')
+                    setOpenSnack(true);
+                    return;
+                }
+
+                eventPreview.eventData.occupancyObsId = occupancyObservation[0].id;
+                eventPreview.eventData.rpmSystemId = ds.properties["system@id"];
+                comboData.occupancyObsId = occupancyObservation[0].id;
+                comboData.alarmingSystemUid = ds.properties["system@id"];
+
+
+            }
+
             const response = await sendCommand(
                 currLaneEntry.parentNode,
                 adjControlStream.properties.id,
@@ -178,21 +195,15 @@ export function EventPreview() {
             setAdjSnackMsg('Adjudication successful for Occupancy ID: ' + eventPreview.eventData.occupancyCount);
             setColorStatus('success')
 
-
-        }catch(error){
+        } catch(error) {
             console.error( error)
             setColorStatus('error')
-        }finally{
-            setOpenSnack(true)
-            resetAdjudicationData();
-            handleCloseRounded();
+        } finally {
+            setOpenSnack(true);
         }
     }
 
     const resetAdjudicationData = () => {
-        disconnectDSArray(gammaDatasources);
-        disconnectDSArray(neutronDatasources);
-        disconnectDSArray(thresholdDatasources);
         setAdjFormData(null);
         setAdjudication(null);
         setNotes("");
@@ -206,6 +217,7 @@ export function EventPreview() {
         }));
         dispatch(setShouldForceAlarmTableDeselect(true))
         dispatch(setSelectedRowId(null))
+        resetAdjudicationData();
     }
 
     const handleInspectionSelect = (value: "NONE" | "REQUESTED" | "COMPLETED") => {
@@ -220,25 +232,12 @@ export function EventPreview() {
         router.push("/event-details");
     }
 
-    function disconnectDSArray(dsArray: typeof ConSysApi[]) {
-        dsArray.forEach(ds => {
-            ds.disconnect();
-        });
-    }
-
-    const cleanupResources = () => {
-        disconnectDSArray(gammaDatasources);
-        disconnectDSArray(neutronDatasources);
-        disconnectDSArray(thresholdDatasources);
-
-        setDatasourcesReady(false);
-    };
 
     useEffect(() => {
         if (eventPreview.eventData?.occupancyCount !== prevEventIdRef.current) {
 
             if (prevEventIdRef.current) {
-                cleanupResources();
+                setDatasourcesReady(false);
             }
 
             prevEventIdRef.current = eventPreview.eventData?.occupancyCount;
@@ -262,8 +261,6 @@ export function EventPreview() {
             return;
         }
 
-        let tempDSMap: Map<string, typeof ConSysApi[]>;
-
         let datasources = await currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
 
         setLocalDSMap(datasources);
@@ -272,7 +269,6 @@ export function EventPreview() {
         const updatedNeutron = datasources.get("neutron") || [];
         const updatedThreshold = datasources.get("gammaTrshld") || [];
 
-        console.log("datasources", datasources)
         setGammaDatasources(updatedGamma);
         setNeutronDatasources(updatedNeutron);
         setThresholdDatasources(updatedThreshold);
@@ -289,12 +285,6 @@ export function EventPreview() {
         gammaDatasources.forEach(ds => ds.connect());
         neutronDatasources.forEach(ds => ds.connect());
         thresholdDatasources.forEach(ds => ds.connect());
-
-        return () => {
-            gammaDatasources.forEach(ds => ds.disconnect());
-            neutronDatasources.forEach(ds => ds.disconnect());
-            thresholdDatasources.forEach(ds => ds.disconnect());
-        }
     }, [datasourcesReady]);
 
     const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason) => {
@@ -302,6 +292,7 @@ export function EventPreview() {
             return;
         }
         setOpenSnack(false);
+        handleCloseRounded();
     };
 
     return (
@@ -402,7 +393,7 @@ export function EventPreview() {
                     <Snackbar
                         anchorOrigin={{ vertical:'top', horizontal:'center' }}
                         open={openSnack}
-                        autoHideDuration={5000}
+                        autoHideDuration={1500}
                         onClose={handleCloseSnack}
                         message={adjSnackMsg}
                         sx={{

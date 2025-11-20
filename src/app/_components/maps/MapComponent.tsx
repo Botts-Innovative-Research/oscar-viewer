@@ -227,11 +227,11 @@ export default function MapComponent() {
             if (locationList && locationList.length > 0) {
                 locationList.forEach((location) => {
 
-                    location.locationSources.map((src: any) =>{
-                        if (src.isConnected()){
-                            src.disconnect();
-                        }
-                    });
+                    // location.locationSources.map((src: any) =>{
+                    //     if (src.isConnected()){
+                    //         src.disconnect();
+                    //     }
+                    // });
                 });
             }
         }

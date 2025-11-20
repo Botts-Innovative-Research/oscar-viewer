@@ -113,7 +113,6 @@ export default function LaneVideoPlayback({selectedNode, videos, modeType, start
 
     const handleVideoRef = useCallback((element: HTMLVideoElement | null, index: number) => {
         if ( element ) {
-            console.log("index", index)
             videoRefs.current[index] = element;
 
             element.addEventListener('loadedmetadata', () => handleLoadedMetadata(element));
