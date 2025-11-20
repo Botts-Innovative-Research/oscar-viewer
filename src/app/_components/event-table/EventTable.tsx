@@ -33,11 +33,13 @@ import {
 } from "@/lib/state/EventDataSlice";
 import {useRouter} from "next/dist/client/components/navigation";
 import {getObservations} from "@/app/utils/ChartUtils";
-import {isThresholdDataStream} from "@/lib/data/oscar/Utilities";
+import {isOccupancyDataStream, isThresholdDataStream} from "@/lib/data/oscar/Utilities";
 import {convertToMap, hashString} from "@/app/utils/Utils";
 import {OCCUPANCY_PILLAR_DEF} from "@/lib/data/Constants";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import {Mode} from "osh-js/source/core/datasource/Mode";
+import {selectNodes} from "@/lib/state/OSHSlice";
+import Observations from "osh-js/source/core/consysapi/observation/Observations";
 import {EventType} from "osh-js/source/core/event/EventType";
 
 
@@ -71,6 +73,17 @@ export default function EventTable({
                                        laneMap,
                                        currentLane,
                                    }: TableProps) {
+
+    const nodes = useSelector(selectNodes);
+
+    const [loading, setLoading] = useState(false);
+    const pageSize = 15
+    const [paginationModel, setPaginationModel]= useState({page: 0, pageSize: pageSize});
+    const [rowCount, setRowCount] = useState(0);
+    const [currentPage, setCurrentPage] = useState(0);
+    const [previousPage, setPreviousPage] = useState(0);
+    const obsCollectionRef = useRef(null);
+
 
     const selectedRowId = useSelector(selectSelectedRowId);
     const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
@@ -114,18 +127,19 @@ export default function EventTable({
     }
 
     // @ts-ignore
-    async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry): Promise<EventTableData[]> {
-        let observations: EventTableData[] = [];
-
-        while (obsCollection.hasNext()) {
-            let obsResults = await obsCollection.nextPage();
-            obsResults.map((obs: any) => {
-                let result = eventFromObservation(obs, laneEntry, false);
-                observations.push(result);
-            })
-        }
-        return observations;
-    }
+    // async function handleObservations(obsCollection: Collection<JSON>, laneEntry: LaneMapEntry): Promise<EventTableData[]> {
+    //     let observations: EventTableData[] = [];
+    //
+    //     while (obsCollection.hasNext()) {
+    //         let obsResults = await obsCollection.nextPage();
+    //         obsResults.map((obs: any) => {
+    //             let result = eventFromObservation(obs, laneEntry);
+    //
+    //             observations.push(result);
+    //         })
+    //     }
+    //     return observations;
+    // }
 
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry, isLive: boolean): EventTableData {
         const id = prngFromStr(obs, laneEntry.laneName);
@@ -164,9 +178,44 @@ export default function EventTable({
     }
 
     useEffect(() => {
-        initialize(stableLaneMap);
-    }, [stableLaneMap]);
+        fetchObservations();
+    }, []);
 
+    async function fetchObservations() {
+        if (stableLaneMap.size === 0)
+            return;
+
+        if (nodes.size === 0)
+            return;
+
+        for (const node of nodes) {
+            let datastreams: any[] = [];
+
+            // collect all occupancy datastream ids for each lane
+            stableLaneMap.forEach((entry: LaneMapEntry) => {
+                console.log("entry", entry)
+                // verify its coming from right node
+                if (entry.parentNode.id == node.id) {
+                    let datastream: typeof DataStream = entry.datastreams.filter((ds: typeof DataStream) => isOccupancyDataStream(ds));
+                    datastreams.push(...datastream);
+                }
+
+            });
+
+            let datastreamIds: any[] = [];
+            datastreams.forEach((ds) => datastreamIds.push(ds.properties.id));
+
+            console.log("datastream IDS", datastreamIds)
+
+            const observationFilter = new ObservationFilter({
+                dataStream: datastreamIds,
+                filter: "gammaAlarm=true,neutronAlarm=true"
+            });
+
+
+            let observationApi: typeof Observations = await node.getObservationsApi();
+        }
+    }
 
     useEffect(() => {
         if (stableLaneMap.size === 0) {
@@ -221,6 +270,13 @@ export default function EventTable({
         await doFetch(map);
     }, []);
 
+
+    //Pseudorandom number generator from event data
+    function prngFromStr(obs: any, laneName: string): number {
+        const baseId = `${obs.result?.occupancyCount}${laneName}${obs.result?.startTime}${obs.result?.endTime}`;
+        return hashString(baseId);
+    }
+
     useEffect(() => {
         let filteredData: EventTableData[] = [];
         if (tableMode === 'alarmtable') {
@@ -228,6 +284,7 @@ export default function EventTable({
         } else if (tableMode === 'eventlog') {
             filteredData = tableData
         }else if(tableMode === 'lanelog'){
+
             filteredData = laneEventList(tableData);
         }
 
@@ -412,24 +469,29 @@ export default function EventTable({
                 columns={columns}
                 onRowClick={handleRowSelection}
                 rowSelectionModel={selectionModel}
-                initialState={{
-                    pagination: {
-                        paginationModel: {
-                            pageSize: 15,
-                        },
-                    },
-                    columns: {
-                        // Manage visible columns in table based on component parameters
-                        columnVisibilityModel: {
-                            adjudicatedIds: viewAdjudicated,
-                            // adjudicatedCode: viewAdjudicated,
-                        },
-
-                    },
-                    sorting: {
-                        sortModel: [{field: 'startTime', sort: 'desc'}]
-                    },
-                }}
+                pagination
+                paginationMode="server"
+                loading={loading}
+                paginationModel={paginationModel}
+                onPaginationModelChange={setPaginationModel}
+                // initialState={{
+                //     pagination: {
+                //         paginationModel: {
+                //             pageSize: 15,
+                //         },
+                //     },
+                //     columns: {
+                //         // Manage visible columns in table based on component parameters
+                //         columnVisibilityModel: {
+                //             adjudicatedIds: viewAdjudicated,
+                //             // adjudicatedCode: viewAdjudicated,
+                //         },
+                //
+                //     },
+                //     sorting: {
+                //         sortModel: [{field: 'startTime', sort: 'desc'}]
+                //     },
+                // }}
                 pageSizeOptions={[15]}
                 slots={{toolbar: CustomToolbar}}
                 slotProps={{
