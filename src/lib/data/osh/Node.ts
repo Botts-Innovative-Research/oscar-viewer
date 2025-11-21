@@ -329,8 +329,9 @@ export class Node implements INode {
     async fetchSystems(): Promise<any[]> {
         let systemsApi = this.getSystemsApi();
 
-        let searchedSystems = await systemsApi.searchSystems(new SystemFilter(), 100);
+        let searchedSystems = await systemsApi.searchSystems();
         let availableSystems = [];
+
 
         while (searchedSystems.hasNext()) {
             let systems = await searchedSystems.nextPage();

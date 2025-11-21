@@ -114,19 +114,15 @@ export default function EventTable({
             if (nodes.size === 0 || stableLaneMap.size === 0)
                 return;
 
-            console.log("node", nodes)
-            console.log("stable lane map", stableLaneMap)
             const counts = new Map<string, number>();
             let total: number = 0;
 
             for (const node of nodes) {
                 const datastreamIds = getDatastreamIds(node);
 
-                console.log("data ids", datastreamIds)
                 if (datastreamIds.length === 0) continue;
 
                 const count = await fetchTotalCount(node, datastreamIds);
-                console.log("count", count)
                 counts.set(node.id, count);
 
                 total += count;
@@ -142,12 +138,12 @@ export default function EventTable({
     const totalObservations = useMemo(() => {
         let sum = 0;
         totalCount.forEach(count => sum += count);
-        console.log("total obs", sum)
         return sum;
     }, [totalCount]);
 
     const totalPages = Math.ceil(totalObservations / pageSize);
 
+    const [pageLoadedTime] = useState(() => new Date().toISOString());
 
     const fetchPage = useCallback(async (userRequestedPage: number): Promise<boolean> => {
         if (stableLaneMap.size === 0 || nodes.size === 0 || totalPages === 0)
@@ -156,6 +152,12 @@ export default function EventTable({
         setLoading(true);
 
         try {
+            //items per page = 15
+            // total items  = 190is
+            // target page =
+            // total pages = total items/ items per page
+            // user requested page  = 0 (pagination page based on table)
+            // api page = total pages - user requested page - 1 (bc we do the nextPage())
             const apiPage = totalPages - 1 - userRequestedPage;
             const pageOffset = apiPage * pageSize;
 
@@ -167,13 +169,14 @@ export default function EventTable({
 
                 const observationFilter = new ObservationFilter({
                     dataStream: datastreamIds,
-                    resultTime: `../now`
+                    resultTime: `../${pageLoadedTime}`
                 });
 
                 const obsApi: typeof Observations = await node.getObservationsApi();
-                const obsCollection = await obsApi.searchObservations(observationFilter, pageSize, pageOffset);
+                const obsCollection = await obsApi.searchObservations(observationFilter, pageSize, 0);
 
-                const results = await obsCollection.nextPage();
+
+                const results = await obsCollection.page(apiPage);
                 for (const obs of results) {
                     const laneEntry = findLaneByDataStreamId(stableLaneMap, obs.properties["datastream@id"]);
                     if (!laneEntry) continue;
@@ -182,7 +185,7 @@ export default function EventTable({
                     allRows.push(evt);
                 }
 
-                const deduped = dedupeById(allRows);
+                const deduped = dedepulicateById(allRows);
                 const filtered = filterRows(deduped);
 
                 setFilteredTableData(filtered);
@@ -197,7 +200,7 @@ export default function EventTable({
 
     }, [nodes, stableLaneMap, totalPages]);
 
-    function dedupeById(arr: EventTableData[]): EventTableData[] {
+    function dedepulicateById(arr: EventTableData[]): EventTableData[] {
         const map = new Map();
         for (const row of arr) map.set(row.id, row);
         return [...map.values()];
