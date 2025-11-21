@@ -206,7 +206,6 @@ export default function EventTable({
         return [...map.values()];
     }
 
-    // Effect to fetch data when pagination changes
     useEffect(() => {
         if (totalPages > 0)
             fetchPage(paginationModel.page)
@@ -258,7 +257,7 @@ export default function EventTable({
         let newEvent: EventTableData;
 
         if (isLive) {
-            // Handle live/streaming observations
+            // Handle live observations
             const result = obs.result || obs;
             newEvent = new EventTableData(id, laneEntry.laneName, result, null, obs["foi@id"] || obs.foiId);
             newEvent.setDataStreamId(obs["datastream@id"]);
@@ -281,7 +280,6 @@ export default function EventTable({
         return hashString(baseId);
     }
 
-    // Subscribe to real-time events
     useEffect(() => {
         if (stableLaneMap.size === 0) {
             return;
@@ -314,18 +312,15 @@ export default function EventTable({
                         event.setDataStreamId(dsObsPath.split("/")[2]);
                     }
 
-                    // Apply the same filter to real-time events
                     const filtered = filterRows([event]);
-                    if (filtered.length === 0) return; // Event doesn't pass filter
+                    if (filtered.length === 0) return;
 
-                    // Add new event at the top (newest first) when on page 0
                     if (currentPage === 0) {
                         setFilteredTableData(prev => {
                             const exists = prev.some(row => row.id === event.id);
                             if (exists) return prev;
                             return [event, ...prev].slice(0, pageSize);
                         });
-                        // Update row count since we have new data
                         setRowCount(prev => prev + 1);
                     }
                 } catch (err) {
@@ -351,7 +346,6 @@ export default function EventTable({
         }
     }, [selectedRowId]);
 
-    // Column definitions
     const locale = navigator.language || 'en-US';
 
     const columns: GridColDef<EventTableData>[] = [
