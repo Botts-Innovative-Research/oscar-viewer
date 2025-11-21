@@ -56,8 +56,6 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
             let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
             if(!nodeLaneMap) return;
 
-            // await node.authFileServer();
-            await node.fetchOscarServiceSystem();
             await node.fetchDataStreams(nodeLaneMap);
             await node.fetchLaneControlStreams(nodeLaneMap);
 

@@ -17,6 +17,7 @@ import {ISystem} from "@/lib/data/osh/Systems";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import { hashString } from "@/app/utils/Utils";
 import {LatLngExpression} from "leaflet";
+import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
 
 const SYSTEM_UID_PREFIX = "urn:osh:system:";
 
@@ -40,15 +41,11 @@ export interface INode {
 
     getBasicAuthHeader(): any,
 
-    fetchLanes(): Promise<{ systems: typeof System[]; lanes: LaneMeta[] }>,
-
     fetchSystems(): Promise<any[]>,
 
     fetchDataStreams(laneMap: Map<string, LaneMapEntry>): void,
 
     fetchLaneSystemsAndSubsystems(): Promise<Map<string, LaneMapEntry>>,
-
-    fetchOscarServiceSystem(): Promise<any>,
 
     fetchLaneControlStreams(laneMap: Map<string, LaneMapEntry>): Promise<any>,
 
@@ -59,8 +56,6 @@ export interface INode {
     getOscarServiceSystem(): typeof System
 
     fetchDataStream(system: typeof System): Promise<any[]>
-
-    fetchLatestObservation(): Promise<any>
 
     fetchObservationsWithFilter(observationFilter: typeof ObservationFilter): Promise<any[]>
 
@@ -73,8 +68,6 @@ export interface INode {
     getControlStreamApi(): typeof ControlStreams
 
     getObservationsApi(): typeof Observations
-
-    authFileServer(): any
 
     setSiteMapPath(path: string): void
     setUpperRightBox(latLong: LatLngExpression): void
@@ -154,21 +147,6 @@ export class Node implements INode {
 
     }
 
-    async authFileServer() {
-
-        let ep: string = `${this.getFileServerEndpoint()}`;
-
-        const response = await fetch(ep, {
-            method: 'GET',
-            mode: 'cors',
-            headers: {
-                ...this.getBasicAuthHeader()
-            }
-        });
-
-      return response.ok
-
-    }
     getOscarServiceSystem() {
         return this.oscarServiceSystem;
     }
@@ -218,32 +196,6 @@ export class Node implements INode {
         return {"Authorization": `Basic ${encoded}`};
     }
 
-    async fetchLanes(): Promise<{ systems: typeof System[]; lanes: LaneMeta[] }> {
-        let fetchedLanes: LaneMeta[] = [];
-        let fetchedSystems: ISystem[] = [];
-        // first, fetch the systems
-        const systems_arr = await this.fetchSystems();
-        for (let system of systems_arr) {
-
-            const newSystem = new System(system.id, system.properties.uid, system.properties.name, this, null);
-            fetchedSystems.push(newSystem);
-            // Test for lane signature in uid
-            if (system.properties.uid.includes(SYSTEM_UID_PREFIX)) {
-                const newLaneName = system.properties.name;
-                // Fetch subsystems
-                const subsystems = await newSystem.fetchSubsystems();
-                fetchedSystems.push(...subsystems);
-                let systemIds = subsystems.map((subsystem: any) => subsystem.id);
-                systemIds.unshift(newSystem.id);
-                // Create a new LaneMeta object
-                let newLaneMeta = new LaneMeta(newLaneName, systemIds);
-                console.info("New Lane Created:", newLaneMeta);
-                fetchedLanes.push(newLaneMeta);
-            }
-        }
-        return {lanes: null, systems: systems_arr};
-    }
-
     async checkForEndpoint() {
         let ep: string = `${this.getConnectedSystemsEndpoint()}`;
 
@@ -277,6 +229,12 @@ export class Node implements INode {
         let systems = await this.fetchSystems();
         if (!systems || systems.length == 0) return;
 
+        systems.sort((a, b) => {
+            const aIsLane = a.properties.properties?.uid.includes(SYSTEM_UID_PREFIX) ? 0 : 1;
+            const bIsLane = b.properties.properties?.uid.includes(SYSTEM_UID_PREFIX) ? 0 : 1;
+            return aIsLane - bIsLane;
+        });
+
         let laneMap = new Map<string, LaneMapEntry>();
 
         // filter into lanes
@@ -296,40 +254,31 @@ export class Node implements INode {
                     entry.setLaneSystem(system);
                 }
 
-                let subsystems = await system.searchMembers();
-                while (subsystems.hasNext()) {
-                    let subsystemResults = await subsystems.nextPage();
-                    laneMap.get(laneName).addSystems(subsystemResults);
+            } else if (system.properties.properties.uid.includes("urn:ornl:oscar:system:")) {
+                this.oscarServiceSystem = system;
+            } else {
+            // else if (system.properties.properties?.uid.includes("LANE UID SUFFIX")) {
+                const parts = system.properties.properties.uid.split(":");
+                const parentUidSuffix = parts[parts.length - 1];
+
+                for (let [, entry] of laneMap) {
+                    // This relation is enforced on backend's lane module, replace in future
+                    if (entry.laneSystem?.properties?.properties?.uid.endsWith(parentUidSuffix)) {
+                        entry.addSystem(system);
+                        break;
+                    }
                 }
+                // }
             }
         }
 
         return laneMap;
     }
 
-    async fetchOscarServiceSystem(){
-        const isReachable = await this.checkForEndpoint();
-
-        if (!isReachable) {
-            console.warn("Node is not reachable, check endpoint properties");
-            return;
-        }
-
-        let systems = await this.fetchSystems();
-        if (!systems || systems.length == 0) return;
-
-        for(let system of systems){
-            if (system.properties.properties.uid.includes("urn:ornl:oscar:system:")) {
-                // todo add oscar service system some where
-                this.oscarServiceSystem = system;
-            }
-        }
-    }
-
     async fetchSystems(): Promise<any[]> {
         let systemsApi = this.getSystemsApi();
 
-        let searchedSystems = await systemsApi.searchSystems(new SystemFilter(), 100);
+        let searchedSystems = await systemsApi.searchSystems(new SystemFilter({ searchMembers: true, validTime: "latest" }), 500);
         let availableSystems = [];
 
         while (searchedSystems.hasNext()) {
@@ -362,15 +311,6 @@ export class Node implements INode {
         }
     }
 
-    async fetchLatestObservation() {
-        let observationsApi = this.getObservationsApi();
-
-        let searchedObservations = await observationsApi.searchObservations(new ObservationFilter({resultTime: 'latest'}), 1);
-
-        let obsResult = await searchedObservations.nextPage();
-        return obsResult;
-    }
-
     async fetchLatestObservationWithFilter(observationFilter: typeof ObservationFilter) {
         let observationsApi = this.getObservationsApi();
 
@@ -400,16 +340,33 @@ export class Node implements INode {
     }
 
     async fetchDataStreams(laneMap: Map<string, LaneMapEntry>) {
+        const laneIds: string[] = [];
         for (const [, laneEntry] of laneMap) {
             if (laneEntry.parentNode.id != this.id) continue;
-            try {
-                const datastreams = await laneEntry.laneSystem.searchDataStreams(new DataStreamFilter({ validTime: "latest" }), 100);
-                while (datastreams.hasNext()) {
-                    const datastreamResults = await datastreams.nextPage();
-                    laneEntry.addDataStreams(datastreamResults);
+            laneIds.push(laneEntry.laneSystem.properties.id);
+        }
+
+        const dataStreamCollection = await this.getDataStreamsApi()
+            .searchDataStreams(
+                new DataStreamFilter({
+                    system: laneIds.join(","),
+                    validTime: "latest"
+                }), 1000);
+
+        const allDataStreams = [];
+        while (dataStreamCollection.hasNext()) {
+            const dataStreams = await dataStreamCollection.nextPage();
+            allDataStreams.push(...dataStreams);
+        }
+
+        for (const dataStream of allDataStreams) {
+            for (const [, laneEntry] of laneMap) {
+                if (laneEntry.parentNode.id != this.id)
+                    continue;
+                const matchingSystem: typeof System = laneEntry.systems.find((system: typeof System) => system.properties.id == dataStream.properties["system@id"]);
+                if (matchingSystem != null) {
+                    laneEntry.addDataStream(dataStream);
                 }
-            } catch (error) {
-                console.error(`Error fetching datastreams for system ${laneEntry.laneSystem.id}:`, error);
             }
         }
     }
@@ -425,16 +382,33 @@ export class Node implements INode {
     }
 
     async fetchLaneControlStreams(laneMap: Map<string, LaneMapEntry>) {
+        const laneIds: string[] = [];
         for (const [, laneEntry] of laneMap) {
             if (laneEntry.parentNode.id != this.id) continue;
-            try {
-                const controlStreams = await laneEntry.laneSystem.searchControlStreams(undefined, 100);
-                while (controlStreams.hasNext()) {
-                    const controlStreamResults = await controlStreams.nextPage();
-                    laneEntry.addControlStreams(controlStreamResults);
+            laneIds.push(laneEntry.laneSystem.properties.id);
+        }
+
+        const controlStreamCollection = await this.getControlStreamApi()
+            .searchControlStreams(
+                new ControlStreamFilter({
+                    system: laneIds.join(","),
+                    validTime: "latest"
+                }), 1000);
+
+        const allControlStreams = [];
+        while (controlStreamCollection.hasNext()) {
+            const dataStreams = await controlStreamCollection.nextPage();
+            allControlStreams.push(...dataStreams);
+        }
+
+        for (const controlStream of allControlStreams) {
+            for (const [, laneEntry] of laneMap) {
+                if (laneEntry.parentNode.id != this.id)
+                    continue;
+                const matchingSystem: typeof System = laneEntry.systems.find((system: typeof System) => system.properties.id == controlStream.properties["system@id"]);
+                if (matchingSystem != null) {
+                    laneEntry.addControlStream(controlStream);
                 }
-            } catch (error) {
-                console.error(`Error fetching control streams for system ${laneEntry.laneSystem.id}:`, error);
             }
         }
     }
