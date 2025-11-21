@@ -166,7 +166,7 @@ export class Node implements INode {
             }
         });
 
-      return response.ok
+        return response.ok
 
     }
     getOscarServiceSystem() {
