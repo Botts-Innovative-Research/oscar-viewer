@@ -339,7 +339,6 @@ export default function EventTable({
         }
     }, [stableLaneMap, dispatch, filterRows]);
 
-    // Clear selection when selectedRowId changes externally
     useEffect(() => {
         if (!selectedRowId) {
             setSelectionModel([]);
