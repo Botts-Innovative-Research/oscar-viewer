@@ -99,6 +99,10 @@ export class LaneMapEntry {
         this.laneName = name;
     }
 
+    addControlStream(controlStream: any[]) {
+        this.controlStreams.push(controlStream);
+    }
+
     addControlStreams(controlStreams: any[]) {
         this.controlStreams.push(...controlStreams)
     }

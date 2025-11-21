@@ -36,7 +36,7 @@ export default function MapComponent() {
 
     const nodes = useSelector((state: RootState) => selectNodes(state));
 
-    const [isInit, setIsInt] = useState(false);
+    const [isInit, setIsInit] = useState(false);
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
     const [locationList, setLocationList] = useState<LaneWithLocation[] | null>(null);
     const [dsLocations, setDsLocations] = useState([]);
@@ -168,7 +168,7 @@ export default function MapComponent() {
                 autoZoomOnFirstMarker: true
             });
             leafletViewRef.current = view;
-            setIsInt(true);
+            setIsInit(true);
         }
 
         return () =>{
@@ -243,9 +243,10 @@ export default function MapComponent() {
     }
 
     useEffect(() => {
-        if (!leafletViewRef.current) {
+        if (!leafletViewRef.current || !isInit) {
             return;
         }
+
         const addImageOverlay = async (node: INode, path: string, urb: any, llb: any) => {
 
             const bounds = L.latLngBounds([llb, urb]);
@@ -292,7 +293,7 @@ export default function MapComponent() {
 
                         }
                     } else {
-                        console.warn("No sitemap, or bounds provided.")
+                        console.info("No sitemap or bounds provided for " + node.name)
                         return;
                     }
                 }
