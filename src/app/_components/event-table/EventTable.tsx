@@ -47,12 +47,6 @@ interface TableProps {
     laneMap: Map<string, LaneMapEntry>;
 }
 
-interface PaginationState {
-    collections: Map<string, any>; // nodeId -> collection
-    currentPage: number;
-    hasMore: boolean;
-}
-
 export default function EventTable({
                                        tableMode,
                                        viewLane = false,
@@ -72,14 +66,14 @@ export default function EventTable({
     const [totalCount, setTotalCount] = useState<Map<string, number>>(new Map());
     const [currentPage, setCurrentPage] = useState(0);
 
+    // const obsCollectionRef = useRef<Map<string, any>>(new Map());
+    // const [isInitialized, setIsInitialized] = useState(false);
 
     const dispatch = useAppDispatch();
     const router = useRouter();
 
-
     const stableLaneMap = useMemo(() => convertToMap(laneMap), [laneMap]);
 
-    console.log(laneMap)
 
     const getDatastreamIds = useCallback((node: any): string[] => {
         const datastreamIds: string[] = [];
@@ -144,6 +138,10 @@ export default function EventTable({
     const totalPages = Math.ceil(totalObservations / pageSize);
 
     const [pageLoadedTime] = useState(() => new Date().toISOString());
+
+    const fetchUntilFilled = useCallback(async (targetCount: number) => {
+
+    },[]);
 
     const fetchPage = useCallback(async (userRequestedPage: number): Promise<boolean> => {
         if (stableLaneMap.size === 0 || nodes.size === 0 || totalPages === 0)
@@ -211,7 +209,6 @@ export default function EventTable({
             fetchPage(paginationModel.page)
     }, [paginationModel.page, paginationModel.pageSize, stableLaneMap, nodes, totalPages]);
 
-
     function findLaneByDataStreamId(laneMap: Map<string, LaneMapEntry>, datastreamId: string): LaneMapEntry | null {
         for (const entry of laneMap.values()) {
             if (entry.datastreams.some(ds => ds.properties.id === datastreamId)) {
@@ -227,7 +224,6 @@ export default function EventTable({
         let queryParams = `/observations/count?resultTime=../now&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}`
         let fullUrl = endpoint + queryParams;
 
-        console.log("full url", fullUrl)
         try {
             const response = await fetch(fullUrl, {
                 method: 'GET',
@@ -243,8 +239,6 @@ export default function EventTable({
                 return 0;
             }
             let responseJson = await response.json();
-
-            console.log("response json count", responseJson)
             return responseJson.count || 0;
         } catch (error) {
             console.error("Error fetching total observation count", error);
@@ -260,7 +254,6 @@ export default function EventTable({
             // Handle live observations
             const result = obs.result || obs;
             newEvent = new EventTableData(id, laneEntry.laneName, result, null, obs["foi@id"] || obs.foiId);
-            newEvent.setDataStreamId(obs["datastream@id"]);
             newEvent.setFoiId(obs["foi@id"] || obs.foiId);
         } else {
             // Handle historical observations
@@ -498,6 +491,7 @@ export default function EventTable({
                 paginationMode="server"
                 loading={loading}
                 paginationModel={paginationModel}
+                // onPaginationModelChange={handlePaginationChange}
                 onPaginationModelChange={setPaginationModel}
                 rowCount={rowCount}
                 columns={columns}
