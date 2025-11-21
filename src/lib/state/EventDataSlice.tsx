@@ -38,15 +38,15 @@ export const Slice = createSlice({
         setLaneViewLogData: (state, action: PayloadAction<AlarmTableData[]>) => {
             state.laneViewLog = action.payload;
         },
-        setEventLogData: (state, action: PayloadAction<EventTableData[]>) => {
-            state.eventLog = action.payload;
-        },
+        // setEventLogData: (state, action: PayloadAction<EventTableData[]>) => {
+        //     state.eventLog = action.payload;
+        // },
         setSelectedEvent: (state, action: PayloadAction<EventTableData>) => {
             state.selectedEvent = action.payload;
         },
-        addEventToLog: (state, action: PayloadAction<EventTableData>) => {
-                state.eventLog = [...state.eventLog, action.payload];
-        },
+        // addEventToLog: (state, action: PayloadAction<EventTableData>) => {
+        //         state.eventLog = [...state.eventLog, action.payload];
+        // },
         updateSelectedEventAdjudication: (state, action: PayloadAction<AdjudicationData>) => {
             if(state.selectedEvent){
                 const updatedEvent = {
@@ -79,9 +79,9 @@ export const Slice = createSlice({
 })
 
 export const {
-    setEventLogData,
+    // setEventLogData,
     setSelectedEvent,
-    addEventToLog,
+    // addEventToLog,
     updateSelectedEventAdjudication,
     setHasFetchedInitial,
     setLaneViewLogData,
