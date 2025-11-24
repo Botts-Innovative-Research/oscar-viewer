@@ -4,7 +4,7 @@ import {Grid, Paper, Stack, ToggleButton, ToggleButtonGroup, Typography} from "@
 import BackButton from "../_components/BackButton";
 import LaneStatus from "../_components/lane-view/LaneStatus";
 import Media from "../_components/lane-view/Media";
-import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
+import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import EventTable from "@/app/_components/event-table/EventTable";
 import {useSelector} from "react-redux";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
@@ -32,6 +32,7 @@ export default function LaneViewPage() {
 
     const currentLane = useSelector((state: RootState) => state.laneView.currentLane);
 
+    const [entry, setEntry] = useState<LaneMapEntry>();
     const [gammaDS, setGammaDS] =  useState<typeof ConSysApi>();
     const [neutronDS, setNeutronDS] =  useState<typeof ConSysApi>();
     const [thresholdDS, setThresholdDS] = useState<typeof ConSysApi>();
@@ -61,6 +62,8 @@ export default function LaneViewPage() {
             console.warn("Lane not found for currentLane:", currentLane);
             return;
         }
+
+        setEntry(lane);
 
         for(let i = 0; i < lane.datastreams.length; i++) {
             const ds = lane.datastreams[i]
@@ -156,7 +159,9 @@ export default function LaneViewPage() {
                             <EventTable tableMode={'lanelog'} laneMap={laneMap} viewLane viewAdjudicated currentLane={currentLane}/>
                         </Grid>
                         <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'fault' ? 'block' : 'none' }}>
-                            <StatusTable laneMap={laneMap}/>
+                            {entry && (
+                                <StatusTable currentLane={currentLane} entry={entry} />
+                            )}
                         </Grid>
                     </Grid>
                 </Paper>

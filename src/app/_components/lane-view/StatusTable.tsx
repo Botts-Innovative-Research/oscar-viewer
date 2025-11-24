@@ -20,16 +20,19 @@ import { INode } from "@/lib/data/osh/Node";
 import Observations from "osh-js/source/core/consysapi/observation/Observations";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream";
-import {ALARM_DEF, OCCUPANCY_PILLAR_DEF, TAMPER_STATUS_DEF} from "@/lib/data/Constants";
+import {ALARM_DEF, TAMPER_STATUS_DEF} from "@/lib/data/Constants";
 import {EventType} from "osh-js/source/core/event/EventType";
 import {convertToMap} from "@/app/utils/Utils";
 
+interface StatusTableProps {
+    currentLane: string,
+    entry: LaneMapEntry
+}
 
-export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEntry>}){
+export default function StatusTable({currentLane, entry}: StatusTableProps){
     const locale = navigator.language || 'en-US';
 
     const nodes = useSelector(selectNodes);
-    const currentLane = useSelector(selectCurrentLane);
 
     const [loading, setLoading] = useState(false);
     const pageSize = 15
@@ -37,11 +40,9 @@ export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEnt
     const [rowCount, setRowCount] = useState(0);
     const [data, setData] = useState<AlarmTableData[]>([]);
 
-    const [totalCount, setTotalCount] = useState<Map<string, number>>(new Map());
     const [currentPage, setCurrentPage] = useState(0);
     const [pageLoadedTime] = useState(() => new Date().toISOString());
 
-    const stableLaneMap = useMemo(() => convertToMap(laneMap), [laneMap]);
 
     const columns: GridColDef<AlarmTableData>[] = [
         {
@@ -76,7 +77,6 @@ export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEnt
 
     async function fetchTotalCount(node: INode, datastreamIds: string[]) {
         let endpoint = node.getConnectedSystemsEndpoint(false);
-        // let queryParams = `/observations/count?resultTime=../${pageLoadedTime}&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}&filter=tamperStatus=true`
         let queryParams = `/observations/count?resultTime=../${pageLoadedTime}&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}&filter=tamperStatus=true,alarmState=Fault%20-%20Neutron%20High,alarmState=Fault%20-%20Gamma%20High,alarmState=Fault%20-%20Gamma%20Low`
         let fullUrl = endpoint + queryParams;
 
@@ -102,45 +102,42 @@ export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEnt
         }
     }
 
-    function eventFromObservation(obs: any, isLive: boolean): AlarmTableData {
+    function eventFromObservation(obs: any, isLive: boolean): AlarmTableData | undefined {
+        if (!obs) return undefined;
 
-        let newEvent: AlarmTableData;
+        let newEvent: AlarmTableData | undefined;
 
         if (isLive) {
             if (obs?.alarmState) {
-                let state = obs.alarmState;
-                if (["Scan", "Background", "Alarm"].includes(state))
-                    return null;
-                newEvent = new AlarmTableData(randomUUID(), currentLane, state, obs.samplingTime);
-            }else if (obs?.tamperStatus)
+                const state = obs.alarmState;
+                if (!["Scan", "Background", "Alarm"].includes(state)) {
+                    newEvent = new AlarmTableData(randomUUID(), currentLane, state, obs.samplingTime);
+                }
+            } else if (obs?.tamperStatus) {
                 newEvent = new AlarmTableData(randomUUID(), currentLane, "Tamper", obs.samplingtime);
-        } else {
-            console.log("obs", obs, isLive);
-
-            if (obs?.properties?.result.alarmState) {
-                let state = obs?.properties?.result.alarmState;
-                if (["Scan", "Background", "Alarm"].includes(state))
-                    return null;
-                newEvent = new AlarmTableData(randomUUID(), currentLane, state, obs?.properties?.resultTime);
             }
-            else if (obs?.properties?.result.tamperStatus)
-                newEvent = new AlarmTableData(randomUUID(), currentLane, "Tamper", obs?.properties?.resultTime);
-
+        } else {
+            const result = obs?.properties?.result;
+            if (result?.alarmState && !["Scan", "Background", "Alarm"].includes(result.alarmState)) {
+                newEvent = new AlarmTableData(randomUUID(), currentLane, result.alarmState, obs.properties.resultTime);
+            } else if (result?.tamperStatus) {
+                newEvent = new AlarmTableData(randomUUID(), currentLane, "Tamper", obs.properties.resultTime);
+            }
         }
 
         return newEvent;
     }
 
+
     const getDatastreamIds = useCallback((node: INode) =>  {
         const datastreamIds: string[] = [];
 
-        const entry = stableLaneMap.get(currentLane);
         if (!entry) return datastreamIds;
 
-        if (entry.parentNode.id !== node.id) return datastreamIds;
+        if (entry.parentNode.id !== node.id)
+            return datastreamIds;
 
         const datastreams: typeof DataStream[] = entry.datastreams.filter(
-            // (ds: any) => isTamperDataStream(ds)
             (ds: any) => isGammaDataStream(ds) || isNeutronDataStream(ds) || isTamperDataStream(ds)
         );
 
@@ -149,43 +146,31 @@ export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEnt
         }
 
         return datastreamIds;
-    }, [stableLaneMap, currentLane]);
+    }, [currentLane, entry]);
 
 
     useEffect(() => {
         const fetchAllCounts = async () => {
-            if (nodes.size === 0 || stableLaneMap.size === 0)
-                return;
 
-            const counts = new Map<string, number>();
             let total: number = 0;
 
-            for (const node of nodes) {
-                const datastreamIds = getDatastreamIds(node);
+            const selectedNode = nodes.find((node: INode) => entry.parentNode.id === node.id);
 
-                if (datastreamIds.length === 0) continue;
+            const datastreamIds = getDatastreamIds(selectedNode);
 
-                const count = await fetchTotalCount(node, datastreamIds);
-                counts.set(node.id, count);
+            const count = await fetchTotalCount(selectedNode, datastreamIds);
 
-                total += count;
-            }
+            total += count;
 
-            setTotalCount(counts);
             setRowCount(total);
         }
 
         fetchAllCounts();
-    }, [nodes, stableLaneMap]);
+    }, [nodes, entry]);
 
 
-    const totalObservations = useMemo(() => {
-        let sum = 0;
-        totalCount.forEach(count => sum += count);
-        return sum;
-    }, [totalCount]);
 
-    const totalPages = Math.ceil(totalObservations / pageSize);
+    const totalPages = Math.ceil(rowCount / pageSize);
 
     const fetchPage = useCallback(async (userRequestedPage: number) => {
         setLoading(true);
@@ -196,29 +181,32 @@ export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEnt
 
             const allRows: AlarmTableData[] = [];
 
-            for (const node of nodes) {
-                const datastreamIds = getDatastreamIds(node);
-                if (datastreamIds.length === 0) continue;
+            const node = nodes.find((node: INode) => entry.parentNode.id === node.id);
 
-                const observationFilter = new ObservationFilter({
-                    dataStream: datastreamIds,
-                    resultTime: `../${pageLoadedTime}`,
-                    // filter: "tamperStatus=true"
-                    filter: "tamperStatus=true,alarmState=Fault%20-%20Neutron%20High,alarmState=Fault%20-%20Gamma%20High,alarmState=Fault%20-%20Gamma%20Low"
-                });
+            if (!node) return;
 
-                const obsApi: typeof Observations = await node.getObservationsApi();
-                const obsCollection = await obsApi.searchObservations(observationFilter, pageSize, pageOffset);
+            const datastreamIds = getDatastreamIds(node);
+            if (datastreamIds.length === 0) return;
 
-                const results = await obsCollection.fetchData();
-                for (const obs of results) {
-                    const evt = eventFromObservation(obs, false);
+            const observationFilter = new ObservationFilter({
+                dataStream: datastreamIds,
+                resultTime: `../${pageLoadedTime}`,
+                filter: "tamperStatus=true"
+                // filter: "tamperStatus=true,alarmState=Fault%20-%20Neutron%20High,alarmState=Fault%20-%20Gamma%20High,alarmState=Fault%20-%20Gamma%20Low"
+            });
+
+            const obsApi: typeof Observations = await node.getObservationsApi();
+            const obsCollection = await obsApi.searchObservations(observationFilter, pageSize, pageOffset);
+
+            const results = await obsCollection.fetchData();
+            for (const obs of results) {
+                const evt = eventFromObservation(obs, false);
+                if (evt !== undefined)
                     allRows.push(evt);
-                }
-
-                setData(allRows);
-                setCurrentPage(userRequestedPage);
             }
+
+            setData(allRows.filter((evt): evt is AlarmTableData => evt !== null && evt !== undefined));
+            setCurrentPage(userRequestedPage);
 
         } catch (error) {
             console.error("Error fetching observations,", error)
@@ -226,83 +214,178 @@ export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEnt
         } finally {
             setLoading(false);
         }
-    },[nodes, stableLaneMap, totalPages])
+    },[nodes, totalPages])
 
 
     useEffect(() => {
         if (totalPages > 0)
             fetchPage(paginationModel.page)
-    }, [paginationModel.page, paginationModel.pageSize, stableLaneMap, nodes, totalPages]);
+    }, [paginationModel.page, paginationModel.pageSize, nodes, totalPages]);
+
+
+    // useEffect(() => {
+    //     const connectedSources: typeof ConSysApi[] = [];
+    //
+    //     const handleMessage = (msg: any) => {
+    //         try {
+    //             const obsData = msg.values?.[0]?.data || msg;
+    //             const event = eventFromObservation(obsData, true);
+    //
+    //             if (currentPage === 0) {
+    //                 setData(prev => {
+    //                     return [event, ...prev].slice(0, pageSize);
+    //                 });
+    //                 setRowCount(prev => prev + 1);
+    //             }
+    //         } catch (err) {
+    //             console.error("Error creating event from observation:", err);
+    //         }
+    //     };
+    //
+    //     const alarmStream: typeof DataStream = entry.findDataStreamByObsProperty(ALARM_DEF);
+    //
+    //     if (!alarmStream) {
+    //         console.info("No alarm datastream");
+    //     }
+    //
+    //
+    //     const alarmSource = entry.datasourcesRealtime?.find((ds: any) => {
+    //         const parts = ds.properties.resource?.split("/");
+    //         return parts && parts[2] === alarmStream.properties.id;
+    //     });
+    //
+    //     if (!alarmSource) {
+    //         console.info("No alarm datasource");
+    //     }
+    //
+    //     alarmSource.subscribe(handleMessage, [EventType.DATA]);
+    //     try {
+    //         alarmSource.connect()
+    //         connectedSources.push(alarmSource);
+    //     } catch (err) {
+    //         console.error("Error connecting alarm source:", err);
+    //     }
+    // }, [entry]);
+    //
+    // useEffect(() => {
+    //
+    //     const connectedSources: typeof ConSysApi[] = [];
+    //
+    //     const handleMessage = (msg: any) => {
+    //         try {
+    //             const obsData = msg.values?.[0]?.data || msg;
+    //             const event = eventFromObservation(obsData, true);
+    //
+    //             if (currentPage === 0) {
+    //                 setData(prev => {
+    //                     return [event, ...prev].slice(0, pageSize);
+    //                 });
+    //                 setRowCount(prev => prev + 1);
+    //             }
+    //         } catch (err) {
+    //             console.error("Error creating event from observation:", err);
+    //         }
+    //     };
+    //
+    //
+    //     const tamperStream: typeof DataStream = entry.findDataStreamByObsProperty(TAMPER_STATUS_DEF);
+    //
+    //     if (!tamperStream) {
+    //         console.info("no tamper datastream");
+    //     }
+    //     const tamperSource = entry.datasourcesRealtime?.find((ds: any) => {
+    //         const parts = ds.properties.resource?.split("/");
+    //         return parts && parts[2] === tamperStream.properties.id;
+    //     });
+    //
+    //     if (!tamperSource) {
+    //         console.info("no tamper datasource");
+    //     }
+    //
+    //     tamperSource.subscribe(handleMessage, [EventType.DATA]);
+    //
+    //     try {
+    //         tamperSource.connect();
+    //         connectedSources.push(tamperSource);
+    //     } catch (err) {
+    //         console.error("Error connecting tamper source:", err);
+    //     }
+    //
+    // }, [entry]);
 
 
     useEffect(() => {
-        if (stableLaneMap.size === 0) {
+        if (!entry) {
+            console.warn("No entry provided for realtime data");
             return;
         }
 
         const connectedSources: typeof ConSysApi[] = [];
 
-        for (const entry of stableLaneMap.values()) {
-            const alarmStream: typeof DataStream = entry.findDataStreamByObsProperty(ALARM_DEF);
-            const tamperStream: typeof DataStream = entry.findDataStreamByObsProperty(TAMPER_STATUS_DEF);
+        const handleMessage = (msg: any) => {
+            try {
+                const obsData = msg.values?.[0]?.data || msg;
+                const event = eventFromObservation(obsData, true);
 
-            if (!alarmStream) {
-                continue;
+                // CRITICAL FIX: Check if event is defined before adding to array
+                if (event && currentPage === 0) {
+                    setData(prev => {
+                        return [event, ...prev].slice(0, pageSize);
+                    });
+                    setRowCount(prev => prev + 1);
+                }
+            } catch (err) {
+                console.error("Error creating event from observation:", err);
             }
-            if (!tamperStream) {
-                continue;
-            }
+        };
 
+        const alarmStream: typeof DataStream = entry.findDataStreamByObsProperty(ALARM_DEF);
+
+        if (!alarmStream) {
+            console.info("No alarm datastream");
+        } else {
             const alarmSource = entry.datasourcesRealtime?.find((ds: any) => {
                 const parts = ds.properties.resource?.split("/");
                 return parts && parts[2] === alarmStream.properties.id;
             });
 
             if (!alarmSource) {
-                continue;
+                console.info("No alarm datasource");
+            } else {
+                try {
+                    alarmSource.subscribe(handleMessage, [EventType.DATA]);
+                    alarmSource.connect()
+                    connectedSources.push(alarmSource);
+                } catch (err) {
+                    console.error("Error connecting alarm source:", err);
+                }
             }
+        }
 
+        const tamperStream: typeof DataStream = entry.findDataStreamByObsProperty(TAMPER_STATUS_DEF);
+
+        if (!tamperStream) {
+            console.info("no tamper datastream");
+        } else {
             const tamperSource = entry.datasourcesRealtime?.find((ds: any) => {
                 const parts = ds.properties.resource?.split("/");
                 return parts && parts[2] === tamperStream.properties.id;
             });
 
             if (!tamperSource) {
-                continue;
-            }
-
-
-            const handleMessage = (msg: any) => {
+                console.info("no tamper datasource");
+            } else {
                 try {
-                    const obsData = msg.values?.[0]?.data || msg;
-                    const event = eventFromObservation(obsData, true);
-
-                    if (currentPage === 0) {
-                        setData(prev => {
-                            return [event, ...prev].slice(0, pageSize);
-                        });
-                        setRowCount(prev => prev + 1);
-                    }
+                    tamperSource.subscribe(handleMessage, [EventType.DATA]);
+                    tamperSource.connect();
+                    connectedSources.push(tamperSource);
                 } catch (err) {
-                    console.error("Error creating event from observation:", err);
+                    console.error("Error connecting tamper source:", err);
                 }
-            };
-
-            alarmSource.subscribe(handleMessage, [EventType.DATA]);
-            tamperSource.subscribe(handleMessage, [EventType.DATA]);
-
-            try {
-                alarmSource.connect()
-                tamperSource.connect();
-                connectedSources.push(alarmSource);
-                connectedSources.push(tamperSource);
-            } catch (err) {
-                console.error("Error connecting occSource:", err);
             }
         }
-    }, [stableLaneMap]);
 
-
+    }, [entry, currentPage, pageSize]);
     return(
         <Box sx={{height: 800, width: '100%'}}>
             <DataGrid

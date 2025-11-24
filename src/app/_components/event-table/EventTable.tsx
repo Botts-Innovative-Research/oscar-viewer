@@ -74,16 +74,37 @@ export default function EventTable({
 
     const getDatastreamIds = useCallback((node: any): string[] => {
         const datastreamIds: string[] = [];
-        stableLaneMap.forEach((entry: LaneMapEntry) => {
-            if (entry.parentNode.id === node.id) {
-                const occStreams = entry.datastreams.filter(ds => isOccupancyDataStream(ds));
+
+        if (tableMode === "lanelog" && currentLane != null) {
+
+            const entry = stableLaneMap.get(currentLane);
+            if (!entry) return datastreamIds;
+
+            if (entry.parentNode.id !== node.id)
+                return;
+
+
+            const occStreams = entry.datastreams.filter((ds: typeof DataStream) => isOccupancyDataStream(ds));
+            for (const ds of occStreams) {
+                datastreamIds.push(ds.properties.id);
+            }
+
+        } else {
+            stableLaneMap.forEach((entry: LaneMapEntry) => {
+                if (entry.parentNode.id !== node.id)
+                    return;
+
+                const occStreams = entry.datastreams.filter((ds: typeof DataStream) => isOccupancyDataStream(ds));
                 for (const ds of occStreams) {
                     datastreamIds.push(ds.properties.id);
                 }
-            }
-        });
+
+            });
+        }
         return datastreamIds;
-    }, [stableLaneMap]);
+    }, [stableLaneMap, currentLane, tableMode]);
+
+
 
     const filterRows = useCallback((rows: EventTableData[]): EventTableData[] => {
         switch (tableMode) {
@@ -162,7 +183,7 @@ export default function EventTable({
                 const obsCollection = await obsApi.searchObservations(observationFilter, pageSize, pageOffset);
 
                 const results = await obsCollection.fetchData();
-                console.log("Results", results);
+
                 // const results = await obsCollection.page(apiPage);
                 for (const obs of results) {
                     const laneEntry = findLaneByDataStreamId(stableLaneMap, obs.properties["datastream@id"]);
@@ -174,9 +195,6 @@ export default function EventTable({
 
                 const deduped = deduplicateById(allRows);
                 const filtered = filterRows(deduped);
-
-                console.log("Table mode", tableMode);
-                console.log("Filtered data", filtered);
 
                 setFilteredTableData(filtered);
                 setCurrentPage(userRequestedPage);
