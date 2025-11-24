@@ -141,8 +141,8 @@ export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEnt
         if (entry.parentNode.id !== node.id) return datastreamIds;
 
         const datastreams: typeof DataStream[] = entry.datastreams.filter(
-            (ds: any) => isTamperDataStream(ds)
-            // (ds: any) => isGammaDataStream(ds) || isNeutronDataStream(ds) || isTamperDataStream(ds)
+            // (ds: any) => isTamperDataStream(ds)
+            (ds: any) => isGammaDataStream(ds) || isNeutronDataStream(ds) || isTamperDataStream(ds)
         );
 
         for (const ds of datastreams) {
