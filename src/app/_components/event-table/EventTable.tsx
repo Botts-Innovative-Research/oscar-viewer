@@ -208,7 +208,7 @@ export default function EventTable({
     async function fetchTotalCount(node: INode, datastreamIds: string[]) {
 
         let endpoint = node.getConnectedSystemsEndpoint(false);
-        let queryParams = `/observations/count?resultTime=../now&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}`
+        let queryParams = `/observations/count?resultTime=../${pageLoadedTime}&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}`
         let fullUrl = endpoint + queryParams;
 
         try {
