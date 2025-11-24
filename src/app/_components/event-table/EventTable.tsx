@@ -47,6 +47,7 @@ interface TableProps {
     laneMap: Map<string, LaneMapEntry>;
 }
 
+
 export default function EventTable({
                                        tableMode,
                                        viewLane = false,
@@ -135,10 +136,6 @@ export default function EventTable({
 
     const [pageLoadedTime] = useState(() => new Date().toISOString());
 
-    const fetchUntilFilled = useCallback(async (targetCount: number) => {
-
-    },[]);
-
     const fetchPage = useCallback(async (userRequestedPage: number): Promise<boolean> => {
         if (stableLaneMap.size === 0 || nodes.size === 0 || totalPages === 0)
             return;
@@ -146,15 +143,9 @@ export default function EventTable({
         setLoading(true);
 
         try {
-            //items per page = 15
-            // total items  = 190is
-            // target page =
-            // total pages = total items/ items per page
-            // user requested page  = 0 (pagination page based on table)
-            // api page = total pages - user requested page - 1 (bc we do the nextPage())
             const apiPage = totalPages - 1 - userRequestedPage;
-            const pageOffset = apiPage * pageSize;
 
+            const pageOffset = apiPage * pageSize;
             const allRows: EventTableData[] = [];
 
             for (const node of nodes) {
@@ -167,11 +158,10 @@ export default function EventTable({
                 });
 
                 const obsApi: typeof Observations = await node.getObservationsApi();
-                const obsCollection = await obsApi.searchObservations(observationFilter, pageSize, 0);
+                const obsCollection = await obsApi.searchObservations(observationFilter, pageSize, pageOffset);
 
-                // maybe save obsCollection has a useRef and then do the pages my pagination... (previousPage() nextPage())
-
-                const results = await obsCollection.page(apiPage);
+                const results = await obsCollection.fetchData();
+                // const results = await obsCollection.page(apiPage);
                 for (const obs of results) {
                     const laneEntry = findLaneByDataStreamId(stableLaneMap, obs.properties["datastream@id"]);
                     if (!laneEntry) continue;
