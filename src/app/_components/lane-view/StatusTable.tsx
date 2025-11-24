@@ -75,7 +75,6 @@ export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEnt
     ];
 
     async function fetchTotalCount(node: INode, datastreamIds: string[]) {
-
         let endpoint = node.getConnectedSystemsEndpoint(false);
         // let queryParams = `/observations/count?resultTime=../${pageLoadedTime}&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}&filter=tamperStatus=true`
         let queryParams = `/observations/count?resultTime=../${pageLoadedTime}&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}&filter=tamperStatus=true,alarmState=Fault%20-%20Neutron%20High,alarmState=Fault%20-%20Gamma%20High,alarmState=Fault%20-%20Gamma%20Low`
