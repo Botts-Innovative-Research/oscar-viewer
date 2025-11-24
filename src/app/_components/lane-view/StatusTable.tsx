@@ -77,7 +77,8 @@ export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEnt
     async function fetchTotalCount(node: INode, datastreamIds: string[]) {
 
         let endpoint = node.getConnectedSystemsEndpoint(false);
-        let queryParams = `/observations/count?resultTime=../${pageLoadedTime}&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}&filter=tamperStatus=true,alarmState=Neutron%20High%20Fault,alarmState=Gamma%20High%20Fault,alarmState=Gamma%20Low%20Fault`
+        let queryParams = `/observations/count?resultTime=../${pageLoadedTime}&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}&filter=tamperStatus=true`
+        // let queryParams = `/observations/count?resultTime=../${pageLoadedTime}&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}&filter=tamperStatus=true,alarmState=Neutron%20High%20Fault,alarmState=Gamma%20High%20Fault,alarmState=Gamma%20Low%20Fault`
         let fullUrl = endpoint + queryParams;
 
         try {
@@ -140,7 +141,8 @@ export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEnt
         if (entry.parentNode.id !== node.id) return datastreamIds;
 
         const datastreams: typeof DataStream[] = entry.datastreams.filter(
-            (ds: any) => isGammaDataStream(ds) || isNeutronDataStream(ds) || isTamperDataStream(ds)
+            (ds: any) => isTamperDataStream(ds)
+            // (ds: any) => isGammaDataStream(ds) || isNeutronDataStream(ds) || isTamperDataStream(ds)
         );
 
         for (const ds of datastreams) {
@@ -202,8 +204,8 @@ export default function StatusTables({laneMap}: {laneMap: Map<string, LaneMapEnt
                 const observationFilter = new ObservationFilter({
                     dataStream: datastreamIds,
                     resultTime: `../${pageLoadedTime}`,
-                    // filter: "tamperStatus=true"
-                    filter: "tamperStatus=true,alarmState=Neutron%20High%20Fault,alarmState=Gamma%20High%20Fault,alarmState=Gamma%20Low%20Fault"
+                    filter: "tamperStatus=true"
+                    // filter: "tamperStatus=true,alarmState=Neutron%20High%20Fault,alarmState=Gamma%20High%20Fault,alarmState=Gamma%20Low%20Fault"
                 });
 
                 const obsApi: typeof Observations = await node.getObservationsApi();
