@@ -154,13 +154,15 @@ export default function EventTable({
 
                 const observationFilter = new ObservationFilter({
                     dataStream: datastreamIds,
-                    resultTime: `../${pageLoadedTime}`
+                    resultTime: `../${pageLoadedTime}`,
+                    filter: tableMode == "alarmtable" ? "gammaAlarm=true,neutronAlarm=true" : "",
                 });
 
                 const obsApi: typeof Observations = await node.getObservationsApi();
                 const obsCollection = await obsApi.searchObservations(observationFilter, pageSize, pageOffset);
 
                 const results = await obsCollection.fetchData();
+                console.log("Results", results);
                 // const results = await obsCollection.page(apiPage);
                 for (const obs of results) {
                     const laneEntry = findLaneByDataStreamId(stableLaneMap, obs.properties["datastream@id"]);
@@ -170,8 +172,11 @@ export default function EventTable({
                     allRows.push(evt);
                 }
 
-                const deduped = dedepulicateById(allRows);
+                const deduped = deduplicateById(allRows);
                 const filtered = filterRows(deduped);
+
+                console.log("Table mode", tableMode);
+                console.log("Filtered data", filtered);
 
                 setFilteredTableData(filtered);
                 setCurrentPage(userRequestedPage);
@@ -185,7 +190,7 @@ export default function EventTable({
 
     }, [nodes, stableLaneMap, totalPages]);
 
-    function dedepulicateById(arr: EventTableData[]): EventTableData[] {
+    function deduplicateById(arr: EventTableData[]): EventTableData[] {
         const map = new Map();
         for (const row of arr) map.set(row.id, row);
         return [...map.values()];
@@ -206,9 +211,8 @@ export default function EventTable({
     }
 
     async function fetchTotalCount(node: INode, datastreamIds: string[]) {
-
         let endpoint = node.getConnectedSystemsEndpoint(false);
-        let queryParams = `/observations/count?resultTime=../${pageLoadedTime}&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}`
+        let queryParams = `/observations/count?resultTime=../${pageLoadedTime}&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}${tableMode == "alarmtable" ? "&filter=gammaAlarm=true,neutronAlarm=true" : ""}`
         let fullUrl = endpoint + queryParams;
 
         try {
