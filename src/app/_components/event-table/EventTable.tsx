@@ -66,14 +66,10 @@ export default function EventTable({
     const [totalCount, setTotalCount] = useState<Map<string, number>>(new Map());
     const [currentPage, setCurrentPage] = useState(0);
 
-    // const obsCollectionRef = useRef<Map<string, any>>(new Map());
-    // const [isInitialized, setIsInitialized] = useState(false);
-
     const dispatch = useAppDispatch();
     const router = useRouter();
 
     const stableLaneMap = useMemo(() => convertToMap(laneMap), [laneMap]);
-
 
     const getDatastreamIds = useCallback((node: any): string[] => {
         const datastreamIds: string[] = [];
@@ -173,6 +169,7 @@ export default function EventTable({
                 const obsApi: typeof Observations = await node.getObservationsApi();
                 const obsCollection = await obsApi.searchObservations(observationFilter, pageSize, 0);
 
+                // maybe save obsCollection has a useRef and then do the pages my pagination... (previousPage() nextPage())
 
                 const results = await obsCollection.page(apiPage);
                 for (const obs of results) {
@@ -491,7 +488,6 @@ export default function EventTable({
                 paginationMode="server"
                 loading={loading}
                 paginationModel={paginationModel}
-                // onPaginationModelChange={handlePaginationChange}
                 onPaginationModelChange={setPaginationModel}
                 rowCount={rowCount}
                 columns={columns}
