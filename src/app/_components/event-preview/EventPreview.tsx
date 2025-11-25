@@ -36,7 +36,7 @@ import AdjudicationData, {
 } from "@/lib/data/oscar/adjudication/Adjudication";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
-import {setSelectedEvent, updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
+import {setSelectedEvent, triggerEventTableRefresh, setAdjudicatedEventId} from "@/lib/state/EventDataSlice";
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 import { setEventData } from "@/lib/state/EventDetailsSlice";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -46,6 +46,7 @@ import {generateAdjudicationCommandJSON, sendCommand} from "@/lib/data/oscar/OSC
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import {isAdjudicationControlStream} from "@/lib/data/oscar/Utilities";
+import { EventTableData } from "@/lib/data/oscar/TableHelpers";
 
 export function EventPreview() {
     const dispatch = useAppDispatch();
@@ -76,6 +77,7 @@ export function EventPreview() {
     const [openSnack, setOpenSnack] = useState(false);
     const [colorStatus, setColorStatus] = useState('')
 
+    const [localSelectedEvent, setLocalSelectedEvent] = useState<EventTableData>(eventPreview.eventData);
 
     const handleAdjudicationCode = (value: AdjudicationCode) => {
         let newAdjData: IAdjudicationData = {
@@ -133,14 +135,16 @@ export function EventPreview() {
         await submitAdjudication(currLaneEntry, comboData)
     }
 
+    useEffect(() => {
+        setLocalSelectedEvent(eventPreview.eventData);
+    }, [eventPreview.eventData]);
 
     const submitAdjudication = async(currLaneEntry: any, comboData: any) => {
         try{
             let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == eventPreview.eventData.dataStreamId);
-
-            let streams = await currLaneEntry.parentNode.fetchNodeControlStreams();
-
+            let streams = currLaneEntry.controlStreams.length > 0 ? currLaneEntry.controlStreams : await currLaneEntry.parentNode.fetchNodeControlStreams();
             let adjControlStream = streams.find((stream: typeof ControlStream) => isAdjudicationControlStream(stream));
+
             if (!adjControlStream){
                 console.error("Failed: cannot find adjudication control stream for occupancy.");
                 return;
@@ -190,7 +194,14 @@ export function EventPreview() {
                 return;
             }
 
-            dispatch(updateSelectedEventAdjudication(comboData));
+
+            eventPreview.eventData.adjudicatedData = comboData;
+
+
+            // Dispatch actions
+            dispatch(setSelectedEvent(eventPreview.eventData));
+            dispatch(setAdjudicatedEventId(eventPreview.eventData.id));
+            // dispatch(triggerEventTableRefresh());
 
             setAdjSnackMsg('Adjudication successful for Occupancy ID: ' + eventPreview.eventData.occupancyCount);
             setColorStatus('success')

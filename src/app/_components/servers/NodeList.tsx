@@ -13,13 +13,6 @@ import ListItemText from "@mui/material/ListItemText";
 import {INode, Node} from "@/lib/data/osh/Node";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import React from "react";
-import ConfigData, {
-    getConfigDataStreamID,
-    getConfigSystemID,
-    retrieveLatestConfigDataStream
-} from "@/lib/data/oscar/Config";
-import {selectCurrentUser, setCurrentUser} from "@/lib/state/OSCARClientSlice";
-import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 
 interface NodeListProps {
     modeChangeCallback?: (editMode: boolean, editNode: INode) => void

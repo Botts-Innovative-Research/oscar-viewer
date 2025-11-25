@@ -6,6 +6,7 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {setCurrentLane} from '@/lib/state/LaneViewSlice';
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/dist/client/components/navigation";
+import {setAlarmTrigger} from "@/lib/state/EventDataSlice";
 
 
 export interface LaneStatusProps {
@@ -57,6 +58,10 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
 
                 if (state == undefined)
                     return;
+
+                if (state === 'Alarm')
+                    // trigger alarm  for new event
+                    dispatch(setAlarmTrigger(true));
                 updateStatus(laneName, state);
             });
 
@@ -65,6 +70,10 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
 
                 if (state == undefined)
                     return;
+
+                if (state === 'Alarm')
+                    // trigger alarm  for new event
+                    dispatch(setAlarmTrigger(true));
                 updateStatus(laneName, state);
             });
 

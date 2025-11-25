@@ -27,19 +27,19 @@ export default function MiscTable({currentTime}: {currentTime: string}) {
 
       let speedDS = lme.datastreams.find(ds => isSpeedDataStream(ds));
 
-      let initialRes = await speedDS.searchObservations(new ObservationFilter({ resultTime: `${eventData?.startTime}/${eventData?.endTime}`}), 25000);
+      let initialRes = await speedDS.searchObservations(new ObservationFilter({ resultTime: `${eventData?.startTime}/${eventData?.endTime}`}), 10000);
 
-      while(initialRes.hasNext()){
+      // while(initialRes.hasNext()){
         let speedArr = await initialRes.nextPage();
         // make CSAPI request for speed in different output
         let speed = "N/A";
 
-        speed = speedArr.find((sobs: any) => sobs.resultTime === currentTime)?.result.speedKPH || 'N/A';
+        speed = speedArr[0].result.speedKPH ? speedArr[0].result.speedKPH : "N/A";
 
         setSpeedval(speed);
-        dispatch(setSpeed(speed));
+        // dispatch(setSpeed(speed));
         return speed;
-      }
+      // }
     }
   }, [eventData, currentTime]);
 

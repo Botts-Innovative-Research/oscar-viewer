@@ -257,18 +257,47 @@ export class Node implements INode {
             } else if (system.properties.properties.uid.includes("urn:ornl:oscar:system:")) {
                 this.oscarServiceSystem = system;
             } else {
-            // else if (system.properties.properties?.uid.includes("LANE UID SUFFIX")) {
-                const parts = system.properties.properties.uid.split(":");
-                const parentUidSuffix = parts[parts.length - 1];
+                const uid = system.properties.properties.uid;
+                const uidParts = uid.split(":");
 
                 for (let [, entry] of laneMap) {
-                    // This relation is enforced on backend's lane module, replace in future
-                    if (entry.laneSystem?.properties?.properties?.uid.endsWith(parentUidSuffix)) {
-                        entry.addSystem(system);
-                        break;
+                    const laneUid = entry.laneSystem?.properties?.properties?.uid;
+                    if (!laneUid) continue;
+
+                    const laneParts = laneUid.split(":");
+                    const laneIdx = laneParts.indexOf("lane");
+                    if (laneIdx < 0) continue;
+
+                    const laneSuffix = laneParts[laneIdx + 1];
+
+                    const isStandardSubsystem =
+                        uidParts[uidParts.length - 1] === laneSuffix;
+
+                    let isFFmpegSubsystem = false;
+
+                    const ffmpegIdx = uidParts.indexOf("ffmpeg");
+                    if (ffmpegIdx >= 0) {
+                        const subLaneIdx = uidParts.indexOf("lane", ffmpegIdx);
+                        const hasCorrectSuffix =
+                            uidParts[subLaneIdx + 1] === laneSuffix;
+
+                        const n = uidParts[subLaneIdx + 2];
+                        const isInteger = Number.isInteger(Number(n));
+
+                        isFFmpegSubsystem =
+                            subLaneIdx > ffmpegIdx &&
+                            hasCorrectSuffix &&
+                            isInteger;
+
+                        if (isFFmpegSubsystem) {
+                            entry.addSystem(system);
+                            break;
+                        }
+                    } else if(isStandardSubsystem) {
+                         entry.addSystem(system);
+                         break;
                     }
                 }
-                // }
             }
         }
 
@@ -397,8 +426,8 @@ export class Node implements INode {
 
         const allControlStreams = [];
         while (controlStreamCollection.hasNext()) {
-            const dataStreams = await controlStreamCollection.nextPage();
-            allControlStreams.push(...dataStreams);
+            const controlStreams = await controlStreamCollection.nextPage();
+            allControlStreams.push(...controlStreams);
         }
 
         for (const controlStream of allControlStreams) {
@@ -415,7 +444,7 @@ export class Node implements INode {
 
     async fetchNodeControlStreams(): Promise<any[]>{
         let availableControlStreams = [];
-        const controlStreamCollection = await this.getControlStreamApi().searchControlStreams(undefined, 100);
+        const controlStreamCollection = await this.getControlStreamApi().searchControlStreams(new ControlStreamFilter({ validTime: "latest" }), 100);
         while (controlStreamCollection.hasNext()) {
             let controlStreamResults = await controlStreamCollection.nextPage();
             availableControlStreams.push(...controlStreamResults);
