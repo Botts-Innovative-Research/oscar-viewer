@@ -137,10 +137,9 @@ export function EventPreview() {
     const submitAdjudication = async(currLaneEntry: any, comboData: any) => {
         try{
             let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == eventPreview.eventData.dataStreamId);
-
-            let streams = await currLaneEntry.parentNode.fetchNodeControlStreams();
-
+            let streams = currLaneEntry.controlStreams.length > 0 ? currLaneEntry.controlStreams : await currLaneEntry.parentNode.fetchNodeControlStreams();
             let adjControlStream = streams.find((stream: typeof ControlStream) => isAdjudicationControlStream(stream));
+
             if (!adjControlStream){
                 console.error("Failed: cannot find adjudication control stream for occupancy.");
                 return;
@@ -148,7 +147,6 @@ export function EventPreview() {
 
             // If no occupancy obs ID (from live data) we can fetch it before adjudicating based on the latest occupancyCount match
             if (comboData.occupancyObsId == null) {
-
                 let query = await ds.searchObservations(new ObservationFilter({
                     filter: `startTime=${eventPreview.eventData.startTime},endTime=${eventPreview.eventData.endTime}`
                 }), 10000);
@@ -166,8 +164,6 @@ export function EventPreview() {
                 eventPreview.eventData.rpmSystemId = ds.properties["system@id"];
                 comboData.occupancyObsId = occupancyObservation[0].id;
                 comboData.alarmingSystemUid = ds.properties["system@id"];
-
-
             }
 
             const response = await sendCommand(
@@ -190,6 +186,7 @@ export function EventPreview() {
                 return;
             }
 
+            // TODO Remove adjudicated from table
             dispatch(updateSelectedEventAdjudication(comboData));
 
             setAdjSnackMsg('Adjudication successful for Occupancy ID: ' + eventPreview.eventData.occupancyCount);

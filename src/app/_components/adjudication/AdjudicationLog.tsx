@@ -97,7 +97,7 @@ export default function AdjudicationLog(props: {
         const currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
 
-        let streams = await currLaneEntry.parentNode.fetchNodeControlStreams();
+        let streams = currLaneEntry.controlStreams.length > 0 ? currLaneEntry.controlStreams : await currLaneEntry.parentNode.fetchNodeControlStreams();
         if(!streams)
             return;
 
@@ -127,7 +127,6 @@ export default function AdjudicationLog(props: {
 
             let completedAdjData =  cmdRes.filter((obs: any) => obs.statusCode === "COMPLETED");
 
-            console.log("completedAdjData", completedAdjData)
             let adjDataArr = completedAdjData.map((obs: any) => {
 
                 if (!obs?.results)

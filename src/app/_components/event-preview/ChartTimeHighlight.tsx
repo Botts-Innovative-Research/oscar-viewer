@@ -292,8 +292,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             nSigmaChartViewRef.current.innerHTML = "";
             nSigmaChartViewRef.current.appendChild(nsigmaDiv);
 
-            console.log("layers.nsigma", layers.nsigma)
-
             const nsigmaChart = new ChartJsView({
                 container: nsigmaDiv.id,
                 layers: [layers.nsigma, layers.threshNsigma],

@@ -45,6 +45,7 @@ interface TableProps {
     viewLane?: boolean;
     viewAdjudicated?: boolean;
     laneMap: Map<string, LaneMapEntry>;
+    setEvents?: unknown;
 }
 
 
@@ -53,7 +54,7 @@ export default function EventTable({
                                        viewLane = false,
                                        viewAdjudicated = false,
                                        laneMap,
-                                       currentLane,
+                                       currentLane
                                    }: TableProps) {
 
     const nodes = useSelector(selectNodes);
@@ -103,8 +104,6 @@ export default function EventTable({
         }
         return datastreamIds;
     }, [stableLaneMap, currentLane, tableMode]);
-
-
 
     const filterRows = useCallback((rows: EventTableData[]): EventTableData[] => {
         switch (tableMode) {

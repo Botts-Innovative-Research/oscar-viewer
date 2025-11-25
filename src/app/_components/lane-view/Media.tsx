@@ -55,8 +55,6 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
 
             if (streamPath)
                 setVideoSource(streamPath);
-            console.log("response", responseJson)
-            console.log("stream path", streamPath)
         }
 
         const stopPreviousStream = async () => {

@@ -54,7 +54,6 @@ export const Slice = createSlice({
                     adjudicatedData: action.payload,
                 };
 
-
                 const eventInLogIdx = state.eventLog.findIndex((eventData) => eventData.id === state.selectedEvent.id);
 
                 if (eventInLogIdx !== -1) {
