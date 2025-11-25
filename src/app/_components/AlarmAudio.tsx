@@ -1,4 +1,4 @@
-import { selectEventTableDataArray } from "@/lib/state/EventDataSlice";
+import {selectTriggeredAlarm, setAlarmTrigger} from "@/lib/state/EventDataSlice";
 import { RootState } from "@/lib/state/Store";
 import { useEffect, useRef, useState} from "react";
 import {useDispatch, useSelector} from "react-redux";
@@ -26,8 +26,8 @@ export async function playAudio(audio: HTMLAudioElement) {
 export default function AlarmAudio() {
     const dispatch = useDispatch();
     const savedVolume = useSelector(selectAlarmAudioVolume);
-    const tableData = useSelector((state: RootState) => selectEventTableDataArray(state))
-    const isLoaded = useRef(false);
+
+    const triggerAlarm = useSelector((state: RootState) => selectTriggeredAlarm(state))
     const [volumeValue, setVolumeValue] = useState(savedVolume)
 
     useEffect(() => {
@@ -50,19 +50,13 @@ export default function AlarmAudio() {
     }
 
     useEffect(() => {
-        if(tableData != undefined && tableData.length > 0) {
-            isLoaded.current = true;
-        }
-        if(isLoaded.current) {
+        if (triggerAlarm) {
             const audio = getAlarmAudio();
-            if(tableData.length > 0 && tableData[tableData.length-1].status != 'None') {
-                audio.play();
-
-            }
-            audio.volume = volumeValue/100;
-
+            audio.volume = savedVolume / 100;
+            audio.play();
+            dispatch(setAlarmTrigger(false));
         }
-    }, [tableData, volumeValue]);
+    }, [triggerAlarm, volumeValue]);
 
     return (
         <Box sx={{width: 200, padding: 1}}>
