@@ -125,6 +125,7 @@ export default function AdjudicationLog(props: {
         while (commandStatuses.hasNext()) {
             let cmdRes = await commandStatuses.nextPage();
 
+            console.log('comd res', cmdRes);
             let adjDataArr = cmdRes.map((obs: any) => {
                 if (!obs?.results)
                     return null;

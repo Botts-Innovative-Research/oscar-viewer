@@ -36,7 +36,7 @@ import AdjudicationData, {
 } from "@/lib/data/oscar/adjudication/Adjudication";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
-import {setSelectedEvent, updateSelectedEventAdjudication} from "@/lib/state/EventDataSlice";
+import {setSelectedEvent, triggerEventTableRefresh, setAdjudicatedEventId} from "@/lib/state/EventDataSlice";
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 import { setEventData } from "@/lib/state/EventDetailsSlice";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -46,6 +46,7 @@ import {generateAdjudicationCommandJSON, sendCommand} from "@/lib/data/oscar/OSC
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import {isAdjudicationControlStream} from "@/lib/data/oscar/Utilities";
+import { EventTableData } from "@/lib/data/oscar/TableHelpers";
 
 export function EventPreview() {
     const dispatch = useAppDispatch();
@@ -76,6 +77,7 @@ export function EventPreview() {
     const [openSnack, setOpenSnack] = useState(false);
     const [colorStatus, setColorStatus] = useState('')
 
+    const [localSelectedEvent, setLocalSelectedEvent] = useState<EventTableData>(eventPreview.eventData);
 
     const handleAdjudicationCode = (value: AdjudicationCode) => {
         let newAdjData: IAdjudicationData = {
@@ -133,6 +135,9 @@ export function EventPreview() {
         await submitAdjudication(currLaneEntry, comboData)
     }
 
+    useEffect(() => {
+        setLocalSelectedEvent(eventPreview.eventData);
+    }, [eventPreview.eventData]);
 
     const submitAdjudication = async(currLaneEntry: any, comboData: any) => {
         try{
@@ -147,6 +152,7 @@ export function EventPreview() {
 
             // If no occupancy obs ID (from live data) we can fetch it before adjudicating based on the latest occupancyCount match
             if (comboData.occupancyObsId == null) {
+
                 let query = await ds.searchObservations(new ObservationFilter({
                     filter: `startTime=${eventPreview.eventData.startTime},endTime=${eventPreview.eventData.endTime}`
                 }), 10000);
@@ -164,6 +170,8 @@ export function EventPreview() {
                 eventPreview.eventData.rpmSystemId = ds.properties["system@id"];
                 comboData.occupancyObsId = occupancyObservation[0].id;
                 comboData.alarmingSystemUid = ds.properties["system@id"];
+
+
             }
 
             const response = await sendCommand(
@@ -186,8 +194,14 @@ export function EventPreview() {
                 return;
             }
 
-            // TODO Remove adjudicated from table
-            dispatch(updateSelectedEventAdjudication(comboData));
+
+            eventPreview.eventData.adjudicatedData = comboData;
+
+
+            // Dispatch actions
+            dispatch(setSelectedEvent(eventPreview.eventData));
+            dispatch(setAdjudicatedEventId(eventPreview.eventData.id));
+            // dispatch(triggerEventTableRefresh());
 
             setAdjSnackMsg('Adjudication successful for Occupancy ID: ' + eventPreview.eventData.occupancyCount);
             setColorStatus('success')

@@ -16,7 +16,7 @@ import {
     TextField
 
 } from "@mui/material";
-import React, {ChangeEvent, useContext, useRef, useState} from "react";
+import React, {ChangeEvent, useContext, useEffect, useRef, useState} from "react";
 import AdjudicationLog from "./AdjudicationLog"
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
@@ -34,9 +34,12 @@ import AdjudicationSelect from "./AdjudicationSelect";
 import IsotopeSelect from "./IsotopeSelect";
 import IconButton from "@mui/material/IconButton";
 import DeleteOutline from "@mui/icons-material/DeleteOutline"
+import {setAdjudicatedEventId, setSelectedEvent} from "@/lib/state/EventDataSlice";
+import {useAppDispatch} from "@/lib/state/Hooks";
 
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
+    const dispatch = useAppDispatch();
 
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
@@ -62,6 +65,64 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     function onFetchComplete() {
         setShouldFetchLogs(false);
     }
+
+    useEffect(() => {
+        const loadOccupancyObservation = async () => {
+            if (!props.event.occupancyObsId) {
+                try {
+                    const currentLane = props.event.laneId;
+                    const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+
+                    if (!currLaneEntry) {
+                        console.error("Lane entry not found:", currentLane);
+                        return;
+                    }
+
+                    const ds = currLaneEntry.datastreams.find(
+                        (ds: any) => ds.properties.id === props.event.dataStreamId
+                    );
+
+                    if (!ds) {
+                        console.error("Datastream not found:", props.event.dataStreamId);
+                        return;
+                    }
+
+                    const filter = new ObservationFilter({
+                        filter: `startTime=${props.event.startTime},endTime=${props.event.endTime}`
+                    });
+
+                    let query = await ds.searchObservations(filter, 10000);
+                    const occupancyObservation = await query.nextPage();
+
+                    if (!occupancyObservation || occupancyObservation.length === 0) {
+                        setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
+                        setColorStatus('error');
+                        setOpenSnack(true);
+                        return;
+                    }
+
+                    props.event.occupancyObsId = occupancyObservation[0].id;
+                    props.event.rpmSystemId = ds.properties["system@id"];
+
+                } catch (err) {
+                    console.error(err);
+                    setAdjSnackMsg('Error loading observation.');
+                    setColorStatus('error');
+                    setOpenSnack(true);
+                }
+            }
+        };
+
+        loadOccupancyObservation();
+    }, [
+        props.event.occupancyObsId,
+        props.event.laneId,
+        props.event.startTime,
+        props.event.endTime,
+        props.event.dataStreamId,
+        laneMapRef
+    ]);
+
 
     /**handle the file uploaded**/
     const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -158,23 +219,36 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == props.event.dataStreamId);
 
-            let query = await ds.searchObservations(new ObservationFilter({resultTime: `${props.event.startTime}/${props.event.endTime}`}), 1)
-
-            const occupancyObservation = await query.nextPage();
-            if (!occupancyObservation) {
-                setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
-                setColorStatus('error')
-                setOpenSnack(true);
-                return;
-            }
-
-            let streams = await currLaneEntry.parentNode.fetchNodeControlStreams();
-
+            let streams = currLaneEntry.controlStreams.length > 0 ? currLaneEntry.controlStreams : await currLaneEntry.parentNode.fetchNodeControlStreams();
             let adjControlStream = streams.find((stream: typeof ControlStream) => isAdjudicationControlStream(stream));
+
             if (!adjControlStream){
                 console.error("Failed: cannot find adjudication control stream for occupancy.");
                 return;
             }
+
+            if (tempAdjData.occupancyObsId === null) {
+                let query = await ds.searchObservations(new ObservationFilter({
+                    filter: `startTime=${props.event.startTime},endTime=${props.event.endTime}`
+                }), 10000);
+
+                const occupancyObservation = await query.nextPage();
+
+                if (!occupancyObservation) {
+                    setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
+                    setColorStatus('error')
+                    setOpenSnack(true);
+                    return;
+                }
+
+                props.event.occupancyObsId = occupancyObservation[0].id;
+                props.event.rpmSystemId = ds.properties["system@id"];
+                tempAdjData.occupancyObsId = occupancyObservation[0].id;
+                tempAdjData.alarmingSystemUid = ds.properties["system@id"];
+
+            }
+
+
 
             const response = await sendCommand(
                 currLaneEntry.parentNode,
@@ -196,8 +270,13 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 return;
             }
 
+            props.event.adjudicatedData = tempAdjData;
+
             setAdjSnackMsg('Adjudication successful for Occupancy ID: ' + props.event.occupancyCount);
             setColorStatus('success')
+
+            dispatch(setSelectedEvent(props.event));
+            dispatch(setAdjudicatedEventId(props.event.id));
 
         }catch(error){
             setAdjSnackMsg('Adjudication failed to submit.')

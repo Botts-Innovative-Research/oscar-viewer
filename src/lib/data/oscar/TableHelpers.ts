@@ -47,7 +47,7 @@ export class EventTableData implements IEventTableData {
         } else {
             this.status = "None"
         }
-        this.adjudicatedData = adjudicatedData ? adjudicatedData : new AdjudicationData("N/A", "N/A", "N/A", "N/A");
+        this.adjudicatedData = adjudicatedData ? adjudicatedData : null;
         this.occupancyObsId = occupancyObsId;
         this.foiId = foiId;
         this.videoPaths = msgValue.videoPaths;
