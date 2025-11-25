@@ -73,8 +73,6 @@ export default function NationalViewPage() {
 
                 let respJson = await response.json();
 
-                console.log("respJson", respJson);
-
                 if (selectedTimeRange == "custom") {
                     setSnackMessage("Refreshing the custom time range stats");
                     setSeverity("success");
