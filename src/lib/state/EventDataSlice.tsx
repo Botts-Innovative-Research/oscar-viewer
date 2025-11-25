@@ -9,14 +9,12 @@ enableMapSet();
 
 export interface IEventDataState {
     selectedEvent: EventTableData | null,
-    refreshToken: number,
     adjudicatedEventId: number | null,
     triggerAlarm: boolean
 }
 
 const initialState: IEventDataState = {
     selectedEvent: null,
-    refreshToken: 0,
     adjudicatedEventId: null,
     triggerAlarm: false
 }
@@ -27,9 +25,6 @@ export const Slice = createSlice({
     reducers: {
         setSelectedEvent: (state, action: PayloadAction<EventTableData>) => {
             state.selectedEvent = action.payload;
-        },
-        triggerEventTableRefresh(state) {
-            state.refreshToken = Date.now();
         },
         setAdjudicatedEventId(state, action: PayloadAction<number | null>) {
             state.adjudicatedEventId = action.payload;
@@ -42,14 +37,12 @@ export const Slice = createSlice({
 
 export const {
     setSelectedEvent,
-    triggerEventTableRefresh,
     setAdjudicatedEventId,
     setAlarmTrigger
 } = Slice.actions
 
 
 export const selectTriggeredAlarm = (state: RootState) => state.eventLogSlice.triggerAlarm;
-export const selectEventTableRefreshToken = (state: RootState) => state.eventLogSlice.refreshToken;
 export const selectSelectedEvent = (state: RootState) => state.eventLogSlice.selectedEvent;
 export const selectAdjudicatedEventId = (state: RootState) => state.eventLogSlice.adjudicatedEventId;
 export default Slice.reducer

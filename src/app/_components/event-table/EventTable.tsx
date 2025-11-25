@@ -25,7 +25,7 @@ import {
 import CustomToolbar from "@/app/_components/CustomToolbar";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import { useAppDispatch } from "@/lib/state/Hooks";
-import {selectAdjudicatedEventId, selectEventTableRefreshToken, selectSelectedEvent, setAdjudicatedEventId, setSelectedEvent} from "@/lib/state/EventDataSlice";
+import {selectAdjudicatedEventId, selectSelectedEvent, setAdjudicatedEventId, setSelectedEvent} from "@/lib/state/EventDataSlice";
 import { useRouter } from "next/dist/client/components/navigation";
 import { getObservations } from "@/app/utils/ChartUtils";
 import { isOccupancyDataStream, isThresholdDataStream } from "@/lib/data/oscar/Utilities";
@@ -68,7 +68,6 @@ export default function EventTable({
     const [totalCount, setTotalCount] = useState<Map<string, number>>(new Map());
     const [currentPage, setCurrentPage] = useState(0);
 
-    const refreshToken = useSelector(selectEventTableRefreshToken);
     const adjudicatedEventId = useSelector(selectAdjudicatedEventId);
 
     const selectedEvent = useSelector(selectSelectedEvent);
@@ -145,6 +144,17 @@ export default function EventTable({
         }
     }, [adjudicatedEventId, tableMode, selectedEvent]);
 
+    const totalObservations = useMemo(() => {
+        let sum = 0;
+        totalCount.forEach(count => sum += count);
+        return sum;
+    }, [totalCount]);
+
+    const totalPages = Math.ceil(totalObservations / pageSize);
+
+    const [pageLoadedTime, setPageLoadedTime] = useState(() => new Date().toISOString());
+
+
     useEffect(() => {
         const fetchAllCounts = async () => {
             if (nodes.size === 0 || stableLaneMap.size === 0)
@@ -171,27 +181,19 @@ export default function EventTable({
         fetchAllCounts();
     }, [nodes, stableLaneMap]);
 
-    const totalObservations = useMemo(() => {
-        let sum = 0;
-        totalCount.forEach(count => sum += count);
-        return sum;
-    }, [totalCount]);
-
-    const totalPages = Math.ceil(totalObservations / pageSize);
-
-    const [pageLoadedTime, setPageLoadedTime] = useState(() => new Date().toISOString());
-
-    useEffect(() => {
-        if (currentPage === 0)
-            setPageLoadedTime(new Date().toISOString());
-    }, [currentPage]);
-
     const fetchPage = useCallback(async (userRequestedPage: number): Promise<boolean> => {
         if (stableLaneMap.size === 0 || nodes.size === 0 || totalPages === 0)
             return;
 
         setLoading(true);
 
+        console.log("user requested page", userRequestedPage)
+
+        const timestampToUse = userRequestedPage === 0 ? new Date().toISOString() : pageLoadedTime;
+
+        if (userRequestedPage === 0) {
+            setPageLoadedTime(timestampToUse);
+        }
         try {
             const apiPage = totalPages - 1 - userRequestedPage;
 
@@ -204,7 +206,7 @@ export default function EventTable({
 
                 const observationFilter = new ObservationFilter({
                     dataStream: datastreamIds,
-                    resultTime: `../${pageLoadedTime}`,
+                    resultTime: `../${timestampToUse}`,
                     filter: tableMode == "alarmtable" ? "gammaAlarm=true,neutronAlarm=true" : "",
                 });
 
@@ -245,8 +247,10 @@ export default function EventTable({
 
 
     useEffect(() => {
-        if (totalPages > 0)
+        if (totalPages > 0) {
             fetchPage(paginationModel.page)
+        }
+
     }, [paginationModel.page, paginationModel.pageSize, stableLaneMap, nodes, totalPages]);
 
     function findLaneByDataStreamId(laneMap: Map<string, LaneMapEntry>, datastreamId: string): LaneMapEntry | null {
@@ -317,6 +321,10 @@ export default function EventTable({
             return;
         }
 
+        // dont listen for new events unless on page 0
+        if (currentPage !== 0)
+            return;
+
         const connectedSources: typeof ConSysApi[] = [];
 
         for (const entry of stableLaneMap.values()) {
@@ -336,9 +344,6 @@ export default function EventTable({
             }
 
             const handleMessage = (msg: any) => {
-                if (currentPage !== 0)
-                    return;
-
                 try {
                     const obsData = msg.values?.[0]?.data || msg;
                     const event = eventFromObservation(obsData, entry, true);
@@ -373,7 +378,16 @@ export default function EventTable({
                 console.error("Error connecting occSource:", err);
             }
         }
-    }, [stableLaneMap, dispatch, filterRows]);
+
+        return () => {
+            if (currentPage !== 0) {
+                connectedSources.forEach(async(source: any) => {
+                    await source.disconnect();
+                })
+            }
+
+        }
+    }, [stableLaneMap, dispatch, filterRows, currentPage]);
 
     useEffect(() => {
         if (!selectedRowId) {
