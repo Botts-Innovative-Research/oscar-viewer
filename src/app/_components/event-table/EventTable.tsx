@@ -36,7 +36,6 @@ import { selectNodes } from "@/lib/state/OSHSlice";
 import { EventType } from "osh-js/source/core/event/EventType";
 import {INode} from "@/lib/data/osh/Node";
 import Observations from "osh-js/source/core/consysapi/observation/Observations";
-import {setAlarmTrigger} from "@/lib/state/EventDataSlice";
 
 interface TableProps {
     tableMode: "eventlog" | "alarmtable" | "lanelog";
@@ -351,8 +350,6 @@ export default function EventTable({
                     const filtered = filterRows([event]);
                     if (filtered.length === 0) return;
 
-                    // trigger alarm  for new event
-                    dispatch(setAlarmTrigger(true));
 
                     setRowCount(prev => prev + 1);
 
