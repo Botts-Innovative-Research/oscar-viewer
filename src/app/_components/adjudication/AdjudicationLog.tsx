@@ -119,16 +119,13 @@ export default function AdjudicationLog(props: {
 
 
     async function fetchObservations(controlStream: typeof ControlStream) {
-
-        let commandStatuses = await controlStream.searchStatus(new ControlStreamFilter({}), 100);
+        // TODO: Paginate this
+        let commandStatuses = await controlStream.searchStatus(new ControlStreamFilter({ statusCode: "COMPLETED" }), 100);
 
         while (commandStatuses.hasNext()) {
             let cmdRes = await commandStatuses.nextPage();
 
-            let completedAdjData =  cmdRes.filter((obs: any) => obs.statusCode === "COMPLETED");
-
-            let adjDataArr = completedAdjData.map((obs: any) => {
-
+            let adjDataArr = cmdRes.map((obs: any) => {
                 if (!obs?.results)
                     return null;
 
