@@ -114,7 +114,6 @@ export default function EventTable({
     const filterRows = useCallback((rows: EventTableData[]): EventTableData[] => {
         switch (tableMode) {
             case 'alarmtable':
-                console.log("rows", rows);
                 // Only show alarming events that are not adjudicated
                 return rows.filter(row => row.status !== 'None' && row.adjudicatedIds.length == 0);
             case 'lanelog':
@@ -180,7 +179,12 @@ export default function EventTable({
 
     const totalPages = Math.ceil(totalObservations / pageSize);
 
-    const [pageLoadedTime] = useState(() => new Date().toISOString());
+    const [pageLoadedTime, setPageLoadedTime] = useState(() => new Date().toISOString());
+
+    useEffect(() => {
+        if (currentPage === 0)
+            setPageLoadedTime(new Date().toISOString());
+    }, [currentPage]);
 
     const fetchPage = useCallback(async (userRequestedPage: number): Promise<boolean> => {
         if (stableLaneMap.size === 0 || nodes.size === 0 || totalPages === 0)
@@ -332,6 +336,9 @@ export default function EventTable({
             }
 
             const handleMessage = (msg: any) => {
+                if (currentPage !== 0)
+                    return;
+
                 try {
                     const obsData = msg.values?.[0]?.data || msg;
                     const event = eventFromObservation(obsData, entry, true);
@@ -345,22 +352,12 @@ export default function EventTable({
 
                     setRowCount(prev => prev + 1);
 
-                    if (currentPage === 0) {
-                        // setFilteredTableData(prev => {
-                        //     const exists = prev.some(row => row.id === event.id);
-                        //     if (exists) return prev;
-                        //     return [event, ...prev].slice(0, pageSize);
-                        // });
-                        // setRowCount(prev => prev + 1);
-                        if (currentPage === 0) {
-                            setFilteredTableData(prev => {
-                                const exists = prev.some(row => row.id === event.id);
-                                if (exists) return prev;
-                                return [event, ...prev].slice(0, pageSize);
-                            });
-                        }
+                    setFilteredTableData(prev => {
+                        const exists = prev.some(row => row.id === event.id);
+                        if (exists) return prev;
+                        return [event, ...prev].slice(0, pageSize);
+                    });
 
-                    }
                 } catch (err) {
                     console.error("Error creating event from observation:", err);
                 }
