@@ -25,7 +25,7 @@ import {
 import CustomToolbar from "@/app/_components/CustomToolbar";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import { useAppDispatch } from "@/lib/state/Hooks";
-import {setSelectedEvent} from "@/lib/state/EventDataSlice";
+import {selectAdjudicatedEventId, selectEventTableRefreshToken, selectSelectedEvent, setAdjudicatedEventId, setSelectedEvent} from "@/lib/state/EventDataSlice";
 import { useRouter } from "next/dist/client/components/navigation";
 import { getObservations } from "@/app/utils/ChartUtils";
 import { isOccupancyDataStream, isThresholdDataStream } from "@/lib/data/oscar/Utilities";
@@ -68,6 +68,12 @@ export default function EventTable({
     const [totalCount, setTotalCount] = useState<Map<string, number>>(new Map());
     const [currentPage, setCurrentPage] = useState(0);
 
+    const refreshToken = useSelector(selectEventTableRefreshToken);
+    const adjudicatedEventId = useSelector(selectAdjudicatedEventId);
+
+    const selectedEvent = useSelector(selectSelectedEvent);
+
+
     const dispatch = useAppDispatch();
     const router = useRouter();
 
@@ -108,8 +114,9 @@ export default function EventTable({
     const filterRows = useCallback((rows: EventTableData[]): EventTableData[] => {
         switch (tableMode) {
             case 'alarmtable':
+                console.log("rows", rows);
                 // Only show alarming events that are not adjudicated
-                return rows.filter(row => row.status !== 'None' && row.adjudicatedData?.adjudicationCode?.code === 0);
+                return rows.filter(row => row.status !== 'None' && row.adjudicatedIds.length == 0);
             case 'lanelog':
                 // Only show events for the current lane
                 return rows.filter(row => row.laneId === currentLane);
@@ -119,6 +126,25 @@ export default function EventTable({
                 return rows;
         }
     }, [tableMode, currentLane]);
+
+
+    useEffect(() => {
+        if (adjudicatedEventId && tableMode === 'alarmtable') {
+            // Remove the adjudicated event from the table immediately
+            console.log('selectedEvent', selectedEvent)
+            setFilteredTableData(prev => prev.filter(row => row.id !== adjudicatedEventId));
+
+            // Decrement row count
+            // setRowCount(prev => Math.max(0, prev - 1));
+
+            // Clear selection
+            // setSelectionModel([]);
+            // dispatch(setSelectedRowId(null));
+            //
+            // // Reset the adjudicated event ID
+            dispatch(setAdjudicatedEventId(null));
+        }
+    }, [adjudicatedEventId, tableMode, selectedEvent]);
 
     useEffect(() => {
         const fetchAllCounts = async () => {
@@ -205,13 +231,14 @@ export default function EventTable({
             setLoading(false);
         }
 
-    }, [nodes, stableLaneMap, totalPages]);
+    }, [nodes, stableLaneMap, totalPages, selectedEvent]);
 
     function deduplicateById(arr: EventTableData[]): EventTableData[] {
         const map = new Map();
         for (const row of arr) map.set(row.id, row);
         return [...map.values()];
     }
+
 
     useEffect(() => {
         if (totalPages > 0)
@@ -316,13 +343,23 @@ export default function EventTable({
                     const filtered = filterRows([event]);
                     if (filtered.length === 0) return;
 
+                    setRowCount(prev => prev + 1);
+
                     if (currentPage === 0) {
-                        setFilteredTableData(prev => {
-                            const exists = prev.some(row => row.id === event.id);
-                            if (exists) return prev;
-                            return [event, ...prev].slice(0, pageSize);
-                        });
-                        setRowCount(prev => prev + 1);
+                        // setFilteredTableData(prev => {
+                        //     const exists = prev.some(row => row.id === event.id);
+                        //     if (exists) return prev;
+                        //     return [event, ...prev].slice(0, pageSize);
+                        // });
+                        // setRowCount(prev => prev + 1);
+                        if (currentPage === 0) {
+                            setFilteredTableData(prev => {
+                                const exists = prev.some(row => row.id === event.id);
+                                if (exists) return prev;
+                                return [event, ...prev].slice(0, pageSize);
+                            });
+                        }
+
                     }
                 } catch (err) {
                     console.error("Error creating event from observation:", err);
@@ -345,6 +382,7 @@ export default function EventTable({
             setSelectionModel([]);
         }
     }, [selectedRowId]);
+
 
     const locale = navigator.language || 'en-US';
 
@@ -514,7 +552,13 @@ export default function EventTable({
                 initialState={{
                     sorting: {
                         sortModel: [{field: 'startTime', sort: 'desc'}]
-                    }
+                    },
+                    columns: {
+                        // Manage visible columns in table based on component parameters
+                        columnVisibilityModel: {
+                            adjudicatedIds: viewAdjudicated,
+                        },
+                    },
                 }}
                 autosizeOptions={{
                     expand: true,

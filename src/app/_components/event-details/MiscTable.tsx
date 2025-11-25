@@ -37,7 +37,7 @@ export default function MiscTable({currentTime}: {currentTime: string}) {
         speed = speedArr[0].result.speedKPH ? speedArr[0].result.speedKPH : "N/A";
 
         setSpeedval(speed);
-        dispatch(setSpeed(speed));
+        // dispatch(setSpeed(speed));
         return speed;
       // }
     }
