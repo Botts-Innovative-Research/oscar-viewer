@@ -444,7 +444,7 @@ export class Node implements INode {
 
     async fetchNodeControlStreams(): Promise<any[]>{
         let availableControlStreams = [];
-        const controlStreamCollection = await this.getControlStreamApi().searchControlStreams(undefined, 100);
+        const controlStreamCollection = await this.getControlStreamApi().searchControlStreams(new ControlStreamFilter({ validTime: "latest" }), 100);
         while (controlStreamCollection.hasNext()) {
             let controlStreamResults = await controlStreamCollection.nextPage();
             availableControlStreams.push(...controlStreamResults);

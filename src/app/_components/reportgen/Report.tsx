@@ -21,6 +21,7 @@ import {RootState} from "@/lib/state/Store";
 import {selectNodes} from "@/lib/state/OSHSlice";
 import {isReportControlStream} from "@/lib/data/oscar/Utilities";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
+import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
 
 
 export default function ReportGeneratorView(){
@@ -61,7 +62,18 @@ export default function ReportGeneratorView(){
             if(!selectedNode) return;
 
             setIsGenerating(true);
-            let streams = await selectedNode.fetchNodeControlStreams();
+
+            let streams: typeof ControlStream[];
+            if (selectedNode.oscarServiceSystem != null) {
+                const query = await selectedNode.oscarServiceSystem.searchControlStreams(new ControlStreamFilter({ validTime: "latest" }), 100);
+
+                const results = await query.nextPage();
+                if (results || results.length > 0) {
+                    streams = results;
+                }
+            } else {
+                streams = await selectedNode.fetchNodeControlStreams();
+            }
 
             let controlStream = streams.find((stream: typeof ControlStream) => isReportControlStream(stream))
             if (!controlStream){
