@@ -317,75 +317,69 @@ export default function EventTable({
     }
 
     useEffect(() => {
-        if (stableLaneMap.size === 0) {
-            return;
-        }
-
-        // dont listen for new events unless on page 0
-        if (currentPage !== 0)
-            return;
 
         const connectedSources: typeof ConSysApi[] = [];
 
-        for (const entry of stableLaneMap.values()) {
-            const occStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
+        if (stableLaneMap.size > 0 && currentPage === 0) {
+            for (const entry of stableLaneMap.values()) {
+                const occStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
 
-            if (!occStream) {
-                continue;
-            }
-
-            const occSource = entry.datasourcesRealtime?.find((ds: any) => {
-                const parts = ds.properties.resource?.split("/");
-                return parts && parts[2] === occStream.properties.id;
-            });
-
-            if (!occSource) {
-                continue;
-            }
-
-            const handleMessage = (msg: any) => {
-                try {
-                    const obsData = msg.values?.[0]?.data || msg;
-                    const event = eventFromObservation(obsData, entry, true);
-                    const dsObsPath = occSource.properties.resource;
-                    if (dsObsPath) {
-                        event.setDataStreamId(dsObsPath.split("/")[2]);
-                    }
-
-                    const filtered = filterRows([event]);
-                    if (filtered.length === 0) return;
-
-
-                    setRowCount(prev => prev + 1);
-
-                    setFilteredTableData(prev => {
-                        const exists = prev.some(row => row.id === event.id);
-                        if (exists) return prev;
-                        return [event, ...prev].slice(0, pageSize);
-                    });
-
-                } catch (err) {
-                    console.error("Error creating event from observation:", err);
+                if (!occStream) {
+                    continue;
                 }
-            };
 
-            occSource.subscribe(handleMessage, [EventType.DATA]);
+                const occSource = entry.datasourcesRealtime?.find((ds: any) => {
+                    const parts = ds.properties.resource?.split("/");
+                    return parts && parts[2] === occStream.properties.id;
+                });
 
-            try {
-                occSource.connect();
-                connectedSources.push(occSource);
-            } catch (err) {
-                console.error("Error connecting occSource:", err);
+                if (!occSource) {
+                    continue;
+                }
+
+                const handleMessage = (msg: any) => {
+                    try {
+                        const obsData = msg.values?.[0]?.data || msg;
+                        const event = eventFromObservation(obsData, entry, true);
+                        const dsObsPath = occSource.properties.resource;
+                        if (dsObsPath) {
+                            event.setDataStreamId(dsObsPath.split("/")[2]);
+                        }
+
+                        const filtered = filterRows([event]);
+                        if (filtered.length === 0) return;
+
+
+                        setRowCount(prev => prev + 1);
+
+                        setFilteredTableData(prev => {
+                            const exists = prev.some(row => row.id === event.id);
+                            if (exists) return prev;
+                            return [event, ...prev].slice(0, pageSize);
+                        });
+
+                    } catch (err) {
+                        console.error("Error creating event from observation:", err);
+                    }
+                };
+
+                occSource.subscribe(handleMessage, [EventType.DATA]);
+
+                try {
+                    occSource.connect();
+                    connectedSources.push(occSource);
+                } catch (err) {
+                    console.error("Error connecting occSource:", err);
+                }
             }
+
         }
 
         return () => {
-            if (currentPage !== 0) {
-                connectedSources.forEach(async(source: any) => {
-                    await source.disconnect();
-                })
-            }
-
+            // unsubscribe to connected sources so we arent listening to them when we move past page 0
+            connectedSources.forEach(async(source: any) => {
+                await source.disconnect();
+            })
         }
     }, [stableLaneMap, dispatch, filterRows, currentPage]);
 
