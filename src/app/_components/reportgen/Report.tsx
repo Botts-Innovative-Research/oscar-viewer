@@ -81,11 +81,20 @@ export default function ReportGeneratorView(){
                 return;
             }
 
-            let response = await sendCommand(
-                selectedNode,
-                controlStream.properties.id,
-                generateReportCommandJSON(startTime, endTime, selectedReportType, selectedLaneUID.toString(), selectedEvent)
-            );
+            let response;
+
+            for (let i = 0; i < 5; i++) {
+                response = await sendCommand(
+                    selectedNode,
+                    controlStream.properties.id,
+                    generateReportCommandJSON(startTime, endTime, selectedReportType, selectedLaneUID.toString(), selectedEvent)
+                );
+
+                if (response.ok)
+                    break;
+
+                console.warn("Command to generate report has failed. Retrying... Attempt #", i);
+            }
 
             if (!response.ok) {
                 setSnackMessage("Report request failed to submit.");
