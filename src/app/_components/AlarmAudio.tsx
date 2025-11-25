@@ -1,53 +1,51 @@
-import {selectTriggeredAlarm, setAlarmTrigger} from "@/lib/state/EventDataSlice";
+import { selectTriggeredAlarm, setAlarmTrigger } from "@/lib/state/EventDataSlice";
 import { RootState } from "@/lib/state/Store";
-import { useEffect, useRef, useState} from "react";
-import {useDispatch, useSelector} from "react-redux";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import {Slider, Stack} from "@mui/material";
-import {VolumeDown, VolumeUp} from "@mui/icons-material";
-import * as React from "react";
-import {selectAlarmAudioVolume, setAlarmAudioVolume} from "@/lib/state/OSCARClientSlice";
+import {Alert} from "@mui/material";
+import { selectAlarmAudioVolume } from "@/lib/state/OSCARClientSlice";
 
-
-let alarmAudio: HTMLAudioElement = null;
+let alarmAudio: HTMLAudioElement | null = null;
 
 export function getAlarmAudio() {
-    if(alarmAudio === null) {
-        alarmAudio = new Audio('/alarm_sound.wav');
+    if (!alarmAudio) {
+        alarmAudio = new Audio("/alarm_sound.wav");
+        alarmAudio.preload = "auto";  // preload for faster start
     }
     return alarmAudio;
-}
-
-export async function playAudio(audio: HTMLAudioElement) {
-    audio.play();
 }
 
 export default function AlarmAudio() {
     const dispatch = useDispatch();
     const savedVolume = useSelector(selectAlarmAudioVolume);
+    const triggerAlarm = useSelector((state: RootState) => selectTriggeredAlarm(state));
+    const [soundLocked, setSoundLocked] = useState(true);
 
-    const triggerAlarm = useSelector((state: RootState) => selectTriggeredAlarm(state))
-    const [volumeValue, setVolumeValue] = useState(savedVolume)
 
     useEffect(() => {
-        document.body.addEventListener("click", function() {
-            if(alarmAudio == undefined || alarmAudio == null) {
-                console.info("Alarm audio has been loaded.");
-                console.info(getAlarmAudio());
+        const unlockAudio = () => {
+            const audio = getAlarmAudio();
+            audio.volume = savedVolume / 100;
 
-                const audio = getAlarmAudio();
-                audio.volume = savedVolume/100;
-            }
-        });
+            // attempt to play/pause immediately to unlock browser autoplay
+            audio.play()
+                .then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    setSoundLocked(false);
+
+                })
+                .finally(() => {
+                    document.removeEventListener("click", unlockAudio);
+                });
+        };
+
+        document.addEventListener("click", unlockAudio);
+        return () => document.removeEventListener("click", unlockAudio);
     }, [savedVolume]);
 
 
-    const handleVolumeChange =(event: Event, newValue: number| number[]) =>{
-        const volume = newValue as number;
-        setVolumeValue(volume);
-        dispatch(setAlarmAudioVolume(volume));
-    }
 
     useEffect(() => {
         if (triggerAlarm) {
@@ -56,25 +54,17 @@ export default function AlarmAudio() {
             audio.play();
             dispatch(setAlarmTrigger(false));
         }
-    }, [triggerAlarm, volumeValue]);
+    }, [triggerAlarm, savedVolume, soundLocked]);
 
     return (
-        <Box sx={{width: 200, padding: 1}}>
-            <Typography variant="body2" gutterBottom>
-                Alarm Volume
-            </Typography>
+        <Box sx={{ width: 200, padding: 1 }}>
 
-            <Stack spacing={2} direction="row" sx={{alignItems: 'center', mb: 1}}>
-                <VolumeDown/>
-                <Slider
-                    aria-label="Volume"
-                    value={volumeValue}
-                    onChange={handleVolumeChange}
-                    valueLabelDisplay="auto"
-                    min={0}
-                    max={100}/>
-                <VolumeUp/>
-            </Stack>
+            {soundLocked && (
+                <Alert severity="info" sx={{ mb: 2, fontSize: "0.8rem" }}>
+                    Click anywhere to enable alarm sound
+                </Alert>
+            )}
+
         </Box>
     );
 }
