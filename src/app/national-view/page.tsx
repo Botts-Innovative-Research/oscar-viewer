@@ -14,6 +14,7 @@ import {NATIONAL_DEF} from "@/lib/data/Constants";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import {isNationalControlStream} from "@/lib/data/oscar/Utilities";
 import {generateNationalCommandJSON, sendCommand} from "@/lib/data/oscar/OSCARCommands";
+import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
 
 
 export default function NationalViewPage() {
@@ -55,7 +56,17 @@ export default function NationalViewPage() {
             setIsRefreshing(true);
 
             for (const node of nodes) {
-                let streams = await node.fetchNodeControlStreams();
+                let streams: typeof ControlStream[];
+                if (node.oscarServiceSystem != null) {
+                    const query = await node.oscarServiceSystem.searchControlStreams(new ControlStreamFilter({ validTime: "latest" }), 100);
+
+                    const results = await query.nextPage();
+                    if (results || results.length > 0) {
+                        streams = results;
+                    }
+                } else {
+                    streams = await node.fetchNodeControlStreams();
+                }
                 let controlStream = streams.find((stream: typeof ControlStream) => isNationalControlStream(stream));
 
                 if (!controlStream){
