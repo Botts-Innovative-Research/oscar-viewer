@@ -91,9 +91,9 @@ export default function ReportGeneratorView(){
                     generateReportCommandJSON(startTime, endTime, selectedReportType, selectedLaneUID.toString(), selectedEvent)
                 );
 
-                if (response.ok) {
+                if (response.status == 200) {
                     const json = await response.json();
-                    if (json.statusCode == "ACCEPTED") {
+                    if (json.statusCode === "ACCEPTED") {
                         reportResult = json;
                         break;
                     }
