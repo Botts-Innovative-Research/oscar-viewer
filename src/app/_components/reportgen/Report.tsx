@@ -82,6 +82,7 @@ export default function ReportGeneratorView(){
             }
 
             let response;
+            let reportResult;
 
             for (let i = 0; i < 5; i++) {
                 response = await sendCommand(
@@ -90,8 +91,13 @@ export default function ReportGeneratorView(){
                     generateReportCommandJSON(startTime, endTime, selectedReportType, selectedLaneUID.toString(), selectedEvent)
                 );
 
-                if (response.ok)
-                    break;
+                if (response.ok) {
+                    const json = await response.json();
+                    if (json.statusCode == "ACCEPTED") {
+                        reportResult = json;
+                        break;
+                    }
+                }
 
                 console.warn("Command to generate report has failed. Retrying... Attempt #", i);
             }
@@ -102,7 +108,8 @@ export default function ReportGeneratorView(){
                 return;
             }
 
-            let reportResult = await response.json();
+            if (reportResult == undefined)
+                reportResult = await response.json();
             console.log("report result", reportResult.results[0].data.reportPath);
             setGeneratedURL(selectedNode.isSecure ? `https://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${reportResult.results[0].data.reportPath}` : `http://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${reportResult.results[0].data.reportPath}`);
 
