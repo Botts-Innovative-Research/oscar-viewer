@@ -36,6 +36,7 @@ export default function NationalViewPage() {
 
     const timeRangeCache = useRef<Map<string, INationalTableData[]>>(new Map());
 
+
     const handleRefreshStats = async() => {
 
         const tempRangeData: Map<string, INationalTableData[]> = new Map();
@@ -165,10 +166,54 @@ export default function NationalViewPage() {
     }
 
     useEffect(() => {
-        if (nodes && nodes.length > 0){
-            handleRefreshStats();
+        if (!nodes || nodes.length === 0) return;
+
+        const loadInitialStats = async () => {
+            const tempRangeData: Map<string, INationalTableData[]> = new Map();
+
+            const ranges = ["allTime", "daily", "monthly", "weekly", "custom"];
+
+            ranges.forEach(range => {
+                tempRangeData.set(range, []);
+            });
+
+            for (const node of nodes) {
+                const allRangeCounts = await fetchAllTimeRangesForNode(node);
+
+                ranges.forEach((range: string) => {
+                    const list = tempRangeData.get(range);
+                    list.push ({
+                        id: idVal.current++,
+                        site: node.name,
+                        numGammaAlarms: allRangeCounts[range].numGammaAlarms,
+                        numNeutronAlarms: allRangeCounts[range].numNeutronAlarms,
+                        numGammaNeutronAlarms: allRangeCounts[range].numGammaNeutronAlarms,
+                        numOccupancies: allRangeCounts[range].numOccupancies,
+                        numTampers: allRangeCounts[range].numTampers,
+                        numGammaFaults: allRangeCounts[range].numGammaFaults,
+                        numNeutronFaults: allRangeCounts[range].numNeutronFaults,
+                        numFaults: allRangeCounts[range].numFaults,
+                    });
+                })
+            }
+
+            for (const [range, counts] of tempRangeData.entries()) {
+                timeRangeCache.current.set(range, counts);
+            }
+
+            setSelectedTimeRangeCounts(tempRangeData.get(selectedTimeRange));
+
         }
+
+        loadInitialStats();
     }, [nodes]);
+
+
+    // useEffect(() => {
+    //     if (nodes && nodes.length > 0){
+    //         handleRefreshStats();
+    //     }
+    // }, [nodes]);
 
     useEffect(() => {
         const cached = timeRangeCache.current.get(selectedTimeRange);
