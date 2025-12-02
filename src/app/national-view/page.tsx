@@ -313,9 +313,18 @@ export default function NationalViewPage() {
                 onClose={handleCloseSnack}
                 anchorOrigin={{vertical: 'top', horizontal: 'center'}}
             >
-                <Alert severity={severity} onClose={handleCloseSnack}>
-                    {snackMessage}
-                </Alert>
+                <Snackbar
+                    anchorOrigin={{ vertical:'top', horizontal:'center' }}
+                    open={openSnack}
+                    autoHideDuration={1500}
+                    onClose={handleCloseSnack}
+                    message={snackMessage}
+                    sx={{
+                        '& .MuiSnackbarContent-root': {
+                            backgroundColor: severity === 'success' ? 'green' : 'red',
+                        },
+                    }}
+                />
             </Snackbar>
         </Box>
     );

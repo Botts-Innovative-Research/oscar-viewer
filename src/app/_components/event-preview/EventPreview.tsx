@@ -36,7 +36,7 @@ import AdjudicationData, {
 } from "@/lib/data/oscar/adjudication/Adjudication";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
-import {setSelectedEvent, triggerEventTableRefresh, setAdjudicatedEventId} from "@/lib/state/EventDataSlice";
+import {setSelectedEvent, setAdjudicatedEventId} from "@/lib/state/EventDataSlice";
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 import { setEventData } from "@/lib/state/EventDetailsSlice";
 import CircularProgress from "@mui/material/CircularProgress";
