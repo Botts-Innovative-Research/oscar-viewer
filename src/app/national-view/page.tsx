@@ -209,12 +209,6 @@ export default function NationalViewPage() {
     }, [nodes]);
 
 
-    // useEffect(() => {
-    //     if (nodes && nodes.length > 0){
-    //         handleRefreshStats();
-    //     }
-    // }, [nodes]);
-
     useEffect(() => {
         const cached = timeRangeCache.current.get(selectedTimeRange);
         if (cached) {
@@ -236,6 +230,7 @@ export default function NationalViewPage() {
             setOpenSnack(true);
         }
 
+        console.log('observation', observation)
         var result = observation[0].properties.result;
 
         const parse = (result: any) => ({

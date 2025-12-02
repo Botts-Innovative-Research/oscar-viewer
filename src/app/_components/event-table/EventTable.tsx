@@ -61,22 +61,28 @@ export default function EventTable({
     const selectedRowId = useSelector(selectSelectedRowId);
     const [loading, setLoading] = useState(false);
     const pageSize = 15;
-    const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: pageSize });
     const [rowCount, setRowCount] = useState(0);
     const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([selectedRowId]);
     const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
     const [totalCount, setTotalCount] = useState<Map<string, number>>(new Map());
-    const [currentPage, setCurrentPage] = useState(0);
+    // const [currentPage, setCurrentPage] = useState(0);
+    const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize });
 
     const adjudicatedEventId = useSelector(selectAdjudicatedEventId);
-
     const selectedEvent = useSelector(selectSelectedEvent);
-
 
     const dispatch = useAppDispatch();
     const router = useRouter();
 
     const stableLaneMap = useMemo(() => convertToMap(laneMap), [laneMap]);
+
+    // Use ref to track current page for websocket handlers
+    const currentPageRef = useRef(0);
+
+    // // Keep ref in sync with state
+    // useEffect(() => {
+    //     currentPageRef.current = currentPage;
+    // }, [currentPage]);
 
     const getDatastreamIds = useCallback((node: any): string[] => {
         const datastreamIds: string[] = [];
@@ -119,30 +125,21 @@ export default function EventTable({
                 // Only show events for the current lane
                 return rows.filter(row => row.laneId === currentLane);
             case 'eventlog':
-                // shows all events
+            // shows all events
             default:
                 return rows;
         }
     }, [tableMode, currentLane]);
 
-
     useEffect(() => {
         if (adjudicatedEventId && tableMode === 'alarmtable') {
             // Remove the adjudicated event from the table immediately
-            console.log('selectedEvent', selectedEvent)
+            // console.log('selectedEvent', selectedEvent)
             setFilteredTableData(prev => prev.filter(row => row.id !== adjudicatedEventId));
 
-            // Decrement row count
-            // setRowCount(prev => Math.max(0, prev - 1));
-
-            // Clear selection
-            // setSelectionModel([]);
-            // dispatch(setSelectedRowId(null));
-            //
-            // // Reset the adjudicated event ID
             dispatch(setAdjudicatedEventId(null));
         }
-    }, [adjudicatedEventId, tableMode, selectedEvent]);
+    }, [adjudicatedEventId, tableMode, selectedEvent, dispatch]);
 
     const totalObservations = useMemo(() => {
         let sum = 0;
@@ -154,9 +151,10 @@ export default function EventTable({
 
     const [pageLoadedTime, setPageLoadedTime] = useState(() => new Date().toISOString());
 
-
     useEffect(() => {
+
         const fetchAllCounts = async () => {
+            // console.log("fetching new total", pageLoadedTime)
             if (nodes.size === 0 || stableLaneMap.size === 0)
                 return;
 
@@ -179,21 +177,16 @@ export default function EventTable({
         }
 
         fetchAllCounts();
-    }, [nodes, stableLaneMap]);
+    }, [nodes, stableLaneMap, pageLoadedTime, getDatastreamIds]);
 
-    const fetchPage = useCallback(async (userRequestedPage: number): Promise<boolean> => {
+    const fetchPage = useCallback(async (userRequestedPage: number): Promise<boolean | undefined> => {
         if (stableLaneMap.size === 0 || nodes.size === 0 || totalPages === 0)
             return;
 
         setLoading(true);
 
-        console.log("user requested page", userRequestedPage)
+        // console.log("user requested page", userRequestedPage)
 
-        const timestampToUse = userRequestedPage === 0 ? new Date().toISOString() : pageLoadedTime;
-
-        if (userRequestedPage === 0) {
-            setPageLoadedTime(timestampToUse);
-        }
         try {
             const apiPage = totalPages - 1 - userRequestedPage;
 
@@ -206,7 +199,7 @@ export default function EventTable({
 
                 const observationFilter = new ObservationFilter({
                     dataStream: datastreamIds,
-                    resultTime: `../${timestampToUse}`,
+                    resultTime: `../${pageLoadedTime}`,
                     filter: tableMode == "alarmtable" ? "gammaAlarm=true,neutronAlarm=true" : "",
                 });
 
@@ -215,7 +208,6 @@ export default function EventTable({
 
                 const results = await obsCollection.fetchData();
 
-                // const results = await obsCollection.page(apiPage);
                 for (const obs of results) {
                     const laneEntry = findLaneByDataStreamId(stableLaneMap, obs.properties["datastream@id"]);
                     if (!laneEntry) continue;
@@ -223,13 +215,13 @@ export default function EventTable({
                     const evt = eventFromObservation(obs, laneEntry, false);
                     allRows.push(evt);
                 }
-
-                const deduped = deduplicateById(allRows);
-                const filtered = filterRows(deduped);
-
-                setFilteredTableData(filtered);
-                setCurrentPage(userRequestedPage);
             }
+
+            const deduped = deduplicateById(allRows);
+            const filtered = filterRows(deduped);
+            setFilteredTableData(filtered);
+            currentPageRef.current = userRequestedPage;
+            // setCurrentPage(userRequestedPage);
         } catch (error) {
             console.error("Error fetching observations,", error)
             setFilteredTableData([])
@@ -237,21 +229,13 @@ export default function EventTable({
             setLoading(false);
         }
 
-    }, [nodes, stableLaneMap, totalPages, selectedEvent]);
+    }, [nodes, stableLaneMap, totalPages, pageLoadedTime, tableMode, getDatastreamIds, filterRows]);
 
     function deduplicateById(arr: EventTableData[]): EventTableData[] {
         const map = new Map();
         for (const row of arr) map.set(row.id, row);
         return [...map.values()];
     }
-
-
-    useEffect(() => {
-        if (totalPages > 0) {
-            fetchPage(paginationModel.page)
-        }
-
-    }, [paginationModel.page, paginationModel.pageSize, stableLaneMap, nodes, totalPages]);
 
     function findLaneByDataStreamId(laneMap: Map<string, LaneMapEntry>, datastreamId: string): LaneMapEntry | null {
         for (const entry of laneMap.values()) {
@@ -317,71 +301,88 @@ export default function EventTable({
     }
 
     useEffect(() => {
+        fetchPage(paginationModel.page);
+    }, [paginationModel.page]);
+
+    useEffect(() => {
+        currentPageRef.current = paginationModel.page;
+    }, [paginationModel.page]);
+
+    useEffect(() => {
+        if (paginationModel.page === 0) {
+            const now = new Date().toISOString();
+            // console.log('updating time for page load', now);
+
+            setPageLoadedTime(now);
+        }
+    }, [paginationModel.page]);
+
+
+    useEffect(() => {
+
+        if (stableLaneMap.size === 0) return;
 
         const connectedSources: typeof ConSysApi[] = [];
 
-        if (stableLaneMap.size > 0 && currentPage === 0) {
-            for (const entry of stableLaneMap.values()) {
-                const occStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
+        for (const entry of stableLaneMap.values()) {
+            const occStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
 
-                if (!occStream) {
-                    continue;
-                }
+            if (!occStream) {
+                continue;
+            }
 
-                const occSource = entry.datasourcesRealtime?.find((ds: any) => {
-                    const parts = ds.properties.resource?.split("/");
-                    return parts && parts[2] === occStream.properties.id;
-                });
+            const occSource = entry.datasourcesRealtime?.find((ds: any) => {
+                const parts = ds.properties.resource?.split("/");
+                return parts && parts[2] === occStream.properties.id;
+            });
 
-                if (!occSource) {
-                    continue;
-                }
+            if (!occSource) {
+                continue;
+            }
 
-                const handleMessage = (msg: any) => {
-                    try {
-                        const obsData = msg.values?.[0]?.data || msg;
-                        const event = eventFromObservation(obsData, entry, true);
-                        const dsObsPath = occSource.properties.resource;
-                        if (dsObsPath) {
-                            event.setDataStreamId(dsObsPath.split("/")[2]);
-                        }
+            const handleMessage = (msg: any) => {
+                try {
+                    if (currentPageRef.current !== 0)
+                        return;
 
-                        const filtered = filterRows([event]);
-                        if (filtered.length === 0) return;
+                    // console.log("paginationModel page", paginationModel.page)
+                    // console.log("currentPageRef.current", currentPageRef.current);
+                    const obsData = msg.values?.[0]?.data || msg;
+                    const event = eventFromObservation(obsData, entry, true);
 
+                    const dsObsPath = occSource.properties.resource;
+                    if (dsObsPath) {
+                        event.setDataStreamId(dsObsPath.split("/")[2]);
+                    }
 
-                        setRowCount(prev => prev + 1);
+                    const filtered = filterRows([event]);
+                    if (filtered.length === 0) return;
+
+                    if (currentPageRef.current  === 0) {
 
                         setFilteredTableData(prev => {
                             const exists = prev.some(row => row.id === event.id);
                             if (exists) return prev;
                             return [event, ...prev].slice(0, pageSize);
                         });
-
-                    } catch (err) {
-                        console.error("Error creating event from observation:", err);
                     }
-                };
-
-                occSource.subscribe(handleMessage, [EventType.DATA]);
-
-                try {
-                    occSource.connect();
-                    connectedSources.push(occSource);
                 } catch (err) {
-                    console.error("Error connecting occSource:", err);
+                    console.error("Error creating event from observation:", err);
                 }
+            };
+
+
+            occSource.subscribe(handleMessage, [EventType.DATA]);
+
+            try {
+                occSource.connect();
+                connectedSources.push(occSource);
+            } catch (err) {
+                console.error("Error connecting occSource:", err);
             }
-
         }
 
-        return () => {
-            // unsubscribe to connected sources so we arent listening to them when we move past page 0
-            connectedSources.forEach(async(source: any) => {
-                await source.disconnect();
-            })
-        }
-    }, [stableLaneMap, dispatch, filterRows, currentPage]);
+    }, [stableLaneMap, filterRows]);
 
     useEffect(() => {
         if (!selectedRowId) {
@@ -389,6 +390,10 @@ export default function EventTable({
         }
     }, [selectedRowId]);
 
+    // Update rowCount when totalObservations changes
+    useEffect(() => {
+        setRowCount(totalObservations);
+    }, [totalObservations]);
 
     const locale = navigator.language || 'en-US';
 
@@ -543,9 +548,14 @@ export default function EventTable({
                 paginationMode="server"
                 loading={loading}
                 paginationModel={paginationModel}
-                onPaginationModelChange={setPaginationModel}
+                onPaginationModelChange={(model) => {
+                    // console.log("user requested page from return: ", model.page);
+                    setPaginationModel(model);
+                }}
+
                 rowCount={rowCount}
                 columns={columns}
+                keepNonExistentRowsSelected
                 onRowClick={handleRowSelection}
                 rowSelectionModel={selectionModel}
                 pageSizeOptions={[15]}
