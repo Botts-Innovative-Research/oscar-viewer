@@ -187,6 +187,12 @@ export default function EventTable({
 
         // console.log("user requested page", userRequestedPage)
 
+        // const timestampToUse = userRequestedPage === 0 ? new Date().toISOString() : pageLoadedTime;
+        //
+        // if (userRequestedPage === 0) {
+        //     setPageLoadedTime(timestampToUse);
+        // }
+
         try {
             const apiPage = totalPages - 1 - userRequestedPage;
 
@@ -301,21 +307,22 @@ export default function EventTable({
     }
 
     useEffect(() => {
-        fetchPage(paginationModel.page);
-    }, [paginationModel.page]);
+        if (totalPages > 0)
+            fetchPage(paginationModel.page);
+    }, [totalPages, paginationModel.page]);
 
     useEffect(() => {
         currentPageRef.current = paginationModel.page;
     }, [paginationModel.page]);
 
     useEffect(() => {
-        if (paginationModel.page === 0) {
+        if (paginationModel.page === 0 && totalObservations > 0 ) {
             const now = new Date().toISOString();
             // console.log('updating time for page load', now);
 
             setPageLoadedTime(now);
         }
-    }, [paginationModel.page]);
+    }, [paginationModel.page, totalObservations]);
 
 
     useEffect(() => {
@@ -552,10 +559,8 @@ export default function EventTable({
                     // console.log("user requested page from return: ", model.page);
                     setPaginationModel(model);
                 }}
-
                 rowCount={rowCount}
                 columns={columns}
-                keepNonExistentRowsSelected
                 onRowClick={handleRowSelection}
                 rowSelectionModel={selectionModel}
                 pageSizeOptions={[15]}
