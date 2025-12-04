@@ -81,7 +81,7 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
             // resultTime: `../${pageLoadedTime}`, I think it is safe to fetch count of all here
             format: "application/om+json",
             dataStream: `${datastreamIds.join(",")}`,
-            filter: "tamperStatus=true OR alarmState=Fault%20-%20Neutron%20High OR alarmState=Fault%20-%20Gamma%20High OR alarmState=Fault%20-%20Gamma%20Low"
+            filter: `tamperStatus=true OR alarmState='Fault - Neutron High' OR alarmState='Fault - Gamma High' OR alarmState='Fault - Gamma Low'`
         });
             // `?resultTime=../${pageLoadedTime}&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}&filter=tamperStatus=true OR alarmState=Fault%20-%20Neutron%20High OR alarmState=Fault%20-%20Gamma%20High OR alarmState=Fault%20-%20Gamma%20Low`
         let fullUrl = endpoint + "/observations/count?" + queryParams;

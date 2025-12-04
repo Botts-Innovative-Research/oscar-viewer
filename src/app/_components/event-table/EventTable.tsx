@@ -79,10 +79,13 @@ export default function EventTable({
     // Use ref to track current page for websocket handlers
     const currentPageRef = useRef(0);
 
-    // // Keep ref in sync with state
-    // useEffect(() => {
-    //     currentPageRef.current = currentPage;
-    // }, [currentPage]);
+    const handlePaginationChange = useCallback((model: { page: number; pageSize: number }) => {
+        if (model.page === 0 && paginationModel.page !== 0) {
+            setPageLoadedTime(new Date().toISOString());
+            fetchAllCounts();
+        }
+        setPaginationModel(model);
+    }, [paginationModel.page]);
 
     const getDatastreamIds = useCallback((node: any): string[] => {
         const datastreamIds: string[] = [];
@@ -151,47 +154,37 @@ export default function EventTable({
 
     const [pageLoadedTime, setPageLoadedTime] = useState(() => new Date().toISOString());
 
-    useEffect(() => {
+    const fetchAllCounts = async () => {
+        if (nodes.size === 0 || stableLaneMap.size === 0)
+            return;
 
-        const fetchAllCounts = async () => {
-            // console.log("fetching new total", pageLoadedTime)
-            if (nodes.size === 0 || stableLaneMap.size === 0)
-                return;
+        const counts = new Map<string, number>();
+        let total: number = 0;
 
-            const counts = new Map<string, number>();
-            let total: number = 0;
+        for (const node of nodes) {
+            const datastreamIds = getDatastreamIds(node);
 
-            for (const node of nodes) {
-                const datastreamIds = getDatastreamIds(node);
+            if (datastreamIds.length === 0) continue;
 
-                if (datastreamIds.length === 0) continue;
+            const count = await fetchTotalCount(node, datastreamIds);
+            counts.set(node.id, count);
 
-                const count = await fetchTotalCount(node, datastreamIds);
-                counts.set(node.id, count);
-
-                total += count;
-            }
-
-            setTotalCount(counts);
-            setRowCount(total);
+            total += count;
         }
 
+        setTotalCount(counts);
+        setRowCount(total);
+    }
+
+    useEffect(() => {
         fetchAllCounts();
-    }, [nodes, stableLaneMap, pageLoadedTime, getDatastreamIds]);
+    }, [nodes, stableLaneMap, getDatastreamIds]);
 
     const fetchPage = useCallback(async (userRequestedPage: number): Promise<boolean | undefined> => {
         if (stableLaneMap.size === 0 || nodes.size === 0 || totalPages === 0)
             return;
 
         setLoading(true);
-
-        // console.log("user requested page", userRequestedPage)
-
-        // const timestampToUse = userRequestedPage === 0 ? new Date().toISOString() : pageLoadedTime;
-        //
-        // if (userRequestedPage === 0) {
-        //     setPageLoadedTime(timestampToUse);
-        // }
 
         try {
             const apiPage = totalPages - 1 - userRequestedPage;
@@ -323,14 +316,14 @@ export default function EventTable({
         currentPageRef.current = paginationModel.page;
     }, [paginationModel.page]);
 
-    useEffect(() => {
-        if (paginationModel.page === 0 && totalObservations > 0 ) {
-            const now = new Date().toISOString();
-            // console.log('updating time for page load', now);
-
-            setPageLoadedTime(now);
-        }
-    }, [paginationModel.page, totalObservations]);
+    // useEffect(() => {
+    //     if (paginationModel.page === 0 && totalObservations > 0 ) {
+    //         const now = new Date().toISOString();
+    //         // console.log('updating time for page load', now);
+    //
+    //         setPageLoadedTime(now);
+    //     }
+    // }, [paginationModel.page, totalObservations]);
 
 
     useEffect(() => {
@@ -372,6 +365,8 @@ export default function EventTable({
 
                     const filtered = filterRows([event]);
                     if (filtered.length === 0) return;
+
+                    setRowCount(prev => prev + 1);
 
                     if (currentPageRef.current  === 0) {
 
@@ -563,10 +558,7 @@ export default function EventTable({
                 paginationMode="server"
                 loading={loading}
                 paginationModel={paginationModel}
-                onPaginationModelChange={(model) => {
-                    // console.log("user requested page from return: ", model.page);
-                    setPaginationModel(model);
-                }}
+                onPaginationModelChange={handlePaginationChange}
                 rowCount={rowCount}
                 columns={columns}
                 onRowClick={handleRowSelection}
