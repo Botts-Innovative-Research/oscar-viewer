@@ -218,7 +218,7 @@ export default function ReportGeneratorView(){
                             <>
                                 <ReportTypeSelect onSelect={handleReportTypeSelect} report={selectedReportType} />
 
-                                {["ADJUDICATION", "EVENT", "LANE"].includes(selectedReportType) && (
+                                {["ADJUDICATION", "LANE"].includes(selectedReportType) && (
                                     <LaneSelect onSelect={handleLaneSelect} lane={selectedLaneUID} selectedNode={selectedNode}/>
                                 )}
 
