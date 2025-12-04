@@ -263,7 +263,7 @@ export default function EventTable({
             queryParams.set("filter", "gammaAlarm=true OR neutronAlarm=true")
         }
 //      `/observations/count?resultTime=../${pageLoadedTime}&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}${tableMode == "alarmtable" ? "&filter=gammaAlarm=true,neutronAlarm=true" : ""}`
-        let fullUrl = endpoint + queryParams;
+        let fullUrl = endpoint + "/observations/count?" + queryParams;
 
         try {
             const response = await fetch(fullUrl, {
