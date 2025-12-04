@@ -77,8 +77,14 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
 
     async function fetchTotalCount(node: INode, datastreamIds: string[]) {
         let endpoint = node.getConnectedSystemsEndpoint(false);
-        let queryParams = `/observations/count?resultTime=../${pageLoadedTime}&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}&filter=tamperStatus=true,alarmState=Fault%20-%20Neutron%20High,alarmState=Fault%20-%20Gamma%20High,alarmState=Fault%20-%20Gamma%20Low`
-        let fullUrl = endpoint + queryParams;
+        const queryParams = new URLSearchParams({
+            // resultTime: `../${pageLoadedTime}`, I think it is safe to fetch count of all here
+            format: "application/om+json",
+            dataStream: `${datastreamIds.join(",")}`,
+            filter: "tamperStatus=true OR alarmState=Fault%20-%20Neutron%20High OR alarmState=Fault%20-%20Gamma%20High OR alarmState=Fault%20-%20Gamma%20Low"
+        });
+            // `?resultTime=../${pageLoadedTime}&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}&filter=tamperStatus=true OR alarmState=Fault%20-%20Neutron%20High OR alarmState=Fault%20-%20Gamma%20High OR alarmState=Fault%20-%20Gamma%20Low`
+        let fullUrl = endpoint + "/observations/count?" + queryParams;
 
         try {
             const response = await fetch(fullUrl, {

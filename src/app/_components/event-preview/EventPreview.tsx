@@ -154,7 +154,7 @@ export function EventPreview() {
             if (comboData.occupancyObsId == null) {
 
                 let query = await ds.searchObservations(new ObservationFilter({
-                    filter: `startTime=${eventPreview.eventData.startTime},endTime=${eventPreview.eventData.endTime}`
+                    filter: `startTime=${eventPreview.eventData.startTime} AND endTime=${eventPreview.eventData.endTime}`
                 }), 10000);
 
                 const occupancyObservation: any[] = await query.nextPage();

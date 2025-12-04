@@ -88,7 +88,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     }
 
                     const filter = new ObservationFilter({
-                        filter: `startTime=${props.event.startTime},endTime=${props.event.endTime}`
+                        filter: `startTime=${props.event.startTime} AND endTime=${props.event.endTime}`
                     });
 
                     let query = await ds.searchObservations(filter, 10000);
@@ -229,7 +229,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             if (tempAdjData.occupancyObsId === null) {
                 let query = await ds.searchObservations(new ObservationFilter({
-                    filter: `startTime=${props.event.startTime},endTime=${props.event.endTime}`
+                    filter: `startTime=${props.event.startTime} AND endTime=${props.event.endTime}`
                 }), 10000);
 
                 const occupancyObservation = await query.nextPage();

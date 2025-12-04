@@ -206,7 +206,7 @@ export default function EventTable({
                 const observationFilter = new ObservationFilter({
                     dataStream: datastreamIds,
                     resultTime: `../${pageLoadedTime}`,
-                    filter: tableMode == "alarmtable" ? "gammaAlarm=true,neutronAlarm=true" : "",
+                    filter: tableMode == "alarmtable" ? "gammaAlarm=true OR neutronAlarm=true" : "",
                 });
 
                 const obsApi: typeof Observations = await node.getObservationsApi();
@@ -254,7 +254,15 @@ export default function EventTable({
 
     async function fetchTotalCount(node: INode, datastreamIds: string[]) {
         let endpoint = node.getConnectedSystemsEndpoint(false);
-        let queryParams = `/observations/count?resultTime=../${pageLoadedTime}&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}${tableMode == "alarmtable" ? "&filter=gammaAlarm=true,neutronAlarm=true" : ""}`
+        const queryParams = new URLSearchParams({
+            // resultTime: `../${pageLoadedTime}`, I think it is safe to fetch count of all here
+            format: "application/om+json",
+            dataStream: `${datastreamIds.join(",")}`,
+        });
+        if (tableMode === "alarmtable") {
+            queryParams.set("filter", "gammaAlarm=true OR neutronAlarm=true")
+        }
+//      `/observations/count?resultTime=../${pageLoadedTime}&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}${tableMode == "alarmtable" ? "&filter=gammaAlarm=true,neutronAlarm=true" : ""}`
         let fullUrl = endpoint + queryParams;
 
         try {
