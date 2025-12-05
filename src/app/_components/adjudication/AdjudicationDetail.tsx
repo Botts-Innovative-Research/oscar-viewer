@@ -226,7 +226,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 return;
             }
 
-            if (tempAdjData.occupancyObsId === null) {
+            if (tempAdjData.occupancyObsId == null) {
                 let query = await ds.searchObservations(new ObservationFilter({
                     filter: `startTime='${props.event.startTime}' AND endTime='${props.event.endTime}'`
                 }), 1);
@@ -271,11 +271,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             props.event.adjudicatedData = tempAdjData;
 
-            setAdjSnackMsg('Adjudication successful for Occupancy ID: ' + props.event.occupancyCount);
-            setColorStatus('success')
-
             dispatch(setSelectedEvent(props.event));
             dispatch(setAdjudicatedEventId(props.event.id));
+
+            setAdjSnackMsg('Adjudication successful for Occupancy ID: ' + props.event.occupancyCount);
+            setColorStatus('success')
 
         }catch(error){
             setAdjSnackMsg('Adjudication failed to submit.')
