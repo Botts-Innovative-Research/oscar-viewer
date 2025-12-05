@@ -38,6 +38,7 @@ import DeleteOutline from "@mui/icons-material/DeleteOutline"
 import {setAdjudicatedEventId, setSelectedEvent} from "@/lib/state/EventDataSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import { useBreakpoint } from "@/app/providers";
+import {INode} from "@/lib/data/osh/Node";
 
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
@@ -251,7 +252,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             }
 
-
+            // add uploaded files to
+            let newFileNames = await sendFileUploadRequest(tempAdjData.filePaths, currLaneEntry.parentNode);
 
             const response = await sendCommand(
                 currLaneEntry.parentNode,
@@ -261,7 +263,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     tempAdjData.adjudicationCode,
                     tempAdjData.isotopes,
                     tempAdjData.secondaryInspectionStatus,
-                    tempAdjData.filePaths,
+                    newFileNames,
                     tempAdjData.occupancyObsId,
                     tempAdjData.vehicleId
                 )
@@ -292,6 +294,40 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     }
 
+    async function sendFileUploadRequest(filePaths: File[], node: INode) {
+
+        let newFileNames: any[] = [];
+        const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
+
+        for (const file of filePaths) {
+            const endpoint = node.isSecure
+                ? `https://${node.address}:${node.port}${node.oshPathRoot}/buckets/adjudication/${file.name}`
+                : `http://${node.address}:${node.port}${node.oshPathRoot}/buckets/adjudication/${file.name}`;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const options: RequestInit = {
+                method: 'POST',
+                headers: {
+                    // 'Content-Type': 'application/json',
+                    'Authorization': `Basic ${encoded}`
+                },
+                mode: 'cors',
+                body: formData
+            }
+
+
+            const response = await fetch(endpoint, options);
+            if (!response.ok) {
+                console.error("Failed uploading file:", file, response);
+                return;
+            }
+            newFileNames.push(`/buckets/adjudication/${file.name}`)
+
+        }
+        return newFileNames;
+    }
 
     const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
         if (reason === 'clickaway')
@@ -309,7 +345,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     Adjudication
                 </Typography>
             </Grid>
-                
+
             <Grid item xs={12}>
                 <AdjudicationLog
                     event={props.event}
@@ -317,7 +353,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     onFetch={onFetchComplete}
                 />
             </Grid>
-                
+
             {/* ADJUDICATION REPORT FORM */}
             <Grid item container xs={12} spacing={2}>
 
@@ -446,7 +482,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                 Submit
                             </Button>
                         </Grid>
-                        
+
                     </Grid>
                 </Grid>
 
