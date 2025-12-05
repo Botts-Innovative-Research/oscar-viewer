@@ -36,6 +36,7 @@ import IconButton from "@mui/material/IconButton";
 import DeleteOutline from "@mui/icons-material/DeleteOutline"
 import {setAdjudicatedEventId, setSelectedEvent} from "@/lib/state/EventDataSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
+import {INode} from "@/lib/data/osh/Node";
 
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
@@ -199,7 +200,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         let tempAdjData: AdjudicationData = adjData;
 
         tempAdjData.setTime(phenomenonTime);
-        tempAdjData.setFilePaths(adjData.filePaths);
+        tempAdjData.setFilePaths(uploadedFiles.map(f => f.name));
         tempAdjData.setAdjudicationCode(adjData.adjudicationCode);
         tempAdjData.setVehicleId(adjData.vehicleId);
         tempAdjData.setFeedback(adjData.feedback);
@@ -247,7 +248,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             }
 
-
+            // add uploaded files to
+            let newFileNames = await sendFileUploadRequest(tempAdjData.filePaths, currLaneEntry.parentNode);
 
             const response = await sendCommand(
                 currLaneEntry.parentNode,
@@ -257,17 +259,19 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     tempAdjData.adjudicationCode,
                     tempAdjData.isotopes,
                     tempAdjData.secondaryInspectionStatus,
-                    tempAdjData.filePaths,
+                    newFileNames,
                     tempAdjData.occupancyObsId,
                     tempAdjData.vehicleId
                 )
             );
+
 
             if (!response.ok) {
                 setAdjSnackMsg('Adjudication failed to submit.')
                 setColorStatus('error')
                 return;
             }
+
 
             props.event.adjudicatedData = tempAdjData;
 
@@ -288,6 +292,40 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     }
 
+    async function sendFileUploadRequest(filePaths: File[], node: INode) {
+
+        let newFileNames: any[] = [];
+        const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
+
+        for (const file of filePaths) {
+            const endpoint = node.isSecure
+                ? `https://${node.address}:${node.port}${node.oshPathRoot}/buckets/adjudication/${file.name}`
+                : `http://${node.address}:${node.port}${node.oshPathRoot}/buckets/adjudication/${file.name}`;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const options: RequestInit = {
+                method: 'POST',
+                headers: {
+                    // 'Content-Type': 'application/json',
+                    'Authorization': `Basic ${encoded}`
+                },
+                mode: 'cors',
+                body: formData
+            }
+
+
+            const response = await fetch(endpoint, options);
+            if (!response.ok) {
+                console.error("Failed uploading file:", file, response);
+                return;
+            }
+            newFileNames.push(`/buckets/adjudication/${file.name}`)
+
+        }
+        return newFileNames;
+    }
 
     const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
         if (reason === 'clickaway')
