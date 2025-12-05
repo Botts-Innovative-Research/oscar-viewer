@@ -147,9 +147,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     }
 
     const handleIsotopeSelect = (value: string[]) => {
-        let valueString = value.join(', ');
         let tAdjData = adjData;
-        tAdjData.isotopes.push(valueString);
+        tAdjData.isotopes = value;
         setIsotope(value);
         setAdjData(tAdjData);
     }
