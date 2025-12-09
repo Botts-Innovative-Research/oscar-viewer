@@ -181,8 +181,7 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
         setLoading(true);
 
         try {
-            const apiPage = totalPages - 1 - userRequestedPage;
-            const pageOffset = apiPage * pageSize;
+            const pageOffset = userRequestedPage * pageSize;
 
             const allRows: AlarmTableData[] = [];
 
@@ -196,7 +195,8 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
             const observationFilter = new ObservationFilter({
                 dataStream: datastreamIds,
                 resultTime: `../${pageLoadedTime}`,
-                filter: "tamperStatus=true"
+                filter: "tamperStatus=true",
+                order: 'desc'
             });
 
             const obsApi: typeof Observations = await node.getObservationsApi();

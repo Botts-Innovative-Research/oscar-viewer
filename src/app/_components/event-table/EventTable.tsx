@@ -187,9 +187,7 @@ export default function EventTable({
         setLoading(true);
 
         try {
-            const apiPage = totalPages - 1 - userRequestedPage;
-
-            const pageOffset = apiPage * pageSize;
+            const pageOffset = userRequestedPage * pageSize;
             const allRows: EventTableData[] = [];
 
             for (const node of nodes) {
@@ -200,6 +198,7 @@ export default function EventTable({
                     dataStream: datastreamIds,
                     resultTime: `../${pageLoadedTime}`,
                     filter: tableMode == "alarmtable" ? "gammaAlarm=true OR neutronAlarm=true" : "",
+                    order: 'desc'
                 });
 
                 const obsApi: typeof Observations = await node.getObservationsApi();
