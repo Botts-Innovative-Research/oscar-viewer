@@ -1,0 +1,22 @@
+{
+  "appTitle": "OSCAR",
+  "dashboard": "Tablero",
+  "events": "Eventos",
+  "map": "Mapa",
+  "national": "Nacional",
+  "reportGenerator": "Generador de Informes",
+  "servers": "Servidores",
+  "alarmVolume": "Volumen de Alarma",
+  "laneStatus": "Estado del Carril",
+  "laneId": "ID de Carril",
+  "occupancyId": "ID de Ocupación",
+  "startTime": "Hora de Inicio",
+  "endTime": "Hora de Finalización",
+  "maxGamma": "Gamma Max (cps)",
+  "maxNeutron": "Neutrón Max (cps)",
+  "status": "Estado",
+  "adjudicated": "Adjudicado",
+  "details": "Detalles",
+  "yes": "Sí",
+  "no": "No"
+}
