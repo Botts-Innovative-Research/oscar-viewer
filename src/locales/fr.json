@@ -1,0 +1,22 @@
+{
+  "appTitle": "OSCAR",
+  "dashboard": "Tableau de bord",
+  "events": "Événements",
+  "map": "Carte",
+  "national": "National",
+  "reportGenerator": "Générateur de rapports",
+  "servers": "Serveurs",
+  "alarmVolume": "Volume de l'alarme",
+  "laneStatus": "État de la voie",
+  "laneId": "ID de la voie",
+  "occupancyId": "ID d'occupation",
+  "startTime": "Heure de début",
+  "endTime": "Heure de fin",
+  "maxGamma": "Gamma Max (cps)",
+  "maxNeutron": "Neutron Max (cps)",
+  "status": "État",
+  "adjudicated": "Jugé",
+  "details": "Détails",
+  "yes": "Oui",
+  "no": "Non"
+}

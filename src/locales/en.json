@@ -1,0 +1,22 @@
+{
+  "appTitle": "OSCAR",
+  "dashboard": "Dashboard",
+  "events": "Events",
+  "map": "Map",
+  "national": "National",
+  "reportGenerator": "Report Generator",
+  "servers": "Servers",
+  "alarmVolume": "Alarm Volume",
+  "laneStatus": "Lane Status",
+  "laneId": "Lane ID",
+  "occupancyId": "Occupancy ID",
+  "startTime": "Start Time",
+  "endTime": "End Time",
+  "maxGamma": "Max Gamma (cps)",
+  "maxNeutron": "Max Neutron (cps)",
+  "status": "Status",
+  "adjudicated": "Adjudicated",
+  "details": "Details",
+  "yes": "Yes",
+  "no": "No"
+}

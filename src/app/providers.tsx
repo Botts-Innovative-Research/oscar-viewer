@@ -6,6 +6,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { getTheme } from "@/app/style/theme";
 import "@/app/style/global.css"
 import SuspenseLoad from "./_components/SuspenseLoad";
+import {LanguageProvider} from "@/contexts/LanguageContext";
 
 export default function Providers({ children }: { children: ReactNode }) {
 
@@ -20,12 +21,14 @@ export default function Providers({ children }: { children: ReactNode }) {
 
   return (
     <Suspense fallback={<SuspenseLoad />}>
-      <ThemeProvider theme={theme}>
-        <Box sx={{backgroundColor: "background.default"}}>
-          <CssBaseline />
-          {children}
-        </Box>
-      </ThemeProvider>
+      <LanguageProvider>
+          <ThemeProvider theme={theme}>
+            <Box sx={{backgroundColor: "background.default"}}>
+              <CssBaseline />
+              {children}
+            </Box>
+          </ThemeProvider>
+      </LanguageProvider>
     </Suspense>
   );
 }

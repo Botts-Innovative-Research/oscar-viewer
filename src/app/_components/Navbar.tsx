@@ -32,6 +32,8 @@ import {Download, VolumeDown, VolumeUp} from "@mui/icons-material";
 import AlarmAudio from "@/app/_components/AlarmAudio";
 import {selectAlarmAudioVolume, setAlarmAudioVolume} from "@/lib/state/OSCARClientSlice";
 import {useDispatch, useSelector} from "react-redux";
+import LanguageSelector from './LanguageSelector';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const drawerWidth = 240;
 
@@ -109,6 +111,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null); // Anchor element for notification menu
     const menuOpen = Boolean(anchorEl); // Open state for notification menu
     const [drawerOpen, setDrawerOpen] = useState(false);  // Open state for navigation drawer
+    const { t } = useLanguage();
 
     const dispatch = useDispatch();
 
@@ -146,27 +149,27 @@ export default function Navbar({children}: { children: React.ReactNode }) {
     // Menu items for drawer
     const menuItems = [
         {
-            title: "Dashboard",
+            title: t('dashboard'),
             icon: <DashboardRoundedIcon/>,
             href: "/",
         },
         {
-            title: "Events",
+            title: t('events'),
             icon: <WarningRoundedIcon/>,
             href: "/event-log",
         },
         {
-            title: "Map",
+            title: t('map'),
             icon: <LocationOnRoundedIcon/>,
             href: "/map",
         },
         {
-            title: "National",
+            title: t('national'),
             icon: <MediationIcon/>,
             href: "/national-view",
         },
         {
-            title: "Report Generator",
+            title: t('reportGenerator'),
             icon: <Download/>,
             href: "/report",
         },
@@ -175,7 +178,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
     // Settings items for drawer
     const settingsItems = [
         {
-            title: "Servers",
+            title: t('servers'),
             icon: <CloudRoundedIcon/>,
             href: "/servers",
         }
@@ -210,17 +213,20 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                     </IconButton>
                     <Stack direction={"row"} width={"100%"} alignItems={"center"} justifyContent={"space-between"}>
                         <Typography variant="h6" noWrap component="div">
-                            OSCAR
+                            {t('appTitle')}
                         </Typography>
-                        <Tooltip title={'Alarm Volume'} arrow placement="top">
-                            <IconButton
-                                color="inherit"
-                                aria-label="open notifications"
-                                onClick={handleMenuOpen}
-                            >
-                                {savedVolume === 0 ? <NotificationsOffIcon/> : <NotificationsRoundedIcon/>}
-                            </IconButton>
-                        </Tooltip>
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                            <LanguageSelector />
+                            <Tooltip title={t('alarmVolume')} arrow placement="top">
+                                <IconButton
+                                    color="inherit"
+                                    aria-label="open notifications"
+                                    onClick={handleMenuOpen}
+                                >
+                                    {savedVolume === 0 ? <NotificationsOffIcon/> : <NotificationsRoundedIcon/>}
+                                </IconButton>
+                            </Tooltip>
+                        </Stack>
                     </Stack>
                 </Toolbar>
             </AppBar>
@@ -244,7 +250,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                 <MenuItem>
                     <Box sx={{ width: 200, padding: 1 }}>
                         <Typography variant="body2" gutterBottom>
-                            Alarm Volume
+                            {t('alarmVolume')}
                         </Typography>
 
                         <Stack spacing={2} direction="row" sx={{alignItems: 'center', mb: 1}}>
