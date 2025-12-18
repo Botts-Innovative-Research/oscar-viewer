@@ -28,7 +28,8 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
     const router = useRouter();
 
     useEffect(() => {
-        setStatusList(props.initialLanes);
+        let sortedLanes = [...props.initialLanes].sort((a,b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+        setStatusList(sortedLanes);
 
         return () => {
             if (timersRef.current) {
