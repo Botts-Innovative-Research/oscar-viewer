@@ -13,6 +13,7 @@ import {
     Button,
     Paper,
     Snackbar,
+    TextField, FormControlLabel, Checkbox
 
 } from "@mui/material";
 import React, {ChangeEvent, useContext, useEffect, useRef, useState} from "react";
@@ -38,14 +39,17 @@ import {useAppDispatch} from "@/lib/state/Hooks";
 import {INode} from "@/lib/data/osh/Node";
 
 interface FileWithWebId {
+    file: File;
+    webIdEnabled: boolean;
+}
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
     const dispatch = useAppDispatch();
 
-    const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
     // const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
     // const [webIdEnabled, setWebIdEnabled] = useState<boolean>(false);
 
+    const [uploadedFiles, setUploadedFiles] = useState<FileWithWebId[]>([])
     const [adjudicationCode, setAdjudicationCode] = useState(AdjudicationCodes.codes[0]);
     const [isotope, setIsotope] = useState<string[]>([]);
     const [secondaryInspection, setSecondaryInspection] = useState('');
@@ -126,15 +130,27 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         laneMapRef
     ]);
 
+    const handleWebIdAnalysis = (fileIndex: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
+        setUploadedFiles(prevFiles =>
+            prevFiles.map((fileData, idx) =>
+                idx === fileIndex ? { ...fileData, webIdEnabled: event.target.checked } : fileData
+            )
+        );
+    };
 
-    /**handle the file uploaded**/
     const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files === null) {
             return;
         }
 
         const files = Array.from(e.target.files);
-        setUploadedFiles([...uploadedFiles, ...files]);
+
+        const filesWithWebId = files.map(file => ({
+            file,
+            webIdEnabled: false
+        }));
+
+        setUploadedFiles([...uploadedFiles, ...filesWithWebId]);
     };
 
     const handleFileDelete = (fileIndex: number) => {
@@ -150,8 +166,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     }
 
     const handleIsotopeSelect = (value: string[]) => {
+        let valueString = value.join(', ');
         let tAdjData = adjData;
-        tAdjData.isotopes = value;
+        tAdjData.isotopes.push(valueString);
         setIsotope(value);
         setAdjData(tAdjData);
     }
@@ -202,7 +219,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         let tempAdjData: AdjudicationData = adjData;
 
         tempAdjData.setTime(phenomenonTime);
-        tempAdjData.setFilePaths(uploadedFiles.map(f => f.name));
+        tempAdjData.setFilePaths(uploadedFiles.map(f => f.file.name));
         tempAdjData.setAdjudicationCode(adjData.adjudicationCode);
         tempAdjData.setVehicleId(adjData.vehicleId);
         tempAdjData.setFeedback(adjData.feedback);
@@ -212,10 +229,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         // send to server
         const currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-        await submitAdjudication(currLaneEntry, tempAdjData)
+
+        await submitAdjudication(currLaneEntry, tempAdjData, uploadedFiles)
     }
 
-    const submitAdjudication = async(currLaneEntry: any, tempAdjData: any) => {
+    const submitAdjudication = async(currLaneEntry: any, tempAdjData: any, files: FileWithWebId[]) => {
         try{
             let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == props.event.dataStreamId);
 
@@ -227,7 +245,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 return;
             }
 
-            if (tempAdjData.occupancyObsId == null) {
+            if (tempAdjData.occupancyObsId === null) {
                 let query = await ds.searchObservations(new ObservationFilter({
                     filter: `startTime='${props.event.startTime}' AND endTime='${props.event.endTime}'`
                 }), 1);
@@ -248,9 +266,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             }
 
-            // add uploaded files to
-            let newFileNames = await sendFileUploadRequest(tempAdjData.filePaths, currLaneEntry.parentNode);
-
             const response = await sendCommand(
                 currLaneEntry.parentNode,
                 adjControlStream.properties.id,
@@ -259,12 +274,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     tempAdjData.adjudicationCode,
                     tempAdjData.isotopes,
                     tempAdjData.secondaryInspectionStatus,
-                    newFileNames,
+                    [],
                     tempAdjData.occupancyObsId,
                     tempAdjData.vehicleId
                 )
             );
-
 
             if (!response.ok) {
                 setAdjSnackMsg('Adjudication failed to submit.')
@@ -272,15 +286,23 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 return;
             }
 
-
             props.event.adjudicatedData = tempAdjData;
-
-            dispatch(setSelectedEvent(props.event));
-            dispatch(setAdjudicatedEventId(props.event.id));
 
             setAdjSnackMsg('Adjudication successful for Occupancy ID: ' + props.event.occupancyCount);
             setColorStatus('success')
 
+            dispatch(setSelectedEvent(props.event));
+            dispatch(setAdjudicatedEventId(props.event.id));
+
+            const responseJson = await response.json()
+            if (responseJson) {
+                const adjId = responseJson.results[0].id
+
+
+                let newFileNames = await sendFileUploadRequest(files, currLaneEntry.parentNode, adjId);
+
+                // what to do here? nothing maybe...
+            }
         }catch(error){
             setAdjSnackMsg('Adjudication failed to submit.')
             setColorStatus('error')
@@ -292,21 +314,25 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     }
 
-    async function sendFileUploadRequest(filePaths: File[], node: INode) {
+
+    async function sendFileUploadRequest(filePaths: FileWithWebId[], node: INode, adjId: string) {
 
         let newFileNames: any[] = [];
         const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
+        const protocol = node.isSecure ? 'https://' : 'http://';
 
-        for (const file of filePaths) {
 
-            const protocol = node.isSecure ? 'https://' : 'http://';
-            const endpoint =  `${protocol}${node.address}:${node.port}${node.oshPathRoot}/buckets/adjudication/${file.name}`
+        for (const fileData of filePaths) {
+
+            const endpoint =  `${protocol}${node.address}:${node.port}${node.oshPathRoot}/buckets/adjudication/${fileData.file.name}?adjudicationId=${adjId}&enableWebId=${fileData.webIdEnabled}}`
+            const url = new URL(endpoint);
+
 
             const formData = new FormData(); // this should handle the content type and set it properly
-            formData.append('file', file);
+            formData.append('file', fileData.file);
 
             const options: RequestInit = {
-                method: 'POST',
+                method: 'PUT',
                 headers: {
                     'Authorization': `Basic ${encoded}`
                 },
@@ -314,12 +340,15 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 body: formData
             }
 
-            const response = await fetch(endpoint, options);
+            const response = await fetch(url, options);
             if (!response.ok) {
-                console.error("Failed uploading file:", file, response);
-                return;
+                console.error("Failed uploading file:", fileData.file.name, response);
+                setAdjSnackMsg(`Failed to upload file: ${fileData.file.name}`);
+                setColorStatus('error');
+                setOpenSnack(true);
+                continue;
             }
-            newFileNames.push(`/buckets/adjudication/${file.name}`)
+            newFileNames.push(`/buckets/adjudication/${fileData.file.name}`)
 
         }
         return newFileNames;
@@ -389,68 +418,87 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     value={feedback}
                     onChange={handleChange}
                 />
-                {
-                    uploadedFiles.length > 0 && (
-                        <Paper variant='outlined' sx={{width: "100%"}}>
-                            <Stack
-                                sx={{
-                                    maxHeight: '100px', // Adjust height based on item size
-                                    overflowY: 'auto',
-                                    p: 2,
-                                }}
-                                spacing={1}
-                            >
-                                {uploadedFiles.map((file, index) => (
-                                    <Stack key={`${file}-${index}`} direction="row" spacing={2}>
-                                        <Box display={"flex"} sx={{wordSpacing: 2}}>
+                {uploadedFiles.length > 0 && (
+                    <Paper variant='outlined' sx={{width: "100%"}}>
+                        <Stack
+                            sx={{
+                                maxHeight: '100px',
+                                overflowY: 'auto',
+                                p: 2,
+                            }}
+                            spacing={1}
+                        >
+                            {uploadedFiles.map((fileData, index) => (
+                                <Stack
+                                    key={`${fileData.file.name}-${index}`}
+                                    direction="row"
+                                    spacing={2}
+                                >
+                                    <Box
+                                        display={"flex"}
+                                        sx={{wordSpacing: 2}}
+                                    >
+                                        <Stack direction={"row"} spacing={2}>
                                             <InsertDriveFileRoundedIcon/>
-                                            <Typography variant="body1">{file.name}</Typography>
-                                        </Box>
-
-                                        <IconButton
-                                            onClick={() => handleFileDelete(index)}
-                                            sx={{
-                                                padding: "2px",
-                                                border: "1px solid",
-                                                borderRadius: "10px",
-                                                borderColor: "error.main",
-                                                backgroundColor: "inherit",
-                                                color: "error.main"
-                                            }}>
-                                            <DeleteOutline/>
-                                        </IconButton>
-                                    </Stack>
-                                ))}
-                            </Stack>
-                        </Paper>
-                    )
-                }
+                                            <Typography variant="body1">
+                                                {fileData.file.name}
+                                            </Typography>
+                                            <FormControlLabel
+                                                control={
+                                                    <Checkbox
+                                                        checked={fileData.webIdEnabled}
+                                                        onChange={handleWebIdAnalysis(index)}
+                                                    />
+                                                }
+                                                label="WebID Analysis"
+                                            />
+                                            <IconButton
+                                                onClick={() => handleFileDelete(index)}
+                                                sx={{
+                                                    padding: "2px",
+                                                    border: "1px solid",
+                                                    borderRadius: "10px",
+                                                    borderColor: "error.main",
+                                                    backgroundColor: "inherit",
+                                                    color: "error.main"
+                                                }}
+                                            >
+                                                <DeleteOutline/>
+                                            </IconButton>
+                                        </Stack>
+                                    </Box>
+                                </Stack>
+                            ))}
+                        </Stack>
+                    </Paper>
+                )}
                 <Stack direction={"row"} spacing={2} justifyContent={"space-between"} alignItems={"center"} width={"100%"}>
-                    <Button
-                        component="label"
-                        startIcon={<UploadFileRoundedIcon/>}
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            width: "auto",
-                            padding: "8px",
-                            borderStyle: "solid",
-                            borderWidth: "1px",
-                            borderRadius: "10px",
-                            borderColor: "secondary.main",
-                            backgroundColor: "inherit",
-                            color: "secondary.main"
-                        }}
-                    >
-                        Upload Files
-                        <input
-                            type="file"
-                            multiple
-                            onChange={handleFileUpload}
-                            ref={fileInputRef}
-                            style={{display: "none"}}
-                        />
-                    </Button>
+                        <Button
+                            component="label"
+                            startIcon={<UploadFileRoundedIcon/>}
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                width: "auto",
+                                padding: "8px",
+                                borderStyle: "solid",
+                                borderWidth: "1px",
+                                borderRadius: "10px",
+                                borderColor: "secondary.main",
+                                backgroundColor: "inherit",
+                                color: "secondary.main"
+                            }}
+                        >
+                            Upload Files
+                            <input
+                                type="file"
+                                multiple
+                                onChange={handleFileUpload}
+                                ref={fileInputRef}
+                                style={{display: "none"}}
+                            />
+                        </Button>
+
                     <Stack direction={"row"} spacing={2}>
                         <SecondaryInspectionSelect
                             secondarySelectVal={secondaryInspection}
