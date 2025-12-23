@@ -419,40 +419,66 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     onChange={handleChange}
                 />
                 {uploadedFiles.length > 0 && (
-                    <Paper variant='outlined' sx={{width: "100%"}}>
+                    <Paper
+                        variant='outlined'
+                        sx={{ width: "100%", borderRadius: 2, overflow: 'hidden', padding: 2 }}
+                    >
+                        <Typography variant="h6">Uploaded Files</Typography>
                         <Stack
                             sx={{
-                                maxHeight: '100px',
+                                maxHeight: '200px',
                                 overflowY: 'auto',
-                                p: 2,
+                                p: 1.5,
                             }}
                             spacing={1}
                         >
                             {uploadedFiles.map((fileData, index) => (
-                                <Stack
+                                <Paper
                                     key={`${fileData.file.name}-${index}`}
-                                    direction="row"
-                                    spacing={2}
+                                    elevation={0}
                                 >
-                                    <Box
-                                        display={"flex"}
-                                        sx={{wordSpacing: 2}}
+                                    <Stack
+                                        direction="row"
+                                        spacing={2}
+                                        alignItems="center"
+                                        justifyContent="space-between"
                                     >
-                                        <Stack direction={"row"} spacing={2}>
-                                            <InsertDriveFileRoundedIcon/>
-                                            <Typography variant="body1">
+                                        <Stack
+                                            direction="row"
+                                            spacing={1.5}
+                                            alignItems="center"
+                                            flex={1}
+                                            minWidth={0}
+                                        >
+                                            <InsertDriveFileRoundedIcon />
+                                            <Typography
+                                                variant="body2"
+                                            >
                                                 {fileData.file.name}
                                             </Typography>
+                                        </Stack>
+
+                                        <Stack
+                                            direction="row"
+                                            spacing={1}
+                                            alignItems="center"
+                                        >
                                             <FormControlLabel
                                                 control={
                                                     <Checkbox
+                                                        size="small"
                                                         checked={fileData.webIdEnabled}
                                                         onChange={handleWebIdAnalysis(index)}
                                                     />
                                                 }
-                                                label="WebID Analysis"
+                                                label={
+                                                    <Typography variant="body2">
+                                                        WebID Analysis
+                                                    </Typography>
+                                                }
                                             />
                                             <IconButton
+                                                size="small"
                                                 onClick={() => handleFileDelete(index)}
                                                 sx={{
                                                     padding: "2px",
@@ -466,8 +492,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                 <DeleteOutline/>
                                             </IconButton>
                                         </Stack>
-                                    </Box>
-                                </Stack>
+                                    </Stack>
+                                </Paper>
                             ))}
                         </Stack>
                     </Paper>
