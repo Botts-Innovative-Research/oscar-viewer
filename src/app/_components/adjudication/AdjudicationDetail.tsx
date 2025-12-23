@@ -13,7 +13,6 @@ import {
     Button,
     Paper,
     Snackbar,
-    TextField
 
 } from "@mui/material";
 import React, {ChangeEvent, useContext, useEffect, useRef, useState} from "react";
@@ -38,11 +37,14 @@ import {setAdjudicatedEventId, setSelectedEvent} from "@/lib/state/EventDataSlic
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {INode} from "@/lib/data/osh/Node";
 
+interface FileWithWebId {
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
     const dispatch = useAppDispatch();
 
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+    // const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+    // const [webIdEnabled, setWebIdEnabled] = useState<boolean>(false);
 
     const [adjudicationCode, setAdjudicationCode] = useState(AdjudicationCodes.codes[0]);
     const [isotope, setIsotope] = useState<string[]>([]);
