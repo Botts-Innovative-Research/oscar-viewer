@@ -40,6 +40,7 @@ import {useAppDispatch} from "@/lib/state/Hooks";
 import { useBreakpoint } from "@/app/providers";
 import {INode} from "@/lib/data/osh/Node";
 
+interface FileWithWebId {
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
     const { isMobile, isSmallTablet } = useBreakpoint();
@@ -47,6 +48,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const dispatch = useAppDispatch();
 
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+    // const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+    // const [webIdEnabled, setWebIdEnabled] = useState<boolean>(false);
 
     const [adjudicationCode, setAdjudicationCode] = useState(AdjudicationCodes.codes[0]);
     const [isotope, setIsotope] = useState<string[]>([]);
@@ -204,7 +207,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         let tempAdjData: AdjudicationData = adjData;
 
         tempAdjData.setTime(phenomenonTime);
-        tempAdjData.setFilePaths(adjData.filePaths);
+        tempAdjData.setFilePaths(uploadedFiles.map(f => f.name));
         tempAdjData.setAdjudicationCode(adjData.adjudicationCode);
         tempAdjData.setVehicleId(adjData.vehicleId);
         tempAdjData.setFeedback(adjData.feedback);
@@ -267,11 +270,13 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 )
             );
 
+
             if (!response.ok) {
                 setAdjSnackMsg('Adjudication failed to submit.')
                 setColorStatus('error')
                 return;
             }
+
 
             props.event.adjudicatedData = tempAdjData;
 
@@ -379,21 +384,17 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                         isotopeValue={isotope}
                         onSelect={handleIsotopeSelect}
                     />
-                </Grid>
+                </Stack>
 
-                <Grid item xs={12}>
-                    <TextField
-                        id="outlined-multiline-static"
-                        label="Notes"
-                        name="notes"
-                        multiline
-                        rows={4}
-                        value={feedback}
-                        onChange={handleChange}
-                        fullWidth
-                    />
-                </Grid>
-
+                <TextField
+                    id="outlined-multiline-static"
+                    label="Notes"
+                    name="notes"
+                    multiline
+                    rows={4}
+                    value={feedback}
+                    onChange={handleChange}
+                />
                 {
                     uploadedFiles.length > 0 && (
                         <Grid item xs={12}>
