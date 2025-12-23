@@ -214,9 +214,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     }
 
     const submitAdjudication = async(currLaneEntry: any, tempAdjData: any) => {
-
         try{
-
             let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == props.event.dataStreamId);
 
             let streams = currLaneEntry.controlStreams.length > 0 ? currLaneEntry.controlStreams : await currLaneEntry.parentNode.fetchNodeControlStreams();
@@ -298,23 +296,21 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
 
         for (const file of filePaths) {
-            const endpoint = node.isSecure
-                ? `https://${node.address}:${node.port}${node.oshPathRoot}/buckets/adjudication/${file.name}`
-                : `http://${node.address}:${node.port}${node.oshPathRoot}/buckets/adjudication/${file.name}`;
 
-            const formData = new FormData();
+            const protocol = node.isSecure ? 'https://' : 'http://';
+            const endpoint =  `${protocol}${node.address}:${node.port}${node.oshPathRoot}/buckets/adjudication/${file.name}`
+
+            const formData = new FormData(); // this should handle the content type and set it properly
             formData.append('file', file);
 
             const options: RequestInit = {
                 method: 'POST',
                 headers: {
-                    // 'Content-Type': 'application/json',
                     'Authorization': `Basic ${encoded}`
                 },
                 mode: 'cors',
                 body: formData
             }
-
 
             const response = await fetch(endpoint, options);
             if (!response.ok) {
