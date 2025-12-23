@@ -138,6 +138,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         );
     };
 
+    /**handle the file uploaded**/
     const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files === null) {
             return;
@@ -166,9 +167,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     }
 
     const handleIsotopeSelect = (value: string[]) => {
-        let valueString = value.join(', ');
         let tAdjData = adjData;
-        tAdjData.isotopes.push(valueString);
+        tAdjData.isotopes = value;
         setIsotope(value);
         setAdjData(tAdjData);
     }
@@ -266,6 +266,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             }
 
+
+
             const response = await sendCommand(
                 currLaneEntry.parentNode,
                 adjControlStream.properties.id,
@@ -274,7 +276,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     tempAdjData.adjudicationCode,
                     tempAdjData.isotopes,
                     tempAdjData.secondaryInspectionStatus,
-                    [],
+                    tempAdjData.filePaths,
                     tempAdjData.occupancyObsId,
                     tempAdjData.vehicleId
                 )

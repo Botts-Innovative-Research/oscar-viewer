@@ -16,6 +16,7 @@ export default function LaneSelect(props: {
     selectedNode: INode
 }) {
 
+
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
 
     const [lanes, setLanes] = useState([]);
@@ -24,7 +25,13 @@ export default function LaneSelect(props: {
         const {target: {value},} = event;
 
         let laneVal = typeof value === 'string' ? value.split(', ') : value;
-        props.onSelect(laneVal)
+
+        if (laneVal.includes("all")) {
+            props.onSelect(props.lane.length === lanes.length ? [] : lanes.map(l => l.laneSystem.properties.properties.uid));
+        } else {
+            props.onSelect(laneVal)
+        }
+
     };
 
     useEffect(() => {
@@ -80,16 +87,26 @@ export default function LaneSelect(props: {
                         },
                 }}
             >
+                <MenuItem value="all">
+                    <Checkbox
+                        checked={props.lane.length === lanes.length && lanes.length > 0}
+                        indeterminate={
+                            props.lane.length > 0 &&
+                            props.lane.length < lanes.length
+                        }
+                    />
+                    <ListItemText primary="Select All" />
+                </MenuItem>
 
                 {lanes.map((lane: any) => (
                         <MenuItem key={lane.laneSystem.properties.properties.uid} value={lane.laneSystem.properties.properties.uid}>
                             <Checkbox checked={props.lane?.includes(lane.laneSystem.properties.properties.uid)} />
                             <ListItemText primary={lane.laneName} secondary={lane.laneSystem.properties.properties.uid} />
                         </MenuItem>
+
+
                     ))
                 }
-
-
             </Select>
         </FormControl>
     );
