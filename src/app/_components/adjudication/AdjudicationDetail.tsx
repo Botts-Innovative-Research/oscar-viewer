@@ -61,7 +61,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const [openDialog, setOpenDialog] = useState(false);
     const videoElement = useRef<HTMLVideoElement>(null);
-    const [qrCodeData, setQrCodeData] = useState<string[]>([]);
+    const [scannedData, setScannedData] = useState<string[]>([]);
     const scanner = useRef<QrScanner>();
 
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
@@ -72,8 +72,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const [adjSnackMsg, setAdjSnackMsg] = useState('');
     const [colorStatus, setColorStatus] = useState('');
     const [openSnack, setOpenSnack] = useState(false);
-
-
     const [shouldFetchLogs, setShouldFetchLogs] = useState<boolean>(false);
 
     function onFetchComplete() {
@@ -151,7 +149,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         setOpenDialog(false);
     }
 
-
     const handleQrCode = () => {
         setOpenDialog(true);
     };
@@ -165,17 +162,23 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             }
 
             scanner.current = new QrScanner(videoElement.current, (result) => {
-                setQrCodeData(prev => [...prev, result.data]);
-            }, qrOptions);
 
+                setScannedData(prev => {
+                    if (prev.includes(result.data))
+                        return prev;
+                    return [...prev, result.data]
+                });
+                }, qrOptions);
 
             scanner?.current?.start().catch((err) => {
                 console.error("Error starting scanner")
                 setAdjSnackMsg("Failed to start camera");
                 setOpenSnack(true);
             });
+
         }
     }, [openDialog]);
+
 
     const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files === null) {
@@ -272,7 +275,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     }
 
     const submitAdjudication = async(currLaneEntry: any, tempAdjData: any, files: FileWithWebId[]) => {
-        try{
+        try {
             let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == props.event.dataStreamId);
 
             let streams = currLaneEntry.controlStreams.length > 0 ? currLaneEntry.controlStreams : await currLaneEntry.parentNode.fetchNodeControlStreams();
@@ -336,52 +339,52 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             if (responseJson) {
                 const adjId = responseJson.results[0].id
 
+                await sendFileUploadRequest(files, currLaneEntry.parentNode, adjId);
 
-                let newFileNames = await sendFileUploadRequest(files, currLaneEntry.parentNode, adjId);
 
-                // what to do here? nothing maybe...
+                await sendQrCodeUploadRequest(scannedData, currLaneEntry.parentNode, adjId)
             }
-        }catch(error){
+        } catch(error) {
             setAdjSnackMsg('Adjudication failed to submit.')
             setColorStatus('error')
-        }finally{
+        } finally {
             setShouldFetchLogs(true);
             setOpenSnack(true);
             resetForm();
         }
-
     }
 
-    async function sendQrCodeUploadRequest(qrData: string, node: INode, adjId: string) {
+    async function sendQrCodeUploadRequest(qrDataArray: string[], node: INode, adjId: string) {
         const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
         const protocol = node.isSecure ? 'https://' : 'http://';
 
-        const endpoint =  `${protocol}${node.address}:${node.port}${node.oshPathRoot}/buckets/adjudication?adjudicationId=${adjId}`
+        const endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}/buckets/adjudication?adjudicationId=${adjId}`
         const url = new URL(endpoint);
 
-        const options: RequestInit = {
-            method: 'POST',
-            headers: {
-                'Authorization': `Basic ${encoded}`,
-                'Content-Type': 'text/plain'
-            },
-            mode: 'cors',
-            body: qrData
-        }
-        const response = await fetch(url, options);
+        for (const qrData of qrDataArray) {
+            const options: RequestInit = {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Basic ${encoded}`,
+                    'Content-Type': 'text/plain'
+                },
+                mode: 'cors',
+                body: qrData
+            }
+            const response = await fetch(url, options);
 
-        if (!response.ok) {
-            console.error("Successfully uploading qr code:", response);
-            setAdjSnackMsg(`Successfully to upload qr code`);
-            setColorStatus('success');
+            if (!response.ok) {
+                console.error("Successfully uploading qr code:", response);
+                setAdjSnackMsg(`Successfully to upload qr code`);
+                setColorStatus('success');
+                setOpenSnack(true);
+                return;
+            }
+
+            setAdjSnackMsg(`Failed to upload qr code`);
+            setColorStatus('error');
             setOpenSnack(true);
-            return;
         }
-
-        setAdjSnackMsg(`Failed to upload qr code`);
-        setColorStatus('error');
-        setOpenSnack(true);
-        // this returns the file name! probs dont need to do anything atm
     }
 
     async function sendFileUploadRequest(filePaths: FileWithWebId[], node: INode, adjId: string) {
@@ -631,7 +634,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                 <CloseIcon />
                             </IconButton>
                             <DialogTitle sx={{ textAlign: 'center', pb: 1}}>
-                                QR Code
+                                Spectroscopic QR Code Scanner
                             </DialogTitle>
                             <Box
                                 sx={{
@@ -665,13 +668,63 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                     }}
                                     />
                                 </Box>
-                                <Button
-                                    variant="contained"
-                                    onClick={handleCloseQrCodeDialog}
-                                    sx={{ mt: 2, minWidth: 120 }}
-                                >
-                                    Done
-                                </Button>
+
+                                {scannedData.length > 0 && (
+                                    <Paper
+                                        variant="outlined"
+                                        sx={{ mt: 2, p: 2, width: '100%', maxHeight: 150, overflowY: 'auto' }}
+                                    >
+                                        <Typography variant="subtitle2" gutterBottom>
+                                            Scanned Codes ({scannedData.length}):
+                                        </Typography>
+                                        <Stack spacing={1}>
+                                            {scannedData.map((data, idx) => (
+                                                <Stack
+                                                    key={idx}
+                                                    direction="row"
+                                                    justifyContent="space-between"
+                                                    alignItems="center"
+                                                >
+                                                    <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                                                        {data}
+                                                    </Typography>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => setScannedData(prev => prev.filter((_, i) => i !== idx))}
+                                                    >
+                                                        <DeleteOutline fontSize="small" />
+                                                    </IconButton>
+                                                </Stack>
+                                            ))}
+                                        </Stack>
+                                    </Paper>
+                                )}
+
+                                {/*<Button*/}
+                                {/*    variant="contained"*/}
+                                {/*    onClick={handleCloseQrCodeDialog}*/}
+                                {/*    sx={{ mt: 2, minWidth: 120 }}*/}
+                                {/*>*/}
+                                {/*    Done Scanning*/}
+                                {/*</Button>*/}
+
+                                <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                                    {scannedData.length > 0 && (
+                                        <Button
+                                            variant="outlined"
+                                            onClick={() => setScannedData([])}
+                                        >
+                                            Clear All
+                                        </Button>
+                                    )}
+                                    <Button
+                                        variant="contained"
+                                        onClick={handleCloseQrCodeDialog}
+                                        sx={{ minWidth: 120 }}
+                                    >
+                                        Done Scanning
+                                    </Button>
+                                </Stack>
                             </Box>
                         </Dialog>
                     </Stack>
