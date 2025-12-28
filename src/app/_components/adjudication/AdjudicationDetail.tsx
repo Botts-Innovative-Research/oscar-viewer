@@ -17,7 +17,7 @@ import {
     Dialog
 
 } from "@mui/material";
-import React, {ChangeEvent, useContext, useEffect, useRef, useState} from "react";
+import React, {ChangeEvent, useCallback, useContext, useEffect, useRef, useState} from "react";
 import AdjudicationLog from "./AdjudicationLog"
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
@@ -41,28 +41,10 @@ import {INode} from "@/lib/data/osh/Node";
 import {QrCode} from "@mui/icons-material";
 import QrScanner from "qr-scanner";
 import {CloseIcon} from "next/dist/client/components/react-dev-overlay/internal/icons/CloseIcon";
-import DetectorResponseFunction from "./DetectorResponseFunction";
-import SpectrumTypeSelector from "@/app/_components/adjudication/SpectrumTypeSelector";
-import WebIdAnalysis from "@/app/_components/adjudication/WebIdAnalysis";
-import {useSelector} from "react-redux";
-import {RootState} from "@/lib/state/Store";
-import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
-import {randomUUID} from "osh-js/source/core/utils/Utils";
 
 interface FileWithWebId {
     file: File;
     webIdEnabled: boolean;
-    detectorResponseFunction: string;
-    spectrumType: string;
-}
-
-// qr code auto true = webIdEnabled
-
-interface ScannedDataWithWebId {
-    text: string;
-    webIdEnabled: boolean;
-    detectorResponseFunction: string;
-    spectrumType: string;
 }
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
@@ -79,7 +61,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const [openDialog, setOpenDialog] = useState(false);
     const videoElement = useRef<HTMLVideoElement>(null);
-    const [scannedData, setScannedData] = useState<ScannedDataWithWebId[]>([]);
+    const [scannedData, setScannedData] = useState<string[]>([]);
     const scanner = useRef<QrScanner>();
 
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
@@ -134,14 +116,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     props.event.occupancyObsId = occupancyObservation[0].id;
                     props.event.rpmSystemId = ds.properties["system@id"];
 
-                    setAdjData(prevAdjData => {
-                        if (prevAdjData) {
-                            prevAdjData.occupancyObsId = occupancyObservation[0].id;
-                            prevAdjData.alarmingSystemUid = ds.properties["system@id"];
-                        }
-                        return prevAdjData;
-                    });
-
                 } catch (err) {
                     console.error(err);
                     setAdjSnackMsg('Error loading observation.');
@@ -164,15 +138,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const handleWebIdAnalysis = (fileIndex: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
         setUploadedFiles(prevFiles =>
             prevFiles.map((fileData, idx) =>
-                idx === fileIndex ? {...fileData, webIdEnabled: event.target.checked} : fileData
-            )
-        );
-    };
-
-    const handleQRCodeWebIdAnalysis = (fileIndex: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
-        setScannedData(prevFiles =>
-            prevFiles.map((fileData, idx) =>
-                idx === fileIndex ? {...fileData, webIdEnabled: event.target.checked} : fileData
+                idx === fileIndex ? { ...fileData, webIdEnabled: event.target.checked } : fileData
             )
         );
     };
@@ -188,45 +154,28 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     };
 
     useEffect(() => {
-        if (openDialog && !scanner.current) {
-            const timeoutId = setTimeout(() => {
-                if (!videoElement.current) {
-                    console.error("Video element not found");
-                    setAdjSnackMsg("Failed to initialize camera");
-                    setOpenSnack(true);
-                    return;
-                }
+        if (openDialog && videoElement?.current && !scanner.current) {
+            const qrOptions = {
+                onDecodeError: (err: any) => console.error("QR Scan Error:", err),
+                preferredCamera: "environment",
+                highlightScanRegion: true,
+            }
 
-                const qrOptions = {
-                    onDecodeError: (err: any) => console.error("QR Scan Error:", err),
-                    preferredCamera: "environment", //this will detect automatically to use the back camera on the phone
-                    highlightScanRegion: true,
-                }
+            scanner.current = new QrScanner(videoElement.current, (result) => {
 
-                scanner.current = new QrScanner(videoElement.current, (result) => {
-                    let newData: ScannedDataWithWebId = {
-                        text: result.data,
-                        detectorResponseFunction: "",
-                        spectrumType: "",
-                        webIdEnabled: true
-                    }
-
-                    setScannedData(prev => {
-                        if (prev.some(item => item.text === result.data))
-                            return prev;
-                        return [...prev, newData]
-                    });
+                setScannedData(prev => {
+                    if (prev.includes(result.data))
+                        return prev;
+                    return [...prev, result.data]
+                });
                 }, qrOptions);
 
-                scanner.current.start().catch((err) => {
-                    console.error("Error starting scanner:", err);
-                    setAdjSnackMsg("Failed to start camera");
-                    setColorStatus('error');
-                    setOpenSnack(true);
-                });
-            }, 100);
+            scanner?.current?.start().catch((err) => {
+                console.error("Error starting scanner")
+                setAdjSnackMsg("Failed to start camera");
+                setOpenSnack(true);
+            });
 
-            return () => clearTimeout(timeoutId);
         }
     }, [openDialog]);
 
@@ -240,13 +189,10 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
         const filesWithWebId = files.map(file => ({
             file,
-            webIdEnabled: false,
-            detectorResponseFunction: "",
-            spectrumType: ""
+            webIdEnabled: false
         }));
 
         setUploadedFiles([...uploadedFiles, ...filesWithWebId]);
-        e.target.value = '';
     };
 
     const handleFileDelete = (fileIndex: number) => {
@@ -275,42 +221,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         setAdjData(tAdjData);
     }
 
-    const handleDrfSelection = (fileIndex: number) => (value: string) => {
-        setUploadedFiles(prevFiles =>
-            prevFiles.map((fileData, idx) =>
-                idx === fileIndex ? {...fileData, detectorResponseFunction: value} : fileData
-            )
-        );
-    }
-
-    const handleSpectrumType = (fileIndex: number) => (value: string) => {
-        setUploadedFiles(prevFiles =>
-            prevFiles.map((fileData, idx) =>
-                idx === fileIndex ? {...fileData, spectrumType: value} : fileData
-            )
-        );
-    }
-
-    const handleScannedDataDrfSelection = (index: number) => (value: string) => {
-        setScannedData(prev =>
-            prev.map((data, idx) =>
-                idx === index ? {...data, detectorResponseFunction: value} : data
-            )
-        );
-    }
-
-    const handleScannedDataSpectrumType = (index: number) => (value: string) => {
-        setScannedData(prev =>
-            prev.map((data, idx) =>
-                idx === index ? {...data, spectrumType: value} : data
-            )
-        );
-    }
-
-    const handleScannedDataDelete = (index: number) => {
-        setScannedData(prev => prev.filter((_, i) => i !== index));
-    }
-
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value} = e.target;
 
@@ -331,7 +241,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         setVehicleId('')
         setAdjData(adjudication);
         setUploadedFiles([]);
-        setScannedData([]);
         setSecondaryInspection('');
         setIsotope([]);
         setAdjudicationCode(AdjudicationCodes.codes[0]);
@@ -339,7 +248,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     }
 
     const sendAdjudicationData = async () => {
-        if (adjData.adjudicationCode === null || !adjData.adjudicationCode || adjData.adjudicationCode === AdjudicationCodes.codes[0]) {
+        if(adjData.adjudicationCode === null || !adjData.adjudicationCode || adjData.adjudicationCode === AdjudicationCodes.codes[0]){
             setAdjSnackMsg("Please selected a valid adjudication code before submitting.");
             setColorStatus('error');
             setOpenSnack(true)
@@ -365,17 +274,15 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         await submitAdjudication(currLaneEntry, tempAdjData, uploadedFiles)
     }
 
-    const submitAdjudication = async (currLaneEntry: any, tempAdjData: any, files: FileWithWebId[]) => {
+    const submitAdjudication = async(currLaneEntry: any, tempAdjData: any, files: FileWithWebId[]) => {
         try {
             let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == props.event.dataStreamId);
 
             let streams = currLaneEntry.controlStreams.length > 0 ? currLaneEntry.controlStreams : await currLaneEntry.parentNode.fetchNodeControlStreams();
             let adjControlStream = streams.find((stream: typeof ControlStream) => isAdjudicationControlStream(stream));
 
-            if (!adjControlStream) {
-                setAdjSnackMsg("Failed: cannot find adjudication control stream for occupancy.");
-                setColorStatus('error')
-                setOpenSnack(true);
+            if (!adjControlStream){
+                console.error("Failed: cannot find adjudication control stream for occupancy.");
                 return;
             }
 
@@ -400,19 +307,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             }
 
-            let qrCodeFiles = createFilesForQRCode(scannedData)
-
-            qrCodeFiles.forEach(file => files.push(file))
-
-            const updatedFileNames = await sendFileUploadRequest(files, currLaneEntry.parentNode);
-
-            if (updatedFileNames.length > 0 && !updatedFileNames) {
-                return;
-            }
-
-
-            let allFiles = [...(updatedFileNames || [])]
-
             const response = await sendCommand(
                 currLaneEntry.parentNode,
                 adjControlStream.properties.id,
@@ -421,8 +315,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     tempAdjData.adjudicationCode,
                     tempAdjData.isotopes,
                     tempAdjData.secondaryInspectionStatus,
-                    // files.map(file => 'adjudication/' + file.file.name),
-                    allFiles,
+                    [],
                     tempAdjData.occupancyObsId,
                     tempAdjData.vehicleId
                 )
@@ -431,7 +324,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             if (!response.ok) {
                 setAdjSnackMsg('Adjudication failed to submit.')
                 setColorStatus('error')
-                setOpenSnack(true);
                 return;
             }
 
@@ -443,108 +335,80 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             dispatch(setSelectedEvent(props.event));
             dispatch(setAdjudicatedEventId(props.event.id));
 
+            const responseJson = await response.json()
+            if (responseJson) {
+                const adjId = responseJson.results[0].id
+
+                await sendFileUploadRequest(files, currLaneEntry.parentNode, adjId);
+
+
+                await sendQrCodeUploadRequest(scannedData, currLaneEntry.parentNode, adjId)
+            }
+        } catch(error) {
+            setAdjSnackMsg('Adjudication failed to submit.')
+            setColorStatus('error')
+        } finally {
             setShouldFetchLogs(true);
             setOpenSnack(true);
             resetForm();
-        } catch (error) {
-            setAdjSnackMsg('Adjudication failed to submit.')
-            setColorStatus('error')
+        }
+    }
+
+    async function sendQrCodeUploadRequest(qrDataArray: string[], node: INode, adjId: string) {
+        const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
+        const protocol = node.isSecure ? 'https://' : 'http://';
+
+        const endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}/buckets/adjudication?adjudicationId=${adjId}`
+        const url = new URL(endpoint);
+
+        for (const qrData of qrDataArray) {
+            const options: RequestInit = {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Basic ${encoded}`,
+                    'Content-Type': 'text/plain'
+                },
+                mode: 'cors',
+                body: qrData
+            }
+            const response = await fetch(url, options);
+
+            if (!response.ok) {
+                console.error("Successfully uploading qr code:", response);
+                setAdjSnackMsg(`Successfully to upload qr code`);
+                setColorStatus('success');
+                setOpenSnack(true);
+                return;
+            }
+
+            setAdjSnackMsg(`Failed to upload qr code`);
+            setColorStatus('error');
             setOpenSnack(true);
         }
     }
 
-    const laneMap = useSelector((state: RootState) => selectLaneMap(state));
+    async function sendFileUploadRequest(filePaths: FileWithWebId[], node: INode, adjId: string) {
 
-    const laneUid = laneMap.get(props.event?.laneId)?.laneSystem?.properties?.properties?.uid;
-
-    function createFilesForQRCode(qrCodeData: ScannedDataWithWebId[]) {
-        let newFiles: FileWithWebId[] = [];
-
-        const options = {
-            type: "text/plain;charset=utf-8",
-        };
-
-        qrCodeData.forEach((code) => {
-            let fileName = 'foreground-' + randomUUID() + ".txt"
-            let fileBits = code.text;
-            const file = new File([fileBits], fileName, options);
-
-            let fileWithId: FileWithWebId = {
-                file,
-                webIdEnabled: true,
-                detectorResponseFunction: code.detectorResponseFunction,
-                spectrumType: code.spectrumType ? code.spectrumType : 'foreground'
-            }
-            newFiles.push(fileWithId);
-        })
-
-        return newFiles;
-    }
-
-    async function sendFileUploadRequest(filePaths: FileWithWebId[], node: INode) {
         let newFileNames: any[] = [];
-
         const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
         const protocol = node.isSecure ? 'https://' : 'http://';
 
-        const webIdFiles = filePaths.filter(f => f.webIdEnabled);
-        const foregroundFile = webIdFiles.find(f => f.spectrumType === 'foreground');
-        const backgroundFile = webIdFiles.find(f => f.spectrumType === 'background');
-        const foregroundAndBackgroundFile = webIdFiles.find(f => f.spectrumType === 'foreground/background');
-        const hasPair = foregroundFile && backgroundFile;
-
-        const pairedFiles = hasPair ? new Set([foregroundFile, backgroundFile]) : new Set<FileWithWebId>();
-
-        if (hasPair) {
-            const drf = foregroundFile.detectorResponseFunction || backgroundFile.detectorResponseFunction;
-            const endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication?occupancyObsId=${props.event.occupancyObsId}&laneUid=${laneUid}&webIdEnabled=${foregroundFile.webIdEnabled}&drf=${drf}`;
-            const url = new URL(endpoint);
-
-            const formData = new FormData();
-            formData.append('foreground', foregroundFile.file);
-            formData.append('background', backgroundFile.file);
-
-            const options: RequestInit = {
-                method: 'POST',
-                headers: {'Authorization': `Basic ${encoded}`},
-                mode: 'cors',
-                body: formData
-            };
-
-            const response = await fetch(url, options);
-            if (!response.ok) {
-                console.error("Failed uploading paired WebID files:", response);
-                setAdjSnackMsg('Failed to upload paired WebID files.');
-                setColorStatus('error');
-                setOpenSnack(true);
-            }
-
-            let filesNames: string[] = await response.json();
-
-            filesNames.forEach(path => newFileNames.push(path))
-        }
 
         for (const fileData of filePaths) {
-            if (pairedFiles.has(fileData)) continue;
-
-            let fileName = `adjudication?occupancyObsId=${props.event.occupancyObsId}&laneUid=${laneUid}&webIdEnabled=${fileData.webIdEnabled}`
-
-            if (fileData.webIdEnabled)
-                fileName = fileName + `&drf=${fileData.detectorResponseFunction}`
-
-            let endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/${fileName}`;
-
+            const endpoint =  `${protocol}${node.address}:${node.port}${node.oshPathRoot}/buckets/adjudication/${fileData.file.name}?adjudicationId=${adjId}&enableWebId=${fileData.webIdEnabled}}`
             const url = new URL(endpoint);
 
-            const formData = new FormData();
-            formData.append('foreground', fileData.file);
+            const formData = new FormData(); // this should handle the content type and set it properly
+            formData.append('file', fileData.file);
 
             const options: RequestInit = {
-                method: 'POST',
-                headers: {'Authorization': `Basic ${encoded}`},
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Basic ${encoded}`
+                },
                 mode: 'cors',
                 body: formData
-            };
+            }
 
             const response = await fetch(url, options);
             if (!response.ok) {
@@ -552,17 +416,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 setAdjSnackMsg(`Failed to upload file: ${fileData.file.name}`);
                 setColorStatus('error');
                 setOpenSnack(true);
-                return;
+                continue;
             }
+            newFileNames.push(`/buckets/adjudication/${fileData.file.name}`)
 
-            setAdjSnackMsg(`Successfully uploaded file: ${fileName}`);
-            setColorStatus('success');
-            setOpenSnack(true);
-
-            let filesNames: string[] = await response.json();
-            filesNames.forEach(path => newFileNames.push(path))
         }
-
         return newFileNames;
     }
 
@@ -572,410 +430,332 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         setOpenSnack(false);
     };
 
+
     return (
-        <>
-            <Paper variant='outlined' sx={{width: "100%"}}>
-                <WebIdAnalysis
-                    event={props.event}
-                    shouldFetch={shouldFetchLogs}
-                    onFetch={onFetchComplete}
-                />
-            </Paper>
+        <Stack direction={"column"} p={2} spacing={2}>
+            <Typography
+                variant="h4"
+            >
+                Adjudication
+            </Typography>
 
+            <AdjudicationLog
+                event={props.event}
+                shouldFetch={shouldFetchLogs}
+                onFetch={onFetchComplete}
+            />
 
-            <Paper variant='outlined' sx={{width: "100%"}}>
+            <Stack spacing={2}>
+                <Typography variant="h5">Adjudication Report Form</Typography>
 
-                <Stack direction={"column"} p={2} spacing={2}>
+                <Stack
+                    direction={"row"}
+                    spacing={2}
+                    justifyContent={"start"}
+                    alignItems={"center"}
+                >
+                    <TextField
+                        label="VehicleId"
+                        name="vehicleId"
+                        value={vehicleId}
+                        onChange={handleChange}
 
-                    <Typography
-                        variant="h4"
-                    >
-                        Adjudication
-                    </Typography>
-
-                    <AdjudicationLog
-                        event={props.event}
-                        shouldFetch={shouldFetchLogs}
-                        onFetch={onFetchComplete}
-                        node={laneMapRef.current.get(props.event.laneId)?.parentNode}
                     />
+                </Stack>
 
-                    <Stack spacing={2}>
-                        <Typography variant="h5">Adjudication Report Form</Typography>
+                <Stack
+                    direction={"row"}
+                    spacing={2}
+                    justifyContent={"start"}
+                    alignItems={"center"}
+                >
+                    <AdjudicationSelect
+                        adjCode={adjudicationCode}
+                        onSelect={handleAdjudicationSelect}
+                    />
+                    <IsotopeSelect
+                        isotopeValue={isotope}
+                        onSelect={handleIsotopeSelect}
+                    />
+                </Stack>
 
+                <TextField
+                    id="outlined-multiline-static"
+                    label="Notes"
+                    name="notes"
+                    multiline
+                    rows={4}
+                    value={feedback}
+                    onChange={handleChange}
+                />
+                {uploadedFiles.length > 0 && (
+                    <Paper
+                        variant='outlined'
+                        sx={{ width: "100%", borderRadius: 2, overflow: 'hidden', padding: 2 }}
+                    >
+                        <Typography variant="h6">Uploaded Files</Typography>
                         <Stack
-                            direction={"row"}
-                            spacing={2}
-                            justifyContent={"start"}
-                            alignItems={"center"}
+                            sx={{
+                                maxHeight: '200px',
+                                overflowY: 'auto',
+                                p: 1.5,
+                            }}
+                            spacing={1}
                         >
-                            <TextField
-                                label="VehicleId"
-                                name="vehicleId"
-                                value={vehicleId}
-                                onChange={handleChange}
-
-                            />
-                        </Stack>
-
-                        <Stack
-                            direction={"row"}
-                            spacing={2}
-                            justifyContent={"start"}
-                            alignItems={"center"}
-                        >
-                            <AdjudicationSelect
-                                adjCode={adjudicationCode}
-                                onSelect={handleAdjudicationSelect}
-                            />
-                            <IsotopeSelect
-                                isotopeValue={isotope}
-                                onSelect={handleIsotopeSelect}
-                            />
-                        </Stack>
-
-                        <TextField
-                            id="outlined-multiline-static"
-                            label="Notes"
-                            name="notes"
-                            multiline
-                            rows={4}
-                            value={feedback}
-                            onChange={handleChange}
-                        />
-                        {uploadedFiles.length > 0 && (
-                            <Box sx={{width: "100%"}}>
-                                <Typography variant="subtitle2" sx={{mb: 1}}>
-                                    Uploaded Files ({uploadedFiles.length})
-                                </Typography>
-                                <Box
-                                    sx={{
-                                        maxHeight: '200px',
-                                        overflowY: 'auto',
-                                        border: '1px solid',
-                                        borderColor: 'divider',
-                                        borderRadius: 1,
-                                    }}
+                            {uploadedFiles.map((fileData, index) => (
+                                <Paper
+                                    key={`${fileData.file.name}-${index}`}
+                                    elevation={0}
                                 >
-                                    {uploadedFiles.map((fileData, index) => (
-                                        <Box
-                                            key={`${fileData.file.name}-${index}`}
-                                            sx={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'space-between',
-                                                px: 2,
-                                                py: 1,
-                                                borderBottom: index < uploadedFiles.length - 1 ? '1px solid' : 'none',
-                                                borderColor: 'divider',
-                                            }}
-                                        >
-                                            <Stack direction="row" spacing={1.5} alignItems="center" flex={1}
-                                                   minWidth={0}>
-                                                <InsertDriveFileRoundedIcon fontSize="small" color="action"/>
-                                                <Typography variant="body2" noWrap sx={{flex: 1}}>
-                                                    {fileData.file.name}
-                                                </Typography>
-                                            </Stack>
-                                            <Stack direction="row" spacing={1} alignItems="center">
-                                                <FormControlLabel
-                                                    control={
-                                                        <Checkbox
-                                                            size="small"
-                                                            checked={fileData.webIdEnabled}
-                                                            onChange={handleWebIdAnalysis(index)}
-                                                        />
-                                                    }
-                                                    label={<Typography variant="body2">WebID</Typography>}
-                                                    sx={{mr: 0}}
-                                                />
-                                                {
-                                                    fileData.webIdEnabled ? (
-                                                            <Stack direction={"row"} spacing={2}>
-                                                                <DetectorResponseFunction
-                                                                    onSelect={handleDrfSelection(index)}
-                                                                    selectVal={fileData.detectorResponseFunction}/>
-
-                                                                <SpectrumTypeSelector onSelect={handleSpectrumType(index)}
-                                                                                      selectVal={fileData.spectrumType}/>
-                                                            </Stack>
-
-                                                        ) :
-                                                        (
-                                                            <div></div>
-                                                        )
-                                                }
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => handleFileDelete(index)}
-                                                    color="error"
-                                                >
-                                                    <DeleteOutline fontSize="small"/>
-                                                </IconButton>
-                                            </Stack>
-                                        </Box>
-                                    ))}
-                                </Box>
-                            </Box>
-                        )}
-                        {scannedData.length > 0 && (
-                            <Box sx={{width: "100%"}}>
-                                <Typography variant="subtitle2" sx={{mb: 1}}>
-                                    Scanned Data ({scannedData.length})
-                                </Typography>
-                                <Box
-                                    sx={{
-                                        maxHeight: '200px',
-                                        overflowY: 'auto',
-                                        border: '1px solid',
-                                        borderColor: 'divider',
-                                        borderRadius: 1,
-                                    }}
-                                >
-                                    {scannedData.map((data, index) => (
-                                        <Box
-                                            key={`scanned-${index}`}
-                                            sx={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'space-between',
-                                                px: 2,
-                                                py: 1,
-                                                borderBottom: index < scannedData.length - 1 ? '1px solid' : 'none',
-                                                borderColor: 'divider',
-                                            }}
-                                        >
-                                            <Stack direction="row" spacing={1.5} alignItems="center" flex={1}
-                                                   minWidth={0}>
-                                                <QrCode fontSize="small" color="action"/>
-                                                <Typography variant="body2" noWrap
-                                                            sx={{flex: 1, fontFamily: 'monospace'}}>
-                                                    {data.text.length > 50 ? data.text.substring(0, 50) + '...' : data.text}
-                                                </Typography>
-                                            </Stack>
-                                            <Stack direction="row" spacing={2} alignItems="center">
-                                                <FormControlLabel
-                                                    control={
-                                                        <Checkbox
-                                                            size="small"
-                                                            checked={data.webIdEnabled}
-                                                            onChange={handleQRCodeWebIdAnalysis(index)}
-                                                        />
-                                                    }
-                                                    label={<Typography variant="body2">WebID</Typography>}
-                                                    sx={{mr: 0}}
-                                                />
-
-                                                {data.webIdEnabled ? (
-                                                    <>
-                                                        <DetectorResponseFunction
-                                                            onSelect={handleScannedDataDrfSelection(index)}
-                                                            selectVal={data.detectorResponseFunction}
-                                                        />
-                                                        <SpectrumTypeSelector
-                                                            onSelect={handleScannedDataSpectrumType(index)}
-                                                            selectVal={data.spectrumType}
-                                                        />
-                                                    </>
-                                                ): <></>
-                                                }
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => handleScannedDataDelete(index)}
-                                                    color="error"
-                                                >
-                                                    <DeleteOutline fontSize="small"/>
-                                                </IconButton>
-                                            </Stack>
-                                        </Box>
-                                    ))}
-                                </Box>
-                            </Box>
-                        )}
-
-                        <Stack direction={"row"} spacing={2} justifyContent={"space-between"} alignItems={"center"}
-                               width={"100%"}>
-                            <Stack direction={"row"} spacing={2}>
-                                <Button
-                                    component="label"
-                                    startIcon={<UploadFileRoundedIcon/>}
-                                    sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        width: "auto",
-                                        padding: "8px",
-                                        borderStyle: "solid",
-                                        borderWidth: "1px",
-                                        borderRadius: "10px",
-                                        borderColor: "secondary.main",
-                                        backgroundColor: "inherit",
-                                        color: "secondary.main"
-                                    }}
-                                >
-                                    Upload Files
-                                    <input
-                                        type="file"
-                                        multiple
-                                        onChange={handleFileUpload}
-                                        ref={fileInputRef}
-                                        style={{display: "none"}}
-                                    />
-                                </Button>
-
-                                <Button
-                                    component="label"
-                                    startIcon={<QrCode/>}
-                                    sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        width: "auto",
-                                        padding: "8px",
-                                        borderStyle: "solid",
-                                        borderWidth: "1px",
-                                        borderRadius: "10px",
-                                        borderColor: "info.main",
-                                        backgroundColor: "inherit",
-                                        color: "info.main"
-                                    }}
-                                    onClick={handleQrCode}
-                                >
-                                    Scan QR Code
-                                </Button>
-
-                                <Dialog
-                                    onClose={handleCloseQrCodeDialog}
-                                    open={openDialog}
-                                    fullWidth
-                                    maxWidth="sm"
-                                >
-                                    <IconButton
-                                        aria-label="close"
-                                        onClick={handleCloseQrCodeDialog}
-                                        sx={{
-                                            position: 'absolute',
-                                            right: 8,
-                                            top: 8,
-                                        }}
+                                    <Stack
+                                        direction="row"
+                                        spacing={2}
+                                        alignItems="center"
+                                        justifyContent="space-between"
                                     >
-                                        <CloseIcon/>
-                                    </IconButton>
-                                    <DialogTitle sx={{textAlign: 'center', pb: 1}}>
-                                        Spectroscopic QR Code Scanner
-                                    </DialogTitle>
-                                    <Box
-                                        sx={{
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            p: 3,
-                                            pt: 1,
-                                        }}
-                                    >
-                                        <Box className='qr-reader'
-                                             sx={{
-                                                 width: 400,
-                                                 height: 400,
-                                                 maxWidth: 400,
-                                                 borderRadius: 2,
-                                                 overflow: 'hidden',
-                                                 backgroundColor: 'black',
-                                                 display: 'flex',
-                                                 alignItems: 'center',
-                                                 justifyContent: 'center',
-                                             }}
+                                        <Stack
+                                            direction="row"
+                                            spacing={1.5}
+                                            alignItems="center"
+                                            flex={1}
+                                            minWidth={0}
                                         >
-                                            <video
-                                                ref={videoElement}
-                                                style={{
-                                                    width: "100%",
-                                                    height: "100%",
-                                                    objectFit: "cover"
-                                                }}
-                                            />
-                                        </Box>
-
-                                        {scannedData.length > 0 && (
-                                            <Paper
-                                                variant="outlined"
-                                                sx={{mt: 2, p: 2, width: '100%', maxHeight: 150, overflowY: 'auto'}}
+                                            <InsertDriveFileRoundedIcon />
+                                            <Typography
+                                                variant="body2"
                                             >
-                                                <Typography variant="subtitle2" gutterBottom>
-                                                    Scanned Codes ({scannedData.length}):
-                                                </Typography>
-                                                <Stack spacing={1}>
-                                                    {scannedData.map((data, idx) => (
-                                                        <Stack
-                                                            key={idx}
-                                                            direction="row"
-                                                            justifyContent="space-between"
-                                                            alignItems="center"
-                                                        >
-                                                            <Typography variant="body2" sx={{fontFamily: 'monospace'}}>
-                                                                {data.text.length > 60 ? data.text.substring(0, 60) + '...' : data.text}
-                                                            </Typography>
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => handleScannedDataDelete(idx)}
-                                                            >
-                                                                <DeleteOutline fontSize="small"/>
-                                                            </IconButton>
-                                                        </Stack>
-                                                    ))}
-                                                </Stack>
-                                            </Paper>
-                                        )}
-
-                                        <Stack direction="row" spacing={2} sx={{mt: 2}}>
-                                            {scannedData.length > 0 && (
-                                                <Button
-                                                    variant="outlined"
-                                                    onClick={() => setScannedData([])}
-                                                >
-                                                    Clear All
-                                                </Button>
-                                            )}
-                                            <Button
-                                                variant="contained"
-                                                onClick={handleCloseQrCodeDialog}
-                                                sx={{minWidth: 120}}
-                                            >
-                                                Done Scanning
-                                            </Button>
+                                                {fileData.file.name}
+                                            </Typography>
                                         </Stack>
-                                    </Box>
-                                </Dialog>
-                            </Stack>
-                            <Stack direction={"row"} spacing={2}>
-                                <SecondaryInspectionSelect
-                                    secondarySelectVal={secondaryInspection}
-                                    onSelect={handleInspectionSelect}
-                                />
-                                <Button
-                                    disableElevation
-                                    variant={"contained"}
-                                    color={"success"}
-                                    onClick={sendAdjudicationData}
-                                >
-                                    Submit
-                                </Button>
-                                <Snackbar
-                                    anchorOrigin={{vertical: 'top', horizontal: 'center'}}
-                                    open={openSnack}
-                                    autoHideDuration={5000}
-                                    onClose={handleCloseSnack}
-                                    message={adjSnackMsg}
-                                    sx={{
-                                        '& .MuiSnackbarContent-root': {
-                                            backgroundColor: colorStatus === 'success' ? 'green' : 'red',
-                                        },
-                                    }}
-                                />
-                            </Stack>
+
+                                        <Stack
+                                            direction="row"
+                                            spacing={1}
+                                            alignItems="center"
+                                        >
+                                            <FormControlLabel
+                                                control={
+                                                    <Checkbox
+                                                        size="small"
+                                                        checked={fileData.webIdEnabled}
+                                                        onChange={handleWebIdAnalysis(index)}
+                                                    />
+                                                }
+                                                label={
+                                                    <Typography variant="body2">
+                                                        WebID Analysis
+                                                    </Typography>
+                                                }
+                                            />
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => handleFileDelete(index)}
+                                                sx={{
+                                                    padding: "2px",
+                                                    border: "1px solid",
+                                                    borderRadius: "10px",
+                                                    borderColor: "error.main",
+                                                    backgroundColor: "inherit",
+                                                    color: "error.main"
+                                                }}
+                                            >
+                                                <DeleteOutline/>
+                                            </IconButton>
+                                        </Stack>
+                                    </Stack>
+                                </Paper>
+                            ))}
                         </Stack>
+                    </Paper>
+                )}
+                <Stack direction={"row"} spacing={2} justifyContent={"space-between"} alignItems={"center"} width={"100%"}>
+                    <Stack direction={"row"} spacing={2}>
+                        <Button
+                            component="label"
+                            startIcon={<UploadFileRoundedIcon/>}
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                width: "auto",
+                                padding: "8px",
+                                borderStyle: "solid",
+                                borderWidth: "1px",
+                                borderRadius: "10px",
+                                borderColor: "secondary.main",
+                                backgroundColor: "inherit",
+                                color: "secondary.main"
+                            }}
+                        >
+                            Upload Files
+                            <input
+                                type="file"
+                                multiple
+                                onChange={handleFileUpload}
+                                ref={fileInputRef}
+                                style={{display: "none"}}
+                            />
+                        </Button>
+
+                        <Button
+                            component="label"
+                            startIcon={<QrCode/>}
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                width: "auto",
+                                padding: "8px",
+                                borderStyle: "solid",
+                                borderWidth: "1px",
+                                borderRadius: "10px",
+                                borderColor: "info.main",
+                                backgroundColor: "inherit",
+                                color: "info.main"
+                            }}
+                            onClick={handleQrCode}
+                        >
+                             Scan QR Code
+                        </Button>
+
+                        <Dialog
+                            onClose={handleCloseQrCodeDialog}
+                            open={openDialog}
+                            fullWidth
+                            maxWidth="sm"
+                        >
+                            <IconButton
+                                aria-label="close"
+                                onClick={handleCloseQrCodeDialog}
+                                sx={{
+                                    position: 'absolute',
+                                    right: 8,
+                                    top: 8,
+                                }}
+                            >
+                                <CloseIcon />
+                            </IconButton>
+                            <DialogTitle sx={{ textAlign: 'center', pb: 1}}>
+                                Spectroscopic QR Code Scanner
+                            </DialogTitle>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    p: 3,
+                                    pt: 1,
+                                }}
+                            >
+                                <Box className='qr-reader'
+                                     sx={{
+                                         width: 400,
+                                         height: 400,
+                                         maxWidth: 400,
+                                         borderRadius: 2,
+                                         overflow: 'hidden',
+                                         backgroundColor: 'black',
+                                         display: 'flex',
+                                         alignItems: 'center',
+                                         justifyContent: 'center',
+                                     }}
+                                >
+                                    <video
+                                        ref={videoElement}
+                                        style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "cover"
+                                    }}
+                                    />
+                                </Box>
+
+                                {scannedData.length > 0 && (
+                                    <Paper
+                                        variant="outlined"
+                                        sx={{ mt: 2, p: 2, width: '100%', maxHeight: 150, overflowY: 'auto' }}
+                                    >
+                                        <Typography variant="subtitle2" gutterBottom>
+                                            Scanned Codes ({scannedData.length}):
+                                        </Typography>
+                                        <Stack spacing={1}>
+                                            {scannedData.map((data, idx) => (
+                                                <Stack
+                                                    key={idx}
+                                                    direction="row"
+                                                    justifyContent="space-between"
+                                                    alignItems="center"
+                                                >
+                                                    <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                                                        {data}
+                                                    </Typography>
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => setScannedData(prev => prev.filter((_, i) => i !== idx))}
+                                                    >
+                                                        <DeleteOutline fontSize="small" />
+                                                    </IconButton>
+                                                </Stack>
+                                            ))}
+                                        </Stack>
+                                    </Paper>
+                                )}
+
+                                {/*<Button*/}
+                                {/*    variant="contained"*/}
+                                {/*    onClick={handleCloseQrCodeDialog}*/}
+                                {/*    sx={{ mt: 2, minWidth: 120 }}*/}
+                                {/*>*/}
+                                {/*    Done Scanning*/}
+                                {/*</Button>*/}
+
+                                <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                                    {scannedData.length > 0 && (
+                                        <Button
+                                            variant="outlined"
+                                            onClick={() => setScannedData([])}
+                                        >
+                                            Clear All
+                                        </Button>
+                                    )}
+                                    <Button
+                                        variant="contained"
+                                        onClick={handleCloseQrCodeDialog}
+                                        sx={{ minWidth: 120 }}
+                                    >
+                                        Done Scanning
+                                    </Button>
+                                </Stack>
+                            </Box>
+                        </Dialog>
+                    </Stack>
+                    <Stack direction={"row"} spacing={2}>
+                        <SecondaryInspectionSelect
+                            secondarySelectVal={secondaryInspection}
+                            onSelect={handleInspectionSelect}
+                        />
+                        <Button
+                            disableElevation
+                            variant={"contained"}
+                            color={"success"}
+                            onClick={sendAdjudicationData}
+                        >
+                            Submit
+                        </Button>
+                        <Snackbar
+                            anchorOrigin={{ vertical:'top', horizontal:'center' }}
+                            open={openSnack}
+                            autoHideDuration={5000}
+                            onClose={handleCloseSnack}
+                            message={adjSnackMsg}
+                            sx={{
+                                '& .MuiSnackbarContent-root': {
+                                    backgroundColor: colorStatus === 'success' ? 'green' : 'red',
+                                },
+                            }}
+                        />
                     </Stack>
                 </Stack>
-            </Paper>
-        </>
+            </Stack>
+        </Stack>
     );
 }
