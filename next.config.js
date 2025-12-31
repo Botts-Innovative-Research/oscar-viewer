@@ -2,7 +2,15 @@
  * Copyright (c) 2024.  Botts Innovative Research, Inc.
  * All Rights Reserved
  */
-module.exports = {
+const { withSentryConfig } = require("@sentry/nextjs");
+const withPWA = require('next-pwa')({
+    dest: 'public',
+    register: true,
+    skipWaiting: true,
+    disable: process.env.NODE_ENV === 'development', // Disable in dev to avoid caching issues
+});
+
+const nextConfig = {
     distDir: 'web',
     output: 'export',
     trailingSlash: true,
@@ -35,14 +43,11 @@ module.exports = {
         unoptimized: true,
     },
     reactStrictMode: false,
-}
+};
 
-// Injected content via Sentry wizard below
-
-const { withSentryConfig } = require("@sentry/nextjs");
-
+// Chain the wrappers: PWA first, then Sentry
 module.exports = withSentryConfig(
-  module.exports,
+  withPWA(nextConfig),
   {
     // For all available options, see:
     // https://www.npmjs.com/package/@sentry/webpack-plugin#options
