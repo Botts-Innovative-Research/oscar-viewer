@@ -77,7 +77,6 @@ export function EventPreview() {
     const [openSnack, setOpenSnack] = useState(false);
     const [colorStatus, setColorStatus] = useState('')
 
-    const [localSelectedEvent, setLocalSelectedEvent] = useState<EventTableData>(eventPreview.eventData);
 
     const handleAdjudicationCode = (value: AdjudicationCode) => {
         let newAdjData: IAdjudicationData = {
@@ -135,9 +134,6 @@ export function EventPreview() {
         await submitAdjudication(currLaneEntry, comboData)
     }
 
-    useEffect(() => {
-        setLocalSelectedEvent(eventPreview.eventData);
-    }, [eventPreview.eventData]);
 
     const submitAdjudication = async(currLaneEntry: any, comboData: any) => {
         try{
@@ -242,7 +238,6 @@ export function EventPreview() {
 
         router.push("/event-details");
     }
-
 
     useEffect(() => {
         if (eventPreview.eventData?.occupancyCount !== prevEventIdRef.current) {

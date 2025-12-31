@@ -3,12 +3,6 @@
  * All Rights Reserved
  */
 const { withSentryConfig } = require("@sentry/nextjs");
-const withPWA = require('next-pwa')({
-    dest: 'public',
-    register: true,
-    skipWaiting: true,
-    disable: process.env.NODE_ENV === 'development', // Disable in dev to avoid caching issues
-});
 
 const nextConfig = {
     distDir: 'web',
@@ -45,9 +39,9 @@ const nextConfig = {
     reactStrictMode: false,
 };
 
-// Chain the wrappers: PWA first, then Sentry
+// Wrap with Sentry
 module.exports = withSentryConfig(
-  withPWA(nextConfig),
+  nextConfig,
   {
     // For all available options, see:
     // https://www.npmjs.com/package/@sentry/webpack-plugin#options

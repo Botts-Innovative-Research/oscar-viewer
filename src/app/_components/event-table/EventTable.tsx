@@ -38,6 +38,7 @@ import {INode} from "@/lib/data/osh/Node";
 import Observations from "osh-js/source/core/consysapi/observation/Observations";
 import { GridFilterModel } from "@mui/x-data-grid"
 import { useLanguage } from '@/contexts/LanguageContext';
+import {NotificationService, NotificationTemplates} from "@/app/_components/pwa/NotificationService";
 
 
 interface TableProps {
@@ -400,6 +401,30 @@ export default function EventTable({
         }
     }
 
+    const notificationServiceRef = useRef<NotificationService | null>(null);
+
+    useEffect(() => {
+        if (!notificationServiceRef.current) {
+            notificationServiceRef.current = new NotificationService();
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then((registration) => {
+                notificationServiceRef.current?.init(registration);
+            });
+        }
+    }, []);
+
+    function sendNotification(alarmData: { laneName: string }) {
+        const notificationService = notificationServiceRef.current;
+        if (notificationService?.isReady()) {
+            console.log("showingn notifications!")
+            notificationService.showNotification(
+                NotificationTemplates.newAlarm(alarmData.laneName)
+            )
+        }
+    }
+
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry, isLive: boolean): EventTableData {
         const id = prngFromStr(obs, laneEntry.laneName);
         let newEvent: EventTableData;
@@ -409,6 +434,11 @@ export default function EventTable({
             const result = obs.result || obs;
             newEvent = new EventTableData(id, laneEntry.laneName, result, null, obs["foi@id"] || obs.foiId, laneEntry.parentNode.name);
             newEvent.setFoiId(obs["foi@id"] || obs.foiId);
+
+
+            if (newEvent.status !== 'None') {
+                sendNotification({ laneName: laneEntry.laneName });
+            }
         } else {
             // Handle historical observations
             newEvent = new EventTableData(id, laneEntry.laneName, obs.properties.result, obs.properties.id, obs.properties.foiId, laneEntry.parentNode.name);
