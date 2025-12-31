@@ -14,6 +14,20 @@ export const metadata: Metadata = {
         statusBarStyle: "default",
         title: "OSCAR Viewer",
     },
+    icons: {
+        icon: {
+            url: '/icons/icon-128x128.png',
+            type: 'image/png'
+        },
+        shortcut: {
+            url: '/icons/icon-128x128.png',
+            type: 'image/png',
+        },
+        apple: {
+            url: '/icons/icon-192x192.png',
+            type: 'image/png',
+        },
+    }
 };
 
 export const viewport: Viewport = {
@@ -23,7 +37,7 @@ export const viewport: Viewport = {
     maximumScale: 1,
 };
 
-export default function RootLayout({children,}: {
+export default function RootLayout({children}: {
     children: React.ReactNode
 }) {
 
