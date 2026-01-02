@@ -1,5 +1,3 @@
-
-
 export interface NotificationPayload {
     title: string
     body: string
@@ -82,11 +80,10 @@ export class NotificationService {
     }
 }
 
-
 export const NotificationTemplates = {
-    newAlarm: (laneName: string): NotificationPayload => ({
-        title: 'New Alarm',
-        body: `${laneName} with new alarm`,
+    newAlarm: (laneName: string, alarmStatus: string): NotificationPayload => ({
+        title: 'New OSCAR Alarm',
+        body: `New ${alarmStatus} alarm at Lane ${laneName}`,
         icon: '/icons/icon-192x192.png',
         actions: [
             { action: 'view-alarm', title: 'View Alarm' },

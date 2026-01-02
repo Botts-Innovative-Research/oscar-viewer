@@ -36,6 +36,7 @@ import { selectNodes } from "@/lib/state/OSHSlice";
 import { EventType } from "osh-js/source/core/event/EventType";
 import {INode} from "@/lib/data/osh/Node";
 import Observations from "osh-js/source/core/consysapi/observation/Observations";
+import {NotificationService, NotificationTemplates} from "@/app/_components/notifications/NotificationService";
 import { useLanguage } from '@/contexts/LanguageContext';
 import {NotificationService, NotificationTemplates} from "@/app/_components/pwa/NotificationService";
 
@@ -329,6 +330,7 @@ export default function EventTable({
             newEvent.setOccupancyObsId(obs.id);
         }
 
+
         return newEvent;
     }
 
@@ -346,15 +348,6 @@ export default function EventTable({
     useEffect(() => {
         currentPageRef.current = paginationModel.page;
     }, [paginationModel.page]);
-
-    // useEffect(() => {
-    //     if (paginationModel.page === 0 && totalObservations > 0 ) {
-    //         const now = new Date().toISOString();
-    //         // console.log('updating time for page load', now);
-    //
-    //         setPageLoadedTime(now);
-    //     }
-    // }, [paginationModel.page, totalObservations]);
 
 
     useEffect(() => {
@@ -384,8 +377,6 @@ export default function EventTable({
                     if (currentPageRef.current !== 0)
                         return;
 
-                    // console.log("paginationModel page", paginationModel.page)
-                    // console.log("currentPageRef.current", currentPageRef.current);
                     const obsData = msg.values?.[0]?.data || msg;
                     const event = eventFromObservation(obsData, entry, true);
 
