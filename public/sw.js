@@ -8,14 +8,31 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('push', (event) => {
     if (event.data) {
-        const data = event.data.json();
+        const data = event.data;
         const title = data.title || 'New OSCAR Notification';
         const options = {
             body: data.body || 'You have a new notification',
             icon: data.icon || '/icons/icon-192x192.png',
             badge: data.badge || '/icons/icon-128x128.png',
             vibrate: [200, 100, 200],
-            data: { url: data.url }
+            data: {
+                url: data.url,
+                timestamp: new Date().toISOString(),
+                source: '',
+                ...data
+            },
+            requireInteraction: true,
+            tag: data.tag || 'pwa-notification',
+            actions: [
+                {
+                    action: 'view-alarm',
+                    title: 'View Alarm'
+                },
+                {
+                    action: 'dismiss',
+                    title: 'Dismiss'
+                }
+            ]
         };
         event.waitUntil(self.registration.showNotification(title, options));
     }
