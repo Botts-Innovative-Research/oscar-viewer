@@ -200,14 +200,14 @@ export default function Navbar({children}: { children: React.ReactNode }) {
     const drawerContent = (
         <>
             <DrawerHeader>
-                <IconButton onClick={handleDrawerClose}>
+                <IconButton onClick={handleDrawerClose} aria-label="close drawer">
                     <ChevronLeftIcon/>
                 </IconButton>
             </DrawerHeader>
             <Divider/>
             <List>
                 {menuItems.map((item) => (
-                    <Link href={item.href} passHref key={item.title}>
+                    <Link href={item.href} passHref key={item.title} onClick={!isDesktop ? handleDrawerClose : null}>
                         <ListItem disablePadding sx={{display: 'block'}}>
                             <ListItemButton
                                 sx={{
@@ -351,7 +351,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                 </Drawer>
             ) : (
                 /* Render temporary variant for MOBILE and TABLET */
-                <MuiDrawer variant="temporary" open={drawerOpen}
+                <MuiDrawer variant="temporary" open={drawerOpen} onClose={handleDrawerClose}
                     sx={{
                         '& .MuiDrawer-paper': {
                         width: drawerWidthMobile,
