@@ -365,7 +365,24 @@ export default function Navbar({children}: { children: React.ReactNode }) {
             <Box sx={{display: "none"}}>
                 <AlarmAudio/>
             </Box>
-            <Box component="main" sx={{height: "100%", width: { xs: "100%", lg: (drawerOpen ? `calc(100% - ${drawerWidth}px)` : '100%') } }}>
+            <Box
+                component="main"
+                sx={(theme) => {
+                    // On desktop, shrink by drawerWidth if open
+                    const desktopWidth = drawerOpen ? `calc(100% - ${drawerWidth}px)` : '100%';
+                    return {
+                        height: '100%',
+                        width: {
+                            xs: '100%',
+                            lg: desktopWidth,
+                        },
+                        transition: theme.transitions.create(['margin-left', 'width'], {
+                            easing: theme.transitions.easing.sharp,
+                            duration: theme.transitions.duration.standard,
+                        }),
+                    };
+                }}
+            >
                 <DrawerHeader/>
                 <Box m={0}>
                     {children}
