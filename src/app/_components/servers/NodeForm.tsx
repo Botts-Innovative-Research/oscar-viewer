@@ -160,7 +160,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     }
 
     return (
-        <Card sx={{margin: 2, width: '100%'}}>
+        <Card sx={{width: '100%'}}>
             <Typography
                 variant="h4"
                 align="left"

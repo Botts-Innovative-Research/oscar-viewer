@@ -11,7 +11,7 @@ export default function EventLogPage() {
     const laneMap = useSelector((state: RootState) => selectLaneMap(state))
 
     return (
-        <Box>
+        <Box width={"100%"}>
             <Typography variant="h4">Event Log</Typography>
             <br />
             <Paper variant='outlined' sx={{ height: "100%" }}>

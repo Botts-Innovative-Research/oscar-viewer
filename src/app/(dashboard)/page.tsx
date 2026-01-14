@@ -106,7 +106,7 @@ export default function DashboardPage() {
 
     return (
         <Grid container spacing={2} width={"100%"}>
-            <Grid item xs={12} md={8} sx={{display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0}}>
+            <Grid item xs={12} lg={8} sx={{display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0}}>
                 <Paper variant='outlined' sx={{height: "auto", minHeight: 275, padding: 1}}>
                     <LaneStatus dataSourcesByLane={dataSourcesByLane} initialLanes={statusList} />
                 </Paper>
@@ -114,9 +114,9 @@ export default function DashboardPage() {
                     <EventTable tableMode={'alarmtable'} laneMap={laneMap} />
                 </Paper>
             </Grid>
-            {/* Conditionally render QuickView if Desktop or Tablet */}
-            {(isDesktop || isTablet) ? (
-                <Grid item xs={12} md={4}>
+            {/* Conditionally render QuickView if Desktop */}
+            {(isDesktop) ? (
+                <Grid item xs={12} lg={4}>
                     <Paper variant='outlined' sx={{height: "100%"}}>
                         <QuickView />
                     </Paper>

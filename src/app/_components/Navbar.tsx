@@ -234,7 +234,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
             <Divider/>
             <List>
                 {settingsItems.map((item) => (
-                    <Link href={item.href} passHref key={item.title}>
+                    <Link href={item.href} passHref key={item.title} onClick={!isDesktop ? handleDrawerClose : null}>
                         <ListItem disablePadding sx={{display: 'block'}}>
                             <ListItemButton
                                 sx={{
@@ -384,7 +384,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                 }}
             >
                 <DrawerHeader/>
-                <Box m={2} mr={0}>
+                <Box sx={{ m: 2, mr: 0 }}>
                     {children}
                 </Box>
             </Box>

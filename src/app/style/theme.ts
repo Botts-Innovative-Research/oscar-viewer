@@ -48,6 +48,13 @@ export const getTheme = (mode: PaletteMode) => {
           }),
         },
       },
+      MuiCard: {
+        styleOverrides: {
+          root: ({ ownerState }) => ({
+            borderRadius: "10px",
+          }),
+        },
+      },
       MuiButton: {
         styleOverrides: {
           root: ({ ownerState }) => ({
