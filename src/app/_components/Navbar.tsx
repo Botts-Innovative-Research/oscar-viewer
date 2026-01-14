@@ -77,20 +77,28 @@ const AppBar = styled(MuiAppBar, {
     shouldForwardProp: (prop) => prop !== 'open' && prop !== "isDesktop"
 })<AppBarProps>(({theme, open, isDesktop}) => ({
     zIndex: theme.zIndex.drawer + 1,
+    // Exit transition
     transition: theme.transitions.create(['width', 'margin'], {
         easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.enteringScreen,
+        duration: theme.transitions.duration.leavingScreen,
     }),
     ...((open && isDesktop) && {
         marginLeft: drawerWidth,
         width: `calc(100% - ${drawerWidth}px)`,
-        
+        // Entrance transition
+        transition: theme.transitions.create(['width', 'margin'], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+        }),
     }),
     ...((open && !isDesktop) && {
-        //marginLeft: drawerWidthMobile,
         width: `calc(100% - ${drawerWidthMobile}px)`,
+        // Entrance transition
+        transition: theme.transitions.create(['transform'], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+        }),
     }),
-
 }));
 
 const Drawer = styled(MuiDrawer, {shouldForwardProp: (prop) => prop !== 'open'})(
