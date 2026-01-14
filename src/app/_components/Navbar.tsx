@@ -32,8 +32,10 @@ import {Download, VolumeDown, VolumeUp} from "@mui/icons-material";
 import AlarmAudio from "@/app/_components/AlarmAudio";
 import {selectAlarmAudioVolume, setAlarmAudioVolume} from "@/lib/state/OSCARClientSlice";
 import {useDispatch, useSelector} from "react-redux";
+import { useBreakpoint } from '../providers';
 
 const drawerWidth = 240;
+const drawerWidthMobile = 200;
 
 const openedMixin = (theme: Theme): CSSObject => ({
     width: drawerWidth,
@@ -68,24 +70,27 @@ const DrawerHeader = styled('div')(({theme}) => ({
 
 interface AppBarProps extends MuiAppBarProps {
     open?: boolean;
+    isDesktop?: boolean;
 }
 
 const AppBar = styled(MuiAppBar, {
-    shouldForwardProp: (prop) => prop !== 'open',
-})<AppBarProps>(({theme, open}) => ({
+    shouldForwardProp: (prop) => prop !== 'open' && prop !== "isDesktop"
+})<AppBarProps>(({theme, open, isDesktop}) => ({
     zIndex: theme.zIndex.drawer + 1,
     transition: theme.transitions.create(['width', 'margin'], {
         easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.leavingScreen,
+        duration: theme.transitions.duration.enteringScreen,
     }),
-    ...(open && {
+    ...((open && isDesktop) && {
         marginLeft: drawerWidth,
         width: `calc(100% - ${drawerWidth}px)`,
-        transition: theme.transitions.create(['width', 'margin'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.enteringScreen,
-        }),
+        
     }),
+    ...((open && !isDesktop) && {
+        //marginLeft: drawerWidthMobile,
+        width: `calc(100% - ${drawerWidthMobile}px)`,
+    }),
+
 }));
 
 const Drawer = styled(MuiDrawer, {shouldForwardProp: (prop) => prop !== 'open'})(
@@ -106,6 +111,8 @@ const Drawer = styled(MuiDrawer, {shouldForwardProp: (prop) => prop !== 'open'})
 );
 
 export default function Navbar({children}: { children: React.ReactNode }) {
+    const { isDesktop } = useBreakpoint();
+
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null); // Anchor element for notification menu
     const menuOpen = Boolean(anchorEl); // Open state for notification menu
     const [drawerOpen, setDrawerOpen] = useState(false);  // Open state for navigation drawer
@@ -181,6 +188,72 @@ export default function Navbar({children}: { children: React.ReactNode }) {
         }
     ]
 
+    // Drawer contents used for permanent and temporary variant
+    const drawerContent = (
+        <>
+            <DrawerHeader>
+                <IconButton onClick={handleDrawerClose}>
+                    <ChevronLeftIcon/>
+                </IconButton>
+            </DrawerHeader>
+            <Divider/>
+            <List>
+                {menuItems.map((item) => (
+                    <Link href={item.href} passHref key={item.title}>
+                        <ListItem disablePadding sx={{display: 'block'}}>
+                            <ListItemButton
+                                sx={{
+                                    minHeight: 48,
+                                    justifyContent: drawerOpen ? 'initial' : 'center',
+                                    px: 2.5,
+                                }}
+                            >
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 0,
+                                        mr: drawerOpen ? 3 : 'auto',
+                                        justifyContent: 'center',
+                                    }}
+                                >
+                                    {item.icon}
+                                </ListItemIcon>
+                                <ListItemText primary={item.title} sx={{opacity: drawerOpen ? 1 : 0}}/>
+                            </ListItemButton>
+                        </ListItem>
+                    </Link>
+                ))}
+            </List>
+            <Divider/>
+            <List>
+                {settingsItems.map((item) => (
+                    <Link href={item.href} passHref key={item.title}>
+                        <ListItem disablePadding sx={{display: 'block'}}>
+                            <ListItemButton
+                                sx={{
+                                    minHeight: 48,
+                                    justifyContent: drawerOpen ? 'initial' : 'center',
+                                    px: 2.5,
+                                }}
+                            >
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 0,
+                                        mr: drawerOpen ? 3 : 'auto',
+                                        justifyContent: 'center',
+                                    }}
+                                >
+                                    {item.icon}
+                                </ListItemIcon>
+                                <ListItemText primary={item.title} sx={{opacity: drawerOpen ? 1 : 0}}/>
+                            </ListItemButton>
+                        </ListItem>
+                    </Link>
+                ))}
+            </List>
+            <Divider/>
+        </>
+    )
+
     return (
         <Box sx={{display: 'flex'}}>
             <CssBaseline/>
@@ -194,6 +267,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                     borderBottom: "solid",
                     borderColor: "action.selected"
                 }}
+                isDesktop={isDesktop}
             >
                 <Toolbar>
                     <IconButton
@@ -262,68 +336,23 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                     </Box>
                 </MenuItem>
             </Menu>
-            <Drawer variant="permanent" open={drawerOpen}>
-                <DrawerHeader>
-                    <IconButton onClick={handleDrawerClose}>
-                        <ChevronLeftIcon/>
-                    </IconButton>
-                </DrawerHeader>
-                <Divider/>
-                <List>
-                    {menuItems.map((item) => (
-                        <Link href={item.href} passHref key={item.title}>
-                            <ListItem disablePadding sx={{display: 'block'}}>
-                                <ListItemButton
-                                    sx={{
-                                        minHeight: 48,
-                                        justifyContent: drawerOpen ? 'initial' : 'center',
-                                        px: 2.5,
-                                    }}
-                                >
-                                    <ListItemIcon
-                                        sx={{
-                                            minWidth: 0,
-                                            mr: drawerOpen ? 3 : 'auto',
-                                            justifyContent: 'center',
-                                        }}
-                                    >
-                                        {item.icon}
-                                    </ListItemIcon>
-                                    <ListItemText primary={item.title} sx={{opacity: drawerOpen ? 1 : 0}}/>
-                                </ListItemButton>
-                            </ListItem>
-                        </Link>
-                    ))}
-                </List>
-                <Divider/>
-                <List>
-                    {settingsItems.map((item) => (
-                        <Link href={item.href} passHref key={item.title}>
-                            <ListItem disablePadding sx={{display: 'block'}}>
-                                <ListItemButton
-                                    sx={{
-                                        minHeight: 48,
-                                        justifyContent: drawerOpen ? 'initial' : 'center',
-                                        px: 2.5,
-                                    }}
-                                >
-                                    <ListItemIcon
-                                        sx={{
-                                            minWidth: 0,
-                                            mr: drawerOpen ? 3 : 'auto',
-                                            justifyContent: 'center',
-                                        }}
-                                    >
-                                        {item.icon}
-                                    </ListItemIcon>
-                                    <ListItemText primary={item.title} sx={{opacity: drawerOpen ? 1 : 0}}/>
-                                </ListItemButton>
-                            </ListItem>
-                        </Link>
-                    ))}
-                </List>
-                <Divider/>
-            </Drawer>
+            {isDesktop ? (
+                /* Render permanent variant for DESKTOP */
+                <Drawer variant="permanent" open={drawerOpen}>
+                    {drawerContent}
+                </Drawer>
+            ) : (
+                /* Render temporary variant for MOBILE and TABLET */
+                <MuiDrawer variant="temporary" open={drawerOpen}
+                    sx={{
+                        '& .MuiDrawer-paper': {
+                        width: drawerWidthMobile,
+                        },
+                    }}
+                >
+                    {drawerContent}
+                </MuiDrawer>
+            )}
 
             <Box sx={{display: "none"}}>
                 <AlarmAudio/>
