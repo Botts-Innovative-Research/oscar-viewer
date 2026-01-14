@@ -384,7 +384,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                 }}
             >
                 <DrawerHeader/>
-                <Box m={0}>
+                <Box m={2} mr={0}>
                     {children}
                 </Box>
             </Box>
