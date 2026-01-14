@@ -365,9 +365,11 @@ export default function Navbar({children}: { children: React.ReactNode }) {
             <Box sx={{display: "none"}}>
                 <AlarmAudio/>
             </Box>
-            <Box component="main" sx={{height: "100%", width: "100%", m: 2}}>
+            <Box component="main" sx={{height: "100%", width: { xs: "100%", lg: (drawerOpen ? `calc(100% - ${drawerWidth}px)` : '100%') } }}>
                 <DrawerHeader/>
-                {children}
+                <Box m={0}>
+                    {children}
+                </Box>
             </Box>
         </Box>
     );

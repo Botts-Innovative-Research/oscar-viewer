@@ -20,8 +20,11 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import dynamic from "next/dynamic";
 import CircularProgress from "@mui/material/CircularProgress";
+import { useBreakpoint } from "../providers";
 
 export default function DashboardPage() {
+    const { isTablet, isDesktop } = useBreakpoint();
+
     const laneMap = useSelector((state: RootState) => selectLaneMap(state))
 
     const {laneMapRef} = useContext(DataSourceContext);
@@ -102,27 +105,23 @@ export default function DashboardPage() {
     ), [])
 
     return (
-        <Grid container spacing={2} direction={"column"}>
-            <Grid item container spacing={2} style={{flexBasis: '33.33%', flexGrow: 0, flexShrink: 0}}>
-                <Grid item xs={8} sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                    <Paper variant='outlined' sx={{height: "auto", minHeight: 275, padding: 1}}>
-                        <LaneStatus dataSourcesByLane={dataSourcesByLane} initialLanes={statusList} />
-                    </Paper>
-
-                    <Paper variant='outlined' sx={{flexGrow: 1, padding: 2, overflow: "hidden"}}>
-                        <EventTable tableMode={'alarmtable'} laneMap={laneMap} />
-                    </Paper>
-                </Grid>
-
-                <Grid item xs={4}>
+        <Grid container spacing={2} width={"100%"}>
+            <Grid item xs={12} md={8} sx={{display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0}}>
+                <Paper variant='outlined' sx={{height: "auto", minHeight: 275, padding: 1}}>
+                    <LaneStatus dataSourcesByLane={dataSourcesByLane} initialLanes={statusList} />
+                </Paper>
+                <Paper variant='outlined' sx={{flexGrow: 1, padding: 2, overflow: "hidden"}}>
+                    <EventTable tableMode={'alarmtable'} laneMap={laneMap} />
+                </Paper>
+            </Grid>
+            {/* Conditionally render QuickView if Desktop or Tablet */}
+            {(isDesktop || isTablet) ? (
+                <Grid item xs={12} md={4}>
                     <Paper variant='outlined' sx={{height: "100%"}}>
                         <QuickView />
                     </Paper>
                 </Grid>
-
-            </Grid>
+            ): (<></>)}
         </Grid>
     );
 }
-
-
