@@ -1,5 +1,5 @@
 "use client"
-import { Box, Grid, Paper, Typography } from "@mui/material";
+import { Grid, Paper, Typography } from "@mui/material";
 import EventTable from "@/app/_components/event-table/EventTable";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
