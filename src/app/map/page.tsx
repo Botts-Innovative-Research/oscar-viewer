@@ -20,7 +20,7 @@ export default function MapViewPage() {
                 <Typography variant="h4">Map</Typography>
             </Grid>
             <Grid item xs={12} sx={{ gap: 2, minWidth: 0 }}>
-                <Paper variant='outlined' sx={{ flexGrow: 1, padding: 2, overflow: "hidden" }}>
+                <Paper variant='outlined'>
                     <Map/>
                 </Paper>
             </Grid>

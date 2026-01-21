@@ -1,5 +1,6 @@
 import { PaletteMode, ThemeOptions } from "@mui/material";
 import { createTheme, responsiveFontSizes } from "@mui/material/styles";
+import '@mui/material/Paper';
 
 // When using TypeScript 4.x and above
 import type {} from "@mui/x-data-grid/themeAugmentation";
@@ -16,6 +17,11 @@ declare module "@mui/material/styles" {
     secondaryHighlight: string;
     infoHighlight: string;
     successHighlight: string;
+  }
+}
+declare module "@mui/material/Paper" {
+  interface PaperPropsVariantOverrides {
+    dynamic: true;
   }
 }
 
@@ -41,12 +47,22 @@ export const getTheme = (mode: PaletteMode) => {
     components: {
       MuiPaper: {
         styleOverrides: {
-          root: ({ ownerState }) => ({
+          root: ({ ownerState, theme }) => ({
             ...(ownerState.variant === "outlined" && {
               borderRadius: "10px",
+              flexGrow: 1,
+              padding: theme.spacing(2),
+              overflow: "hidden",
             }),
           }),
         },
+        variants: [{
+          props: { variant: "dynamic" },
+          style: ({ theme }) => ({
+            flexGrow: 1,
+            overflow: "hidden",
+          })
+        }],
       },
       MuiCard: {
         styleOverrides: {

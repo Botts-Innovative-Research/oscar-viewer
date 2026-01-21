@@ -17,7 +17,7 @@ export default function EventLogPage() {
             </Grid>
             
             <Grid item xs={12} sx={{ gap: 2, minWidth: 0 }}>
-                <Paper variant='outlined' sx={{ flexGrow: 1, padding: 2, overflow: "hidden" }}>
+                <Paper variant='outlined' sx={{ padding: 0 }}>
                     <EventTable tableMode={"eventlog"} viewLane viewAdjudicated laneMap={laneMap}/>
                 </Paper>
             </Grid>
