@@ -13,7 +13,8 @@ import {
     Button,
     Paper,
     Snackbar,
-    TextField
+    TextField,
+    Grid
 
 } from "@mui/material";
 import React, {ChangeEvent, useContext, useEffect, useRef, useState} from "react";
@@ -297,28 +298,31 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
 
     return (
-        <Stack direction={"column"} p={2} spacing={2}>
-            <Typography
-                variant="h4"
-            >
-                Adjudication
-            </Typography>
-
-            <AdjudicationLog
-                event={props.event}
-                shouldFetch={shouldFetchLogs}
-                onFetch={onFetchComplete}
-            />
-
-            <Stack spacing={2}>
-                <Typography variant="h5">Adjudication Report Form</Typography>
-
-                <Stack
-                    direction={"row"}
-                    spacing={2}
-                    justifyContent={"start"}
-                    alignItems={"center"}
+        <Grid container xs={12} gap={2}>
+            <Grid item xs={12}>
+                <Typography
+                    variant="h4"
                 >
+                    Adjudication
+                </Typography>
+            </Grid>
+                
+            <Grid item xs={12}>
+                <AdjudicationLog
+                    event={props.event}
+                    shouldFetch={shouldFetchLogs}
+                    onFetch={onFetchComplete}
+                />
+            </Grid>
+                
+            {/* ADJUDICATION REPORT FORM */}
+            <Grid item container xs={12} spacing={2}>
+
+                <Grid item xs={12}>
+                    <Typography variant="h5">Adjudication Report Form</Typography>
+                </Grid>
+
+                <Grid item xs={12}>
                     <TextField
                         label="VehicleId"
                         name="vehicleId"
@@ -326,108 +330,119 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                         onChange={handleChange}
 
                     />
-                </Stack>
+                </Grid>
 
-                <Stack
-                    direction={"row"}
-                    spacing={2}
-                    justifyContent={"start"}
-                    alignItems={"center"}
-                >
+                <Grid item xs={12} sm={6}>
                     <AdjudicationSelect
                         adjCode={adjudicationCode}
                         onSelect={handleAdjudicationSelect}
                     />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
                     <IsotopeSelect
                         isotopeValue={isotope}
                         onSelect={handleIsotopeSelect}
                     />
-                </Stack>
+                </Grid>
 
-                <TextField
-                    id="outlined-multiline-static"
-                    label="Notes"
-                    name="notes"
-                    multiline
-                    rows={4}
-                    value={feedback}
-                    onChange={handleChange}
-                />
+                <Grid item xs={12}>
+                    <TextField
+                        id="outlined-multiline-static"
+                        label="Notes"
+                        name="notes"
+                        multiline
+                        rows={4}
+                        value={feedback}
+                        onChange={handleChange}
+                        fullWidth
+                    />
+                </Grid>
+
                 {
                     uploadedFiles.length > 0 && (
-                        <Paper variant='outlined' sx={{width: "100%"}}>
-                            <Stack
-                                sx={{
-                                    maxHeight: '100px', // Adjust height based on item size
-                                    overflowY: 'auto',
-                                    p: 2,
-                                }}
-                                spacing={1}
-                            >
-                                {uploadedFiles.map((file, index) => (
-                                    <Stack key={`${file}-${index}`} direction="row" spacing={2}>
-                                        <Box display={"flex"} sx={{wordSpacing: 2}}>
-                                            <InsertDriveFileRoundedIcon/>
-                                            <Typography variant="body1">{file.name}</Typography>
-                                        </Box>
+                        <Grid item xs={12}>
+                            <Paper variant='outlined'>
+                                <Stack
+                                    sx={{
+                                        maxHeight: '100px', // Adjust height based on item size
+                                        overflowY: 'auto',
+                                    }}
+                                    spacing={1}
+                                >
+                                    {uploadedFiles.map((file, index) => (
+                                        <Stack key={`${file}-${index}`} direction="row" spacing={2}>
+                                            <Box display={"flex"} sx={{wordSpacing: 2}}>
+                                                <InsertDriveFileRoundedIcon/>
+                                                <Typography variant="body1">{file.name}</Typography>
+                                            </Box>
 
-                                        <IconButton
-                                            onClick={() => handleFileDelete(index)}
-                                            sx={{
-                                                padding: "2px",
-                                                border: "1px solid",
-                                                borderRadius: "10px",
-                                                borderColor: "error.main",
-                                                backgroundColor: "inherit",
-                                                color: "error.main"
-                                            }}>
-                                            <DeleteOutline/>
-                                        </IconButton>
-                                    </Stack>
-                                ))}
-                            </Stack>
-                        </Paper>
+                                            <IconButton
+                                                onClick={() => handleFileDelete(index)}
+                                                sx={{
+                                                    padding: "2px",
+                                                    border: "1px solid",
+                                                    borderRadius: "10px",
+                                                    borderColor: "error.main",
+                                                    backgroundColor: "inherit",
+                                                    color: "error.main"
+                                                }}>
+                                                <DeleteOutline/>
+                                            </IconButton>
+                                        </Stack>
+                                    ))}
+                                </Stack>
+                            </Paper>
+                        </Grid>
                     )
                 }
-                <Stack direction={"row"} spacing={2} justifyContent={"space-between"} alignItems={"center"} width={"100%"}>
-                    <Button
-                        component="label"
-                        startIcon={<UploadFileRoundedIcon/>}
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            width: "auto",
-                            padding: "8px",
-                            borderStyle: "solid",
-                            borderWidth: "1px",
-                            borderRadius: "10px",
-                            borderColor: "secondary.main",
-                            backgroundColor: "inherit",
-                            color: "secondary.main"
-                        }}
-                    >
-                        Upload Files
-                        <input
-                            type="file"
-                            multiple
-                            onChange={handleFileUpload}
-                            ref={fileInputRef}
-                            style={{display: "none"}}
-                        />
-                    </Button>
-                    <Stack direction={"row"} spacing={2}>
-                        <SecondaryInspectionSelect
-                            secondarySelectVal={secondaryInspection}
-                            onSelect={handleInspectionSelect}
-                        />
+
+                <Grid item container xs={12} spacing={2} justifyContent={"space-between"}>
+                    <Grid item xs={12} sm={"auto"} alignItems={"center"}>
                         <Button
-                            disableElevation
-                            variant={"contained"}
-                            color={"success"}
-                            onClick={sendAdjudicationData}
+                            component="label"
+                            startIcon={<UploadFileRoundedIcon/>}
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                maxWidth: "auto",
+                                padding: "8px",
+                                borderStyle: "solid",
+                                borderWidth: "1px",
+                                borderRadius: "10px",
+                                borderColor: "secondary.main",
+                                backgroundColor: "inherit",
+                                color: "secondary.main"
+                            }}
                         >
-                            Submit
+                            Upload Files
+                            <input
+                                type="file"
+                                multiple
+                                onChange={handleFileUpload}
+                                ref={fileInputRef}
+                                style={{display: "none"}}
+                            />
                         </Button>
+                    </Grid>
+                    <Grid item container xs={12} sm={"auto"} spacing={2}>
+                        <Grid item xs={12} sm={"auto"}>
+                            <SecondaryInspectionSelect
+                                secondarySelectVal={secondaryInspection}
+                                onSelect={handleInspectionSelect}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={"auto"}>
+                            <Button
+                                disableElevation
+                                variant={"contained"}
+                                color={"success"}
+                                onClick={sendAdjudicationData}
+                                fullWidth
+                            >
+                                Submit
+                            </Button>
+                        </Grid>
                         <Snackbar
                             anchorOrigin={{ vertical:'top', horizontal:'center' }}
                             open={openSnack}
@@ -440,9 +455,10 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                 },
                             }}
                         />
-                    </Stack>
-                </Stack>
-            </Stack>
-        </Stack>
+                    </Grid>
+                </Grid>
+
+            </Grid>
+        </Grid>
     );
 }

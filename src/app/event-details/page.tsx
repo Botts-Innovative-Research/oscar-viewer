@@ -95,16 +95,20 @@ export default function EventDetailsPage() {
     });
 
     return (
-        <Grid container spacing={2} width={"100%"}>
-            <Grid item xs={12}>
-                <Stack spacing={2} direction={"column"} sx={{width: "100%"}}>
-                    
-                    {/* HEADER */}
-                    <Stack direction={"row"} justifyContent={"space-between"} alignItems={"center"}>
-                        <Stack direction={"row"} spacing={2}>
+        <Grid container spacing={2} width={"100%"} sx={{ minWidth: 0 }}>
+            <Grid item container xs={12} sx={{ minWidth: 0, gap: 2 }}>   
+
+                {/* HEADER */}
+                <Grid item container xs={12} spacing={2} justifyContent={"space-between"}>
+                    <Grid item container spacing={2} xs alignItems={"center"}>
+                        <Grid item>
                             <BackButton/>
+                        </Grid>
+                        <Grid item>
                             <Typography variant="h4">Event Details</Typography>
-                        </Stack>
+                        </Grid>
+                    </Grid>
+                    <Grid item xs={12} sm={"auto"}>
                         <Button
                             variant="outlined"
                             startIcon={<PictureAsPdfRounded/>}
@@ -114,14 +118,19 @@ export default function EventDetailsPage() {
                         >
                             Export as PDF
                         </Button>
-                    </Stack>
+                    </Grid>
+                </Grid>
+                
 
-                    {/* EVENT PREVIEW */}
+                {/* EVENT PREVIEW */}
+                <Grid item xs={12}>
                     <Paper variant='outlined' sx={{ width: '100%'}}>
                         <DataRow eventData={eventPreview.eventData}/>
                     </Paper>
+                </Grid>
 
-                    {/* EVENT MEDIA */}
+                {/* EVENT MEDIA */}
+                <Grid item xs={12}>
                     { datasourcesReady ? (
                         <EventMedia
                             selectedNode={laneMapRef.current.get(eventPreview.eventData.laneId).parentNode}
@@ -138,18 +147,22 @@ export default function EventDetailsPage() {
                             <CircularProgress/>
                         </Box>
                     }
+                </Grid>
 
-                    {/* MISC TABLE */}
+                {/* MISC TABLE */}
+                <Grid item xs={12}>
                     <Paper variant='outlined' sx={{width: "100%"}}>
                         <MiscTable currentTime={eventPreview.eventData?.startTime}/>
                     </Paper>
+                </Grid>
 
-                    {/* ADJUDICATION */}
+                {/* ADJUDICATION */}
+                <Grid item xs={12}>
                     <Paper variant='outlined' sx={{width: "100%"}}>
                         <AdjudicationDetail event={eventPreview.eventData}/>
                     </Paper>
-
-                </Stack>
+                </Grid>
+                
             </Grid>
         </Grid>
     );

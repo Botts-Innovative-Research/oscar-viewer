@@ -5,7 +5,7 @@ import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {DataGrid, GridColDef} from "@mui/x-data-grid";
-import { Stack, Typography} from "@mui/material";
+import { Box, Paper, Stack, Typography} from "@mui/material";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {isAdjudicationControlStream} from "@/lib/data/oscar/Utilities";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
@@ -196,23 +196,37 @@ export default function AdjudicationLog(props: {
 
     return (
         <>
-            <Stack spacing={2}>
+            <Stack spacing={2} minWidth={0}>
                 <Stack direction={"column"} spacing={1}>
                     <Typography variant="h5">Logged Adjudications</Typography>
                 </Stack>
-                <DataGrid
-                    rows={filteredLog}
-                    columns={logColumns}
-                    initialState={{
-                        pagination: {
-                            paginationModel: {
-                                pageSize: 10
-                            }
-                        }
-                    }}
-                    pageSizeOptions={[5, 10, 25, 50, 100]}
-                    disableRowSelectionOnClick={true}
-                />
+                <Paper sx={{ width: "100%", minWidth: 0 }}>
+                    <Box sx={{
+                        width: "100%",
+                        maxWidth: "100%",
+                        overflowX: "auto",
+                    }}>
+                        <DataGrid
+                            rows={filteredLog}
+                            columns={logColumns}
+                            initialState={{
+                                pagination: {
+                                    paginationModel: {
+                                        pageSize: 10
+                                    }
+                                }
+                            }}
+                            pageSizeOptions={[5, 10, 25, 50, 100]}
+                            disableRowSelectionOnClick={true}
+                            sx={{
+                                minWidth: 0,
+                                width: "100%",
+                            }}
+                        />
+                    </Box>
+                </Paper>
+                
+                
                 <Dialog
                     open={feedbackDialog.open}
                     onClose={() => setFeedbackDialog({ open: false, text: "" })}
