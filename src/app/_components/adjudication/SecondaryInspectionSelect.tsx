@@ -37,7 +37,7 @@ export default function SecondaryInspectionSelect(props: {
                     }
                 }}
                 autoWidth
-                style={{minWidth: "12em"}}
+                style={{minWidth: "15em"}}
                 sx={{
                     color: "text.primary",
                     "& .MuiOutlinedInput-notchedOutline": {

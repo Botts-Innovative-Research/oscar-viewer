@@ -124,7 +124,7 @@ export default function EventDetailsPage() {
 
                 {/* EVENT PREVIEW */}
                 <Grid item xs={12}>
-                    <Paper variant='outlined' sx={{ width: '100%'}}>
+                    <Paper variant='outlined' sx={{ padding: 0, width: '100%'}}>
                         <DataRow eventData={eventPreview.eventData}/>
                     </Paper>
                 </Grid>

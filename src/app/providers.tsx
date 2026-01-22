@@ -39,12 +39,14 @@ export const useBreakpoint = () => {
 
   const isDesktop = useMediaQuery(theme.breakpoints.up("lg"));
   const isTablet = useMediaQuery(theme.breakpoints.up("md"));
+  const isSmallTablet = useMediaQuery(theme.breakpoints.up("sm"))
 
-  const size = isDesktop ? "desktop" : isTablet ? "tablet" : "mobile"
+  const size = isDesktop ? "desktop" : isTablet ? "tablet" : isSmallTablet ? "smallTablet" : "mobile"
 
   return {
     size,
     isMobile: size === "mobile",
+    isSmallTablet: size === "smallTablet",
     isTablet: size === "tablet",
     isDesktop: size === "desktop",
   };
