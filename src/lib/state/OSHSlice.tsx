@@ -88,16 +88,6 @@ export const Slice = createSlice({
             }
         },
         removeNode: (state, action: PayloadAction<string>) => {
-            const rmvNode = state.nodes.find((node: INode) => node.id === action.payload);
-
-            if(!rmvNode){
-                console.error("Cannot find node to remove");
-                return;
-            };
-            if (rmvNode.isDefaultNode) {
-                console.error("Cannot remove the default node");
-                return;
-            }
             const nodeIndex = state.nodes.findIndex((node: INode) => node.id === action.payload);
             state.nodes.splice(nodeIndex, 1);
             localStorage.setItem("osh_nodes", JSON.stringify(state.nodes));
