@@ -37,9 +37,12 @@ import IconButton from "@mui/material/IconButton";
 import DeleteOutline from "@mui/icons-material/DeleteOutline"
 import {setAdjudicatedEventId, setSelectedEvent} from "@/lib/state/EventDataSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
+import { useBreakpoint } from "@/app/providers";
 
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
+    const { isMobile, isSmallTablet } = useBreakpoint();
+
     const dispatch = useAppDispatch();
 
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -328,7 +331,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                         name="vehicleId"
                         value={vehicleId}
                         onChange={handleChange}
-
+                        fullWidth={isMobile || isSmallTablet}
                     />
                 </Grid>
 
