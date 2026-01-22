@@ -95,55 +95,62 @@ export default function EventDetailsPage() {
     });
 
     return (
-        <Stack spacing={4} direction={"column"} sx={{width: "100%"}}>
-            <Grid container spacing={2} alignItems="center">
-                <Grid item xs={"auto"} >
-                    <BackButton/>
-                </Grid>
-                <Grid item xs>
-                    <Typography variant="h4">Event Details</Typography>
-                </Grid>
-                <Grid item xs={2}>
-                    <Button
-                        variant="outlined"
-                        startIcon={<PictureAsPdfRounded/>}
-                        onClick={() => {
-                            reactToPrintFn()
-                        }}
-                    >
-                        Export as PDF
-                    </Button>
-                </Grid>
+        <Grid container spacing={2} width={"100%"}>
+            <Grid item xs={12}>
+                <Stack spacing={2} direction={"column"} sx={{width: "100%"}}>
+                    
+                    {/* HEADER */}
+                    <Stack direction={"row"} justifyContent={"space-between"} alignItems={"center"}>
+                        <Stack direction={"row"} spacing={2}>
+                            <BackButton/>
+                            <Typography variant="h4">Event Details</Typography>
+                        </Stack>
+                        <Button
+                            variant="outlined"
+                            startIcon={<PictureAsPdfRounded/>}
+                            onClick={() => {
+                                reactToPrintFn()
+                            }}
+                        >
+                            Export as PDF
+                        </Button>
+                    </Stack>
+
+                    {/* EVENT PREVIEW */}
+                    <Paper variant='outlined' sx={{ width: '100%'}}>
+                        <DataRow eventData={eventPreview.eventData}/>
+                    </Paper>
+
+                    {/* EVENT MEDIA */}
+                    { datasourcesReady ? (
+                        <EventMedia
+                            selectedNode={laneMapRef.current.get(eventPreview.eventData.laneId).parentNode}
+                            datasources={{
+                                gamma: gammaDatasources[0],
+                                neutron: neutronDatasources[0],
+                                threshold: thresholdDatasources[0],
+                            }}
+                            mode="details"
+                            eventData={eventPreview.eventData}
+                        />
+                        ) :
+                        <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}>
+                            <CircularProgress/>
+                        </Box>
+                    }
+
+                    {/* MISC TABLE */}
+                    <Paper variant='outlined' sx={{width: "100%"}}>
+                        <MiscTable currentTime={eventPreview.eventData?.startTime}/>
+                    </Paper>
+
+                    {/* ADJUDICATION */}
+                    <Paper variant='outlined' sx={{width: "100%"}}>
+                        <AdjudicationDetail event={eventPreview.eventData}/>
+                    </Paper>
+
+                </Stack>
             </Grid>
-
-            <Paper variant='outlined' sx={{ width: '100%'}}>
-                <DataRow eventData={eventPreview.eventData}/>
-            </Paper>
-
-            { datasourcesReady ? (
-                <EventMedia
-                    selectedNode={laneMapRef.current.get(eventPreview.eventData.laneId).parentNode}
-                    datasources={{
-                        gamma: gammaDatasources[0],
-                        neutron: neutronDatasources[0],
-                        threshold: thresholdDatasources[0],
-                    }}
-                    mode="details"
-                    eventData={eventPreview.eventData}
-                />
-                ) :
-                <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}>
-                    <CircularProgress/>
-                </Box>
-            }
-
-            <Paper variant='outlined' sx={{width: "100%"}}>
-                <MiscTable currentTime={eventPreview.eventData?.startTime}/>
-            </Paper>
-
-            <Paper variant='outlined' sx={{width: "100%"}}>
-                <AdjudicationDetail event={eventPreview.eventData}/>
-            </Paper>
-        </Stack>
+        </Grid>
     );
 }
