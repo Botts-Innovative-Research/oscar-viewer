@@ -297,12 +297,11 @@ export default function EventTable({
         }
     }, []);
 
-    function sendNotification(alarmData: { laneName: string }) {
+    function sendNotification(alarmData: { laneName: string, status: string}) {
         const notificationService = notificationServiceRef.current;
         if (notificationService?.isReady()) {
-            console.log("showingn notifications!")
             notificationService.showNotification(
-                NotificationTemplates.newAlarm(alarmData.laneName)
+                NotificationTemplates.newAlarm(alarmData.laneName, alarmData.status)
             )
         }
     }
@@ -319,7 +318,7 @@ export default function EventTable({
 
 
             if (newEvent.status !== 'None') {
-                sendNotification({ laneName: laneEntry.laneName });
+                sendNotification({ laneName: laneEntry.laneName, status: newEvent.status});
             }
         } else {
             // Handle historical observations
