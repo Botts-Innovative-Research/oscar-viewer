@@ -29,8 +29,8 @@ export default function QuickView() {
     }
 
     return (
-        <Box style={{width: '100%', height: '300', overflow: 'hidden', borderRadius: "5px"}}>
+        <Grid container width={"100%"}>
             {eventPreview.isOpen && eventPreview.eventData ? <EventPreview /> : <MapComponent/>}
-        </Box>
+        </Grid>
     );
 }
