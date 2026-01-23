@@ -71,19 +71,13 @@ export const Slice = createSlice({
     initialState,
     reducers: {
         addNode: (state, action: PayloadAction<INode>) => {
-            const nodeIndex = state.nodes.findIndex((node: INode) => node.name === action.payload.name);
+            state.nodes.push(action.payload);
+            localStorage.setItem("osh_nodes", JSON.stringify(state.nodes));
 
-            if (nodeIndex === -1) {
-                state.nodes.push(action.payload);
-                localStorage.setItem("osh_nodes", JSON.stringify(state.nodes));
-            } else {
-                console.error("Node with same name already exists in the OSHSlice");
-            }
         },
         setNodes: (state, action: PayloadAction<INode[]>) => {
             state.nodes = action.payload
             localStorage.setItem("osh_nodes", JSON.stringify(state.nodes));
-
         },
         updateNode: (state, action: PayloadAction<INode>) => {
             const nodeIndex = state.nodes.findIndex((node: INode) => node.name === action.payload.name);
@@ -94,16 +88,6 @@ export const Slice = createSlice({
             }
         },
         removeNode: (state, action: PayloadAction<string>) => {
-            const rmvNode = state.nodes.find((node: INode) => node.id === action.payload);
-
-            if(!rmvNode){
-                console.error("Cannot find node to remove");
-                return;
-            };
-            if (rmvNode.isDefaultNode) {
-                console.error("Cannot remove the default node");
-                return;
-            }
             const nodeIndex = state.nodes.findIndex((node: INode) => node.id === action.payload);
             state.nodes.splice(nodeIndex, 1);
             localStorage.setItem("osh_nodes", JSON.stringify(state.nodes));
