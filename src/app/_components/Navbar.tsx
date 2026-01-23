@@ -146,6 +146,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
         }
     }, []);
 
+    // fix where u can actually turn notificaitons off
     const handleNotifications = async () => {
         if (!('Notification' in window)) {
             alert('Notifications are not supported in this browser');

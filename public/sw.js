@@ -8,7 +8,7 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('push', (event) => {
     if (event.data) {
-        const data = event.data;
+        const data = event.data.json();
         const title = data.title || 'New OSCAR Notification';
         const options = {
             body: data.body || 'You have a new notification',
@@ -22,7 +22,7 @@ self.addEventListener('push', (event) => {
                 ...data
             },
             requireInteraction: true,
-            tag: data.tag || 'pwa-notification',
+            tag: `pwa-notification-${Date.now()}`,
             actions: [
                 {
                     action: 'view-alarm',
