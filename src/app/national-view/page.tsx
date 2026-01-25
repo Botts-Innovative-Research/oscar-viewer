@@ -1,6 +1,6 @@
 "use client";
 
-import {Alert, Box, Button, Paper, Snackbar, SnackbarCloseReason, Stack, Typography} from "@mui/material";
+import {Alert, Box, Button, Grid, Paper, Snackbar, SnackbarCloseReason, Stack, Typography} from "@mui/material";
 import NationalStatsTable from "../_components/national/NationalStatsTable";
 import NationalDatePicker from "../_components/national/NationalDatePicker";
 import TimeRangeSelect from "@/app/_components/national/TimeRangeSelector";
@@ -15,9 +15,13 @@ import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStr
 import {isNationalControlStream} from "@/lib/data/oscar/Utilities";
 import {generateNationalCommandJSON, sendCommand} from "@/lib/data/oscar/OSCARCommands";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
+import { useBreakpoint } from "../providers";
 
 
 export default function NationalViewPage() {
+
+    const { isMobile } = useBreakpoint();
+
     const[isRefreshing, setIsRefreshing] = useState(false);
 
     const [openSnack, setOpenSnack] = useState(false);
@@ -254,73 +258,76 @@ export default function NationalViewPage() {
     }
 
     return (
-        <Box sx={{ padding: 4}} >
+        <Grid container spacing={2} width={"100%"}>
+            
+            {/* HEADER */}
+            <Grid item xs={12}>
+                <Typography variant="h4">
+                    National View
+                </Typography>
+            </Grid>
 
-            <Typography variant="h4" gutterBottom>
-                National View
-            </Typography>
-
-            <Stack
-                spacing={3}
-                direction="row"
-                alignItems="center"
-                flexWrap="wrap"
-            >
-                <Paper>
+            {/* OPTIONS */}
+            <Grid item container xs={12} spacing={2} alignItems={"center"}>
+                <Grid item xs={12} sm={(selectedTimeRange === 'custom') ? 12 : 6} md={"auto"}>
                     <TimeRangeSelect
                         onSelect={handleTimeRange}
                         timeRange={selectedTimeRange}
                     />
-                </Paper>
-
-
+                </Grid>
                 {selectedTimeRange === 'custom' && (
-                    <Paper>
+                    <Grid item sm={12} md={"auto"}>
                         <NationalDatePicker
                             onCustomStartChange={handleCustomStartTime}
                             onCustomEndChange={handleCustomEndTime}
                         />
-                    </Paper>
+                    </Grid>
 
                 )}
-
-                <Paper>
+                <Grid item xs={12} sm={(selectedTimeRange === 'custom') ? 12 : 6} md={"auto"}>
                     <Button
                         variant="contained"
                         size="large"
                         onClick={handleRefreshStats}
                         startIcon={<RefreshRounded/>}
                         disabled={isRefreshing}
+                        fullWidth
                     >
                         { isRefreshing ? 'Refreshing Stats...' : 'Refresh Stats'}
                     </Button>
+                </Grid>
+            </Grid>
+
+            {/* TABLE */}
+            <Grid item xs={12}>
+                <Paper variant='outlined' sx={{ height: "100%", padding: 0 }}>
+                    <NationalStatsTable selectedTimeRangeCounts={selectedTimeRangeCounts}/>
                 </Paper>
-            </Stack>
+            </Grid>
 
-            <br/>
-            <Paper variant='outlined' sx={{height: "100%"}}>
-                <NationalStatsTable selectedTimeRangeCounts={selectedTimeRangeCounts}/>
-            </Paper>
-
-            <Snackbar
-                open={openSnack}
-                autoHideDuration={5000}
-                onClose={handleCloseSnack}
-                anchorOrigin={{vertical: 'top', horizontal: 'center'}}
-            >
+            {/* SNACKBAR */}
+            <Grid item xs={12}>
                 <Snackbar
-                    anchorOrigin={{ vertical:'top', horizontal:'center' }}
                     open={openSnack}
-                    autoHideDuration={1500}
+                    autoHideDuration={5000}
                     onClose={handleCloseSnack}
-                    message={snackMessage}
-                    sx={{
-                        '& .MuiSnackbarContent-root': {
-                            backgroundColor: severity === 'success' ? 'green' : 'red',
-                        },
-                    }}
-                />
-            </Snackbar>
-        </Box>
+                    anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+                >
+                    <Snackbar
+                        anchorOrigin={{ vertical:'top', horizontal:'center' }}
+                        open={openSnack}
+                        autoHideDuration={1500}
+                        onClose={handleCloseSnack}
+                        message={snackMessage}
+                        sx={{
+                            '& .MuiSnackbarContent-root': {
+                                backgroundColor: severity === 'success' ? 'green' : 'red',
+                            },
+                        }}
+                    />
+                </Snackbar>
+            </Grid>
+
+        </Grid>
     );
 }

@@ -36,16 +36,18 @@ export default function NationalDatePicker({onCustomStartChange, onCustomEndChan
 
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <Stack direction="row" spacing={2}>
+            <Stack direction="row" spacing={2} width={"100%"} justifyContent={"stretch"}>
                 <DateTimePicker
                     label="Start Date"
                     value={startTime}
                     onChange={handleStartTimeChange}
+                    sx={{ width: "100%" }}
                 />
                 <DateTimePicker
                     label="End Date"
                     value={endTime}
                     onChange={handleEndTimeChange}
+                    sx={{ width: "100%" }}
                 />
             </Stack>
         </LocalizationProvider>

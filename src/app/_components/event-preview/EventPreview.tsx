@@ -315,7 +315,7 @@ export function EventPreview() {
         <Grid container spacing={isDesktop ? 0 : 2} gap={isDesktop ? 2 : 0} width={"100%"}>
 
             {/* HEADER */}
-            <Grid item container xs={12} spacing={2} paddingInline={1} justifyContent={"space-between"} width={"100%"}>
+            <Grid item container xs={12} spacing={2} paddingLeft={1} justifyContent={"space-between"} width={"100%"}>
                 <Grid item container spacing={2} xs alignItems={"center"}>
                     {!isDesktop && (
                         <Grid item>

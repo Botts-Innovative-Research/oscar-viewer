@@ -101,7 +101,7 @@ export default function StatTable(selectedTimeRangeCounts: {selectedTimeRangeCou
     ]
 
     return (
-        <Box sx={{height: 800, width: '100%'}}>
+        <Box sx={{height: 800, width: '100%', overflowX: 'auto'}}>
             <DataGrid
                 rows={natlTableRef.current.data}
                 columns={columns}
@@ -119,6 +119,10 @@ export default function StatTable(selectedTimeRangeCounts: {selectedTimeRangeCou
                     expand: true,
                     includeOutliers: true,
                     includeHeaders: false,
+                }}
+                sx={{
+                    border: "none",
+                    width: "100%"
                 }}
             />
         </Box>
