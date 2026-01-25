@@ -204,7 +204,7 @@ export default function ReportGeneratorView(){
 
     return (
 
-        <Box sx={{ padding: 4}} >
+        <Box>
             <Grid container spacing={4}>
                 <Grid item xs={12} md={5}>
                     <Typography variant="h5" align="center" gutterBottom>
