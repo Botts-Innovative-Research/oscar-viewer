@@ -15,7 +15,7 @@ interface mobileButton {
 }
 
 export default function Servers() {
-    const { isMobile } = useBreakpoint();
+    const { isMobile, isSmallTablet } = useBreakpoint();
 
     const [isEditNode, setIsEditNode] = React.useState(false);
     const [selectedNode, setSelectedNode] = React.useState(null);
@@ -53,10 +53,10 @@ export default function Servers() {
 
     return (
         <Grid container spacing={2} width={"100%"} direction={{ xs: "column-reverse", md: "row" }}>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} sm={12} md={6}>
                 <NodeList modeChangeCallback={handleModeChange}/>
             </Grid>
-            {isMobile ? (
+            {isMobile || isSmallTablet ? (
                 <Grid item md={6}>
                     <Button variant={mobileButtonConfig.variant} color={mobileButtonConfig.color} onClick={handleMobileForm} fullWidth>
                         {mobileButtonConfig.text}
