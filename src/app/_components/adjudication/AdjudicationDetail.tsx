@@ -193,6 +193,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         }));
 
         setUploadedFiles([...uploadedFiles, ...filesWithWebId]);
+        e.target.value = '';
     };
 
     const handleFileDelete = (fileIndex: number) => {
@@ -374,14 +375,14 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             const response = await fetch(url, options);
 
             if (!response.ok) {
-                console.error("Successfully uploading qr code:", response);
-                setAdjSnackMsg(`Successfully to upload qr code`);
+                console.error("Successfully uploaded data from qr code:", response);
+                setAdjSnackMsg(`Successfully uploaded data from qr code`);
                 setColorStatus('success');
                 setOpenSnack(true);
                 return;
             }
 
-            setAdjSnackMsg(`Failed to upload qr code`);
+            setAdjSnackMsg(`Failed to upload data from qr code`);
             setColorStatus('error');
             setOpenSnack(true);
         }
@@ -489,84 +490,62 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     onChange={handleChange}
                 />
                 {uploadedFiles.length > 0 && (
-                    <Paper
-                        variant='outlined'
-                        sx={{ width: "100%", borderRadius: 2, overflow: 'hidden', padding: 2 }}
-                    >
-                        <Typography variant="h6">Uploaded Files</Typography>
-                        <Stack
+                    <Box sx={{ width: "100%" }}>
+                        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                            Uploaded Files ({uploadedFiles.length})
+                        </Typography>
+                        <Box
                             sx={{
                                 maxHeight: '200px',
                                 overflowY: 'auto',
-                                p: 1.5,
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                borderRadius: 1,
                             }}
-                            spacing={1}
                         >
                             {uploadedFiles.map((fileData, index) => (
-                                <Paper
+                                <Box
                                     key={`${fileData.file.name}-${index}`}
-                                    elevation={0}
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        px: 2,
+                                        py: 1,
+                                        borderBottom: index < uploadedFiles.length - 1 ? '1px solid' : 'none',
+                                        borderColor: 'divider',
+                                    }}
                                 >
-                                    <Stack
-                                        direction="row"
-                                        spacing={2}
-                                        alignItems="center"
-                                        justifyContent="space-between"
-                                    >
-                                        <Stack
-                                            direction="row"
-                                            spacing={1.5}
-                                            alignItems="center"
-                                            flex={1}
-                                            minWidth={0}
-                                        >
-                                            <InsertDriveFileRoundedIcon />
-                                            <Typography
-                                                variant="body2"
-                                            >
-                                                {fileData.file.name}
-                                            </Typography>
-                                        </Stack>
-
-                                        <Stack
-                                            direction="row"
-                                            spacing={1}
-                                            alignItems="center"
-                                        >
-                                            <FormControlLabel
-                                                control={
-                                                    <Checkbox
-                                                        size="small"
-                                                        checked={fileData.webIdEnabled}
-                                                        onChange={handleWebIdAnalysis(index)}
-                                                    />
-                                                }
-                                                label={
-                                                    <Typography variant="body2">
-                                                        WebID Analysis
-                                                    </Typography>
-                                                }
-                                            />
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => handleFileDelete(index)}
-                                                sx={{
-                                                    padding: "2px",
-                                                    border: "1px solid",
-                                                    borderRadius: "10px",
-                                                    borderColor: "error.main",
-                                                    backgroundColor: "inherit",
-                                                    color: "error.main"
-                                                }}
-                                            >
-                                                <DeleteOutline/>
-                                            </IconButton>
-                                        </Stack>
+                                    <Stack direction="row" spacing={1.5} alignItems="center" flex={1} minWidth={0}>
+                                        <InsertDriveFileRoundedIcon fontSize="small" color="action" />
+                                        <Typography variant="body2" noWrap sx={{ flex: 1 }}>
+                                            {fileData.file.name}
+                                        </Typography>
                                     </Stack>
-                                </Paper>
+                                    <Stack direction="row" spacing={1} alignItems="center">
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    size="small"
+                                                    checked={fileData.webIdEnabled}
+                                                    onChange={handleWebIdAnalysis(index)}
+                                                />
+                                            }
+                                            label={<Typography variant="body2">WebID</Typography>}
+                                            sx={{ mr: 0 }}
+                                        />
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => handleFileDelete(index)}
+                                            color="error"
+                                        >
+                                            <DeleteOutline fontSize="small" />
+                                        </IconButton>
+                                    </Stack>
+                                </Box>
                             ))}
-                        </Stack>
-                    </Paper>
+                        </Box>
+                    </Box>
                 )}
                 <Stack direction={"row"} spacing={2} justifyContent={"space-between"} alignItems={"center"} width={"100%"}>
                     <Stack direction={"row"} spacing={2}>
