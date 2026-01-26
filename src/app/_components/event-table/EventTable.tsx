@@ -559,8 +559,9 @@ export default function EventTable({
         let start: string | null = null;
         let end: string = pageLoadedTime;
 
+        debugger
         for (const item of filterModel.items) {
-            if (!item.value)
+            if (item.field != 'startTime' || item.field != 'endTime')
                 continue;
 
             const isoDate = new Date(item.value).toISOString();
@@ -588,7 +589,7 @@ export default function EventTable({
         }
         if (start)
             return `${start}/${end}`;
-        return `../${end}`;
+        return `../${pageLoadedTime}`;
     }
 
     const buildFilterQuery = (filterModel: GridFilterModel, tableMode: string): string => {
