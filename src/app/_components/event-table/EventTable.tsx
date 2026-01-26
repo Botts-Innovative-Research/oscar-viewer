@@ -559,7 +559,6 @@ export default function EventTable({
         let start: string | null = null;
         let end: string = pageLoadedTime;
 
-        debugger
         for (const item of filterModel.items) {
             if (!['startTime', 'endTime'].includes(item.field))
                 continue;
@@ -594,55 +593,39 @@ export default function EventTable({
     }
 
     const buildFilterQuery = (filterModel: GridFilterModel, tableMode: string): string => {
-        let filters: string[] = [];
-
-        if (tableMode === "alarmtable") {
-            filters.push("gammaAlarm=true OR neutronAlarm=true");
-        }
-
+        let filter: string | null = null;
+        
         // http://localhost:8282/sensorhub/api/observations?resultTime=../2026-01-26T13:22:44.048Z&format=application/om%2Bjson&dataStream=0g30&filter=adjudicatedIds>0&order=desc&offset=0&limit=15
         for (const item of filterModel.items) {
-            if (!item.value) continue;
+            if (!['status', 'adjudicatedIds'].includes(item.field))
+                continue;
 
             switch (item.field) {
                 case 'status':
-                    // if (item.operator === 'is') {
-                        if (item.value === 'Gamma') {
-                            filters.push(`gammaAlarm=true AND neutronAlarm=false`)
-                        } else if (item.value === 'Neutron') {
-                            filters.push(`gammaAlarm=false AND neutronAlarm=true`)
-                        } else if (item.value === 'Gamma & Neutron') {
-                            filters.push(`gammaAlarm=true AND neutronAlarm=true`)
-                        } else if (item.value === 'None') {
-                            filters.push(`gammaAlarm=false AND neutronAlarm=false`)
-                        }
-                    // }
-                    // else if (item.operator === 'not') { // not a or not b
-                    //     if (item.value === 'Gamma') {
-                    //         // not gamma only = neutron OR both OR none
-                    //         filters.push(`gammaAlarm=false OR neutronAlarm=true`);
-                    //     } else if (item.value === 'Neutron') {
-                    //         // not neutron only = gamma OR both OR none
-                    //         filters.push(`gammaAlarm=true OR neutronAlarm=false`);
-                    //     } else if (item.value === 'Gamma & Neutron') {
-                    //         // not both = at least one is false
-                    //         filters.push(`gammaAlarm=false OR neutronAlarm=false`);
-                    //     } else if (item.value === 'None') {
-                    //         // not none = at least one alarm
-                    //         filters.push(`gammaAlarm=true OR neutronAlarm=true`);
-                    //     }
-                    // }
+                    if (item.value === 'Gamma') {
+                        filter =`gammaAlarm=true AND neutronAlarm=false`
+                    } else if (item.value === 'Neutron') {
+                        filter =`gammaAlarm=false AND neutronAlarm=true`
+                    } else if (item.value === 'Gamma & Neutron') {
+                        filter =`gammaAlarm=true AND neutronAlarm=true`
+                    } else if (item.value === 'None') {
+                        filter =`gammaAlarm=false AND neutronAlarm=false`
+                    }
                     break;
                 case 'adjudicatedIds':
                     if (item.value === 'Yes')
-                        filters.push(`adjudicatedIdsCount>0`)
+                        filter =`adjudicatedIdsCount>0`
                     else if (item.value === 'No')
-                        filters.push(`adjudicatedIdsCount=0`)
+                        filter =`adjudicatedIdsCount=0`
                     break;
             }
         }
 
-        return filters.join(" AND ");
+        if (filter)
+            return filter;
+        if (tableMode === 'alarmtable')
+            return "gammaAlarm=true OR neutronAlarm=true";
+        return '';
     }
 
     const handleFilterChange = useCallback((model: GridFilterModel) => {
