@@ -36,6 +36,7 @@ import { selectNodes } from "@/lib/state/OSHSlice";
 import { EventType } from "osh-js/source/core/event/EventType";
 import {INode} from "@/lib/data/osh/Node";
 import Observations from "osh-js/source/core/consysapi/observation/Observations";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface TableProps {
     tableMode: "eventlog" | "alarmtable" | "lanelog";
@@ -73,6 +74,7 @@ export default function EventTable({
 
     const dispatch = useAppDispatch();
     const router = useRouter();
+    const { t } = useLanguage();
 
     const stableLaneMap = useMemo(() => convertToMap(laneMap), [laneMap]);
 
@@ -409,21 +411,21 @@ export default function EventTable({
     const columns: GridColDef<EventTableData>[] = [
         {
             field: 'laneId',
-            headerName: 'Lane ID',
+            headerName: t('laneId'),
             type: 'string',
             minWidth: 100,
             flex: 1,
         },
         {
             field: 'occupancyCount',
-            headerName: 'Occupancy ID',
+            headerName: t('occupancyId'),
             type: 'string',
             minWidth: 125,
             flex: 1.5,
         },
         {
             field: 'startTime',
-            headerName: 'Start Time',
+            headerName: t('startTime'),
             valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
                 year: 'numeric',
                 month: 'numeric',
@@ -437,7 +439,7 @@ export default function EventTable({
         },
         {
             field: 'endTime',
-            headerName: 'End Time',
+            headerName: t('endTime'),
             valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
                 year: 'numeric',
                 month: 'numeric',
@@ -451,29 +453,29 @@ export default function EventTable({
         },
         {
             field: 'maxGamma',
-            headerName: 'Max Gamma (cps)',
+            headerName: t('maxGamma'),
             valueFormatter: (params) => (typeof params === 'number' ? params : 0),
             minWidth: 150,
             flex: 1.2,
         },
         {
             field: 'maxNeutron',
-            headerName: 'Max Neutron (cps)',
+            headerName: t('maxNeutron'),
             valueFormatter: (params) => (typeof params === 'number' ? params : 0),
             minWidth: 150,
             flex: 1.2,
         },
         {
             field: 'status',
-            headerName: 'Status',
+            headerName: t('status'),
             type: 'string',
             minWidth: 125,
             flex: 1.2,
         },
         {
             field: 'adjudicatedIds',
-            headerName: 'Adjudicated',
-            valueFormatter: (params: any) => params.length > 0 ? "Yes" : "No",
+            headerName: t('adjudicated'),
+            valueFormatter: (params: any) => params.length > 0 ? t('yes') : t('no'),
             minWidth: 100,
             flex: 1,
             filterable: viewAdjudicated
@@ -489,7 +491,7 @@ export default function EventTable({
                     <GridActionsCellItem
                         key="details"
                         icon={<VisibilityRoundedIcon />}
-                        label="Details"
+                        label={t('details')}
                         onClick={() => handleEventPreview()}
                         showInMenu
                     />
