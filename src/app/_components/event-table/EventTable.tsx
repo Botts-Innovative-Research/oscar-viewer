@@ -561,8 +561,9 @@ export default function EventTable({
 
         debugger
         for (const item of filterModel.items) {
-            if (item.field != 'startTime' || item.field != 'endTime')
+            if (!['startTime', 'endTime'].includes(item.field))
                 continue;
+
 
             const isoDate = new Date(item.value).toISOString();
 
