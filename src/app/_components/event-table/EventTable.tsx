@@ -14,7 +14,7 @@ import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 import { EventTableData } from "@/lib/data/oscar/TableHelpers";
 import {
-    DataGrid,
+    DataGrid, getGridSingleSelectOperators,
     GridActionsCellItem,
     GridCellParams,
     gridClasses,
@@ -36,6 +36,7 @@ import { selectNodes } from "@/lib/state/OSHSlice";
 import { EventType } from "osh-js/source/core/event/EventType";
 import {INode} from "@/lib/data/osh/Node";
 import Observations from "osh-js/source/core/consysapi/observation/Observations";
+import { GridFilterModel } from "@mui/x-data-grid"
 
 interface TableProps {
     tableMode: "eventlog" | "alarmtable" | "lanelog";
@@ -65,8 +66,9 @@ export default function EventTable({
     const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([selectedRowId]);
     const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
     const [totalCount, setTotalCount] = useState<Map<string, number>>(new Map());
-    // const [currentPage, setCurrentPage] = useState(0);
     const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize });
+
+    const [filterModel, setFilterModel] = useState<GridFilterModel>({ items: [] })
 
     const adjudicatedEventId = useSelector(selectAdjudicatedEventId);
     const selectedEvent = useSelector(selectSelectedEvent);
@@ -76,7 +78,6 @@ export default function EventTable({
 
     const stableLaneMap = useMemo(() => convertToMap(laneMap), [laneMap]);
 
-    // Use ref to track current page for websocket handlers
     const currentPageRef = useRef(0);
 
     const handlePaginationChange = useCallback((model: { page: number; pageSize: number }) => {
@@ -137,7 +138,6 @@ export default function EventTable({
     useEffect(() => {
         if (adjudicatedEventId && tableMode === 'alarmtable') {
             // Remove the adjudicated event from the table immediately
-            // console.log('selectedEvent', selectedEvent)
             setFilteredTableData(prev => prev.filter(row => row.id !== adjudicatedEventId));
 
             dispatch(setAdjudicatedEventId(null));
@@ -197,7 +197,8 @@ export default function EventTable({
                 const observationFilter = new ObservationFilter({
                     dataStream: datastreamIds,
                     resultTime: `../${pageLoadedTime}`,
-                    filter: tableMode == "alarmtable" ? "gammaAlarm=true OR neutronAlarm=true" : "",
+                    filter: buildFilterQuery(filterModel, tableMode),
+                    // filter: tableMode == "alarmtable" ? "gammaAlarm=true OR neutronAlarm=true" : "",
                     order: 'desc'
                 });
 
@@ -219,7 +220,6 @@ export default function EventTable({
             const filtered = filterRows(deduped);
             setFilteredTableData(filtered);
             currentPageRef.current = userRequestedPage;
-            // setCurrentPage(userRequestedPage);
         } catch (error) {
             console.error("Error fetching observations,", error)
             setFilteredTableData([])
@@ -227,7 +227,7 @@ export default function EventTable({
             setLoading(false);
         }
 
-    }, [nodes, stableLaneMap, totalPages, pageLoadedTime, tableMode, getDatastreamIds, filterRows]);
+    }, [nodes, stableLaneMap, totalPages, pageLoadedTime, tableMode, getDatastreamIds, filterRows, filterModel]);
 
     function deduplicateById(arr: EventTableData[]): EventTableData[] {
         const map = new Map();
@@ -309,24 +309,13 @@ export default function EventTable({
     useEffect(() => {
         if (totalPages > 0)
             fetchPage(paginationModel.page);
-    }, [totalPages, paginationModel.page]);
+    }, [totalPages, paginationModel.page, filterModel]);
 
     useEffect(() => {
         currentPageRef.current = paginationModel.page;
     }, [paginationModel.page]);
 
-    // useEffect(() => {
-    //     if (paginationModel.page === 0 && totalObservations > 0 ) {
-    //         const now = new Date().toISOString();
-    //         // console.log('updating time for page load', now);
-    //
-    //         setPageLoadedTime(now);
-    //     }
-    // }, [paginationModel.page, totalObservations]);
-
-
     useEffect(() => {
-
         if (stableLaneMap.size === 0) return;
 
         const connectedSources: typeof ConSysApi[] = [];
@@ -352,8 +341,6 @@ export default function EventTable({
                     if (currentPageRef.current !== 0)
                         return;
 
-                    // console.log("paginationModel page", paginationModel.page)
-                    // console.log("currentPageRef.current", currentPageRef.current);
                     const obsData = msg.values?.[0]?.data || msg;
                     const event = eventFromObservation(obsData, entry, true);
 
@@ -394,17 +381,16 @@ export default function EventTable({
     }, [stableLaneMap, filterRows]);
 
     useEffect(() => {
-        if (!selectedRowId) {
+        if (!selectedRowId)
             setSelectionModel([]);
-        }
     }, [selectedRowId]);
 
-    // Update rowCount when totalObservations changes
     useEffect(() => {
         setRowCount(totalObservations);
     }, [totalObservations]);
 
     const locale = navigator.language || 'en-US';
+
 
     const columns: GridColDef<EventTableData>[] = [
         {
@@ -413,6 +399,7 @@ export default function EventTable({
             type: 'string',
             minWidth: 100,
             flex: 1,
+            filterable: false
         },
         {
             field: 'occupancyCount',
@@ -420,6 +407,7 @@ export default function EventTable({
             type: 'string',
             minWidth: 125,
             flex: 1.5,
+            filterable: false
         },
         {
             field: 'startTime',
@@ -434,6 +422,7 @@ export default function EventTable({
             }),
             minWidth: 200,
             flex: 2,
+            filterable: false
         },
         {
             field: 'endTime',
@@ -448,6 +437,7 @@ export default function EventTable({
             }),
             minWidth: 200,
             flex: 2,
+            filterable: false
         },
         {
             field: 'maxGamma',
@@ -455,6 +445,7 @@ export default function EventTable({
             valueFormatter: (params) => (typeof params === 'number' ? params : 0),
             minWidth: 150,
             flex: 1.2,
+            filterable: false
         },
         {
             field: 'maxNeutron',
@@ -462,6 +453,7 @@ export default function EventTable({
             valueFormatter: (params) => (typeof params === 'number' ? params : 0),
             minWidth: 150,
             flex: 1.2,
+            filterable: false
         },
         {
             field: 'status',
@@ -469,6 +461,12 @@ export default function EventTable({
             type: 'string',
             minWidth: 125,
             flex: 1.2,
+            type: 'singleSelect',
+            valueOptions: ['None', 'Gamma', 'Neutron', 'Gamma & Neutron'],
+            filterOperators: getGridSingleSelectOperators().filter(
+                (op) => ['is'].includes(op.value)
+                // (op) => ['is', 'not'].includes(op.value)
+            )
         },
         {
             field: 'adjudicatedIds',
@@ -476,7 +474,12 @@ export default function EventTable({
             valueFormatter: (params: any) => params.length > 0 ? "Yes" : "No",
             minWidth: 100,
             flex: 1,
-            filterable: viewAdjudicated
+            filterable: viewAdjudicated,
+            type: 'singleSelect',
+            valueOptions: ['Yes', 'No'],
+            filterOperators: getGridSingleSelectOperators().filter(
+                (op) => ['is'].includes(op.value)
+            )
         },
         {
             field: 'Menu',
@@ -550,11 +553,71 @@ export default function EventTable({
         }
     }
 
+    const buildFilterQuery = (filterModel: GridFilterModel, tableMode: string): string => {
+        let filters: string[] = [];
+
+        if (tableMode === "alarmtable") {
+            filters.push("gammaAlarm=true OR neutronAlarm=true");
+        }
+
+        // http://localhost:8282/sensorhub/api/observations?resultTime=../2026-01-26T13:22:44.048Z&format=application/om%2Bjson&dataStream=0g30&filter=adjudicatedIds>0&order=desc&offset=0&limit=15
+        for (const item of filterModel.items) {
+            if (!item.value) continue;
+
+            switch (item.field) {
+                case 'status':
+                    // if (item.operator === 'is') {
+                        if (item.value === 'Gamma') {
+                            filters.push(`gammaAlarm=true AND neutronAlarm=false`)
+                        } else if (item.value === 'Neutron') {
+                            filters.push(`gammaAlarm=false AND neutronAlarm=true`)
+                        } else if (item.value === 'Gamma & Neutron') {
+                            filters.push(`gammaAlarm=true AND neutronAlarm=true`)
+                        } else if (item.value === 'None') {
+                            filters.push(`gammaAlarm=false AND neutronAlarm=false`)
+                        }
+                    // }
+                    // else if (item.operator === 'not') { // not a or not b
+                    //     if (item.value === 'Gamma') {
+                    //         // not gamma only = neutron OR both OR none
+                    //         filters.push(`gammaAlarm=false OR neutronAlarm=true`);
+                    //     } else if (item.value === 'Neutron') {
+                    //         // not neutron only = gamma OR both OR none
+                    //         filters.push(`gammaAlarm=true OR neutronAlarm=false`);
+                    //     } else if (item.value === 'Gamma & Neutron') {
+                    //         // not both = at least one is false
+                    //         filters.push(`gammaAlarm=false OR neutronAlarm=false`);
+                    //     } else if (item.value === 'None') {
+                    //         // not none = at least one alarm
+                    //         filters.push(`gammaAlarm=true OR neutronAlarm=true`);
+                    //     }
+                    // }
+                    break;
+                case 'adjudicatedIds':
+                    if (item.value === 'Yes')
+                        filters.push(`adjudicatedIdsCount>0`)
+                    else if (item.value === 'No')
+                        filters.push(`adjudicatedIdsCount=0`)
+                    break;
+            }
+        }
+
+        return filters.join(" AND ");
+    }
+
+    const handleFilterChange = useCallback((model: GridFilterModel) => {
+        setFilterModel(model);
+        setPaginationModel(prev => ({ ...prev, page: 0 }));
+    }, []);
+
     return (
         <Box sx={{ height: 800, width: '100%' }}>
             <DataGrid
                 rows={filteredTableData}
                 paginationMode="server"
+                filterMode="server"
+                filterModel={filterModel}
+                onFilterModelChange={handleFilterChange}
                 loading={loading}
                 paginationModel={paginationModel}
                 onPaginationModelChange={handlePaginationChange}
