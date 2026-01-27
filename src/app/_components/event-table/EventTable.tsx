@@ -37,6 +37,7 @@ import { EventType } from "osh-js/source/core/event/EventType";
 import {INode} from "@/lib/data/osh/Node";
 import Observations from "osh-js/source/core/consysapi/observation/Observations";
 import { useBreakpoint } from "@/app/providers";
+import { usePathname } from 'next/navigation'
 
 interface TableProps {
     tableMode: "eventlog" | "alarmtable" | "lanelog";
@@ -59,6 +60,7 @@ export default function EventTable({
                                    }: TableProps) {
     
     const { isDesktop } = useBreakpoint();
+    const pathname = usePathname();
 
     const nodes = useSelector(selectNodes);
     const selectedRowId = useSelector(selectSelectedRowId);
@@ -541,8 +543,8 @@ export default function EventTable({
                 dispatch(setSelectedEvent(selectedRow));
             }, 10);
 
-            // Handle routing to Event Preview page, if not Desktop
-            if (!isDesktop) router.push("/event-preview");
+            // Handle routing to Event Preview page -> IF not Desktop AND on dashboard
+            if (!isDesktop && pathname === "/") router.push("/event-preview");
         }
     };
 
