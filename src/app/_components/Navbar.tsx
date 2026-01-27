@@ -303,15 +303,18 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                                     checked={notificationsEnabled === 'granted'}
                                     onChange={handleNotifications}
                                     size="small"
+                                    disabled={notificationsEnabled === 'granted'}
                                 />
                             }
                             label={
                                 <Box sx={{marginLeft: 2}}>
                                     <Typography variant="body2" fontWeight={500}>
-                                        Browser Notifications
+                                        Browser Notification Permission
                                     </Typography>
+
                                     <Typography variant="caption" color="text.secondary">
-                                        Receive all system notifications
+                                        { notificationsEnabled === 'granted' ? 'Permission granted' : notificationsEnabled === 'denied' ? 'Permission denied (update in browser settings)': 'Click to request permission' }
+
                                     </Typography>
                                 </Box>
                             }
