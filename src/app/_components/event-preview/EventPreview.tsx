@@ -405,7 +405,7 @@ export function EventPreview() {
 
             {/* BUTTONS */}
             <Grid item container xs={12} spacing={2}>
-                <Grid item xs={6} sm={12}>
+                <Grid item xs={6}>
                     <Button
                         onClick={sendAdjudicationData}
                         variant={"contained"}
@@ -416,7 +416,7 @@ export function EventPreview() {
                         Submit
                     </Button>
                 </Grid>
-                <Grid item xs={6} sm={12}>
+                <Grid item xs={6}>
                     <Button
                         onClick={resetAdjudicationData}
                         variant={"contained"}
