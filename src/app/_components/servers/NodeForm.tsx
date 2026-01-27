@@ -15,9 +15,10 @@ import {
     Typography
 } from "@mui/material";
 import React, {useEffect, useState} from "react";
-import {addNode, updateNode} from "@/lib/state/OSHSlice";
+import {addNode, selectNodes, updateNode} from "@/lib/state/OSHSlice";
 import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
 import {useAppDispatch} from "@/lib/state/Hooks";
+import {useSelector} from "react-redux";
 
 
 export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
@@ -31,6 +32,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     const [colorStatus, setColorStatus] = useState("");
 
     const dispatch = useAppDispatch();
+    const nodes = useSelector(selectNodes);
 
     const newNodeOpts: NodeOptions = {
         name: "",
@@ -82,7 +84,27 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
             dispatch(updateNode(newNode));
             modeChangeCallback(false, null);
         } else {
+            const hasDuplicate = nodes.some(
+                (n: INode) => n.address === newNode.address && n.port === newNode.port
+            );
+            if (hasDuplicate) {
+                setNodeSnackMsg(`Node with address ${newNode.address}:${newNode.port} already exists`);
+                setColorStatus('error');
+                setOpenSnack(true);
+                return;
+            }
+            const nameExists = nodes.some((n: INode) => n.name === newNode.name);
+            if (nameExists) {
+                setNodeSnackMsg(`Node with name "${newNode.name}" already exists`);
+                setColorStatus('error');
+                setOpenSnack(true);
+                return;
+            }
+
             dispatch(addNode(newNode));
+            setNodeSnackMsg(`Node "${newNode.name}" added successfully`);
+            setColorStatus('success');
+            setOpenSnack(true);
             modeChangeCallback(false, null);
         }
     }

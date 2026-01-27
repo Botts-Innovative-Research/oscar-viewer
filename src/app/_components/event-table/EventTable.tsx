@@ -38,6 +38,9 @@ import {INode} from "@/lib/data/osh/Node";
 import Observations from "osh-js/source/core/consysapi/observation/Observations";
 import { useBreakpoint } from "@/app/providers";
 import { usePathname } from 'next/navigation'
+import {NotificationService, NotificationTemplates} from "@/app/_components/notifications/NotificationService";
+import { useLanguage } from '@/contexts/LanguageContext';
+
 
 interface TableProps {
     tableMode: "eventlog" | "alarmtable" | "lanelog";
@@ -78,6 +81,7 @@ export default function EventTable({
 
     const dispatch = useAppDispatch();
     const router = useRouter();
+    const { t } = useLanguage();
 
     const stableLaneMap = useMemo(() => convertToMap(laneMap), [laneMap]);
 
@@ -284,6 +288,29 @@ export default function EventTable({
         }
     }
 
+    const notificationServiceRef = useRef<NotificationService | null>(null);
+
+    useEffect(() => {
+        if (!notificationServiceRef.current) {
+            notificationServiceRef.current = new NotificationService();
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then((registration) => {
+                notificationServiceRef.current?.init(registration);
+            });
+        }
+    }, []);
+
+    function sendNotification(alarmData: { laneName: string, status: string}) {
+        const notificationService = notificationServiceRef.current;
+        if (notificationService?.isReady()) {
+            notificationService.showNotification(
+                NotificationTemplates.newAlarm(alarmData.laneName, alarmData.status)
+            )
+        }
+    }
+
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry, isLive: boolean): EventTableData {
         const id = prngFromStr(obs, laneEntry.laneName);
         let newEvent: EventTableData;
@@ -293,6 +320,11 @@ export default function EventTable({
             const result = obs.result || obs;
             newEvent = new EventTableData(id, laneEntry.laneName, result, null, obs["foi@id"] || obs.foiId);
             newEvent.setFoiId(obs["foi@id"] || obs.foiId);
+
+
+            if (newEvent.status !== 'None') {
+                sendNotification({ laneName: laneEntry.laneName, status: newEvent.status});
+            }
         } else {
             // Handle historical observations
             newEvent = new EventTableData(id, laneEntry.laneName, obs.properties.result, obs.properties.id, obs.properties.foiId);
@@ -301,6 +333,7 @@ export default function EventTable({
             newEvent.setFoiId(obs.properties["foi@id"]);
             newEvent.setOccupancyObsId(obs.id);
         }
+
 
         return newEvent;
     }
@@ -319,15 +352,6 @@ export default function EventTable({
     useEffect(() => {
         currentPageRef.current = paginationModel.page;
     }, [paginationModel.page]);
-
-    // useEffect(() => {
-    //     if (paginationModel.page === 0 && totalObservations > 0 ) {
-    //         const now = new Date().toISOString();
-    //         // console.log('updating time for page load', now);
-    //
-    //         setPageLoadedTime(now);
-    //     }
-    // }, [paginationModel.page, totalObservations]);
 
 
     useEffect(() => {
@@ -357,8 +381,6 @@ export default function EventTable({
                     if (currentPageRef.current !== 0)
                         return;
 
-                    // console.log("paginationModel page", paginationModel.page)
-                    // console.log("currentPageRef.current", currentPageRef.current);
                     const obsData = msg.values?.[0]?.data || msg;
                     const event = eventFromObservation(obsData, entry, true);
 
@@ -414,21 +436,21 @@ export default function EventTable({
     const columns: GridColDef<EventTableData>[] = [
         {
             field: 'laneId',
-            headerName: 'Lane ID',
+            headerName: t('laneId'),
             type: 'string',
             minWidth: 100,
             flex: 1,
         },
         {
             field: 'occupancyCount',
-            headerName: 'Occupancy ID',
+            headerName: t('occupancyId'),
             type: 'string',
             minWidth: 125,
             flex: 1.5,
         },
         {
             field: 'startTime',
-            headerName: 'Start Time',
+            headerName: t('startTime'),
             valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
                 year: 'numeric',
                 month: 'numeric',
@@ -442,7 +464,7 @@ export default function EventTable({
         },
         {
             field: 'endTime',
-            headerName: 'End Time',
+            headerName: t('endTime'),
             valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
                 year: 'numeric',
                 month: 'numeric',
@@ -456,29 +478,29 @@ export default function EventTable({
         },
         {
             field: 'maxGamma',
-            headerName: 'Max Gamma (cps)',
+            headerName: t('maxGamma'),
             valueFormatter: (params) => (typeof params === 'number' ? params : 0),
             minWidth: 150,
             flex: 1.2,
         },
         {
             field: 'maxNeutron',
-            headerName: 'Max Neutron (cps)',
+            headerName: t('maxNeutron'),
             valueFormatter: (params) => (typeof params === 'number' ? params : 0),
             minWidth: 150,
             flex: 1.2,
         },
         {
             field: 'status',
-            headerName: 'Status',
+            headerName: t('status'),
             type: 'string',
             minWidth: 125,
             flex: 1.2,
         },
         {
             field: 'adjudicatedIds',
-            headerName: 'Adjudicated',
-            valueFormatter: (params: any) => params.length > 0 ? "Yes" : "No",
+            headerName: t('adjudicated'),
+            valueFormatter: (params: any) => params.length > 0 ? t('yes') : t('no'),
             minWidth: 100,
             flex: 1,
             filterable: viewAdjudicated
@@ -494,7 +516,7 @@ export default function EventTable({
                     <GridActionsCellItem
                         key="details"
                         icon={<VisibilityRoundedIcon />}
-                        label="Details"
+                        label={t('details')}
                         onClick={() => handleEventPreview()}
                         showInMenu
                     />

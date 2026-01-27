@@ -7,6 +7,7 @@ import {setCurrentLane} from '@/lib/state/LaneViewSlice';
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/dist/client/components/navigation";
 import {setAlarmTrigger} from "@/lib/state/EventDataSlice";
+import {useLanguage} from "@/contexts/LanguageContext";
 
 
 export interface LaneStatusProps {
@@ -26,9 +27,11 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
 
     const dispatch = useAppDispatch();
     const router = useRouter();
+    const { t } = useLanguage();
 
     useEffect(() => {
-        setStatusList(props.initialLanes);
+        let sortedLanes = [...props.initialLanes].sort((a,b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+        setStatusList(sortedLanes);
 
         return () => {
             if (timersRef.current) {
@@ -174,8 +177,9 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
     }
 
     return (
+
         <Stack justifyContent={"start"} spacing={1}>
-            <Typography variant="h6">Lane Status</Typography>
+            <Typography variant="h6">t('laneStatus')</Typography>
             <>
                 <Box sx={{overflowY: "auto", maxHeight: 275, flexGrow: 1}}>
                     {(
