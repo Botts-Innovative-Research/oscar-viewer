@@ -446,22 +446,23 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                 Submit
                             </Button>
                         </Grid>
-                        <Snackbar
-                            anchorOrigin={{ vertical:'top', horizontal:'center' }}
-                            open={openSnack}
-                            autoHideDuration={5000}
-                            onClose={handleCloseSnack}
-                            message={adjSnackMsg}
-                            sx={{
-                                '& .MuiSnackbarContent-root': {
-                                    backgroundColor: colorStatus === 'success' ? 'green' : 'red',
-                                },
-                            }}
-                        />
+                        
                     </Grid>
                 </Grid>
 
             </Grid>
+            <Snackbar
+                anchorOrigin={{ vertical:'top', horizontal:'center' }}
+                open={openSnack}
+                autoHideDuration={5000}
+                onClose={handleCloseSnack}
+                message={adjSnackMsg}
+                sx={{
+                    '& .MuiSnackbarContent-root': {
+                        backgroundColor: colorStatus === 'success' ? 'green' : 'red',
+                    },
+                }}
+            />
         </Grid>
     );
 }
