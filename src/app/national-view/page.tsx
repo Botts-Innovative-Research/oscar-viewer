@@ -276,7 +276,7 @@ export default function NationalViewPage() {
                     />
                 </Grid>
                 {selectedTimeRange === 'custom' && (
-                    <Grid item sm={12} md={"auto"}>
+                    <Grid item xs={12} sm={12} md={"auto"}>
                         <NationalDatePicker
                             onCustomStartChange={handleCustomStartTime}
                             onCustomEndChange={handleCustomEndTime}
