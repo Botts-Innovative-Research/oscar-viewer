@@ -15,6 +15,7 @@ import {PictureAsPdfRounded} from "@mui/icons-material";
 import {useReactToPrint} from "react-to-print";
 import EventMedia from "../_components/event-preview/EventMedia";
 import CircularProgress from "@mui/material/CircularProgress";
+import {useLanguage} from "@/contexts/LanguageContext";
 
 
 export default function EventDetailsPage() {
@@ -31,6 +32,7 @@ export default function EventDetailsPage() {
     const contentRef = useRef<HTMLDivElement>(null);
     const docTitle = eventPreview.eventData ? `eventdetails-${eventPreview.eventData.laneId}-${eventPreview.eventData.occupancyObsId}-${eventPreview.eventData.startTime}-${eventPreview.eventData.endTime}` : 'eventdetails';
 
+    const { t } = useLanguage();
 
     const collectDataSources = useCallback(async() => {
         if(!eventPreview.eventData?.laneId || !laneMapRef.current) return;
@@ -101,7 +103,9 @@ export default function EventDetailsPage() {
                     <BackButton/>
                 </Grid>
                 <Grid item xs>
-                    <Typography variant="h4">Event Details</Typography>
+                    <Typography variant="h4">
+                        { t('eventDetails') }
+                    </Typography>
                 </Grid>
                 <Grid item xs={2}>
                     <Button

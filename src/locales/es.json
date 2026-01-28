@@ -18,5 +18,9 @@
   "adjudicated": "Adjudicado",
   "details": "Detalles",
   "yes": "Sí",
-  "no": "No"
+  "no": "No",
+  "eventDetails": "Detalles del evento",
+  "addServer": "Agregar un nuevo servidor",
+  "editNode": "Editar nodo",
+  "nodes": "Nodos"
 }

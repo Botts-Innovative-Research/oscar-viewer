@@ -18,5 +18,9 @@
   "adjudicated": "Jugé",
   "details": "Détails",
   "yes": "Oui",
-  "no": "Non"
+  "no": "Non",
+  "eventDetails": "Détails de l'événement",
+  "addServer": "Ajouter un nouveau serveur",
+  "editNode": "Modifier le nœud",
+  "nodes": "Nœuds"
 }

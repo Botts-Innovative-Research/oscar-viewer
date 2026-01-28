@@ -15,9 +15,12 @@ import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStr
 import {isNationalControlStream} from "@/lib/data/oscar/Utilities";
 import {generateNationalCommandJSON, sendCommand} from "@/lib/data/oscar/OSCARCommands";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
+import {useLanguage} from "@/contexts/LanguageContext";
 
 
 export default function NationalViewPage() {
+    const { t } = useLanguage();
+
     const[isRefreshing, setIsRefreshing] = useState(false);
 
     const [openSnack, setOpenSnack] = useState(false);
@@ -257,7 +260,7 @@ export default function NationalViewPage() {
         <Box sx={{ padding: 4}} >
 
             <Typography variant="h4" gutterBottom>
-                National View
+                { t('national') }
             </Typography>
 
             <Stack

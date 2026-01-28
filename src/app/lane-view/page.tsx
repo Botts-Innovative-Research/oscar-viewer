@@ -21,10 +21,12 @@ import {useAppDispatch} from "@/lib/state/Hooks";
 import {selectLastToggleState, setToggleState} from "@/lib/state/LaneViewSlice";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import StatusTable from "../_components/lane-view/StatusTable";
+import {useLanguage} from "@/contexts/LanguageContext";
 
 
 export default function LaneViewPage() {
     const dispatch = useAppDispatch();
+    const { t } = useLanguage();
 
     const savedToggleState = useSelector(selectLastToggleState)
     const laneMap = useSelector((state: RootState) => selectLaneMap(state))
@@ -109,7 +111,10 @@ export default function LaneViewPage() {
                     <BackButton/>
                 </Grid>
                 <Grid item xs>
-                    <Typography variant="h4">Lane View: {currentLane}</Typography>
+                    <Typography variant="h4">
+                        { t('laneId') } :
+                        {currentLane}
+                    </Typography>
                 </Grid>
             </Grid>
 
