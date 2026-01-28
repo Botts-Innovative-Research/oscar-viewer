@@ -39,6 +39,9 @@ import Observations from "osh-js/source/core/consysapi/observation/Observations"
 import { GridFilterModel } from "@mui/x-data-grid"
 import {openDB} from "idb";
 
+import { useLanguage } from '@/contexts/LanguageContext';
+
+
 interface TableProps {
     tableMode: "eventlog" | "alarmtable" | "lanelog";
     viewSecondary?: boolean;
@@ -73,6 +76,8 @@ export default function EventTable({
     const selectedEvent = useSelector(selectSelectedEvent);
     const dispatch = useAppDispatch();
     const router = useRouter();
+
+    const { t } = useLanguage();
     const stableLaneMap = useMemo(() => convertToMap(laneMap), [laneMap]);
     const currentPageRef = useRef(0);
     const locale = navigator.language || 'en-US';
@@ -80,7 +85,7 @@ export default function EventTable({
     const columns: GridColDef<EventTableData>[] = [
         {
             field: 'laneId',
-            headerName: 'Lane ID',
+            headerName: t('laneId'),
             type: 'string',
             minWidth: 100,
             flex: 1,
@@ -88,7 +93,7 @@ export default function EventTable({
         },
         {
             field: 'occupancyCount',
-            headerName: 'Occupancy ID',
+            headerName: t('occupancyId'),
             type: 'string',
             minWidth: 125,
             flex: 1.5,
@@ -96,7 +101,7 @@ export default function EventTable({
         },
         {
             field: 'startTime',
-            headerName: 'Start Time',
+            headerName: t('startTime'),
             valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
                 year: 'numeric',
                 month: 'numeric',
@@ -114,7 +119,7 @@ export default function EventTable({
         },
         {
             field: 'endTime',
-            headerName: 'End Time',
+            headerName: t('endTime'),
             valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
                 year: 'numeric',
                 month: 'numeric',
@@ -132,7 +137,7 @@ export default function EventTable({
         },
         {
             field: 'maxGamma',
-            headerName: 'Max Gamma (cps)',
+            headerName: t('maxGamma'),
             valueFormatter: (params) => (typeof params === 'number' ? params : 0),
             minWidth: 150,
             flex: 1.2,
@@ -140,7 +145,7 @@ export default function EventTable({
         },
         {
             field: 'maxNeutron',
-            headerName: 'Max Neutron (cps)',
+            headerName: t('maxNeutron'),
             valueFormatter: (params) => (typeof params === 'number' ? params : 0),
             minWidth: 150,
             flex: 1.2,
@@ -148,7 +153,7 @@ export default function EventTable({
         },
         {
             field: 'status',
-            headerName: 'Status',
+            headerName: t('status'),
             type: 'string',
             minWidth: 125,
             flex: 1.2,
@@ -161,7 +166,7 @@ export default function EventTable({
         },
         {
             field: 'adjudicatedIds',
-            headerName: 'Adjudicated',
+            headerName: t('adjudicated'),
             valueFormatter: (params: any) => params.length > 0 ? "Yes" : "No",
             minWidth: 100,
             flex: 1,
