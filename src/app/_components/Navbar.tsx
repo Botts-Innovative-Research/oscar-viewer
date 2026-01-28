@@ -338,7 +338,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                         </Typography>
                         <Stack direction="row" alignItems="center" spacing={1}>
                             <LanguageSelector />
-                            <Tooltip title={'Settings'} arrow placement="top">
+                            <Tooltip title={t('settings')} arrow placement="top">
                                 <IconButton
                                     color="inherit"
                                     aria-label="open settings"
@@ -372,11 +372,11 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                 }}
             >
                 <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-                    <Typography variant="h6">Settings</Typography>
+                    <Typography variant="h6">{ t('settings') }</Typography>
                 </Box>
                 <Box sx={{ p: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>
-                        Notification Preferences
+                        { t('notificationPreferences') }
                     </Typography>
                     <Stack direction="column" spacing={1.5} sx={{ mt: 1.5}}>
                         <FormControlLabel
@@ -391,13 +391,12 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                             label={
                                 <Box sx={{marginLeft: 2}}>
                                     <Typography variant="body2" fontWeight={500}>
-                                        Browser Notification Permission
+                                        {t('browserNotificationPermission')}
                                     </Typography>
 
-                                    <Typography variant="caption" color="text.secondary">
-                                        { notificationsEnabled === 'granted' ? 'Permission granted' : notificationsEnabled === 'denied' ? 'Permission denied (update in browser settings)': 'Click to request permission' }
-
-                                    </Typography>
+                                    {/*<Typography variant="caption" color="text.secondary">*/}
+                                    {/*    { notificationsEnabled === 'granted' ? t('permissionGranted') : notificationsEnabled === 'denied' ? t('permissionDenied') : t('clickToRequestPermission') }*/}
+                                    {/*</Typography>*/}
                                 </Box>
                             }
                         />
@@ -406,7 +405,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                 <Divider />
                 <Box sx={{ p: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>
-                        Alarm Volume
+                        {t('alarmVolume')}
                     </Typography>
                     <Stack spacing={2} direction="row" sx={{ alignItems: 'center', mt: 1.5 }}>
                         <VolumeDown fontSize="small" color="action"/>
