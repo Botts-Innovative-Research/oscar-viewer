@@ -37,7 +37,7 @@ export default function TimeRangeSelect(props: {
     };
 
     return (
-        <FormControl size="small">
+        <FormControl size="small" fullWidth>
             <InputLabel id="label">Time Range</InputLabel>
             <Select
                 variant="outlined"
@@ -53,6 +53,7 @@ export default function TimeRangeSelect(props: {
                     }
                 }}
                 autoWidth
+                fullWidth
                 style={{minWidth: "8em"}}
                 sx={{
                     color: "text.primary",

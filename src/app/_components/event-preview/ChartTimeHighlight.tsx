@@ -329,13 +329,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                     onChange={handleToggle}
                     exclusive
                     value={toggleView}
-                    sx={{
-                        boxShadow: 1,
-                        '& .MuiToggleButton-root': {
-                            margin: 0.5,
-                            padding: "5px",
-                        },
-                    }}
                 >
                     {gammaToggleButtons}
                 </ToggleButtonGroup>

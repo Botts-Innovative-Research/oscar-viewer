@@ -8,6 +8,7 @@
 import {
     Box,
     Button,
+    Grid,
     IconButton,
     Snackbar,
     SnackbarCloseReason,
@@ -47,8 +48,12 @@ import ObservationFilter from "osh-js/source/core/consysapi/observation/Observat
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import {isAdjudicationControlStream} from "@/lib/data/oscar/Utilities";
 import { EventTableData } from "@/lib/data/oscar/TableHelpers";
+import { useBreakpoint } from "@/app/providers";
+import BackButton from "../BackButton";
 
 export function EventPreview() {
+    const { isDesktop } = useBreakpoint();
+
     const dispatch = useAppDispatch();
     const router = useRouter();
     const eventPreview = useSelector(selectEventPreview);
@@ -302,125 +307,135 @@ export function EventPreview() {
     };
 
     return (
-        <Stack
-            p={1}
-            display={"flex"}
-            spacing={1}
-        >
-            <Stack
-                direction={"row"}
-                justifyContent={"space-between"}
-                spacing={1}
-            >
-                <Stack
-                    direction={"row"}
-                    spacing={1}
-                    alignItems={"center"}
-                >
-                    <Typography
-                        variant="h6"
-                    >
-                        Occupancy ID: {eventPreview.eventData.occupancyCount}
-                    </Typography>
-                    <IconButton
-                        onClick={handleExpand}
-                        aria-label="expand"
-                    >
-                        <OpenInFullRoundedIcon
-                            fontSize="small"
-                        />
-                    </IconButton>
-                </Stack>
-                <IconButton
-                    onClick={handleCloseRounded}
-                    aria-label="close"
-                >
-                    <CloseRoundedIcon fontSize="small"/>
-                </IconButton>
-            </Stack>
+        <Grid container spacing={isDesktop ? 0 : 2} gap={isDesktop ? 2 : 0} width={"100%"}>
 
-            { datasourcesReady ? (
-                    <Box>
-                        <EventMedia
-                            selectedNode={laneMapRef.current.get(eventPreview.eventData.laneId).parentNode}
-                            datasources={{
-                                gamma: gammaDatasources[0],
-                                neutron: neutronDatasources[0],
-                                threshold: thresholdDatasources[0]
-                            }}
-                            mode={"preview"}
-                            eventData={eventPreview.eventData}
-                        />
+            {/* HEADER */}
+            <Grid item container xs={12} spacing={2} paddingLeft={1} justifyContent={"space-between"} width={"100%"}>
+                <Grid item container spacing={2} xs alignItems={"center"}>
+                    {!isDesktop && (
+                        <Grid item>
+                            <BackButton/>
+                        </Grid>
+                    )}
+                    <Grid item>
+                        <Typography
+                            variant="h6"
+                        >
+                            Occupancy ID: {eventPreview.eventData.occupancyCount}
+                        </Typography>
+                    </Grid>
+                    <Grid item>
+                        <IconButton
+                            onClick={handleExpand}
+                            aria-label="expand"
+                        >
+                            <OpenInFullRoundedIcon
+                                fontSize="small"
+                            />
+                        </IconButton>
+                    </Grid>
+                </Grid>
+                {isDesktop && (
+                  <Grid item>
+                        <IconButton
+                            onClick={handleCloseRounded}
+                            aria-label="close"
+                        >
+                            <CloseRoundedIcon fontSize="small"/>
+                        </IconButton>
+                    </Grid>  
+                )}
+            </Grid>
+
+            {/* MEDIA */}
+            <Grid item xs={12}>
+                { datasourcesReady ? (
+                        <Box>
+                            <EventMedia
+                                selectedNode={laneMapRef.current.get(eventPreview.eventData.laneId).parentNode}
+                                datasources={{
+                                    gamma: gammaDatasources[0],
+                                    neutron: neutronDatasources[0],
+                                    threshold: thresholdDatasources[0]
+                                }}
+                                mode={"preview"}
+                                eventData={eventPreview.eventData}
+                            />
+                        </Box>
+
+                    ) :
+                    <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}>
+                        <CircularProgress/>
                     </Box>
+                }
+            </Grid>
 
-                ) :
-                <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}>
-                    <CircularProgress/>
-                </Box>
-            }
-            <Stack spacing={2}>
+            {/* ADJUDICATION SELECT */}
+            <Grid item xs={12}>
                 <AdjudicationSelect
                     adjCode={adjudicationCode}
                     onSelect={handleAdjudicationCode}
                 />
+            </Grid>
 
+            {/* SECONDARY INSPECT SELECT */}
+            <Grid item xs={12}>
                 <SecondaryInspectionSelect
                     secondarySelectVal={secondaryInspection}
                     onSelect={handleInspectionSelect}
                 />
+            </Grid>
 
+            {/* NOTES */}
+            <Grid item xs={12}>
                 <TextField
                     onChange={handleNotes}
                     id="outlined-multiline-static"
                     label="Notes"
                     multiline
                     rows={4}
+                    fullWidth
                 />
+            </Grid>
 
-                <Stack
-                    direction={"row"}
-                    spacing={10}
-                    sx={{width: "100%"}}
-                    justifyContent={"center"}
-                >
-
+            {/* BUTTONS */}
+            <Grid item container xs={12} spacing={2}>
+                <Grid item xs={6}>
                     <Button
                         onClick={sendAdjudicationData}
                         variant={"contained"}
-                        size={"small"}
-                        fullWidth={false}
+                        fullWidth
                         color={"success"}
                         disabled={adjFormData === null}
-                        sx={{width: "25%"}}
                     >
                         Submit
                     </Button>
-
-                    <Snackbar
-                        anchorOrigin={{ vertical:'top', horizontal:'center' }}
-                        open={openSnack}
-                        autoHideDuration={1500}
-                        onClose={handleCloseSnack}
-                        message={adjSnackMsg}
-                        sx={{
-                            '& .MuiSnackbarContent-root': {
-                                backgroundColor: colorStatus === 'success' ? 'green' : 'red',
-                            },
-                        }}
-                    />
-
+                </Grid>
+                <Grid item xs={6}>
                     <Button
                         onClick={resetAdjudicationData}
                         variant={"contained"}
-                        size={"small"}
-                        fullWidth={false}
+                        fullWidth
                         color={"secondary"}
-                        sx={{width: "25%"}}
                     >
                         Reset
                     </Button>
-                </Stack>
-            </Stack>
-        </Stack>
+                </Grid>
+            </Grid>            
+
+            <Snackbar
+                anchorOrigin={{ vertical:'top', horizontal:'center' }}
+                open={openSnack}
+                autoHideDuration={1500}
+                onClose={handleCloseSnack}
+                message={adjSnackMsg}
+                sx={{
+                    '& .MuiSnackbarContent-root': {
+                        backgroundColor: colorStatus === 'success' ? 'green' : 'red',
+                    },
+                }}
+            />
+
+        </Grid>
     )
 }
