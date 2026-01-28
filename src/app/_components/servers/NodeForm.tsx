@@ -19,11 +19,12 @@ import {addNode, selectNodes, updateNode} from "@/lib/state/OSHSlice";
 import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {useSelector} from "react-redux";
+import {useLanguage} from "@/contexts/LanguageContext";
 
 
 export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     isEditNode: boolean,
-    modeChangeCallback?: (editMode: boolean, editNode: INode) => void
+    modeChangeCallback?: (editMode: boolean, editNode: INode | null) => void
     editNode?: INode
 }) {
 
@@ -33,6 +34,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
     const dispatch = useAppDispatch();
     const nodes = useSelector(selectNodes);
+    const { t } = useLanguage();
 
     const newNodeOpts: NodeOptions = {
         name: "",
@@ -178,6 +180,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         } catch (error) {
             setNodeSnackMsg('Connection failed. Confirm IP, port, and server availability.');
             setColorStatus('error')
+            return false;
         }
     }
 
@@ -189,7 +192,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                 sx={{margin: 2}}
             >
                 {
-                    isEditNode ? "Edit Node" : "Add a New Server"
+                    isEditNode ? t('editNode')  : t('addServer')
                 }
             </Typography>
 

@@ -13,6 +13,7 @@ import ListItemText from "@mui/material/ListItemText";
 import {INode, Node} from "@/lib/data/osh/Node";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import React, {useState} from "react";
+import {useLanguage} from "@/contexts/LanguageContext";
 
 interface NodeListProps {
     modeChangeCallback?: (editMode: boolean, editNode: INode) => void
@@ -21,6 +22,7 @@ interface NodeListProps {
 export default function NodeList({modeChangeCallback}: NodeListProps) {
     const dispatch = useAppDispatch();
     const nodes = useSelector((state: RootState) => selectNodes(state));
+    const { t } = useLanguage();
 
     const [openSnack, setOpenSnack] = useState(false);
     const [nodeSnackMsg, setNodeSnackMsg] = useState("");
@@ -66,7 +68,9 @@ export default function NodeList({modeChangeCallback}: NodeListProps) {
     };
     return (
         <Box sx={{width: '100%'}}>
-            <Typography variant="h4" align="left" sx={{margin: 2}}>Nodes</Typography>
+            <Typography variant="h4" align="left" sx={{margin: 2}}>
+                { t('nodes') }
+            </Typography>
             {nodes.length === 0 ? (
                 <p>No Nodes</p>
             ) : (
@@ -75,8 +79,15 @@ export default function NodeList({modeChangeCallback}: NodeListProps) {
                         <Card key={node.address + node.port} sx={{backgroundColor: getBGColor(node.isDefaultNode)}}>
                             <ListItem sx={{m: 0}}>
                                 <ListItemText primary={node.name} secondary={node.address}/>
-                                <Button variant="contained" size={"small"} color="primary" sx={{m: 1}}
-                                        onClick={() => setEditNode(node)}>Edit</Button>
+                                <Button
+                                    variant="contained"
+                                    size={"small"}
+                                    color="primary"
+                                    sx={{m: 1}}
+                                    onClick={() => setEditNode(node)}
+                                >
+                                    Edit
+                                </Button>
                                 <Button variant="contained" size={"small"} color="secondary" sx={{m: 1}}
                                         onClick={() => deleteNode(node.id)}>Delete</Button>
                             </ListItem>
