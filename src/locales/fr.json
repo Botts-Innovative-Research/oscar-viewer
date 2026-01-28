@@ -18,5 +18,11 @@
   "adjudicated": "Jugé",
   "details": "Détails",
   "yes": "Oui",
-  "no": "Non"
+  "no": "Non",
+  "settings": "Paramètres",
+  "notificationPreferences": "Préférences de Notification",
+  "browserNotificationPermission": "Autorisation de Notification du Navigateur",
+  "permissionGranted": "Autorisation accordée",
+  "permissionDenied": "Autorisation refusée (mettre à jour dans les paramètres du navigateur)",
+  "clickToRequestPermission": "Cliquez pour demander l'autorisation"
 }
