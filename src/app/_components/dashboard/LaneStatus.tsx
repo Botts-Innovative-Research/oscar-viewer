@@ -177,7 +177,8 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
     }
 
     return (
-        <Stack padding={2} justifyContent={"start"} spacing={1}>
+
+        <Stack justifyContent={"start"} spacing={1}>
             <Typography variant="h6">{t('laneStatus')}</Typography>
             <>
                 <Box sx={{overflowY: "auto", maxHeight: 275, flexGrow: 1}}>

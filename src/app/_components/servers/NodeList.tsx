@@ -66,7 +66,7 @@ export default function NodeList({modeChangeCallback}: NodeListProps) {
     };
     return (
         <Box sx={{width: '100%'}}>
-            <Typography variant="h4" align="left" sx={{margin: 2}}>Nodes</Typography>
+            <Typography variant="h4" align="left">Nodes</Typography>
             {nodes.length === 0 ? (
                 <p>No Nodes</p>
             ) : (

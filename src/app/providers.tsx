@@ -1,22 +1,27 @@
 "use client";
 
-import { Box, ThemeProvider, createTheme, useMediaQuery } from "@mui/material";
-import {ReactNode, Suspense, useMemo} from "react";
-import CssBaseline from '@mui/material/CssBaseline';
+import {
+  Box,
+  ThemeProvider,
+  createTheme,
+  useTheme,
+  useMediaQuery,
+} from "@mui/material";
+import { ReactNode, Suspense, useMemo } from "react";
+import CssBaseline from "@mui/material/CssBaseline";
 import { getTheme } from "@/app/style/theme";
-import "@/app/style/global.css"
+import "@/app/style/global.css";
 import SuspenseLoad from "./_components/SuspenseLoad";
 import {LanguageProvider} from "@/contexts/LanguageContext";
 
 export default function Providers({ children }: { children: ReactNode }) {
-
   // Get system preference for dark/light mode
   const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
 
   // Implement custom theme based on system preference
   const theme = useMemo(
     () => createTheme(getTheme(prefersDarkMode ? "dark" : "light")),
-    [prefersDarkMode],
+    [prefersDarkMode]
   );
 
   return (
@@ -31,4 +36,23 @@ export default function Providers({ children }: { children: ReactNode }) {
       </LanguageProvider>
     </Suspense>
   );
+}
+
+// Handle breakpoints for desktop vs. tablets vs. mobile displays
+export const useBreakpoint = () => {
+  const theme = useTheme();
+
+  const isDesktop = useMediaQuery(theme.breakpoints.up("lg"));
+  const isTablet = useMediaQuery(theme.breakpoints.up("md"));
+  const isSmallTablet = useMediaQuery(theme.breakpoints.up("sm"))
+
+  const size = isDesktop ? "desktop" : isTablet ? "tablet" : isSmallTablet ? "smallTablet" : "mobile"
+
+  return {
+    size,
+    isMobile: size === "mobile",
+    isSmallTablet: size === "smallTablet",
+    isTablet: size === "tablet",
+    isDesktop: size === "desktop",
+  };
 }

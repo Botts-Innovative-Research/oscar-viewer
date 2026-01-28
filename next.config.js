@@ -2,7 +2,9 @@
  * Copyright (c) 2024.  Botts Innovative Research, Inc.
  * All Rights Reserved
  */
-module.exports = {
+const { withSentryConfig } = require("@sentry/nextjs");
+
+const nextConfig = {
     distDir: 'web',
     output: 'export',
     trailingSlash: true,
@@ -35,14 +37,11 @@ module.exports = {
         unoptimized: true,
     },
     reactStrictMode: false,
-}
+};
 
-// Injected content via Sentry wizard below
-
-const { withSentryConfig } = require("@sentry/nextjs");
-
+// Wrap with Sentry
 module.exports = withSentryConfig(
-  module.exports,
+  nextConfig,
   {
     // For all available options, see:
     // https://www.npmjs.com/package/@sentry/webpack-plugin#options

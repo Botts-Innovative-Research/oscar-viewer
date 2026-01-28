@@ -18,5 +18,11 @@
   "adjudicated": "Adjudicado",
   "details": "Detalles",
   "yes": "Sí",
-  "no": "No"
+  "no": "No",
+  "settings": "Configuración",
+  "notificationPreferences": "Preferencias de Notificación",
+  "browserNotificationPermission": "Permiso de Notificación del Navegador",
+  "permissionGranted": "Permiso concedido",
+  "permissionDenied": "Permiso denegado (actualizar en configuración del navegador)",
+  "clickToRequestPermission": "Haga clic para solicitar permiso"
 }

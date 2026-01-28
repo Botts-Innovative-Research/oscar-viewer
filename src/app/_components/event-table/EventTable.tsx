@@ -36,7 +36,11 @@ import { selectNodes } from "@/lib/state/OSHSlice";
 import { EventType } from "osh-js/source/core/event/EventType";
 import {INode} from "@/lib/data/osh/Node";
 import Observations from "osh-js/source/core/consysapi/observation/Observations";
+import { useBreakpoint } from "@/app/providers";
+import { usePathname } from 'next/navigation'
+import {NotificationService, NotificationTemplates} from "@/app/_components/notifications/NotificationService";
 import { useLanguage } from '@/contexts/LanguageContext';
+
 
 interface TableProps {
     tableMode: "eventlog" | "alarmtable" | "lanelog";
@@ -57,6 +61,9 @@ export default function EventTable({
                                        laneMap,
                                        currentLane
                                    }: TableProps) {
+    
+    const { isDesktop } = useBreakpoint();
+    const pathname = usePathname();
 
     const nodes = useSelector(selectNodes);
     const selectedRowId = useSelector(selectSelectedRowId);
@@ -281,6 +288,29 @@ export default function EventTable({
         }
     }
 
+    const notificationServiceRef = useRef<NotificationService | null>(null);
+
+    useEffect(() => {
+        if (!notificationServiceRef.current) {
+            notificationServiceRef.current = new NotificationService();
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then((registration) => {
+                notificationServiceRef.current?.init(registration);
+            });
+        }
+    }, []);
+
+    function sendNotification(alarmData: { laneName: string, status: string}) {
+        const notificationService = notificationServiceRef.current;
+        if (notificationService?.isReady()) {
+            notificationService.showNotification(
+                NotificationTemplates.newAlarm(alarmData.laneName, alarmData.status)
+            )
+        }
+    }
+
     function eventFromObservation(obs: any, laneEntry: LaneMapEntry, isLive: boolean): EventTableData {
         const id = prngFromStr(obs, laneEntry.laneName);
         let newEvent: EventTableData;
@@ -290,6 +320,11 @@ export default function EventTable({
             const result = obs.result || obs;
             newEvent = new EventTableData(id, laneEntry.laneName, result, null, obs["foi@id"] || obs.foiId);
             newEvent.setFoiId(obs["foi@id"] || obs.foiId);
+
+
+            if (newEvent.status !== 'None') {
+                sendNotification({ laneName: laneEntry.laneName, status: newEvent.status});
+            }
         } else {
             // Handle historical observations
             newEvent = new EventTableData(id, laneEntry.laneName, obs.properties.result, obs.properties.id, obs.properties.foiId);
@@ -298,6 +333,7 @@ export default function EventTable({
             newEvent.setFoiId(obs.properties["foi@id"]);
             newEvent.setOccupancyObsId(obs.id);
         }
+
 
         return newEvent;
     }
@@ -316,15 +352,6 @@ export default function EventTable({
     useEffect(() => {
         currentPageRef.current = paginationModel.page;
     }, [paginationModel.page]);
-
-    // useEffect(() => {
-    //     if (paginationModel.page === 0 && totalObservations > 0 ) {
-    //         const now = new Date().toISOString();
-    //         // console.log('updating time for page load', now);
-    //
-    //         setPageLoadedTime(now);
-    //     }
-    // }, [paginationModel.page, totalObservations]);
 
 
     useEffect(() => {
@@ -354,8 +381,6 @@ export default function EventTable({
                     if (currentPageRef.current !== 0)
                         return;
 
-                    // console.log("paginationModel page", paginationModel.page)
-                    // console.log("currentPageRef.current", currentPageRef.current);
                     const obsData = msg.values?.[0]?.data || msg;
                     const event = eventFromObservation(obsData, entry, true);
 
@@ -500,6 +525,7 @@ export default function EventTable({
         },
     ];
 
+    // Handles EVENT-DETAILS page
     const handleEventPreview = () => {
         router.push("/event-details");
     };
@@ -516,13 +542,16 @@ export default function EventTable({
     const handleRowSelection = (params: GridRowParams) => {
         const selectedId = params.row.id;
 
+        // Disselect
         if (selectedRowId === selectedId) {
             setSelectionModel([]);
             dispatch(setLatestGB(null));
             dispatch(setSelectedEvent(null));
             dispatch(setSelectedRowId(null));
             dispatch(setEventPreview({ isOpen: false, eventData: null }));
-        } else {
+        }
+        // Select
+        else {
             dispatch(setEventPreview({ isOpen: false, eventData: null }));
             setSelectionModel([selectedId]);
             dispatch(setSelectedRowId(selectedId));
@@ -531,10 +560,13 @@ export default function EventTable({
                 const selectedRow = filteredTableData.find((row) => row.id === selectedId);
                 if (!selectedRow) return;
 
-                getLatestGB(selectedRow);
+                getLatestGB(selectedRow);                
                 dispatch(setEventPreview({ isOpen: true, eventData: selectedRow }));
                 dispatch(setSelectedEvent(selectedRow));
             }, 10);
+
+            // Handle routing to Event Preview page -> IF not Desktop AND on dashboard
+            if (!isDesktop && pathname === "/") router.push("/event-preview");
         }
     };
 
