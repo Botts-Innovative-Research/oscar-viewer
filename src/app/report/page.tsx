@@ -2,6 +2,7 @@
 
 import {
     Box,
+    Grid,
     Paper,
     Typography
 } from "@mui/material"
@@ -10,10 +11,13 @@ import Report from "@/app/_components/reportgen/Report";
 
 export default function ReportViewPage() {
     return (
-        <Box sx={{margin: 2, width: '100%', height: "100%", padding: 2}}>
-            <Typography variant="h4" sx={{padding: 2}}>Reports</Typography>
-            <br />
-            <Report/>
-        </Box>
+        <Grid container spacing={2} width={"100%"}>
+            <Grid item xs={12}>
+                <Typography variant="h4">Reports</Typography>
+            </Grid>
+            <Grid item xs={12} width={"100%"} minWidth={0}>
+                <Report/>
+            </Grid>
+        </Grid>
     )
 }

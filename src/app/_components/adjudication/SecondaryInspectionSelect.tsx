@@ -22,7 +22,7 @@ export default function SecondaryInspectionSelect(props: {
 
     return (
         <FormControl size="small" fullWidth>
-            <InputLabel id="label" >Secondary Inspection</InputLabel>
+            <InputLabel id="label">Secondary Inspection</InputLabel>
             <Select
                 variant="outlined"
                 id="label"
@@ -37,7 +37,7 @@ export default function SecondaryInspectionSelect(props: {
                     }
                 }}
                 autoWidth
-                style={{minWidth: "12em"}}
+                style={{minWidth: "15em"}}
                 sx={{
                     color: "text.primary",
                     "& .MuiOutlinedInput-notchedOutline": {

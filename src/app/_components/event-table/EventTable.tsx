@@ -36,9 +36,11 @@ import { selectNodes } from "@/lib/state/OSHSlice";
 import { EventType } from "osh-js/source/core/event/EventType";
 import {INode} from "@/lib/data/osh/Node";
 import Observations from "osh-js/source/core/consysapi/observation/Observations";
+import { useBreakpoint } from "@/app/providers";
+import { usePathname } from 'next/navigation'
 import {NotificationService, NotificationTemplates} from "@/app/_components/notifications/NotificationService";
 import { useLanguage } from '@/contexts/LanguageContext';
-import {NotificationService, NotificationTemplates} from "@/app/_components/pwa/NotificationService";
+
 
 interface TableProps {
     tableMode: "eventlog" | "alarmtable" | "lanelog";
@@ -59,6 +61,9 @@ export default function EventTable({
                                        laneMap,
                                        currentLane
                                    }: TableProps) {
+    
+    const { isDesktop } = useBreakpoint();
+    const pathname = usePathname();
 
     const nodes = useSelector(selectNodes);
     const selectedRowId = useSelector(selectSelectedRowId);
@@ -520,6 +525,7 @@ export default function EventTable({
         },
     ];
 
+    // Handles EVENT-DETAILS page
     const handleEventPreview = () => {
         router.push("/event-details");
     };
@@ -536,13 +542,16 @@ export default function EventTable({
     const handleRowSelection = (params: GridRowParams) => {
         const selectedId = params.row.id;
 
+        // Disselect
         if (selectedRowId === selectedId) {
             setSelectionModel([]);
             dispatch(setLatestGB(null));
             dispatch(setSelectedEvent(null));
             dispatch(setSelectedRowId(null));
             dispatch(setEventPreview({ isOpen: false, eventData: null }));
-        } else {
+        }
+        // Select
+        else {
             dispatch(setEventPreview({ isOpen: false, eventData: null }));
             setSelectionModel([selectedId]);
             dispatch(setSelectedRowId(selectedId));
@@ -551,10 +560,13 @@ export default function EventTable({
                 const selectedRow = filteredTableData.find((row) => row.id === selectedId);
                 if (!selectedRow) return;
 
-                getLatestGB(selectedRow);
+                getLatestGB(selectedRow);                
                 dispatch(setEventPreview({ isOpen: true, eventData: selectedRow }));
                 dispatch(setSelectedEvent(selectedRow));
             }, 10);
+
+            // Handle routing to Event Preview page -> IF not Desktop AND on dashboard
+            if (!isDesktop && pathname === "/") router.push("/event-preview");
         }
     };
 
