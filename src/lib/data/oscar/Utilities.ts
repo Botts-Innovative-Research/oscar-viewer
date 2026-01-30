@@ -140,6 +140,14 @@ export function isWebIdAnalysisDataStream(datastream: typeof DataStream): boolea
 }
 
 
+export function isWebIdAnalysisDataStream(datastream: typeof DataStream): boolean {
+    if (!hasDefinitionProperties(datastream))
+        return false;
+
+    return datastream.properties.observedProperties[0].definition.includes(WEB_ID_DEF);
+}
+
+
 export function isHLSVideoControlStream(controlStream: typeof ControlStream): boolean {
     if (!hasDefinitionProperties(controlStream))
         return false;
