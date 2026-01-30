@@ -28,6 +28,7 @@ export interface INode {
     port: number,
     oshPathRoot: string,
     csAPIEndpoint: string,
+    bucketsEndpoint: string,
     isSecure: boolean,
     auth: { username: string, password: string } | null,
     isDefaultNode: boolean
@@ -80,6 +81,7 @@ export interface NodeOptions {
     port: number,
     oshPathRoot?: string,
     csAPIEndpoint?: string,
+    bucketsEndpoint?: string,
     auth?: { username: string, password: string } | null,
     isSecure?: boolean,
     isDefaultNode?: boolean
@@ -94,6 +96,7 @@ export class Node implements INode {
     port: number;
     oshPathRoot: string;
     csAPIEndpoint: string;
+    bucketsEndpoint: string;
     isSecure: boolean;
     auth: { username: string, password: string } | null = null;
     isDefaultNode: boolean;
@@ -115,6 +118,7 @@ export class Node implements INode {
         this.port = options.port;
         this.oshPathRoot = options.oshPathRoot || '/sensorhub';
         this.csAPIEndpoint = options.csAPIEndpoint || '/api';
+        this.bucketsEndpoint = options.bucketsEndpoint || '/buckets';
         this.auth = options.auth || null;
         this.isSecure = options.isSecure || false;
         this.isDefaultNode = options.isDefaultNode || false;

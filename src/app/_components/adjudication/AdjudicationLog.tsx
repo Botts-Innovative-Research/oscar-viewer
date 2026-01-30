@@ -4,7 +4,7 @@ import React, {useContext, useEffect, useState} from "react";
 import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import {DataGrid, GridColDef} from "@mui/x-data-grid";
+import {DataGrid, GridActionsCellItem, GridColDef} from "@mui/x-data-grid";
 import { Stack, Typography} from "@mui/material";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {isAdjudicationControlStream} from "@/lib/data/oscar/Utilities";
@@ -12,6 +12,10 @@ import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStr
 import {AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
 import { Dialog, DialogTitle, DialogContent } from "@mui/material";
+import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
+import {DownloadSharp} from "@mui/icons-material";
+import {useLanguage} from "@/contexts/LanguageContext";
+import {INode} from "@/lib/data/osh/Node";
 
 
 
@@ -19,7 +23,9 @@ export default function AdjudicationLog(props: {
     event: EventTableData;
     shouldFetch: boolean;
     onFetch: () => void;
+    node: INode;
 }) {
+    const { t } = useLanguage();
 
     const locale = navigator.language || 'en-US';
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
@@ -31,6 +37,17 @@ export default function AdjudicationLog(props: {
         open: false,
         text: ""
     });
+
+    const [nodeEndpoint, setNodeEndpoint] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (props.node == null || !props.node.address || !props.node.port)
+            return;
+        const protocol = props.node.isSecure ? 'https://' : 'http://';
+        const endpoint =  `${protocol}${props.node.address}:${props.node.port}${props.node.oshPathRoot}${props.node.bucketsEndpoint}/`
+
+        setNodeEndpoint(endpoint)
+    }, [props.node]);
 
     const logColumns: GridColDef<AdjudicationData>[] = [
         {
@@ -113,7 +130,21 @@ export default function AdjudicationLog(props: {
             field: 'filePaths',
             headerName: 'FilePaths',
             width: 200,
-            type: 'string'
+            type: 'string',
+            renderCell: (params) => {
+                if (!params.value) return null;
+                if (!nodeEndpoint) return <span>{params.value}</span>;
+                return (
+                    <a
+                        href={nodeEndpoint + params.value}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#1976d2', textDecoration: 'underline' }}
+                    >
+                        {params.value}
+                    </a>
+                );
+            }
         },
         {
             field: 'vehicleId',
@@ -123,8 +154,12 @@ export default function AdjudicationLog(props: {
                 if (value === "") return "Unknown";
                 else return value;
             }
-        },
+        }
     ];
+
+    function handleFileDownload() {
+
+    }
     async function getControlStream(){
         const currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
