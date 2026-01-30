@@ -154,7 +154,6 @@ export default function EventTable({
         {
             field: 'status',
             headerName: t('status'),
-            type: 'string',
             minWidth: 125,
             flex: 1.2,
             type: 'singleSelect',
@@ -560,40 +559,31 @@ export default function EventTable({
     }
 
     const buildResultTimeQuery = (filterModel: GridFilterModel): string => {
-        // need to include the HH:MM:SS in the filter value
-        let start: string | null = null;
-        let end: string = pageLoadedTime;
-
         for (const item of filterModel.items) {
-            if (!['startTime', 'endTime'].includes(item.field))
-                continue;
-
+            if (!['startTime', 'endTime'].includes(item.field)) continue;
 
             const isoDate = new Date(item.value).toISOString();
 
-            switch (item.field) {
-                case 'startTime':
-                    if (item.operator === 'after') {
-                        if (!start || isoDate > start)
-                            start = isoDate;
-                    } else if (item.operator === 'before') {
-                        if (isoDate < end)
-                            end = isoDate;
-                    }
-                    break;
-                case 'endTime':
-                    if (item.operator === 'after') {
-                        if (!start || isoDate > start)
-                            start = isoDate;
-                    } else if (item.operator === 'before') {
-                        if (isoDate < end)
-                            end = isoDate;
-                    }
-                    break;
+            // if (item.field === 'startTime') {
+            //     if (item.operator === 'after') {
+            //         return `${isoDate}/${pageLoadedTime}`
+            //     } else if (item.operator === 'before') {
+            //         return `../${isoDate}`
+            //     }
+            // } else if (item.field === 'endTime') {
+            //     if (item.operator === 'after') {
+            //         return `${isoDate}/${pageLoadedTime}`
+            //     } else if (item.operator === 'before') {
+            //         return `../${isoDate}`
+            //     }
+            // }
+            if (item.operator === 'after') {
+                return `${isoDate}/${pageLoadedTime}`
+            } else if (item.operator === 'before') {
+                return `../${isoDate}`
             }
         }
-        if (start)
-            return `${start}/${end}`;
+
         return `../${pageLoadedTime}`;
     }
 
