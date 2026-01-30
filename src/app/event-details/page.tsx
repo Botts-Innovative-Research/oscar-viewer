@@ -15,6 +15,7 @@ import {PictureAsPdfRounded} from "@mui/icons-material";
 import {useReactToPrint} from "react-to-print";
 import EventMedia from "../_components/event-preview/EventMedia";
 import CircularProgress from "@mui/material/CircularProgress";
+import WebIdAnalysis from "@/app/_components/adjudication/WebIdAnalysis";
 
 
 export default function EventDetailsPage() {
@@ -139,6 +140,11 @@ export default function EventDetailsPage() {
 
             <Paper variant='outlined' sx={{width: "100%"}}>
                 <MiscTable currentTime={eventPreview.eventData?.startTime}/>
+            </Paper>
+
+            <Paper variant='outlined' sx={{width: "100%"}}>
+                <WebIdAnalysis />
+                {/*<WebIdAnalysis event={} shouldFetch={} onFetch={} />*/}
             </Paper>
 
             <Paper variant='outlined' sx={{width: "100%"}}>
