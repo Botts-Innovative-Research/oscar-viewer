@@ -316,7 +316,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     tempAdjData.adjudicationCode,
                     tempAdjData.isotopes,
                     tempAdjData.secondaryInspectionStatus,
-                    [],
+                    files.map(file => 'adjudication/' + file.file.name),
                     tempAdjData.occupancyObsId,
                     tempAdjData.vehicleId
                 )
@@ -338,7 +338,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             const responseJson = await response.json()
             if (responseJson) {
-                const adjId = responseJson.results[0].id
+                console.log("response json", responseJson)
+                const adjId = responseJson['command@id'];
 
                 await sendFileUploadRequest(files, currLaneEntry.parentNode, adjId);
 
@@ -390,13 +391,13 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     async function sendFileUploadRequest(filePaths: FileWithWebId[], node: INode, adjId: string) {
 
-        let newFileNames: any[] = [];
+        // let newFileNames: any[] = [];
         const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
         const protocol = node.isSecure ? 'https://' : 'http://';
 
 
         for (const fileData of filePaths) {
-            const endpoint =  `${protocol}${node.address}:${node.port}${node.oshPathRoot}/buckets/adjudication/${fileData.file.name}?adjudicationId=${adjId}&enableWebId=${fileData.webIdEnabled}}`
+            const endpoint =  `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication/${fileData.file.name}?adjudicationId=${adjId}&enableWebId=${fileData.webIdEnabled}`
             const url = new URL(endpoint);
 
             const formData = new FormData(); // this should handle the content type and set it properly
@@ -419,10 +420,10 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 setOpenSnack(true);
                 continue;
             }
-            newFileNames.push(`/buckets/adjudication/${fileData.file.name}`)
+            // newFileNames.push(`${node.bucketsEndpoint}/adjudication/${fileData.file.name}`)
 
         }
-        return newFileNames;
+        // return newFileNames;
     }
 
     const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
@@ -444,6 +445,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 event={props.event}
                 shouldFetch={shouldFetchLogs}
                 onFetch={onFetchComplete}
+                node={laneMapRef.current.get(props.event.laneId)?.parentNode}
             />
 
             <Stack spacing={2}>

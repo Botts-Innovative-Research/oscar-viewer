@@ -4,14 +4,18 @@ import React, {useContext, useEffect, useState} from "react";
 import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import {DataGrid, GridColDef} from "@mui/x-data-grid";
-import { Box, Grid, Paper, Stack, Typography} from "@mui/material";
+import {DataGrid, GridActionsCellItem, GridColDef} from "@mui/x-data-grid";
+import { Stack, Typography} from "@mui/material";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {isAdjudicationControlStream} from "@/lib/data/oscar/Utilities";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import {AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
 import { Dialog, DialogTitle, DialogContent } from "@mui/material";
+import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
+import {DownloadSharp} from "@mui/icons-material";
+import {useLanguage} from "@/contexts/LanguageContext";
+import {INode} from "@/lib/data/osh/Node";
 
 
 
@@ -19,7 +23,9 @@ export default function AdjudicationLog(props: {
     event: EventTableData;
     shouldFetch: boolean;
     onFetch: () => void;
+    node: INode;
 }) {
+    const { t } = useLanguage();
 
     const locale = navigator.language || 'en-US';
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
@@ -32,23 +38,34 @@ export default function AdjudicationLog(props: {
         text: ""
     });
 
+    const [nodeEndpoint, setNodeEndpoint] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (props.node == null || !props.node.address || !props.node.port)
+            return;
+        const protocol = props.node.isSecure ? 'https://' : 'http://';
+        const endpoint =  `${protocol}${props.node.address}:${props.node.port}${props.node.oshPathRoot}${props.node.bucketsEndpoint}/`
+
+        setNodeEndpoint(endpoint)
+    }, [props.node]);
+
     const logColumns: GridColDef<AdjudicationData>[] = [
         {
             field: 'occupancyCount',
             headerName: 'Occupancy ID',
-            // width: 175,
+            width: 175,
             type: 'string',
         },
         {
             field: 'username',
             headerName: 'User',
-            // width: 150,
+            width: 150,
             type: 'string',
         },
         {
             field: 'time',
             headerName: 'Timestamp',
-            // width: 200,
+            width: 200,
             type: 'string',
             valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
                 year: 'numeric',
@@ -62,7 +79,7 @@ export default function AdjudicationLog(props: {
         {
             field: 'feedback',
             headerName: 'Feedback',
-            // width: 250,
+            width: 250,
             type: 'string',
             renderCell: (params) => {
                 const fullText = params.value ?? "";
@@ -90,12 +107,12 @@ export default function AdjudicationLog(props: {
         {
             field: 'secondaryInspectionStatus',
             headerName: 'Secondary Inspection Status',
-            // width: 200
+            width: 200
         },
         {
             field: 'adjudicationCode',
             headerName: 'Adjudication Code',
-            // width: 400,
+            width: 400,
             valueGetter: (value, row) => {
                 return row.adjudicationCode.label
             }
@@ -103,7 +120,7 @@ export default function AdjudicationLog(props: {
         {
             field: 'isotopes',
             headerName: 'Isotopes',
-            // width: 200,
+            width: 200,
             valueGetter: (value) => {
                 if (value === "") return "Unknown";
                 else return value;
@@ -112,19 +129,37 @@ export default function AdjudicationLog(props: {
         {
             field: 'filePaths',
             headerName: 'FilePaths',
-            // width: 200,
-            type: 'string'
+            width: 200,
+            type: 'string',
+            renderCell: (params) => {
+                if (!params.value) return null;
+                if (!nodeEndpoint) return <span>{params.value}</span>;
+                return (
+                    <a
+                        href={nodeEndpoint + params.value}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#1976d2', textDecoration: 'underline' }}
+                    >
+                        {params.value}
+                    </a>
+                );
+            }
         },
         {
             field: 'vehicleId',
             headerName: 'Vehicle ID',
-            // width: 150,
+            width: 150,
             valueGetter: (value) => {
                 if (value === "") return "Unknown";
                 else return value;
             }
-        },
+        }
     ];
+
+    function handleFileDownload() {
+
+    }
     async function getControlStream(){
         const currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
@@ -195,31 +230,24 @@ export default function AdjudicationLog(props: {
 
 
     return (
-        <Grid container spacing={2} xs={12}>
-            <Grid item xs={12}>
-                <Typography variant="h5">Logged Adjudications</Typography>
-            </Grid>
-            <Grid item xs={12}>
-                <Paper variant="outlined" sx={{ padding: 0 }}>
-                    <DataGrid
-                        rows={filteredLog}
-                        columns={logColumns}
-                        initialState={{
-                            pagination: {
-                                paginationModel: {
-                                    pageSize: 10
-                                }
+        <>
+            <Stack spacing={2}>
+                <Stack direction={"column"} spacing={1}>
+                    <Typography variant="h5">Logged Adjudications</Typography>
+                </Stack>
+                <DataGrid
+                    rows={filteredLog}
+                    columns={logColumns}
+                    initialState={{
+                        pagination: {
+                            paginationModel: {
+                                pageSize: 10
                             }
-                        }}
-                        pageSizeOptions={[5, 10, 25, 50, 100]}
-                        disableRowSelectionOnClick={true}
-                        sx={{
-                            border: "none",
-                            width: "100%",
-                            minHeight: 200
-                        }}
-                    />
-                </Paper>
+                        }
+                    }}
+                    pageSizeOptions={[5, 10, 25, 50, 100]}
+                    disableRowSelectionOnClick={true}
+                />
                 <Dialog
                     open={feedbackDialog.open}
                     onClose={() => setFeedbackDialog({ open: false, text: "" })}
@@ -233,7 +261,7 @@ export default function AdjudicationLog(props: {
                         </Typography>
                     </DialogContent>
                 </Dialog>
-            </Grid>
-        </Grid>
+            </Stack>
+        </>
     );
 }
