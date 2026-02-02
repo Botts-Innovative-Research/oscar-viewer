@@ -125,19 +125,27 @@ export default function AdjudicationLog(props: {
             field: 'filePaths',
             headerName: 'FilePaths',
             width: 200,
-            type: 'string',
             renderCell: (params) => {
-                if (!params.value) return null;
-                if (!nodeEndpoint) return <span>{params.value}</span>;
+                const paths: string[] = Array.isArray(params.value) ? params.value : [];
+                if (paths.length === 0) return null;
                 return (
-                    <a
-                        href={nodeEndpoint + params.value}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: '#1976d2', textDecoration: 'underline' }}
-                    >
-                        {params.value}
-                    </a>
+                    <span>
+                        {paths.map((path, index) =>
+                            <React.Fragment key={index}>
+                                {index > 0 && ', '}
+                                {nodeEndpoint ? (
+                                    <a
+                                        href={nodeEndpoint + path}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ color: '#1976d2', textDecoration: 'underline' }}
+                                    >
+                                        {path}
+                                    </a>
+                                ) : path}
+                            </React.Fragment>
+                        )}
+                    </span>
                 );
             }
         },
