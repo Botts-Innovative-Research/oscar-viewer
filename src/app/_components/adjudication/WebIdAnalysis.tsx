@@ -17,9 +17,9 @@ import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
 
 
 export default function WebIdAnalysis(props: {
-    // event: EventTableData;
-    // shouldFetch: boolean;
-    // onFetch: () => void;
+    event: EventTableData;
+    shouldFetch: boolean;
+    onFetch: () => void;
 }) {
 
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
@@ -58,20 +58,18 @@ export default function WebIdAnalysis(props: {
             headerName: 'Count Rate',
             width: 200,
             type: 'number',
-        },
+        }
     ];
 
     async function getDataStream(){
-        const currentLane = "props.event.laneId";
+        const currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
 
-        let streams = currLaneEntry.datastreams.length > 0 ? currLaneEntry.datastreams : await currLaneEntry.parentNode.fetchDataStreams(laneMapRef.current)
-        if(!streams)
-            return;
+        let streams = currLaneEntry.datastreams.length > 0 ? currLaneEntry.datastreams : await currLaneEntry.parentNode.fetchNodeDataStreams()
+        if(!streams) return;
 
         let webIdDs: typeof DataStream = streams.find((stream: typeof DataStream) => isWebIdAnalysisDataStream(stream));
-        if (!webIdDs)
-            return
+        if (!webIdDs) return
         setWebIdDatastream(webIdDs);
     }
 
@@ -84,8 +82,18 @@ export default function WebIdAnalysis(props: {
             fetchObservations(webIdDataStream);
     }, [webIdDataStream]);
 
-    async function fetchObservations(stream: typeof DataStream) {
+    async function fetchObservations(datastream: typeof DataStream) {
+        let query = await datastream.searchObservations(undefined, 100);
 
+        while (query.hasNext()) {
+            let obsCollection = await query.nextPage();
+
+            if (!obsCollection) {
+                return;
+            }
+
+
+        }
     }
 
     useEffect(() => {
@@ -94,11 +102,11 @@ export default function WebIdAnalysis(props: {
     }, [webIdLog]);
 
     useEffect(() => {
-        // if (props.shouldFetch) {
+        if (props.shouldFetch) {
             setTimeout(() => {
                 fetchObservations(webIdDataStream);
             }, 5000);
-        // }
+        }
     }, []);
 
 

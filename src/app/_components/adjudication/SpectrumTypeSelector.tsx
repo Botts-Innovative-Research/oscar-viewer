@@ -3,8 +3,8 @@
 import {FormControl, InputLabel, MenuItem, Select, SelectChangeEvent} from '@mui/material';
 
 const selectChoices=[
-    "FOREGROUND",
-    "BACKGROUND",
+    "Foreground",
+    "Background",
 ]
 export default function SpectrumTypeSelector(props: {
     onSelect: (value: string) => void, // Return selected value

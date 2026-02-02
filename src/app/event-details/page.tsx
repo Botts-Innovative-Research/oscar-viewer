@@ -145,10 +145,6 @@ export default function EventDetailsPage() {
                 <MiscTable currentTime={eventPreview.eventData?.startTime}/>
             </Paper>
 
-            <Paper variant='outlined' sx={{width: "100%"}}>
-                <WebIdAnalysis />
-                {/*<WebIdAnalysis event={} shouldFetch={} onFetch={} />*/}
-            </Paper>
 
             <Paper variant='outlined' sx={{width: "100%"}}>
                 <AdjudicationDetail event={eventPreview.eventData}/>
