@@ -165,9 +165,7 @@ export default function AdjudicationLog(props: {
         },
     ];
 
-    function handleFileDownload() {
 
-    }
     async function getControlStream(){
         const currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
