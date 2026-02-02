@@ -146,6 +146,11 @@ export default function EventDetailsPage() {
             </Paper>
 
             <Paper variant='outlined' sx={{width: "100%"}}>
+                <WebIdAnalysis />
+                {/*<WebIdAnalysis event={} shouldFetch={} onFetch={} />*/}
+            </Paper>
+
+            <Paper variant='outlined' sx={{width: "100%"}}>
                 <AdjudicationDetail event={eventPreview.eventData}/>
             </Paper>
         </Stack>
