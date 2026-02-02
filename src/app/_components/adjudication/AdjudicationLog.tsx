@@ -57,12 +57,6 @@ export default function AdjudicationLog(props: {
             type: 'string',
         },
         {
-            field: 'username',
-            headerName: 'User',
-            width: 150,
-            type: 'string',
-        },
-        {
             field: 'time',
             headerName: 'Timestamp',
             width: 200,
@@ -75,6 +69,20 @@ export default function AdjudicationLog(props: {
                 minute: 'numeric',
                 second: 'numeric'
             }),
+        },
+        {
+            field: 'username',
+            headerName: 'User',
+            width: 150,
+            type: 'string',
+        },
+        {
+            field: 'adjudicationCode',
+            headerName: 'Adjudication Code',
+            width: 400,
+            valueGetter: (value, row) => {
+                return row.adjudicationCode.label
+            }
         },
         {
             field: 'feedback',
@@ -102,19 +110,6 @@ export default function AdjudicationLog(props: {
                         )}
                     </div>
                 );
-            }
-        },
-        {
-            field: 'secondaryInspectionStatus',
-            headerName: 'Secondary Inspection Status',
-            width: 200
-        },
-        {
-            field: 'adjudicationCode',
-            headerName: 'Adjudication Code',
-            width: 400,
-            valueGetter: (value, row) => {
-                return row.adjudicationCode.label
             }
         },
         {
@@ -147,6 +142,11 @@ export default function AdjudicationLog(props: {
             }
         },
         {
+            field: 'secondaryInspectionStatus',
+            headerName: 'Secondary Inspection Status',
+            width: 200
+        },
+        {
             field: 'vehicleId',
             headerName: 'Vehicle ID',
             width: 150,
@@ -154,7 +154,7 @@ export default function AdjudicationLog(props: {
                 if (value === "") return "Unknown";
                 else return value;
             }
-        }
+        },
     ];
 
     function handleFileDownload() {
