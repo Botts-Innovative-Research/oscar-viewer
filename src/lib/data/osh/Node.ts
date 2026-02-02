@@ -52,6 +52,8 @@ export interface INode {
 
     fetchNodeControlStreams(): Promise<any>,
 
+    fetchNodeDataStreams(): Promise<any>,
+
     checkForEndpoint(): Promise<boolean>
 
     getOscarServiceSystem(): typeof System
@@ -448,7 +450,7 @@ export class Node implements INode {
 
     async fetchNodeControlStreams(): Promise<any[]>{
         let availableControlStreams = [];
-        const controlStreamCollection = await this.getControlStreamApi().searchControlStreams(new ControlStreamFilter({ validTime: "latest" }), 100);
+        const controlStreamCollection = await this.getControlStreamApi().searchControlStreams(new ControlStreamFilter({ validTime: "latest" }), 1);
         while (controlStreamCollection.hasNext()) {
             let controlStreamResults = await controlStreamCollection.nextPage();
             availableControlStreams.push(...controlStreamResults);
@@ -458,5 +460,19 @@ export class Node implements INode {
             return availableControlStreams;
         else
             console.warn("No control streams found for : ", this.address);
+    }
+
+    async fetchNodeDataStreams(): Promise<any[]>{
+        let availableDataStreams = [];
+        const dataStreamCollection = await this.getDataStreamsApi().searchDataStreams(new DataStreamFilter({ validTime: "latest" }), 1);
+        while (dataStreamCollection.hasNext()) {
+            let dataStreamResults = await dataStreamCollection.nextPage();
+            availableDataStreams.push(...dataStreamResults);
+        }
+
+        if(availableDataStreams.length > 0)
+            return availableDataStreams;
+        else
+            console.warn("No data streams found for : ", this.address);
     }
 }

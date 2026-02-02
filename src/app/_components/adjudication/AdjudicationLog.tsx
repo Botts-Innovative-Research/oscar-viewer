@@ -12,8 +12,6 @@ import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStr
 import {AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
 import { Dialog, DialogTitle, DialogContent } from "@mui/material";
-import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
-import {DownloadSharp} from "@mui/icons-material";
 import {useLanguage} from "@/contexts/LanguageContext";
 import {INode} from "@/lib/data/osh/Node";
 
