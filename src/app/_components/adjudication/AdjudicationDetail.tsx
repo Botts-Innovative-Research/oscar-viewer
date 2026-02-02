@@ -41,10 +41,14 @@ import {INode} from "@/lib/data/osh/Node";
 import {QrCode} from "@mui/icons-material";
 import QrScanner from "qr-scanner";
 import {CloseIcon} from "next/dist/client/components/react-dev-overlay/internal/icons/CloseIcon";
+import DetectorResponseFunction from "./DetectorResponseFunction";
+import SpectrumTypeSelector from "@/app/_components/adjudication/SpectrumTypeSelector";
 
 interface FileWithWebId {
     file: File;
     webIdEnabled: boolean;
+    detectorResponseFunction: string;
+    spectrumType: string;
 }
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
@@ -189,7 +193,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
         const filesWithWebId = files.map(file => ({
             file,
-            webIdEnabled: false
+            webIdEnabled: false,
+            detectorResponseFunction: "",
+            spectrumType: ""
         }));
 
         setUploadedFiles([...uploadedFiles, ...filesWithWebId]);
@@ -220,6 +226,22 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         tAdjData.secondaryInspectionStatus = value;
         setSecondaryInspection(value);
         setAdjData(tAdjData);
+    }
+
+    const handleDrfSelection = (fileIndex: number) => (value: string) => {
+        setUploadedFiles(prevFiles =>
+            prevFiles.map((fileData, idx) =>
+                idx === fileIndex ? { ...fileData, detectorResponseFunction: value } : fileData
+            )
+        );
+    }
+
+    const handleSpectrumType = (fileIndex: number) => (value: string) => {
+        setUploadedFiles(prevFiles =>
+            prevFiles.map((fileData, idx) =>
+                idx === fileIndex ? { ...fileData, spectrumType: value } : fileData
+            )
+        );
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -391,22 +413,56 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
         const protocol = node.isSecure ? 'https://' : 'http://';
 
+        const webIdFiles = filePaths.filter(f => f.webIdEnabled);
+        const foregroundFile = webIdFiles.find(f => f.spectrumType === 'FOREGROUND');
+        const backgroundFile = webIdFiles.find(f => f.spectrumType === 'BACKGROUND');
+        const hasPair = foregroundFile && backgroundFile;
 
-        for (const fileData of filePaths) {
-            const endpoint =  `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication/${fileData.file.name}?adjudicationId=${adjId}&enableWebId=${fileData.webIdEnabled}`
+        // Track which files are sent as a pair so we skip them in the individual loop
+        const pairedFiles = hasPair ? new Set([foregroundFile, backgroundFile]) : new Set<FileWithWebId>();
+
+        // Send foreground + background together in one request
+        if (hasPair) {
+            const drf = foregroundFile.detectorResponseFunction || backgroundFile.detectorResponseFunction;
+            const endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication?adjudicationId=${adjId}&enableWebId=true&drf=${drf}&foreground=${foregroundFile.file.name}&background=${backgroundFile.file.name}`;
             const url = new URL(endpoint);
 
-            const formData = new FormData(); // this should handle the content type and set it properly
+            const formData = new FormData();
+            formData.append('foreground', foregroundFile.file);
+            formData.append('background', backgroundFile.file);
+
+            const options: RequestInit = {
+                method: 'PUT',
+                headers: { 'Authorization': `Basic ${encoded}` },
+                mode: 'cors',
+                body: formData
+            };
+
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                console.error("Failed uploading paired WebID files:", response);
+                setAdjSnackMsg('Failed to upload paired WebID files.');
+                setColorStatus('error');
+                setOpenSnack(true);
+            }
+        }
+
+        // Send remaining files individually
+        for (const fileData of filePaths) {
+            if (pairedFiles.has(fileData)) continue;
+
+            const endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication/${fileData.file.name}?adjudicationId=${adjId}&enableWebId=${fileData.webIdEnabled}&drf=${fileData.detectorResponseFunction}`;
+            const url = new URL(endpoint);
+
+            const formData = new FormData();
             formData.append('file', fileData.file);
 
             const options: RequestInit = {
                 method: 'PUT',
-                headers: {
-                    'Authorization': `Basic ${encoded}`
-                },
+                headers: { 'Authorization': `Basic ${encoded}` },
                 mode: 'cors',
                 body: formData
-            }
+            };
 
             const response = await fetch(url, options);
             if (!response.ok) {
@@ -414,7 +470,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 setAdjSnackMsg(`Failed to upload file: ${fileData.file.name}`);
                 setColorStatus('error');
                 setOpenSnack(true);
-                continue;
             }
         }
     }
@@ -529,6 +584,19 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                             label={<Typography variant="body2">WebID</Typography>}
                                             sx={{ mr: 0 }}
                                         />
+                                        {
+                                            fileData.webIdEnabled ? (
+                                                    <Stack direction={"row"} spacing={2}>
+                                                        <DetectorResponseFunction onSelect={handleDrfSelection(index)} selectVal={fileData.detectorResponseFunction} />
+
+                                                        <SpectrumTypeSelector onSelect={handleSpectrumType(index)} selectVal={fileData.spectrumType} />
+                                                    </Stack>
+
+                                            ) :
+                                                (
+                                                    <div></div>
+                                                )
+                                        }
                                         <IconButton
                                             size="small"
                                             onClick={() => handleFileDelete(index)}

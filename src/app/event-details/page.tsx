@@ -160,6 +160,13 @@ export default function EventDetailsPage() {
                     </Paper>
                 </Grid>
 
+                <Grid item xs={12}>
+                    <Paper variant='outlined' sx={{width: "100%"}}>
+                        <WebIdAnalysis />
+                        {/*<WebIdAnalysis event={} shouldFetch={} onFetch={} />*/}
+                    </Paper>
+                </Grid>
+
                 {/* ADJUDICATION */}
                 <Grid item xs={12}>
                     <Paper variant='outlined' sx={{width: "100%"}}>
