@@ -338,11 +338,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             const responseJson = await response.json()
             if (responseJson) {
-                console.log("response json", responseJson)
                 const adjId = responseJson['command@id'];
 
                 await sendFileUploadRequest(files, currLaneEntry.parentNode, adjId);
-
 
                 await sendQrCodeUploadRequest(scannedData, currLaneEntry.parentNode, adjId)
             }
@@ -390,8 +388,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     }
 
     async function sendFileUploadRequest(filePaths: FileWithWebId[], node: INode, adjId: string) {
-
-        // let newFileNames: any[] = [];
         const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
         const protocol = node.isSecure ? 'https://' : 'http://';
 
@@ -420,10 +416,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 setOpenSnack(true);
                 continue;
             }
-            // newFileNames.push(`${node.bucketsEndpoint}/adjudication/${fileData.file.name}`)
-
         }
-        // return newFileNames;
     }
 
     const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason,) => {
@@ -680,14 +673,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                         </Stack>
                                     </Paper>
                                 )}
-
-                                {/*<Button*/}
-                                {/*    variant="contained"*/}
-                                {/*    onClick={handleCloseQrCodeDialog}*/}
-                                {/*    sx={{ mt: 2, minWidth: 120 }}*/}
-                                {/*>*/}
-                                {/*    Done Scanning*/}
-                                {/*</Button>*/}
 
                                 <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
                                     {scannedData.length > 0 && (
