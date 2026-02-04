@@ -306,7 +306,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             let adjControlStream = streams.find((stream: typeof ControlStream) => isAdjudicationControlStream(stream));
 
             if (!adjControlStream){
-                console.error("Failed: cannot find adjudication control stream for occupancy.");
+                setAdjSnackMsg("Failed: cannot find adjudication control stream for occupancy.");
+                setColorStatus('error')
+                setOpenSnack(true);
                 return;
             }
 
@@ -333,6 +335,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             const updatedFileNames = await sendFileUploadRequest(files, currLaneEntry.parentNode);
 
+            console.log("updatedFileNames", updatedFileNames)
             const response = await sendCommand(
                 currLaneEntry.parentNode,
                 adjControlStream.properties.id,
@@ -347,6 +350,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     tempAdjData.vehicleId
                 )
             );
+            console.log("adj response", response)
 
             if (!response.ok) {
                 setAdjSnackMsg('Adjudication failed to submit.')
@@ -362,14 +366,12 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             dispatch(setSelectedEvent(props.event));
             dispatch(setAdjudicatedEventId(props.event.id));
 
-            const responseJson = await response.json()
-            if (responseJson) {
-                const adjId = responseJson['command@id'];
-
-
-
-                await sendQrCodeUploadRequest(scannedData, currLaneEntry.parentNode, adjId)
-            }
+            // const responseJson = await response.json()
+            // if (responseJson) {
+            //     const adjId = responseJson['command@id'];
+            //
+            //     await sendQrCodeUploadRequest(scannedData, currLaneEntry.parentNode, adjId)
+            // }
         } catch(error) {
             setAdjSnackMsg('Adjudication failed to submit.')
             setColorStatus('error')
@@ -450,14 +452,20 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 setOpenSnack(true);
             }
 
-            newFileNames.push(`${node.bucketsEndpoint}/adjudication/${foregroundFile.file.name}`)
-            newFileNames.push(`${node.bucketsEndpoint}/adjudication/${backgroundFile.file.name}`)
+            newFileNames.push(`adjudication/${foregroundFile.file.name}`)
+            newFileNames.push(`adjudication/${backgroundFile.file.name}`)
         }
 
         for (const fileData of filePaths) {
             if (pairedFiles.has(fileData)) continue;
 
-            const endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication/${fileData.file.name}?occupancyObsId=${props.event.occupancyObsId}&enableWebId=${fileData.webIdEnabled}&drf=${fileData.detectorResponseFunction}`;
+
+            let endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication/${fileData.file.name}?occupancyObsId=${props.event.occupancyObsId}`;
+            // let endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication/${fileData.file.name}?occupancyObsId=${props.event.occupancyObsId}&enableWebId=${fileData.webIdEnabled}&drf=${fileData.detectorResponseFunction}`;
+
+            if (fileData.webIdEnabled)
+                endpoint = endpoint + `&enableWebId=${fileData.webIdEnabled}&drf=${fileData.detectorResponseFunction}`
+
             const url = new URL(endpoint);
 
             const formData = new FormData();
@@ -478,7 +486,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 setOpenSnack(true);
             }
 
-            newFileNames.push(`${node.bucketsEndpoint}/adjudication/${fileData.file.name}`)
+            newFileNames.push(`adjudication/${fileData.file.name}`)
         }
 
         return newFileNames;
