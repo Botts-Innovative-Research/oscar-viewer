@@ -83,15 +83,11 @@ export default function WebIdAnalysis(props: {
     }, [webIdDataStream]);
 
     async function fetchObservations(datastream: typeof DataStream) {
+
         let query = await datastream.searchObservations(undefined, 100);
 
         while (query.hasNext()) {
             let obsCollection = await query.nextPage();
-
-            if (!obsCollection) {
-                return;
-            }
-
 
         }
     }
