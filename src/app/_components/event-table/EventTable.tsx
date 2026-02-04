@@ -14,7 +14,7 @@ import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 import { EventTableData } from "@/lib/data/oscar/TableHelpers";
 import {
-    DataGrid,
+    DataGrid, getGridDateOperators, getGridSingleSelectOperators,
     GridActionsCellItem,
     GridCellParams,
     gridClasses,
@@ -36,7 +36,9 @@ import { selectNodes } from "@/lib/state/OSHSlice";
 import { EventType } from "osh-js/source/core/event/EventType";
 import {INode} from "@/lib/data/osh/Node";
 import Observations from "osh-js/source/core/consysapi/observation/Observations";
+import { GridFilterModel } from "@mui/x-data-grid"
 import { useLanguage } from '@/contexts/LanguageContext';
+
 
 interface TableProps {
     tableMode: "eventlog" | "alarmtable" | "lanelog";
@@ -66,20 +68,131 @@ export default function EventTable({
     const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([selectedRowId]);
     const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
     const [totalCount, setTotalCount] = useState<Map<string, number>>(new Map());
-    // const [currentPage, setCurrentPage] = useState(0);
     const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize });
-
+    const [filterModel, setFilterModel] = useState<GridFilterModel>({ items: [] })
     const adjudicatedEventId = useSelector(selectAdjudicatedEventId);
     const selectedEvent = useSelector(selectSelectedEvent);
-
     const dispatch = useAppDispatch();
     const router = useRouter();
+
     const { t } = useLanguage();
-
     const stableLaneMap = useMemo(() => convertToMap(laneMap), [laneMap]);
-
-    // Use ref to track current page for websocket handlers
     const currentPageRef = useRef(0);
+    const locale = navigator.language || 'en-US';
+
+    const columns: GridColDef<EventTableData>[] = [
+        {
+            field: 'laneId',
+            headerName: t('laneId'),
+            type: 'string',
+            minWidth: 100,
+            flex: 1,
+            filterable: false
+        },
+        {
+            field: 'occupancyCount',
+            headerName: t('occupancyId'),
+            type: 'string',
+            minWidth: 125,
+            flex: 1.5,
+            filterable: false
+        },
+        {
+            field: 'startTime',
+            headerName: t('startTime'),
+            valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric'
+            }),
+            minWidth: 200,
+            flex: 2,
+            type: "dateTime",
+            filterOperators: getGridDateOperators(true).filter(
+                (op) => ['after', 'before'].includes(op.value)
+            )
+        },
+        {
+            field: 'endTime',
+            headerName: t('endTime'),
+            valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric'
+            }),
+            minWidth: 200,
+            flex: 2,
+            type: "dateTime",
+            filterOperators: getGridDateOperators(true).filter(
+                (op) => ['after', 'before'].includes(op.value)
+            )
+        },
+        {
+            field: 'maxGamma',
+            headerName: t('maxGamma'),
+            valueFormatter: (params) => (typeof params === 'number' ? params : 0),
+            minWidth: 150,
+            flex: 1.2,
+            filterable: false
+        },
+        {
+            field: 'maxNeutron',
+            headerName: t('maxNeutron'),
+            valueFormatter: (params) => (typeof params === 'number' ? params : 0),
+            minWidth: 150,
+            flex: 1.2,
+            filterable: false
+        },
+        {
+            field: 'status',
+            headerName: t('status'),
+            minWidth: 125,
+            flex: 1.2,
+            type: 'singleSelect',
+            valueOptions: ['None', 'Gamma', 'Neutron', 'Gamma & Neutron'],
+            filterOperators: getGridSingleSelectOperators().filter(
+                (op) => ['is'].includes(op.value)
+                // (op) => ['is', 'not'].includes(op.value)
+            )
+        },
+        {
+            field: 'adjudicatedIds',
+            headerName: t('adjudicated'),
+            valueFormatter: (params: any) => params.length > 0 ? "Yes" : "No",
+            minWidth: 100,
+            flex: 1,
+            filterable: viewAdjudicated,
+            type: 'singleSelect',
+            valueOptions: ['Yes', 'No'],
+            filterOperators: getGridSingleSelectOperators().filter(
+                (op) => ['is', 'equal'].includes(op.value)
+            )
+        },
+        {
+            field: 'Menu',
+            headerName: '',
+            type: 'actions',
+            minWidth: 50,
+            flex: 0.5,
+            getActions: (params) => [
+                selectionModel.includes(params.row.id) ? (
+                    <GridActionsCellItem
+                        key="details"
+                        icon={<VisibilityRoundedIcon />}
+                        label="Details"
+                        onClick={() => handleEventPreview()}
+                        showInMenu
+                    />
+                ) : <></>,
+            ],
+        },
+    ];
 
     const handlePaginationChange = useCallback((model: { page: number; pageSize: number }) => {
         if (model.page === 0 && paginationModel.page !== 0) {
@@ -139,7 +252,6 @@ export default function EventTable({
     useEffect(() => {
         if (adjudicatedEventId && tableMode === 'alarmtable') {
             // Remove the adjudicated event from the table immediately
-            // console.log('selectedEvent', selectedEvent)
             setFilteredTableData(prev => prev.filter(row => row.id !== adjudicatedEventId));
 
             dispatch(setAdjudicatedEventId(null));
@@ -198,8 +310,10 @@ export default function EventTable({
 
                 const observationFilter = new ObservationFilter({
                     dataStream: datastreamIds,
-                    resultTime: `../${pageLoadedTime}`,
-                    filter: tableMode == "alarmtable" ? "gammaAlarm=true OR neutronAlarm=true" : "",
+                    resultTime: buildResultTimeQuery(filterModel),
+                    // resultTime: `../${pageLoadedTime}`,
+                    filter: buildFilterQuery(filterModel, tableMode),
+                    // filter: tableMode == "alarmtable" ? "gammaAlarm=true OR neutronAlarm=true" : "",
                     order: 'desc'
                 });
 
@@ -221,7 +335,6 @@ export default function EventTable({
             const filtered = filterRows(deduped);
             setFilteredTableData(filtered);
             currentPageRef.current = userRequestedPage;
-            // setCurrentPage(userRequestedPage);
         } catch (error) {
             console.error("Error fetching observations,", error)
             setFilteredTableData([])
@@ -229,7 +342,7 @@ export default function EventTable({
             setLoading(false);
         }
 
-    }, [nodes, stableLaneMap, totalPages, pageLoadedTime, tableMode, getDatastreamIds, filterRows]);
+    }, [nodes, stableLaneMap, totalPages, pageLoadedTime, tableMode, getDatastreamIds, filterRows, filterModel]);
 
     function deduplicateById(arr: EventTableData[]): EventTableData[] {
         const map = new Map();
@@ -311,24 +424,13 @@ export default function EventTable({
     useEffect(() => {
         if (totalPages > 0)
             fetchPage(paginationModel.page);
-    }, [totalPages, paginationModel.page]);
+    }, [totalPages, paginationModel.page, filterModel]);
 
     useEffect(() => {
         currentPageRef.current = paginationModel.page;
     }, [paginationModel.page]);
 
-    // useEffect(() => {
-    //     if (paginationModel.page === 0 && totalObservations > 0 ) {
-    //         const now = new Date().toISOString();
-    //         // console.log('updating time for page load', now);
-    //
-    //         setPageLoadedTime(now);
-    //     }
-    // }, [paginationModel.page, totalObservations]);
-
-
     useEffect(() => {
-
         if (stableLaneMap.size === 0) return;
 
         const connectedSources: typeof ConSysApi[] = [];
@@ -354,8 +456,6 @@ export default function EventTable({
                     if (currentPageRef.current !== 0)
                         return;
 
-                    // console.log("paginationModel page", paginationModel.page)
-                    // console.log("currentPageRef.current", currentPageRef.current);
                     const obsData = msg.values?.[0]?.data || msg;
                     const event = eventFromObservation(obsData, entry, true);
 
@@ -396,109 +496,13 @@ export default function EventTable({
     }, [stableLaneMap, filterRows]);
 
     useEffect(() => {
-        if (!selectedRowId) {
+        if (!selectedRowId)
             setSelectionModel([]);
-        }
     }, [selectedRowId]);
 
-    // Update rowCount when totalObservations changes
     useEffect(() => {
         setRowCount(totalObservations);
     }, [totalObservations]);
-
-    const locale = navigator.language || 'en-US';
-
-    const columns: GridColDef<EventTableData>[] = [
-        {
-            field: 'laneId',
-            headerName: t('laneId'),
-            type: 'string',
-            minWidth: 100,
-            flex: 1,
-        },
-        {
-            field: 'occupancyCount',
-            headerName: t('occupancyId'),
-            type: 'string',
-            minWidth: 125,
-            flex: 1.5,
-        },
-        {
-            field: 'startTime',
-            headerName: t('startTime'),
-            valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
-                year: 'numeric',
-                month: 'numeric',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: 'numeric',
-                second: 'numeric'
-            }),
-            minWidth: 200,
-            flex: 2,
-        },
-        {
-            field: 'endTime',
-            headerName: t('endTime'),
-            valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
-                year: 'numeric',
-                month: 'numeric',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: 'numeric',
-                second: 'numeric'
-            }),
-            minWidth: 200,
-            flex: 2,
-        },
-        {
-            field: 'maxGamma',
-            headerName: t('maxGamma'),
-            valueFormatter: (params) => (typeof params === 'number' ? params : 0),
-            minWidth: 150,
-            flex: 1.2,
-        },
-        {
-            field: 'maxNeutron',
-            headerName: t('maxNeutron'),
-            valueFormatter: (params) => (typeof params === 'number' ? params : 0),
-            minWidth: 150,
-            flex: 1.2,
-        },
-        {
-            field: 'status',
-            headerName: t('status'),
-            type: 'string',
-            minWidth: 125,
-            flex: 1.2,
-        },
-        {
-            field: 'adjudicatedIds',
-            headerName: t('adjudicated'),
-            valueFormatter: (params: any) => params.length > 0 ? t('yes') : t('no'),
-            minWidth: 100,
-            flex: 1,
-            filterable: viewAdjudicated
-        },
-        {
-            field: 'Menu',
-            headerName: '',
-            type: 'actions',
-            minWidth: 50,
-            flex: 0.5,
-            getActions: (params) => [
-                selectionModel.includes(params.row.id) ? (
-                    <GridActionsCellItem
-                        key="details"
-                        icon={<VisibilityRoundedIcon />}
-                        label={t('details')}
-                        onClick={() => handleEventPreview()}
-                        showInMenu
-                    />
-                ) : <></>,
-            ],
-        },
-    ];
 
     const handleEventPreview = () => {
         router.push("/event-details");
@@ -552,11 +556,84 @@ export default function EventTable({
         }
     }
 
+    const buildResultTimeQuery = (filterModel: GridFilterModel): string => {
+        for (const item of filterModel.items) {
+            if (!['startTime', 'endTime'].includes(item.field)) continue;
+
+            const isoDate = new Date(item.value).toISOString();
+
+            // if (item.field === 'startTime') {
+            //     if (item.operator === 'after') {
+            //         return `${isoDate}/${pageLoadedTime}`
+            //     } else if (item.operator === 'before') {
+            //         return `../${isoDate}`
+            //     }
+            // } else if (item.field === 'endTime') {
+            //     if (item.operator === 'after') {
+            //         return `${isoDate}/${pageLoadedTime}`
+            //     } else if (item.operator === 'before') {
+            //         return `../${isoDate}`
+            //     }
+            // }
+            if (item.operator === 'after') {
+                return `${isoDate}/${pageLoadedTime}`
+            } else if (item.operator === 'before') {
+                return `../${isoDate}`
+            }
+        }
+
+        return `../${pageLoadedTime}`;
+    }
+
+    const buildFilterQuery = (filterModel: GridFilterModel, tableMode: string): string => {
+        let filter: string | null = null;
+        
+        // http://localhost:8282/sensorhub/api/observations?resultTime=../2026-01-26T13:22:44.048Z&format=application/om%2Bjson&dataStream=0g30&filter=adjudicatedIds>0&order=desc&offset=0&limit=15
+        for (const item of filterModel.items) {
+            if (!['status', 'adjudicatedIds'].includes(item.field))
+                continue;
+
+            switch (item.field) {
+                case 'status':
+                    if (item.value === 'Gamma') {
+                        filter =`gammaAlarm=true AND neutronAlarm=false`
+                    } else if (item.value === 'Neutron') {
+                        filter =`gammaAlarm=false AND neutronAlarm=true`
+                    } else if (item.value === 'Gamma & Neutron') {
+                        filter =`gammaAlarm=true AND neutronAlarm=true`
+                    } else if (item.value === 'None') {
+                        filter =`gammaAlarm=false AND neutronAlarm=false`
+                    }
+                    break;
+                case 'adjudicatedIds':
+                    if (item.value === 'Yes')
+                        filter =`adjudicatedIdsCount>0`
+                    else if (item.value === 'No')
+                        filter =`adjudicatedIdsCount=0`
+                    break;
+            }
+        }
+
+        if (filter)
+            return filter;
+        if (tableMode === 'alarmtable')
+            return "gammaAlarm=true OR neutronAlarm=true";
+        return '';
+    }
+
+    const handleFilterChange = useCallback((model: GridFilterModel) => {
+        setFilterModel(model);
+        setPaginationModel(prev => ({ ...prev, page: 0 }));
+    }, []);
+
     return (
         <Box sx={{ height: 800, width: '100%' }}>
             <DataGrid
                 rows={filteredTableData}
                 paginationMode="server"
+                filterMode="server"
+                filterModel={filterModel}
+                onFilterModelChange={handleFilterChange}
                 loading={loading}
                 paginationModel={paginationModel}
                 onPaginationModelChange={handlePaginationChange}
