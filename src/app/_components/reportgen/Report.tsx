@@ -214,7 +214,7 @@ export default function ReportGeneratorView(){
 
     const resetForm = () => {
         setIsGenerating(false);
-        setSelectedEvent("");
+        setSelectedEvent(null);
         setSelectedReportType("")
         setSelectedTimeRange("");
         setSelectedNode(null);
