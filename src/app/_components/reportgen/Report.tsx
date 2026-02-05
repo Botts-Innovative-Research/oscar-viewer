@@ -22,8 +22,6 @@ import {selectNodes} from "@/lib/state/OSHSlice";
 import {isReportControlStream} from "@/lib/data/oscar/Utilities";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
-import Command from "osh-js/source/core/consysapi/command/Command";
-import CommandFilter from "osh-js/source/core/consysapi/command/CommandFilter";
 
 
 export default function ReportGeneratorView(){
