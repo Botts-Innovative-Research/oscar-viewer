@@ -9,15 +9,15 @@ const timeRanges = [
         value: "allTime",
     },
     {
-        label: "Monthly",
+        label: "Last 30 Days",
         value: "monthly",
     },
     {
-        label: "Weekly",
+        label: "Last 7 Days",
         value: 'weekly'
     },
     {
-        label: "Daily",
+        label: "Last 24 Hours",
         value: "daily"
     },
     {
