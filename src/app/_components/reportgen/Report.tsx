@@ -101,7 +101,6 @@ export default function ReportGeneratorView(){
                     isStreamingStatus = true;
                     setCommandStatus('PENDING');
 
-                    // Option 2: Create Command object and patch it with getSchema method
                     const networkProperties = {
                         endpointUrl: `${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}${selectedNode.csAPIEndpoint}`,
                         tls: selectedNode.isSecure,
