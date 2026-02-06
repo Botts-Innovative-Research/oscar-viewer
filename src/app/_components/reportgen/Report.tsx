@@ -22,6 +22,8 @@ import {selectNodes} from "@/lib/state/OSHSlice";
 import {isReportControlStream} from "@/lib/data/oscar/Utilities";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
+import Command from "osh-js/source/core/consysapi/command/Command";
+import CommandFilter from "osh-js/source/core/consysapi/command/CommandFilter";
 
 
 export default function ReportGeneratorView(){
@@ -99,65 +101,68 @@ export default function ReportGeneratorView(){
                     isStreamingStatus = true;
                     setCommandStatus('PENDING');
 
-                    const statusEndpoint = `${selectedNode.getConnectedSystemsEndpoint(false)}/controlstreams/${controlStream.properties.id}/commands/${commandId}/status`;
-
-                    const pollInterval = setInterval(async () => {
-                        try {
-                            const statusResponse = await fetch(statusEndpoint, {
-                                headers: selectedNode.getBasicAuthHeader(),
-                                mode: 'cors',
-                            });
-
-                            if (statusResponse.ok) {
-                                const statusData = await statusResponse.json();
-                                console.log("status response:", statusData);
-
-                                const items = statusData?.items ?? [statusData];
-                                for (const item of items) {
-                                    const statusCode = item.statusCode;
-
-                                    if (statusCode === 'ACCEPTED') {
-                                        clearInterval(pollInterval);
-                                        const reportPath = item?.results?.[0]?.data?.reportPath;
-                                        if (reportPath) {
-                                            const isTls = selectedNode.isSecure ? 'https://' : 'http://';
-                                            setGeneratedURL(
-                                                `${isTls}${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${reportPath}`
-                                            );
-                                        }
-                                        setSnackMessage("Report created successfully");
-                                        setSeverity("success");
-                                        setOpenSnack(true);
-                                        setIsGenerating(false);
-                                        setCommandStatus(null);
-                                        resetForm();
-                                        return;
-                                    } else if (statusCode === 'FAILED') {
-                                        clearInterval(pollInterval);
-                                        setSnackMessage("Report generation failed.");
-                                        setSeverity("error");
-                                        setOpenSnack(true);
-                                        setIsGenerating(false);
-                                        setCommandStatus(null);
-                                        resetForm();
-                                        return;
-                                    } else if (statusCode) {
-                                        setCommandStatus(statusCode);
-                                    }
-                                }
-                            }
-                        } catch (err) {
-                            console.error("Status poll error:", err);
+                    // Option 2: Create Command object and patch it with getSchema method
+                    const networkProperties = {
+                        endpointUrl: `${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}${selectedNode.csAPIEndpoint}`,
+                        tls: selectedNode.isSecure,
+                        streamProtocol: 'ws',
+                        connectorOpts: {
+                            username: selectedNode.auth.username,
+                            password: selectedNode.auth.password
                         }
-                    }, 5000);
+                    };
+
+                    const properties = {
+                        id: commandId,
+                        'controlstream@id': controlStream.properties.id,
+                        'system@id': controlStream.properties['system@id']
+                    };
+
+                    const command = new Command(properties, networkProperties);
+
+                    command.getSchema = async () => {
+                        return controlStream.getSchema(new ControlStreamFilter({}));
+                    };
+
+                    command.streamStatus(new CommandFilter({ format: 'application/json' }), (data: any) => {
+                        const messages = Array.isArray(data) ? data : [data];
+                        for (const message of messages) {
+                            const statusCode = message.statusCode;
+                            console.log(message);
+
+                            if (statusCode === 'ACCEPTED') {
+                                const reportPath = message?.results?.[0]?.data?.reportPath;
+                                if (reportPath) {
+                                    const isTls = selectedNode.isSecure ? 'https://' : 'http://';
+                                    setGeneratedURL(
+                                        `${isTls}${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${reportPath}`
+                                    );
+                                }
+                                setSnackMessage("Report created successfully");
+                                setSeverity("success");
+                                setOpenSnack(true);
+                                setIsGenerating(false);
+                                setCommandStatus(null);
+                                resetForm();
+                            } else if (statusCode === 'FAILED') {
+                                setSnackMessage("Report generation failed.");
+                                setSeverity("error");
+                                setOpenSnack(true);
+                                setIsGenerating(false);
+                                setCommandStatus(null);
+                                resetForm();
+                            } else if (statusCode) {
+                                setCommandStatus(statusCode);
+                            }
+                        }
+                    })
 
                     setSnackMessage("Report is being generated...");
                     setSeverity("success");
                     setOpenSnack(true);
                     return;
                 }
-
-                if (json.statusCode === "ACCEPTED") {
+                else if (json.statusCode === "ACCEPTED") {
                     const isTls = selectedNode.isSecure ? 'https://' : 'http://';
                     setGeneratedURL(
                         `${isTls}${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${json.results[0].data.reportPath}`
@@ -166,8 +171,7 @@ export default function ReportGeneratorView(){
                     setSeverity("success");
                 }
             }
-
-            if (!response.ok) {
+            else {
                 setSnackMessage("Report request failed to submit.");
                 setSeverity("error");
             }
@@ -185,7 +189,6 @@ export default function ReportGeneratorView(){
     }
 
     const handleLaneSelect = (value: string[]) => {
-        let valueString = value.join(', ');
         setSelectedLaneUID(value)
     }
 
