@@ -73,6 +73,7 @@ export default function DashboardPage() {
             newStatusList.push({
                 id: idVal.current++,
                 name: laneid,
+                parentNode: lane.parentNode.name,
                 isOnline: false,
                 isTamper: false,
                 isFault: false,

@@ -12,6 +12,7 @@ import {useLanguage} from "@/contexts/LanguageContext";
 
 export interface LaneStatusProps {
     id: number;
+    parentNode: string;
     name: string;
     isOnline: boolean;
     isTamper: boolean;
@@ -162,6 +163,7 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
                 const newLane: LaneStatusProps = {
                     id: idVal.current++,
                     name: laneName,
+                    parentNode: '',
                     isOnline: newState === 'Online',
                     isTamper: newState === 'Tamper',
                     isFault: newState.includes('Fault'),
@@ -190,6 +192,7 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
                                             key={item.id}
                                             id={item.id}
                                             name={item.name}
+                                            parentNode={item.parentNode}
                                             isOnline={item.isOnline}
                                             isFault={item.isFault}
                                             isTamper={item.isTamper}

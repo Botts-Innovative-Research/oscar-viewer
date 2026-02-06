@@ -68,7 +68,23 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
                 }
             }
 
-            nodeLaneMap.forEach((value: LaneMapEntry, key: string) =>allLanes.set(key,value));
+            nodeLaneMap.forEach((value: LaneMapEntry, key: string) => {
+                if (allLanes.has(key)) {
+                    const prefixedKey = `${node.name} - ${key}`;
+                    value.setLaneName(prefixedKey);
+                    allLanes.set(prefixedKey, value);
+
+                    const existing = allLanes.get(key);
+                    if (existing) {
+                        const existingPrefixedKey = `${existing.parentNode.name} - ${key}`;
+                        existing.setLaneName(existingPrefixedKey);
+                        allLanes.set(existingPrefixedKey, existing);
+                        allLanes.delete(key);
+                    }
+                } else {
+                    allLanes.set(key, value);
+                }
+            });
         }));
 
         dispatch(setLaneMap(allLanes));
