@@ -1,6 +1,6 @@
 import {
     Alert, Box,
-    Button, Grid,
+    Button, CircularProgress, Grid,
     Snackbar,
     SnackbarCloseReason, Paper,
     Stack,
@@ -22,6 +22,8 @@ import {selectNodes} from "@/lib/state/OSHSlice";
 import {isReportControlStream} from "@/lib/data/oscar/Utilities";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
+import Command from "osh-js/source/core/consysapi/command/Command";
+import CommandFilter from "osh-js/source/core/consysapi/command/CommandFilter";
 
 
 export default function ReportGeneratorView(){
@@ -40,6 +42,7 @@ export default function ReportGeneratorView(){
     const [snackMessage, setSnackMessage] = useState<string>();
     const [severity, setSeverity] = useState<'success' | 'error'>('success');
     const [generatedURL, setGeneratedURL] = useState<string | null>("");
+    const [commandStatus, setCommandStatus] = useState<string | null>(null);
 
     const handleGenerateReport = async() => {
         if (selectedTimeRange === "custom" && (!customStartTime || !customEndTime)){
@@ -57,6 +60,8 @@ export default function ReportGeneratorView(){
         let startTime = getTimeRange(selectedTimeRange).startTime;
         let endTime = getTimeRange(selectedTimeRange).endTime;
 
+
+        let isStreamingStatus = false;
 
         try {
             if(!selectedNode) return;
@@ -81,54 +86,108 @@ export default function ReportGeneratorView(){
                 return;
             }
 
-            let response;
-            let reportResult;
+            const response = await sendCommand(
+                selectedNode,
+                controlStream.properties.id,
+                generateReportCommandJSON(startTime, endTime, selectedReportType, selectedLaneUID.toString(), selectedEvent)
+            );
 
-            for (let i = 0; i < 5; i++) {
-                response = await sendCommand(
-                    selectedNode,
-                    controlStream.properties.id,
-                    generateReportCommandJSON(startTime, endTime, selectedReportType, selectedLaneUID.toString(), selectedEvent)
-                );
+            if (response.status == 200) {
+                const json = await response.json();
 
-                if (response.status == 200) {
-                    const json = await response.json();
-                    if (json.statusCode === "ACCEPTED") {
-                        reportResult = json;
-                        break;
-                    }
+                if (json.statusCode === 'PENDING') {
+                    console.log("status pending")
+                    const commandId = json['command@id'];
+                    isStreamingStatus = true;
+                    setCommandStatus('PENDING');
+
+                    const networkProperties = {
+                        endpointUrl: `${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}${selectedNode.csAPIEndpoint}`,
+                        tls: selectedNode.isSecure,
+                        streamProtocol: 'ws',
+                        connectorOpts: {
+                            username: selectedNode.auth.username,
+                            password: selectedNode.auth.password
+                        }
+                    };
+
+                    const properties = {
+                        id: commandId,
+                        'controlstream@id': controlStream.properties.id,
+                        'system@id': controlStream.properties['system@id']
+                    };
+
+                    const command = new Command(properties, networkProperties);
+
+                    command.getSchema = async () => {
+                        return controlStream.getSchema(new ControlStreamFilter({}));
+                    };
+
+                    command.streamStatus(new CommandFilter({ format: 'application/json' }), (data: any) => {
+                        const messages = Array.isArray(data) ? data : [data];
+                        for (const message of messages) {
+                            const statusCode = message.statusCode;
+                            console.log(message);
+
+                            if (statusCode === 'ACCEPTED') {
+                                const reportPath = message?.results?.[0]?.data?.reportPath;
+                                if (reportPath) {
+                                    const isTls = selectedNode.isSecure ? 'https://' : 'http://';
+                                    setGeneratedURL(
+                                        `${isTls}${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${reportPath}`
+                                    );
+                                }
+                                setSnackMessage("Report created successfully");
+                                setSeverity("success");
+                                setOpenSnack(true);
+                                setIsGenerating(false);
+                                setCommandStatus(null);
+                                resetForm();
+                            } else if (statusCode === 'FAILED') {
+                                setSnackMessage("Report generation failed.");
+                                setSeverity("error");
+                                setOpenSnack(true);
+                                setIsGenerating(false);
+                                setCommandStatus(null);
+                                resetForm();
+                            } else if (statusCode) {
+                                setCommandStatus(statusCode);
+                            }
+                        }
+                    })
+
+                    setSnackMessage("Report is being generated...");
+                    setSeverity("success");
+                    setOpenSnack(true);
+                    return;
                 }
-
-                console.warn("Command to generate report has failed. Retrying... Attempt #", i);
+                else if (json.statusCode === "ACCEPTED") {
+                    const isTls = selectedNode.isSecure ? 'https://' : 'http://';
+                    setGeneratedURL(
+                        `${isTls}${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${json.results[0].data.reportPath}`
+                    );
+                    setSnackMessage("Report created successfully");
+                    setSeverity("success");
+                }
             }
-
-            if (!response.ok) {
+            else {
                 setSnackMessage("Report request failed to submit.");
                 setSeverity("error");
-                return;
             }
-
-            if (reportResult == undefined)
-                reportResult = await response.json();
-            console.log("report result", reportResult.results[0].data.reportPath);
-            setGeneratedURL(selectedNode.isSecure ? `https://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${reportResult.results[0].data.reportPath}` : `http://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${reportResult.results[0].data.reportPath}`);
-
-            setSnackMessage("Report created successfully");
-            setSeverity("success");
 
         } catch (error) {
             setSnackMessage("Report request failed to submit.");
             setSeverity("error");
         } finally {
-            setOpenSnack(true)
-            setIsGenerating(false)
-            resetForm();
+            setOpenSnack(true);
+            if (!isStreamingStatus) {
+                setIsGenerating(false);
+                resetForm();
+            }
         }
     }
 
-
     const handleLaneSelect = (value: string[]) => {
-        let valueString = value.join(', ');
         setSelectedLaneUID(value)
     }
 
@@ -158,12 +217,12 @@ export default function ReportGeneratorView(){
     const resetForm = () => {
         setIsGenerating(false);
         setSelectedEvent(null);
-        setSelectedReportType(null)
-        setSelectedTimeRange(null);
+        setSelectedReportType("")
+        setSelectedTimeRange("");
         setSelectedNode(null);
         setSelectedLaneUID([]);
-        setCustomEndTime(null);
-        setCustomStartTime(null);
+        setCustomEndTime("");
+        setCustomStartTime("");
     }
 
     const getTimeRange = (timeRange: string): {startTime: string, endTime: string} => {
@@ -246,6 +305,15 @@ export default function ReportGeneratorView(){
                             {isGenerating ? 'Generating Report...' : 'Generate Report'}
                         </Button>
 
+                        {commandStatus && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mt: 1 }}>
+                                <CircularProgress size={20} />
+                                <Typography variant="body2" color="text.secondary">
+                                    Status: {commandStatus}
+                                </Typography>
+                            </Box>
+                        )}
+
                     </Stack>
                 </Grid>
 
@@ -256,9 +324,9 @@ export default function ReportGeneratorView(){
                         </Typography>
 
                         {generatedURL ? (
-                            <Box sx={{ height: "800px", border: "1px solid #ccc", borderRadius: 2, overflow: "hidden"}}>
-                                <iframe width="100%" height="100%" src={generatedURL} style={{ border: "none"}} />
-                            </Box>
+                                <Box sx={{ height: "800px", border: "1px solid #ccc", borderRadius: 2, overflow: "hidden"}}>
+                                    <iframe width="100%" height="100%" src={generatedURL} style={{ border: "none"}} />
+                                </Box>
                             ) :
                             <Box
                                 sx={{
