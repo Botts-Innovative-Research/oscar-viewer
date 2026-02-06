@@ -28,7 +28,7 @@ import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
 import MediationIcon from '@mui/icons-material/Mediation';
 import {Menu, MenuItem, Slider, Stack, Tooltip} from '@mui/material';
 import Link from 'next/link';
-import {Download, VolumeDown, VolumeUp} from "@mui/icons-material";
+import {Download, InsertChart, VolumeDown, VolumeUp} from "@mui/icons-material";
 import AlarmAudio from "@/app/_components/AlarmAudio";
 import {selectAlarmAudioVolume, setAlarmAudioVolume} from "@/lib/state/OSCARClientSlice";
 import {useDispatch, useSelector} from "react-redux";
@@ -170,7 +170,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
         },
         {
             title: t('reportGenerator'),
-            icon: <Download/>,
+            icon: <InsertChart/>,
             href: "/report",
         },
     ]
