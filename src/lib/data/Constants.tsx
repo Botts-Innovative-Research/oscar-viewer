@@ -95,6 +95,7 @@ export const OCCUPANCY_PILLAR_DEF =  radUri + "PillarOccupancyCount";
 export const CONNECTION_DEF =  radUri + "ConnectionStatus";
 export const THRESHOLD_DEF =  radUri + "Threshold";
 export const ADJ_DEF =  radUri + "Feedback";
+export const ADJ_DEF2 =  smlUri + "Feedback";
 export const SPEED_DEF = radUri + "SpeedTime";
 export const NATIONAL_DEF =  radUri + "NumOccupancies";
 export const START_DEF =  smlUri + "StartDateTime";
