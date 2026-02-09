@@ -44,6 +44,9 @@ import {CloseIcon} from "next/dist/client/components/react-dev-overlay/internal/
 import DetectorResponseFunction from "./DetectorResponseFunction";
 import SpectrumTypeSelector from "@/app/_components/adjudication/SpectrumTypeSelector";
 import WebIdAnalysis from "@/app/_components/adjudication/WebIdAnalysis";
+import {useSelector} from "react-redux";
+import {RootState} from "@/lib/state/Store";
+import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 
 interface FileWithWebId {
     file: File;
@@ -335,7 +338,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             const updatedFileNames = await sendFileUploadRequest(files, currLaneEntry.parentNode);
 
-            console.log("updatedFileNames", updatedFileNames)
             const response = await sendCommand(
                 currLaneEntry.parentNode,
                 adjControlStream.properties.id,
@@ -350,7 +352,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     tempAdjData.vehicleId
                 )
             );
-            console.log("adj response", response)
 
             if (!response.ok) {
                 setAdjSnackMsg('Adjudication failed to submit.')
@@ -381,6 +382,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             resetForm();
         }
     }
+
+    const laneMap = useSelector((state: RootState) => selectLaneMap(state));
+
+    const laneUid = laneMap.get(props.event?.laneId)?.laneSystem?.properties?.properties?.uid;
+
 
     async function sendQrCodeUploadRequest(qrDataArray: string[], node: INode, adjId: string) {
         const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
@@ -430,7 +436,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
         if (hasPair) {
             const drf = foregroundFile.detectorResponseFunction || backgroundFile.detectorResponseFunction;
-            const endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication?occupancyObsId=${props.event.occupancyObsId}&enableWebId=true&drf=${drf}&foreground=${foregroundFile.file.name}&background=${backgroundFile.file.name}`;
+            const endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication?occupancyObsId=${props.event.occupancyObsId}&laneUid=${laneUid}&webIdEnabled=${foregroundFile.webIdEnabled}&drf=${drf}&foreground=${foregroundFile.file.name}&background=${backgroundFile.file.name}`;
             const url = new URL(endpoint);
 
             const formData = new FormData();
@@ -452,19 +458,22 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 setOpenSnack(true);
             }
 
-            newFileNames.push(`adjudication/${foregroundFile.file.name}`)
-            newFileNames.push(`adjudication/${backgroundFile.file.name}`)
+            let fileName = `/adjudication?occupancyObsId=${props.event.occupancyObsId}&laneUid=${laneUid}&webIdEnabled=true&drf=${drf}&foreground=${foregroundFile.file.name}&background=${backgroundFile.file.name}`
+            newFileNames.push(fileName)
+
         }
 
         for (const fileData of filePaths) {
             if (pairedFiles.has(fileData)) continue;
 
-
-            let endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication/${fileData.file.name}?occupancyObsId=${props.event.occupancyObsId}`;
-            // let endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication/${fileData.file.name}?occupancyObsId=${props.event.occupancyObsId}&enableWebId=${fileData.webIdEnabled}&drf=${fileData.detectorResponseFunction}`;
+            let fileName = `adjudication/${fileData.file.name}?occupancyObsId=${props.event.occupancyObsId}&laneUid=${laneUid}`
 
             if (fileData.webIdEnabled)
-                endpoint = endpoint + `&enableWebId=${fileData.webIdEnabled}&drf=${fileData.detectorResponseFunction}`
+                fileName = fileName + `&webIdEnabled=${fileData.webIdEnabled}&drf=${fileData.detectorResponseFunction}`
+
+            let endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/${fileName}`;
+            // let endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication/${fileData.file.name}?occupancyObsId=${props.event.occupancyObsId}&enableWebId=${fileData.webIdEnabled}&drf=${fileData.detectorResponseFunction}`;
+
 
             const url = new URL(endpoint);
 
@@ -486,7 +495,12 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 setOpenSnack(true);
             }
 
-            newFileNames.push(`adjudication/${fileData.file.name}`)
+            console.log("file upload response", response)
+            setAdjSnackMsg(`Successfully uploaded file: ${fileName}`);
+            setColorStatus('success');
+            setOpenSnack(true);
+
+            newFileNames.push(fileName)
         }
 
         return newFileNames;
