@@ -124,6 +124,14 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     props.event.occupancyObsId = occupancyObservation[0].id;
                     props.event.rpmSystemId = ds.properties["system@id"];
 
+                    setAdjData(prevAdjData => {
+                        if (prevAdjData) {
+                            prevAdjData.occupancyObsId = occupancyObservation[0].id;
+                            prevAdjData.alarmingSystemUid = ds.properties["system@id"];
+                        }
+                        return prevAdjData;
+                    });
+
                 } catch (err) {
                     console.error(err);
                     setAdjSnackMsg('Error loading observation.');
@@ -373,13 +381,14 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             //
             //     await sendQrCodeUploadRequest(scannedData, currLaneEntry.parentNode, adjId)
             // }
-        } catch(error) {
-            setAdjSnackMsg('Adjudication failed to submit.')
-            setColorStatus('error')
-        } finally {
+
             setShouldFetchLogs(true);
             setOpenSnack(true);
             resetForm();
+        } catch(error) {
+            setAdjSnackMsg('Adjudication failed to submit.')
+            setColorStatus('error')
+            setOpenSnack(true);
         }
     }
 
