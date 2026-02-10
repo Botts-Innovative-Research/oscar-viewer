@@ -34,7 +34,7 @@ import {selectAlarmAudioVolume, setAlarmAudioVolume} from "@/lib/state/OSCARClie
 import {useDispatch, useSelector} from "react-redux";
 import { useBreakpoint } from '../providers';
 import LanguageSelector from './LanguageSelector';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 const drawerWidth = 240;
 const drawerWidthMobile = 200;
