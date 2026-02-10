@@ -3,7 +3,7 @@
 import {Box, Paper, Typography} from "@mui/material";
 import dynamic from "next/dynamic";
 import {useMemo} from "react";
-import {useLanguage} from "@/contexts/LanguageContext";
+import {useLanguage} from "@/app/contexts/LanguageContext";
 
 export default function MapViewPage() {
     const { t } = useLanguage();
