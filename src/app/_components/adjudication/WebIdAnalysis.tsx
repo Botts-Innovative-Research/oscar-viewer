@@ -1,7 +1,6 @@
 "use client";
 
 import React, {useContext, useEffect, useState} from "react";
-import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {DataGrid, GridColDef} from "@mui/x-data-grid";
@@ -10,9 +9,8 @@ import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {isWebIdAnalysisDataStream} from "@/lib/data/oscar/Utilities";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
 import {useLanguage} from "@/app/contexts/LanguageContext";
-import WebIdIsotopeData, {IWebIdIsotope} from "@/lib/data/oscar/adjudication/WebId";
+import {IWebIdIsotope} from "@/lib/data/oscar/adjudication/WebId";
 import WebIdAnalysisResult from "@/lib/data/oscar/adjudication/WebId";
-
 
 
 export default function WebIdAnalysis(props: {

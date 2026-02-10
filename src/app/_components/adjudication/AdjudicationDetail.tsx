@@ -375,12 +375,12 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             dispatch(setSelectedEvent(props.event));
             dispatch(setAdjudicatedEventId(props.event.id));
 
-            // const responseJson = await response.json()
-            // if (responseJson) {
-            //     const adjId = responseJson['command@id'];
-            //
-            //     await sendQrCodeUploadRequest(scannedData, currLaneEntry.parentNode, adjId)
-            // }
+            const responseJson = await response.json()
+            if (responseJson) {
+                const adjId = responseJson['command@id'];
+
+                await sendQrCodeUploadRequest(scannedData, currLaneEntry.parentNode, adjId)
+            }
 
             setShouldFetchLogs(true);
             setOpenSnack(true);
