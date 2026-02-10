@@ -170,28 +170,38 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     };
 
     useEffect(() => {
-        if (openDialog && videoElement?.current && !scanner.current) {
-            const qrOptions = {
-                onDecodeError: (err: any) => console.error("QR Scan Error:", err),
-                preferredCamera: "environment",
-                highlightScanRegion: true,
-            }
+        if (openDialog && !scanner.current) {
+            const timeoutId = setTimeout(() => {
+                if (!videoElement.current) {
+                    console.error("Video element not found");
+                    setAdjSnackMsg("Failed to initialize camera");
+                    setOpenSnack(true);
+                    return;
+                }
 
-            scanner.current = new QrScanner(videoElement.current, (result) => {
+                const qrOptions = {
+                    onDecodeError: (err: any) => console.error("QR Scan Error:", err),
+                    preferredCamera: "environment",
+                    highlightScanRegion: true,
+                }
 
-                setScannedData(prev => {
-                    if (prev.includes(result.data))
-                        return prev;
-                    return [...prev, result.data]
-                });
+                scanner.current = new QrScanner(videoElement.current, (result) => {
+                    setScannedData(prev => {
+                        if (prev.includes(result.data))
+                            return prev;
+                        return [...prev, result.data]
+                    });
                 }, qrOptions);
 
-            scanner?.current?.start().catch((err) => {
-                console.error("Error starting scanner")
-                setAdjSnackMsg("Failed to start camera");
-                setOpenSnack(true);
-            });
+                scanner.current.start().catch((err) => {
+                    console.error("Error starting scanner:", err);
+                    setAdjSnackMsg("Failed to start camera");
+                    setColorStatus('error');
+                    setOpenSnack(true);
+                });
+            }, 100);
 
+            return () => clearTimeout(timeoutId);
         }
     }, [openDialog]);
 
@@ -417,15 +427,15 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             const response = await fetch(url, options);
 
             if (!response.ok) {
-                console.error("Successfully uploaded data from qr code:", response);
-                setAdjSnackMsg(`Successfully uploaded data from qr code`);
-                setColorStatus('success');
+                console.error("Failed to upload data from qr code:", response);
+                setAdjSnackMsg(`Failed to upload data from qr code`);
+                setColorStatus('error');
                 setOpenSnack(true);
                 return;
             }
 
-            setAdjSnackMsg(`Failed to upload data from qr code`);
-            setColorStatus('error');
+            setAdjSnackMsg(`Successfully uploaded data from qr code`);
+            setColorStatus('success');
             setOpenSnack(true);
         }
     }
@@ -662,6 +672,33 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                 </Box>
                             </Box>
                         )}
+                        {scannedData.length > 0 && (
+                            <Stack spacing={1}>
+                                {scannedData.map((data, idx) => (
+                                    <Stack
+                                        key={idx}
+                                        direction="row"
+                                        justifyContent="space-between"
+                                        alignItems="center"
+                                    >
+                                        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                                            Scanned Data ({uploadedFiles.length})
+                                        </Typography>
+                                        <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                                            {data}
+                                        </Typography>
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => setScannedData(prev => prev.filter((_, i) => i !== idx))}
+                                        >
+                                            <DeleteOutline fontSize="small" />
+                                        </IconButton>
+                                    </Stack>
+                                ))}
+                            </Stack>
+                            )
+                        }
+
                         <Stack direction={"row"} spacing={2} justifyContent={"space-between"} alignItems={"center"} width={"100%"}>
                             <Stack direction={"row"} spacing={2}>
                                 <Button
