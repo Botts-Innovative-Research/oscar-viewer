@@ -10,7 +10,8 @@ import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {isWebIdAnalysisDataStream} from "@/lib/data/oscar/Utilities";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
 import {useLanguage} from "@/app/contexts/LanguageContext";
-import WebIdIsotopeData from "@/lib/data/oscar/adjudication/WebId";
+import WebIdIsotopeData, {IWebIdIsotope} from "@/lib/data/oscar/adjudication/WebId";
+import WebIdAnalysisResult from "@/lib/data/oscar/adjudication/WebId";
 
 
 
@@ -28,7 +29,7 @@ export default function WebIdAnalysis(props: {
 
     const locale = navigator.language || 'en-US';
 
-    const logColumns: GridColDef<AdjudicationData>[] = [
+    const logColumns: GridColDef<WebIdAnalysisResult>[] = [
         {
             field: 'time',
             headerName: 'Timestamp',
@@ -47,29 +48,77 @@ export default function WebIdAnalysis(props: {
             field: 'name',
             headerName: 'Name',
             width: 200,
-            type: 'string',
+            valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.name).join(', '),
         },
         {
             field: 'type',
             headerName: 'Type',
             width: 200,
-            type: 'string',
+            valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.type).join(', '),
         },
         {
             field: 'confidence',
             headerName: 'Confidence',
             width: 200,
-            type: 'number',
+            valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.confidence).join(', '),
         },
         {
             field: 'confidenceStr',
             headerName: 'Confidence String',
             width: 200,
-            type: 'string',
+            valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.confidenceStr).join(', '),
         },
         {
             field: 'countRate',
             headerName: 'Count Rate',
+            width: 200,
+            valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.countRate).join(', '),
+        },
+        {
+            field: 'isotopeString',
+            headerName: 'Isotope String',
+            width: 200,
+            type: 'string',
+        },
+        {
+            field: 'numIsotopes',
+            headerName: 'Number of Isotopes',
+            width: 200,
+            type: 'number',
+        },
+        {
+            field: 'numAnalysisWarning',
+            headerName: 'Num Analysis Warning',
+            width: 200,
+            type: 'string',
+        },
+        {
+            field: 'analysisWarning',
+            headerName: 'Analysis Warning',
+            width: 200,
+            type: 'string',
+        },
+        {
+            field: 'chiSquare',
+            headerName: 'Chi Square',
+            width: 200,
+            type: 'number',
+        },
+        {
+            field: 'detectorResponseFunction',
+            headerName: 'Detector Response Function',
+            width: 200,
+            type: 'string',
+        },
+        {
+            field: 'errorMessage',
+            headerName: 'Error Message',
+            width: 200,
+            type: 'string',
+        },
+        {
+            field: 'estimatedDose',
+            headerName: 'Estimated Dose',
             width: 200,
             type: 'number',
         }
@@ -105,9 +154,13 @@ export default function WebIdAnalysis(props: {
             let obsCollection = await query.nextPage();
 
             let webIdData = obsCollection.map((obs: any)=> {
-                let resultIsotopes = obs?.result.isotopes[0];
-                return new WebIdIsotopeData(obs.resultTime, resultIsotopes.name, resultIsotopes.type, resultIsotopes.confidence, resultIsotopes.confidenceString, resultIsotopes.countRate, obs.result.occupancyObsId)
+                // let resultIsotopes = obs?.result.isotopes[0];
+                let webIdAnalysis = new WebIdAnalysisResult(obs.resultTime, obs.result);
+
+                return webIdAnalysis;
+                // return new WebIdIsotopeData(obs.resultTime, resultIsotopes.name, resultIsotopes.type, resultIsotopes.confidence, resultIsotopes.confidenceString, resultIsotopes.countRate, obs.result.occupancyObsId)
             })
+            console.log("webid data", webIdData)
             setWebIdLog(webIdData)
         }
         props.onFetch();
@@ -132,7 +185,7 @@ export default function WebIdAnalysis(props: {
             <Stack spacing={2} p={2}>
                 <Stack direction={"column"} spacing={1}>
                     <Typography variant="h5">
-                        WebID Isotopes Analysis Log
+                        WebID Analysis Results Log
                     </Typography>
                 </Stack>
                 <DataGrid

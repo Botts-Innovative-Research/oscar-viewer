@@ -20,15 +20,15 @@ export interface IWebIdAnalysis {
     time: string,
     id: string;
     occupancyObsId: string,
-    isotopes: IWebIdIsotope,
+    analysisWarnings: string[],
     chiSquare: number,
     detectorResponseFunction: string,
     errorMessage: string,
     estimatedDose: number,
     isotopeString: string,
-    numAnalysisWarning: number,
+    isotopes: IWebIdIsotope[],
+    numAnalysisWarnings: number,
     numIsotopes: number,
-    analysisWarnings: string[];
 }
 export interface IWebIdIsotope {
     name: string,
@@ -38,49 +38,100 @@ export interface IWebIdIsotope {
     countRate: number,
 }
 
-export default class WebIdIsotopeData implements IWebId {
+export default class WebIdAnalysisResult implements IWebIdAnalysis {
     time: string;
     id: string;
-    name: string;
-    type: string;
-    confidence: number;
-    confidenceStr: string;
-    countRate: number;
-    occupancyObsId: string // observation ID
-
-    constructor(time: string, name: string, type: string, confidence: number, confidenceStr: string, countRate: number, occObsId: string) {
+    occupancyObsId: string;
+    analysisWarnings: string[];
+    chiSquare: number;
+    detectorResponseFunction: string;
+    errorMessage: string;
+    estimatedDose: number;
+    isotopeString: string;
+    isotopes: IWebIdIsotope[];
+    numAnalysisWarnings: number;
+    numIsotopes: number;
+    constructor(
+        time: string,
+        observation: any
+        // occupancyObsId: string,
+        // analysisWarnings: string[],
+        // chiSquare: number,
+        // detectorResponseFunction: string,
+        // errorMessage: string,
+        // estimatedDose: number,
+        // isotopeString: string,
+        // isotopes: IWebIdIsotope,
+        // numAnalysisWarning: number,
+        // numIsotopes: number,
+        ) {
+        console.log('observation', observation)
         this.time = time;
         this.id = randomUUID();
-        this.name = name;
-        this.type = type;
-        this.confidence = confidence;
-        this.confidenceStr = confidenceStr;
-        this.countRate = countRate;
-        this.occupancyObsId = occObsId // observation ID
-    }
+        this.occupancyObsId = observation?.occupancyObsId;
+        this.analysisWarnings = observation?.analysisWarnings;
+        this.chiSquare = observation?.chiSquare;
+        this.errorMessage = observation?.errorMessage;
+        this.detectorResponseFunction = observation?.detectorResponseFunction;
+        this.estimatedDose = observation?.estimatedDose;
+        this.isotopeString = observation?.isotopeString;
+        this.numIsotopes = observation?.numIsotopes;
+        this.numAnalysisWarnings = observation?.numAnalysisWarnings;
 
+        this.isotopes = observation?.isotopes?.map((iso: any) => ({
+            name: iso?.name,
+            type: iso?.type,
+            confidence: iso?.confidence,
+            confidenceStr: iso?.confidenceString,
+            countRate: iso?.countRate,
+        })) || [];
 
-    setName(name: string) {
-        this.name = name;
-    }
-
-    setTime(isoTime: string) {
-        this.time = isoTime;
-    }
-
-    setType(type: string) {
-        this.type = type;
-    }
-
-    setConfidence(confidence: number) {
-        this.confidence = confidence;
-    }
-
-    setConfidenceStr(confidenceStr: string) {
-        this.confidenceStr = confidenceStr;
-    }
-
-    setCountRate(count: number) {
-        this.countRate = count;
     }
 }
+
+// export default class WebIdIsotopeData implements IWebId {
+//     time: string;
+//     id: string;
+//     name: string;
+//     type: string;
+//     confidence: number;
+//     confidenceStr: string;
+//     countRate: number;
+//     occupancyObsId: string // observation ID
+//
+//     constructor(time: string, name: string, type: string, confidence: number, confidenceStr: string, countRate: number, occObsId: string) {
+//         this.time = time;
+//         this.id = randomUUID();
+//         this.name = name;
+//         this.type = type;
+//         this.confidence = confidence;
+//         this.confidenceStr = confidenceStr;
+//         this.countRate = countRate;
+//         this.occupancyObsId = occObsId // observation ID
+//     }
+//
+//
+//     setName(name: string) {
+//         this.name = name;
+//     }
+//
+//     setTime(isoTime: string) {
+//         this.time = isoTime;
+//     }
+//
+//     setType(type: string) {
+//         this.type = type;
+//     }
+//
+//     setConfidence(confidence: number) {
+//         this.confidence = confidence;
+//     }
+//
+//     setConfidenceStr(confidenceStr: string) {
+//         this.confidenceStr = confidenceStr;
+//     }
+//
+//     setCountRate(count: number) {
+//         this.countRate = count;
+//     }
+// }
