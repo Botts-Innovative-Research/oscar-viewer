@@ -436,44 +436,44 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
         const protocol = node.isSecure ? 'https://' : 'http://';
 
-        const webIdFiles = filePaths.filter(f => f.webIdEnabled);
-        const foregroundFile = webIdFiles.find(f => f.spectrumType === 'FOREGROUND');
-        const backgroundFile = webIdFiles.find(f => f.spectrumType === 'BACKGROUND');
-        const hasPair = foregroundFile && backgroundFile;
+        // const webIdFiles = filePaths.filter(f => f.webIdEnabled);
+        // const foregroundFile = webIdFiles.find(f => f.spectrumType === 'FOREGROUND');
+        // const backgroundFile = webIdFiles.find(f => f.spectrumType === 'BACKGROUND');
+        // const hasPair = foregroundFile && backgroundFile;
 
-        const pairedFiles = hasPair ? new Set([foregroundFile, backgroundFile]) : new Set<FileWithWebId>();
-
-        if (hasPair) {
-            const drf = foregroundFile.detectorResponseFunction || backgroundFile.detectorResponseFunction;
-            const endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication?occupancyObsId=${props.event.occupancyObsId}&laneUid=${laneUid}&webIdEnabled=${foregroundFile.webIdEnabled}&drf=${drf}&foreground=${foregroundFile.file.name}&background=${backgroundFile.file.name}`;
-            const url = new URL(endpoint);
-
-            const formData = new FormData();
-            formData.append('foreground', foregroundFile.file);
-            formData.append('background', backgroundFile.file);
-
-            const options: RequestInit = {
-                method: 'PUT',
-                headers: { 'Authorization': `Basic ${encoded}` },
-                mode: 'cors',
-                body: formData
-            };
-
-            const response = await fetch(url, options);
-            if (!response.ok) {
-                console.error("Failed uploading paired WebID files:", response);
-                setAdjSnackMsg('Failed to upload paired WebID files.');
-                setColorStatus('error');
-                setOpenSnack(true);
-            }
-
-            let fileName = `/adjudication?occupancyObsId=${props.event.occupancyObsId}&laneUid=${laneUid}&webIdEnabled=true&drf=${drf}&foreground=${foregroundFile.file.name}&background=${backgroundFile.file.name}`
-            newFileNames.push(fileName)
-
-        }
+        // const pairedFiles = hasPair ? new Set([foregroundFile, backgroundFile]) : new Set<FileWithWebId>();
+        //
+        // if (hasPair) {
+        //     const drf = foregroundFile.detectorResponseFunction || backgroundFile.detectorResponseFunction;
+        //     const endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication?occupancyObsId=${props.event.occupancyObsId}&laneUid=${laneUid}&webIdEnabled=${foregroundFile.webIdEnabled}&drf=${drf}&foreground=${foregroundFile.file.name}&background=${backgroundFile.file.name}`;
+        //     const url = new URL(endpoint);
+        //
+        //     const formData = new FormData();
+        //     formData.append('foreground', foregroundFile.file);
+        //     formData.append('background', backgroundFile.file);
+        //
+        //     const options: RequestInit = {
+        //         method: 'PUT',
+        //         headers: { 'Authorization': `Basic ${encoded}` },
+        //         mode: 'cors',
+        //         body: formData
+        //     };
+        //
+        //     const response = await fetch(url, options);
+        //     if (!response.ok) {
+        //         console.error("Failed uploading paired WebID files:", response);
+        //         setAdjSnackMsg('Failed to upload paired WebID files.');
+        //         setColorStatus('error');
+        //         setOpenSnack(true);
+        //     }
+        //
+        //     let fileName = `/adjudication?occupancyObsId=${props.event.occupancyObsId}&laneUid=${laneUid}&webIdEnabled=true&drf=${drf}&foreground=${foregroundFile.file.name}&background=${backgroundFile.file.name}`
+        //     newFileNames.push(fileName)
+        //
+        // }
 
         for (const fileData of filePaths) {
-            if (pairedFiles.has(fileData)) continue;
+            // if (pairedFiles.has(fileData)) continue;
 
             let fileName = `adjudication/${fileData.file.name}?occupancyObsId=${props.event.occupancyObsId}&laneUid=${laneUid}`
 
@@ -482,7 +482,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             let endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/${fileName}`;
             // let endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication/${fileData.file.name}?occupancyObsId=${props.event.occupancyObsId}&enableWebId=${fileData.webIdEnabled}&drf=${fileData.detectorResponseFunction}`;
-
 
             const url = new URL(endpoint);
 
@@ -642,7 +641,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                             <Stack direction={"row"} spacing={2}>
                                                                 <DetectorResponseFunction onSelect={handleDrfSelection(index)} selectVal={fileData.detectorResponseFunction} />
 
-                                                                <SpectrumTypeSelector onSelect={handleSpectrumType(index)} selectVal={fileData.spectrumType} />
+                                                                {/*<SpectrumTypeSelector onSelect={handleSpectrumType(index)} selectVal={fileData.spectrumType} />*/}
                                                             </Stack>
 
                                                         ) :
