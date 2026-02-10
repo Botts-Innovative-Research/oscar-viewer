@@ -145,7 +145,6 @@ export default function WebIdAnalysis(props: {
     }, [webIdDataStream]);
 
     async function fetchObservations(datastream: typeof DataStream) {
-
         let query = await datastream.searchObservations(undefined, 100);
 
         while (query.hasNext()) {
@@ -153,12 +152,9 @@ export default function WebIdAnalysis(props: {
 
             let webIdData = obsCollection.map((obs: any)=> {
                 // let resultIsotopes = obs?.result.isotopes[0];
-                let webIdAnalysis = new WebIdAnalysisResult(obs.resultTime, obs.result);
-
-                return webIdAnalysis;
+                return new WebIdAnalysisResult(obs.resultTime, obs.result);
                 // return new WebIdIsotopeData(obs.resultTime, resultIsotopes.name, resultIsotopes.type, resultIsotopes.confidence, resultIsotopes.confidenceString, resultIsotopes.countRate, obs.result.occupancyObsId)
             })
-            console.log("webid data", webIdData)
             setWebIdLog(webIdData)
         }
         props.onFetch();
