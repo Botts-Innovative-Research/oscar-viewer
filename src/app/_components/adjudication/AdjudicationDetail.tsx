@@ -524,7 +524,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     return (
         <>
             <Paper variant='outlined' sx={{width: "100%"}}>
-
                 <WebIdAnalysis
                     event={props.event}
                     shouldFetch={shouldFetchLogs}

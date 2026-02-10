@@ -33,7 +33,7 @@ import AlarmAudio from "@/app/_components/AlarmAudio";
 import {selectAlarmAudioVolume, setAlarmAudioVolume} from "@/lib/state/OSCARClientSlice";
 import {useDispatch, useSelector} from "react-redux";
 import LanguageSelector from './LanguageSelector';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 
 const drawerWidth = 240;
 

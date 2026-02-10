@@ -7,12 +7,10 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {DataGrid, GridColDef} from "@mui/x-data-grid";
 import { Stack, Typography} from "@mui/material";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {isAdjudicationControlStream, isWebIdAnalysisDataStream} from "@/lib/data/oscar/Utilities";
-import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
-import {AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
-import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
-import { Dialog, DialogTitle, DialogContent } from "@mui/material";
+import {isWebIdAnalysisDataStream} from "@/lib/data/oscar/Utilities";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
+import {useLanguage} from "@/app/contexts/LanguageContext";
+import WebIdIsotopeData from "@/lib/data/oscar/adjudication/WebId";
 
 
 
@@ -26,9 +24,25 @@ export default function WebIdAnalysis(props: {
     const [webIdLog, setWebIdLog] = useState<any[]>([]);
     const [filteredLog, setFilteredLog] = useState<any[]>([]);
     const [webIdDataStream, setWebIdDatastream] = useState();
+    const { t } = useLanguage();
 
+    const locale = navigator.language || 'en-US';
 
     const logColumns: GridColDef<AdjudicationData>[] = [
+        {
+            field: 'time',
+            headerName: 'Timestamp',
+            width: 200,
+            type: 'string',
+            valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric'
+            }),
+        },
         {
             field: 'name',
             headerName: 'Name',
@@ -69,13 +83,14 @@ export default function WebIdAnalysis(props: {
         if(!streams) return;
 
         let webIdDs: typeof DataStream = streams.find((stream: typeof DataStream) => isWebIdAnalysisDataStream(stream));
+
         if (!webIdDs) return
         setWebIdDatastream(webIdDs);
     }
 
     useEffect(() => {
         getDataStream();
-    }, []);
+    }, [props.event.laneId]);
 
     useEffect(() => {
         if (webIdDataStream)
@@ -89,7 +104,13 @@ export default function WebIdAnalysis(props: {
         while (query.hasNext()) {
             let obsCollection = await query.nextPage();
 
+            let webIdData = obsCollection.map((obs: any)=> {
+                let resultIsotopes = obs?.result.isotopes[0];
+                return new WebIdIsotopeData(obs.resultTime, resultIsotopes.name, resultIsotopes.type, resultIsotopes.confidence, resultIsotopes.confidenceString, resultIsotopes.countRate, obs.result.occupancyObsId)
+            })
+            setWebIdLog(webIdData)
         }
+        props.onFetch();
     }
 
     useEffect(() => {
@@ -103,7 +124,7 @@ export default function WebIdAnalysis(props: {
                 fetchObservations(webIdDataStream);
             }, 5000);
         }
-    }, []);
+    }, [props.shouldFetch]);
 
 
     return (
@@ -111,7 +132,7 @@ export default function WebIdAnalysis(props: {
             <Stack spacing={2} p={2}>
                 <Stack direction={"column"} spacing={1}>
                     <Typography variant="h5">
-                        WebID Analysis Log
+                        WebID Isotopes Analysis Log
                     </Typography>
                 </Stack>
                 <DataGrid
