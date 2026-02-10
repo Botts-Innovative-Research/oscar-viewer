@@ -13,7 +13,7 @@ import ListItemText from "@mui/material/ListItemText";
 import {INode, Node} from "@/lib/data/osh/Node";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import React, {useState} from "react";
-import {useLanguage} from "@/contexts/LanguageContext";
+import {useLanguage} from "@/app/contexts/LanguageContext";
 
 interface NodeListProps {
     modeChangeCallback?: (editMode: boolean, editNode: INode) => void
