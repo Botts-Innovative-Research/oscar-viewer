@@ -55,6 +55,14 @@ interface FileWithWebId {
     spectrumType: string;
 }
 
+// qr code auto true = webIdEnabled
+
+interface ScannedDataWithWebId {
+    text: string;
+    detectorResponseFunction: string;
+    spectrumType: string;
+}
+
 export default function AdjudicationDetail(props: { event: EventTableData }) {
     const dispatch = useAppDispatch();
 
@@ -69,7 +77,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const [openDialog, setOpenDialog] = useState(false);
     const videoElement = useRef<HTMLVideoElement>(null);
-    const [scannedData, setScannedData] = useState<string[]>([]);
+    const [scannedData, setScannedData] = useState<ScannedDataWithWebId[]>([]);
     const scanner = useRef<QrScanner>();
 
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
@@ -186,10 +194,16 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 }
 
                 scanner.current = new QrScanner(videoElement.current, (result) => {
+                    let newData: ScannedDataWithWebId = {
+                        text: result.data,
+                        detectorResponseFunction: "",
+                        spectrumType: ""
+                    }
+
                     setScannedData(prev => {
-                        if (prev.includes(result.data))
+                        if (prev.some(item => item.text === result.data))
                             return prev;
-                        return [...prev, result.data]
+                        return [...prev, newData]
                     });
                 }, qrOptions);
 
@@ -266,6 +280,26 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         );
     }
 
+    const handleScannedDataDrfSelection = (index: number) => (value: string) => {
+        setScannedData(prev =>
+            prev.map((data, idx) =>
+                idx === index ? { ...data, detectorResponseFunction: value } : data
+            )
+        );
+    }
+
+    const handleScannedDataSpectrumType = (index: number) => (value: string) => {
+        setScannedData(prev =>
+            prev.map((data, idx) =>
+                idx === index ? { ...data, spectrumType: value } : data
+            )
+        );
+    }
+
+    const handleScannedDataDelete = (index: number) => {
+        setScannedData(prev => prev.filter((_, i) => i !== index));
+    }
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const {name, value} = e.target;
 
@@ -286,6 +320,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         setVehicleId('')
         setAdjData(adjudication);
         setUploadedFiles([]);
+        setScannedData([]);
         setSecondaryInspection('');
         setIsotope([]);
         setAdjudicationCode(AdjudicationCodes.codes[0]);
@@ -356,6 +391,18 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             const updatedFileNames = await sendFileUploadRequest(files, currLaneEntry.parentNode);
 
+            if (files.length > 0 && !updatedFileNames) {
+                return;
+            }
+
+            const scannedQrCodeFiles = await sendQrCodeUploadRequest(scannedData, currLaneEntry.parentNode)
+
+            if (scannedData.length > 0 && !scannedQrCodeFiles) {
+                return;
+            }
+
+            let allFiles = [...(updatedFileNames || []), ...(scannedQrCodeFiles || [])]
+
             const response = await sendCommand(
                 currLaneEntry.parentNode,
                 adjControlStream.properties.id,
@@ -365,7 +412,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     tempAdjData.isotopes,
                     tempAdjData.secondaryInspectionStatus,
                     // files.map(file => 'adjudication/' + file.file.name),
-                    updatedFileNames,
+                    allFiles,
                     tempAdjData.occupancyObsId,
                     tempAdjData.vehicleId
                 )
@@ -374,6 +421,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             if (!response.ok) {
                 setAdjSnackMsg('Adjudication failed to submit.')
                 setColorStatus('error')
+                setOpenSnack(true);
                 return;
             }
 
@@ -384,13 +432,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             dispatch(setSelectedEvent(props.event));
             dispatch(setAdjudicatedEventId(props.event.id));
-
-            const responseJson = await response.json()
-            if (responseJson) {
-                const adjId = responseJson['command@id'];
-
-                await sendQrCodeUploadRequest(scannedData, currLaneEntry.parentNode, adjId)
-            }
 
             setShouldFetchLogs(true);
             setOpenSnack(true);
@@ -407,14 +448,16 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const laneUid = laneMap.get(props.event?.laneId)?.laneSystem?.properties?.properties?.uid;
 
 
-    async function sendQrCodeUploadRequest(qrDataArray: string[], node: INode, adjId: string) {
+    async function sendQrCodeUploadRequest(dataArray: ScannedDataWithWebId[], node: INode) {
         const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
         const protocol = node.isSecure ? 'https://' : 'http://';
 
-        const endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}/buckets/adjudication?adjudicationId=${adjId}`
-        const url = new URL(endpoint);
+        let newFiles: any[] = [];
+        for (const data of dataArray) {
+            let endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}/buckets/adjudication?laneUid=${laneUid}&occupancyObsId=${props.event.occupancyObsId}&webIdEnabled=true&drf=${data.detectorResponseFunction}`;
 
-        for (const qrData of qrDataArray) {
+            const url = new URL(endpoint);
+
             const options: RequestInit = {
                 method: 'POST',
                 headers: {
@@ -422,10 +465,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     'Content-Type': 'text/plain'
                 },
                 mode: 'cors',
-                body: qrData
+                body: data.text
             }
             const response = await fetch(url, options);
-
             if (!response.ok) {
                 console.error("Failed to upload data from qr code:", response);
                 setAdjSnackMsg(`Failed to upload data from qr code`);
@@ -434,10 +476,16 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 return;
             }
 
+            const location = response.headers.get('location');
+            const filePath = location ? 'adjudication/' + location.split('adjudication/')[1] : null;
+
             setAdjSnackMsg(`Successfully uploaded data from qr code`);
             setColorStatus('success');
             setOpenSnack(true);
+            newFiles.push(filePath)
         }
+
+        return newFiles;
     }
 
     async function sendFileUploadRequest(filePaths: FileWithWebId[], node: INode) {
@@ -511,9 +559,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 setAdjSnackMsg(`Failed to upload file: ${fileData.file.name}`);
                 setColorStatus('error');
                 setOpenSnack(true);
+                return;
             }
 
-            console.log("file upload response", response)
             setAdjSnackMsg(`Successfully uploaded file: ${fileName}`);
             setColorStatus('success');
             setOpenSnack(true);
@@ -673,31 +721,60 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                             </Box>
                         )}
                         {scannedData.length > 0 && (
-                            <Stack spacing={1}>
-                                {scannedData.map((data, idx) => (
-                                    <Stack
-                                        key={idx}
-                                        direction="row"
-                                        justifyContent="space-between"
-                                        alignItems="center"
-                                    >
-                                        <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                                            Scanned Data ({uploadedFiles.length})
-                                        </Typography>
-                                        <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                                            {data}
-                                        </Typography>
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => setScannedData(prev => prev.filter((_, i) => i !== idx))}
+                            <Box sx={{ width: "100%" }}>
+                                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                                    Scanned Data ({scannedData.length})
+                                </Typography>
+                                <Box
+                                    sx={{
+                                        maxHeight: '200px',
+                                        overflowY: 'auto',
+                                        border: '1px solid',
+                                        borderColor: 'divider',
+                                        borderRadius: 1,
+                                    }}
+                                >
+                                    {scannedData.map((data, index) => (
+                                        <Box
+                                            key={`scanned-${index}`}
+                                            sx={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                                px: 2,
+                                                py: 1,
+                                                borderBottom: index < scannedData.length - 1 ? '1px solid' : 'none',
+                                                borderColor: 'divider',
+                                            }}
                                         >
-                                            <DeleteOutline fontSize="small" />
-                                        </IconButton>
-                                    </Stack>
-                                ))}
-                            </Stack>
-                            )
-                        }
+                                            <Stack direction="row" spacing={1.5} alignItems="center" flex={1} minWidth={0}>
+                                                <QrCode fontSize="small" color="action" />
+                                                <Typography variant="body2" noWrap sx={{ flex: 1, fontFamily: 'monospace' }}>
+                                                    {data.text.length > 50 ? data.text.substring(0, 50) + '...' : data.text}
+                                                </Typography>
+                                            </Stack>
+                                            <Stack direction="row" spacing={2} alignItems="center">
+                                                <DetectorResponseFunction
+                                                    onSelect={handleScannedDataDrfSelection(index)}
+                                                    selectVal={data.detectorResponseFunction}
+                                                />
+                                                {/*<SpectrumTypeSelector*/}
+                                                {/*    onSelect={handleScannedDataSpectrumType(index)}*/}
+                                                {/*    selectVal={data.spectrumType}*/}
+                                                {/*/>*/}
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => handleScannedDataDelete(index)}
+                                                    color="error"
+                                                >
+                                                    <DeleteOutline fontSize="small" />
+                                                </IconButton>
+                                            </Stack>
+                                        </Box>
+                                    ))}
+                                </Box>
+                            </Box>
+                        )}
 
                         <Stack direction={"row"} spacing={2} justifyContent={"space-between"} alignItems={"center"} width={"100%"}>
                             <Stack direction={"row"} spacing={2}>
@@ -817,11 +894,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                             alignItems="center"
                                                         >
                                                             <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                                                                {data}
+                                                                {data.text.length > 60 ? data.text.substring(0, 60) + '...' : data.text}
                                                             </Typography>
                                                             <IconButton
                                                                 size="small"
-                                                                onClick={() => setScannedData(prev => prev.filter((_, i) => i !== idx))}
+                                                                onClick={() => handleScannedDataDelete(idx)}
                                                             >
                                                                 <DeleteOutline fontSize="small" />
                                                             </IconButton>
