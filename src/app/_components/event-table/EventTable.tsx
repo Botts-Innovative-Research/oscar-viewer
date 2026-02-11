@@ -87,7 +87,13 @@ export default function EventTable({
             type: 'string',
             minWidth: 100,
             flex: 1,
-            filterable: false
+            filterable: false,
+            renderCell: (params) => (
+                <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', py: 0.5 }}>
+                    <span style={{ lineHeight: 1.25 }}>{params.row.laneId}</span>
+                    <span style={{ fontSize: '0.8rem', color: 'gray', lineHeight: 1.25 }}>{params.row.parentNode}</span>
+                </Box>
+            )
         },
         {
             field: 'occupancyCount',
@@ -401,11 +407,11 @@ export default function EventTable({
         if (isLive) {
             // Handle live observations
             const result = obs.result || obs;
-            newEvent = new EventTableData(id, laneEntry.laneName, result, null, obs["foi@id"] || obs.foiId);
+            newEvent = new EventTableData(id, laneEntry.laneName, result, null, obs["foi@id"] || obs.foiId, laneEntry.parentNode.name);
             newEvent.setFoiId(obs["foi@id"] || obs.foiId);
         } else {
             // Handle historical observations
-            newEvent = new EventTableData(id, laneEntry.laneName, obs.properties.result, obs.properties.id, obs.properties.foiId);
+            newEvent = new EventTableData(id, laneEntry.laneName, obs.properties.result, obs.properties.id, obs.properties.foiId, laneEntry.parentNode.name);
             newEvent.setRPMSystemId(laneEntry.lookupSystemIdFromDataStreamId(obs.properties["datastream@id"]));
             newEvent.setDataStreamId(obs.properties["datastream@id"]);
             newEvent.setFoiId(obs.properties["foi@id"]);

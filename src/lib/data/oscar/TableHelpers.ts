@@ -27,8 +27,9 @@ export class EventTableData implements IEventTableData {
     foiId: string;
     videoPaths: string[];
     adjudicatedIds: string[];
+    parentNode: string;
 
-    constructor(id: number, laneId: string, msgValue: any, occupancyObsId: string, foiId: string,  adjudicatedData: AdjudicationData | null = null) {
+    constructor(id: number, laneId: string, msgValue: any, occupancyObsId: string, foiId: string, parentNode: string, adjudicatedData: AdjudicationData | null = null) {
         this.id = id
         this.laneId = laneId
         this.occupancyCount = msgValue.occupancyCount;
@@ -53,6 +54,7 @@ export class EventTableData implements IEventTableData {
         this.videoPaths = msgValue.videoPaths;
         this.adjudicatedIds = msgValue.adjudicatedIds;
         this.secondaryInspection = this.setSecondaryStatus(msgValue.adjudicatedIds); //TODO: reference adjudicatedIds to get secondary status
+        this.parentNode = parentNode;
     }
 
     adjudicatedUser?: string;
