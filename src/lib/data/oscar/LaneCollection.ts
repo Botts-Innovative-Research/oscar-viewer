@@ -55,6 +55,7 @@ export class LaneMapEntry {
     laneSystem: typeof System;
     laneName: string;
     controlStreams: any[]
+    isRS350Backpack: boolean;
 
     constructor(node: INode) {
         this.systems = [];
@@ -65,6 +66,7 @@ export class LaneMapEntry {
         this.parentNode = node;
         this.laneName = undefined;
         this.controlStreams = [];
+        this.isRS350Backpack = false;
     }
 
     setLaneSystem(system: typeof System) {
@@ -105,6 +107,10 @@ export class LaneMapEntry {
 
     addControlStreams(controlStreams: any[]) {
         this.controlStreams.push(...controlStreams)
+    }
+
+    setIsRS350Backpack(value: boolean) {
+        this.isRS350Backpack = value;
     }
 
     resetDatasources() {

@@ -349,7 +349,6 @@ export class Node implements INode {
         return obsResult;
     }
 
-
     async fetchObservationsWithFilter(observationFilter: typeof ObservationFilter): Promise<any[]> {
         let observationsApi = this.getObservationsApi();
 
@@ -388,6 +387,8 @@ export class Node implements INode {
             allDataStreams.push(...dataStreams);
         }
 
+        console.log(allDataStreams)
+
         for (const dataStream of allDataStreams) {
             for (const [, laneEntry] of laneMap) {
                 if (laneEntry.parentNode.id != this.id)
@@ -395,6 +396,11 @@ export class Node implements INode {
                 const matchingSystem: typeof System = laneEntry.systems.find((system: typeof System) => system.properties.id == dataStream.properties["system@id"]);
                 if (matchingSystem != null) {
                     laneEntry.addDataStream(dataStream);
+
+                    const systemLinkUid = dataStream.properties?.["system@link"]?.uid;
+                    if (systemLinkUid && systemLinkUid.includes("rsi:rs350")) {
+                        laneEntry.setIsRS350Backpack(true);
+                    }
                 }
             }
         }
