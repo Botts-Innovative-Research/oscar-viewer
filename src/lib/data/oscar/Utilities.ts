@@ -9,7 +9,7 @@ import ConnectedSystemsApi from "osh-js/source/core/consysapi/ConnectedSystemsAp
 import {
     ADJ_DEF,
     ALARM_DEF, CONFIG_DEF,
-    CONNECTION_DEF, END_DEF, GAMMA_COUNT_DEF, HLS_VIDEO_DEF, LOCATION_VECTOR_DEF, NATIONAL_DEF,
+    CONNECTION_DEF, DURATION_DEF, END_DEF, GAMMA_COUNT_DEF, HLS_VIDEO_DEF, LOCATION_VECTOR_DEF, NATIONAL_DEF,
     NEUTRON_COUNT_DEF,
     OCCUPANCY_PILLAR_DEF, RASTER_IMAGE_DEF, REPORT_DEF, SENSOR_LOCATION_DEF,
     SITE_DIAGRAM_DEF, SPEED_DEF, START_DEF,
@@ -82,6 +82,15 @@ export function isSpeedDataStream(datastream: typeof DataStream): boolean {
         return false;
 
     return datastream.properties.observedProperties[0].definition.includes(SPEED_DEF);
+}
+
+export function isForegroundDataStream(datastream: typeof DataStream): boolean {
+
+    // if (!hasDefinitionProperties(datastream))
+    //     return false;
+
+    console.log("datastream", datastream)
+    return datastream.properties.observedProperties[0].definition.includes(DURATION_DEF);
 }
 
 export function isThresholdDataStream(datastream: typeof DataStream): boolean {

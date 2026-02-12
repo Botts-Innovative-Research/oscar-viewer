@@ -141,9 +141,7 @@ export default function LaneViewPage() {
 
                             currentLane={currentLane}
                         />
-
                     </Grid>
-
                     <Grid item container spacing={2} sx={{ width: "100%" }}>
                         <Paper variant='outlined' sx={{ width: "100%", height: "100%", padding: 2}}>
                             <Grid container direction="column" sx={{ width: "100%"}}>

@@ -100,3 +100,5 @@ export const NATIONAL_DEF =  radUri + "NumOccupancies";
 export const START_DEF =  smlUri + "StartDateTime";
 export const END_DEF =  smlUri + "EndDateTime";
 export const HLS_VIDEO_DEF =  smlUri + "StreamControl";
+export const DURATION_DEF =  radUri + "Duration";
+export const DOSE_DEF =  radUri + "Dose";
