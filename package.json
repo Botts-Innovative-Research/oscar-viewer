@@ -11,7 +11,11 @@
     "lint": "next lint",
     "start-exported": "npx serve@latest web",
     "test": "cypress run --e2e",
-    "test:all": "cypress run --e2e --headed --spec 'cypress/e2e/all-specs.cy.tsx'"
+    "test:all": "cypress run --e2e --headed --spec 'cypress/e2e/all-specs.cy.tsx'",
+    "cap:sync": "npx cap sync",
+    "cap:build": "npm run build && npx cap sync",
+    "cap:android": "npx cap open android",
+    "cap:run:android": "npx cap run android"
   },
   "keywords": [
     "OpenSensorHub",
@@ -43,6 +47,12 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.24.0",
+    "@capacitor/android": "^8.1.0",
+    "@capacitor/app": "^8.0.0",
+    "@capacitor/cli": "^8.1.0",
+    "@capacitor/core": "^8.1.0",
+    "@capacitor/local-notifications": "^8.0.0",
+    "@capawesome/capacitor-background-task": "^8.0.0",
     "@cesium/engine": "8.0.0",
     "@cesium/widgets": "5.0.0",
     "@cypress/webpack-dev-server": "^1.1.1",

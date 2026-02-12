@@ -12,6 +12,7 @@ import ObservationFilter from "osh-js/source/core/consysapi/observation/Observat
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {EventType} from "osh-js/source/core/event/EventType";
+import {notificationService} from "@/services/NotificationService";
 
 interface LaneStatusProps {
     dataSourcesByLane: LaneDSColl;
@@ -29,18 +30,18 @@ export default function LaneStatus(props: LaneStatusProps) {
 
         props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("gammaRT", (message: any) => {
             const state = message.values[0].data.alarmState;
-            updateStatus(currentLane, state);
+            updateStatus(currentLane, state, 'gamma');
         })
 
         props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("neutronRT", (message: any) => {
             const state = message.values[0].data.alarmState;
-            updateStatus(currentLane, state);
+            updateStatus(currentLane, state, 'neutron');
         })
 
         props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("tamperRT", (message: any) => {
             const state = message.values[0].data.tamperStatus;
             if (state) {
-                updateStatus(currentLane, 'Tamper')
+                updateStatus(currentLane, 'Tamper', 'tamper')
             }
         })
 
@@ -94,7 +95,7 @@ export default function LaneStatus(props: LaneStatusProps) {
         addSubscriptionCallbacks();
     }, [props.dataSourcesByLane]);
 
-    function updateStatus(laneName: string, newState: string) {
+    function updateStatus(laneName: string, newState: string, source?: string) {
         const newStatus: LaneStatusType = {
             id: idVal.current++,
             name: laneName,
@@ -105,6 +106,9 @@ export default function LaneStatus(props: LaneStatusProps) {
         setLaneStatus(newStatus);
         // }, 5000);
         dispatch(setLastLaneStatus(newStatus))
+
+        // Trigger notification for alarm states (works in background and on local network)
+        notificationService.handleAlarmStateChange(laneName, newState, source);
     }
 
     return (

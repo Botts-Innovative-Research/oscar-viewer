@@ -3,6 +3,7 @@ import Navbar from "./_components/Navbar"
 import Providers from "./providers"
 import StoreProvider from "@/app/StoreProvider";
 import DataSourceProvider from "@/app/contexts/DataSourceContext";
+import CapacitorInit from "@/app/_components/CapacitorInit";
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
@@ -47,11 +48,13 @@ export default function RootLayout({children}: {
         <Providers>
             <StoreProvider>
                 <CssBaseline/>
-                <DataSourceProvider>
-                    <Navbar>
-                        {children}
-                    </Navbar>
-                </DataSourceProvider>
+                <CapacitorInit>
+                    <DataSourceProvider>
+                        <Navbar>
+                            {children}
+                        </Navbar>
+                    </DataSourceProvider>
+                </CapacitorInit>
             </StoreProvider>
         </Providers>
         </body>

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">OSCAR Viewer</string>
+    <string name="title_activity_main">OSCAR Viewer</string>
+    <string name="package_name">gov.ornl.oscar.viewer</string>
+    <string name="custom_url_scheme">gov.ornl.oscar.viewer</string>
+</resources>
