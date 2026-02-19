@@ -17,7 +17,7 @@ import {
     Dialog
 
 } from "@mui/material";
-import React, {ChangeEvent, useCallback, useContext, useEffect, useRef, useState} from "react";
+import React, {ChangeEvent, useContext, useEffect, useRef, useState} from "react";
 import AdjudicationLog from "./AdjudicationLog"
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
@@ -47,6 +47,7 @@ import WebIdAnalysis from "@/app/_components/adjudication/WebIdAnalysis";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
+import {randomUUID} from "osh-js/source/core/utils/Utils";
 
 interface FileWithWebId {
     file: File;
@@ -59,6 +60,7 @@ interface FileWithWebId {
 
 interface ScannedDataWithWebId {
     text: string;
+    webIdEnabled: boolean;
     detectorResponseFunction: string;
     spectrumType: string;
 }
@@ -162,7 +164,15 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const handleWebIdAnalysis = (fileIndex: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
         setUploadedFiles(prevFiles =>
             prevFiles.map((fileData, idx) =>
-                idx === fileIndex ? { ...fileData, webIdEnabled: event.target.checked } : fileData
+                idx === fileIndex ? {...fileData, webIdEnabled: event.target.checked} : fileData
+            )
+        );
+    };
+
+    const handleQRCodeWebIdAnalysis = (fileIndex: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
+        setScannedData(prevFiles =>
+            prevFiles.map((fileData, idx) =>
+                idx === fileIndex ? {...fileData, webIdEnabled: event.target.checked} : fileData
             )
         );
     };
@@ -197,7 +207,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     let newData: ScannedDataWithWebId = {
                         text: result.data,
                         detectorResponseFunction: "",
-                        spectrumType: ""
+                        spectrumType: "",
+                        webIdEnabled: true
                     }
 
                     setScannedData(prev => {
@@ -267,7 +278,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const handleDrfSelection = (fileIndex: number) => (value: string) => {
         setUploadedFiles(prevFiles =>
             prevFiles.map((fileData, idx) =>
-                idx === fileIndex ? { ...fileData, detectorResponseFunction: value } : fileData
+                idx === fileIndex ? {...fileData, detectorResponseFunction: value} : fileData
             )
         );
     }
@@ -275,7 +286,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const handleSpectrumType = (fileIndex: number) => (value: string) => {
         setUploadedFiles(prevFiles =>
             prevFiles.map((fileData, idx) =>
-                idx === fileIndex ? { ...fileData, spectrumType: value } : fileData
+                idx === fileIndex ? {...fileData, spectrumType: value} : fileData
             )
         );
     }
@@ -283,7 +294,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const handleScannedDataDrfSelection = (index: number) => (value: string) => {
         setScannedData(prev =>
             prev.map((data, idx) =>
-                idx === index ? { ...data, detectorResponseFunction: value } : data
+                idx === index ? {...data, detectorResponseFunction: value} : data
             )
         );
     }
@@ -291,7 +302,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const handleScannedDataSpectrumType = (index: number) => (value: string) => {
         setScannedData(prev =>
             prev.map((data, idx) =>
-                idx === index ? { ...data, spectrumType: value } : data
+                idx === index ? {...data, spectrumType: value} : data
             )
         );
     }
@@ -328,7 +339,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     }
 
     const sendAdjudicationData = async () => {
-        if(adjData.adjudicationCode === null || !adjData.adjudicationCode || adjData.adjudicationCode === AdjudicationCodes.codes[0]){
+        if (adjData.adjudicationCode === null || !adjData.adjudicationCode || adjData.adjudicationCode === AdjudicationCodes.codes[0]) {
             setAdjSnackMsg("Please selected a valid adjudication code before submitting.");
             setColorStatus('error');
             setOpenSnack(true)
@@ -354,14 +365,14 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         await submitAdjudication(currLaneEntry, tempAdjData, uploadedFiles)
     }
 
-    const submitAdjudication = async(currLaneEntry: any, tempAdjData: any, files: FileWithWebId[]) => {
+    const submitAdjudication = async (currLaneEntry: any, tempAdjData: any, files: FileWithWebId[]) => {
         try {
             let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == props.event.dataStreamId);
 
             let streams = currLaneEntry.controlStreams.length > 0 ? currLaneEntry.controlStreams : await currLaneEntry.parentNode.fetchNodeControlStreams();
             let adjControlStream = streams.find((stream: typeof ControlStream) => isAdjudicationControlStream(stream));
 
-            if (!adjControlStream){
+            if (!adjControlStream) {
                 setAdjSnackMsg("Failed: cannot find adjudication control stream for occupancy.");
                 setColorStatus('error')
                 setOpenSnack(true);
@@ -389,20 +400,29 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             }
 
+            let qrCodeFiles = createFilesForQRCode(scannedData)
+
+            console.log('qrcode files', qrCodeFiles)
+            qrCodeFiles.forEach(file => files.push(file))
+
+
+
             const updatedFileNames = await sendFileUploadRequest(files, currLaneEntry.parentNode);
 
-            if (files.length > 0 && !updatedFileNames) {
+            if (updatedFileNames.length > 0 && !updatedFileNames) {
                 return;
             }
 
-            const scannedQrCodeFiles = await sendQrCodeUploadRequest(scannedData, currLaneEntry.parentNode)
+            // const scannedQrCodeFiles = await sendQrCodeUploadRequest(scannedData, currLaneEntry.parentNode)
 
-            if (scannedData.length > 0 && !scannedQrCodeFiles) {
-                return;
-            }
+            // if (scannedData.length > 0 && !scannedQrCodeFiles) {
+            //     return;
+            // }
 
-            let allFiles = [...(updatedFileNames || []), ...(scannedQrCodeFiles || [])]
+            let allFiles = [...(updatedFileNames || [])]
 
+            console.log('all files', files)
+            console.log("hey")
             const response = await sendCommand(
                 currLaneEntry.parentNode,
                 adjControlStream.properties.id,
@@ -436,7 +456,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             setShouldFetchLogs(true);
             setOpenSnack(true);
             resetForm();
-        } catch(error) {
+        } catch (error) {
             setAdjSnackMsg('Adjudication failed to submit.')
             setColorStatus('error')
             setOpenSnack(true);
@@ -447,43 +467,27 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const laneUid = laneMap.get(props.event?.laneId)?.laneSystem?.properties?.properties?.uid;
 
+    function createFilesForQRCode(qrCodeData: ScannedDataWithWebId[]) {
+        let newFiles: FileWithWebId[] = [];
 
-    async function sendQrCodeUploadRequest(dataArray: ScannedDataWithWebId[], node: INode) {
-        const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
-        const protocol = node.isSecure ? 'https://' : 'http://';
+        const options = {
+            type: "text/plain;charset=utf-8",
+        };
 
-        let newFiles: any[] = [];
-        for (const data of dataArray) {
-            let endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}/buckets/adjudication?laneUid=${laneUid}&occupancyObsId=${props.event.occupancyObsId}&webIdEnabled=true&drf=${data.detectorResponseFunction}`;
+        qrCodeData.forEach((code) => {
+            let fileName = 'foreground-' + randomUUID() + ".txt"
+            let fileBits = code.text;
+            const file = new File([fileBits], fileName, options);
 
-            const url = new URL(endpoint);
-
-            const options: RequestInit = {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Basic ${encoded}`,
-                    'Content-Type': 'text/plain'
-                },
-                mode: 'cors',
-                body: data.text
+            let fileWithId: FileWithWebId = {
+                file,
+                webIdEnabled: true,
+                detectorResponseFunction: code.detectorResponseFunction,
+                spectrumType: code.spectrumType ? code.spectrumType : 'foreground'
             }
-            const response = await fetch(url, options);
-            if (!response.ok) {
-                console.error("Failed to upload data from qr code:", response);
-                setAdjSnackMsg(`Failed to upload data from qr code`);
-                setColorStatus('error');
-                setOpenSnack(true);
-                return;
-            }
-
-            const location = response.headers.get('location');
-            const filePath = location ? 'adjudication/' + location.split('adjudication/')[1] : null;
-
-            setAdjSnackMsg(`Successfully uploaded data from qr code`);
-            setColorStatus('success');
-            setOpenSnack(true);
-            newFiles.push(filePath)
-        }
+            console.log('new file made', fileWithId)
+            newFiles.push(fileWithId);
+        })
 
         return newFiles;
     }
@@ -494,61 +498,60 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
         const protocol = node.isSecure ? 'https://' : 'http://';
 
-        // const webIdFiles = filePaths.filter(f => f.webIdEnabled);
-        // const foregroundFile = webIdFiles.find(f => f.spectrumType === 'FOREGROUND');
-        // const backgroundFile = webIdFiles.find(f => f.spectrumType === 'BACKGROUND');
-        // const hasPair = foregroundFile && backgroundFile;
+        const webIdFiles = filePaths.filter(f => f.webIdEnabled);
+        const foregroundFile = webIdFiles.find(f => f.spectrumType === 'foreground');
+        const backgroundFile = webIdFiles.find(f => f.spectrumType === 'background');
+        const hasPair = foregroundFile && backgroundFile;
 
-        // const pairedFiles = hasPair ? new Set([foregroundFile, backgroundFile]) : new Set<FileWithWebId>();
-        //
-        // if (hasPair) {
-        //     const drf = foregroundFile.detectorResponseFunction || backgroundFile.detectorResponseFunction;
-        //     const endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication?occupancyObsId=${props.event.occupancyObsId}&laneUid=${laneUid}&webIdEnabled=${foregroundFile.webIdEnabled}&drf=${drf}&foreground=${foregroundFile.file.name}&background=${backgroundFile.file.name}`;
-        //     const url = new URL(endpoint);
-        //
-        //     const formData = new FormData();
-        //     formData.append('foreground', foregroundFile.file);
-        //     formData.append('background', backgroundFile.file);
-        //
-        //     const options: RequestInit = {
-        //         method: 'PUT',
-        //         headers: { 'Authorization': `Basic ${encoded}` },
-        //         mode: 'cors',
-        //         body: formData
-        //     };
-        //
-        //     const response = await fetch(url, options);
-        //     if (!response.ok) {
-        //         console.error("Failed uploading paired WebID files:", response);
-        //         setAdjSnackMsg('Failed to upload paired WebID files.');
-        //         setColorStatus('error');
-        //         setOpenSnack(true);
-        //     }
-        //
-        //     let fileName = `/adjudication?occupancyObsId=${props.event.occupancyObsId}&laneUid=${laneUid}&webIdEnabled=true&drf=${drf}&foreground=${foregroundFile.file.name}&background=${backgroundFile.file.name}`
-        //     newFileNames.push(fileName)
-        //
-        // }
+        const pairedFiles = hasPair ? new Set([foregroundFile, backgroundFile]) : new Set<FileWithWebId>();
+
+        if (hasPair) {
+            const drf = foregroundFile.detectorResponseFunction || backgroundFile.detectorResponseFunction;
+            const endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication?occupancyObsId=${props.event.occupancyObsId}&laneUid=${laneUid}&webIdEnabled=${foregroundFile.webIdEnabled}&drf=${drf}`;
+            const url = new URL(endpoint);
+
+            const formData = new FormData();
+            formData.append('foreground', foregroundFile.file);
+            formData.append('background', backgroundFile.file);
+
+            const options: RequestInit = {
+                method: 'POST',
+                headers: {'Authorization': `Basic ${encoded}`},
+                mode: 'cors',
+                body: formData
+            };
+
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                console.error("Failed uploading paired WebID files:", response);
+                setAdjSnackMsg('Failed to upload paired WebID files.');
+                setColorStatus('error');
+                setOpenSnack(true);
+            }
+
+            let filesNames: string[] = await response.json();
+
+            filesNames.forEach(path => newFileNames.push(path))
+        }
 
         for (const fileData of filePaths) {
-            // if (pairedFiles.has(fileData)) continue;
+            if (pairedFiles.has(fileData)) continue;
 
-            let fileName = `adjudication/${fileData.file.name}?occupancyObsId=${props.event.occupancyObsId}&laneUid=${laneUid}`
+            let fileName = `adjudication?occupancyObsId=${props.event.occupancyObsId}&laneUid=${laneUid}&webIdEnabled=${fileData.webIdEnabled}`
 
             if (fileData.webIdEnabled)
-                fileName = fileName + `&webIdEnabled=${fileData.webIdEnabled}&drf=${fileData.detectorResponseFunction}`
+                fileName = fileName + `&drf=${fileData.detectorResponseFunction}`
 
             let endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/${fileName}`;
-            // let endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication/${fileData.file.name}?occupancyObsId=${props.event.occupancyObsId}&enableWebId=${fileData.webIdEnabled}&drf=${fileData.detectorResponseFunction}`;
 
             const url = new URL(endpoint);
 
             const formData = new FormData();
-            formData.append('file', fileData.file);
+            formData.append('foreground', fileData.file);
 
             const options: RequestInit = {
-                method: 'PUT',
-                headers: { 'Authorization': `Basic ${encoded}` },
+                method: 'POST',
+                headers: {'Authorization': `Basic ${encoded}`},
                 mode: 'cors',
                 body: formData
             };
@@ -566,7 +569,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             setColorStatus('success');
             setOpenSnack(true);
 
-            newFileNames.push(fileName)
+            let filesNames: string[] = await response.json();
+            filesNames.forEach(path => newFileNames.push(path))
         }
 
         return newFileNames;
@@ -584,7 +588,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 <WebIdAnalysis
                     event={props.event}
                     shouldFetch={shouldFetchLogs}
-                    onFetch={onFetchComplete }
+                    onFetch={onFetchComplete}
                 />
             </Paper>
 
@@ -650,8 +654,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                             onChange={handleChange}
                         />
                         {uploadedFiles.length > 0 && (
-                            <Box sx={{ width: "100%" }}>
-                                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                            <Box sx={{width: "100%"}}>
+                                <Typography variant="subtitle2" sx={{mb: 1}}>
                                     Uploaded Files ({uploadedFiles.length})
                                 </Typography>
                                 <Box
@@ -676,9 +680,10 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                 borderColor: 'divider',
                                             }}
                                         >
-                                            <Stack direction="row" spacing={1.5} alignItems="center" flex={1} minWidth={0}>
-                                                <InsertDriveFileRoundedIcon fontSize="small" color="action" />
-                                                <Typography variant="body2" noWrap sx={{ flex: 1 }}>
+                                            <Stack direction="row" spacing={1.5} alignItems="center" flex={1}
+                                                   minWidth={0}>
+                                                <InsertDriveFileRoundedIcon fontSize="small" color="action"/>
+                                                <Typography variant="body2" noWrap sx={{flex: 1}}>
                                                     {fileData.file.name}
                                                 </Typography>
                                             </Stack>
@@ -692,14 +697,17 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                         />
                                                     }
                                                     label={<Typography variant="body2">WebID</Typography>}
-                                                    sx={{ mr: 0 }}
+                                                    sx={{mr: 0}}
                                                 />
                                                 {
                                                     fileData.webIdEnabled ? (
                                                             <Stack direction={"row"} spacing={2}>
-                                                                <DetectorResponseFunction onSelect={handleDrfSelection(index)} selectVal={fileData.detectorResponseFunction} />
+                                                                <DetectorResponseFunction
+                                                                    onSelect={handleDrfSelection(index)}
+                                                                    selectVal={fileData.detectorResponseFunction}/>
 
-                                                                {/*<SpectrumTypeSelector onSelect={handleSpectrumType(index)} selectVal={fileData.spectrumType} />*/}
+                                                                <SpectrumTypeSelector onSelect={handleSpectrumType(index)}
+                                                                                      selectVal={fileData.spectrumType}/>
                                                             </Stack>
 
                                                         ) :
@@ -712,7 +720,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                     onClick={() => handleFileDelete(index)}
                                                     color="error"
                                                 >
-                                                    <DeleteOutline fontSize="small" />
+                                                    <DeleteOutline fontSize="small"/>
                                                 </IconButton>
                                             </Stack>
                                         </Box>
@@ -721,8 +729,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                             </Box>
                         )}
                         {scannedData.length > 0 && (
-                            <Box sx={{ width: "100%" }}>
-                                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                            <Box sx={{width: "100%"}}>
+                                <Typography variant="subtitle2" sx={{mb: 1}}>
                                     Scanned Data ({scannedData.length})
                                 </Typography>
                                 <Box
@@ -747,27 +755,46 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                 borderColor: 'divider',
                                             }}
                                         >
-                                            <Stack direction="row" spacing={1.5} alignItems="center" flex={1} minWidth={0}>
-                                                <QrCode fontSize="small" color="action" />
-                                                <Typography variant="body2" noWrap sx={{ flex: 1, fontFamily: 'monospace' }}>
+                                            <Stack direction="row" spacing={1.5} alignItems="center" flex={1}
+                                                   minWidth={0}>
+                                                <QrCode fontSize="small" color="action"/>
+                                                <Typography variant="body2" noWrap
+                                                            sx={{flex: 1, fontFamily: 'monospace'}}>
                                                     {data.text.length > 50 ? data.text.substring(0, 50) + '...' : data.text}
                                                 </Typography>
                                             </Stack>
                                             <Stack direction="row" spacing={2} alignItems="center">
-                                                <DetectorResponseFunction
-                                                    onSelect={handleScannedDataDrfSelection(index)}
-                                                    selectVal={data.detectorResponseFunction}
+                                                <FormControlLabel
+                                                    control={
+                                                        <Checkbox
+                                                            size="small"
+                                                            checked={data.webIdEnabled}
+                                                            onChange={handleQRCodeWebIdAnalysis(index)}
+                                                        />
+                                                    }
+                                                    label={<Typography variant="body2">WebID</Typography>}
+                                                    sx={{mr: 0}}
                                                 />
-                                                {/*<SpectrumTypeSelector*/}
-                                                {/*    onSelect={handleScannedDataSpectrumType(index)}*/}
-                                                {/*    selectVal={data.spectrumType}*/}
-                                                {/*/>*/}
+
+                                                {data.webIdEnabled ? (
+                                                        <>
+                                                            <DetectorResponseFunction
+                                                                onSelect={handleScannedDataDrfSelection(index)}
+                                                                selectVal={data.detectorResponseFunction}
+                                                            />
+                                                            <SpectrumTypeSelector
+                                                                onSelect={handleScannedDataSpectrumType(index)}
+                                                                selectVal={data.spectrumType}
+                                                            />
+                                                        </>
+                                                    ): <></>
+                                                }
                                                 <IconButton
                                                     size="small"
                                                     onClick={() => handleScannedDataDelete(index)}
                                                     color="error"
                                                 >
-                                                    <DeleteOutline fontSize="small" />
+                                                    <DeleteOutline fontSize="small"/>
                                                 </IconButton>
                                             </Stack>
                                         </Box>
@@ -776,7 +803,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                             </Box>
                         )}
 
-                        <Stack direction={"row"} spacing={2} justifyContent={"space-between"} alignItems={"center"} width={"100%"}>
+                        <Stack direction={"row"} spacing={2} justifyContent={"space-between"} alignItems={"center"}
+                               width={"100%"}>
                             <Stack direction={"row"} spacing={2}>
                                 <Button
                                     component="label"
@@ -839,9 +867,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                             top: 8,
                                         }}
                                     >
-                                        <CloseIcon />
+                                        <CloseIcon/>
                                     </IconButton>
-                                    <DialogTitle sx={{ textAlign: 'center', pb: 1}}>
+                                    <DialogTitle sx={{textAlign: 'center', pb: 1}}>
                                         Spectroscopic QR Code Scanner
                                     </DialogTitle>
                                     <Box
@@ -880,7 +908,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                         {scannedData.length > 0 && (
                                             <Paper
                                                 variant="outlined"
-                                                sx={{ mt: 2, p: 2, width: '100%', maxHeight: 150, overflowY: 'auto' }}
+                                                sx={{mt: 2, p: 2, width: '100%', maxHeight: 150, overflowY: 'auto'}}
                                             >
                                                 <Typography variant="subtitle2" gutterBottom>
                                                     Scanned Codes ({scannedData.length}):
@@ -893,14 +921,14 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                             justifyContent="space-between"
                                                             alignItems="center"
                                                         >
-                                                            <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                                                            <Typography variant="body2" sx={{fontFamily: 'monospace'}}>
                                                                 {data.text.length > 60 ? data.text.substring(0, 60) + '...' : data.text}
                                                             </Typography>
                                                             <IconButton
                                                                 size="small"
                                                                 onClick={() => handleScannedDataDelete(idx)}
                                                             >
-                                                                <DeleteOutline fontSize="small" />
+                                                                <DeleteOutline fontSize="small"/>
                                                             </IconButton>
                                                         </Stack>
                                                     ))}
@@ -908,7 +936,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                             </Paper>
                                         )}
 
-                                        <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                                        <Stack direction="row" spacing={2} sx={{mt: 2}}>
                                             {scannedData.length > 0 && (
                                                 <Button
                                                     variant="outlined"
@@ -920,7 +948,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                             <Button
                                                 variant="contained"
                                                 onClick={handleCloseQrCodeDialog}
-                                                sx={{ minWidth: 120 }}
+                                                sx={{minWidth: 120}}
                                             >
                                                 Done Scanning
                                             </Button>
@@ -942,7 +970,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                     Submit
                                 </Button>
                                 <Snackbar
-                                    anchorOrigin={{ vertical:'top', horizontal:'center' }}
+                                    anchorOrigin={{vertical: 'top', horizontal: 'center'}}
                                     open={openSnack}
                                     autoHideDuration={5000}
                                     onClose={handleCloseSnack}
