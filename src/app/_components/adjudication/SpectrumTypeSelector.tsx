@@ -36,7 +36,7 @@ export default function SpectrumTypeSelector(props: {
                 style={{minWidth: "12em"}}
             >
                 {selectChoices.map((item) =>(
-                    <MenuItem key={item} value={item}>
+                    <MenuItem key={item} value={item.toLowerCase()}>
                         {item}
                     </MenuItem>
                 ))

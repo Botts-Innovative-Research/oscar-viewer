@@ -129,6 +129,7 @@ export default function AdjudicationLog(props: {
                 return (
                     <span>
                         {paths.map((path, index) =>
+
                             <React.Fragment key={index}>
                                 {index > 0 && ', '}
                                 {nodeEndpoint ? (
@@ -138,7 +139,7 @@ export default function AdjudicationLog(props: {
                                         rel="noopener noreferrer"
                                         style={{ color: '#1976d2', textDecoration: 'underline' }}
                                     >
-                                        {path}
+                                        {path.split("/")[1]}
                                     </a>
                                 ) : path}
                             </React.Fragment>
