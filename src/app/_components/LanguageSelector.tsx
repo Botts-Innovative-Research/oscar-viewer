@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Select, MenuItem, FormControl, InputLabel, SelectChangeEvent } from '@mui/material';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage } from '@/app/contexts/LanguageContext';
 import LanguageIcon from '@mui/icons-material/Language';
 
 export default function LanguageSelector() {

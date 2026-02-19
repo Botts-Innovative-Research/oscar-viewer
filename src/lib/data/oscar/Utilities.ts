@@ -7,14 +7,14 @@ import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import ConnectedSystemsApi from "osh-js/source/core/consysapi/ConnectedSystemsApi";
 import {
-    ADJ_DEF,
+    ADJ_DEF, ADJ_DEF2,
     ALARM_DEF, CONFIG_DEF,
     CONNECTION_DEF, END_DEF, GAMMA_COUNT_DEF, HLS_VIDEO_DEF, LOCATION_VECTOR_DEF, NATIONAL_DEF,
     NEUTRON_COUNT_DEF,
     OCCUPANCY_PILLAR_DEF, RASTER_IMAGE_DEF, REPORT_DEF, SENSOR_LOCATION_DEF,
     SITE_DIAGRAM_DEF, SPEED_DEF, START_DEF,
     TAMPER_STATUS_DEF,
-    THRESHOLD_DEF, VIDEO_FRAME_DEF
+    THRESHOLD_DEF, VIDEO_FRAME_DEF, WEB_ID_DEF
 } from "@/lib/data/Constants";
 
 
@@ -128,7 +128,15 @@ export function isAdjudicationControlStream(controlStream: typeof ControlStream)
     if (!hasDefinitionProperties(controlStream))
         return false;
 
-    return controlStream.properties.controlledProperties[0].definition.includes(ADJ_DEF);
+    return controlStream.properties.controlledProperties[0].definition.includes(ADJ_DEF) || controlStream.properties.controlledProperties[0].definition.includes(ADJ_DEF2);
+}
+
+
+export function isWebIdAnalysisDataStream(datastream: typeof DataStream): boolean {
+    if (!hasDefinitionProperties(datastream))
+        return false;
+
+    return datastream.properties.observedProperties[0].definition.includes(WEB_ID_DEF);
 }
 
 

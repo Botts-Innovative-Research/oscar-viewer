@@ -7,7 +7,7 @@ import {
 } from "@mui/material"
 import React from "react";
 import Report from "@/app/_components/reportgen/Report";
-import {useLanguage} from "@/contexts/LanguageContext";
+import {useLanguage} from "@/app/contexts/LanguageContext";
 
 export default function ReportViewPage() {
     const { t } = useLanguage();

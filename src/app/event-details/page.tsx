@@ -7,7 +7,6 @@ import DataRow from "../_components/event-details/DataRow";
 import MiscTable from "../_components/event-details/MiscTable";
 import {useSelector} from "react-redux";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
-import AdjudicationDetail from "@/app/_components/adjudication/AdjudicationDetail";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {selectEventPreview} from "@/lib/state/EventPreviewSlice";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
@@ -15,7 +14,8 @@ import {PictureAsPdfRounded} from "@mui/icons-material";
 import {useReactToPrint} from "react-to-print";
 import EventMedia from "../_components/event-preview/EventMedia";
 import CircularProgress from "@mui/material/CircularProgress";
-import {useLanguage} from "@/contexts/LanguageContext";
+import {useLanguage} from "@/app/contexts/LanguageContext";
+import AdjudicationDetail from "../_components/adjudication/AdjudicationDetail";
 
 
 export default function EventDetailsPage() {
@@ -144,6 +144,7 @@ export default function EventDetailsPage() {
             <Paper variant='outlined' sx={{width: "100%"}}>
                 <MiscTable currentTime={eventPreview.eventData?.startTime}/>
             </Paper>
+
 
             <Paper variant='outlined' sx={{width: "100%"}}>
                 <AdjudicationDetail event={eventPreview.eventData}/>

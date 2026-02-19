@@ -28,6 +28,7 @@ export interface INode {
     port: number,
     oshPathRoot: string,
     csAPIEndpoint: string,
+    bucketsEndpoint: string,
     isSecure: boolean,
     auth: { username: string, password: string } | null,
     isDefaultNode: boolean
@@ -50,6 +51,8 @@ export interface INode {
     fetchLaneControlStreams(laneMap: Map<string, LaneMapEntry>): Promise<any>,
 
     fetchNodeControlStreams(): Promise<any>,
+
+    fetchNodeDataStreams(): Promise<any>,
 
     checkForEndpoint(): Promise<boolean>
 
@@ -80,6 +83,7 @@ export interface NodeOptions {
     port: number,
     oshPathRoot?: string,
     csAPIEndpoint?: string,
+    bucketsEndpoint?: string,
     auth?: { username: string, password: string } | null,
     isSecure?: boolean,
     isDefaultNode?: boolean
@@ -94,6 +98,7 @@ export class Node implements INode {
     port: number;
     oshPathRoot: string;
     csAPIEndpoint: string;
+    bucketsEndpoint: string;
     isSecure: boolean;
     auth: { username: string, password: string } | null = null;
     isDefaultNode: boolean;
@@ -115,6 +120,7 @@ export class Node implements INode {
         this.port = options.port;
         this.oshPathRoot = options.oshPathRoot || '/sensorhub';
         this.csAPIEndpoint = options.csAPIEndpoint || '/api';
+        this.bucketsEndpoint = options.bucketsEndpoint || '/buckets';
         this.auth = options.auth || null;
         this.isSecure = options.isSecure || false;
         this.isDefaultNode = options.isDefaultNode || false;
@@ -444,7 +450,7 @@ export class Node implements INode {
 
     async fetchNodeControlStreams(): Promise<any[]>{
         let availableControlStreams = [];
-        const controlStreamCollection = await this.getControlStreamApi().searchControlStreams(new ControlStreamFilter({ validTime: "latest" }), 100);
+        const controlStreamCollection = await this.getControlStreamApi().searchControlStreams(new ControlStreamFilter({ validTime: "latest" }), 1);
         while (controlStreamCollection.hasNext()) {
             let controlStreamResults = await controlStreamCollection.nextPage();
             availableControlStreams.push(...controlStreamResults);
@@ -454,5 +460,19 @@ export class Node implements INode {
             return availableControlStreams;
         else
             console.warn("No control streams found for : ", this.address);
+    }
+
+    async fetchNodeDataStreams(): Promise<any[]>{
+        let availableDataStreams = [];
+        const dataStreamCollection = await this.getDataStreamsApi().searchDataStreams(new DataStreamFilter({ validTime: "latest" }), 1);
+        while (dataStreamCollection.hasNext()) {
+            let dataStreamResults = await dataStreamCollection.nextPage();
+            availableDataStreams.push(...dataStreamResults);
+        }
+
+        if(availableDataStreams.length > 0)
+            return availableDataStreams;
+        else
+            console.warn("No data streams found for : ", this.address);
     }
 }
