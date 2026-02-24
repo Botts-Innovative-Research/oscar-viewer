@@ -8,6 +8,7 @@ import {RootState} from "@/lib/state/Store";
 import {selectLatestGB} from "@/lib/state/EventPreviewSlice";
 import Box from "@mui/material/Box";
 import {Grid, Paper} from "@mui/material";
+import N42Chart from "@/app/_components/n42/N42Chart";
 
 
 export default function EventMedia({selectedNode, datasources, eventData, mode}: {selectedNode: any, datasources: typeof ConSysApi, eventData: EventTableData, mode: string},) {
@@ -30,17 +31,23 @@ export default function EventMedia({selectedNode, datasources, eventData, mode}:
         return(
             <Paper variant='outlined' sx={{ width: "100%" }}>
                 <Box sx={{ width: "100%", height: "100%", alignItems: "center" }}>
-                    <ChartTimeHighlight
-                        datasources={{
-                            gamma: datasources.gamma,
-                            neutron: datasources.neutron,
-                            threshold: datasources.threshold
-                        }}
-                        modeType={mode}
-                        eventData={eventData}
-                        latestGB={latestGB}
-                        currentTime={videoCurrentTime}
-                    />
+                    {eventData.isRS350 ? (
+                        <div>
+                            Rs350 chart instead
+                        </div>
+                    ) : (
+                        <ChartTimeHighlight
+                            datasources={{
+                                gamma: datasources.gamma,
+                                neutron: datasources.neutron,
+                                threshold: datasources.threshold
+                            }}
+                            modeType={mode}
+                            eventData={eventData}
+                            latestGB={latestGB}
+                            currentTime={videoCurrentTime}
+                        />
+                    )}
                 </Box>
                 <Box sx={{ width: "100%", height: "100%" }}>
                     <LaneVideoPlayback
@@ -69,17 +76,21 @@ export default function EventMedia({selectedNode, datasources, eventData, mode}:
                           justifyContent={"center"}
                     >
                         <Grid item xs={12} md={6}>
-                            <ChartTimeHighlight
-                                datasources={{
-                                    gamma: datasources.gamma,
-                                    neutron: datasources.neutron,
-                                    threshold: datasources.threshold
-                                }}
-                                modeType={mode}
-                                eventData={eventData}
-                                latestGB={latestGB}
-                                currentTime={videoCurrentTime}
-                            />
+                            {eventData.isRS350 ? (
+                                <div>Rs350 chart here</div>
+                            ) : (
+                                <ChartTimeHighlight
+                                    datasources={{
+                                        gamma: datasources.gamma,
+                                        neutron: datasources.neutron,
+                                        threshold: datasources.threshold
+                                    }}
+                                    modeType={mode}
+                                    eventData={eventData}
+                                    latestGB={latestGB}
+                                    currentTime={videoCurrentTime}
+                                />
+                            )}
                         </Grid>
                         <Grid item xs={12}  md={6}>
                             <LaneVideoPlayback

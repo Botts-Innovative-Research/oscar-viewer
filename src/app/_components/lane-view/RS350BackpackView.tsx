@@ -3,9 +3,11 @@
 import React, {useCallback, useContext, useEffect, useState} from "react";
 import {Grid, Paper, Typography, Stack, Box} from "@mui/material";
 import { LaneMapEntry } from "@/lib/data/oscar/LaneCollection";
-import {isForegroundDataStream} from "@/lib/data/oscar/Utilities";
 import VideoMedia from "@/app/_components/lane-view/VideoMedia";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import N42Chart from "@/app/_components/n42/N42Chart";
+import StatusTable from "@/app/_components/lane-view/StatusTable";
+import { isRs350DataStream } from "@/lib/data/oscar/Utilities";
 
 interface RS350BackpackViewProps {
     entry: LaneMapEntry;
@@ -15,22 +17,17 @@ interface RS350BackpackViewProps {
 export default function RS350BackpackView({ entry, currentLane }: RS350BackpackViewProps) {
 
     // get datastreams status, alarm, foreground, background
-    const checkForForeground = useCallback(async () => {
+    const checkForDataSource = useCallback(async () => {
+        let datastream = entry.datastreams.find(ds => isRs350DataStream(ds));
+        let intitialRes = await datastream.searchObservations(new ObservationFilter({ resultTime: 'latest'}),1);
+        let res = await intitialRes.nextPage();
 
-        let foregroundDs = entry.datastreams.find(ds => isForegroundDataStream(ds));
-
-        let intitialRes = await foregroundDs.searchObservations(new ObservationFilter({ resultTime: 'latest'}),1);
-
-        let foregroundArr = await intitialRes.nextPage();
-
-        console.log("foreground Arr", foregroundArr[0].result)
 
     },[]);
 
     useEffect(() => {
-        if (entry) {
-            checkForForeground();
-        }
+        if (entry)
+            checkForDataSource();
     }, [entry]);
 
     return (
@@ -42,10 +39,7 @@ export default function RS350BackpackView({ entry, currentLane }: RS350BackpackV
                             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                                 Status
                             </Typography>
-                            {/* TODO: Add RS350 status data display */}
-                            <Typography variant="body2" color="text.secondary">
-                                Status data will be displayed here
-                            </Typography>
+                           <StatusTable currentLane={currentLane} entry={}/>
                         </Paper>
                     </Grid>
                     <Grid item xs={12} md={6}>
@@ -54,22 +48,19 @@ export default function RS350BackpackView({ entry, currentLane }: RS350BackpackV
                                 Foreground Report
                             </Typography>
                             {/* TODO: Add RS350 foreground data display */}
-                            <Typography variant="body2" color="text.secondary">
-                                Foreground report data will be displayed here
-                            </Typography>
+                            <N42Chart laneName={currentLane} datasource={} setChartReady={} title={"Foreground Report"} yCurve={} yValue={}/>
                         </Paper>
                     </Grid>
-                    {/*<Grid item xs={12} md={6}>*/}
-                    {/*    <Paper variant="outlined" sx={{ padding: 2, height: "100%" }}>*/}
-                    {/*        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>*/}
-                    {/*            Background Report*/}
-                    {/*        </Typography>*/}
-                    {/*        /!* TODO: Add RS350 background data display *!/*/}
-                    {/*        <Typography variant="body2" color="text.secondary">*/}
-                    {/*            Background report data will be displayed here*/}
-                    {/*        </Typography>*/}
-                    {/*    </Paper>*/}
-                    {/*</Grid>*/}
+                    <Grid item xs={12} md={6}>
+                        <Paper variant="outlined" sx={{ padding: 2, height: "100%" }}>
+                            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                                Background Report
+                            </Typography>
+                            {/* TODO: Add RS350 background data display */}
+                            <N42Chart laneName={currentLane} datasource={} setChartReady={} title={"Background Report"} yCurve={} yValue={}/>
+
+                        </Paper>
+                    </Grid>
                     {/*<Grid item xs={12} md={6}>*/}
                     {/*    <Paper variant="outlined" sx={{ padding: 2, height: "100%" }}>*/}
                     {/*        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>*/}
@@ -81,7 +72,6 @@ export default function RS350BackpackView({ entry, currentLane }: RS350BackpackV
                     {/*        </Typography>*/}
                     {/*    </Paper>*/}
                     {/*</Grid>*/}
-
                     <VideoMedia currentLane={currentLane} />
                 </Grid>
             </Paper>
