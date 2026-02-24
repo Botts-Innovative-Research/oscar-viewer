@@ -89,7 +89,14 @@ export function isForegroundDataStream(datastream: typeof DataStream): boolean {
     // if (!hasDefinitionProperties(datastream))
     //     return false;
 
-    console.log("datastream", datastream)
+    return datastream.properties.observedProperties[0].definition.includes(DURATION_DEF);
+}
+
+export function isRs350DataStream(datastream: typeof DataStream): boolean {
+
+    // if (!hasDefinitionProperties(datastream))
+    //     return false;
+
     return datastream.properties.observedProperties[0].definition.includes(DURATION_DEF);
 }
 
