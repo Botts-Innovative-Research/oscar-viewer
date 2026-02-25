@@ -122,7 +122,7 @@ export default function LaneViewPage() {
             </Grid>
 
             {entry?.isRS350Backpack ? (
-                <RS350BackpackView entry={entry} currentLane={currentLane} />
+                <RS350BackpackView entry={entry} currentLane={currentLane} laneMap={laneMap}/>
             ) : (
                 <>
                     <Grid item xs={12}>
@@ -138,7 +138,6 @@ export default function LaneViewPage() {
                                 neutron: neutronDS,
                                 threshold: thresholdDS,
                             }}
-
                             currentLane={currentLane}
                         />
                     </Grid>
