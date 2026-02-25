@@ -4,7 +4,7 @@ import React, {useContext, useEffect, useState} from "react";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {DataGrid, GridColDef} from "@mui/x-data-grid";
-import { Stack, Typography} from "@mui/material";
+import { Box, Stack, Typography} from "@mui/material";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {isWebIdAnalysisDataStream} from "@/lib/data/oscar/Utilities";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
@@ -31,7 +31,8 @@ export default function WebIdAnalysis(props: {
         {
             field: 'time',
             headerName: 'Timestamp',
-            width: 200,
+            minWidth: 140,
+            flex: 1,
             type: 'string',
             valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
                 year: 'numeric',
@@ -45,79 +46,92 @@ export default function WebIdAnalysis(props: {
         {
             field: 'name',
             headerName: 'Name',
-            width: 200,
+            minWidth: 100,
+            flex: 1,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.name).join(', '),
         },
         {
             field: 'type',
             headerName: 'Type',
-            width: 200,
+            minWidth: 80,
+            flex: 0.8,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.type).join(', '),
         },
         {
             field: 'confidence',
             headerName: 'Confidence',
-            width: 200,
+            minWidth: 90,
+            flex: 0.8,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.confidence).join(', '),
         },
         {
             field: 'confidenceStr',
             headerName: 'Confidence String',
-            width: 200,
+            minWidth: 120,
+            flex: 1,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.confidenceStr).join(', '),
         },
         {
             field: 'countRate',
             headerName: 'Count Rate',
-            width: 200,
+            minWidth: 90,
+            flex: 0.8,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.countRate).join(', '),
         },
         {
             field: 'isotopeString',
             headerName: 'Isotope String',
-            width: 200,
+            minWidth: 100,
+            flex: 1,
             type: 'string',
         },
         {
             field: 'numIsotopes',
-            headerName: 'Number of Isotopes',
-            width: 200,
+            headerName: '# Isotopes',
+            minWidth: 80,
+            flex: 0.6,
             type: 'number',
         },
         {
             field: 'numAnalysisWarning',
-            headerName: 'Num Analysis Warning',
-            width: 200,
+            headerName: '# Warnings',
+            minWidth: 80,
+            flex: 0.6,
             type: 'string',
         },
         {
             field: 'analysisWarning',
             headerName: 'Analysis Warning',
-            width: 200,
+            minWidth: 120,
+            flex: 1,
             type: 'string',
         },
         {
             field: 'chiSquare',
             headerName: 'Chi Square',
-            width: 200,
+            minWidth: 90,
+            flex: 0.7,
             type: 'number',
         },
         {
             field: 'detectorResponseFunction',
-            headerName: 'Detector Response Function',
-            width: 200,
+            headerName: 'DRF',
+            minWidth: 80,
+            flex: 0.6,
             type: 'string',
         },
         {
             field: 'errorMessage',
             headerName: 'Error Message',
-            width: 200,
+            minWidth: 100,
+            flex: 1,
             type: 'string',
         },
         {
             field: 'estimatedDose',
-            headerName: 'Estimated Dose',
-            width: 200,
+            headerName: 'Est. Dose',
+            minWidth: 80,
+            flex: 0.6,
             type: 'number',
         }
     ];
@@ -176,25 +190,27 @@ export default function WebIdAnalysis(props: {
 
     return (
         <>
-            <Stack spacing={2} p={2}>
+            <Stack spacing={2} sx={{ width: '100%' }}>
                 <Stack direction={"column"} spacing={1}>
                     <Typography variant="h5">
                         WebID Analysis Results Log
                     </Typography>
                 </Stack>
-                <DataGrid
-                    rows={filteredLog}
-                    columns={logColumns}
-                    initialState={{
-                        pagination: {
-                            paginationModel: {
-                                pageSize: 10
+                <Box sx={{ width: '100%' }}>
+                    <DataGrid
+                        rows={filteredLog}
+                        columns={logColumns}
+                        initialState={{
+                            pagination: {
+                                paginationModel: {
+                                    pageSize: 10
+                                }
                             }
-                        }
-                    }}
-                    pageSizeOptions={[5, 10, 25, 50, 100]}
-                    disableRowSelectionOnClick={true}
-                />
+                        }}
+                        pageSizeOptions={[5, 10, 25, 50, 100]}
+                        disableRowSelectionOnClick={true}
+                    />
+                </Box>
             </Stack>
         </>
     );

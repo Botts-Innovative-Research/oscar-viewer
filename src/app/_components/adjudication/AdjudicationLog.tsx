@@ -5,7 +5,7 @@ import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {DataGrid, GridActionsCellItem, GridColDef} from "@mui/x-data-grid";
-import { Stack, Typography} from "@mui/material";
+import { Box, Stack, Typography} from "@mui/material";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {isAdjudicationControlStream} from "@/lib/data/oscar/Utilities";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
@@ -51,13 +51,15 @@ export default function AdjudicationLog(props: {
         {
             field: 'occupancyCount',
             headerName: 'Occupancy ID',
-            width: 175,
+            minWidth: 100,
+            flex: 1,
             type: 'string',
         },
         {
             field: 'time',
             headerName: 'Timestamp',
-            width: 200,
+            minWidth: 140,
+            flex: 1,
             type: 'string',
             valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
                 year: 'numeric',
@@ -71,13 +73,15 @@ export default function AdjudicationLog(props: {
         {
             field: 'username',
             headerName: 'User',
-            width: 150,
+            minWidth: 80,
+            flex: 0.8,
             type: 'string',
         },
         {
             field: 'adjudicationCode',
             headerName: 'Adjudication Code',
-            width: 400,
+            minWidth: 150,
+            flex: 1.5,
             valueGetter: (value, row) => {
                 return row.adjudicationCode.label
             }
@@ -85,7 +89,8 @@ export default function AdjudicationLog(props: {
         {
             field: 'feedback',
             headerName: 'Feedback',
-            width: 250,
+            minWidth: 120,
+            flex: 1,
             type: 'string',
             renderCell: (params) => {
                 const fullText = params.value ?? "";
@@ -113,7 +118,8 @@ export default function AdjudicationLog(props: {
         {
             field: 'isotopes',
             headerName: 'Isotopes',
-            width: 200,
+            minWidth: 100,
+            flex: 1,
             valueGetter: (value) => {
                 if (value === "") return "Unknown";
                 else return value;
@@ -122,7 +128,8 @@ export default function AdjudicationLog(props: {
         {
             field: 'filePaths',
             headerName: 'FilePaths',
-            width: 200,
+            minWidth: 100,
+            flex: 1,
             renderCell: (params) => {
                 const paths: string[] = Array.isArray(params.value) ? params.value : [];
                 if (paths.length === 0) return null;
@@ -150,13 +157,15 @@ export default function AdjudicationLog(props: {
         },
         {
             field: 'secondaryInspectionStatus',
-            headerName: 'Secondary Inspection Status',
-            width: 200
+            headerName: 'Secondary Inspection',
+            minWidth: 120,
+            flex: 1,
         },
         {
             field: 'vehicleId',
             headerName: 'Vehicle ID',
-            width: 150,
+            minWidth: 80,
+            flex: 0.8,
             valueGetter: (value) => {
                 if (value === "") return "Unknown";
                 else return value;
@@ -236,23 +245,25 @@ export default function AdjudicationLog(props: {
 
     return (
         <>
-            <Stack spacing={2}>
+            <Stack spacing={2} sx={{ width: '100%' }}>
                 <Stack direction={"column"} spacing={1}>
                     <Typography variant="h5">Logged Adjudications</Typography>
                 </Stack>
-                <DataGrid
-                    rows={filteredLog}
-                    columns={logColumns}
-                    initialState={{
-                        pagination: {
-                            paginationModel: {
-                                pageSize: 10
+                <Box sx={{ width: '100%' }}>
+                    <DataGrid
+                        rows={filteredLog}
+                        columns={logColumns}
+                        initialState={{
+                            pagination: {
+                                paginationModel: {
+                                    pageSize: 10
+                                }
                             }
-                        }
-                    }}
-                    pageSizeOptions={[5, 10, 25, 50, 100]}
-                    disableRowSelectionOnClick={true}
-                />
+                        }}
+                        pageSizeOptions={[5, 10, 25, 50, 100]}
+                        disableRowSelectionOnClick={true}
+                    />
+                </Box>
                 <Dialog
                     open={feedbackDialog.open}
                     onClose={() => setFeedbackDialog({ open: false, text: "" })}
