@@ -9,9 +9,12 @@ import ObservationFilter from "osh-js/source/core/consysapi/observation/Observat
 import {selectEventData, selectSpeed, setSpeed} from "@/lib/state/EventDetailsSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {isSpeedDataStream} from "@/lib/data/oscar/Utilities";
+import { useBreakpoint } from "@/app/providers";
 
 
 export default function MiscTable({currentTime}: {currentTime: string}) {
+  const { isMobile } = useBreakpoint();
+
   const dispatch = useAppDispatch();
 
   const savedSpeed = useSelector(selectSpeed)
@@ -52,20 +55,46 @@ export default function MiscTable({currentTime}: {currentTime: string}) {
   return (
       <Box>
         <TableContainer>
-          <Table sx={{ minWidth: 650 }} aria-label="simple table">
+          <Table
+            aria-label="simple table"
+            sx={{ minWidth: 500 }}
+          >
             <TableBody>
-              <TableRow>
-                <TableCell>Max Gamma Count Rate (cps)</TableCell>
-                <TableCell>{eventData?.maxGamma}</TableCell>
-                <TableCell>Neutron Background Count Rate</TableCell>
-                <TableCell>{eventData?.neutronBackground}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Max Neutron Count Rate (cps)</TableCell>
-                <TableCell>{eventData?.maxNeutron}</TableCell>
-                <TableCell>Speed (kph)</TableCell>
-                <TableCell>{speedVal}</TableCell>
-              </TableRow>
+              {!isMobile ? (
+                <>
+                  <TableRow>
+                    <TableCell>Max Gamma Count Rate (cps)</TableCell>
+                    <TableCell>{eventData?.maxGamma}</TableCell>
+                    <TableCell>Neutron Background Count Rate</TableCell>
+                      <TableCell>{eventData?.neutronBackground}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Max Neutron Count Rate (cps)</TableCell>
+                    <TableCell>{eventData?.maxNeutron}</TableCell>
+                    <TableCell>Speed (kph)</TableCell>
+                    <TableCell>{speedVal}</TableCell>
+                  </TableRow>
+                </>
+              ) : (
+                <>
+                  <TableRow>
+                    <TableCell>Max Gamma Count Rate (cps)</TableCell>
+                    <TableCell>{eventData?.maxGamma}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Neutron Background Count Rate</TableCell>
+                      <TableCell>{eventData?.neutronBackground}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Max Neutron Count Rate (cps)</TableCell>
+                    <TableCell>{eventData?.maxNeutron}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Speed (kph)</TableCell>
+                    <TableCell>{speedVal}</TableCell>
+                  </TableRow>
+                </>
+              )}
             </TableBody>
           </Table>
         </TableContainer>

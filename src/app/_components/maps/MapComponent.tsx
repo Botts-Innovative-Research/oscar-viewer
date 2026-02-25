@@ -329,7 +329,7 @@ export default function MapComponent() {
     return (
         <Box
             id="mapcontainer"
-            style={{width: '100%', height: '1200px'}}
+            sx={{width: '100%', height: '100vh'}}
         />
     );
 }

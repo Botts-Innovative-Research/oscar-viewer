@@ -1,6 +1,6 @@
 "use client";
 
-import {Box, Paper, Typography} from "@mui/material";
+import {Box, Grid, Paper, Typography} from "@mui/material";
 import dynamic from "next/dynamic";
 import {useMemo} from "react";
 import {useLanguage} from "@/contexts/LanguageContext";
@@ -18,17 +18,18 @@ export default function MapViewPage() {
     ),[])
 
     return (
-        <Box>
-            <Typography variant="h4" sx={{padding: 2}}>
-                { t('map') }
-            </Typography>
-            <br />
-            <Paper variant='outlined' sx={{height: "900", width: "600"}}>
-                <div style={{height: '100%', width: '100%'}}>
+        <Grid container spacing={2} width={"100%"}>
+            <Grid item xs={12}>
+                <Typography variant="h4">
+                    { t('map') }
+                </Typography>
+            </Grid>
+            <Grid item xs={12} sx={{ gap: 2, minWidth: 0 }}>
+                <Paper variant='outlined' sx={{ padding: 1 }}>
                     <Map/>
-                </div>
-            </Paper>
-        </Box>
+                </Paper>
+            </Grid>
+        </Grid>
     );
 }
 

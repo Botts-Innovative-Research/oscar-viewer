@@ -28,8 +28,8 @@ export default function EventMedia({selectedNode, datasources, eventData, mode}:
 
     if ( mode === "preview" ){
         return(
-            <Paper variant='outlined' sx={{ width: "100%" , padding: 2 }}>
-                <Box sx={{ width: "100%", height: "100%" }}>
+            <Paper variant='outlined' sx={{ width: "100%" }}>
+                <Box sx={{ width: "100%", height: "100%", alignItems: "center" }}>
                     <ChartTimeHighlight
                         datasources={{
                             gamma: datasources.gamma,
@@ -61,7 +61,7 @@ export default function EventMedia({selectedNode, datasources, eventData, mode}:
 
     if ( mode === "details" ) {
         return (
-            <Paper variant='outlined' sx={{ width: "100%" , padding: 2 }}>
+            <Paper variant='outlined' sx={{ width: "100%" }}>
                 <Box>
                     <Grid container
                           direction="row"
