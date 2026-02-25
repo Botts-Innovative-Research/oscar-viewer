@@ -199,7 +199,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
                 const qrOptions = {
                     onDecodeError: (err: any) => console.error("QR Scan Error:", err),
-                    preferredCamera: "environment",
+                    preferredCamera: "environment", //this will detect automatically to use the back camera on the phone
                     highlightScanRegion: true,
                 }
 
@@ -402,10 +402,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             let qrCodeFiles = createFilesForQRCode(scannedData)
 
-            console.log('qrcode files', qrCodeFiles)
             qrCodeFiles.forEach(file => files.push(file))
-
-
 
             const updatedFileNames = await sendFileUploadRequest(files, currLaneEntry.parentNode);
 
@@ -413,16 +410,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 return;
             }
 
-            // const scannedQrCodeFiles = await sendQrCodeUploadRequest(scannedData, currLaneEntry.parentNode)
-
-            // if (scannedData.length > 0 && !scannedQrCodeFiles) {
-            //     return;
-            // }
 
             let allFiles = [...(updatedFileNames || [])]
 
-            console.log('all files', files)
-            console.log("hey")
             const response = await sendCommand(
                 currLaneEntry.parentNode,
                 adjControlStream.properties.id,
@@ -485,7 +475,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 detectorResponseFunction: code.detectorResponseFunction,
                 spectrumType: code.spectrumType ? code.spectrumType : 'foreground'
             }
-            console.log('new file made', fileWithId)
             newFiles.push(fileWithId);
         })
 
@@ -501,6 +490,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         const webIdFiles = filePaths.filter(f => f.webIdEnabled);
         const foregroundFile = webIdFiles.find(f => f.spectrumType === 'foreground');
         const backgroundFile = webIdFiles.find(f => f.spectrumType === 'background');
+        const foregroundAndBackgroundFile = webIdFiles.find(f => f.spectrumType === 'foreground/background');
         const hasPair = foregroundFile && backgroundFile;
 
         const pairedFiles = hasPair ? new Set([foregroundFile, backgroundFile]) : new Set<FileWithWebId>();
