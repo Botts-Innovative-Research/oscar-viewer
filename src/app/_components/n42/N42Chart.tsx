@@ -1,101 +1,111 @@
 "use client";
 
-import React, {useCallback, useEffect, useRef, useState} from "react";
-import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView";
-import {createN42ViewCurve} from "@/app/utils/ChartUtils";
-import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
-import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
-
+import React, {useCallback, useEffect, useRef} from "react";
+import Chart from "chart.js/auto";
+import {EventType} from "osh-js/source/core/event/EventType";
 
 interface ChartInterceptProps {
-    laneName: string;
-    datasource: typeof ConSysApi,
-    setChartReady: Function;
+    laneName?: string;
+    datasource: any;
     title: string;
-    yCurve: string;
-    yValue: string;
-
+    yCurve?: string;
+    yValue?: string;
+    chartId: string
 }
 
+export default function N42Chart({datasource, title, yValue = "linearSpectrum", chartId}: ChartInterceptProps) {
+    const chartRef = useRef<Chart | null>(null);
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-export default function N42Chart({datasource, setChartReady, yCurve, title, yValue}: ChartInterceptProps) {
-    const chartId = "chart-view-n42";
-    const chartViewRef = useRef<typeof ChartJsView | null>(null);
-    const [curve, setCurve] = useState<typeof CurveLayer>();
+    const updateChart = useCallback((spectrumData: number[]) => {
+        if (!canvasRef.current) return;
 
-    useEffect(() => {
-        if(datasource)
-            setCurve(createN42ViewCurve(datasource, title, yCurve, yValue));
+        const channels = spectrumData.map((_, index) => index);
 
-    }, [datasource]);
-
-    const createChart = useCallback(() => {
-        if (curve && !chartViewRef.current) {
-            const container = document.getElementById(chartId);
-
-            if (container) {
-                chartViewRef.current = new ChartJsView({
-                    type: 'line',
-                    container: chartId,
-                    layers: [curve],
-                    css: "chart-view",
-                    options: {
-                        plugins: {
+        if (chartRef.current) {
+            chartRef.current.data.labels = channels;
+            chartRef.current.data.datasets[0].data = spectrumData;
+            chartRef.current.update('none');
+        } else {
+            chartRef.current = new Chart(canvasRef.current, {
+                type: 'line',
+                data: {
+                    labels: channels,
+                    datasets: [{
+                        label: title,
+                        data: spectrumData,
+                        borderColor: '#366cf4',
+                        backgroundColor: 'rgb(109,162,231)',
+                        borderWidth: 1,
+                        fill: true,
+                        pointRadius: 0,
+                        tension: 0.1,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: title,
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                        },
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                        }
+                    },
+                    scales: {
+                        x: {
                             title: {
                                 display: true,
-                                text: title,
-                                font: {
-                                    size: 14,
-                                    weight: 'bold'
-                                },
-                                align: 'center',
-                                position: 'top',
-
+                                text: 'Channel',
                             },
-                            legend: {
-                                display: true,
-                                align: 'center',
-                                position: 'bottom',
+                            ticks: {
+                                maxTicksLimit: 20,
                             }
                         },
-                        responsive: true,
-                        scales: {
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Time',
-                                },
-                            },
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: 'Counts',
-
-                                },
+                        y: {
+                            title: {
                                 display: true,
-                                position: 'left',
-                                align: 'center',
-                                grid: {beginAtZero: false},
-                                ticks: {},
-
-
+                                text: 'Counts',
                             },
+                            beginAtZero: true,
                         },
-                    }
-                })
-            }
+                    },
+                }
+            });
         }
-
-        if (curve)
-            setChartReady(true);
-
-    },[curve, setChartReady]);
+    }, [title]);
 
     useEffect(() => {
-        createChart();
-    }, [createChart]);
+        if (!datasource) return;
+
+        const handleData = (rec: any) => {
+            const spectrum = rec.values[0].data[yValue];
+
+            if (spectrum && Array.isArray(spectrum)) {
+                updateChart(spectrum);
+            }
+        };
+
+        datasource.subscribe(handleData, [EventType.DATA]);
+
+        return () => {
+            if (chartRef.current) {
+                chartRef.current.destroy();
+                chartRef.current = null;
+            }
+        };
+    }, [datasource, yValue, updateChart]);
+
 
     return (
-        <div id={chartId} style={{marginBottom: 50, height: '85%'}}></div>
+        <canvas ref={canvasRef} id={chartId} style={{marginBottom: 50, height: '85%'}}></canvas>
     );
 }

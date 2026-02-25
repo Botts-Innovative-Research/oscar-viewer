@@ -145,6 +145,7 @@ export default function EventDetailsPage() {
                             }}
                             mode="details"
                             eventData={eventPreview.eventData}
+                            laneMap={laneMapRef.current}
                         />
                         ) :
                         <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}>
