@@ -139,26 +139,3 @@ export  function createThreshSigmaViewCurve(thresholdDatasource: { id: any; }) {
     });
     return gCurve;
 }
-
-export  function createN42ViewCurve(datasource: { id: any; }, name: string, yLabel: string, yValue: string) {
-    if (!datasource) return null;
-
-    let curve = new CurveLayer({
-        dataSourceIds: [datasource.id],
-        getValues: (rec: any) => {
-            return ({ x: rec.timestamp, y: rec?.[yValue]})
-        },
-        name: name,
-        xLabel: 'Time',
-        yLabel: yLabel,
-        borderWidth: 1.5,
-        backgroundColor: "rgba(245, 166, 160, 0.1)",
-        lineColor: "#f44336",
-        visible: true,
-        order: 1,
-        fill: 1,
-        maxValues: 500,
-    });
-
-    return curve;
-}

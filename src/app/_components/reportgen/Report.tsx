@@ -96,7 +96,6 @@ export default function ReportGeneratorView(){
                 const json = await response.json();
 
                 if (json.statusCode === 'PENDING') {
-                    console.log("status pending")
                     const commandId = json['command@id'];
                     isStreamingStatus = true;
                     setCommandStatus('PENDING');
@@ -127,7 +126,6 @@ export default function ReportGeneratorView(){
                         const messages = Array.isArray(data) ? data : [data];
                         for (const message of messages) {
                             const statusCode = message.statusCode;
-                            console.log(message);
 
                             if (statusCode === 'ACCEPTED') {
                                 const reportPath = message?.results?.[0]?.data?.reportPath;

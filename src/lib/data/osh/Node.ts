@@ -12,9 +12,7 @@ import Systems from "osh-js/source/core/consysapi/system/Systems.js";
 import Observations from "osh-js/source/core/consysapi/observation/Observations.js"
 import SystemFilter from "osh-js/source/core/consysapi/system/SystemFilter.js";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
-import ControlStreams from "osh-js/source/core/consysapi/controlstream/ControlStreams"
-import {ISystem} from "@/lib/data/osh/Systems";
-import {randomUUID} from "osh-js/source/core/utils/Utils";
+import ControlStreams from "osh-js/source/core/consysapi/controlstream/ControlStreams";
 import { hashString } from "@/app/utils/Utils";
 import {LatLngExpression} from "leaflet";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
@@ -386,8 +384,6 @@ export class Node implements INode {
             const dataStreams = await dataStreamCollection.nextPage();
             allDataStreams.push(...dataStreams);
         }
-
-        console.log(allDataStreams)
 
         for (const dataStream of allDataStreams) {
             for (const [, laneEntry] of laneMap) {

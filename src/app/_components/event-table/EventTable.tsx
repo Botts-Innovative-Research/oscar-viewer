@@ -407,11 +407,11 @@ export default function EventTable({
         if (isLive) {
             // Handle live observations
             const result = obs.result || obs;
-            newEvent = new EventTableData(id, laneEntry.laneName, result, null, obs["foi@id"] || obs.foiId, laneEntry.parentNode.name);
+            newEvent = new EventTableData(id, laneEntry.laneName, result, null, obs["foi@id"] || obs.foiId, laneEntry.parentNode.name, laneEntry.isRS350Backpack);
             newEvent.setFoiId(obs["foi@id"] || obs.foiId);
         } else {
             // Handle historical observations
-            newEvent = new EventTableData(id, laneEntry.laneName, obs.properties.result, obs.properties.id, obs.properties.foiId, laneEntry.parentNode.name);
+            newEvent = new EventTableData(id, laneEntry.laneName, obs.properties.result, obs.properties.id, obs.properties.foiId, laneEntry.parentNode.name, laneEntry.isRS350Backpack);
             newEvent.setRPMSystemId(laneEntry.lookupSystemIdFromDataStreamId(obs.properties["datastream@id"]));
             newEvent.setDataStreamId(obs.properties["datastream@id"]);
             newEvent.setFoiId(obs.properties["foi@id"]);

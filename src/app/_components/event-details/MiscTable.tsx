@@ -32,9 +32,7 @@ export default function MiscTable({currentTime}: {currentTime: string}) {
       // while(initialRes.hasNext()){
         let speedArr = await initialRes.nextPage();
         // make CSAPI request for speed in different output
-        let speed = "N/A";
-
-        speed = speedArr[0].result.speedKPH ? speedArr[0].result.speedKPH : "N/A";
+        let speed = speedArr[0].result.speedKPH ? speedArr[0].result.speedKPH : "N/A";
 
         setSpeedval(speed);
         // dispatch(setSpeed(speed));

@@ -233,7 +233,6 @@ export default function NationalViewPage() {
             setOpenSnack(true);
         }
 
-        console.log('observation', observation)
         var result = observation[0].properties.result;
 
         const parse = (result: any) => ({
