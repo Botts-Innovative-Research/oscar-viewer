@@ -662,7 +662,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                             </Typography>
                                         </Box>
 
-                                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                                        <Stack direction="row" spacing={1} alignItems="center">
                                             <FormControlLabel
                                                 control={
                                                     <Checkbox
@@ -674,17 +674,19 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                 label={<Typography variant="body2">WebID</Typography>}
                                                 sx={{mr: 0}}
                                             />
-                                            {fileData.webIdEnabled && (
-                                                <>
-                                                    <DetectorResponseFunction
-                                                        onSelect={handleDrfSelection(index)}
-                                                        selectVal={fileData.detectorResponseFunction}
-                                                    />
-                                                    <SpectrumTypeSelector
-                                                        onSelect={handleSpectrumType(index)}
-                                                        selectVal={fileData.spectrumType}
-                                                    />
-                                                </>
+
+                                                {fileData.webIdEnabled && (
+
+                                                    <>
+                                                        <DetectorResponseFunction
+                                                            onSelect={handleDrfSelection(index)}
+                                                            selectVal={fileData.detectorResponseFunction}
+                                                        />
+                                                        <SpectrumTypeSelector
+                                                            onSelect={handleSpectrumType(index)}
+                                                            selectVal={fileData.spectrumType}
+                                                        />
+                                                    </>
                                             )}
                                         </Stack>
                                         <IconButton
@@ -726,7 +728,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                             </Typography>
                                         </Box>
 
-                                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                                        <Stack direction="row" spacing={1} alignItems="center">
                                             <FormControlLabel
                                                 control={
                                                     <Checkbox
