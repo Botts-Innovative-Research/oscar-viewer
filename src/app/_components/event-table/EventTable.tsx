@@ -38,7 +38,7 @@ import {INode} from "@/lib/data/osh/Node";
 import Observations from "osh-js/source/core/consysapi/observation/Observations";
 import { GridFilterModel } from "@mui/x-data-grid"
 import { useLanguage } from '@/contexts/LanguageContext';
-import {NotificationService, NotificationTemplates} from "@/app/_components/pwa/NotificationService";
+import {NotificationService, NotificationTemplates} from "@/app/_components/notifications/NotificationService";
 
 
 interface TableProps {
