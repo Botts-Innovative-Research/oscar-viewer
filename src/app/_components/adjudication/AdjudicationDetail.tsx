@@ -55,6 +55,7 @@ interface FileWithWebId {
     webIdEnabled: boolean;
     detectorResponseFunction: string;
     spectrumType: string;
+    synthesizeBackground: boolean;
 }
 
 // qr code auto true = webIdEnabled
@@ -64,6 +65,7 @@ interface ScannedDataWithWebId {
     webIdEnabled: boolean;
     detectorResponseFunction: string;
     spectrumType: string;
+    synthesizeBackground: boolean;
 }
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
@@ -210,7 +212,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                         text: result.data,
                         detectorResponseFunction: "",
                         spectrumType: "",
-                        webIdEnabled: true
+                        webIdEnabled: true,
+                        synthesizeBackground: false
                     }
 
                     setScannedData(prev => {
@@ -244,7 +247,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             file,
             webIdEnabled: false,
             detectorResponseFunction: "",
-            spectrumType: ""
+            spectrumType: "",
+            synthesizeBackground: false
         }));
 
         setUploadedFiles([...uploadedFiles, ...filesWithWebId]);
@@ -293,6 +297,15 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         );
     }
 
+
+    const handleSynthesizeBackground = (fileIndex: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
+        setUploadedFiles(prevFiles =>
+            prevFiles.map((fileData, idx) =>
+                idx === fileIndex ? {...fileData, synthesizeBackground: event.target.checked} : fileData
+            )
+        );
+    };
+
     const handleScannedDataDrfSelection = (index: number) => (value: string) => {
         setScannedData(prev =>
             prev.map((data, idx) =>
@@ -308,6 +321,14 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             )
         );
     }
+
+    const handleScannedDataSynthesizeBackground = (fileIndex: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
+        setScannedData(prevFiles =>
+            prevFiles.map((fileData, idx) =>
+                idx === fileIndex ? {...fileData, synthesizeBackground: event.target.checked} : fileData
+            )
+        );
+    };
 
     const handleScannedDataDelete = (index: number) => {
         setScannedData(prev => prev.filter((_, i) => i !== index));
@@ -475,7 +496,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 file,
                 webIdEnabled: true,
                 detectorResponseFunction: code.detectorResponseFunction,
-                spectrumType: code.spectrumType ? code.spectrumType : 'foreground'
+                spectrumType: code.spectrumType ? code.spectrumType : 'foreground',
+                synthesizeBackground: false
             }
             newFiles.push(fileWithId);
         })
@@ -492,7 +514,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         const webIdFiles = filePaths.filter(f => f.webIdEnabled);
         const foregroundFile = webIdFiles.find(f => f.spectrumType === 'foreground');
         const backgroundFile = webIdFiles.find(f => f.spectrumType === 'background');
-        const foregroundAndBackgroundFile = webIdFiles.find(f => f.spectrumType === 'foreground/background');
         const hasPair = foregroundFile && backgroundFile;
 
         const pairedFiles = hasPair ? new Set([foregroundFile, backgroundFile]) : new Set<FileWithWebId>();
@@ -532,7 +553,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             let fileName = `adjudication?occupancyObsId=${props.event.occupancyObsId}&laneUid=${laneUid}&webIdEnabled=${fileData.webIdEnabled}`
 
             if (fileData.webIdEnabled)
-                fileName = fileName + `&drf=${fileData.detectorResponseFunction}`
+                fileName = fileName + `&drf=${fileData.detectorResponseFunction}&synthesizeBackground=${fileData.synthesizeBackground}`
+
+
 
             let endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/${fileName}`;
 
@@ -654,7 +677,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                 spacing={1}
                             >
                                 {uploadedFiles.map((fileData, index) => (
-                                    <Stack key={`${fileData.file.name}-${index}`} direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                                    <Stack key={`${fileData.file.name}-${index}`} direction="row" spacing={1} alignItems="center" flexWrap="wrap" p={1}>
                                         <Box display="flex" alignItems="center" sx={{ minWidth: 0, flex: '1 1 auto' }}>
                                             <InsertDriveFileRoundedIcon fontSize="small" />
                                             <Typography variant="body2" noWrap sx={{ ml: 0.5 }}>
@@ -686,6 +709,23 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                             onSelect={handleSpectrumType(index)}
                                                             selectVal={fileData.spectrumType}
                                                         />
+                                                        {
+                                                            fileData.spectrumType === 'foreground' && (
+
+                                                                <FormControlLabel
+                                                                    control={
+                                                                        <Checkbox
+                                                                            size="small"
+                                                                            checked={fileData.synthesizeBackground}
+                                                                            onChange={handleSynthesizeBackground(index)}
+                                                                        />
+                                                                    }
+                                                                    label={<Typography variant="body2">Synthesize Background</Typography>}
+                                                                    sx={{mr: 0}}
+                                                                />
+
+                                                            )
+                                                        }
                                                     </>
                                             )}
                                         </Stack>
@@ -720,7 +760,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                 spacing={1}
                             >
                                 {scannedData.map((data, index) => (
-                                    <Stack key={`scanned-${index}`} direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                                    <Stack key={`scanned-${index}`} direction="row" spacing={1} alignItems="center" flexWrap="wrap" p={1}>
                                         <Box display="flex" alignItems="center" sx={{ minWidth: 0, flex: '1 1 auto' }}>
                                             <QrCode fontSize="small" color="action"/>
                                             <Typography variant="body2" noWrap sx={{ ml: 0.5, fontFamily: 'monospace' }}>
@@ -751,6 +791,23 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                         onSelect={handleScannedDataSpectrumType(index)}
                                                         selectVal={data.spectrumType}
                                                     />
+
+                                                    {
+                                                        data.spectrumType === 'foreground' && (
+                                                            <FormControlLabel
+                                                                control={
+                                                                    <Checkbox
+                                                                        size="small"
+                                                                        checked={data.synthesizeBackground}
+                                                                        onChange={handleScannedDataSynthesizeBackground(index)}
+                                                                    />
+                                                                }
+                                                                label={<Typography variant="body2">Synthesize Background</Typography>}
+                                                                sx={{mr: 0}}
+                                                            />
+                                                        )
+                                                    }
+
                                                 </>
                                             )}
                                             <IconButton
