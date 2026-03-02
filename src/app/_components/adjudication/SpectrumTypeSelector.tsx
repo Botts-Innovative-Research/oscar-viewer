@@ -5,6 +5,7 @@ import {FormControl, InputLabel, MenuItem, Select, SelectChangeEvent} from '@mui
 const selectChoices=[
     "Foreground",
     "Background",
+    "Foreground/Background",
 ]
 export default function inSpectrumTypeSelector(props: {
     onSelect: (value: string) => void, // Return selected value
