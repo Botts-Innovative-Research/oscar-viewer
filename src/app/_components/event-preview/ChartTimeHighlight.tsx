@@ -252,6 +252,15 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 }
             });
 
+            console.log('gamma chart before', gammaChart.chart.data.datasets)
+
+            gammaChart.chart.data.datasets.forEach((dataset: { data: any[]; }) => {
+                dataset.data.sort((a, b) => new Date(a.x).getTime() - new Date(b.x).getTime());
+            });
+
+            console.log('gamma chart after', gammaChart.chart.data.datasets)
+
+            gammaChart.chart.update();
             setChartViews(prev => ({...prev, gamma: gammaChart}));
         }
 
@@ -281,6 +290,14 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 }
             });
 
+            console.log('neutron chart before', neutronChart.chart.data.datasets)
+            neutronChart.chart.data.datasets.forEach((dataset: { data: any[]; }) => {
+                dataset.data.sort((a, b) => new Date(a.x).getTime() - new Date(b.x).getTime());
+            });
+
+            console.log('neutron chart after', neutronChart.chart.data.datasets)
+
+            neutronChart.chart.update();
             setChartViews(prev => ({...prev, neutron: neutronChart}));
         }
 
@@ -309,6 +326,11 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                     }
                 }
             });
+            nsigmaChart.chart.data.datasets.forEach((dataset: { data: any[]; }) => {
+                dataset.data.sort((a, b) => new Date(a.x).getTime() - new Date(b.x).getTime());
+            });
+
+            nsigmaChart.chart.update();
 
             setChartViews(prev => ({...prev, nsigma: nsigmaChart}));
         }
