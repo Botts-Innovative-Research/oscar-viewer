@@ -82,7 +82,7 @@
     "nouislider": "^15.6.1",
     "ol": "^10.1.0",
     "ol-layerswitcher": "^4.1.2",
-    "osh-js": "git+ssh://git@github.com/earocorn/osh-js.git#webworker-upgrade",
+    "osh-js": "github:earocorn/osh-js#webworker-upgrade",
     "patch-package": "^6.5.0",
     "path-browserify": "^1.0.1",
     "react": "^18.3.1",
