@@ -7,6 +7,7 @@ import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasou
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import System from "osh-js/source/core/consysapi/system/System.js";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
+import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import {INode} from "@/lib/data/osh/Node";
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
@@ -247,6 +248,14 @@ export class LaneMapEntry {
         return stream;
     }
 
+    findControlStreamByProperty(controlledProperty: string) {
+        let stream: typeof ControlStream = this.controlStreams.find((ds) => {
+            let hasProp = ds.properties.controlledProperties.some((prop: any) => prop.definition === controlledProperty)
+            return hasProp;
+        });
+        return stream;
+    }
+
 
     /**
      * Retrieves datastreams within the specified time range and categorizes them by event detail types.
@@ -321,6 +330,8 @@ export class LaneDSColl {
     adjBatch: typeof ConSysApi[];
     connectionRT: typeof ConSysApi[];
     connectionBatch: typeof ConSysApi[];
+    webIdBatch: typeof ConSysApi[];
+    webIdRT: typeof ConSysApi[];
 
 
     constructor() {
@@ -341,6 +352,8 @@ export class LaneDSColl {
         this.adjBatch = [];
         this.connectionBatch = [];
         this.connectionRT = [];
+        this.webIdRT = [];
+        this.webIdBatch = [];
     }
 
     getDSArray(propName: string): typeof ConSysApi[] {
@@ -358,6 +371,7 @@ export class LaneDSColl {
             'gammaTrshldBatch',
             'adjBatch',
             'connectionBatch',
+            'webIdBatch',
             'occRT',
             'gammaRT',
             'neutronRT',
@@ -365,7 +379,8 @@ export class LaneDSColl {
             'locRT',
             'gammaTrshldRT',
             'connectionRT',
-            'adjRT'
+            'adjRT',
+            'webIdRT'
         ]
     }
 
@@ -379,6 +394,7 @@ export class LaneDSColl {
             'gammaTrshldBatch',
             'adjBatch',
             'connectionBatch',
+            'webIdBatch',
         ]
     }
 
@@ -391,7 +407,8 @@ export class LaneDSColl {
             'locRT',
             'gammaTrshldRT',
             'connectionRT',
-            'adjRT'
+            'adjRT',
+            'webIdRT'
         ];
     }
 

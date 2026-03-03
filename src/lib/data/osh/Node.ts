@@ -4,7 +4,7 @@
  */
 
 
-import {LaneMapEntry, LaneMeta} from "@/lib/data/oscar/LaneCollection";
+import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import DataStreamFilter from "osh-js/source/core/consysapi/datastream/DataStreamFilter.js";
 import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js";
 import System from "osh-js/source/core/consysapi/system/System.js";
@@ -13,11 +13,11 @@ import Observations from "osh-js/source/core/consysapi/observation/Observations.
 import SystemFilter from "osh-js/source/core/consysapi/system/SystemFilter.js";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import ControlStreams from "osh-js/source/core/consysapi/controlstream/ControlStreams"
-import {ISystem} from "@/lib/data/osh/Systems";
-import {randomUUID} from "osh-js/source/core/utils/Utils";
 import { hashString } from "@/app/utils/Utils";
 import {LatLngExpression} from "leaflet";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
+import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
+import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 
 const SYSTEM_UID_PREFIX = "urn:osh:system:";
 
@@ -28,6 +28,7 @@ export interface INode {
     port: number,
     oshPathRoot: string,
     csAPIEndpoint: string,
+    bucketsEndpoint: string,
     isSecure: boolean,
     auth: { username: string, password: string } | null,
     isDefaultNode: boolean
@@ -49,13 +50,17 @@ export interface INode {
 
     fetchLaneControlStreams(laneMap: Map<string, LaneMapEntry>): Promise<any>,
 
-    fetchNodeControlStreams(): Promise<any>,
+    fetchNodeControlStreams(): Promise<typeof ControlStream[]>,
+
+    fetchNodeDataStreams(): Promise<typeof DataStream[]>,
+
+    fetchDataStreamWithObservedProperty(observedProperty: string): Promise<typeof DataStream>,
 
     checkForEndpoint(): Promise<boolean>
 
     getOscarServiceSystem(): typeof System
 
-    fetchDataStream(system: typeof System): Promise<any[]>
+    fetchDataStream(system: typeof System): Promise<typeof DataStream[]>
 
     fetchObservationsWithFilter(observationFilter: typeof ObservationFilter): Promise<any[]>
 
@@ -70,7 +75,9 @@ export interface INode {
     getObservationsApi(): typeof Observations
 
     setSiteMapPath(path: string): void
+
     setUpperRightBox(latLong: LatLngExpression): void
+
     setLowerLeftBox(latLong: LatLngExpression): void
 }
 
@@ -80,6 +87,7 @@ export interface NodeOptions {
     port: number,
     oshPathRoot?: string,
     csAPIEndpoint?: string,
+    bucketsEndpoint?: string,
     auth?: { username: string, password: string } | null,
     isSecure?: boolean,
     isDefaultNode?: boolean
@@ -94,6 +102,7 @@ export class Node implements INode {
     port: number;
     oshPathRoot: string;
     csAPIEndpoint: string;
+    bucketsEndpoint: string;
     isSecure: boolean;
     auth: { username: string, password: string } | null = null;
     isDefaultNode: boolean;
@@ -115,6 +124,7 @@ export class Node implements INode {
         this.port = options.port;
         this.oshPathRoot = options.oshPathRoot || '/sensorhub';
         this.csAPIEndpoint = options.csAPIEndpoint || '/api';
+        this.bucketsEndpoint = options.bucketsEndpoint || '/buckets';
         this.auth = options.auth || null;
         this.isSecure = options.isSecure || false;
         this.isDefaultNode = options.isDefaultNode || false;
@@ -454,5 +464,29 @@ export class Node implements INode {
             return availableControlStreams;
         else
             console.warn("No control streams found for : ", this.address);
+    }
+
+    async fetchNodeDataStreams(): Promise<any[]>{
+        let availableDataStreams = [];
+        const dataStreamCollection = await this.getDataStreamsApi().searchDataStreams(new DataStreamFilter({ validTime: "latest" }), 100);
+        while (dataStreamCollection.hasNext()) {
+            let dataStreamResults = await dataStreamCollection.nextPage();
+            availableDataStreams.push(...dataStreamResults);
+        }
+
+        if(availableDataStreams.length > 0)
+            return availableDataStreams;
+        else
+            console.warn("No data streams found for : ", this.address);
+    }
+
+    async fetchDataStreamWithObservedProperty(observedProperty: string): Promise<typeof DataStream>{
+        const dataStreamCollection = await this.getDataStreamsApi().searchDataStreams(new DataStreamFilter({ validTime: "latest", observedProperty: observedProperty }), 1);
+        let dataStreamResults = await dataStreamCollection.nextPage();
+
+        if(dataStreamResults)
+            return dataStreamResults[0];
+        else
+            console.warn("No data streams found for : {} and {}", this.address , observedProperty);
     }
 }

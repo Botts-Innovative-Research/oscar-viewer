@@ -95,14 +95,12 @@ export function EventPreview() {
             secondaryInspectionStatus: secondaryInspection,
             filePaths: [],
             occupancyObsId: eventPreview.eventData.occupancyObsId,
-            alarmingSystemUid: eventPreview.eventData.rpmSystemId
         }
 
         let adjudicationData = new AdjudicationData(
             new Date().toISOString(),
             eventPreview.eventData.occupancyCount,
             eventPreview.eventData.occupancyObsId,
-            eventPreview.eventData.rpmSystemId
         );
 
         adjudicationData.setFeedback(notes);
@@ -170,8 +168,6 @@ export function EventPreview() {
                 eventPreview.eventData.occupancyObsId = occupancyObservation[0].id;
                 eventPreview.eventData.rpmSystemId = ds.properties["system@id"];
                 comboData.occupancyObsId = occupancyObservation[0].id;
-                comboData.alarmingSystemUid = ds.properties["system@id"];
-
 
             }
 
