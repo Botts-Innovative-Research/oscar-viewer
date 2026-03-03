@@ -211,7 +211,7 @@ export default function AdjudicationLog(props: {
                     return null;
 
                 let results = obs?.results[0].data;
-                let data = new AdjudicationData(obs.reportTime, props.event.occupancyCount, results.occupancyObsId, results.alarmingSystemUid);
+                let data = new AdjudicationData(obs.reportTime, props.event.occupancyCount, results.occupancyObsId);
                 data.setFeedback(results.feedback);
                 data.setIsotopes(results.isotopes ?? NaN);
                 data.setSecondaryInspectionStatus(results.secondaryInspectionStatus);

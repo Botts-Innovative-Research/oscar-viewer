@@ -88,7 +88,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
 
-    const adjudication = props.event ? new AdjudicationData(new Date().toISOString(), props.event.occupancyCount, props.event.occupancyObsId, props.event.rpmSystemId) : null;
+    const adjudication = props.event ? new AdjudicationData(new Date().toISOString(), props.event.occupancyCount, props.event.occupancyObsId) : null;
     const [adjData, setAdjData] = useState<AdjudicationData>(adjudication);
 
     const [adjSnackMsg, setAdjSnackMsg] = useState('');
@@ -141,7 +141,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     setAdjData(prevAdjData => {
                         if (prevAdjData) {
                             prevAdjData.occupancyObsId = occupancyObservation[0].id;
-                            prevAdjData.alarmingSystemUid = ds.properties["system@id"];
                         }
                         return prevAdjData;
                     });
@@ -297,7 +296,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         );
     }
 
-
     const handleSynthesizeBackground = (fileIndex: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
         setUploadedFiles(prevFiles =>
             prevFiles.map((fileData, idx) =>
@@ -419,8 +417,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 props.event.occupancyObsId = occupancyObservation[0].id;
                 props.event.rpmSystemId = ds.properties["system@id"];
                 tempAdjData.occupancyObsId = occupancyObservation[0].id;
-                tempAdjData.alarmingSystemUid = ds.properties["system@id"];
-
             }
 
             let qrCodeFiles = createFilesForQRCode(scannedData)
@@ -497,7 +493,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 webIdEnabled: true,
                 detectorResponseFunction: code.detectorResponseFunction,
                 spectrumType: code.spectrumType ? code.spectrumType : 'foreground',
-                synthesizeBackground: false
+                synthesizeBackground: code.synthesizeBackground
             }
             newFiles.push(fileWithId);
         })
@@ -602,8 +598,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             <Grid item xs={12}>
                 <WebIdAnalysis
                     event={props.event}
-                    shouldFetch={shouldFetchLogs}
-                    onFetch={onFetchComplete}
                 />
             </Grid>
 

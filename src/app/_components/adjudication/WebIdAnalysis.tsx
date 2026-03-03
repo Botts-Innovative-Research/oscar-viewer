@@ -1,29 +1,25 @@
 "use client";
 
-import React, {useContext, useEffect, useState} from "react";
+import React, {useCallback, useContext, useEffect, useState} from "react";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {DataGrid, GridColDef} from "@mui/x-data-grid";
-import { Box, Stack, Typography} from "@mui/material";
+import { Box, Stack, Typography } from "@mui/material";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {isWebIdAnalysisDataStream} from "@/lib/data/oscar/Utilities";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
-import {useLanguage} from "@/app/contexts/LanguageContext";
 import {IWebIdIsotope} from "@/lib/data/oscar/adjudication/WebId";
 import WebIdAnalysisResult from "@/lib/data/oscar/adjudication/WebId";
+import {WEB_ID_DEF} from "@/lib/data/Constants";
+import {EventType} from "osh-js/source/core/event/EventType";
 
 
 export default function WebIdAnalysis(props: {
     event: EventTableData;
-    shouldFetch: boolean;
-    onFetch: () => void;
 }) {
 
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
     const [webIdLog, setWebIdLog] = useState<any[]>([]);
     const [filteredLog, setFilteredLog] = useState<any[]>([]);
-    const [webIdDataStream, setWebIdDatastream] = useState();
-    const { t } = useLanguage();
 
     const locale = navigator.language || 'en-US';
 
@@ -136,56 +132,81 @@ export default function WebIdAnalysis(props: {
         }
     ];
 
-    async function getDataStream(){
+    const fetchData = useCallback(async() => {
         const currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
 
-        let streams = currLaneEntry.datastreams.length > 0 ? currLaneEntry.datastreams : await currLaneEntry.parentNode.fetchNodeDataStreams()
-        if(!streams) return;
+        let webIdDatastream: typeof DataStream = currLaneEntry.findDataStreamByObsProperty(WEB_ID_DEF);
+        if(!webIdDatastream) {
+            console.warn("No WebID Analysis datastream found for this lane");
+            return;
+        }
 
-        let webIdDs: typeof DataStream = streams.find((stream: typeof DataStream) => isWebIdAnalysisDataStream(stream));
-
-        if (!webIdDs) return
-        setWebIdDatastream(webIdDs);
-    }
-
-    useEffect(() => {
-        getDataStream();
-    }, [props.event.laneId]);
-
-    useEffect(() => {
-        if (webIdDataStream)
-            fetchObservations(webIdDataStream);
-    }, [webIdDataStream]);
-
-    async function fetchObservations(datastream: typeof DataStream) {
-        let query = await datastream.searchObservations(undefined, 100);
+        let query = await webIdDatastream.searchObservations(undefined, 100);
 
         while (query.hasNext()) {
             let obsCollection = await query.nextPage();
 
             let webIdData = obsCollection.map((obs: any)=> {
-                // let resultIsotopes = obs?.result.isotopes[0];
                 return new WebIdAnalysisResult(obs.resultTime, obs.result);
-                // return new WebIdIsotopeData(obs.resultTime, resultIsotopes.name, resultIsotopes.type, resultIsotopes.confidence, resultIsotopes.confidenceString, resultIsotopes.countRate, obs.result.occupancyObsId)
             })
             setWebIdLog(webIdData)
         }
-        props.onFetch();
-    }
+    },[])
+
+    useEffect(() => {
+        if (props.event)
+            fetchData();
+    }, [props.event]);
+
+    useEffect(() => {
+        const currentLane = props.event.laneId;
+        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+
+        let webIdStream = currLaneEntry.findDataStreamByObsProperty(WEB_ID_DEF);
+
+        if(!webIdStream) {
+            console.warn("No WebID Analysis datastream found for this lane");
+            return;
+        }
+
+        const webIdSource = currLaneEntry.datasourcesRealtime?.find((ds: any) => {
+            const parts = ds.properties.resource?.split("/");
+            return parts && parts[2] === webIdStream.properties.id;
+        });
+
+        if (!webIdSource) {
+            console.warn("No WebID Analysis data source found for this lane");
+            return;
+        }
+
+        const handleWebIdObservations = (msg: any) => {
+            const results = msg.values?.[0]?.data;
+
+            console.log('results', results)
+            const webId = new WebIdAnalysisResult("", results)
+
+            setFilteredLog(prev => [webId, ...prev])
+        }
+
+        webIdSource.subscribe(handleWebIdObservations, [EventType.DATA]);
+
+        try {
+            webIdSource.connect();
+        } catch (err) {
+            console.error("Error connecting webid source:", err);
+        }
+
+        // return () => {
+        //     webIdSource.disconnect();
+        // }
+    }, [props.event]);
+
 
     useEffect(() => {
         let filteredLog = webIdLog.filter((data) => data?.occupancyObsId ==  props.event.occupancyObsId);
         setFilteredLog(filteredLog);
     }, [webIdLog]);
-
-    useEffect(() => {
-        if (props.shouldFetch) {
-            setTimeout(() => {
-                fetchObservations(webIdDataStream);
-            }, 5000);
-        }
-    }, [props.shouldFetch]);
 
 
     return (

@@ -65,7 +65,6 @@ export default class WebIdAnalysisResult implements IWebIdAnalysis {
         // numAnalysisWarning: number,
         // numIsotopes: number,
         ) {
-        console.log('observation', observation)
         this.time = time;
         this.id = randomUUID();
         this.occupancyObsId = observation?.occupancyObsId;
