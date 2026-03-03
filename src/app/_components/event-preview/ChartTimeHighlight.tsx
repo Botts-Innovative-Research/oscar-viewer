@@ -44,6 +44,7 @@ export class ChartInterceptProps {
 }
 
 export default function ChartTimeHighlight(props: ChartInterceptProps) {
+    const { t } = useLanguage();
 
     const gammaChartViewRef = useRef<HTMLDivElement | null>(null);
     const nSigmaChartViewRef = useRef<HTMLDivElement | null>(null);

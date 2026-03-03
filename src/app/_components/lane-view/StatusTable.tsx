@@ -47,14 +47,14 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
     const columns: GridColDef<AlarmTableData>[] = [
         {
             field: 'laneId',
-            headerName: 'Lane ID',
+            headerName: t('laneId'),
             type: 'string',
             minWidth: 100,
             flex: 1,
         },
         {
             field: 'timestamp',
-            headerName: 'Timestamp',
+            headerName: t('timestamp'),
             valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
                 year: 'numeric',
                 month: 'numeric',
@@ -68,7 +68,7 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
         },
         {
             field: 'status',
-            headerName: 'Status',
+            headerName: t('status'),
             type: 'string',
             minWidth: 150,
             flex: 1,

@@ -6,12 +6,14 @@ import {INode} from "@/lib/data/osh/Node";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectNodes} from "@/lib/state/OSHSlice";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 
 export default function NodeSelect(props: {
     onSelect: (value: INode) => void,
     node: string
 }) {
+    const { t } = useLanguage();
 
     const nodes = useSelector((state: RootState) => selectNodes(state));
 
@@ -27,11 +29,11 @@ export default function NodeSelect(props: {
 
     return (
         <FormControl size="small" fullWidth>
-            <InputLabel id="label">Node Selector</InputLabel>
+            <InputLabel id="label">{t('nodeSelector')}</InputLabel>
             <Select
                 variant="outlined"
                 id="label"
-                label="Node Selector"
+                label={t('nodeSelector')}
                 value= {props.node || ""}
                 onChange={handleChange}
                 MenuProps={{
