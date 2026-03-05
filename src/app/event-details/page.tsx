@@ -115,7 +115,7 @@ export default function EventDetailsPage() {
                             reactToPrintFn()
                         }}
                     >
-                        Export as PDF
+                        {t('exportPdf')}
                     </Button>
                 </Grid>
             </Grid>

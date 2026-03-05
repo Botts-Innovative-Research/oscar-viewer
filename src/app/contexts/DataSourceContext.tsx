@@ -53,22 +53,26 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
         let allLanes: Map<string, LaneMapEntry> = new Map();
 
         await Promise.all(nodes.map(async (node: INode) => {
-            let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
-            if(!nodeLaneMap) return;
+            try {
+                let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
+                if(!nodeLaneMap) return;
 
-            await node.fetchDataStreams(nodeLaneMap);
-            await node.fetchLaneControlStreams(nodeLaneMap);
+                await node.fetchDataStreams(nodeLaneMap);
+                await node.fetchLaneControlStreams(nodeLaneMap);
 
 
-            for (const [key, mapEntry] of nodeLaneMap.entries()) {
-                try {
-                    mapEntry.addDefaultConSysApis();
-                } catch (e) {
-                    console.error(`[ERROR] addDefaultConSysApis failed for ${key}:`, e);
+                for (const [key, mapEntry] of nodeLaneMap.entries()) {
+                    try {
+                        mapEntry.addDefaultConSysApis();
+                    } catch (e) {
+                        console.error(`[ERROR] addDefaultConSysApis failed for ${key}:`, e);
+                    }
                 }
-            }
 
-            nodeLaneMap.forEach((value: LaneMapEntry, key: string) =>allLanes.set(key,value));
+                nodeLaneMap.forEach((value: LaneMapEntry, key: string) =>allLanes.set(key,value));
+            } catch (e) {
+                console.error(`[ERROR] Failed to fetch data for node ${node.name}:`, e);
+            }
         }));
 
         dispatch(setLaneMap(allLanes));

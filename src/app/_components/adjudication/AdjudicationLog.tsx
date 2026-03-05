@@ -12,6 +12,7 @@ import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStr
 import {AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
 import { Dialog, DialogTitle, DialogContent } from "@mui/material";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 
 
@@ -20,6 +21,7 @@ export default function AdjudicationLog(props: {
     shouldFetch: boolean;
     onFetch: () => void;
 }) {
+    const { t } = useLanguage();
 
     const locale = navigator.language || 'en-US';
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
@@ -35,19 +37,19 @@ export default function AdjudicationLog(props: {
     const logColumns: GridColDef<AdjudicationData>[] = [
         {
             field: 'occupancyCount',
-            headerName: 'Occupancy ID',
+            headerName: t('occupancyId'),
             width: 175,
             type: 'string',
         },
         {
             field: 'username',
-            headerName: 'User',
+            headerName: t('user'),
             width: 150,
             type: 'string',
         },
         {
             field: 'time',
-            headerName: 'Timestamp',
+            headerName: t('timestamp'),
             width: 200,
             type: 'string',
             valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
@@ -61,7 +63,7 @@ export default function AdjudicationLog(props: {
         },
         {
             field: 'feedback',
-            headerName: 'Feedback',
+            headerName: t('feedback'),
             width: 250,
             type: 'string',
             renderCell: (params) => {
@@ -80,7 +82,7 @@ export default function AdjudicationLog(props: {
                                 style={{ color: "#1976d2", border: "none", background: "none", cursor: "pointer" }}
                                 onClick={() => setFeedbackDialog({ open: true, text: fullText })}
                             >
-                                Read more
+                                {t('readMore')}
                             </button>
                         )}
                     </div>
@@ -89,12 +91,12 @@ export default function AdjudicationLog(props: {
         },
         {
             field: 'secondaryInspectionStatus',
-            headerName: 'Secondary Inspection Status',
+            headerName: t('secondaryInspectionStatus'),
             width: 200
         },
         {
             field: 'adjudicationCode',
-            headerName: 'Adjudication Code',
+            headerName: t('adjudicationCode'),
             width: 400,
             valueGetter: (value, row) => {
                 return row.adjudicationCode.label
@@ -102,7 +104,7 @@ export default function AdjudicationLog(props: {
         },
         {
             field: 'isotopes',
-            headerName: 'Isotopes',
+            headerName: t('isotopes'),
             width: 200,
             valueGetter: (value) => {
                 if (value === "") return "Unknown";
@@ -111,13 +113,13 @@ export default function AdjudicationLog(props: {
         },
         {
             field: 'filePaths',
-            headerName: 'FilePaths',
+            headerName: t('filePaths'),
             width: 200,
             type: 'string'
         },
         {
             field: 'vehicleId',
-            headerName: 'Vehicle ID',
+            headerName: t('vehicleId'),
             width: 150,
             valueGetter: (value) => {
                 if (value === "") return "Unknown";
@@ -198,7 +200,7 @@ export default function AdjudicationLog(props: {
         <>
             <Stack spacing={2}>
                 <Stack direction={"column"} spacing={1}>
-                    <Typography variant="h5">Logged Adjudications</Typography>
+                    <Typography variant="h5">{t('loggedAdjudications')}</Typography>
                 </Stack>
                 <DataGrid
                     rows={filteredLog}
@@ -219,7 +221,7 @@ export default function AdjudicationLog(props: {
                     maxWidth="sm"
                     fullWidth
                 >
-                    <DialogTitle>Feedback</DialogTitle>
+                    <DialogTitle>{t('feedback')}</DialogTitle>
                     <DialogContent>
                         <Typography whiteSpace="pre-wrap">
                             {feedbackDialog.text}

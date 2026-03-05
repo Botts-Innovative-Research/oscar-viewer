@@ -3,6 +3,7 @@
 import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from "@mui/material";
 import {styled, Theme} from "@mui/material/styles";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 
 const StatusTableCell = styled(TableCell)(({theme, status}: { theme: Theme, status: string }) => ({
@@ -11,21 +12,23 @@ const StatusTableCell = styled(TableCell)(({theme, status}: { theme: Theme, stat
 }));
 
 export default function DataRow({eventData}: {eventData: EventTableData}) {
+    const { t } = useLanguage();
+
     return (
         <TableContainer>
-            <Table sx={{minWidth: 650}} aria-label="simple table">
+            <Table sx={{minWidth: 650}} aria-label={t('simpleTable')}>
                 <TableHead>
                     <TableRow
                         sx={{'&:last-child td, &:last-child th': {border: 0, textAlign: "center"}}}>
-                        <TableCell>Secondary Inspection</TableCell>
-                        <TableCell>Lane ID</TableCell>
-                        <TableCell>Occupancy ID</TableCell>
-                        <TableCell>Start Time</TableCell>
-                        <TableCell>End Time</TableCell>
-                        <TableCell>Max Gamma</TableCell>
-                        <TableCell>Max Neutron</TableCell>
-                        <TableCell>Status</TableCell>
-                        <TableCell>Adjudicated</TableCell>
+                        <TableCell>{t('secondaryInspection')}</TableCell>
+                        <TableCell>{t('laneId')}</TableCell>
+                        <TableCell>{t('occupancyId')}</TableCell>
+                        <TableCell>{t('startTime')}</TableCell>
+                        <TableCell>{t('endTime')}</TableCell>
+                        <TableCell>{t('maxGamma')}</TableCell>
+                        <TableCell>{t('maxNeutron')}</TableCell>
+                        <TableCell>{t('status')}</TableCell>
+                        <TableCell>{t('adjudicated')}</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -42,11 +45,11 @@ export default function DataRow({eventData}: {eventData: EventTableData}) {
                             <StatusTableCell status={eventData?.status || 'Unknown'}>
                                 {eventData?.status || 'Unknown'}
                             </StatusTableCell>
-                            <TableCell>{eventData?.adjudicatedIds.length > 0 ? "Yes" : "No"}</TableCell>
+                            <TableCell>{eventData?.adjudicatedIds.length > 0 ? t('yes') : t('no')}</TableCell>
                         </TableRow>
                     ) : (
                         <TableRow>
-                            <TableCell colSpan={9} align="center">No event data available</TableCell>
+                            <TableCell colSpan={9} align="center">{t('noEventDataAvailable')}</TableCell>
                         </TableRow>
                     )}
                 </TableBody>
