@@ -325,8 +325,7 @@ export default function EventTable({
 
                 const obsApi: typeof Observations = await node.getObservationsApi();
                 const obsCollection = await obsApi.searchObservations(observationFilter, pageSize, pageOffset);
-
-                const results = await obsCollection.fetchData();
+                const results = await obsCollection.fetchData(pageOffset);
 
                 for (const obs of results) {
                     const laneEntry = findLaneByDataStreamId(stableLaneMap, obs.properties["datastream@id"]);

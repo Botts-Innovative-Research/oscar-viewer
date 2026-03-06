@@ -13,6 +13,7 @@ import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
 
 import {
+    isAdjudicationControlStream,
     isConnectionDataStream,
     isGammaDataStream,
     isNeutronDataStream,
@@ -49,13 +50,13 @@ export class LaneMeta implements ILaneMeta {
 export class LaneMapEntry {
     systems: typeof System[];
     datastreams: typeof DataStream[];
-    datasources: any[];
-    datasourcesBatch: any[];
-    datasourcesRealtime: any[];
+    datasources: typeof ConSysApi[];
+    datasourcesBatch: typeof ConSysApi[];
+    datasourcesRealtime: typeof ConSysApi[];
     parentNode: INode;
     laneSystem: typeof System;
     laneName: string;
-    controlStreams: any[]
+    controlStreams: typeof ControlStream[]
 
     constructor(node: INode) {
         this.systems = [];
@@ -80,19 +81,19 @@ export class LaneMapEntry {
         this.systems.push(...systems);
     }
 
-    addDataStream(datastream: any) {
+    addDataStream(datastream: typeof DataStream) {
         this.datastreams.push(datastream);
     }
 
-    addDataStreams(datastreams: any[]) {
+    addDataStreams(datastreams: typeof DataStream[]) {
         this.datastreams.push(...datastreams);
     }
 
-    addDataSource(datasource: any) {
+    addDataSource(datasource: typeof ConSysApi) {
         this.datasources.push(datasource);
     }
 
-    addDataSources(datasources: any[]) {
+    addDataSources(datasources: typeof ConSysApi[]) {
         this.datasources.push(...datasources);
     }
 
@@ -100,11 +101,11 @@ export class LaneMapEntry {
         this.laneName = name;
     }
 
-    addControlStream(controlStream: any[]) {
+    addControlStream(controlStream: typeof ControlStream[]) {
         this.controlStreams.push(controlStream);
     }
 
-    addControlStreams(controlStreams: any[]) {
+    addControlStreams(controlStreams: typeof ControlStream[]) {
         this.controlStreams.push(...controlStreams)
     }
 
@@ -179,6 +180,28 @@ export class LaneMapEntry {
         this.datasourcesBatch = batchArray;
     }
 
+    createRealTimeConSysApi(stream: typeof DataStream | typeof ControlStream) {
+        let mqttOptUrlArray = (stream.networkProperties.endpointUrl).split("/");
+        let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
+
+        let mqttOpts = {
+            shared: true,
+            prefix: this.parentNode.csAPIEndpoint,
+            endpointUrl: mqttOptUrl,
+            username: this.parentNode.auth.username,
+            password: this.parentNode.auth.password,
+        }
+        return new ConSysApi(`rtds - ${stream.properties.name}`, {
+            endpointUrl: stream.networkProperties.endpointUrl,
+            resource:  typeof stream == DataStream ? `/datastreams/${stream.properties.id}/observations` : `/controlstreams/${stream.properties.id}/status`,
+            tls: stream.networkProperties.tls,
+            protocol: 'mqtt',
+            mode: Mode.REAL_TIME,
+            responseFormat: 'application/json',
+            mqttOpts: mqttOpts,
+        });
+    }
+
     createReplayConSysApiFromDataStream(datastream: typeof DataStream, startTime: string, endTime: string) {
         let mqttOptUrlArray = (datastream.networkProperties.endpointUrl).split("/");
         let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
@@ -248,11 +271,8 @@ export class LaneMapEntry {
         return stream;
     }
 
-    findControlStreamByProperty(controlledProperty: string) {
-        let stream: typeof ControlStream = this.controlStreams.find((ds) => {
-            let hasProp = ds.properties.controlledProperties.some((prop: any) => prop.definition === controlledProperty)
-            return hasProp;
-        });
+    findControlStreamByProperty() {
+        let stream: typeof ControlStream = this.controlStreams.find((cs) => isAdjudicationControlStream(cs));
         return stream;
     }
 

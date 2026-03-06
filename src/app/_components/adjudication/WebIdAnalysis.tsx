@@ -183,7 +183,6 @@ export default function WebIdAnalysis(props: {
         const handleWebIdObservations = (msg: any) => {
             const results = msg.values?.[0]?.data;
 
-            console.log('results', results)
             const webId = new WebIdAnalysisResult("", results)
 
             setFilteredLog(prev => [webId, ...prev])
