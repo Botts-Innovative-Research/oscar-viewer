@@ -103,7 +103,6 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
     }
 
     return (
-        <Grid item xs={12} md={6}>
             <Box sx={{
                 display: "flex",
                 flexWrap: "nowrap",
@@ -138,7 +137,6 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
                     <NavigateNextIcon/>
                 </IconButton>
             </Box>
-        </Grid>
 
     );
 }

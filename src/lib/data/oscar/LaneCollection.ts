@@ -387,6 +387,10 @@ export class LaneDSColl {
     webIdBatch: typeof ConSysApi[];
     webIdRT: typeof ConSysApi[];
 
+    backgroundRT: typeof ConSysApi[];
+    backgroundBatch: typeof ConSysApi[];
+    foregroundRT: typeof ConSysApi[];
+    foregroundBatch: typeof ConSysApi[];
 
     constructor() {
         this.occRT = [];
@@ -410,6 +414,10 @@ export class LaneDSColl {
         this.webIdBatch = [];
         this.n42Batch = [];
         this.n42RT = [];
+        this.foregroundRT = [];
+        this.foregroundBatch = [];
+        this.backgroundBatch = [];
+        this.backgroundRT = [];
     }
 
     getDSArray(propName: string): typeof ConSysApi[] {
@@ -440,6 +448,10 @@ export class LaneDSColl {
             'webIdRT'
             'adjRT',
             'n42RT',
+            'foregroundRT',
+            'backgroundRT',
+            'forgroundBatch',
+            'backgroundBatch',
         ]
     }
 
@@ -453,6 +465,9 @@ export class LaneDSColl {
             'gammaTrshldBatch',
             'adjBatch',
             'connectionBatch',
+            'n42Batch',
+            'forgroundBatch',
+            'backgroundBatch',
             'n42Batch'
             'webIdBatch',
         ]
@@ -470,7 +485,9 @@ export class LaneDSColl {
             'adjRT',
             'webIdRT'
             'adjRT',
-            'n42RT'
+            'n42RT',
+            'foregroundRT',
+            'backgroundRT',
         ];
     }
 

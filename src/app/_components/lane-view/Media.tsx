@@ -36,7 +36,9 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
                             }}
                         />
                     </Grid>
-                    <VideoMedia currentLane={currentLane} />
+                    <Grid item xs={12} md={6}>
+                        <VideoMedia currentLane={currentLane} />
+                    </Grid>
                 </Grid>
             </Box>
         </Paper>
