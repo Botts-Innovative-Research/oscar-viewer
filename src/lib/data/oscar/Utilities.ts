@@ -12,7 +12,7 @@ import {
     CONNECTION_DEF, DOSE_DEF, DURATION_DEF, END_DEF, GAMMA_COUNT_DEF, HLS_VIDEO_DEF,
     LINEARSPEC_DEF, LOCATION_VECTOR_DEF, NATIONAL_DEF,
     NEUTRON_COUNT_DEF,
-    OCCUPANCY_PILLAR_DEF, RASTER_IMAGE_DEF, REPORT_DEF, SENSOR_LOCATION_DEF,
+    OCCUPANCY_PILLAR_DEF, RASTER_IMAGE_DEF, REMARK_DEF, REPORT_DEF, SENSOR_LOCATION_DEF,
     SITE_DIAGRAM_DEF, SPEED_DEF, START_DEF,
     TAMPER_STATUS_DEF,
     THRESHOLD_DEF, VIDEO_FRAME_DEF, WEB_ID_DEF
@@ -90,7 +90,22 @@ export function isForegroundDataStream(datastream: typeof DataStream): boolean {
     // if (!hasDefinitionProperties(datastream))
     //     return false;
 
-    return datastream.properties.observedProperties[0].definition.includes(DURATION_DEF);
+    return datastream.properties.observedProperties[0]?.definition?.includes(DURATION_DEF) && datastream.properties.observedProperties[2]?.definition?.includes(LINEARSPEC_DEF) && datastream.properties.observedProperties[9]?.definition?.includes(DOSE_DEF);
+}
+
+export function isBackgroundDataStream(datastream: typeof DataStream): boolean {
+
+    // if (!hasDefinitionProperties(datastream))
+    //     return false;
+
+    return datastream.properties.observedProperties[0]?.definition?.includes(DURATION_DEF) && datastream.properties.observedProperties[2]?.definition?.includes(LINEARSPEC_DEF);
+}
+export function isRs350AlarmDataStream(datastream: typeof DataStream): boolean {
+
+    // if (!hasDefinitionProperties(datastream))
+    //     return false;
+
+    return datastream.properties.observedProperties[0].definition.includes(DURATION_DEF) && datastream.properties.observedProperties[1].definition.includes(REMARK_DEF);
 }
 
 export function isRs350DataStream(datastream: typeof DataStream): boolean {
