@@ -103,3 +103,4 @@ export const HLS_VIDEO_DEF =  smlUri + "StreamControl";
 export const DURATION_DEF =  radUri + "Duration";
 export const LINEARSPEC_DEF =  radUri + "LinearSpectrum";
 export const DOSE_DEF =  radUri + "Dose";
+export const REMARK_DEF =  radUri + "Remark";
