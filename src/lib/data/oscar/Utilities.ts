@@ -141,18 +141,15 @@ export function isHLSVideoControlStream(controlStream: typeof ControlStream): bo
 
 
 export function hasDefinitionProperties(stream: typeof ConnectedSystemsApi){
-    if (stream.properties.length == 0)
+    if (!stream || !stream.properties)
         return false;
 
     let definition = null;
 
     if (stream instanceof ControlStream)
-        definition = stream.properties.controlledProperties[0].definition;
+        definition = stream.properties.controlledProperties?.[0]?.definition;
     else if (stream instanceof DataStream)
-        definition = stream.properties.observedProperties[0].definition
+        definition = stream.properties.observedProperties?.[0]?.definition
 
-    if (definition == undefined)
-        return false;
-
-    return true;
+    return definition !== undefined && definition !== null;
 }

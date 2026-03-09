@@ -77,7 +77,12 @@ export default function LaneStatus(props: LaneStatusProps) {
         const gammaDataStream = await dsAPI.getDataStreamById(gammaDataStreamId);
         const latestObservationQuery = await gammaDataStream.searchObservations(new ObservationFilter({resultTime: 'latest'}), 1);
         const latestObservationArray = await latestObservationQuery.nextPage();
-        const latestObservation = latestObservationArray[0];
+        const latestObservation = latestObservationArray?.[0];
+
+        if (!latestObservation || !latestObservation.result) {
+            console.warn("No latest observation found for lane status initialization");
+            return;
+        }
 
         const initialLaneStatus: LaneStatusType = {
             id: -1,

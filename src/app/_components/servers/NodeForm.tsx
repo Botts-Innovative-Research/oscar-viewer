@@ -199,26 +199,26 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
             <Box component="form" sx={{margin: 2}}>
                 <Stack spacing={4}>
                     {isEditNode ? <Typography variant={"h6"}>Editing Node: {editNode.id}</Typography> : null}
-                    <TextField label="Name" name="name" value={newNode.name} onChange={handleChange}/>
-                    <TextField label="Address" name="address" value={newNode.address} onChange={handleChange}/>
-                    <TextField label="Port" name="port" value={newNode.port} onChange={handleChange}/>
+                    <TextField label={t('name')} name="name" value={newNode.name} onChange={handleChange}/>
+                    <TextField label={t('address')} name="address" value={newNode.address} onChange={handleChange}/>
+                    <TextField label={t('port')} name="port" value={newNode.port} onChange={handleChange}/>
                     <TextField
-                        label="CS API Endpoint"
+                        label={t('csApiEndpoint')}
                         name="csAPIEndpoint"
                         value={newNode.csAPIEndpoint}
                         onChange={handleChange}
                     />
-                    <TextField label="Username" name="username" value={newNode.auth.username} onChange={handleChange}/>
-                    <TextField label="Password" name="password" type={"password"} value={newNode.auth.password}
+                    <TextField label={t('username')} name="username" value={newNode.auth.username} onChange={handleChange}/>
+                    <TextField label={t('password')} name="password" type={"password"} value={newNode.auth.password}
                                onChange={handleChange}/>
 
-                    <FormControlLabel control={<Checkbox name="isSecure" checked={newNode.isSecure} onChange={handleChange}/>} label="Is Secure"/>
+                    <FormControlLabel control={<Checkbox name="isSecure" checked={newNode.isSecure} onChange={handleChange}/>} label={t('isSecure')}/>
 
                     <Stack direction="row" spacing={2}>
                         <Button variant={"contained"} color={"primary"}
                                 onClick={handleAddSave}>{isEditNode ? "Save Changes" : "Add Node"}</Button>
                         <Button variant={"outlined"} color={"secondary"}
-                                onClick={() => modeChangeCallback(false, null)}>Cancel</Button>
+                                onClick={() => modeChangeCallback(false, null)}>{t('cancel')}</Button>
                     </Stack>
 
 

@@ -52,6 +52,7 @@ export default function IsotopeSelect(props: {
   onSelect: (value: string[]) => void, // Return selected value
   isotopeValue: string[]
 }) {
+  const { t } = useLanguage();
   const [isotope, setIsotope] = useState<string[]>([""]);
 
   const handleChange = (event: SelectChangeEvent<typeof isotope>) => {
@@ -70,9 +71,9 @@ export default function IsotopeSelect(props: {
 
   return (
       <FormControl size="small" fullWidth>
-        <InputLabel id="label">Isotope</InputLabel>
+        <InputLabel id="label">{t('isotope')}</InputLabel>
         <Select
-            label="Isotope"
+            label={t('isotope')}
             variant="outlined"
             id="label"
             multiple

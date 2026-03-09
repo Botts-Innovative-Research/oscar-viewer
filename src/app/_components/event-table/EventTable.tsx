@@ -155,7 +155,21 @@ export default function EventTable({
             minWidth: 125,
             flex: 1.2,
             type: 'singleSelect',
-            valueOptions: ['None', 'Gamma', 'Neutron', 'Gamma & Neutron'],
+            valueOptions: [
+                { value: 'None', label: t('statusNone') },
+                { value: 'Gamma', label: t('statusGamma') },
+                { value: 'Neutron', label: t('statusNeutron') },
+                { value: 'Gamma & Neutron', label: t('statusGammaNeutron') }
+            ],
+            valueFormatter: (params) => {
+                 switch(params) {
+                     case 'Gamma': return t('statusGamma');
+                     case 'Neutron': return t('statusNeutron');
+                     case 'Gamma & Neutron': return t('statusGammaNeutron');
+                     case 'None': return t('statusNone');
+                     default: return params;
+                 }
+            },
             filterOperators: getGridSingleSelectOperators().filter(
                 (op) => ['is'].includes(op.value)
                 // (op) => ['is', 'not'].includes(op.value)
@@ -164,12 +178,15 @@ export default function EventTable({
         {
             field: 'adjudicatedIds',
             headerName: t('adjudicated'),
-            valueFormatter: (params: any) => params.length > 0 ? "Yes" : "No",
+            valueFormatter: (params: any) => params.length > 0 ? t('yes') : t('no'),
             minWidth: 100,
             flex: 1,
             filterable: viewAdjudicated,
             type: 'singleSelect',
-            valueOptions: ['Yes', 'No'],
+            valueOptions: [
+                { value: 'Yes', label: t('yes') },
+                { value: 'No', label: t('no') }
+            ],
             filterOperators: getGridSingleSelectOperators().filter(
                 (op) => ['is', 'equal'].includes(op.value)
             )
@@ -185,7 +202,7 @@ export default function EventTable({
                     <GridActionsCellItem
                         key="details"
                         icon={<VisibilityRoundedIcon />}
-                        label="Details"
+                        label={t('details')}
                         onClick={() => handleEventPreview()}
                         showInMenu
                     />
