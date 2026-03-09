@@ -83,7 +83,7 @@
     "nouislider": "^15.6.1",
     "ol": "^10.1.0",
     "ol-layerswitcher": "^4.1.2",
-    "osh-js": "github:kalynstricklin/osh-js#update-collections",
+    "osh-js": "github:earocorn/osh-js#add-consys",
     "patch-package": "^6.5.0",
     "path-browserify": "^1.0.1",
     "qr-scanner": "^1.4.2",
