@@ -16,6 +16,7 @@ import EventMedia from "../_components/event-preview/EventMedia";
 import CircularProgress from "@mui/material/CircularProgress";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 import AdjudicationDetail from "../_components/adjudication/AdjudicationDetail";
+import N42Detail from "../_components/n42/N42Detail";
 
 
 export default function EventDetailsPage() {
@@ -168,6 +169,12 @@ export default function EventDetailsPage() {
                     </Paper>
                 </Grid>
 
+                {/*N42 Detail*/}
+                <Grid item xs={12}>
+                    <Paper variant='outlined'>
+                        <N42Detail event={eventPreview.eventData} />
+                    </Paper>
+                </Grid>
             </Grid>
         </Grid>
     );
