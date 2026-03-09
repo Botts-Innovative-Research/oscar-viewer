@@ -61,25 +61,25 @@ export default function NuclideAnalysisTable({datasource}: NuclideAnalysisProps)
     ];
 
     return (
-        <>
-            <Stack spacing={2}>
-                <Stack direction={"column"} spacing={1}>
-                    <Typography variant="h5">Nuclide Analysis Results</Typography>
-                </Stack>
-                <DataGrid
-                    rows={filteredLog}
-                    columns={logColumns}
-                    initialState={{
-                        pagination: {
-                            paginationModel: {
-                                pageSize: 10
-                            }
-                        }
-                    }}
-                    pageSizeOptions={[5, 10, 25, 50, 100]}
-                    disableRowSelectionOnClick={true}
-                />
+
+        <Stack spacing={2}>
+            <Stack direction={"column"} spacing={1}>
+                <Typography variant="h5">Nuclide Analysis Results</Typography>
             </Stack>
-        </>
+            <DataGrid
+                rows={filteredLog}
+                columns={logColumns}
+                initialState={{
+                    pagination: {
+                        paginationModel: {
+                            pageSize: 10
+                        }
+                    }
+                }}
+                pageSizeOptions={[5, 10, 25, 50, 100]}
+                disableRowSelectionOnClick={true}
+            />
+        </Stack>
+
     );
 }

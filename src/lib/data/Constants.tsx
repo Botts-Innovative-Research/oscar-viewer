@@ -105,4 +105,4 @@ export const WEB_ID_DEF =  radUri + "NumberOfIsotopes";
 export const DURATION_DEF =  radUri + "Duration";
 export const LINEARSPEC_DEF =  radUri + "LinearSpectrum";
 export const DOSE_DEF =  radUri + "Dose";
-export const REMARK_DEF =  radUri + "Remark";
+export const N42_DEF =  radUri + "Remark";
