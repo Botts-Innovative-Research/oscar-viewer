@@ -4,7 +4,7 @@ import EventTable from "@/app/_components/event-table/EventTable";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
-import {useLanguage} from "@/contexts/LanguageContext";
+import {useLanguage} from "@/app/contexts/LanguageContext";
 
 export default function EventLogPage() {
     const { t } = useLanguage();

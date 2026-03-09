@@ -37,6 +37,7 @@ import { EventType } from "osh-js/source/core/event/EventType";
 import {INode} from "@/lib/data/osh/Node";
 import Observations from "osh-js/source/core/consysapi/observation/Observations";
 import { GridFilterModel } from "@mui/x-data-grid"
+
 import { useLanguage } from '@/contexts/LanguageContext';
 import {NotificationService, NotificationTemplates} from "../notifications/NotificationService";
 
@@ -326,8 +327,7 @@ export default function EventTable({
 
                 const obsApi: typeof Observations = await node.getObservationsApi();
                 const obsCollection = await obsApi.searchObservations(observationFilter, pageSize, pageOffset);
-
-                const results = await obsCollection.fetchData();
+                const results = await obsCollection.fetchData(pageOffset);
 
                 for (const obs of results) {
                     const laneEntry = findLaneByDataStreamId(stableLaneMap, obs.properties["datastream@id"]);

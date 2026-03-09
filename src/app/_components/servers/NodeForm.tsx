@@ -19,7 +19,7 @@ import {addNode, selectNodes, updateNode} from "@/lib/state/OSHSlice";
 import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {useSelector} from "react-redux";
-import {useLanguage} from "@/contexts/LanguageContext";
+import {useLanguage} from "@/app/contexts/LanguageContext";
 
 
 export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {

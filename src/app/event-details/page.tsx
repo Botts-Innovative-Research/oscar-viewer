@@ -7,7 +7,6 @@ import DataRow from "../_components/event-details/DataRow";
 import MiscTable from "../_components/event-details/MiscTable";
 import {useSelector} from "react-redux";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
-import AdjudicationDetail from "@/app/_components/adjudication/AdjudicationDetail";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {selectEventPreview} from "@/lib/state/EventPreviewSlice";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
@@ -15,7 +14,8 @@ import {PictureAsPdfRounded} from "@mui/icons-material";
 import {useReactToPrint} from "react-to-print";
 import EventMedia from "../_components/event-preview/EventMedia";
 import CircularProgress from "@mui/material/CircularProgress";
-import {useLanguage} from "@/contexts/LanguageContext";
+import {useLanguage} from "@/app/contexts/LanguageContext";
+import AdjudicationDetail from "../_components/adjudication/AdjudicationDetail";
 
 
 export default function EventDetailsPage() {
@@ -97,8 +97,8 @@ export default function EventDetailsPage() {
     });
 
     return (
-        <Grid container spacing={2} width={"100%"} sx={{ minWidth: 0 }}>
-            <Grid item container xs={12} sx={{ minWidth: 0, gap: 2 }}>
+        <Grid container spacing={2} sx={{ width: "100%", height: "auto" }}>
+            <Grid item container xs={12} lg={12} sx={{ gap: 2 }}>
 
                 {/* HEADER */}
                 <Grid item container xs={12} spacing={2} justifyContent={"space-between"}>
@@ -128,7 +128,7 @@ export default function EventDetailsPage() {
 
                 {/* EVENT PREVIEW */}
                 <Grid item xs={12}>
-                    <Paper variant='outlined' sx={{ padding: 0, width: '100%'}}>
+                    <Paper variant='outlined'>
                         <DataRow eventData={eventPreview.eventData}/>
                     </Paper>
                 </Grid>
@@ -155,14 +155,14 @@ export default function EventDetailsPage() {
 
                 {/* MISC TABLE */}
                 <Grid item xs={12}>
-                    <Paper variant='outlined' sx={{width: "100%"}}>
+                    <Paper variant='outlined'>
                         <MiscTable currentTime={eventPreview.eventData?.startTime}/>
                     </Paper>
                 </Grid>
 
                 {/* ADJUDICATION */}
                 <Grid item xs={12}>
-                    <Paper variant='outlined' sx={{width: "100%"}}>
+                    <Paper variant='outlined'>
                         <AdjudicationDetail event={eventPreview.eventData}/>
                     </Paper>
                 </Grid>

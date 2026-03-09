@@ -16,7 +16,7 @@ import {isNationalControlStream} from "@/lib/data/oscar/Utilities";
 import {generateNationalCommandJSON, sendCommand} from "@/lib/data/oscar/OSCARCommands";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
 import { useBreakpoint } from "../providers";
-import {useLanguage} from "@/contexts/LanguageContext";
+import {useLanguage} from "@/app/contexts/LanguageContext";
 
 
 export default function NationalViewPage() {

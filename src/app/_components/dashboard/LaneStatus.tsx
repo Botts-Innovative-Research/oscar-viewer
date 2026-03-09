@@ -7,7 +7,7 @@ import {setCurrentLane} from '@/lib/state/LaneViewSlice';
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/dist/client/components/navigation";
 import {setAlarmTrigger} from "@/lib/state/EventDataSlice";
-import {useLanguage} from "@/contexts/LanguageContext";
+import {useLanguage} from "@/app/contexts/LanguageContext";
 
 
 export interface LaneStatusProps {
