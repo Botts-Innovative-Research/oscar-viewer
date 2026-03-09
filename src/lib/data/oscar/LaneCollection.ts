@@ -445,7 +445,7 @@ export class LaneDSColl {
             'gammaTrshldRT',
             'connectionRT',
             'adjRT',
-            'webIdRT'
+            'webIdRT',
             'adjRT',
             'n42RT',
             'foregroundRT',
