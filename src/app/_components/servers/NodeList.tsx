@@ -72,7 +72,7 @@ export default function NodeList({modeChangeCallback}: NodeListProps) {
                 { t('nodes') }
             </Typography>
             {nodes.length === 0 ? (
-                <p>No Nodes</p>
+                <p>{t('noNodes')}</p>
             ) : (
                 <List>
                     {nodes.map((node: INode) => (
@@ -86,10 +86,10 @@ export default function NodeList({modeChangeCallback}: NodeListProps) {
                                     sx={{m: 1}}
                                     onClick={() => setEditNode(node)}
                                 >
-                                    Edit
+                                    {t('edit')}
                                 </Button>
                                 <Button variant="contained" size={"small"} color="secondary" sx={{m: 1}}
-                                        onClick={() => deleteNode(node.id)}>Delete</Button>
+                                        onClick={() => deleteNode(node.id)}>{t('delete')}</Button>
                             </ListItem>
                         </Card>
                     ))}

@@ -1,0 +1,55 @@
+diff --git a/node_modules/osh-js/core/parsers/JsonDataParser.js b/node_modules/osh-js/core/parsers/JsonDataParser.js
+index 8bb9f66..0c26f5c 100644
+--- a/node_modules/osh-js/core/parsers/JsonDataParser.js
++++ b/node_modules/osh-js/core/parsers/JsonDataParser.js
+@@ -58,10 +58,13 @@ var JsonDataParser = /** @class */ (function (_super) {
+                 jsonData = input;
+             }
+         }
++        if (!jsonData) return [];
+         if (Array.isArray(jsonData)) {
+             for (var _i = 0, jsonData_1 = jsonData; _i < jsonData_1.length; _i++) {
+                 var d = jsonData_1[_i];
+-                d['timestamp'] = new Date(d[this.getTimeField()]).getTime() + this.props.timeShift;
++                if (d) {
++                    d['timestamp'] = new Date(d[this.getTimeField()]).getTime() + this.props.timeShift;
++                }
+             }
+             return jsonData;
+         }
+diff --git a/node_modules/osh-js/source/core/mqtt/MqttProvider.js b/node_modules/osh-js/source/core/mqtt/MqttProvider.js
+index fb0b3a8..75a9ba2 100644
+--- a/node_modules/osh-js/source/core/mqtt/MqttProvider.js
++++ b/node_modules/osh-js/source/core/mqtt/MqttProvider.js
+@@ -166,10 +166,10 @@ class MqttProvider {
+             this.client.on('message', this.onMessage.bind(this));
+
+             this.client.on('offline', e => {
+-                throw new Error(`The server ${that.endpoint} seems offline`);
++                console.warn(`The server ${that.endpoint} seems offline`);
+             });
+             this.client.on('error', e => {
+-                throw new Error(error);
++                console.error(e);
+             });
+         }
+     }
+diff --git a/node_modules/osh-js/source/core/parsers/JsonDataParser.js b/node_modules/osh-js/source/core/parsers/JsonDataParser.js
+index 67eb795..57490eb 100644
+--- a/node_modules/osh-js/source/core/parsers/JsonDataParser.js
++++ b/node_modules/osh-js/source/core/parsers/JsonDataParser.js
+@@ -38,9 +38,13 @@ class JsonDataParser extends GenericParser {
+             }
+         }
+
++        if (!jsonData) return [];
++
+         if(Array.isArray(jsonData)) {
+             for(let d of jsonData) {
+-                d['timestamp'] = new Date(d[this.getTimeField()]).getTime() + this.props.timeShift;
++                if (d) {
++                    d['timestamp'] = new Date(d[this.getTimeField()]).getTime() + this.props.timeShift;
++                }
+             }
+             return jsonData;
+         } else {
