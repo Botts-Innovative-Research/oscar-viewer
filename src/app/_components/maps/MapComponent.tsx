@@ -25,9 +25,10 @@ import {INode} from "@/lib/data/osh/Node";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import { convertToMap } from "@/app/utils/Utils";
 import DataStreamFilter from "osh-js/source/core/consysapi/datastream/DataStreamFilter.js";
-
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function MapComponent() {
+    const { t } = useLanguage();
     const mapcontainer: string = "mapcontainer";
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
     const leafletViewRef = useRef<typeof LeafletView | null>(null);
@@ -320,8 +321,8 @@ export default function MapComponent() {
 
         return (
             `<div id='popup-data-layer' class='point-popup'><hr/>
-                <h3 class='popup-text-status'>Status: ${status}</h3>
-                <button onClick='location.href="/lane-view"' class="popup-button" type="button">VIEW LANE</button>
+                <h3 class='popup-text-status'>${t('status')}: ${status}</h3>
+                <button onClick='location.href="/lane-view"' class="popup-button" type="button">${t('viewLane')}</button>
             </div>`
         );
     }

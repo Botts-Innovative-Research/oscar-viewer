@@ -22,9 +22,11 @@ import {selectNodes} from "@/lib/state/OSHSlice";
 import {isReportControlStream} from "@/lib/data/oscar/Utilities";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 
 export default function ReportGeneratorView(){
+    const { t } = useLanguage();
     const[isGenerating, setIsGenerating] = useState(false);
 
     const [selectedReportType, setSelectedReportType]= useState<string | null>("");
@@ -208,7 +210,7 @@ export default function ReportGeneratorView(){
             <Grid container spacing={4}>
                 <Grid item xs={12} md={5}>
                     <Typography variant="h5" align="center" gutterBottom>
-                        Generate A Report
+                        {t('generateReport')}
                     </Typography>
 
                     <Stack spacing={3}>
@@ -243,7 +245,7 @@ export default function ReportGeneratorView(){
                             onClick={handleGenerateReport}
                             disabled={isGenerating || !selectedReportType || !selectedTimeRange || !selectedNode}
                         >
-                            {isGenerating ? 'Generating Report...' : 'Generate Report'}
+                            {isGenerating ? t('generatingReport') : t('generateReportBtn')}
                         </Button>
 
                     </Stack>
@@ -252,7 +254,7 @@ export default function ReportGeneratorView(){
                 <Grid item xs={12} md={7}>
                     <Paper elevation={3} sx={{ padding: 2, height: "100%" }}>
                         <Typography variant="h5" align="center" gutterBottom>
-                            Generated Report
+                            {t('generatedReport')}
                         </Typography>
 
                         {generatedURL ? (

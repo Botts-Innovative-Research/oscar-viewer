@@ -2,26 +2,28 @@
 
 import {FormControl, InputLabel, MenuItem, Select, SelectChangeEvent} from '@mui/material';
 import {useState} from "react";
-
-export const eventTypes = [
-    {
-        label: "Alarms and Occupancies",
-        value: "ALARMS_OCCUPANCIES",
-    },
-    {
-        label: "Alarms",
-        value: "ALARMS",
-    },
-    {
-        label: "State of Health",
-        value: "SOH",
-    },
-]
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function EventTypeSelect(props: {
     onSelect: (value: string[] | string) => void,
     event: string
 }) {
+    const { t } = useLanguage();
+
+    const eventTypes = [
+        {
+            label: t('alarmsAndOccupancies'),
+            value: "ALARMS_OCCUPANCIES",
+        },
+        {
+            label: t('alarms'),
+            value: "ALARMS",
+        },
+        {
+            label: t('stateOfHealth'),
+            value: "SOH",
+        },
+    ]
 
     const handleChange = (event: SelectChangeEvent) => {
         const val = event.target.value;
@@ -30,11 +32,11 @@ export default function EventTypeSelect(props: {
 
     return (
         <FormControl size="small" fullWidth>
-            <InputLabel id="label">Event Type</InputLabel>
+            <InputLabel id="label">{t('eventType')}</InputLabel>
             <Select
                 variant="outlined"
                 id="label"
-                label="Event Type"
+                label={t('eventType')}
                 value= {props.event || ""}
                 onChange={handleChange}
                 MenuProps={{
