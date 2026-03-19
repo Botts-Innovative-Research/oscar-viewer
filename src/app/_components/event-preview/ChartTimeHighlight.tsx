@@ -17,6 +17,7 @@ import {
     createNSigmaCalcViewCurve,
     createThresholdViewCurve, createThreshSigmaViewCurve
 } from "@/app/utils/ChartUtils";
+import {useLanguage} from "@/contexts/LanguageContext";
 
 
 type CurveLayers = {
@@ -44,6 +45,7 @@ export class ChartInterceptProps {
 }
 
 export default function ChartTimeHighlight(props: ChartInterceptProps) {
+    const { t } = useLanguage();
 
     const gammaChartViewRef = useRef<HTMLDivElement | null>(null);
     const nSigmaChartViewRef = useRef<HTMLDivElement | null>(null);
