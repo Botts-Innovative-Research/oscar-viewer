@@ -4,6 +4,8 @@ import {FormControl, InputLabel, ListSubheader, MenuItem, Select, SelectChangeEv
 import {useEffect, useState} from 'react';
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {IAdjudicationData} from "@/lib/data/oscar/adjudication/Adjudication";
+import {useLanguage} from "@/contexts/LanguageContext";
+
 
 export const colorCodes = {
     real: {color: "error.dark"},
@@ -16,10 +18,12 @@ export default function AdjudicationSelect(props: {
     onSelect: (value: AdjudicationCode) => void, // Return selected value
     adjCode: AdjudicationCode
 }) {
+    const { t } = useLanguage();
     // const [adjudicated, setAdjudicated] = useState<AdjudicationCode>(AdjudicationCodes.codes[0]); // Adjudication selected value
     const [style, setStyle] = useState(colorCodes.other.color); // Adjudicated button style based on selected value
 
     const handleChangeAdjCode = (event: SelectChangeEvent) => {
+        // Value in Select is English label (unique)
         let value: AdjudicationCode = AdjudicationCodes.getCodeObjByLabel(event.target.value);
         // setAdjudicated(value); // Set local adjudicated state
         props.onSelect(value); // Return selected value to parent component
@@ -38,11 +42,11 @@ export default function AdjudicationSelect(props: {
 
     return (
         <FormControl size="small" fullWidth>
-            <InputLabel id="label" sx={{"&.MuiInputLabel-root": {color: style}}}>Adjudicate</InputLabel>
+            <InputLabel id="label" sx={{"&.MuiInputLabel-root": {color: style}}}>{t('adjudicated')}</InputLabel>
             <Select
                 variant="outlined"
                 id="label"
-                label="Adjudicate"
+                label={t('adjudicated')}
                 value={props.adjCode.label}
                 onChange={handleChangeAdjCode}
                 MenuProps={{
@@ -71,34 +75,34 @@ export default function AdjudicationSelect(props: {
                         },
                 }}
             >
-                <ListSubheader>Real Alarm</ListSubheader>
+                <ListSubheader>{t('realAlarm')}</ListSubheader>
                 {AdjudicationCodes.getGroupCodes("Real Alarm").map((code) => (
-                    <MenuItem key={code.code} value={code.label} sx={colorCodes.real}>{code.label}</MenuItem>
+                    <MenuItem key={code.code} value={code.label} sx={colorCodes.real}>{t(code.translationKey)}</MenuItem>
                 ))}
 
-                <ListSubheader>Innocent Alarm</ListSubheader>
+                <ListSubheader>{t('innocentAlarm')}</ListSubheader>
                 {AdjudicationCodes.getGroupCodes("Innocent Alarm").map((code) => (
-                    <MenuItem key={code.code} value={code.label} sx={colorCodes.innocent}>{code.label}</MenuItem>
+                    <MenuItem key={code.code} value={code.label} sx={colorCodes.innocent}>{t(code.translationKey)}</MenuItem>
                 ))}
 
-                <ListSubheader>False Alarm</ListSubheader>
+                <ListSubheader>{t('falseAlarm')}</ListSubheader>
                 {AdjudicationCodes.getGroupCodes("False Alarm").map((code) => (
-                    <MenuItem key={code.code} value={code.label} sx={colorCodes.false}>{code.label}</MenuItem>
+                    <MenuItem key={code.code} value={code.label} sx={colorCodes.false}>{t(code.translationKey)}</MenuItem>
                 ))}
 
                 <ListSubheader>Alarm/Tamper/Fault</ListSubheader>
                 {AdjudicationCodes.getGroupCodes("Test/Maintenance").map((code) => (
-                    <MenuItem key={code.code} value={code.label} sx={colorCodes.other}>{code.label}</MenuItem>
+                    <MenuItem key={code.code} value={code.label} sx={colorCodes.other}>{t(code.translationKey)}</MenuItem>
                 ))}
 
                 <ListSubheader>Tamper/Fault</ListSubheader>
                 {AdjudicationCodes.getGroupCodes("Tamper/Fault").map((code) => (
-                    <MenuItem key={code.code} value={code.label} sx={colorCodes.other}>{code.label}</MenuItem>
+                    <MenuItem key={code.code} value={code.label} sx={colorCodes.other}>{t(code.translationKey)}</MenuItem>
                 ))}
 
-                <ListSubheader>Other</ListSubheader>
+                <ListSubheader>{t('other')}</ListSubheader>
                 {AdjudicationCodes.getGroupCodes("Other").map((code) => (
-                    <MenuItem key={code.code} value={code.label} sx={colorCodes.other}>{code.label}</MenuItem>
+                    <MenuItem key={code.code} value={code.label} sx={colorCodes.other}>{t(code.translationKey)}</MenuItem>
                 ))}
             </Select>
         </FormControl>
