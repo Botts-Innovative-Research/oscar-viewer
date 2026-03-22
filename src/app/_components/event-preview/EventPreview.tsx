@@ -47,8 +47,10 @@ import ObservationFilter from "osh-js/source/core/consysapi/observation/Observat
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import {isAdjudicationControlStream} from "@/lib/data/oscar/Utilities";
 import { EventTableData } from "@/lib/data/oscar/TableHelpers";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export function EventPreview() {
+    const { t } = useLanguage();
     const dispatch = useAppDispatch();
     const router = useRouter();
     const eventPreview = useSelector(selectEventPreview);
@@ -325,11 +327,11 @@ export function EventPreview() {
                     <Typography
                         variant="h6"
                     >
-                        Occupancy ID: {eventPreview.eventData.occupancyCount}
+                        {t('occupancyId')}: {eventPreview.eventData.occupancyCount}
                     </Typography>
                     <IconButton
                         onClick={handleExpand}
-                        aria-label="expand"
+                        aria-label={t('expand')}
                     >
                         <OpenInFullRoundedIcon
                             fontSize="small"
@@ -338,7 +340,7 @@ export function EventPreview() {
                 </Stack>
                 <IconButton
                     onClick={handleCloseRounded}
-                    aria-label="close"
+                    aria-label={t('close')}
                 >
                     <CloseRoundedIcon fontSize="small"/>
                 </IconButton>
@@ -377,7 +379,7 @@ export function EventPreview() {
                 <TextField
                     onChange={handleNotes}
                     id="outlined-multiline-static"
-                    label="Notes"
+                    label={t('notes')}
                     multiline
                     rows={4}
                 />

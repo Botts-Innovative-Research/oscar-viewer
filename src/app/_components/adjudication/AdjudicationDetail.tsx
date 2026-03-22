@@ -36,10 +36,12 @@ import IconButton from "@mui/material/IconButton";
 import DeleteOutline from "@mui/icons-material/DeleteOutline"
 import {setAdjudicatedEventId, setSelectedEvent} from "@/lib/state/EventDataSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
+import {useLanguage} from "@/contexts/LanguageContext";
 
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
     const dispatch = useAppDispatch();
+    const { t } = useLanguage();
 
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
@@ -95,7 +97,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     const occupancyObservation = await query.nextPage();
 
                     if (!occupancyObservation || occupancyObservation.length === 0) {
-                        setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
+                        setAdjSnackMsg(t('cannotFindObservation'));
                         setColorStatus('error');
                         setOpenSnack(true);
                         return;
@@ -106,7 +108,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
                 } catch (err) {
                     console.error(err);
-                    setAdjSnackMsg('Error loading observation.');
+                    setAdjSnackMsg(t('errorLoadingObservation'));
                     setColorStatus('error');
                     setOpenSnack(true);
                 }
@@ -188,7 +190,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const sendAdjudicationData = async () => {
         if(adjData.adjudicationCode === null || !adjData.adjudicationCode || adjData.adjudicationCode === AdjudicationCodes.codes[0]){
-            setAdjSnackMsg("Please selected a valid adjudication code before submitting.");
+            setAdjSnackMsg(t('selectValidCode'));
             setColorStatus('error');
             setOpenSnack(true)
             return;
@@ -234,7 +236,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 const occupancyObservation = await query.nextPage();
 
                 if (!occupancyObservation) {
-                    setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
+                    setAdjSnackMsg(t('cannotFindObservation'));
                     setColorStatus('error')
                     setOpenSnack(true);
                     return;
@@ -264,7 +266,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             );
 
             if (!response.ok) {
-                setAdjSnackMsg('Adjudication failed to submit.')
+                setAdjSnackMsg(t('adjudicationFail'))
                 setColorStatus('error')
                 return;
             }
@@ -274,11 +276,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             dispatch(setSelectedEvent(props.event));
             dispatch(setAdjudicatedEventId(props.event.id));
 
-            setAdjSnackMsg('Adjudication successful for Occupancy ID: ' + props.event.occupancyCount);
+            setAdjSnackMsg(t('adjudicationSuccess') + props.event.occupancyCount);
             setColorStatus('success')
 
         }catch(error){
-            setAdjSnackMsg('Adjudication failed to submit.')
+            setAdjSnackMsg(t('adjudicationFail'))
             setColorStatus('error')
         }finally{
             setShouldFetchLogs(true);
@@ -301,7 +303,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             <Typography
                 variant="h4"
             >
-                Adjudication
+                {t('adjudicationTitle')}
             </Typography>
 
             <AdjudicationLog
@@ -311,7 +313,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             />
 
             <Stack spacing={2}>
-                <Typography variant="h5">Adjudication Report Form</Typography>
+                <Typography variant="h5">{t('adjudicationReportForm')}</Typography>
 
                 <Stack
                     direction={"row"}
@@ -320,7 +322,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     alignItems={"center"}
                 >
                     <TextField
-                        label="VehicleId"
+                        label={t('vehicleId')}
                         name="vehicleId"
                         value={vehicleId}
                         onChange={handleChange}
@@ -346,7 +348,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
                 <TextField
                     id="outlined-multiline-static"
-                    label="Notes"
+                    label={t('notes')}
                     name="notes"
                     multiline
                     rows={4}
@@ -406,7 +408,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                             color: "secondary.main"
                         }}
                     >
-                        Upload Files
+                        {t('uploadFiles')}
                         <input
                             type="file"
                             multiple
@@ -426,7 +428,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                             color={"success"}
                             onClick={sendAdjudicationData}
                         >
-                            Submit
+                            {t('submit')}
                         </Button>
                         <Snackbar
                             anchorOrigin={{ vertical:'top', horizontal:'center' }}

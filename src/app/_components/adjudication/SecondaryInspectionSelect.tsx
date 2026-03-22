@@ -4,6 +4,7 @@ import {FormControl, InputLabel, ListSubheader, MenuItem, Select, SelectChangeEv
 import {useEffect, useState} from 'react';
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {IAdjudicationData} from "@/lib/data/oscar/adjudication/Adjudication";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const secondarySelectChoices=[
     "NONE",
@@ -14,6 +15,7 @@ export default function SecondaryInspectionSelect(props: {
     onSelect: (value: string) => void, // Return selected value
     secondarySelectVal: string
 }) {
+    const { t } = useLanguage();
 
     const handleChange = (event: SelectChangeEvent) => {
         const val = event.target.value;
@@ -22,11 +24,11 @@ export default function SecondaryInspectionSelect(props: {
 
     return (
         <FormControl size="small" fullWidth>
-            <InputLabel id="label" >Secondary Inspection</InputLabel>
+            <InputLabel id="label" >{t('secondaryInspection')}</InputLabel>
             <Select
                 variant="outlined"
                 id="label"
-                label="Secondary Inspection"
+                label={t('secondaryInspection')}
                 value={props.secondarySelectVal}
                 onChange={handleChange}
                 MenuProps={{
