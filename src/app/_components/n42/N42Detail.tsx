@@ -1,6 +1,5 @@
 import {Grid, Typography} from "@mui/material";
 import React, {useContext, useEffect, useState} from "react";
-import NuclideAnalysisTable from "@/app/_components/n42/NuclideAnalysisTable";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {N42_REPORT_DEF} from "@/lib/data/Constants";
 import {EventType} from "osh-js/source/core/event/EventType";
@@ -81,35 +80,30 @@ export default function N42Detail(props: { event: EventTableData; }) {
                 <Typography variant="h4">N42</Typography>
             </Grid>
 
-                <Grid item xs>
-                    <Grid container direction="row" marginTop={2} marginLeft={1} spacing={4}>
-                        {foregroundReports.length > 0 && (
-                            <Grid item xs>
-                                <N42ChartPlayback
-                                    reports={foregroundReports}
-                                    title={"Foreground Linear Spectrum"}
-                                    chartId={"n42-chart-foreground"}
-                                    yValue={"linearSpectrum"}
-                                />
-                            </Grid>
-                            )}
-                        {backgroundReports.length > 0 && (
-                            <Grid item xs>
-                                <N42ChartPlayback
-                                    reports={backgroundReports}
-                                    title={"Background Linear Spectrum"}
-                                    chartId={"n42-chart-background"}
-                                    yValue={"linearSpectrum"}
-                                />
-                            </Grid>
-                            )}
-                    </Grid>
+            <Grid item xs>
+                <Grid container direction="row" marginTop={2} marginLeft={1} spacing={4}>
+                    {foregroundReports.length > 0 && (
+                        <Grid item xs>
+                            <N42ChartPlayback
+                                reports={foregroundReports}
+                                title={"Foreground Linear Spectrum"}
+                                chartId={"n42-chart-foreground"}
+                                yValue={"linearSpectrum"}
+                            />
+                        </Grid>
+                        )}
+                    {backgroundReports.length > 0 && (
+                        <Grid item xs>
+                            <N42ChartPlayback
+                                reports={backgroundReports}
+                                title={"Background Linear Spectrum"}
+                                chartId={"n42-chart-background"}
+                                yValue={"linearSpectrum"}
+                            />
+                        </Grid>
+                        )}
                 </Grid>
-
-            {/*this is a repeat of the webid analysis isotopes block */}
-            {/*<Grid item xs={12}>*/}
-            {/*    <NuclideAnalysisTable datasource={undefined}/>*/}
-            {/*</Grid>*/}
+            </Grid>
         </Grid>
     );
 }
