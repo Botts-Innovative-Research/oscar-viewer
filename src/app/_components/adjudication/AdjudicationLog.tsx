@@ -173,7 +173,6 @@ export default function AdjudicationLog(props: {
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
 
         let controlStream: typeof ControlStream = currLaneEntry.controlStreams.find((cs) => isAdjudicationControlStream(cs));
-        console.log('control stream', controlStream)
         if(!controlStream) {
             console.warn("No Adjudication control stream found for this lane");
             return;
@@ -217,7 +216,6 @@ export default function AdjudicationLog(props: {
 
 
         let controlStream: typeof ControlStream = currLaneEntry.controlStreams.find((cs) => isAdjudicationControlStream(cs));
-        console.log('control stream', controlStream)
         if(!controlStream) {
             console.warn("No Adjudication control stream found for this lane");
             return;
@@ -225,7 +223,6 @@ export default function AdjudicationLog(props: {
 
         let controlSource = currLaneEntry.createRealTimeConSysApi(controlStream);
 
-        console.log('control source', controlSource)
         if (!controlSource) {
             console.warn("Cannot create rt datasource for this controlstream");
             return;

@@ -170,10 +170,7 @@ export default function WebIdAnalysis(props: {
             return;
         }
 
-        const webIdSource = currLaneEntry.datasourcesRealtime?.find((ds: any) => {
-            const parts = ds.properties.resource?.split("/");
-            return parts && parts[2] === webIdStream.properties.id;
-        });
+        const webIdSource = currLaneEntry.createRealTimeConSysApi(webIdStream);
 
         if (!webIdSource) {
             console.warn("No WebID Analysis data source found for this lane");
@@ -181,6 +178,8 @@ export default function WebIdAnalysis(props: {
         }
 
         const handleWebIdObservations = (msg: any) => {
+            console.log('webid msg',msg)
+
             const results = msg.values?.[0]?.data;
 
             const webId = new WebIdAnalysisResult("", results)
@@ -195,10 +194,6 @@ export default function WebIdAnalysis(props: {
         } catch (err) {
             console.error("Error connecting webid source:", err);
         }
-
-        // return () => {
-        //     webIdSource.disconnect();
-        // }
     }, [props.event]);
 
 
