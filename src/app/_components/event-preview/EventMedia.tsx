@@ -13,6 +13,7 @@ import DataStreamFilter from "osh-js/source/core/consysapi/datastream/DataStream
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
 import {isRs350DataStream} from "@/lib/data/oscar/Utilities";
+import Rs350ChartPlayback from "@/app/_components/event-preview/Rs350ChartPlayback";
 
 
 export default function EventMedia({selectedNode, datasources, eventData, mode, laneMap}: {selectedNode: any, datasources: typeof ConSysApi, eventData: EventTableData, mode: string,  laneMap: Map<string, LaneMapEntry>},) {
@@ -24,7 +25,7 @@ export default function EventMedia({selectedNode, datasources, eventData, mode, 
     const [rs350DataStream, setRs350DataStream] = useState();
 
     const handleVideoTimeUpdate = (timeMs: number) => {
-        if ( !videoIsPlaying ) return;
+        if (!videoIsPlaying) return;
         setVideoCurrentTime(timeMs);
     };
 
@@ -36,9 +37,7 @@ export default function EventMedia({selectedNode, datasources, eventData, mode, 
     useEffect(() => {
         if (eventData.isRS350 && laneMap) {
             const entry = laneMap.get(eventData.laneId);
-
             const dss = entry.datastreams.find((ds: typeof DataStream)=> isRs350DataStream(ds));
-
             setRs350DataStream(dss);
         }
     }, [eventData, laneMap]);
@@ -50,8 +49,7 @@ export default function EventMedia({selectedNode, datasources, eventData, mode, 
                     {eventData.isRS350 ? (
 
                         <>
-                            <N42ChartPlayback datastream={rs350DataStream} title={"Foreground Linear Spectrum"} chartId={"linear-spec-replay-fg"} currentTime={videoCurrentTime}/>
-                            {/*<N42ChartPlayback datastream={} title={"Foreground Linear Spectrum"} chartId={"linear-spec-replay-fg"} startTime={eventData.startTime} endTime={eventData.endTime} currentTime={videoCurrentTime}/>*/}
+                            <Rs350ChartPlayback datastream={rs350DataStream} title={"Foreground Linear Spectrum"} chartId={"linear-spec-replay-fg"} startTime={eventData.startTime} endTime={eventData.endTime} currentTime={videoCurrentTime}/>
                         </>
 
                     ) : (
@@ -97,9 +95,7 @@ export default function EventMedia({selectedNode, datasources, eventData, mode, 
                         <Grid item xs={12} md={6}>
                             {eventData.isRS350 ? (
                                 <>
-                                    <N42ChartPlayback datastream={rs350DataStream} title={"Foreground Linear Spectrum"} chartId={"linear-spec-replay-fg"} currentTime={videoCurrentTime}/>
-
-                                    {/*<N42ChartPlayback datastream={} title={"Foreground Linear Spectrum"} chartId={"linear-spec-replay-fg"} startTime={eventData.startTime} endTime={eventData.endTime} />*/}
+                                    <Rs350ChartPlayback datastream={rs350DataStream} title={"Foreground Linear Spectrum"} chartId={"linear-spec-replay-fg"} currentTime={videoCurrentTime} startTime={eventData.startTime} endTime={eventData.endTime}/>
                                 </>
                             ) : (
                                 <ChartTimeHighlight

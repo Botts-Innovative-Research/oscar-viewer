@@ -204,29 +204,27 @@ export default function WebIdAnalysis(props: {
 
 
     return (
-        <>
-            <Stack spacing={2} sx={{ width: '100%' }}>
-                <Stack direction={"column"} spacing={1}>
-                    <Typography variant="h5">
-                        WebID Analysis Results Log
-                    </Typography>
-                </Stack>
-                <Box sx={{ width: '100%' }}>
-                    <DataGrid
-                        rows={filteredLog}
-                        columns={logColumns}
-                        initialState={{
-                            pagination: {
-                                paginationModel: {
-                                    pageSize: 10
-                                }
-                            }
-                        }}
-                        pageSizeOptions={[5, 10, 25, 50, 100]}
-                        disableRowSelectionOnClick={true}
-                    />
-                </Box>
+        <Stack spacing={2} sx={{ width: '100%' }}>
+            <Stack direction={"column"} spacing={1}>
+                <Typography variant="h5">
+                    WebID Analysis Results Log
+                </Typography>
             </Stack>
-        </>
+            <Box sx={{ width: '100%' }}>
+                <DataGrid
+                    rows={filteredLog}
+                    columns={logColumns}
+                    initialState={{
+                        pagination: {
+                            paginationModel: {
+                                pageSize: 10
+                            }
+                        }
+                    }}
+                    pageSizeOptions={[5, 10, 25, 50, 100]}
+                    disableRowSelectionOnClick={true}
+                />
+            </Box>
+        </Stack>
     );
 }

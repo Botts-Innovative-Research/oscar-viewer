@@ -510,7 +510,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         const webIdFiles = filePaths.filter(f => f.webIdEnabled);
         const foregroundFile = webIdFiles.find(f => f.spectrumType === 'foreground');
         const backgroundFile = webIdFiles.find(f => f.spectrumType === 'background');
-        const foregroundAndBackgroundFile = webIdFiles.find(f => f.spectrumType === 'foreground/background');
         const hasPair = foregroundFile && backgroundFile;
 
         const pairedFiles = hasPair ? new Set([foregroundFile, backgroundFile]) : new Set<FileWithWebId>();
