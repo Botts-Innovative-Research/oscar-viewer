@@ -283,31 +283,6 @@ export class LaneMapEntry {
         return stream;
     }
 
-    async getDatastreamsForN42EventDetail(startTime: string, endTime:string): Promise<Map<string, typeof ConSysApi[]>>{
-        let dsMap: Map<string, typeof ConSysApi[]> = new Map();
-        dsMap.set('occ', []);
-        dsMap.set('n42', []);
-
-        for (const ds of this.datastreams) {
-
-
-            const datasourceBatch = this.createBatchConSysApiFromDataStream(ds, startTime, endTime);
-
-            // if (isOccupancyDataStream(ds)) {
-            //     let occArray = dsMap.get('occ')!;
-            //
-            //     occArray.push(datasourceBatch);
-            // }
-
-            if (isRs350DataStream(ds)) {
-                let n42Array = dsMap.get('n42')!;
-                n42Array.push(datasourceBatch);
-            }
-        }
-
-        return dsMap
-    }
-
 
     /**
      * Retrieves datastreams within the specified time range and categorizes them by event detail types.

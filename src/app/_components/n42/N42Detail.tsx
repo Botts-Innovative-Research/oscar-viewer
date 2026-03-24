@@ -56,8 +56,6 @@ export default function N42Detail(props: { event: EventTableData; }) {
             }
 
             const bkgReports = data["Background Reports"] ?? [];
-            console.log('bkg reports', bkgReports)
-
             console.log(`Received ${bkgReports.length} background reports`);
             if (bkgReports.length > 0) {
                 setBackgroundReports(bkgReports);

@@ -271,42 +271,39 @@ export default function AdjudicationLog(props: {
     }, [adjLog]);
 
 
-
     return (
-        <>
-            <Stack spacing={2} sx={{ width: '100%' }}>
-                <Stack direction={"column"} spacing={1}>
-                    <Typography variant="h5">Logged Adjudications</Typography>
-                </Stack>
-                <Box sx={{ width: '100%' }}>
-                    <DataGrid
-                        rows={filteredLog}
-                        columns={logColumns}
-                        initialState={{
-                            pagination: {
-                                paginationModel: {
-                                    pageSize: 10
-                                }
-                            }
-                        }}
-                        pageSizeOptions={[5, 10, 25, 50, 100]}
-                        disableRowSelectionOnClick={true}
-                    />
-                </Box>
-                <Dialog
-                    open={feedbackDialog.open}
-                    onClose={() => setFeedbackDialog({ open: false, text: "" })}
-                    maxWidth="sm"
-                    fullWidth
-                >
-                    <DialogTitle>Feedback</DialogTitle>
-                    <DialogContent>
-                        <Typography whiteSpace="pre-wrap">
-                            {feedbackDialog.text}
-                        </Typography>
-                    </DialogContent>
-                </Dialog>
+        <Stack spacing={2} sx={{ width: '100%' }}>
+            <Stack direction={"column"} spacing={1}>
+                <Typography variant="h5">Logged Adjudications</Typography>
             </Stack>
-        </>
+            <Box sx={{ width: '100%' }}>
+                <DataGrid
+                    rows={filteredLog}
+                    columns={logColumns}
+                    initialState={{
+                        pagination: {
+                            paginationModel: {
+                                pageSize: 10
+                            }
+                        }
+                    }}
+                    pageSizeOptions={[5, 10, 25, 50, 100]}
+                    disableRowSelectionOnClick={true}
+                />
+            </Box>
+            <Dialog
+                open={feedbackDialog.open}
+                onClose={() => setFeedbackDialog({ open: false, text: "" })}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>Feedback</DialogTitle>
+                <DialogContent>
+                    <Typography whiteSpace="pre-wrap">
+                        {feedbackDialog.text}
+                    </Typography>
+                </DialogContent>
+            </Dialog>
+        </Stack>
     );
 }
