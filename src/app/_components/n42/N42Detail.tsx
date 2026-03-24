@@ -19,8 +19,7 @@ export interface N42Report {
     dose: string;
 }
 
-// this will be under adjudications when they upload a file
-export default function N42Detail(props: { event: EventTableData; }) {
+export default function N42Detail(props: { event: EventTableData; uploadedFiles: string[] }) {
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
 
     const [foregroundReports, setForegroundReports] = useState<N42Report[]>([]);
@@ -49,6 +48,17 @@ export default function N42Detail(props: { event: EventTableData; }) {
             const data = msg.values?.[0]?.data;
             if (!data) return;
 
+            const msgFileName = data["fileName"]; // files/adjudication/FILE_NAME.n42
+            // const adjFilePaths = props.event.adjudicatedData?.filePaths ?? []; // ["FILE_NAME.n42"]
+
+            console.log('adj file paths', props.uploadedFiles)
+            console.log('msgFile name', msgFileName)
+            const matchesAdj = props.uploadedFiles.some(fp => msgFileName?.endsWith(fp));
+            if (!matchesAdj) {
+                console.log('file doesnt match')
+                return;
+            }
+
             const reports: N42Report[] = data["Foreground Reports"] ?? [];
             console.log(`Received ${reports.length} foreground reports`);
             if (reports.length > 0) {
@@ -70,18 +80,22 @@ export default function N42Detail(props: { event: EventTableData; }) {
             console.error("Error connecting n42 source:", err);
         }
 
-    }, [props.event]);
+    }, [props.event.adjudicatedData, props.uploadedFiles]);
+
+    if (foregroundReports.length === 0 && backgroundReports.length === 0) {
+        return null;
+    }
 
     return (
         <Grid container spacing={2} sx={{width: '100%'}}>
             <Grid item xs={12}>
-                <Typography variant="h4">N42</Typography>
+                <Typography variant="h5">N42 Report</Typography>
             </Grid>
 
             <Grid item xs>
                 <Grid container direction="row" marginTop={2} marginLeft={1} spacing={4}>
                     {foregroundReports.length > 0 && (
-                        <Grid item xs>
+                        <Grid item xs={6}>
                             <N42ChartPlayback
                                 reports={foregroundReports}
                                 title={"Foreground Linear Spectrum"}
@@ -91,7 +105,7 @@ export default function N42Detail(props: { event: EventTableData; }) {
                         </Grid>
                         )}
                     {backgroundReports.length > 0 && (
-                        <Grid item xs>
+                        <Grid item xs={6}>
                             <N42ChartPlayback
                                 reports={backgroundReports}
                                 title={"Background Linear Spectrum"}

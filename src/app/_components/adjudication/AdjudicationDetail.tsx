@@ -49,6 +49,7 @@ import {RootState} from "@/lib/state/Store";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import { useBreakpoint } from "@/app/providers";
+import N42Detail from "@/app/_components/n42/N42Detail";
 
 interface FileWithWebId {
     file: File;
@@ -599,6 +600,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 <WebIdAnalysis
                     event={props.event}
                 />
+            </Grid>
+
+            {/*N42 Detail*/}
+            <Grid item xs={12}>
+                <N42Detail event={props.event} uploadedFiles={adjData.filePaths}/>
             </Grid>
 
             <Grid item xs={12}>
