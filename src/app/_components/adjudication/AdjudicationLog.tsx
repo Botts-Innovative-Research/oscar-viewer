@@ -131,7 +131,7 @@ export default function AdjudicationLog(props: {
                                         rel="noopener noreferrer"
                                         style={{ color: '#1976d2', textDecoration: 'underline' }}
                                     >
-                                        {path.split("/")[1]}
+                                        {path.split("\\")[1]}
                                     </a>
                                 ) : path}
                             </React.Fragment>
