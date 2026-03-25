@@ -133,25 +133,49 @@ export default function N42Detail(props: { event: EventTableData; uploadedFiles:
             <Grid item xs>
                 <Grid container direction="row" marginTop={2} marginLeft={1} spacing={4}>
                     {activeFile.foregroundReports.length > 0 && (
-                        <Grid item xs={6}>
-                            <N42ChartPlayback
-                                reports={activeFile.foregroundReports}
-                                title={"Foreground Linear Spectrum"}
-                                chartId={`n42-chart-foreground-${currentPage}`}
-                                yValue={"linearSpectrum"}
-                            />
-                        </Grid>
+                        <>
+                            <Grid item xs={6}>
+                                <N42ChartPlayback
+                                    reports={activeFile.foregroundReports}
+                                    title={"Foreground Linear Spectrum"}
+                                    chartId={`n42-chart-foreground-${currentPage}`}
+                                    yValue={"linearSpectrum"}
+                                />
+                            </Grid>
+                            <Grid item xs={6}>
+                                <N42ChartPlayback
+                                    reports={activeFile.foregroundReports}
+                                    title={"Foreground Linear Spectrum"}
+                                    chartId={`n42-chart-foreground-cmp-${currentPage}`}
+                                    yValue={"compressedSpectrum"}
+                                />
+                            </Grid>
+                        </>
                     )}
+
+
                     {activeFile.backgroundReports.length > 0 && (
-                        <Grid item xs={6}>
-                            <N42ChartPlayback
-                                reports={activeFile.backgroundReports}
-                                title={"Background Linear Spectrum"}
-                                chartId={`n42-chart-background-${currentPage}`}
-                                yValue={"linearSpectrum"}
-                            />
-                        </Grid>
+                        <>
+                            <Grid item xs={6}>
+                                <N42ChartPlayback
+                                    reports={activeFile.backgroundReports}
+                                    title={"Background Linear Spectrum"}
+                                    chartId={`n42-chart-background-${currentPage}`}
+                                    yValue={"linearSpectrum"}
+                                />
+                            </Grid>
+                            <Grid item xs={6}>
+                                <N42ChartPlayback
+                                    reports={activeFile.backgroundReports}
+                                    title={"Background Compressed Spectrum"}
+                                    chartId={`n42-chart-background-cpm-${currentPage}`}
+                                    yValue={"compressedSpectrum"}
+                                />
+                            </Grid>
+                        </>
                     )}
+
+
                 </Grid>
             </Grid>
         </Grid>
