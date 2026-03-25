@@ -13,8 +13,8 @@ import {
     Button,
     Paper,
     Snackbar,
-    TextField
-
+    TextField,
+    Grid
 } from "@mui/material";
 import React, {ChangeEvent, useContext, useEffect, useRef, useState} from "react";
 import AdjudicationLog from "./AdjudicationLog"
@@ -32,20 +32,25 @@ import UploadFileRoundedIcon from '@mui/icons-material/UploadFileRounded';
 import InsertDriveFileRoundedIcon from '@mui/icons-material/InsertDriveFileRounded';
 import AdjudicationSelect from "./AdjudicationSelect";
 import IsotopeSelect from "./IsotopeSelect";
+import WebIdAnalysis from "./WebIdAnalysis";
+import { DetectorResponseFunction } from "./DetectorResponseFunction";
 import IconButton from "@mui/material/IconButton";
 import DeleteOutline from "@mui/icons-material/DeleteOutline"
 import {setAdjudicatedEventId, setSelectedEvent} from "@/lib/state/EventDataSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
+import {useLanguage} from "@/contexts/LanguageContext";
 
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
     const dispatch = useAppDispatch();
+    const { t } = useLanguage();
 
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
     const [adjudicationCode, setAdjudicationCode] = useState(AdjudicationCodes.codes[0]);
     const [isotope, setIsotope] = useState<string[]>([]);
     const [secondaryInspection, setSecondaryInspection] = useState('');
+    const [qrData, setQrData] = useState<string>('');
 
     const [vehicleId, setVehicleId] = useState<string>("");
     const [feedback, setFeedback] = useState<string>("");
@@ -71,14 +76,14 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             if (!props.event.occupancyObsId) {
                 try {
                     const currentLane = props.event.laneId;
-                    const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+                    const currLaneEntry: LaneMapEntry = laneMapRef.current?.get(currentLane);
 
                     if (!currLaneEntry) {
                         console.error("Lane entry not found:", currentLane);
                         return;
                     }
 
-                    const ds = currLaneEntry.datastreams.find(
+                    const ds = currLaneEntry.datastreams?.find(
                         (ds: any) => ds.properties.id === props.event.dataStreamId
                     );
 
@@ -95,7 +100,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     const occupancyObservation = await query.nextPage();
 
                     if (!occupancyObservation || occupancyObservation.length === 0) {
-                        setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
+                        setAdjSnackMsg(t('cannotFindObservation'));
                         setColorStatus('error');
                         setOpenSnack(true);
                         return;
@@ -106,7 +111,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
                 } catch (err) {
                     console.error(err);
-                    setAdjSnackMsg('Error loading observation.');
+                    setAdjSnackMsg(t('errorLoadingObservation'));
                     setColorStatus('error');
                     setOpenSnack(true);
                 }
@@ -153,6 +158,14 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         setAdjData(tAdjData);
     }
 
+    const handleQrData = (data: string) => {
+        setQrData(data);
+        let tAdjData = adjData;
+        tAdjData.feedback += ` [WebID QR: ${data}]`;
+        setFeedback(tAdjData.feedback);
+        setAdjData(tAdjData);
+    }
+
     const handleInspectionSelect = (value: string) => {
         let tAdjData = adjData;
         tAdjData.secondaryInspectionStatus = value;
@@ -188,7 +201,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const sendAdjudicationData = async () => {
         if(adjData.adjudicationCode === null || !adjData.adjudicationCode || adjData.adjudicationCode === AdjudicationCodes.codes[0]){
-            setAdjSnackMsg("Please selected a valid adjudication code before submitting.");
+            setAdjSnackMsg(t('selectValidCode'));
             setColorStatus('error');
             setOpenSnack(true)
             return;
@@ -208,17 +221,22 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
         // send to server
         const currentLane = props.event.laneId;
-        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+        const currLaneEntry: LaneMapEntry = laneMapRef.current?.get(currentLane);
         await submitAdjudication(currLaneEntry, tempAdjData)
     }
 
     const submitAdjudication = async(currLaneEntry: any, tempAdjData: any) => {
 
         try{
+            if (!currLaneEntry) {
+                console.error("Lane entry not found");
+                return;
+            }
 
-            let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == props.event.dataStreamId);
+            let ds = currLaneEntry.datastreams?.find((ds: any) => ds.properties.id == props.event.dataStreamId);
 
-            let streams = currLaneEntry.controlStreams.length > 0 ? currLaneEntry.controlStreams : await currLaneEntry.parentNode.fetchNodeControlStreams();
+            let streams = currLaneEntry.controlStreams?.length > 0 ? currLaneEntry.controlStreams : await currLaneEntry.parentNode?.fetchNodeControlStreams();
+            if (!streams) return;
             let adjControlStream = streams.find((stream: typeof ControlStream) => isAdjudicationControlStream(stream));
 
             if (!adjControlStream){
@@ -234,7 +252,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 const occupancyObservation = await query.nextPage();
 
                 if (!occupancyObservation) {
-                    setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
+                    setAdjSnackMsg(t('cannotFindObservation'));
                     setColorStatus('error')
                     setOpenSnack(true);
                     return;
@@ -264,7 +282,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             );
 
             if (!response.ok) {
-                setAdjSnackMsg('Adjudication failed to submit.')
+                setAdjSnackMsg(t('adjudicationFail'))
                 setColorStatus('error')
                 return;
             }
@@ -274,11 +292,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             dispatch(setSelectedEvent(props.event));
             dispatch(setAdjudicatedEventId(props.event.id));
 
-            setAdjSnackMsg('Adjudication successful for Occupancy ID: ' + props.event.occupancyCount);
+            setAdjSnackMsg(t('adjudicationSuccess') + props.event.occupancyCount);
             setColorStatus('success')
 
         }catch(error){
-            setAdjSnackMsg('Adjudication failed to submit.')
+            setAdjSnackMsg(t('adjudicationFail'))
             setColorStatus('error')
         }finally{
             setShouldFetchLogs(true);
@@ -301,7 +319,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             <Typography
                 variant="h4"
             >
-                Adjudication
+                {t('adjudicationTitle')}
             </Typography>
 
             <AdjudicationLog
@@ -310,49 +328,59 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 onFetch={onFetchComplete}
             />
 
+            <Box component="form" noValidate autoComplete="off">
+                <Grid container spacing={3}>
+                    <Grid item xs={12}>
+                        <Typography variant="h5">{t('adjudicationReportForm')}</Typography>
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                        <TextField
+                            fullWidth
+                            label={t('vehicleId')}
+                            name="vehicleId"
+                            value={vehicleId}
+                            onChange={handleChange}
+                        />
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                        <AdjudicationSelect
+                            adjCode={adjudicationCode}
+                            onSelect={handleAdjudicationSelect}
+                        />
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                        <IsotopeSelect
+                            isotopeValue={isotope}
+                            onSelect={handleIsotopeSelect}
+                        />
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                        <WebIdAnalysis onDataFound={handleQrData} />
+                    </Grid>
+
+                    <Grid item xs={12}>
+                        <DetectorResponseFunction />
+                    </Grid>
+
+                    <Grid item xs={12}>
+                        <TextField
+                            fullWidth
+                            id="outlined-multiline-static"
+                            label={t('notes')}
+                            name="notes"
+                            multiline
+                            rows={4}
+                            value={feedback}
+                            onChange={handleChange}
+                        />
+                    </Grid>
+                </Grid>
+            </Box>
             <Stack spacing={2}>
-                <Typography variant="h5">Adjudication Report Form</Typography>
-
-                <Stack
-                    direction={"row"}
-                    spacing={2}
-                    justifyContent={"start"}
-                    alignItems={"center"}
-                >
-                    <TextField
-                        label="VehicleId"
-                        name="vehicleId"
-                        value={vehicleId}
-                        onChange={handleChange}
-
-                    />
-                </Stack>
-
-                <Stack
-                    direction={"row"}
-                    spacing={2}
-                    justifyContent={"start"}
-                    alignItems={"center"}
-                >
-                    <AdjudicationSelect
-                        adjCode={adjudicationCode}
-                        onSelect={handleAdjudicationSelect}
-                    />
-                    <IsotopeSelect
-                        isotopeValue={isotope}
-                        onSelect={handleIsotopeSelect}
-                    />
-                </Stack>
-
-                <TextField
-                    id="outlined-multiline-static"
-                    label="Notes"
-                    name="notes"
-                    multiline
-                    rows={4}
-                    value={feedback}
-                    onChange={handleChange}
-                />
                 {
                     uploadedFiles.length > 0 && (
                         <Paper variant='outlined' sx={{width: "100%"}}>
@@ -406,7 +434,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                             color: "secondary.main"
                         }}
                     >
-                        Upload Files
+                        {t('uploadFiles')}
                         <input
                             type="file"
                             multiple
@@ -426,7 +454,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                             color={"success"}
                             onClick={sendAdjudicationData}
                         >
-                            Submit
+                            {t('submit')}
                         </Button>
                         <Snackbar
                             anchorOrigin={{ vertical:'top', horizontal:'center' }}

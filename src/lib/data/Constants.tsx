@@ -92,6 +92,7 @@ export const GAMMA_COUNT_DEF =  radUri + "GammaGrossCount";
 export const NEUTRON_COUNT_DEF =  radUri + "NeutronGrossCount";
 export const TAMPER_STATUS_DEF =  radUri + "TamperStatus";
 export const OCCUPANCY_PILLAR_DEF =  radUri + "PillarOccupancyCount";
+export const OCCUPANCY_DEF =  radUri + "Occupancy";
 export const CONNECTION_DEF =  radUri + "ConnectionStatus";
 export const THRESHOLD_DEF =  radUri + "Threshold";
 export const ADJ_DEF =  smlUri + "Feedback";
