@@ -12,7 +12,7 @@ import N42ChartPlayback from "@/app/_components/n42/N42ChartPlayback";
 import DataStreamFilter from "osh-js/source/core/consysapi/datastream/DataStreamFilter";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
-import {isRs350DataStream} from "@/lib/data/oscar/Utilities";
+import {isBackgroundDataStream, isForegroundDataStream, isRs350DataStream} from "@/lib/data/oscar/Utilities";
 import Rs350ChartPlayback from "@/app/_components/event-preview/Rs350ChartPlayback";
 
 
@@ -22,7 +22,8 @@ export default function EventMedia({selectedNode, datasources, eventData, mode, 
     const [videoCurrentTime, setVideoCurrentTime] = useState<number | null>(null);
     const [videoIsPlaying, setVideoIsPlaying] = useState(true);
     const selectedIndex = useRef<number>(0)
-    const [rs350DataStream, setRs350DataStream] = useState();
+    const [foregroundDataStream, setForegroundDataStream] = useState();
+    const [backgroundDataStream, setBackgroundDataStream] = useState();
 
     const handleVideoTimeUpdate = (timeMs: number) => {
         if (!videoIsPlaying) return;
@@ -37,48 +38,101 @@ export default function EventMedia({selectedNode, datasources, eventData, mode, 
     useEffect(() => {
         if (eventData.isRS350 && laneMap) {
             const entry = laneMap.get(eventData.laneId);
-            const dss = entry.datastreams.find((ds: typeof DataStream)=> isRs350DataStream(ds));
-            setRs350DataStream(dss);
+            const dss = entry.datastreams.find((ds: typeof DataStream)=> isForegroundDataStream(ds));
+            setForegroundDataStream(dss);
+
+            const bkgDs = entry.datastreams.find((ds: typeof DataStream)=> isBackgroundDataStream(ds));
+            setBackgroundDataStream(bkgDs);
         }
     }, [eventData, laneMap]);
 
     if ( mode === "preview" ){
         return(
             <Paper variant='outlined' sx={{ width: "100%" }}>
-                <Box sx={{ width: "100%", height: "100%", alignItems: "center" }}>
-                    {eventData.isRS350 ? (
+                <Grid container
+                      direction="row"
+                      spacing={2}
+                      justifyContent={"center"}
+                >
+                    <Grid item xs={12}>
+                        <Box sx={{ width: "100%", height: "100%", alignItems: "center" }}>
 
-                        <>
-                            <Rs350ChartPlayback datastream={rs350DataStream} title={"Foreground Linear Spectrum"} chartId={"linear-spec-replay-fg"} startTime={eventData.startTime} endTime={eventData.endTime} currentTime={videoCurrentTime}/>
-                        </>
-
-                    ) : (
-                        <ChartTimeHighlight
-                            datasources={{
-                                gamma: datasources.gamma,
-                                neutron: datasources.neutron,
-                                threshold: datasources.threshold
-                            }}
-                            modeType={mode}
-                            eventData={eventData}
-                            latestGB={latestGB}
-                            currentTime={videoCurrentTime}
-                        />
-                    )}
-                </Box>
-                <Box sx={{ width: "100%", height: "100%" }}>
-                    <LaneVideoPlayback
-                        selectedNode={selectedNode}
-                        videos={eventData?.videoPaths}
-                        modeType={mode}
-                        startTime={eventData.startTime}
-                        endTime={eventData.endTime}
-                        isPlaying={videoIsPlaying}
-                        syncTime={videoCurrentTime}
-                        onVideoTimeUpdate={handleVideoTimeUpdate}
-                        onSelectedVideoIdxChange={handleUpdatingPage}
-                    />
-                </Box>
+                            {eventData.isRS350 ? (
+                                <Grid container spacing={2}>
+                                    <Grid item xs={12}>
+                                        <Rs350ChartPlayback
+                                            datastream={foregroundDataStream}
+                                            title={"Foreground Linear Spectrum"}
+                                            chartId={"linear-spec-replay-fg"}
+                                            startTime={eventData.startTime}
+                                            endTime={eventData.endTime}
+                                            currentTime={videoCurrentTime}
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <Rs350ChartPlayback
+                                            datastream={foregroundDataStream}
+                                            title={"Foreground Compressed Spectrum"}
+                                            chartId={"compressed-spec-replay-fg"}
+                                            startTime={eventData.startTime}
+                                            endTime={eventData.endTime}
+                                            currentTime={videoCurrentTime}
+                                            yValue={"compressedSpectrum"}
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <Rs350ChartPlayback
+                                            datastream={backgroundDataStream}
+                                            title={"Background Linear Spectrum"}
+                                            chartId={"linear-spec-replay-bg"}
+                                            startTime={eventData.startTime}
+                                            endTime={eventData.endTime}
+                                            currentTime={videoCurrentTime}
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <Rs350ChartPlayback
+                                            datastream={backgroundDataStream}
+                                            title={"Background Compressed Spectrum"}
+                                            chartId={"compressed-spec-replay-bg"}
+                                            startTime={eventData.startTime}
+                                            endTime={eventData.endTime}
+                                            currentTime={videoCurrentTime}
+                                            yValue={"compressedSpectrum"}
+                                        />
+                                    </Grid>
+                                </Grid>
+                            ) : (
+                                <ChartTimeHighlight
+                                    datasources={{
+                                        gamma: datasources.gamma,
+                                        neutron: datasources.neutron,
+                                        threshold: datasources.threshold
+                                    }}
+                                    modeType={mode}
+                                    eventData={eventData}
+                                    latestGB={latestGB}
+                                    currentTime={videoCurrentTime}
+                                />
+                            )}
+                        </Box>
+                    </Grid>
+                    <Grid item xs={12}>
+                        <Box sx={{ width: "100%", height: "100%" }}>
+                            <LaneVideoPlayback
+                                selectedNode={selectedNode}
+                                videos={eventData?.videoPaths}
+                                modeType={mode}
+                                startTime={eventData.startTime}
+                                endTime={eventData.endTime}
+                                isPlaying={videoIsPlaying}
+                                syncTime={videoCurrentTime}
+                                onVideoTimeUpdate={handleVideoTimeUpdate}
+                                onSelectedVideoIdxChange={handleUpdatingPage}
+                            />
+                        </Box>
+                    </Grid>
+                </Grid>
             </Paper>
         )
     }
@@ -94,9 +148,50 @@ export default function EventMedia({selectedNode, datasources, eventData, mode, 
                     >
                         <Grid item xs={12} md={6}>
                             {eventData.isRS350 ? (
-                                <>
-                                    <Rs350ChartPlayback datastream={rs350DataStream} title={"Foreground Linear Spectrum"} chartId={"linear-spec-replay-fg"} currentTime={videoCurrentTime} startTime={eventData.startTime} endTime={eventData.endTime}/>
-                                </>
+                                <Grid container spacing={2}>
+                                    <Grid item xs={12}>
+                                        <Rs350ChartPlayback
+                                            datastream={foregroundDataStream}
+                                            title={"Foreground Linear Spectrum"}
+                                            chartId={"linear-spec-replay-fg"}
+                                            startTime={eventData.startTime}
+                                            endTime={eventData.endTime}
+                                            currentTime={videoCurrentTime}
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <Rs350ChartPlayback
+                                            datastream={foregroundDataStream}
+                                            title={"Foreground Compressed Spectrum"}
+                                            chartId={"compressed-spec-replay-fg"}
+                                            startTime={eventData.startTime}
+                                            endTime={eventData.endTime}
+                                            currentTime={videoCurrentTime}
+                                            yValue={"compressedSpectrum"}
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <Rs350ChartPlayback
+                                            datastream={backgroundDataStream}
+                                            title={"Background Linear Spectrum"}
+                                            chartId={"linear-spec-replay-bg"}
+                                            startTime={eventData.startTime}
+                                            endTime={eventData.endTime}
+                                            currentTime={videoCurrentTime}
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <Rs350ChartPlayback
+                                            datastream={backgroundDataStream}
+                                            title={"Background Compressed Spectrum"}
+                                            chartId={"compressed-spec-replay-bg"}
+                                            startTime={eventData.startTime}
+                                            endTime={eventData.endTime}
+                                            currentTime={videoCurrentTime}
+                                            yValue={"compressedSpectrum"}
+                                        />
+                                    </Grid>
+                                </Grid>
                             ) : (
                                 <ChartTimeHighlight
                                     datasources={{

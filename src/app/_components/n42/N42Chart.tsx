@@ -25,7 +25,7 @@ export default function N42Chart({datasource, title, yValue = "linearSpectrum", 
 
         const channels = spectrumData.map((_, index) => index);
 
-        setHasData(!hasData);
+        setHasData(true);
 
         if (chartRef.current) {
             chartRef.current.data.labels = channels;

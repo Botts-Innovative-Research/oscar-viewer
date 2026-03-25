@@ -4,6 +4,7 @@ import React, {useCallback, useEffect, useRef, useState} from "react";
 import Chart from "chart.js/auto";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import {Box, Typography} from "@mui/material";
 
 interface ChartInterceptProps {
     laneName?: string;
@@ -17,21 +18,24 @@ interface ChartInterceptProps {
     currentTime?: number;
 }
 
-export default function Rs350ChartPlayback({datastream, title, yValue = "linearSpectrum", chartId, startTime='2026-02-24T20:44:06Z', endTime='2026-02-24T20:44:25Z'}: ChartInterceptProps) {
+export default function Rs350ChartPlayback({datastream, title, yValue = "linearSpectrum", chartId, startTime='2026-02-24T20:44:06Z', endTime='2026-02-24T20:44:25Z', currentTime}: ChartInterceptProps) {
     const chartRef = useRef<Chart | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
     const [spectrumFrames, setSpectrumFrames] = useState<number[][]>([]);
     const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
+    const [hasData, setHasData] = useState(false);
 
     const updateChart = useCallback((spectrumData: number[], frameIndex: number, totalFrames: number) => {
         if (!canvasRef.current) return;
 
         const channels = spectrumData.map((_, index) => index);
+        setHasData(true);
 
         if (chartRef.current) {
             chartRef.current.data.labels = channels;
             chartRef.current.data.datasets[0].data = spectrumData;
+            chartRef.current.options.plugins!.title!.text = `${title} - Frame ${frameIndex + 1}/${totalFrames}`;
             chartRef.current.update('none');
         } else {
             chartRef.current = new Chart(canvasRef.current, {
@@ -90,23 +94,6 @@ export default function Rs350ChartPlayback({datastream, title, yValue = "linearS
         }
     }, [title]);
 
-    const [currentTime, setCurrentTime] = useState(0);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrentTime(prev => {
-                const start = new Date(startTime).getTime();
-                const end = new Date(endTime).getTime();
-                const totalDuration = (end - start) / 1000;
-
-                if (prev >= totalDuration) return 0;
-                return prev + 0.1;
-            });
-        }, 100);
-
-        return () => clearInterval(interval);
-    }, [startTime, endTime]);
-
     // need to have the chart move through each array just as it would the video frames
     useEffect(() => {
         if (!datastream) return;
@@ -151,21 +138,43 @@ export default function Rs350ChartPlayback({datastream, title, yValue = "linearS
         }
     }, [currentTime, spectrumFrames]);
 
-    function getFrameIndex(currTime: number) {
+    function getFrameIndex(currTimeMs: number) {
         if (spectrumFrames.length === 0)
             return 0;
 
         const start = new Date(startTime).getTime();
         const end = new Date(endTime).getTime();
         const totalDuration = end - start;
-        const currentMs = currTime * 1000 + start;
 
-        const progress = Math.max(0, Math.min(1, (currentMs - start) / totalDuration));
+        const progress = Math.max(0, Math.min(1, (currTimeMs - start) / totalDuration));
         const frameIndex = Math.floor(progress * spectrumFrames.length);
         return Math.min(frameIndex, spectrumFrames.length - 1);
     }
 
     return (
-        <canvas ref={canvasRef} id={chartId} style={{marginBottom: 50, height: '85%'}}></canvas>
+        <>
+            {!hasData && (
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '85%',
+                    minHeight: 50,
+                    marginBottom: '50px',
+                    p: 2,
+                }}>
+                    <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                        {title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        No data available at this time
+                    </Typography>
+                </Box>
+            )}
+            <Box sx={{position: 'relative', height: 400, width: '100%', display: hasData ? 'block' : 'none',}}>
+                <canvas ref={canvasRef} id={chartId}></canvas>
+            </Box>
+        </>
     );
 }
