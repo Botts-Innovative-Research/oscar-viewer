@@ -161,7 +161,6 @@ export default function Rs350ChartPlayback({datastream, title, yValue = "linearS
                     justifyContent: 'center',
                     height: '85%',
                     minHeight: 50,
-                    marginBottom: '50px',
                     p: 2,
                 }}>
                     <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
