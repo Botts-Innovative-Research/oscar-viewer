@@ -38,7 +38,6 @@ export default function RS350BackpackView({ entry, currentLane, laneMap }: RS350
             return;
         }
 
-
         for (let i = 0; i < lane.datastreams.length; i++) {
             const ds = lane.datastreams[i]
 
@@ -66,6 +65,12 @@ export default function RS350BackpackView({ entry, currentLane, laneMap }: RS350
     }, [foregroundDatasources, currentLane]);
 
     useEffect(() => {
+        if (!backgroundDatasources)
+            return;
+        backgroundDatasources.connect();
+    }, [backgroundDatasources, currentLane]);
+
+    useEffect(() => {
 
         if(laneMapRef.current) {
             collectDataSources()
@@ -75,39 +80,50 @@ export default function RS350BackpackView({ entry, currentLane, laneMap }: RS350
 
     return (
      <>
-         <Grid container spacing={2} sx={{ width: "100%" }}>
-             <Grid item xs={12}>
-                 <Paper variant='outlined' sx={{ width: "100%", p: 2 }}>
-                     {/*TODO:  Lane status*/}
-                 </Paper>
-             </Grid>
-         </Grid>
-
          <Grid container spacing={2} sx={{ width: "100%", mt: 1 }}>
              <Grid item xs={12}>
                  <Paper variant='outlined' sx={{ width: "100%", p: 2, overflow: 'hidden' }}>
                      <Grid container spacing={2}>
                          <Grid item xs={12} md={6}>
                              <Grid container marginTop={2} marginLeft={1} spacing={4}>
-                                 <Grid item xs>
+                                 <Grid item xs={6}>
                                      <N42Chart
                                          laneName={currentLane}
                                          datasource={foregroundDatasources}
                                          title={"Foreground Linear Spectrum"}
                                          yCurve={"Counts"}
                                          yValue={"linearSpectrum"}
-                                         chartId={"chart-linear-fg"}
+                                         chartId={"chart-linear-fg-ls"}
                                      />
                                  </Grid>
-                                 <Grid item xs>
-                                     {/*TODO: Change to Background Linear Spectrum*/}
+                                 <Grid item xs={6}>
+                                     <N42Chart
+                                         laneName={currentLane}
+                                         datasource={foregroundDatasources}
+                                         title={"Foreground Compressed Spectrum"}
+                                         yCurve={"Counts"}
+                                         yValue={"compressedSpectrum"}
+                                         chartId={"chart-linear-fg-cs"}
+                                     />
+                                 </Grid>
+                                 <Grid item xs={6}>
                                      <N42Chart
                                          laneName={currentLane}
                                          datasource={backgroundDatasources}
                                          title={"Background Linear Spectrum"}
                                          yCurve={"Counts"}
                                          yValue={"linearSpectrum"}
-                                         chartId={"chart-linear-bkg"}
+                                         chartId={"chart-linear-bkg-ls"}
+                                     />
+                                 </Grid>
+                                 <Grid item xs={6}>
+                                     <N42Chart
+                                         laneName={currentLane}
+                                         datasource={backgroundDatasources}
+                                         title={"Background Compressed Spectrum"}
+                                         yCurve={"Counts"}
+                                         yValue={"compressedSpectrum"}
+                                         chartId={"chart-linear-bkg-cs"}
                                      />
                                  </Grid>
                              </Grid>

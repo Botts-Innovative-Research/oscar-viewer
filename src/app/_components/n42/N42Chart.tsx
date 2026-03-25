@@ -1,6 +1,7 @@
 "use client";
 
-import React, {useCallback, useEffect, useRef} from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
+import {Box, Typography} from "@mui/material";
 import Chart from "chart.js/auto";
 import {EventType} from "osh-js/source/core/event/EventType";
 
@@ -17,10 +18,14 @@ export default function N42Chart({datasource, title, yValue = "linearSpectrum", 
     const chartRef = useRef<Chart | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+    const [hasData, setHasData] = useState(false);
+
     const updateChart = useCallback((spectrumData: number[]) => {
         if (!canvasRef.current) return;
 
         const channels = spectrumData.map((_, index) => index);
+
+        setHasData(!hasData);
 
         if (chartRef.current) {
             chartRef.current.data.labels = channels;
@@ -44,7 +49,7 @@ export default function N42Chart({datasource, title, yValue = "linearSpectrum", 
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
+                    maintainAspectRatio: true,
                     animation: false,
                     plugins: {
                         title: {
@@ -106,6 +111,35 @@ export default function N42Chart({datasource, title, yValue = "linearSpectrum", 
 
 
     return (
-        <canvas ref={canvasRef} id={chartId} style={{marginBottom: 50, height: '85%'}}></canvas>
+        <>
+            {!hasData && (
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '85%',
+                    minHeight: 50,
+                    marginBottom: '50px',
+                    p: 2,
+                }}>
+                    <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                        {title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        No data available at this time
+                    </Typography>
+                </Box>
+            )}
+            <Box sx={{
+                position: 'relative',
+                width: '100%',
+                maxHeight: 300,
+                display: hasData ? 'block' : 'none',
+            }}>
+                <canvas ref={canvasRef} id={chartId} />
+            </Box>
+        </>
     );
+
 }
