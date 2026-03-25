@@ -55,7 +55,7 @@ export default function N42Detail(props: { event: EventTableData; uploadedFiles:
         const handleObservations = (msg: any) => {
             const data = msg.values?.[0]?.data;
             if (!data) return;
-            
+
             const msgFileName: string = data["fileName"];
             const matchedFile = props.uploadedFiles.find(fp => msgFileName?.endsWith(fp));
             if (!matchedFile) {
@@ -68,6 +68,8 @@ export default function N42Detail(props: { event: EventTableData; uploadedFiles:
 
             if (foreground.length === 0 && background.length === 0) return;
 
+            console.log(data)
+            
             setFileDataMap(prev => {
                 const next = new Map(prev);
                 next.set(matchedFile, {
@@ -139,14 +141,14 @@ export default function N42Detail(props: { event: EventTableData; uploadedFiles:
                                     yValue={"linearSpectrum"}
                                 />
                             </Grid>
-                            <Grid item xs={6}>
-                                <N42ChartPlayback
-                                    reports={activeFile.foregroundReports}
-                                    title={"Foreground Linear Spectrum"}
-                                    chartId={`n42-chart-foreground-cmp-${currentPage}`}
-                                    yValue={"compressedSpectrum"}
-                                />
-                            </Grid>
+                            {/*<Grid item xs={6}>*/}
+                            {/*    <N42ChartPlayback*/}
+                            {/*        reports={activeFile.foregroundReports}*/}
+                            {/*        title={"Foreground Linear Spectrum"}*/}
+                            {/*        chartId={`n42-chart-foreground-cmp-${currentPage}`}*/}
+                            {/*        yValue={"compressedSpectrum"}*/}
+                            {/*    />*/}
+                            {/*</Grid>*/}
                         </>
                     )}
 
@@ -161,14 +163,14 @@ export default function N42Detail(props: { event: EventTableData; uploadedFiles:
                                     yValue={"linearSpectrum"}
                                 />
                             </Grid>
-                            <Grid item xs={6}>
-                                <N42ChartPlayback
-                                    reports={activeFile.backgroundReports}
-                                    title={"Background Compressed Spectrum"}
-                                    chartId={`n42-chart-background-cpm-${currentPage}`}
-                                    yValue={"compressedSpectrum"}
-                                />
-                            </Grid>
+                            {/*<Grid item xs={6}>*/}
+                            {/*    <N42ChartPlayback*/}
+                            {/*        reports={activeFile.backgroundReports}*/}
+                            {/*        title={"Background Compressed Spectrum"}*/}
+                            {/*        chartId={`n42-chart-background-cpm-${currentPage}`}*/}
+                            {/*        yValue={"compressedSpectrum"}*/}
+                            {/*    />*/}
+                            {/*</Grid>*/}
                         </>
                     )}
 
