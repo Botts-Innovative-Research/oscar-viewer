@@ -603,9 +603,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             </Grid>
 
             {/*N42 Detail*/}
-            <Grid item xs={12}>
-                <N42Detail event={props.event} uploadedFiles={adjData.filePaths}/>
-            </Grid>
+            {/*{ adjData.filePaths.length > 0 && (*/}
+                <Grid item xs={12}>
+                    <N42Detail event={props.event} uploadedFiles={adjData.filePaths}/>
+                </Grid>
+            {/*)}*/}
 
             <Grid item xs={12}>
                 <Typography

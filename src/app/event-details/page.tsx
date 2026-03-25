@@ -16,7 +16,6 @@ import EventMedia from "../_components/event-preview/EventMedia";
 import CircularProgress from "@mui/material/CircularProgress";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 import AdjudicationDetail from "../_components/adjudication/AdjudicationDetail";
-import N42Detail from "../_components/n42/N42Detail";
 
 
 export default function EventDetailsPage() {

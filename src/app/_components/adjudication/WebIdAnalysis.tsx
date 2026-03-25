@@ -13,11 +13,9 @@ import {WEB_ID_DEF} from "@/lib/data/Constants";
 import {EventType} from "osh-js/source/core/event/EventType";
 
 
-export default function WebIdAnalysis(props: {
-    event: EventTableData;
-}) {
-
+export default function WebIdAnalysis(props: { event: EventTableData; }) {
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
+
     const [webIdLog, setWebIdLog] = useState<any[]>([]);
     const [filteredLog, setFilteredLog] = useState<any[]>([]);
 
@@ -164,30 +162,29 @@ export default function WebIdAnalysis(props: {
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
 
         let webIdStream = currLaneEntry.findDataStreamByObsProperty(WEB_ID_DEF);
-
         if(!webIdStream) {
             console.warn("No WebID Analysis datastream found for this lane");
             return;
         }
 
-        const webIdSource = currLaneEntry.createRealTimeConSysApi(webIdStream);
-
+        const webIdSource = currLaneEntry.datasourcesRealtime?.find((ds: any) => {
+            const parts = ds.properties.resource?.split("/");
+            return parts && parts[2] === webIdStream.properties.id;
+        });
         if (!webIdSource) {
             console.warn("No WebID Analysis data source found for this lane");
             return;
         }
 
-        const handleWebIdObservations = (msg: any) => {
-            console.log('webid msg',msg)
+        const handleObservations = (msg: any) => {
+            const data = msg.values?.[0]?.data;
+            if (!data) return;
 
-            const results = msg.values?.[0]?.data;
+            const webId = new WebIdAnalysisResult(data.timestamp, data);
+            setFilteredLog(prev => [webId, ...prev]);
+        };
 
-            const webId = new WebIdAnalysisResult("", results)
-
-            setFilteredLog(prev => [webId, ...prev])
-        }
-
-        webIdSource.subscribe(handleWebIdObservations, [EventType.DATA]);
+        webIdSource.subscribe(handleObservations, [EventType.DATA]);
 
         try {
             webIdSource.connect();

@@ -1,4 +1,6 @@
-import {Grid, Typography} from "@mui/material";
+import {Box, Grid, IconButton, Typography} from "@mui/material";
+import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
+import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import React, {useContext, useEffect, useState} from "react";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {N42_REPORT_DEF} from "@/lib/data/Constants";
@@ -19,11 +21,17 @@ export interface N42Report {
     dose: string;
 }
 
+interface N42FileData {
+    fileName: string;
+    foregroundReports: N42Report[];
+    backgroundReports: N42Report[];
+}
+
 export default function N42Detail(props: { event: EventTableData; uploadedFiles: string[] }) {
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
 
-    const [foregroundReports, setForegroundReports] = useState<N42Report[]>([]);
-    const [backgroundReports, setBackgroundReports] = useState<N42Report[]>([]);
+    const [fileDataMap, setFileDataMap] = useState<Map<string, N42FileData>>(new Map());
+    const [currentPage, setCurrentPage] = useState(0);
 
     useEffect(() => {
         const currentLane = props.event.laneId;
@@ -48,28 +56,30 @@ export default function N42Detail(props: { event: EventTableData; uploadedFiles:
             const data = msg.values?.[0]?.data;
             if (!data) return;
 
-            const msgFileName = data["fileName"]; // files/adjudication/FILE_NAME.n42
-            // const adjFilePaths = props.event.adjudicatedData?.filePaths ?? []; // ["FILE_NAME.n42"]
+            console.log('n42 data', data)
+            console.log('uploaded files', props.uploadedFiles)
 
-            console.log('adj file paths', props.uploadedFiles)
-            console.log('msgFile name', msgFileName)
-            const matchesAdj = props.uploadedFiles.some(fp => msgFileName?.endsWith(fp));
-            if (!matchesAdj) {
-                console.log('file doesnt match')
+            const msgFileName: string = data["fileName"];
+            const matchedFile = props.uploadedFiles.find(fp => msgFileName?.endsWith(fp));
+            if (!matchedFile) {
+                console.log('file doesnt match');
                 return;
             }
 
-            const reports: N42Report[] = data["Foreground Reports"] ?? [];
-            console.log(`Received ${reports.length} foreground reports`);
-            if (reports.length > 0) {
-                setForegroundReports(reports);
-            }
+            const foreground: N42Report[] = data["Foreground Reports"] ?? [];
+            const background: N42Report[] = data["Background Reports"] ?? [];
 
-            const bkgReports = data["Background Reports"] ?? [];
-            console.log(`Received ${bkgReports.length} background reports`);
-            if (bkgReports.length > 0) {
-                setBackgroundReports(bkgReports);
-            }
+            if (foreground.length === 0 && background.length === 0) return;
+
+            setFileDataMap(prev => {
+                const next = new Map(prev);
+                next.set(matchedFile, {
+                    fileName: matchedFile,
+                    foregroundReports: foreground,
+                    backgroundReports: background,
+                });
+                return next;
+            });
         };
 
         n42Source.subscribe(handleObservations, [EventType.DATA]);
@@ -82,38 +92,66 @@ export default function N42Detail(props: { event: EventTableData; uploadedFiles:
 
     }, [props.event.adjudicatedData, props.uploadedFiles]);
 
-    if (foregroundReports.length === 0 && backgroundReports.length === 0) {
+    const fileEntries = Array.from(fileDataMap.values());
+
+    if (fileEntries.length === 0) {
         return null;
     }
+
+    const activeFile = fileEntries[currentPage];
+
+    const handlePrevPage = () => {
+        setCurrentPage(prev => (prev > 0 ? prev - 1 : 0));
+    };
+
+    const handleNextPage = () => {
+        setCurrentPage(prev => (prev < fileEntries.length - 1 ? prev + 1 : prev));
+    };
 
     return (
         <Grid container spacing={2} sx={{width: '100%'}}>
             <Grid item xs={12}>
-                <Typography variant="h5">N42 Report</Typography>
+                <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+                    <IconButton onClick={handlePrevPage} disabled={currentPage === 0}>
+                        <NavigateBeforeIcon/>
+                    </IconButton>
+                    <Box sx={{textAlign: 'center'}}>
+                        <Typography variant="h5">N42 Report</Typography>
+                        <Typography variant="subtitle1">{activeFile.fileName}</Typography>
+                        {fileEntries.length > 1 && (
+                            <Typography variant="caption">
+                                {currentPage + 1} / {fileEntries.length}
+                            </Typography>
+                        )}
+                    </Box>
+                    <IconButton onClick={handleNextPage} disabled={currentPage >= fileEntries.length - 1}>
+                        <NavigateNextIcon/>
+                    </IconButton>
+                </Box>
             </Grid>
 
             <Grid item xs>
                 <Grid container direction="row" marginTop={2} marginLeft={1} spacing={4}>
-                    {foregroundReports.length > 0 && (
+                    {activeFile.foregroundReports.length > 0 && (
                         <Grid item xs={6}>
                             <N42ChartPlayback
-                                reports={foregroundReports}
+                                reports={activeFile.foregroundReports}
                                 title={"Foreground Linear Spectrum"}
-                                chartId={"n42-chart-foreground"}
+                                chartId={`n42-chart-foreground-${currentPage}`}
                                 yValue={"linearSpectrum"}
                             />
                         </Grid>
-                        )}
-                    {backgroundReports.length > 0 && (
+                    )}
+                    {activeFile.backgroundReports.length > 0 && (
                         <Grid item xs={6}>
                             <N42ChartPlayback
-                                reports={backgroundReports}
+                                reports={activeFile.backgroundReports}
                                 title={"Background Linear Spectrum"}
-                                chartId={"n42-chart-background"}
+                                chartId={`n42-chart-background-${currentPage}`}
                                 yValue={"linearSpectrum"}
                             />
                         </Grid>
-                        )}
+                    )}
                 </Grid>
             </Grid>
         </Grid>
