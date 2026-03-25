@@ -55,10 +55,7 @@ export default function N42Detail(props: { event: EventTableData; uploadedFiles:
         const handleObservations = (msg: any) => {
             const data = msg.values?.[0]?.data;
             if (!data) return;
-
-            console.log('n42 data', data)
-            console.log('uploaded files', props.uploadedFiles)
-
+            
             const msgFileName: string = data["fileName"];
             const matchedFile = props.uploadedFiles.find(fp => msgFileName?.endsWith(fp));
             if (!matchedFile) {
