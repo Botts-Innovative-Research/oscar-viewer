@@ -15,6 +15,9 @@ import {
     Snackbar,
     TextField, FormControlLabel, Checkbox, DialogTitle,
     Dialog,
+    DialogContent,
+    DialogActions,
+    Divider,
     Grid
 } from "@mui/material";
 import React, {ChangeEvent, useContext, useEffect, useRef, useState} from "react";
@@ -49,6 +52,7 @@ import {RootState} from "@/lib/state/Store";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import { useBreakpoint } from "@/app/providers";
+import N42Detail from "@/app/_components/n42/N42Detail";
 
 interface FileWithWebId {
     file: File;
@@ -82,6 +86,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const [openDialog, setOpenDialog] = useState(false);
+    const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
     const videoElement = useRef<HTMLVideoElement>(null);
     const [scannedData, setScannedData] = useState<ScannedDataWithWebId[]>([]);
     const scanner = useRef<QrScanner>();
@@ -367,6 +372,12 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             return;
         }
 
+        setOpenConfirmDialog(true);
+    }
+
+    const confirmAndSubmitAdjudication = async () => {
+        setOpenConfirmDialog(false);
+
         const phenomenonTime = new Date().toISOString();
 
         let tempAdjData: AdjudicationData = adjData;
@@ -601,6 +612,13 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 />
             </Grid>
 
+            {/*N42 Detail*/}
+            {/*{ adjData.filePaths.length > 0 && (*/}
+                <Grid item xs={12}>
+                    <N42Detail event={props.event} uploadedFiles={adjData.filePaths}/>
+                </Grid>
+            {/*)}*/}
+
             <Grid item xs={12}>
                 <Typography
                     variant="h4"
@@ -755,7 +773,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                     <Stack key={`scanned-${index}`} direction="row" spacing={1} alignItems="center" flexWrap="wrap" p={1}>
                                         <Box display="flex" alignItems="center" sx={{ minWidth: 0, flex: '1 1 auto' }}>
                                             <QrCode fontSize="small" color="action"/>
-                                            <Typography variant="body2" noWrap sx={{ ml: 0.5, fontFamily: 'monospace' }}>
+                                            <Typography variant="body2" noWrap sx={{ ml: 0.5 }}>
                                                 {data.text.length > 40 ? data.text.substring(0, 40) + '...' : data.text}
                                             </Typography>
                                         </Box>
@@ -892,6 +910,125 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             </Grid>
 
             <Dialog
+                open={openConfirmDialog}
+                onClose={() => setOpenConfirmDialog(false)}
+                fullWidth
+                maxWidth="sm"
+            >
+                <DialogTitle sx={{ pb: 1 }}>
+                    Confirm Adjudication Submission
+                </DialogTitle>
+                <DialogContent dividers sx={{ px: 1.5 }}>
+                    <Stack spacing={1.5}>
+                        {vehicleId && (
+                            <>
+                                <Box>
+                                    <Typography variant="subtitle2" color="text.secondary">Vehicle ID</Typography>
+                                    <Typography variant="body1">{vehicleId}</Typography>
+                                </Box>
+                                <Divider />
+                            </>
+                        )}
+
+                        <Box>
+                            <Typography variant="subtitle2" color="text.secondary">Adjudication Code</Typography>
+                            <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>
+                                {adjData.adjudicationCode?.label} ({adjData.adjudicationCode?.group})
+                            </Typography>
+                        </Box>
+                        <Divider />
+
+                        {isotope.length > 0 && (
+                            <>
+                                <Box>
+                                    <Typography variant="subtitle2" color="text.secondary">Isotopes</Typography>
+                                    <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>{isotope.join(', ')}</Typography>
+                                </Box>
+                                <Divider />
+                            </>
+                        )}
+
+                        {feedback && (
+                            <>
+                                <Box>
+                                    <Typography variant="subtitle2" color="text.secondary">Notes</Typography>
+                                    <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{feedback}</Typography>
+                                </Box>
+                                <Divider />
+                            </>
+                        )}
+
+                        {uploadedFiles.length > 0 && (
+                            <>
+                                <Box>
+                                    <Typography variant="subtitle2" color="text.secondary">Files ({uploadedFiles.length})</Typography>
+                                    <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+                                        {uploadedFiles.map((fileData, index) => (
+                                            <Box key={index}>
+                                                <Stack direction="row" spacing={0.5} alignItems="center" sx={{ minWidth: 0 }}>
+                                                    <InsertDriveFileRoundedIcon fontSize="small" sx={{ flexShrink: 0 }} />
+                                                    <Typography variant="body2" noWrap sx={{ minWidth: 0 }}>{fileData.file.name}</Typography>
+                                                </Stack>
+                                                {fileData.webIdEnabled && (
+                                                    <Typography variant="caption" color="info.main" sx={{ pl: 3, display: 'block', wordBreak: 'break-word' }}>
+                                                        WebID: {fileData.spectrumType}, DRF: {fileData.detectorResponseFunction}
+                                                        {fileData.synthesizeBackground ? ', Synth BG' : ''}
+                                                    </Typography>
+                                                )}
+                                            </Box>
+                                        ))}
+                                    </Stack>
+                                </Box>
+                                <Divider />
+                            </>
+                        )}
+
+                        {scannedData.length > 0 && (
+                            <>
+                                <Box>
+                                    <Typography variant="subtitle2" color="text.secondary">Scanned QR Codes ({scannedData.length})</Typography>
+                                    <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+                                        {scannedData.map((data, idx) => (
+                                            <Typography key={idx} variant="body2" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                                                {data.text.length > 80 ? data.text.substring(0, 80) + '...' : data.text}
+                                            </Typography>
+                                        ))}
+                                    </Stack>
+                                </Box>
+                                <Divider />
+                            </>
+                        )}
+
+                        {secondaryInspection && (
+                            <Box>
+                                <Typography variant="subtitle2" color="text.secondary">Secondary Inspection</Typography>
+                                <Typography variant="body1">{secondaryInspection}</Typography>
+                            </Box>
+                        )}
+                    </Stack>
+                </DialogContent>
+                <DialogActions sx={{ px: 1.5, py: 1.5, flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
+                    <Button
+                        onClick={() => setOpenConfirmDialog(false)}
+                        color="error"
+                        fullWidth
+                        sx={{ width: { sm: 'auto' } }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={confirmAndSubmitAdjudication}
+                        variant="contained"
+                        color="success"
+                        fullWidth
+                        sx={{ width: { sm: 'auto' } }}
+                    >
+                        Confirm & Submit
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog
                 onClose={handleCloseQrCodeDialog}
                 open={openDialog}
                 fullWidth
@@ -960,7 +1097,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                         justifyContent="space-between"
                                         alignItems="center"
                                     >
-                                        <Typography variant="body2" sx={{fontFamily: 'monospace'}}>
+                                        <Typography variant="body2">
                                             {data.text.length > 60 ? data.text.substring(0, 60) + '...' : data.text}
                                         </Typography>
                                         <IconButton

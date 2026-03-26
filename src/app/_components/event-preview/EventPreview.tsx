@@ -356,6 +356,7 @@ export function EventPreview() {
                                 }}
                                 mode={"preview"}
                                 eventData={eventPreview.eventData}
+                                laneMap={laneMapRef.current}
                             />
                         </Box>
 

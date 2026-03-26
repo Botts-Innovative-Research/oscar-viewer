@@ -71,12 +71,12 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     ];
 
     useEffect(() => {
-        if ( chartViews.gamma )
+        if (chartViews.gamma)
             setTimeout(() => {
                 chartViews.gamma.chart.update();
             }, 300);
 
-        if ( chartViews.nsigma )
+        if (chartViews.nsigma)
             setTimeout(() => {
                 chartViews.nsigma.chart.update();
             }, 300);
@@ -84,13 +84,12 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
 
     useEffect(() => {
-
-        if ( !props.eventData || !props.datasources?.gamma || !props.datasources?.neutron ) {
+        if (!props.eventData || !props.datasources?.gamma || !props.datasources?.neutron) {
             console.warn("no datasources or event data");
             return;
         }
 
-        if ( props.datasources?.threshold && props?.latestGB )
+        if (props.datasources?.threshold && props?.latestGB)
             setHasNsigma(true);
 
 
@@ -105,12 +104,12 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     const chartsInitializedRef = useRef(false);
 
     useEffect(() => {
-        if ( !props.eventData ) {
+        if (!props.eventData) {
             console.warn("No event data");
             return;
         }
 
-        if ( !layers ) {
+        if (!layers) {
             console.warn("No layers");
             return;
         }
@@ -171,10 +170,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             nchart.options.plugins.annotation = chartAnnotation;
             nchart.update();
         }
-
-            // chartViews?.gamma?.chart.update();
-            // chartViews?.nsigma?.chart.update();
-            // chartViews?.neutron?.chart.update();
     }
 
     function updateChartElIds(eventData: EventTableData): string[] {

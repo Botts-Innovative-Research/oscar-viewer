@@ -108,15 +108,17 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
 export const initializeDefaultNode = () => (dispatch: AppDispatch) => {
     const hostName = window.location.hostname;
+    const port = window.location.port;
+    const isSecure = window.location.protocol === "https:";
 
     const initialNodeOpts: NodeOptions = {
         name: "Local Node",
         address: hostName,
-        port: 8282,
+        port: Number(port),
         oshPathRoot: "/sensorhub",
         csAPIEndpoint: "/api",
         auth: { username: "admin", password: "oscar" },
-        isSecure: false,
+        isSecure: isSecure,
         isDefaultNode: true
     };
 

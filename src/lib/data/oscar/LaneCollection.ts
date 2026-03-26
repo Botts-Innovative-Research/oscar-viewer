@@ -18,6 +18,7 @@ import {
     isGammaDataStream,
     isNeutronDataStream,
     isOccupancyDataStream,
+    isRs350DataStream,
     isTamperDataStream,
     isThresholdDataStream,
     isVideoDataStream
@@ -57,6 +58,7 @@ export class LaneMapEntry {
     laneSystem: typeof System;
     laneName: string;
     controlStreams: typeof ControlStream[]
+    isRS350Backpack: boolean;
 
     constructor(node: INode) {
         this.systems = [];
@@ -67,6 +69,7 @@ export class LaneMapEntry {
         this.parentNode = node;
         this.laneName = undefined;
         this.controlStreams = [];
+        this.isRS350Backpack = false;
     }
 
     setLaneSystem(system: typeof System) {
@@ -107,6 +110,10 @@ export class LaneMapEntry {
 
     addControlStreams(controlStreams: typeof ControlStream[]) {
         this.controlStreams.push(...controlStreams)
+    }
+
+    setIsRS350Backpack(value: boolean) {
+        this.isRS350Backpack = value;
     }
 
     resetDatasources() {
@@ -350,9 +357,15 @@ export class LaneDSColl {
     adjBatch: typeof ConSysApi[];
     connectionRT: typeof ConSysApi[];
     connectionBatch: typeof ConSysApi[];
+    n42RT: typeof ConSysApi[];
+    n42Batch: typeof ConSysApi[];
     webIdBatch: typeof ConSysApi[];
     webIdRT: typeof ConSysApi[];
 
+    backgroundRT: typeof ConSysApi[];
+    backgroundBatch: typeof ConSysApi[];
+    foregroundRT: typeof ConSysApi[];
+    foregroundBatch: typeof ConSysApi[];
 
     constructor() {
         this.occRT = [];
@@ -374,6 +387,12 @@ export class LaneDSColl {
         this.connectionRT = [];
         this.webIdRT = [];
         this.webIdBatch = [];
+        this.n42Batch = [];
+        this.n42RT = [];
+        this.foregroundRT = [];
+        this.foregroundBatch = [];
+        this.backgroundBatch = [];
+        this.backgroundRT = [];
     }
 
     getDSArray(propName: string): typeof ConSysApi[] {
@@ -391,6 +410,7 @@ export class LaneDSColl {
             'gammaTrshldBatch',
             'adjBatch',
             'connectionBatch',
+            'n42Batch',
             'webIdBatch',
             'occRT',
             'gammaRT',
@@ -400,7 +420,13 @@ export class LaneDSColl {
             'gammaTrshldRT',
             'connectionRT',
             'adjRT',
-            'webIdRT'
+            'webIdRT',
+            'adjRT',
+            'n42RT',
+            'foregroundRT',
+            'backgroundRT',
+            'forgroundBatch',
+            'backgroundBatch',
         ]
     }
 
@@ -414,6 +440,10 @@ export class LaneDSColl {
             'gammaTrshldBatch',
             'adjBatch',
             'connectionBatch',
+            'n42Batch',
+            'forgroundBatch',
+            'backgroundBatch',
+            'n42Batch',
             'webIdBatch',
         ]
     }
@@ -428,7 +458,11 @@ export class LaneDSColl {
             'gammaTrshldRT',
             'connectionRT',
             'adjRT',
-            'webIdRT'
+            'webIdRT',
+            'adjRT',
+            'n42RT',
+            'foregroundRT',
+            'backgroundRT',
         ];
     }
 

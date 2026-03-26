@@ -13,11 +13,9 @@ import {WEB_ID_DEF} from "@/lib/data/Constants";
 import {EventType} from "osh-js/source/core/event/EventType";
 
 
-export default function WebIdAnalysis(props: {
-    event: EventTableData;
-}) {
-
+export default function WebIdAnalysis(props: { event: EventTableData; }) {
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
+
     const [webIdLog, setWebIdLog] = useState<any[]>([]);
     const [filteredLog, setFilteredLog] = useState<any[]>([]);
 
@@ -164,7 +162,6 @@ export default function WebIdAnalysis(props: {
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
 
         let webIdStream = currLaneEntry.findDataStreamByObsProperty(WEB_ID_DEF);
-
         if(!webIdStream) {
             console.warn("No WebID Analysis datastream found for this lane");
             return;
@@ -174,31 +171,32 @@ export default function WebIdAnalysis(props: {
             const parts = ds.properties.resource?.split("/");
             return parts && parts[2] === webIdStream.properties.id;
         });
-
         if (!webIdSource) {
             console.warn("No WebID Analysis data source found for this lane");
             return;
         }
 
-        const handleWebIdObservations = (msg: any) => {
-            const results = msg.values?.[0]?.data;
+        const handleObservations = (msg: any) => {
+            const data = msg.values?.[0]?.data;
+            if (!data) return;
 
-            const webId = new WebIdAnalysisResult("", results)
+            const webId = new WebIdAnalysisResult(data.timestamp, data);
+            if (webId.occupancyObsId !== props.event.occupancyObsId) return;
 
-            setFilteredLog(prev => [webId, ...prev])
-        }
+            setFilteredLog(prev => {
+                const exists = prev.some(item => item.occupancyObsId === webId.occupancyObsId && item.time === webId.time);
+                if (exists) return prev;
+                return [webId, ...prev];
+            });
+        };
 
-        webIdSource.subscribe(handleWebIdObservations, [EventType.DATA]);
+        webIdSource.subscribe(handleObservations, [EventType.DATA]);
 
         try {
             webIdSource.connect();
         } catch (err) {
             console.error("Error connecting webid source:", err);
         }
-
-        // return () => {
-        //     webIdSource.disconnect();
-        // }
     }, [props.event]);
 
 
@@ -209,29 +207,27 @@ export default function WebIdAnalysis(props: {
 
 
     return (
-        <>
-            <Stack spacing={2} sx={{ width: '100%' }}>
-                <Stack direction={"column"} spacing={1}>
-                    <Typography variant="h5">
-                        WebID Analysis Results Log
-                    </Typography>
-                </Stack>
-                <Box sx={{ width: '100%' }}>
-                    <DataGrid
-                        rows={filteredLog}
-                        columns={logColumns}
-                        initialState={{
-                            pagination: {
-                                paginationModel: {
-                                    pageSize: 10
-                                }
-                            }
-                        }}
-                        pageSizeOptions={[5, 10, 25, 50, 100]}
-                        disableRowSelectionOnClick={true}
-                    />
-                </Box>
+        <Stack spacing={2} sx={{ width: '100%' }}>
+            <Stack direction={"column"} spacing={1}>
+                <Typography variant="h5">
+                    WebID Analysis Results Log
+                </Typography>
             </Stack>
-        </>
+            <Box sx={{ width: '100%' }}>
+                <DataGrid
+                    rows={filteredLog}
+                    columns={logColumns}
+                    initialState={{
+                        pagination: {
+                            paginationModel: {
+                                pageSize: 10
+                            }
+                        }
+                    }}
+                    pageSizeOptions={[5, 10, 25, 50, 100]}
+                    disableRowSelectionOnClick={true}
+                />
+            </Box>
+        </Stack>
     );
 }
