@@ -49,7 +49,7 @@ export default function N42Chart({datasource, title, yValue = "linearSpectrum", 
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
+                    maintainAspectRatio: false,
                     animation: false,
                     plugins: {
                         title: {
@@ -132,9 +132,8 @@ export default function N42Chart({datasource, title, yValue = "linearSpectrum", 
                 </Box>
             )}
             <Box sx={{
-                position: 'relative',
                 width: '100%',
-                maxHeight: 300,
+                minHeight: 400,
                 display: hasData ? 'block' : 'none',
             }}>
                 <canvas ref={canvasRef} id={chartId} />

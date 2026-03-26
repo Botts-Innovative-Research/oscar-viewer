@@ -103,40 +103,51 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
     }
 
     return (
-            <Box sx={{
-                display: "flex",
-                flexWrap: "nowrap",
-                justifyContent: "center",
-                alignItems: "center",
-            }}>
-                <IconButton onClick={handlePreviousPage} sx={{margin: 2, cursor: 'pointer'}} disabled={currentPage === 0}>
-                    <NavigateBeforeIcon/>
-                </IconButton>
-                <Stack
-                    margin={0}
-                    spacing={2}
-                    direction="row"
-                    alignContent="center"
-                    justifyContent="center"
-                    sx={{
-                        alignItems: "center",
-                        border: "1px solid rgba(0,0,0,0.12)",
-                        padding: 1,
-                        flexShrink: 0
-                    }}
-                >
-                    {videoSource && laneMapRef.current?.get(currentLane)?.parentNode && (
-                        <HLSVideoComponent
-                            videoSource={videoSource}
-                            selectedNode={laneMapRef.current.get(currentLane).parentNode}
-                        />
-                    )}
-                </Stack>
+        <Box sx={{
+            display: "flex",
+            flexWrap: "nowrap",
+            justifyContent: "center",
+            alignItems: "center",
+            width: "100%",
+            overflow: "hidden",
+        }}>
+            <IconButton
+                onClick={handlePreviousPage}
+                sx={{ mx: { xs: 0.5, sm: 2 }, flexShrink: 0, cursor: 'pointer' }}
+                disabled={currentPage === 0}
+            >
+                <NavigateBeforeIcon />
+            </IconButton>
 
-                <IconButton onClick={handleNextPage} sx={{margin: 2, cursor: 'pointer'}} disabled={currentPage === videoStreams.length - 1}>
-                    <NavigateNextIcon/>
-                </IconButton>
-            </Box>
+            <Stack
+                spacing={2}
+                direction="row"
+                alignContent="center"
+                justifyContent="center"
+                sx={{
+                    alignItems: "center",
+                    border: "1px solid rgba(0,0,0,0.12)",
+                    padding: 1,
+                    minWidth: 0,
+                    flex: 1,
+                    overflow: "hidden",
+                }}
+            >
+                {videoSource && laneMapRef.current?.get(currentLane)?.parentNode && (
+                    <HLSVideoComponent
+                        videoSource={videoSource}
+                        selectedNode={laneMapRef.current.get(currentLane).parentNode}
+                    />
+                )}
+            </Stack>
 
+            <IconButton
+                onClick={handleNextPage}
+                sx={{ mx: { xs: 0.5, sm: 2 }, flexShrink: 0, cursor: 'pointer' }}
+                disabled={currentPage === videoStreams.length - 1}
+            >
+                <NavigateNextIcon />
+            </IconButton>
+        </Box>
     );
 }

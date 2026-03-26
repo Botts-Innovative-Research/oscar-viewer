@@ -181,7 +181,13 @@ export default function WebIdAnalysis(props: { event: EventTableData; }) {
             if (!data) return;
 
             const webId = new WebIdAnalysisResult(data.timestamp, data);
-            setFilteredLog(prev => [webId, ...prev]);
+            if (webId.occupancyObsId !== props.event.occupancyObsId) return;
+
+            setFilteredLog(prev => {
+                const exists = prev.some(item => item.occupancyObsId === webId.occupancyObsId && item.time === webId.time);
+                if (exists) return prev;
+                return [webId, ...prev];
+            });
         };
 
         webIdSource.subscribe(handleObservations, [EventType.DATA]);

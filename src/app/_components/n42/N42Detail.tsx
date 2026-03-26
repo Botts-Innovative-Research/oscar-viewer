@@ -59,7 +59,6 @@ export default function N42Detail(props: { event: EventTableData; uploadedFiles:
             const msgFileName: string = data["fileName"];
             const matchedFile = props.uploadedFiles.find(fp => msgFileName?.endsWith(fp));
             if (!matchedFile) {
-                console.log('file doesnt match');
                 return;
             }
 
@@ -67,9 +66,6 @@ export default function N42Detail(props: { event: EventTableData; uploadedFiles:
             const background: N42Report[] = data["Background Reports"] ?? [];
 
             if (foreground.length === 0 && background.length === 0) return;
-
-            console.log(data)
-            
             setFileDataMap(prev => {
                 const next = new Map(prev);
                 next.set(matchedFile, {
