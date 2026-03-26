@@ -69,6 +69,16 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
     return gCurve;
 }
 
+/**
+ * Patches Chart.js datasets to ensure chronological sorting
+ */
+export function patchChartSorting(datasets: any[]) {
+    return datasets.map(dataset => ({
+        ...dataset,
+        data: [...dataset.data].sort((a, b) => a.x - b.x)
+    }));
+}
+
 // get latest gamma background from threshold datasource to calc nsigma for chart
 export function createNSigmaCalcViewCurve(gammaDatasource: any, latestGB: number) {
     if (!gammaDatasource) {

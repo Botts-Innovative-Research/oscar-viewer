@@ -1,0 +1,9 @@
+{
+  "api_version": "1.0",
+  "endpoint": "/buckets/adjudication",
+  "allowed_detectors": ["GR-100", "NS-500", "GN-Scan"],
+  "calibration_factors": {
+    "gamma": 1.0,
+    "neutron": 1.0
+  }
+}

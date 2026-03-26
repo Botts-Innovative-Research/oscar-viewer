@@ -40,7 +40,7 @@ export default function DashboardPage() {
 
             laneDSMap.set(laneid, new LaneDSColl());
 
-            lane.datastreams.forEach((ds, idx) => {
+            lane.datastreams?.forEach((ds, idx) => {
 
                 let rtDS = lane.datasourcesRealtime?.[idx];
 
@@ -55,19 +55,19 @@ export default function DashboardPage() {
                 let laneDSColl = laneDSMap.get(laneid);
 
                 if(isGammaDataStream(ds))
-                    laneDSColl.addDS('gammaRT', rtDS);
+                    laneDSColl?.addDS('gammaRT', rtDS);
 
                 if(isNeutronDataStream(ds))
-                    laneDSColl.addDS('neutronRT', rtDS);
+                    laneDSColl?.addDS('neutronRT', rtDS);
 
                 if(isTamperDataStream(ds))
-                    laneDSColl.addDS('tamperRT', rtDS);
+                    laneDSColl?.addDS('tamperRT', rtDS);
 
                 if(isConnectionDataStream(ds))
-                    laneDSColl.addDS('connectionRT', rtDS);
+                    laneDSColl?.addDS('connectionRT', rtDS);
 
                 if(isThresholdDataStream(ds))
-                    laneDSColl.addDS('gammaTrshldRT', rtDS);
+                    laneDSColl?.addDS('gammaTrshldRT', rtDS);
             });
 
             newStatusList.push({
