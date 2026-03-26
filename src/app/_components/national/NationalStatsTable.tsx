@@ -5,9 +5,11 @@ import { NationalTableDataCollection} from "@/lib/data/oscar/TableHelpers";
 import {DataGrid, GridColDef} from "@mui/x-data-grid";
 import {Box} from "@mui/material";
 import CustomToolbar from "@/app/_components/CustomToolbar";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 
 export default function StatTable(selectedTimeRangeCounts: {selectedTimeRangeCounts: INationalTableData[]}){
+    const { t } = useLanguage();
     const natlTableRef = useRef<NationalTableDataCollection>(new NationalTableDataCollection());
 
     useEffect(() => {
@@ -21,14 +23,14 @@ export default function StatTable(selectedTimeRangeCounts: {selectedTimeRangeCou
     const columns: GridColDef<INationalTableData>[] = [
         {
             field: 'site',
-            headerName: 'Node ID',
+            headerName: t('nodeId'),
             type: 'string',
             minWidth: 150,
             flex: 1,
         },
         {
             field: 'numGammaAlarms',
-            headerName: 'G Alarm',
+            headerName: t('alarm.gamma'),
             valueFormatter: (value) => {
                 return typeof value === 'number' ? value : 0;
             },
@@ -37,7 +39,7 @@ export default function StatTable(selectedTimeRangeCounts: {selectedTimeRangeCou
         },
         {
             field: 'numNeutronAlarms',
-            headerName: 'N Alarm',
+            headerName: t('alarm.neutron'),
             valueFormatter: (value) => {
                 return typeof value === 'number' ? value : 0;
             },
@@ -46,7 +48,7 @@ export default function StatTable(selectedTimeRangeCounts: {selectedTimeRangeCou
         },
         {
             field: 'numGammaNeutronAlarms',
-            headerName: 'G-N Alarm',
+            headerName: t('alarm.gammaNeutron'),
             valueFormatter: (value) => {
                 return typeof value === 'number' ? value : 0;
             },
@@ -55,7 +57,7 @@ export default function StatTable(selectedTimeRangeCounts: {selectedTimeRangeCou
         },
         {
             field: 'numOccupancies',
-            headerName: 'Occupancies',
+            headerName: t('occupancies'),
             valueFormatter: (value) => {
                 return typeof value === 'number' ? value : 0;
             },
@@ -64,7 +66,7 @@ export default function StatTable(selectedTimeRangeCounts: {selectedTimeRangeCou
         },
         {
             field: 'numTampers',
-            headerName: 'Tamper',
+            headerName: t('tamper'),
             valueFormatter: (value) => {
                 return typeof value === 'number' ? value : 0;
             },
@@ -73,7 +75,7 @@ export default function StatTable(selectedTimeRangeCounts: {selectedTimeRangeCou
         },
         {
             field: 'numGammaFaults',
-            headerName: 'G Faults',
+            headerName: t('faults.gamma'),
             valueFormatter: (value) => {
                 return typeof value === 'number' ? value : 0;
             },
@@ -82,7 +84,7 @@ export default function StatTable(selectedTimeRangeCounts: {selectedTimeRangeCou
         },
         {
             field: 'numNeutronFaults',
-            headerName: 'N Faults',
+            headerName: t('faults.neutron'),
             valueFormatter: (value) => {
                 return typeof value === 'number' ? value : 0;
             },
@@ -91,7 +93,7 @@ export default function StatTable(selectedTimeRangeCounts: {selectedTimeRangeCou
         },
         {
             field: 'numFaults',
-            headerName: 'Faults',
+            headerName: t('faults'),
             valueFormatter: (value) => {
                 return typeof value === 'number' ? value : 0;
             },

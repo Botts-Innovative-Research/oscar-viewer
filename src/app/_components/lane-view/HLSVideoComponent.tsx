@@ -24,16 +24,15 @@ export default function HLSVideoComponent({videoSource, selectedNode}: {videoSou
 
             const Hls = (await import('hls.js')).default;
 
-            const encoded = btoa(`${selectedNode.auth.username}:${selectedNode.auth.password}`);
-
-
-            const hlsjsConfig = {
-                xhrSetup: function (xhr: XMLHttpRequest, url: string) {
+            let hlsjsConfig: any = {};
+            if (selectedNode.auth && selectedNode.auth?.username) {
+                const encoded = btoa(`${selectedNode.auth?.username}:${selectedNode.auth?.password}`);
+                hlsjsConfig.xhrSetup = function (xhr: XMLHttpRequest, url: string) {
                     xhr.setRequestHeader("Authorization", `Basic ${encoded}`);
                     xhr.setRequestHeader("Cache-Control", "no-cache");
                     xhr.withCredentials = true;
-                },
-            };
+                };
+            }
 
 
             if (Hls.isSupported()) {

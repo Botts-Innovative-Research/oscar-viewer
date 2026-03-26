@@ -45,8 +45,8 @@ export default function LaneViewPage() {
 
 
     const toggleButtons = [
-        <ToggleButton value={"occupancy"} key={"occupancy"} disabled={toggleView == 'occupancy'}>Occupancy Table</ToggleButton>,
-        <ToggleButton value={"fault"} key={"fault"} disabled={toggleView == 'fault'}>Fault Table</ToggleButton>
+        <ToggleButton value={"occupancy"} key={"occupancy"} disabled={toggleView == 'occupancy'}>{t('occupancyTable')}</ToggleButton>,
+        <ToggleButton value={"fault"} key={"fault"} disabled={toggleView == 'fault'}>{t('faultTable')}</ToggleButton>
     ];
 
     const handleToggle = (event: React.MouseEvent<HTMLElement>, newView: string) =>{
@@ -58,7 +58,7 @@ export default function LaneViewPage() {
 
         let laneDsCollection = new LaneDSColl();
 
-        const lane = laneMapRef.current.get(currentLane);
+        const lane = laneMapRef.current?.get(currentLane);
 
         if (!lane) {
             console.warn("Lane not found for currentLane:", currentLane);
@@ -67,30 +67,33 @@ export default function LaneViewPage() {
 
         setEntry(lane);
 
-        for(let i = 0; i < lane.datastreams.length; i++) {
-            const ds = lane.datastreams[i]
+        const datastreams = lane.datastreams || [];
+        for(let i = 0; i < datastreams.length; i++) {
+            const ds = datastreams[i]
 
             const rtDS = lane.datasourcesRealtime[i];
 
-            if (isGammaDataStream(ds)) {
-                rtDS.properties.mqttOpts.shared = true
-                laneDsCollection.addDS('gammaRT', rtDS);
-                setGammaDS(rtDS)
-            }
-            if (isNeutronDataStream(ds)) {
-                rtDS.properties.mqttOpts.shared = true
-                laneDsCollection.addDS('neutronRT', rtDS);
-                setNeutronDS(rtDS);
-            }
-            if (isTamperDataStream(ds)) {
-                rtDS.properties.mqttOpts.shared = true
-                laneDsCollection.addDS('tamperRT', rtDS);
-                setTamperDS(rtDS)
-            }
-            if (isThresholdDataStream(ds)) {
-                rtDS.properties.mqttOpts.shared = true
-                laneDsCollection?.addDS('gammaTrshldRT', rtDS);
-                setThresholdDS(rtDS);
+            if (rtDS) {
+                if (isGammaDataStream(ds)) {
+                    rtDS.properties.mqttOpts.shared = true
+                    laneDsCollection.addDS('gammaRT', rtDS);
+                    setGammaDS(rtDS)
+                }
+                if (isNeutronDataStream(ds)) {
+                    rtDS.properties.mqttOpts.shared = true
+                    laneDsCollection.addDS('neutronRT', rtDS);
+                    setNeutronDS(rtDS);
+                }
+                if (isTamperDataStream(ds)) {
+                    rtDS.properties.mqttOpts.shared = true
+                    laneDsCollection.addDS('tamperRT', rtDS);
+                    setTamperDS(rtDS)
+                }
+                if (isThresholdDataStream(ds)) {
+                    rtDS.properties.mqttOpts.shared = true
+                    laneDsCollection?.addDS('gammaTrshldRT', rtDS);
+                    setThresholdDS(rtDS);
+                }
             }
         }
 

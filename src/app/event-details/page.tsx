@@ -39,7 +39,7 @@ export default function EventDetailsPage() {
 
         let currentLane = eventPreview.eventData.laneId;
 
-        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+        const currLaneEntry: LaneMapEntry = laneMapRef.current?.get(currentLane);
         if (!currLaneEntry) {
             console.error("LaneMapEntry not found for:", currentLane);
             return;
@@ -97,7 +97,7 @@ export default function EventDetailsPage() {
     });
 
     return (
-        <Stack spacing={4} direction={"column"} sx={{width: "100%"}}>
+        <Stack spacing={4} direction={"column"} sx={{width: "100%"}} ref={contentRef}>
             <Grid container spacing={2} alignItems="center">
                 <Grid item xs={"auto"} >
                     <BackButton/>
@@ -115,7 +115,7 @@ export default function EventDetailsPage() {
                             reactToPrintFn()
                         }}
                     >
-                        Export as PDF
+                        {t('exportPdf')}
                     </Button>
                 </Grid>
             </Grid>
@@ -126,7 +126,7 @@ export default function EventDetailsPage() {
 
             { datasourcesReady ? (
                 <EventMedia
-                    selectedNode={laneMapRef.current.get(eventPreview.eventData.laneId).parentNode}
+                    selectedNode={laneMapRef.current?.get(eventPreview.eventData.laneId)?.parentNode}
                     datasources={{
                         gamma: gammaDatasources[0],
                         neutron: neutronDatasources[0],
