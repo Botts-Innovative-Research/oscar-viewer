@@ -23,6 +23,7 @@ import DataStream from "osh-js/source/core/sweapi/datastream/DataStream";
 import {ALARM_DEF, TAMPER_STATUS_DEF} from "@/lib/data/Constants";
 import {EventType} from "osh-js/source/core/event/EventType";
 import {convertToMap} from "@/app/utils/Utils";
+import {useLanguage} from "@/contexts/LanguageContext";
 
 interface StatusTableProps {
     currentLane: string,
@@ -30,6 +31,7 @@ interface StatusTableProps {
 }
 
 export default function StatusTable({currentLane, entry}: StatusTableProps){
+    const { t } = useLanguage();
     const locale = navigator.language || 'en-US';
 
     const nodes = useSelector(selectNodes);
@@ -47,14 +49,14 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
     const columns: GridColDef<AlarmTableData>[] = [
         {
             field: 'laneId',
-            headerName: 'Lane ID',
+            headerName: t('laneId'),
             type: 'string',
             minWidth: 100,
             flex: 1,
         },
         {
             field: 'timestamp',
-            headerName: 'Timestamp',
+            headerName: t('timestamp'),
             valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
                 year: 'numeric',
                 month: 'numeric',
@@ -68,7 +70,7 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
         },
         {
             field: 'status',
-            headerName: 'Status',
+            headerName: t('status'),
             type: 'string',
             minWidth: 150,
             flex: 1,
@@ -76,6 +78,7 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
     ];
 
     async function fetchTotalCount(node: INode, datastreamIds: string[]) {
+        if (!node) return 0;
         let endpoint = node.getConnectedSystemsEndpoint(false);
         const queryParams = new URLSearchParams({
             // resultTime: `../${pageLoadedTime}`, I think it is safe to fetch count of all here
@@ -119,7 +122,7 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
                     newEvent = new AlarmTableData(randomUUID(), currentLane, state, obs.samplingTime);
                 }
             } else if (obs?.tamperStatus) {
-                newEvent = new AlarmTableData(randomUUID(), currentLane, "Tamper", obs.samplingtime);
+                newEvent = new AlarmTableData(randomUUID(), currentLane, "Tamper", obs.samplingTime);
             }
         } else {
             const result = obs?.properties?.result;
@@ -137,14 +140,14 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
     const getDatastreamIds = useCallback((node: INode) =>  {
         const datastreamIds: string[] = [];
 
-        if (!entry) return datastreamIds;
+        if (!entry || !node) return datastreamIds;
 
         if (entry.parentNode.id !== node.id)
             return datastreamIds;
 
-        const datastreams: typeof DataStream[] = entry.datastreams.filter(
+        const datastreams: typeof DataStream[] = entry.datastreams?.filter(
             (ds: any) => isGammaDataStream(ds) || isNeutronDataStream(ds) || isTamperDataStream(ds)
-        );
+        ) || [];
 
         for (const ds of datastreams) {
             datastreamIds.push(ds.properties.id);

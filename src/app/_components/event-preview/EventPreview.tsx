@@ -47,8 +47,10 @@ import ObservationFilter from "osh-js/source/core/consysapi/observation/Observat
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import {isAdjudicationControlStream} from "@/lib/data/oscar/Utilities";
 import { EventTableData } from "@/lib/data/oscar/TableHelpers";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export function EventPreview() {
+    const { t } = useLanguage();
     const dispatch = useAppDispatch();
     const router = useRouter();
     const eventPreview = useSelector(selectEventPreview);
@@ -131,7 +133,7 @@ export function EventPreview() {
 
         // send to server
         const currentLane = eventPreview.eventData.laneId;
-        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+        const currLaneEntry: LaneMapEntry = laneMapRef.current?.get(currentLane);
         await submitAdjudication(currLaneEntry, comboData)
     }
 
@@ -141,8 +143,13 @@ export function EventPreview() {
 
     const submitAdjudication = async(currLaneEntry: any, comboData: any) => {
         try{
-            let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == eventPreview.eventData.dataStreamId);
-            let streams = currLaneEntry.controlStreams.length > 0 ? currLaneEntry.controlStreams : await currLaneEntry.parentNode.fetchNodeControlStreams();
+            if (!currLaneEntry) {
+                console.error("Lane entry not found");
+                return;
+            }
+            let ds = currLaneEntry.datastreams?.find((ds: any) => ds.properties.id == eventPreview.eventData.dataStreamId);
+            let streams = currLaneEntry.controlStreams?.length > 0 ? currLaneEntry.controlStreams : await currLaneEntry.parentNode?.fetchNodeControlStreams();
+            if (!streams) return;
             let adjControlStream = streams.find((stream: typeof ControlStream) => isAdjudicationControlStream(stream));
 
             if (!adjControlStream){
@@ -266,7 +273,7 @@ export function EventPreview() {
 
         let currentLane = eventPreview.eventData.laneId;
 
-        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+        const currLaneEntry: LaneMapEntry = laneMapRef.current?.get(currentLane);
         if (!currLaneEntry) {
             console.error("LaneMapEntry not found for:", currentLane);
             return;
@@ -325,11 +332,11 @@ export function EventPreview() {
                     <Typography
                         variant="h6"
                     >
-                        Occupancy ID: {eventPreview.eventData.occupancyCount}
+                        {t('occupancyId')}: {eventPreview.eventData.occupancyCount}
                     </Typography>
                     <IconButton
                         onClick={handleExpand}
-                        aria-label="expand"
+                        aria-label={t('expand')}
                     >
                         <OpenInFullRoundedIcon
                             fontSize="small"
@@ -338,7 +345,7 @@ export function EventPreview() {
                 </Stack>
                 <IconButton
                     onClick={handleCloseRounded}
-                    aria-label="close"
+                    aria-label={t('close')}
                 >
                     <CloseRoundedIcon fontSize="small"/>
                 </IconButton>
@@ -347,7 +354,7 @@ export function EventPreview() {
             { datasourcesReady ? (
                     <Box>
                         <EventMedia
-                            selectedNode={laneMapRef.current.get(eventPreview.eventData.laneId).parentNode}
+                            selectedNode={laneMapRef.current?.get(eventPreview.eventData.laneId)?.parentNode}
                             datasources={{
                                 gamma: gammaDatasources[0],
                                 neutron: neutronDatasources[0],
@@ -377,7 +384,7 @@ export function EventPreview() {
                 <TextField
                     onChange={handleNotes}
                     id="outlined-multiline-static"
-                    label="Notes"
+                    label={t('notes')}
                     multiline
                     rows={4}
                 />

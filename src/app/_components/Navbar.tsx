@@ -201,7 +201,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                 <Toolbar>
                     <IconButton
                         color="inherit"
-                        aria-label="open drawer"
+                        aria-label={t('openDrawer')}
                         onClick={handleDrawerOpen}
                         edge="start"
                         sx={{
@@ -220,7 +220,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                             <Tooltip title={t('alarmVolume')} arrow placement="top">
                                 <IconButton
                                     color="inherit"
-                                    aria-label="open notifications"
+                                    aria-label={t('openNotifications')}
                                     onClick={handleMenuOpen}
                                 >
                                     {savedVolume === 0 ? <NotificationsOffIcon/> : <NotificationsRoundedIcon/>}
@@ -256,7 +256,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                         <Stack spacing={2} direction="row" sx={{alignItems: 'center', mb: 1}}>
                             <VolumeDown/>
                             <Slider
-                                aria-label="Volume"
+                                aria-label={t('volume')}
                                 value={volumeValue}
                                 onChange={handleVolumeChange}
                                 valueLabelDisplay="auto"

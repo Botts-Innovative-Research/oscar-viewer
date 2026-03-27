@@ -15,10 +15,8 @@ export interface IAdjudicationData {
     filePaths: string[]
     occupancyObsId: string,
     occupancyCount: string,
-    alarmingSystemUid: string,
     vehicleId?: string
 }
-
 
 export default class AdjudicationData implements IAdjudicationData {
     time: string;
@@ -27,17 +25,14 @@ export default class AdjudicationData implements IAdjudicationData {
     adjudicationCode: AdjudicationCode
     isotopes: string[]
     secondaryInspectionStatus: string
-    // secondaryInspectionStatus: "NONE" | "REQUESTED" | "COMPLETED"
     filePaths: string[]
     occupancyObsId: string // observation ID
-    alarmingSystemUid: string
     vehicleId?: string
     username: string
     occupancyCount: string;
 
-    constructor(time: string, occupancyCount: string, occupancyObsId: string, alarmingSystemUid: string) {
+    constructor(time: string, occupancyCount: string, occupancyObsId: string) {
         this.time = time;
-        this.alarmingSystemUid = alarmingSystemUid;
         this.adjudicationCode = AdjudicationCodes.getCodeObjByIndex(0);
         this.secondaryInspectionStatus = "NONE";
         this.occupancyObsId = occupancyObsId
