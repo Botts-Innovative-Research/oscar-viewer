@@ -4,7 +4,7 @@ import React, {useCallback, useContext, useEffect, useState} from "react";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {DataGrid, GridColDef} from "@mui/x-data-grid";
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, Dialog, DialogContent, DialogTitle, Stack, Typography } from "@mui/material";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
 import {IWebIdIsotope} from "@/lib/data/oscar/adjudication/WebId";
@@ -18,8 +18,31 @@ export default function WebIdAnalysis(props: { event: EventTableData; }) {
 
     const [webIdLog, setWebIdLog] = useState<any[]>([]);
     const [filteredLog, setFilteredLog] = useState<any[]>([]);
+    const [expandDialog, setExpandDialog] = useState({ open: false, title: "", text: "" });
 
     const locale = navigator.language || 'en-US';
+
+    const MAX_CELL_LENGTH = 50;
+
+    const renderStringCell = (headerName: string) => (params: any) => {
+        const fullText = params.value != null ? String(params.value) : "";
+        const truncated = fullText.length > MAX_CELL_LENGTH
+            ? fullText.substring(0, MAX_CELL_LENGTH) + "..."
+            : fullText;
+        return (
+            <div style={{ whiteSpace: "normal", wordWrap: "break-word" }}>
+                {truncated}
+                {fullText.length > MAX_CELL_LENGTH && (
+                    <button
+                        style={{ color: "#1976d2", border: "none", background: "none", cursor: "pointer", paddingLeft: 4 }}
+                        onClick={() => setExpandDialog({ open: true, title: headerName, text: fullText })}
+                    >
+                        Read more
+                    </button>
+                )}
+            </div>
+        );
+    };
 
     const logColumns: GridColDef<WebIdAnalysisResult>[] = [
         {
@@ -43,6 +66,7 @@ export default function WebIdAnalysis(props: { event: EventTableData; }) {
             minWidth: 100,
             flex: 1,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.name).join(', '),
+            renderCell: renderStringCell('Name'),
         },
         {
             field: 'type',
@@ -50,6 +74,7 @@ export default function WebIdAnalysis(props: { event: EventTableData; }) {
             minWidth: 80,
             flex: 0.8,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.type).join(', '),
+            renderCell: renderStringCell('Type'),
         },
         {
             field: 'confidence',
@@ -57,6 +82,7 @@ export default function WebIdAnalysis(props: { event: EventTableData; }) {
             minWidth: 90,
             flex: 0.8,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.confidence).join(', '),
+            renderCell: renderStringCell('Confidence'),
         },
         {
             field: 'confidenceStr',
@@ -64,6 +90,7 @@ export default function WebIdAnalysis(props: { event: EventTableData; }) {
             minWidth: 120,
             flex: 1,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.confidenceStr).join(', '),
+            renderCell: renderStringCell('Confidence String'),
         },
         {
             field: 'countRate',
@@ -71,6 +98,7 @@ export default function WebIdAnalysis(props: { event: EventTableData; }) {
             minWidth: 90,
             flex: 0.8,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.countRate).join(', '),
+            renderCell: renderStringCell('Count Rate'),
         },
         {
             field: 'isotopeString',
@@ -78,6 +106,7 @@ export default function WebIdAnalysis(props: { event: EventTableData; }) {
             minWidth: 100,
             flex: 1,
             type: 'string',
+            renderCell: renderStringCell('Isotope String'),
         },
         {
             field: 'numIsotopes',
@@ -92,6 +121,7 @@ export default function WebIdAnalysis(props: { event: EventTableData; }) {
             minWidth: 80,
             flex: 0.6,
             type: 'string',
+            renderCell: renderStringCell('# Warnings'),
         },
         {
             field: 'analysisWarning',
@@ -99,6 +129,7 @@ export default function WebIdAnalysis(props: { event: EventTableData; }) {
             minWidth: 120,
             flex: 1,
             type: 'string',
+            renderCell: renderStringCell('Analysis Warning'),
         },
         {
             field: 'chiSquare',
@@ -113,6 +144,7 @@ export default function WebIdAnalysis(props: { event: EventTableData; }) {
             minWidth: 80,
             flex: 0.6,
             type: 'string',
+            renderCell: renderStringCell('DRF'),
         },
         {
             field: 'errorMessage',
@@ -120,6 +152,7 @@ export default function WebIdAnalysis(props: { event: EventTableData; }) {
             minWidth: 100,
             flex: 1,
             type: 'string',
+            renderCell: renderStringCell('Error Message'),
         },
         {
             field: 'estimatedDose',
@@ -228,6 +261,17 @@ export default function WebIdAnalysis(props: { event: EventTableData; }) {
                     disableRowSelectionOnClick={true}
                 />
             </Box>
+            <Dialog
+                open={expandDialog.open}
+                onClose={() => setExpandDialog({ open: false, title: "", text: "" })}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>{expandDialog.title}</DialogTitle>
+                <DialogContent>
+                    <Typography whiteSpace="pre-wrap">{expandDialog.text}</Typography>
+                </DialogContent>
+            </Dialog>
         </Stack>
     );
 }
