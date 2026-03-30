@@ -35,6 +35,10 @@ import {useDispatch, useSelector} from "react-redux";
 import { useBreakpoint } from '../providers';
 import LanguageSelector from './LanguageSelector';
 import { useLanguage } from '@/app/contexts/LanguageContext';
+import { useRouter } from 'next/navigation';
+import {setEventPreview, setSelectedRowId} from "@/lib/state/EventPreviewSlice";
+import {setSelectedEvent} from "@/lib/state/EventDataSlice";
+import {setEventData} from "@/lib/state/EventDetailsSlice";
 
 const drawerWidth = 240;
 const drawerWidthMobile = 200;
@@ -130,6 +134,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
     const { t } = useLanguage();
 
     const dispatch = useDispatch();
+    const router = useRouter();
     const savedVolume = useSelector(selectAlarmAudioVolume);
 
     const handleSettingsMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -156,12 +161,28 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                 .catch((error) => {
                     console.error('[PWA] Service Worker registration failed:', error);
                 });
+
+            const handleServiceWorkerMessage = (event: MessageEvent) => {
+                if (event.data?.type === 'VIEW_ALARM' && event.data.eventData) {
+                    const eventData = event.data.eventData;
+                    dispatch(setEventPreview({ isOpen: true, eventData }));
+                    dispatch(setSelectedRowId(eventData.id));
+                    dispatch(setSelectedEvent(eventData));
+                    dispatch(setEventData(eventData));
+                    router.push('/event-details');
+                }
+            };
+
+            navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+            return () => {
+                navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage);
+            };
         } else {
             console.warn('[PWA] Service Worker not supported');
         }
-    }, []);
+    }, [dispatch, router]);
 
-    // fix where u can actually turn notificaitons off
+    // fix where u can actually turn notifications off
     const handleNotifications = async () => {
         if (!('Notification' in window)) {
             alert('Notifications are not supported in this browser');
@@ -393,10 +414,6 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                                     <Typography variant="body2" fontWeight={500}>
                                         {t('browserNotificationPermission')}
                                     </Typography>
-
-                                    {/*<Typography variant="caption" color="text.secondary">*/}
-                                    {/*    { notificationsEnabled === 'granted' ? t('permissionGranted') : notificationsEnabled === 'denied' ? t('permissionDenied') : t('clickToRequestPermission') }*/}
-                                    {/*</Typography>*/}
                                 </Box>
                             }
                         />

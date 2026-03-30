@@ -415,11 +415,11 @@ export default function EventTable({
         }
     }, []);
 
-    function sendNotification(alarmData: { laneName: string, status: string}) {
+    function sendNotification(alarmData: { laneName: string, status: string, eventData?: any}) {
         const notificationService = notificationServiceRef.current;
         if (notificationService?.isReady()) {
             notificationService.showNotification(
-                NotificationTemplates.newAlarm(alarmData.laneName, alarmData.status)
+                NotificationTemplates.newAlarm(alarmData.laneName, alarmData.status, alarmData.eventData)
             )
         }
     }
@@ -436,7 +436,7 @@ export default function EventTable({
 
 
             if (newEvent.status !== 'None') {
-                sendNotification({ laneName: laneEntry.laneName, status: newEvent.status});
+                sendNotification({ laneName: laneEntry.laneName, status: newEvent.status, eventData: newEvent});
             }
         } else {
             // Handle historical observations

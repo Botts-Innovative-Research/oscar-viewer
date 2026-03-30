@@ -90,29 +90,27 @@ export function isForegroundDataStream(datastream: typeof DataStream): boolean {
     // if (!hasDefinitionProperties(datastream))
     //     return false;
 
-    return datastream.properties.observedProperties[0]?.definition?.includes(DURATION_DEF) && datastream.properties.observedProperties[2]?.definition?.includes(LINEARSPEC_DEF) && datastream.properties.observedProperties[9]?.definition?.includes(DOSE_DEF);
+    return datastream.properties.observedProperties[0]?.definition?.includes(DURATION_DEF)
+        && datastream.properties.observedProperties[2]?.definition?.includes(LINEARSPEC_DEF)
+        && datastream.properties.observedProperties[9]?.definition?.includes(DOSE_DEF);
 }
 
 export function isBackgroundDataStream(datastream: typeof DataStream): boolean {
-
     // if (!hasDefinitionProperties(datastream))
     //     return false;
 
-    return datastream.properties.observedProperties[0]?.definition?.includes(DURATION_DEF) && datastream.properties.observedProperties[2]?.definition?.includes(LINEARSPEC_DEF);
-}
-export function isRs350AlarmDataStream(datastream: typeof DataStream): boolean {
-
-    // if (!hasDefinitionProperties(datastream))
-    //     return false;
-
-    return datastream.properties.observedProperties[0].definition.includes(DURATION_DEF) && datastream.properties.observedProperties[1].definition.includes(N42_DEF);
+    return datastream.properties.observedProperties[0]?.definition?.includes(DURATION_DEF)
+        && datastream.properties.observedProperties[2]?.definition?.includes(LINEARSPEC_DEF)
+        && datastream.properties.observedProperties.length < 10;
 }
 
 export function isRs350DataStream(datastream: typeof DataStream): boolean {
 
     // if (!hasDefinitionProperties(datastream))
     //     return false;
-    return datastream.properties.observedProperties[0]?.definition?.includes(DURATION_DEF) && datastream.properties.observedProperties[2]?.definition?.includes(LINEARSPEC_DEF) && datastream.properties.observedProperties[9]?.definition?.includes(DOSE_DEF);
+    return datastream.properties.observedProperties[0]?.definition?.includes(DURATION_DEF)
+        && datastream.properties.observedProperties[2]?.definition?.includes(LINEARSPEC_DEF)
+        && datastream.properties.observedProperties[9]?.definition?.includes(DOSE_DEF);
 }
 
 export function isThresholdDataStream(datastream: typeof DataStream): boolean {
