@@ -13,7 +13,7 @@ import {WEB_ID_DEF} from "@/lib/data/Constants";
 import {EventType} from "osh-js/source/core/event/EventType";
 
 
-export default function WebIdAnalysis(props: { event: EventTableData; }) {
+export default function WebIdAnalysis(props: { event: EventTableData; onWebIdResults?: (results: WebIdAnalysisResult[]) => void; }) {
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
 
     const [webIdLog, setWebIdLog] = useState<any[]>([]);
@@ -238,12 +238,16 @@ export default function WebIdAnalysis(props: { event: EventTableData; }) {
         setFilteredLog(filteredLog);
     }, [webIdLog]);
 
+    useEffect(() => {
+        if (!props.onWebIdResults) return;
+        props.onWebIdResults(filteredLog);
+    }, [filteredLog]);
 
     return (
         <Stack spacing={2} sx={{ width: '100%' }}>
             <Stack direction={"column"} spacing={1}>
                 <Typography variant="h5">
-                    WebID Analysis Results Log
+                    WebID Analysis Results
                 </Typography>
             </Stack>
             <Box sx={{ width: '100%' }}>

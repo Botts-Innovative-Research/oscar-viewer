@@ -164,9 +164,7 @@ export default function EventDetailsPage() {
 
                 {/* ADJUDICATION */}
                 <Grid item xs={12}>
-                    <Paper variant='outlined'>
-                        <AdjudicationDetail event={eventPreview.eventData}/>
-                    </Paper>
+                    <AdjudicationDetail event={eventPreview.eventData}/>
                 </Grid>
             </Grid>
         </Grid>
