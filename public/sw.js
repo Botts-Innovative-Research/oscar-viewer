@@ -41,15 +41,32 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
+    if (event.action === 'dismiss') {
+        return;
+    }
+
+    const notificationData = event.notification.data;
+
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
             for (const client of clientList) {
                 if (client.url.includes(self.location.origin) && 'focus' in client) {
-                    return client.focus();
+                    client.focus();
+                    if (event.action === 'view-alarm' && notificationData) {
+                        client.postMessage({
+                            type: 'VIEW_ALARM',
+                            eventData: notificationData.eventData,
+                            eventId: notificationData.eventId
+                        });
+                    }
+                    return;
                 }
             }
             if (clients.openWindow) {
-                return clients.openWindow('/');
+                const url = (event.action === 'view-alarm' && notificationData?.eventId)
+                    ? `/event-details?eventId=${notificationData.eventId}`
+                    : '/';
+                return clients.openWindow(url);
             }
         })
     );
