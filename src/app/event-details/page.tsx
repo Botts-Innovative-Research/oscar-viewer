@@ -22,6 +22,7 @@ export default function EventDetailsPage() {
 
     const eventPreview = useSelector(selectEventPreview);
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
+    const laneEntry = laneMapRef.current?.get(eventPreview.eventData?.laneId);
     const [localDSMap, setLocalDSMap] = useState<Map<string, typeof ConSysApi[]>>(new Map<string, typeof ConSysApi[]>());
     const [datasourcesReady, setDatasourcesReady] = useState<boolean>(false);
 
@@ -97,7 +98,7 @@ export default function EventDetailsPage() {
     });
 
     return (
-        <Grid container spacing={2} sx={{ width: "100%", height: "auto" }}>
+        <Grid container spacing={2} sx={{ width: "100%", height: "auto" }} ref={contentRef}>
             <Grid item container xs={12} lg={12} sx={{ gap: 2 }}>
 
                 {/* HEADER */}
@@ -136,16 +137,17 @@ export default function EventDetailsPage() {
                 {/* EVENT MEDIA */}
                 <Grid item xs={12}>
                     { datasourcesReady ? (
-                        <EventMedia
-                            selectedNode={laneMapRef.current.get(eventPreview.eventData.laneId).parentNode}
-                            datasources={{
-                                gamma: gammaDatasources[0],
-                                neutron: neutronDatasources[0],
-                                threshold: thresholdDatasources[0],
-                            }}
-                            mode="details"
-                            eventData={eventPreview.eventData}
-                        />
+                            <EventMedia
+                                selectedNode={laneEntry?.parentNode}
+                                datasources={{
+                                    gamma: gammaDatasources[0],
+                                    neutron: neutronDatasources[0],
+                                    threshold: thresholdDatasources[0],
+                                }}
+                                mode="details"
+                                eventData={eventPreview.eventData}
+                                laneMap={laneMapRef.current}
+                            />
                         ) :
                         <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}>
                             <CircularProgress/>
@@ -162,11 +164,8 @@ export default function EventDetailsPage() {
 
                 {/* ADJUDICATION */}
                 <Grid item xs={12}>
-                    <Paper variant='outlined'>
-                        <AdjudicationDetail event={eventPreview.eventData}/>
-                    </Paper>
+                    <AdjudicationDetail event={eventPreview.eventData}/>
                 </Grid>
-
             </Grid>
         </Grid>
     );

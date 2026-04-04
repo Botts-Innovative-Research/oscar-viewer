@@ -4,7 +4,7 @@ import React, {useCallback, useContext, useEffect, useState} from "react";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {DataGrid, GridColDef} from "@mui/x-data-grid";
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, Dialog, DialogContent, DialogTitle, Stack, Typography } from "@mui/material";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
 import {IWebIdIsotope} from "@/lib/data/oscar/adjudication/WebId";
@@ -13,15 +13,36 @@ import {WEB_ID_DEF} from "@/lib/data/Constants";
 import {EventType} from "osh-js/source/core/event/EventType";
 
 
-export default function WebIdAnalysis(props: {
-    event: EventTableData;
-}) {
-
+export default function WebIdAnalysis(props: { event: EventTableData; onWebIdResults?: (results: WebIdAnalysisResult[]) => void; }) {
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
+
     const [webIdLog, setWebIdLog] = useState<any[]>([]);
     const [filteredLog, setFilteredLog] = useState<any[]>([]);
+    const [expandDialog, setExpandDialog] = useState({ open: false, title: "", text: "" });
 
     const locale = navigator.language || 'en-US';
+
+    const MAX_CELL_LENGTH = 50;
+
+    const renderStringCell = (headerName: string) => (params: any) => {
+        const fullText = params.value != null ? String(params.value) : "";
+        const truncated = fullText.length > MAX_CELL_LENGTH
+            ? fullText.substring(0, MAX_CELL_LENGTH) + "..."
+            : fullText;
+        return (
+            <div style={{ whiteSpace: "normal", wordWrap: "break-word" }}>
+                {truncated}
+                {fullText.length > MAX_CELL_LENGTH && (
+                    <button
+                        style={{ color: "#1976d2", border: "none", background: "none", cursor: "pointer", paddingLeft: 4 }}
+                        onClick={() => setExpandDialog({ open: true, title: headerName, text: fullText })}
+                    >
+                        Read more
+                    </button>
+                )}
+            </div>
+        );
+    };
 
     const logColumns: GridColDef<WebIdAnalysisResult>[] = [
         {
@@ -45,6 +66,7 @@ export default function WebIdAnalysis(props: {
             minWidth: 100,
             flex: 1,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.name).join(', '),
+            renderCell: renderStringCell('Name'),
         },
         {
             field: 'type',
@@ -52,6 +74,7 @@ export default function WebIdAnalysis(props: {
             minWidth: 80,
             flex: 0.8,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.type).join(', '),
+            renderCell: renderStringCell('Type'),
         },
         {
             field: 'confidence',
@@ -59,6 +82,7 @@ export default function WebIdAnalysis(props: {
             minWidth: 90,
             flex: 0.8,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.confidence).join(', '),
+            renderCell: renderStringCell('Confidence'),
         },
         {
             field: 'confidenceStr',
@@ -66,6 +90,7 @@ export default function WebIdAnalysis(props: {
             minWidth: 120,
             flex: 1,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.confidenceStr).join(', '),
+            renderCell: renderStringCell('Confidence String'),
         },
         {
             field: 'countRate',
@@ -73,6 +98,7 @@ export default function WebIdAnalysis(props: {
             minWidth: 90,
             flex: 0.8,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.countRate).join(', '),
+            renderCell: renderStringCell('Count Rate'),
         },
         {
             field: 'isotopeString',
@@ -80,6 +106,7 @@ export default function WebIdAnalysis(props: {
             minWidth: 100,
             flex: 1,
             type: 'string',
+            renderCell: renderStringCell('Isotope String'),
         },
         {
             field: 'numIsotopes',
@@ -94,6 +121,7 @@ export default function WebIdAnalysis(props: {
             minWidth: 80,
             flex: 0.6,
             type: 'string',
+            renderCell: renderStringCell('# Warnings'),
         },
         {
             field: 'analysisWarning',
@@ -101,6 +129,7 @@ export default function WebIdAnalysis(props: {
             minWidth: 120,
             flex: 1,
             type: 'string',
+            renderCell: renderStringCell('Analysis Warning'),
         },
         {
             field: 'chiSquare',
@@ -115,6 +144,7 @@ export default function WebIdAnalysis(props: {
             minWidth: 80,
             flex: 0.6,
             type: 'string',
+            renderCell: renderStringCell('DRF'),
         },
         {
             field: 'errorMessage',
@@ -122,6 +152,7 @@ export default function WebIdAnalysis(props: {
             minWidth: 100,
             flex: 1,
             type: 'string',
+            renderCell: renderStringCell('Error Message'),
         },
         {
             field: 'estimatedDose',
@@ -164,7 +195,6 @@ export default function WebIdAnalysis(props: {
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
 
         let webIdStream = currLaneEntry.findDataStreamByObsProperty(WEB_ID_DEF);
-
         if(!webIdStream) {
             console.warn("No WebID Analysis datastream found for this lane");
             return;
@@ -174,31 +204,32 @@ export default function WebIdAnalysis(props: {
             const parts = ds.properties.resource?.split("/");
             return parts && parts[2] === webIdStream.properties.id;
         });
-
         if (!webIdSource) {
             console.warn("No WebID Analysis data source found for this lane");
             return;
         }
 
-        const handleWebIdObservations = (msg: any) => {
-            const results = msg.values?.[0]?.data;
+        const handleObservations = (msg: any) => {
+            const data = msg.values?.[0]?.data;
+            if (!data) return;
 
-            const webId = new WebIdAnalysisResult("", results)
+            const webId = new WebIdAnalysisResult(data.timestamp, data);
+            if (webId.occupancyObsId !== props.event.occupancyObsId) return;
 
-            setFilteredLog(prev => [webId, ...prev])
-        }
+            setFilteredLog(prev => {
+                const exists = prev.some(item => item.occupancyObsId === webId.occupancyObsId && item.time === webId.time);
+                if (exists) return prev;
+                return [webId, ...prev];
+            });
+        };
 
-        webIdSource.subscribe(handleWebIdObservations, [EventType.DATA]);
+        webIdSource.subscribe(handleObservations, [EventType.DATA]);
 
         try {
             webIdSource.connect();
         } catch (err) {
             console.error("Error connecting webid source:", err);
         }
-
-        // return () => {
-        //     webIdSource.disconnect();
-        // }
     }, [props.event]);
 
 
@@ -207,31 +238,44 @@ export default function WebIdAnalysis(props: {
         setFilteredLog(filteredLog);
     }, [webIdLog]);
 
+    useEffect(() => {
+        if (!props.onWebIdResults) return;
+        props.onWebIdResults(filteredLog);
+    }, [filteredLog]);
 
     return (
-        <>
-            <Stack spacing={2} sx={{ width: '100%' }}>
-                <Stack direction={"column"} spacing={1}>
-                    <Typography variant="h5">
-                        WebID Analysis Results Log
-                    </Typography>
-                </Stack>
-                <Box sx={{ width: '100%' }}>
-                    <DataGrid
-                        rows={filteredLog}
-                        columns={logColumns}
-                        initialState={{
-                            pagination: {
-                                paginationModel: {
-                                    pageSize: 10
-                                }
-                            }
-                        }}
-                        pageSizeOptions={[5, 10, 25, 50, 100]}
-                        disableRowSelectionOnClick={true}
-                    />
-                </Box>
+        <Stack spacing={2} sx={{ width: '100%' }}>
+            <Stack direction={"column"} spacing={1}>
+                <Typography variant="h5">
+                    WebID Analysis Results
+                </Typography>
             </Stack>
-        </>
+            <Box sx={{ width: '100%' }}>
+                <DataGrid
+                    rows={filteredLog}
+                    columns={logColumns}
+                    initialState={{
+                        pagination: {
+                            paginationModel: {
+                                pageSize: 10
+                            }
+                        }
+                    }}
+                    pageSizeOptions={[5, 10, 25, 50, 100]}
+                    disableRowSelectionOnClick={true}
+                />
+            </Box>
+            <Dialog
+                open={expandDialog.open}
+                onClose={() => setExpandDialog({ open: false, title: "", text: "" })}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>{expandDialog.title}</DialogTitle>
+                <DialogContent>
+                    <Typography whiteSpace="pre-wrap">{expandDialog.text}</Typography>
+                </DialogContent>
+            </Dialog>
+        </Stack>
     );
 }

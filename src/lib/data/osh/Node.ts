@@ -12,7 +12,7 @@ import Systems from "osh-js/source/core/consysapi/system/Systems.js";
 import Observations from "osh-js/source/core/consysapi/observation/Observations.js"
 import SystemFilter from "osh-js/source/core/consysapi/system/SystemFilter.js";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
-import ControlStreams from "osh-js/source/core/consysapi/controlstream/ControlStreams"
+import ControlStreams from "osh-js/source/core/consysapi/controlstream/ControlStreams";
 import { hashString } from "@/app/utils/Utils";
 import {LatLngExpression} from "leaflet";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
@@ -359,7 +359,6 @@ export class Node implements INode {
         return obsResult;
     }
 
-
     async fetchObservationsWithFilter(observationFilter: typeof ObservationFilter): Promise<any[]> {
         let observationsApi = this.getObservationsApi();
 
@@ -398,6 +397,8 @@ export class Node implements INode {
             allDataStreams.push(...dataStreams);
         }
 
+        console.log(allDataStreams)
+
         for (const dataStream of allDataStreams) {
             for (const [, laneEntry] of laneMap) {
                 if (laneEntry.parentNode.id != this.id)
@@ -405,6 +406,11 @@ export class Node implements INode {
                 const matchingSystem: typeof System = laneEntry.systems.find((system: typeof System) => system.properties.id == dataStream.properties["system@id"]);
                 if (matchingSystem != null) {
                     laneEntry.addDataStream(dataStream);
+
+                    const systemLinkUid = dataStream.properties?.["system@link"]?.uid;
+                    if (systemLinkUid && systemLinkUid.includes("rsi:rs350")) {
+                        laneEntry.setIsRS350Backpack(true);
+                    }
                 }
             }
         }

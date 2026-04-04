@@ -7,11 +7,12 @@ import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import ConnectedSystemsApi from "osh-js/source/core/consysapi/ConnectedSystemsApi";
 import {
-    ADJ_DEF, ADJ_DEF2,
+    ADJ_DEF,
     ALARM_DEF, CONFIG_DEF,
-    CONNECTION_DEF, END_DEF, GAMMA_COUNT_DEF, HLS_VIDEO_DEF, LOCATION_VECTOR_DEF, NATIONAL_DEF,
+    CONNECTION_DEF, DOSE_DEF, DURATION_DEF, END_DEF, GAMMA_COUNT_DEF, HLS_VIDEO_DEF,
+    LINEARSPEC_DEF, LOCATION_VECTOR_DEF, NATIONAL_DEF,
     NEUTRON_COUNT_DEF,
-    OCCUPANCY_PILLAR_DEF, RASTER_IMAGE_DEF, REPORT_DEF, SENSOR_LOCATION_DEF,
+    OCCUPANCY_PILLAR_DEF, RASTER_IMAGE_DEF, N42_DEF, REPORT_DEF, SENSOR_LOCATION_DEF,
     SITE_DIAGRAM_DEF, SPEED_DEF, START_DEF,
     TAMPER_STATUS_DEF,
     THRESHOLD_DEF, VIDEO_FRAME_DEF, WEB_ID_DEF
@@ -144,9 +145,8 @@ export function isAdjudicationControlStream(controlStream: typeof ControlStream)
     if (!hasDefinitionProperties(controlStream))
         return false;
 
-    return controlStream.properties.controlledProperties[0].definition.includes(ADJ_DEF) || controlStream.properties.controlledProperties[0].definition.includes(ADJ_DEF2);
+    return controlStream.properties.controlledProperties[0].definition.includes(ADJ_DEF);
 }
-
 
 export function isWebIdAnalysisDataStream(datastream: typeof DataStream): boolean {
     if (!hasDefinitionProperties(datastream))
@@ -154,7 +154,6 @@ export function isWebIdAnalysisDataStream(datastream: typeof DataStream): boolea
 
     return datastream.properties.observedProperties[0].definition.includes(WEB_ID_DEF);
 }
-
 
 export function isHLSVideoControlStream(controlStream: typeof ControlStream): boolean {
     if (!hasDefinitionProperties(controlStream))

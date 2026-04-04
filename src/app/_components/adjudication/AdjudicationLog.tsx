@@ -131,7 +131,7 @@ export default function AdjudicationLog(props: {
                                         rel="noopener noreferrer"
                                         style={{ color: '#1976d2', textDecoration: 'underline' }}
                                     >
-                                        {path.split("/")[1]}
+                                        {path.split("\\")[1]}
                                     </a>
                                 ) : path}
                             </React.Fragment>
@@ -173,7 +173,6 @@ export default function AdjudicationLog(props: {
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
 
         let controlStream: typeof ControlStream = currLaneEntry.controlStreams.find((cs) => isAdjudicationControlStream(cs));
-        console.log('control stream', controlStream)
         if(!controlStream) {
             console.warn("No Adjudication control stream found for this lane");
             return;
@@ -217,7 +216,6 @@ export default function AdjudicationLog(props: {
 
 
         let controlStream: typeof ControlStream = currLaneEntry.controlStreams.find((cs) => isAdjudicationControlStream(cs));
-        console.log('control stream', controlStream)
         if(!controlStream) {
             console.warn("No Adjudication control stream found for this lane");
             return;
@@ -225,7 +223,6 @@ export default function AdjudicationLog(props: {
 
         let controlSource = currLaneEntry.createRealTimeConSysApi(controlStream);
 
-        console.log('control source', controlSource)
         if (!controlSource) {
             console.warn("Cannot create rt datasource for this controlstream");
             return;
@@ -274,42 +271,39 @@ export default function AdjudicationLog(props: {
     }, [adjLog]);
 
 
-
     return (
-        <>
-            <Stack spacing={2} sx={{ width: '100%' }}>
-                <Stack direction={"column"} spacing={1}>
-                    <Typography variant="h5">Logged Adjudications</Typography>
-                </Stack>
-                <Box sx={{ width: '100%' }}>
-                    <DataGrid
-                        rows={filteredLog}
-                        columns={logColumns}
-                        initialState={{
-                            pagination: {
-                                paginationModel: {
-                                    pageSize: 10
-                                }
-                            }
-                        }}
-                        pageSizeOptions={[5, 10, 25, 50, 100]}
-                        disableRowSelectionOnClick={true}
-                    />
-                </Box>
-                <Dialog
-                    open={feedbackDialog.open}
-                    onClose={() => setFeedbackDialog({ open: false, text: "" })}
-                    maxWidth="sm"
-                    fullWidth
-                >
-                    <DialogTitle>Feedback</DialogTitle>
-                    <DialogContent>
-                        <Typography whiteSpace="pre-wrap">
-                            {feedbackDialog.text}
-                        </Typography>
-                    </DialogContent>
-                </Dialog>
+        <Stack spacing={2} sx={{ width: '100%' }}>
+            <Stack direction={"column"} spacing={1}>
+                <Typography variant="h5">Logged Adjudications</Typography>
             </Stack>
-        </>
+            <Box sx={{ width: '100%' }}>
+                <DataGrid
+                    rows={filteredLog}
+                    columns={logColumns}
+                    initialState={{
+                        pagination: {
+                            paginationModel: {
+                                pageSize: 10
+                            }
+                        }
+                    }}
+                    pageSizeOptions={[5, 10, 25, 50, 100]}
+                    disableRowSelectionOnClick={true}
+                />
+            </Box>
+            <Dialog
+                open={feedbackDialog.open}
+                onClose={() => setFeedbackDialog({ open: false, text: "" })}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>Feedback</DialogTitle>
+                <DialogContent>
+                    <Typography whiteSpace="pre-wrap">
+                        {feedbackDialog.text}
+                    </Typography>
+                </DialogContent>
+            </Dialog>
+        </Stack>
     );
 }
