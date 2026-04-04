@@ -22,5 +22,8 @@
   "eventDetails": "Event Details",
   "addServer": "Add a New Server",
   "editNode": "Edit Node",
-  "nodes": "Nodes"
+  "nodes": "Nodes",
+  "browserNotificationPermission": "Browser Notification Permission",
+  "notificationPreferences": "Notification Preferences",
+  "settings": "Settings"
 }

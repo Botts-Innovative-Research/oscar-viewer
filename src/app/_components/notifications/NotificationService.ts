@@ -81,9 +81,9 @@ export class NotificationService {
 }
 
 export const NotificationTemplates = {
-    newAlarm: (laneName: string, alarmStatus: string): NotificationPayload => ({
-        title: 'New OSCAR Alarm',
-        body: `New ${alarmStatus} Alarm at Lane ${laneName}`,
+    newAlarm: (laneName: string, alarmStatus: string, eventData?: any): NotificationPayload => ({
+        title: `New ${alarmStatus} Alarm`,
+        body: `New OSCAR Alarm at Lane ${laneName} - Occupancy ID: ${eventData.occupancyCount}`,
         icon: '/icons/icon-192x192.png',
         actions: [
             { action: 'view-alarm', title: 'View Alarm' },
@@ -91,5 +91,6 @@ export const NotificationTemplates = {
         ],
         badge: '/icons/icon-128x128.png',
         tag: 'alarm-notification',
+        data: eventData ? { eventId: eventData.id, eventData: JSON.parse(JSON.stringify(eventData)) } : undefined,
     }),
 }
