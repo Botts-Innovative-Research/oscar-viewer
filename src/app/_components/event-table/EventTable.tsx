@@ -675,6 +675,7 @@ export default function EventTable({
                 rowCount={rowCount}
                 columns={columns}
                 onRowClick={handleRowSelection}
+                onRowDoubleClick={handleEventPreview}
                 rowSelectionModel={selectionModel}
                 pageSizeOptions={[15]}
                 slots={{ toolbar: CustomToolbar }}
