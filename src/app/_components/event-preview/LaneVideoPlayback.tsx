@@ -29,7 +29,7 @@ export default function LaneVideoPlayback({selectedNode, videos, modeType, start
     const [videoDuration, setVideoDuration] = useState<number>(0);
     const [isUpdatingFromSlider, setIsUpdatingFromSlider] = useState(false);
     const [selVideoIdx, setSelVidIdx] = useState<number>(0);
-    const [tls, setTls] = useState("");
+    const tls = selectedNode ? (selectedNode.isSecure ? 'https' : 'http') : '';
 
 
     useEffect(() => {
@@ -38,13 +38,6 @@ export default function LaneVideoPlayback({selectedNode, videos, modeType, start
         } else if ( modeType=== 'preview' ){
             setVideoHeight("300px")
         }
-
-        if (!selectedNode)
-            return;
-
-        let tls = selectedNode.isSecure ? 'https' : 'http';
-        setTls(tls)
-
     }, [modeType, videos, selectedNode]);
 
     useEffect(() => {
@@ -155,7 +148,7 @@ export default function LaneVideoPlayback({selectedNode, videos, modeType, start
             width: "100%",
             overflow: "hidden",
         }}>
-            {videos?.length > 0 ? (
+            {videos?.length > 0 && selectedNode ? (
                 <div style={{display: "flex"}}>
                     <IconButton
                         onClick={handlePrevPage}
