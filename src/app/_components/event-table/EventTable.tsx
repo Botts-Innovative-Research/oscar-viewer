@@ -543,6 +543,19 @@ export default function EventTable({
         router.push("/event-details");
     };
 
+    const handleRowDoubleClick = (params: GridRowParams) => {
+        const selectedRow = params.row as EventTableData;
+        if (!selectedRow) return;
+
+        setSelectionModel([selectedRow.id]);
+        dispatch(setSelectedRowId(selectedRow.id));
+        getLatestGB(selectedRow);
+        dispatch(setEventPreview({ isOpen: true, eventData: selectedRow }));
+        dispatch(setSelectedEvent(selectedRow));
+
+        router.push("/event-details");
+    };
+
     const getColumnList = () => {
         const excludeFields: string[] = [];
         if (!viewAdjudicated) excludeFields.push('adjudicatedIds');
@@ -675,7 +688,7 @@ export default function EventTable({
                 rowCount={rowCount}
                 columns={columns}
                 onRowClick={handleRowSelection}
-                onRowDoubleClick={handleEventPreview}
+                onRowDoubleClick={handleRowDoubleClick}
                 rowSelectionModel={selectionModel}
                 pageSizeOptions={[15]}
                 slots={{ toolbar: CustomToolbar }}
