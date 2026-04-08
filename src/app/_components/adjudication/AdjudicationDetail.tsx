@@ -716,7 +716,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 <Grid container spacing={2} sx={{ width: '100%' }}>
                     {/*N42 Detail*/}
                     <Grid item xs={12}>
-                        <N42Detail event={props.event} uploadedFiles={adjData.filePaths}/>
+                        <N42Detail event={props.event}/>
                     </Grid>
                     {/*WebID Results*/}
                     <Grid item xs={12}>

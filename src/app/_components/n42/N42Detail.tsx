@@ -9,7 +9,6 @@ import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import N42ChartPlayback from "@/app/_components/n42/N42ChartPlayback";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
-import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 
 export interface N42Report {
     samplingTime: string;
@@ -29,15 +28,40 @@ interface N42FileData {
     backgroundReports: N42Report[];
 }
 
-export default function N42Detail(props: { event: EventTableData; uploadedFiles?: string[] }) {
+const FILENAME = "fileName";
+const OCCUPANCY_OBS_ID = "occupancyObsId";
+const FOREGROUND_REPORTS = "foregroundReports";
+const BACKGROUND_REPORTS = "backgroundReports";
+
+export default function N42Detail(props: { event: EventTableData }) {
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
     const [fileDataMap, setFileDataMap] = useState<Map<string, N42FileData>>(new Map());
     const [currentPage, setCurrentPage] = useState(0);
 
+    // Each N42 observation carries the encoded id of the occupancy it belongs
+    // to (set in N42Output.parseN42Message at publish time). We filter both the
+    // historical fetch and the live subscription against the current event's
+    // occupancy obs id so the viewer only displays N42 data for THIS occupancy.
+    // Depend on the primitive occupancyObsId/laneId rather than the event
+    // object reference: AdjudicationDetail lazily mutates
+    // props.event.occupancyObsId after an async lookup for events that were
+    // live when opened, and that mutation does not change the prop reference.
+    // Depending on the primitives lets fetchN42 and the live subscription
+    // both re-run once the id becomes available.
+    const targetOccupancyObsId = props.event.occupancyObsId;
+    const currentLaneId = props.event.laneId;
+
     const fetchN42 = useCallback(async() => {
-        // fetch observations between start and endtime and populate chart u can name the filename just like 1 - x
-        const currentLane = props.event.laneId;
-        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+        // Reset on event change so we don't show stale data from another event.
+        setFileDataMap(new Map());
+        setCurrentPage(0);
+
+        if (!targetOccupancyObsId) {
+            console.debug("[N42Detail] skipping fetch: occupancyObsId not yet resolved");
+            return;
+        }
+
+        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLaneId);
 
         const n42Stream = currLaneEntry.findDataStreamByObsProperty(N42_REPORT_DEF);
         if (!n42Stream) {
@@ -45,42 +69,55 @@ export default function N42Detail(props: { event: EventTableData; uploadedFiles?
             return;
         }
 
-        let query = await n42Stream.searchObservations(new ObservationFilter({resultTime: `${props.event.startTime}/${props.event.endTime}`}), 100);
+        // Paginate the lane's N42 stream and accumulate any observation whose
+        // occupancyObsId matches this event. Mirrors WebIdAnalysis.tsx.
+        const matched = new Map<string, N42FileData>();
+        let query = await n42Stream.searchObservations(undefined, 100);
 
+        let scanned = 0;
         while (query.hasNext()) {
-            let obsCollection = await query.nextPage();
+            const obsCollection = await query.nextPage();
 
             for (const obs of obsCollection) {
+                scanned++;
                 const data = obs.result;
                 if (!data) continue;
 
-                const msgFileName: string = data["fileName"];
-                const foreground: N42Report[] = data["Foreground Reports"] ?? [];
-                const background: N42Report[] = data["Background Reports"] ?? [];
+                if (data[OCCUPANCY_OBS_ID] !== targetOccupancyObsId) continue;
 
+                const foreground: N42Report[] = data[FOREGROUND_REPORTS] ?? [];
+                const background: N42Report[] = data[BACKGROUND_REPORTS] ?? [];
                 if (foreground.length === 0 && background.length === 0) continue;
 
-                setFileDataMap(prev => {
-                    const next = new Map(prev);
-                    next.set(msgFileName ?? "none -" + randomUUID(), {
-                        fileName: msgFileName ?? "No file name",
-                        foregroundReports: foreground,
-                        backgroundReports: background,
-                    });
-                    return next;
+                const msgFileName: string | undefined = data[FILENAME];
+                const key = msgFileName && msgFileName.length > 0 ? msgFileName : randomUUID();
+
+                matched.set(key, {
+                    fileName: msgFileName ?? "",
+                    foregroundReports: foreground,
+                    backgroundReports: background,
                 });
             }
         }
 
-    }, [props.event]);
+        console.debug(`[N42Detail] fetch complete: scanned=${scanned} matched=${matched.size} for occupancyObsId=${targetOccupancyObsId}`);
+
+        if (matched.size > 0) {
+            setFileDataMap(matched);
+        }
+    }, [targetOccupancyObsId, currentLaneId, laneMapRef]);
 
     useEffect(() => {
         if (props.event) fetchN42();
-    }, [props.event, fetchN42]);
+    }, [fetchN42]);
 
     useEffect(() => {
-        const currentLane = props.event.laneId;
-        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+        if (!targetOccupancyObsId) {
+            console.debug("[N42Detail] skipping live subscribe: occupancyObsId not yet resolved");
+            return;
+        }
+
+        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLaneId);
 
         const n42Stream = currLaneEntry.findDataStreamByObsProperty(N42_REPORT_DEF);
         if (!n42Stream) {
@@ -101,23 +138,22 @@ export default function N42Detail(props: { event: EventTableData; uploadedFiles?
             const data = msg.values?.[0]?.data;
             if (!data) return;
 
-            console.log('data', data);
+            // Only accept live N42 observations that belong to this event's
+            // occupancy. A user uploading a file mid-view will produce an N42
+            // observation with this occupancy's obs id and so will appear here.
+            if (data[OCCUPANCY_OBS_ID] !== targetOccupancyObsId) return;
 
-            const msgFileName: string = data["fileName"];
-            // const matchedFile = props.uploadedFiles.find(fp => msgFileName?.endsWith(fp));
-            // if (!matchedFile) {
-            //     console.warn("no matched file name")
-            //     return;
-            // }
-
-            const foreground: N42Report[] = data["Foreground Reports"] ?? [];
-            const background: N42Report[] = data["Background Reports"] ?? [];
-
+            const foreground: N42Report[] = data[FOREGROUND_REPORTS] ?? [];
+            const background: N42Report[] = data[BACKGROUND_REPORTS] ?? [];
             if (foreground.length === 0 && background.length === 0) return;
+
+            const msgFileName: string | undefined = data[FILENAME];
+            const key = msgFileName && msgFileName.length > 0 ? msgFileName : randomUUID();
+
             setFileDataMap(prev => {
                 const next = new Map(prev);
-                next.set(msgFileName ?? "none -" + randomUUID(), {
-                    fileName: msgFileName ?? "No file name",
+                next.set(key, {
+                    fileName: msgFileName ?? "",
                     foregroundReports: foreground,
                     backgroundReports: background,
                 });
@@ -133,7 +169,7 @@ export default function N42Detail(props: { event: EventTableData; uploadedFiles?
             console.error("Error connecting n42 source:", err);
         }
 
-    }, [props.event.adjudicatedData, props.uploadedFiles]);
+    }, [targetOccupancyObsId, currentLaneId, laneMapRef]);
 
     const fileEntries = Array.from(fileDataMap.values());
 
@@ -185,14 +221,6 @@ export default function N42Detail(props: { event: EventTableData; uploadedFiles?
                                     yValue={"linearSpectrum"}
                                 />
                             </Grid>
-                            {/*<Grid item xs={6}>*/}
-                            {/*    <N42ChartPlayback*/}
-                            {/*        reports={activeFile.foregroundReports}*/}
-                            {/*        title={"Foreground Linear Spectrum"}*/}
-                            {/*        chartId={`n42-chart-foreground-cmp-${currentPage}`}*/}
-                            {/*        yValue={"compressedSpectrum"}*/}
-                            {/*    />*/}
-                            {/*</Grid>*/}
                         </>
                     )}
 
@@ -207,14 +235,6 @@ export default function N42Detail(props: { event: EventTableData; uploadedFiles?
                                     yValue={"linearSpectrum"}
                                 />
                             </Grid>
-                            {/*<Grid item xs={6}>*/}
-                            {/*    <N42ChartPlayback*/}
-                            {/*        reports={activeFile.backgroundReports}*/}
-                            {/*        title={"Background Compressed Spectrum"}*/}
-                            {/*        chartId={`n42-chart-background-cpm-${currentPage}`}*/}
-                            {/*        yValue={"compressedSpectrum"}*/}
-                            {/*    />*/}
-                            {/*</Grid>*/}
                         </>
                     )}
 
