@@ -40,7 +40,11 @@ export class EventTableData implements IEventTableData {
         this.maxNeutron = msgValue.maxNeutron > -1 ? msgValue.maxNeutron : null;
         this.neutronBackground = msgValue.neutronBackground > -1 ? msgValue.neutronBackground : null;
         this.pillarOccupancy = msgValue.occupancyCount > -1 ? msgValue.occupancyCount : null;
-        if (msgValue.gammaAlarm && msgValue.neutronAlarm) {
+        // TODO Later convert all drivers to use a category code string
+        const rawAlarmCategory: string | undefined = msgValue.alarmCategoryCode;
+        if (rawAlarmCategory && rawAlarmCategory.trim().length > 0) {
+            this.status = rawAlarmCategory;
+        } else if (msgValue.gammaAlarm && msgValue.neutronAlarm) {
             this.status = "Gamma & Neutron";
         } else if (msgValue.gammaAlarm) {
             this.status = "Gamma";

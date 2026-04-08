@@ -718,7 +718,7 @@ export default function EventTable({
                         return "highlightGamma";
                     else if (params.value === "Neutron")
                         return "highlightNeutron";
-                    else if (params.value === "Gamma & Neutron")
+                    else if (params.value === "Gamma & Neutron" || (params.value !== "None" && params.field === "status"))
                         return "highlightGammaNeutron";
                     else if (params.formattedValue === 'Code 1: Contraband Found' || params.formattedValue === 'Code 2: Other' || params.formattedValue === 'Code 3: Medical Isotope Found')
                         return "highlightReal";
