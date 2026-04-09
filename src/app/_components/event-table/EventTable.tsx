@@ -436,7 +436,7 @@ export default function EventTable({
 
 
             if (newEvent.status !== 'None') {
-                sendNotification({ laneName: laneEntry.laneName, status: newEvent.status});
+                sendNotification({ laneName: laneEntry.laneName, status: newEvent.status, eventData: newEvent});
             }
         } else {
             // Handle historical observations

@@ -39,6 +39,7 @@ export class NotificationService {
         }
 
         const options: NotificationOptions = {
+            actions: payload.actions,
             badge: payload.badge,
             body: payload.body,
             data: payload.data,
@@ -83,7 +84,7 @@ export class NotificationService {
 export const NotificationTemplates = {
     newAlarm: (laneName: string, alarmStatus: string, eventData?: any): NotificationPayload => ({
         title: `New ${alarmStatus} Alarm`,
-        body: `New OSCAR Alarm at Lane ${laneName} - Occupancy ID: ${eventData.occupancyCount}`,
+        body: `New OSCAR Alarm at Lane ${laneName} - Occupancy ID: ${eventData?.occupancyCount}`,
         icon: '/icons/icon-192x192.png',
         actions: [
             { action: 'view-alarm', title: 'View Alarm' },
