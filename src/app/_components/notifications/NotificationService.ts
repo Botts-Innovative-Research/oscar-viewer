@@ -38,7 +38,7 @@ export class NotificationService {
             return;
         }
 
-        const options: NotificationOptions = {
+        const options = {
             actions: payload.actions,
             badge: payload.badge,
             body: payload.body,
