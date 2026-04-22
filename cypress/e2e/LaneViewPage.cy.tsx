@@ -66,6 +66,11 @@ describe('Lane View Page (E2E)', () => {
 
             cy.get('video', {timeout: 10000}).then(($video) => {
                 const video = $video[0];
+                // If metadata is already loaded (from prior test), check duration directly
+                if (video.readyState >= 1) {
+                    expect(video.duration).to.be.greaterThan(0);
+                    return;
+                }
                 return new Cypress.Promise((resolve) => {
                     video.onloadedmetadata = () => {
                         expect(video.duration).to.be.greaterThan(0);
@@ -73,8 +78,8 @@ describe('Lane View Page (E2E)', () => {
                     };
                 });
             }).then(() => {
-                    const duration = Date.now() - start;
-                    expect(duration).to.be.lessThan(3000);
+                const duration = Date.now() - start;
+                expect(duration).to.be.lessThan(3000);
             });
         });
     });

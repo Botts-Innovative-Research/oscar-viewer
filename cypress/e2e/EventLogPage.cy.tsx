@@ -51,19 +51,16 @@ describe('Event Log', () => {
             cy.get('.MuiDataGrid-filterForm .MuiSelect-select').filter(':visible').eq(0).click();
             cy.get('.MuiList-root .MuiMenuItem-root').contains('Status').click();
 
-            cy.get('.MuiDataGrid-filterForm .MuiSelect-select').filter(':visible').eq(1).click();
-            cy.get('.MuiList-root .MuiMenuItem-root').contains('equals').click();
-
-            // set filter to Gamma
-            cy.get('.MuiDataGrid-filterForm input[placeholder="Filter value"]')
-                .clear()
-                .type('Gamma{enter}');
+            // Status is a singleSelect column — operator auto-sets to "is";
+            // value input is a Select dropdown (not a text field)
+            cy.get('.MuiDataGrid-filterForm .MuiSelect-select').filter(':visible').last().click();
+            cy.get('.MuiList-root .MuiMenuItem-root').contains('Gamma').click();
 
             // verify only gamma events are displayed in table
             cy.get('.MuiDataGrid-row').contains('Gamma');
 
-            cy.get('.MuiDataGrid-filterForm input[placeholder="Filter value"]')
-                .clear();
+            // remove the filter row to restore full table
+            cy.get('.MuiDataGrid-filterFormDeleteIcon button').click();
 
         });
 

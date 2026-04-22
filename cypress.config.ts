@@ -37,11 +37,13 @@ export default defineConfig({
     },
 
     e2e: {
-        baseUrl: 'http://localhost:8282',
+        baseUrl: 'http://100.94.197.23:8282',
         setupNodeEvents(on, config) {
             // implement node event listeners here
         },
         experimentalRunAllSpecs: true,
         testIsolation: false,
+        viewportWidth: 1280,
+        viewportHeight: 720,
     },
 });

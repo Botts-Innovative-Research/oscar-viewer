@@ -11,7 +11,8 @@
     "lint": "next lint",
     "start-exported": "npx serve@latest web",
     "test": "cypress run --e2e",
-    "test:all": "cypress run --e2e --headed --spec 'cypress/e2e/all-specs.cy.tsx'"
+    "test:all": "cypress run --e2e --headed --spec 'cypress/e2e/all-specs.cy.tsx'",
+    "test:scheduled": "cypress run --e2e --spec 'cypress/e2e/DashboardPage.cy.tsx,cypress/e2e/EventDetailsPage.cy.tsx,cypress/e2e/EventLogPage.cy.tsx,cypress/e2e/LaneViewPage.cy.tsx,cypress/e2e/NationalViewPage.cy.tsx,cypress/e2e/ReportPage.cy.tsx'"
   },
   "keywords": [
     "OpenSensorHub",

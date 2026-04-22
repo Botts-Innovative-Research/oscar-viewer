@@ -1,13 +1,17 @@
 describe('Report Page (E2E)', () => {
-    before(() => {
+    beforeEach(() => {
         cy.visitReportPage();
     });
 
     // Helper functions to reduce duplication
-    const selectNode = (nodeValue = 'node-0.9753074657637626') => {
-        cy.get('.MuiSelect-select').first().click();
+    const selectNode = () => {
+        // Use label anchor to avoid matching the Navbar LanguageSelector
+        cy.contains('label', 'Node Selector').parent().find('.MuiSelect-select').click();
         cy.get('.MuiList-root').should('be.visible');
-        cy.get(`[data-value="${nodeValue}"]`).click();
+        cy.get('.MuiList-root .MuiMenuItem-root', { timeout: 10000 })
+            .should('have.length.greaterThan', 0)
+            .first()
+            .click();
     };
 
     const selectOption = (label: string, value: any, isMultiSelect: boolean) => {
@@ -16,7 +20,13 @@ describe('Report Page (E2E)', () => {
             .find('.MuiSelect-select')
             .click();
         cy.get('.MuiList-root').should('be.visible');
-        cy.get(`[data-value="${value}"]`).click();
+
+        if (label === 'Lane Selector') {
+            // Lane UIDs are server-generated; skip "Select All" and pick first real lane
+            cy.get('.MuiList-root .MuiMenuItem-root').not('[data-value="all"]').first().click();
+        } else {
+            cy.get(`[data-value="${value}"]`).click();
+        }
 
         if (isMultiSelect) {
             cy.get('body').type('{esc}');
@@ -42,6 +52,7 @@ describe('Report Page (E2E)', () => {
 
     const generateAndVerifyReport = (config: any) => {
         selectNode();
+        cy.contains('label', 'Report Type', { timeout: 8000 }).should('be.visible');
         selectOption('Report Type', config.reportType, false);
 
         if (config.lane) {
@@ -100,7 +111,7 @@ describe('Report Page (E2E)', () => {
             it(`should generate Lane report for ${label}`, () => {
                 generateAndVerifyReport({
                     reportType: 'LANE',
-                    lane: 'urn:osh:system:lane:rapiscan',
+                    lane: 'first',
                     timeRange: value
                 });
             });
@@ -109,7 +120,7 @@ describe('Report Page (E2E)', () => {
         it.skip('should generate Lane report with custom range', () => {
             generateAndVerifyReport({
                 reportType: 'LANE',
-                lane: 'urn:osh:system:lane:rapiscan',
+                lane: 'first',
                 timeRange: 'custom',
                 customDates: { start: '2024-01-01', end: '2025-12-31' }
             });
@@ -136,7 +147,6 @@ describe('Report Page (E2E)', () => {
                     it(`should generate ${eventLabel} Event report for ${timeLabel}`, () => {
                         generateAndVerifyReport({
                             reportType: 'EVENT',
-                            lane: 'urn:osh:system:lane:rapiscan',
                             eventType: eventValue,
                             timeRange: timeValue
                         });
@@ -146,7 +156,6 @@ describe('Report Page (E2E)', () => {
                 it.skip(`should generate ${eventLabel} Event report with custom range`, () => {
                     generateAndVerifyReport({
                         reportType: 'EVENT',
-                        lane: 'urn:osh:system:lane:rapiscan',
                         eventType: eventValue,
                         timeRange: 'custom',
                         customDates: { start: '2024-01-01', end: '2025-12-31' }
@@ -168,7 +177,7 @@ describe('Report Page (E2E)', () => {
             it(`should generate Adjudication report for ${label}`, () => {
                 generateAndVerifyReport({
                     reportType: 'ADJUDICATION',
-                    lane: 'urn:osh:system:lane:rapiscan',
+                    lane: 'first',
                     timeRange: value
                 });
             });
@@ -177,7 +186,7 @@ describe('Report Page (E2E)', () => {
         it.skip('should generate Adjudication report with custom range', () => {
             generateAndVerifyReport({
                 reportType: 'ADJUDICATION',
-                lane: 'urn:osh:system:lane:rapiscan',
+                lane: 'first',
                 timeRange: 'custom',
                 customDates: { start: '2024-01-01', end: '2025-12-31' }
             });
