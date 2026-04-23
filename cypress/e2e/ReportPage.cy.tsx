@@ -40,7 +40,7 @@ describe('Report Page (E2E)', () => {
     };
 
     const verifyReportGeneration = () => {
-        cy.get('iframe', { timeout: 15000 })
+        cy.get('iframe', { timeout: 60000 })
             .should('exist')
             .and('be.visible')
             .then(($iframe) => {

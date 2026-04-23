@@ -1,4 +1,4 @@
-$projectDir = "C:\Users\Alex\GitHub\osh-oakridge-buildnode\web\oscar-viewer"
+$projectDir = "C:\OSCAR\oscar-viewer"
 $logDir = "$projectDir\cypress\scheduled-logs"
 $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
 $logFile = "$logDir\run-$timestamp.log"
