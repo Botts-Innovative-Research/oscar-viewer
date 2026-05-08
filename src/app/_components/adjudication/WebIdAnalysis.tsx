@@ -191,8 +191,13 @@ export default function WebIdAnalysis(props: { event: EventTableData; onWebIdRes
     }, [props.event]);
 
     useEffect(() => {
+        if (!props.event?.laneId || !laneMapRef.current) return;
         const currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+        if (!currLaneEntry) {
+            console.warn("WebIdAnalysis: lane entry not ready yet for:", currentLane);
+            return;
+        }
 
         let webIdStream = currLaneEntry.findDataStreamByObsProperty(WEB_ID_DEF);
         if(!webIdStream) {

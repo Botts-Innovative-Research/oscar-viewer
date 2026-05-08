@@ -11,12 +11,14 @@ declare module "@mui/material/styles" {
     secondaryHighlight: string;
     infoHighlight: string;
     successHighlight: string;
+    faultHighlight: string;
   }
   interface PaletteOptions {
     errorHighlight: string;
     secondaryHighlight: string;
     infoHighlight: string;
     successHighlight: string;
+    faultHighlight: string;
   }
 }
 declare module "@mui/material/Paper" {
@@ -42,6 +44,7 @@ export const getTheme = (mode: PaletteMode) => {
       secondaryHighlight: "#9C27B04D",
       infoHighlight: "#2196F34D",
       successHighlight: "#C1D8C2",
+      faultHighlight: "#ED6C024D",
     },
     typography: {},
     components: {

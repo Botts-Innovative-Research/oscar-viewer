@@ -1,16 +1,19 @@
 "use client";
 
 import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from "@mui/material";
-import {styled, Theme} from "@mui/material/styles";
+import {styled} from "@mui/material/styles";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 
 
-const StatusTableCell = styled(TableCell)(({theme, status}: { theme: Theme, status: string }) => ({
+const StatusTableCell = styled(TableCell, {
+    shouldForwardProp: (prop) => prop !== 'status',
+})<{ status: string }>(({theme, status}) => ({
     color: status === 'Gamma' ? theme.palette.error.contrastText : status === 'Neutron' ? theme.palette.info.contrastText : status === 'Gamma & Neutron' ? theme.palette.secondary.contrastText : 'inherit',
     backgroundColor: status === 'Gamma' ? theme.palette.error.main : status === 'Neutron' ? theme.palette.info.main : status === 'Gamma & Neutron' ? theme.palette.secondary.main : 'transparent',
 }));
 
-export default function DataRow({eventData}: {eventData: EventTableData}) {
+
+export default function DataRow({eventData, speed}: {eventData: EventTableData, speed?: string}) {
     return (
         <TableContainer>
             <Table sx={{minWidth: 650}} aria-label="simple table">
@@ -24,6 +27,7 @@ export default function DataRow({eventData}: {eventData: EventTableData}) {
                         <TableCell>End Time</TableCell>
                         <TableCell>Max Gamma</TableCell>
                         <TableCell>Max Neutron</TableCell>
+                        <TableCell>Speed (kph)</TableCell>
                         <TableCell>Status</TableCell>
                         <TableCell>Adjudicated</TableCell>
                     </TableRow>
@@ -39,6 +43,7 @@ export default function DataRow({eventData}: {eventData: EventTableData}) {
                             <TableCell>{eventData?.endTime}</TableCell>
                             <TableCell>{eventData?.maxGamma}</TableCell>
                             <TableCell>{eventData?.maxNeutron}</TableCell>
+                            <TableCell>{speed ?? 'N/A'}</TableCell>
                             <StatusTableCell status={eventData?.status || 'Unknown'}>
                                 {eventData?.status || 'Unknown'}
                             </StatusTableCell>
@@ -46,7 +51,7 @@ export default function DataRow({eventData}: {eventData: EventTableData}) {
                         </TableRow>
                     ) : (
                         <TableRow>
-                            <TableCell colSpan={9} align="center">No event data available</TableCell>
+                            <TableCell colSpan={10} align="center">No event data available</TableCell>
                         </TableRow>
                     )}
                 </TableBody>
@@ -54,4 +59,5 @@ export default function DataRow({eventData}: {eventData: EventTableData}) {
         </TableContainer>
     );
 }
+
 

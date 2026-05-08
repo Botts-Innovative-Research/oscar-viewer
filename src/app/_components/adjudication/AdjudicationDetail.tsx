@@ -504,7 +504,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
 
-    const laneUid = laneMap.get(props.event?.laneId)?.laneSystem?.properties?.properties?.uid;
+    // After redux-persist rehydration, laneMap may be a plain object instead of a Map.
+    // Guard with instanceof before calling .get()
+    const laneUid = (laneMap instanceof Map)
+        ? laneMap.get(props.event?.laneId)?.laneSystem?.properties?.properties?.uid
+        : undefined;
 
     function createFilesForQRCode(qrCodeData: ScannedDataWithWebId[]) {
         let newFiles: FileWithWebId[] = [];
@@ -712,426 +716,192 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     return (
         <Stack spacing={2}>
-            <Paper variant='outlined' sx={{ p: 2 }}>
-                <Grid container spacing={2} sx={{ width: '100%' }}>
-                    {/*N42 Detail*/}
-                    <Grid item xs={12}>
-                        <N42Detail event={props.event}/>
-                    </Grid>
-                    {/*WebID Results*/}
-                    <Grid item xs={12}>
-                        <WebIdAnalysis
-                            event={props.event}
-                            onWebIdResults={handleWebIdResults}
-                        />
-                    </Grid>
-                    {/*Adj Log*/}
-                    <Grid item xs={12}>
-                        <AdjudicationLog
-                            event={props.event}
-                            node={laneMapRef.current.get(props.event.laneId)?.parentNode}
-                        />
-                    </Grid>
-                </Grid>
-            </Paper>
 
-            {/*Evidence Collection*/}
-            <Paper variant='outlined' sx={{ p: 2 }}>
-                <Grid container spacing={2} sx={{ width: '100%' }}>
+            {/* ROW 1: Evidence Collection (narrower) + WebID Analysis side-by-side */}
+            <Grid container spacing={2}>
 
-                    <Grid item xs={12}>
-                        <Typography variant="h5">
-                            Evidence Collection
-                        </Typography>
-                    </Grid>
+                {/* Evidence Collection */}
+                <Grid item xs={12} md={5}>
+                    <Paper variant='outlined' sx={{ p: 2, height: '100%' }}>
+                        <Grid container spacing={2}>
 
-                    {uploadedFiles.length > 0 && (
-                        <Grid item xs={12}>
-                            <Paper variant="outlined" sx={{ p: 1 }}>
-                                <Stack
-                                    sx={{
-                                        maxHeight: '150px',
-                                        overflowY: 'auto',
-                                    }}
-                                    spacing={1}
-                                >
-                                    {uploadedFiles.map((fileData, index) => (
-                                        <Stack key={`${fileData.file.name}-${index}`} direction="row" spacing={1} alignItems="center" flexWrap="wrap" p={1}>
-                                            <Box display="flex" alignItems="center" sx={{ minWidth: 0, flex: '1 1 auto' }}>
-                                                <InsertDriveFileRoundedIcon fontSize="small" />
-                                                <Typography variant="body2" noWrap sx={{ ml: 0.5 }}>
-                                                    {fileData.file.name}
-                                                    {fileData.serverPath && (
-                                                        <Typography component="span" variant="caption" color="success.main" sx={{ ml: 1 }}>
-                                                            (uploaded)
+                            <Grid item xs={12}>
+                                <Typography variant="h5">Evidence Collection</Typography>
+                            </Grid>
+
+                            {uploadedFiles.length > 0 && (
+                                <Grid item xs={12}>
+                                    <Paper variant="outlined" sx={{ p: 1 }}>
+                                        <Stack sx={{ maxHeight: '150px', overflowY: 'auto' }} spacing={1}>
+                                            {uploadedFiles.map((fileData, index) => (
+                                                <Stack key={`${fileData.file.name}-${index}`} direction="row" spacing={1} alignItems="center" flexWrap="wrap" p={1}>
+                                                    <Box display="flex" alignItems="center" sx={{ minWidth: 0, flex: '1 1 auto' }}>
+                                                        <InsertDriveFileRoundedIcon fontSize="small" />
+                                                        <Typography variant="body2" noWrap sx={{ ml: 0.5 }}>
+                                                            {fileData.file.name}
+                                                            {fileData.serverPath && (
+                                                                <Typography component="span" variant="caption" color="success.main" sx={{ ml: 1 }}>(uploaded)</Typography>
+                                                            )}
                                                         </Typography>
-                                                    )}
-                                                </Typography>
-                                            </Box>
-
-                                            <Stack direction="row" spacing={1} alignItems="center">
-                                                <FormControlLabel
-                                                    control={
-                                                        <Checkbox
-                                                            size="small"
-                                                            checked={fileData.webIdEnabled}
-                                                            onChange={handleWebIdAnalysis(index)}
-                                                            disabled={!!fileData.serverPath}
+                                                    </Box>
+                                                    <Stack direction="row" spacing={1} alignItems="center">
+                                                        <FormControlLabel
+                                                            control={<Checkbox size="small" checked={fileData.webIdEnabled} onChange={handleWebIdAnalysis(index)} disabled={!!fileData.serverPath} />}
+                                                            label={<Typography variant="body2">WebID</Typography>}
+                                                            sx={{mr: 0}}
                                                         />
-                                                    }
-                                                    label={<Typography variant="body2">WebID</Typography>}
-                                                    sx={{mr: 0}}
-                                                />
-
-                                                {fileData.webIdEnabled && (
-
-                                                    <>
-                                                        <DetectorResponseFunction
-                                                            onSelect={handleDrfSelection(index)}
-                                                            selectVal={fileData.detectorResponseFunction}
-                                                        />
-                                                        <SpectrumTypeSelector
-                                                            onSelect={handleSpectrumType(index)}
-                                                            selectVal={fileData.spectrumType}
-                                                        />
-                                                        {
-                                                            fileData.spectrumType === 'foreground' && (
-
-                                                                <FormControlLabel
-                                                                    control={
-                                                                        <Checkbox
-                                                                            size="small"
-                                                                            checked={fileData.synthesizeBackground}
-                                                                            onChange={handleSynthesizeBackground(index)}
-                                                                        />
-                                                                    }
-                                                                    label={<Typography variant="body2">Synthesize Background</Typography>}
-                                                                    sx={{mr: 0}}
-                                                                />
-
-                                                            )
-                                                        }
-                                                    </>
-                                                )}
-                                            </Stack>
-                                            <IconButton
-                                                onClick={() => handleFileDelete(index)}
-                                                size="small"
-                                                sx={{
-                                                    padding: "2px",
-                                                    border: "1px solid",
-                                                    borderRadius: "10px",
-                                                    borderColor: "error.main",
-                                                    backgroundColor: "inherit",
-                                                    color: "error.main"
-                                                }}>
-                                                <DeleteOutline fontSize="small" />
-                                            </IconButton>
+                                                        {fileData.webIdEnabled && (
+                                                            <>
+                                                                <DetectorResponseFunction onSelect={handleDrfSelection(index)} selectVal={fileData.detectorResponseFunction} />
+                                                                <SpectrumTypeSelector onSelect={handleSpectrumType(index)} selectVal={fileData.spectrumType} />
+                                                                {fileData.spectrumType === 'foreground' && (
+                                                                    <FormControlLabel
+                                                                        control={<Checkbox size="small" checked={fileData.synthesizeBackground} onChange={handleSynthesizeBackground(index)} />}
+                                                                        label={<Typography variant="body2">Synthesize Background</Typography>}
+                                                                        sx={{mr: 0}}
+                                                                    />
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </Stack>
+                                                    <IconButton onClick={() => handleFileDelete(index)} size="small" sx={{ padding: "2px", border: "1px solid", borderRadius: "10px", borderColor: "error.main", backgroundColor: "inherit", color: "error.main" }}>
+                                                        <DeleteOutline fontSize="small" />
+                                                    </IconButton>
+                                                </Stack>
+                                            ))}
                                         </Stack>
-                                    ))}
-                                </Stack>
-                            </Paper>
-                        </Grid>
-                    )}
-
-                    {scannedData.length > 0 && (
-                        <Grid item xs={12}>
-                            <Paper variant="outlined" sx={{ p: 1 }}>
-                                <Stack
-                                    sx={{
-                                        maxHeight: '150px',
-                                        overflowY: 'auto',
-                                    }}
-                                    spacing={1}
-                                >
-                                    {scannedData.map((data, index) => (
-                                        <Stack key={`scanned-${index}`} direction="row" spacing={1} alignItems="center" flexWrap="wrap" p={1}>
-                                            <Box display="flex" alignItems="center" sx={{ minWidth: 0, flex: '1 1 auto' }}>
-                                                <QrCode fontSize="small" color="action"/>
-                                                <Typography variant="body2" noWrap sx={{ ml: 0.5 }}>
-                                                    {data.text.length > 40 ? data.text.substring(0, 40) + '...' : data.text}
-                                                    {data.serverPath && (
-                                                        <Typography component="span" variant="caption" color="success.main" sx={{ ml: 1 }}>
-                                                            (uploaded)
-                                                        </Typography>
-                                                    )}
-                                                </Typography>
-                                            </Box>
-
-                                            <Stack direction="row" spacing={1} alignItems="center">
-                                                <FormControlLabel
-                                                    control={
-                                                        <Checkbox
-                                                            size="small"
-                                                            checked={data.webIdEnabled}
-                                                            onChange={handleQRCodeWebIdAnalysis(index)}
-                                                            disabled={!!data.serverPath}
-                                                        />
-                                                    }
-                                                    label={<Typography variant="body2">WebID</Typography>}
-                                                    sx={{mr: 0}}
-                                                />
-
-                                                {data.webIdEnabled && (
-                                                    <>
-                                                        <DetectorResponseFunction
-                                                            onSelect={handleScannedDataDrfSelection(index)}
-                                                            selectVal={data.detectorResponseFunction}
-                                                        />
-                                                        <SpectrumTypeSelector
-                                                            onSelect={handleScannedDataSpectrumType(index)}
-                                                            selectVal={data.spectrumType}
-                                                        />
-
-                                                        {
-                                                            data.spectrumType === 'foreground' && (
-                                                                <FormControlLabel
-                                                                    control={
-                                                                        <Checkbox
-                                                                            size="small"
-                                                                            checked={data.synthesizeBackground}
-                                                                            onChange={handleScannedDataSynthesizeBackground(index)}
-                                                                        />
-                                                                    }
-                                                                    label={<Typography variant="body2">Synthesize Background</Typography>}
-                                                                    sx={{mr: 0}}
-                                                                />
-                                                            )
-                                                        }
-
-                                                    </>
-                                                )}
-                                                <IconButton
-                                                    onClick={() => handleScannedDataDelete(index)}
-                                                    size="small"
-                                                    sx={{
-                                                        padding: "2px",
-                                                        border: "1px solid",
-                                                        borderRadius: "10px",
-                                                        borderColor: "error.main",
-                                                        backgroundColor: "inherit",
-                                                        color: "error.main"
-                                                    }}>
-                                                    <DeleteOutline fontSize="small" />
-                                                </IconButton>
-                                            </Stack>
-                                        </Stack>
-                                    ))}
-                                </Stack>
-                            </Paper>
-                        </Grid>
-                    )}
-
-                    <Dialog
-                        onClose={handleCloseQrCodeDialog}
-                        open={openDialog}
-                        fullWidth
-                        maxWidth="sm"
-                    >
-                        <IconButton
-                            aria-label="close"
-                            onClick={handleCloseQrCodeDialog}
-                            sx={{
-                                position: 'absolute',
-                                right: 8,
-                                top: 8,
-                            }}
-                        >
-                            <CloseIcon/>
-                        </IconButton>
-                        <DialogTitle sx={{textAlign: 'center', pb: 1}}>
-                            Spectroscopic QR Code Scanner
-                        </DialogTitle>
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                p: 3,
-                                pt: 1,
-                            }}
-                        >
-                            <Box className='qr-reader'
-                                 sx={{
-                                     width: 400,
-                                     height: 400,
-                                     maxWidth: 400,
-                                     borderRadius: 2,
-                                     overflow: 'hidden',
-                                     backgroundColor: 'black',
-                                     display: 'flex',
-                                     alignItems: 'center',
-                                     justifyContent: 'center',
-                                 }}
-                            >
-                                <video
-                                    ref={videoElement}
-                                    style={{
-                                        width: "100%",
-                                        height: "100%",
-                                        objectFit: "cover"
-                                    }}
-                                />
-                            </Box>
-
-                            {scannedData.length > 0 && (
-                                <Paper
-                                    variant="outlined"
-                                    sx={{mt: 2, p: 2, width: '100%', maxHeight: 150, overflowY: 'auto'}}
-                                >
-                                    <Typography variant="subtitle2" gutterBottom>
-                                        Scanned Codes ({scannedData.length}):
-                                    </Typography>
-                                    <Stack spacing={1}>
-                                        {scannedData.map((data, idx) => (
-                                            <Stack
-                                                key={idx}
-                                                direction="row"
-                                                justifyContent="space-between"
-                                                alignItems="center"
-                                            >
-                                                <Typography variant="body2">
-                                                    {data.text.length > 60 ? data.text.substring(0, 60) + '...' : data.text}
-                                                </Typography>
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => handleScannedDataDelete(idx)}
-                                                >
-                                                    <DeleteOutline fontSize="small"/>
-                                                </IconButton>
-                                            </Stack>
-                                        ))}
-                                    </Stack>
-                                </Paper>
+                                    </Paper>
+                                </Grid>
                             )}
 
-                            <Stack direction="row" spacing={2} sx={{mt: 2}}>
-                                {scannedData.length > 0 && (
-                                    <Button
-                                        variant="outlined"
-                                        onClick={() => setScannedData([])}
-                                    >
-                                        Clear All
-                                    </Button>
-                                )}
-                                <Button
-                                    variant="contained"
-                                    onClick={handleCloseQrCodeDialog}
-                                    sx={{minWidth: 120}}
-                                >
-                                    Done Scanning
-                                </Button>
-                            </Stack>
-                        </Box>
-                    </Dialog>
-                    <Grid item container xs={12} spacing={2} alignItems="center">
-                        <Grid item xs={"auto"}>
-                            <Stack direction="row" spacing={2} alignItems="center">
-                                <Button
-                                    component="label"
-                                    startIcon={<UploadFileRoundedIcon/>}
-                                    sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        width: "auto",
-                                        padding: "8px",
-                                        borderStyle: "solid",
-                                        borderWidth: "1px",
-                                        borderRadius: "10px",
-                                        borderColor: "secondary.main",
-                                        backgroundColor: "inherit",
-                                        color: "secondary.main"
-                                    }}
-                                >
-                                    Upload Files
-                                    <input
-                                        type="file"
-                                        multiple
-                                        onChange={handleFileUpload}
-                                        ref={fileInputRef}
-                                        style={{display: "none"}}
-                                    />
-                                </Button>
-                                <Button
-                                    component="label"
-                                    startIcon={<QrCode/>}
-                                    sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        width: "auto",
-                                        padding: "8px",
-                                        borderStyle: "solid",
-                                        borderWidth: "1px",
-                                        borderRadius: "10px",
-                                        borderColor: "info.main",
-                                        backgroundColor: "inherit",
-                                        color: "info.main"
-                                    }}
-                                    onClick={handleQrCode}
-                                >
-                                    QR Scanner
-                                </Button>
-                                <Button
-                                    variant="outlined"
-                                    color="info"
-                                    onClick={submitToWebId}
-                                    disabled={isSubmittingWebId || (!uploadedFiles.some(f => f.webIdEnabled && !f.serverPath) && !scannedData.some(d => d.webIdEnabled && !d.serverPath))}
-                                    sx={{
-                                        padding: "8px",
-                                        borderRadius: "10px",
-                                    }}
-                                >
-                                    {isSubmittingWebId ? 'Uploading...' : 'Upload to WebID'}
-                                </Button>
-                            </Stack>
+                            {scannedData.length > 0 && (
+                                <Grid item xs={12}>
+                                    <Paper variant="outlined" sx={{ p: 1 }}>
+                                        <Stack sx={{ maxHeight: '150px', overflowY: 'auto' }} spacing={1}>
+                                            {scannedData.map((data, index) => (
+                                                <Stack key={`scanned-${index}`} direction="row" spacing={1} alignItems="center" flexWrap="wrap" p={1}>
+                                                    <Box display="flex" alignItems="center" sx={{ minWidth: 0, flex: '1 1 auto' }}>
+                                                        <QrCode fontSize="small" color="action"/>
+                                                        <Typography variant="body2" noWrap sx={{ ml: 0.5 }}>
+                                                            {data.text.length > 40 ? data.text.substring(0, 40) + '...' : data.text}
+                                                            {data.serverPath && (
+                                                                <Typography component="span" variant="caption" color="success.main" sx={{ ml: 1 }}>(uploaded)</Typography>
+                                                            )}
+                                                        </Typography>
+                                                    </Box>
+                                                    <Stack direction="row" spacing={1} alignItems="center">
+                                                        <FormControlLabel
+                                                            control={<Checkbox size="small" checked={data.webIdEnabled} onChange={handleQRCodeWebIdAnalysis(index)} disabled={!!data.serverPath} />}
+                                                            label={<Typography variant="body2">WebID</Typography>}
+                                                            sx={{mr: 0}}
+                                                        />
+                                                        {data.webIdEnabled && (
+                                                            <>
+                                                                <DetectorResponseFunction onSelect={handleScannedDataDrfSelection(index)} selectVal={data.detectorResponseFunction} />
+                                                                <SpectrumTypeSelector onSelect={handleScannedDataSpectrumType(index)} selectVal={data.spectrumType} />
+                                                                {data.spectrumType === 'foreground' && (
+                                                                    <FormControlLabel
+                                                                        control={<Checkbox size="small" checked={data.synthesizeBackground} onChange={handleScannedDataSynthesizeBackground(index)} />}
+                                                                        label={<Typography variant="body2">Synthesize Background</Typography>}
+                                                                        sx={{mr: 0}}
+                                                                    />
+                                                                )}
+                                                            </>
+                                                        )}
+                                                        <IconButton onClick={() => handleScannedDataDelete(index)} size="small" sx={{ padding: "2px", border: "1px solid", borderRadius: "10px", borderColor: "error.main", backgroundColor: "inherit", color: "error.main" }}>
+                                                            <DeleteOutline fontSize="small" />
+                                                        </IconButton>
+                                                    </Stack>
+                                                </Stack>
+                                            ))}
+                                        </Stack>
+                                    </Paper>
+                                </Grid>
+                            )}
+
+                            {/* QR Scanner Dialog */}
+                            <Dialog onClose={handleCloseQrCodeDialog} open={openDialog} fullWidth maxWidth="sm">
+                                <IconButton aria-label="close" onClick={handleCloseQrCodeDialog} sx={{ position: 'absolute', right: 8, top: 8 }}>
+                                    <CloseIcon/>
+                                </IconButton>
+                                <DialogTitle sx={{textAlign: 'center', pb: 1}}>Spectroscopic QR Code Scanner</DialogTitle>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 3, pt: 1 }}>
+                                    <Box className='qr-reader' sx={{ width: 400, height: 400, maxWidth: 400, borderRadius: 2, overflow: 'hidden', backgroundColor: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <video ref={videoElement} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                    </Box>
+                                    {scannedData.length > 0 && (
+                                        <Paper variant="outlined" sx={{mt: 2, p: 2, width: '100%', maxHeight: 150, overflowY: 'auto'}}>
+                                            <Typography variant="subtitle2" gutterBottom>Scanned Codes ({scannedData.length}):</Typography>
+                                            <Stack spacing={1}>
+                                                {scannedData.map((data, idx) => (
+                                                    <Stack key={idx} direction="row" justifyContent="space-between" alignItems="center">
+                                                        <Typography variant="body2">{data.text.length > 60 ? data.text.substring(0, 60) + '...' : data.text}</Typography>
+                                                        <IconButton size="small" onClick={() => handleScannedDataDelete(idx)}><DeleteOutline fontSize="small"/></IconButton>
+                                                    </Stack>
+                                                ))}
+                                            </Stack>
+                                        </Paper>
+                                    )}
+                                    <Stack direction="row" spacing={2} sx={{mt: 2}}>
+                                        {scannedData.length > 0 && (<Button variant="outlined" onClick={() => setScannedData([])}>Clear All</Button>)}
+                                        <Button variant="contained" onClick={handleCloseQrCodeDialog} sx={{minWidth: 120}}>Done Scanning</Button>
+                                    </Stack>
+                                </Box>
+                            </Dialog>
+
+                            <Grid item container xs={12} spacing={2} alignItems="center">
+                                <Grid item xs={"auto"}>
+                                    <Stack direction="row" spacing={2} alignItems="center">
+                                        <Button component="label" startIcon={<UploadFileRoundedIcon/>} sx={{ display: "flex", alignItems: "center", width: "auto", padding: "8px", borderStyle: "solid", borderWidth: "1px", borderRadius: "10px", borderColor: "secondary.main", backgroundColor: "inherit", color: "secondary.main" }}>
+                                            Upload Files
+                                            <input type="file" multiple onChange={handleFileUpload} ref={fileInputRef} style={{display: "none"}} />
+                                        </Button>
+                                        <Button component="label" startIcon={<QrCode/>} sx={{ display: "flex", alignItems: "center", width: "auto", padding: "8px", borderStyle: "solid", borderWidth: "1px", borderRadius: "10px", borderColor: "info.main", backgroundColor: "inherit", color: "info.main" }} onClick={handleQrCode}>
+                                            QR Scanner
+                                        </Button>
+                                        <Button variant="outlined" color="info" onClick={submitToWebId} disabled={isSubmittingWebId || (!uploadedFiles.some(f => f.webIdEnabled && !f.serverPath) && !scannedData.some(d => d.webIdEnabled && !d.serverPath))} sx={{ padding: "8px", borderRadius: "10px" }}>
+                                            {isSubmittingWebId ? 'Uploading...' : 'Upload to WebID'}
+                                        </Button>
+                                    </Stack>
+                                </Grid>
+                            </Grid>
+
                         </Grid>
-                    </Grid>
+                    </Paper>
                 </Grid>
-            </Paper>
-            {/*Adjudication FORM*/}
+
+                {/* WebID Analysis Results */}
+                <Grid item xs={12} md={7}>
+                    <Paper variant='outlined' sx={{ p: 2, height: '100%' }}>
+                        <WebIdAnalysis event={props.event} onWebIdResults={handleWebIdResults} />
+                    </Paper>
+                </Grid>
+
+            </Grid>
+
+            {/* ROW 2: Adjudication Form */}
             <Paper variant='outlined' sx={{ p: 2 }}>
                 <Grid container spacing={2} sx={{ width: '100%' }}>
                     <Grid item container xs={12} spacing={2}>
                         <Grid item xs={12}>
-                            <Typography variant="h5">
-                                Adjudication Form
-                            </Typography>
+                            <Typography variant="h5">Adjudication Form</Typography>
                         </Grid>
                         <Grid item xs={12} sm={3} lg={2}>
-                            <TextField
-                                label="VehicleId"
-                                name="vehicleId"
-                                value={vehicleId}
-                                onChange={handleChange}
-                                fullWidth
-                            />
+                            <TextField label="VehicleId" name="vehicleId" value={vehicleId} onChange={handleChange} fullWidth />
                         </Grid>
                         <Grid item xs={12} sm={9} lg={10} />
                         <Grid item xs={12} sm={6}>
-                            <AdjudicationSelect
-                                adjCode={adjudicationCode}
-                                onSelect={handleAdjudicationSelect}
-                            />
+                            <AdjudicationSelect adjCode={adjudicationCode} onSelect={handleAdjudicationSelect} />
                         </Grid>
                         <Grid item xs={12} sm={6}>
-                            <IsotopeSelect
-                                isotopeValue={isotope}
-                                onSelect={handleIsotopeSelect}
-                            />
+                            <IsotopeSelect isotopeValue={isotope} onSelect={handleIsotopeSelect} />
                         </Grid>
                         {webIdResults.length > 0 && (
                             <Grid item xs={12}>
                                 <Stack direction="row" spacing={1} alignItems="center">
                                     <FormControl size="small" sx={{ minWidth: 250 }}>
                                         <InputLabel id="webid-result-select-label">WebID Evidence</InputLabel>
-                                        <Select
-                                            multiple
-                                            labelId="webid-result-select-label"
-                                            label="WebID Evidence"
-                                            value={selectedWebIdResultId}
-                                            onChange={handleEvidenceSelection}
-                                        >
+                                        <Select multiple labelId="webid-result-select-label" label="WebID Evidence" value={selectedWebIdResultId} onChange={handleEvidenceSelection}>
                                             {webIdResults.map((result) => (
                                                 <MenuItem key={result.id} value={result.id}>
                                                     <Checkbox size="small" checked={selectedWebIdResultId.includes(result.id)} />
@@ -1140,170 +910,74 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                             ))}
                                         </Select>
                                     </FormControl>
-                                    <Button
-                                        size="small"
-                                        variant="outlined"
-                                        color="info"
-                                        disabled={selectedWebIdResultId.length === 0}
-                                        onClick={applySelectedWebIdResult}
-                                        sx={{ whiteSpace: 'nowrap' }}
-                                    >
+                                    <Button size="small" variant="outlined" color="info" disabled={selectedWebIdResultId.length === 0} onClick={applySelectedWebIdResult} sx={{ whiteSpace: 'nowrap' }}>
                                         Use Selected Result
                                     </Button>
                                 </Stack>
                             </Grid>
                         )}
-
                         <Grid item xs={12}>
-                            <TextField
-                                id="outlined-multiline-static"
-                                label="Notes"
-                                name="notes"
-                                multiline
-                                rows={4}
-                                value={feedback}
-                                onChange={handleChange}
-                                fullWidth
-                            />
+                            <TextField id="outlined-multiline-static" label="Notes" name="notes" multiline rows={4} value={feedback} onChange={handleChange} fullWidth />
                         </Grid>
                     </Grid>
 
                     <Grid item container xs={12} spacing={2} alignItems="center" justifyContent="flex-end">
                         <Grid item xs={"auto"}>
                             <Stack direction="row" spacing={2} alignItems="center">
-                                <SecondaryInspectionSelect
-                                    secondarySelectVal={secondaryInspection}
-                                    onSelect={handleInspectionSelect}
-                                />
-                                <Button
-                                    size="large"
-                                    disableElevation
-                                    variant={"contained"}
-                                    color={"success"}
-                                    onClick={sendAdjudicationData}
-                                >
-                                    Submit
-                                </Button>
+                                <SecondaryInspectionSelect secondarySelectVal={secondaryInspection} onSelect={handleInspectionSelect} />
+                                <Button size="large" disableElevation variant={"contained"} color={"success"} onClick={sendAdjudicationData}>Submit</Button>
                             </Stack>
                         </Grid>
                     </Grid>
 
-                    <Dialog
-                        open={openConfirmDialog}
-                        onClose={() => setOpenConfirmDialog(false)}
-                        fullWidth
-                        maxWidth="sm"
-                    >
-                        <DialogTitle sx={{ pb: 1 }}>
-                            Confirm Adjudication Submission
-                        </DialogTitle>
+                    {/* Confirm Dialog */}
+                    <Dialog open={openConfirmDialog} onClose={() => setOpenConfirmDialog(false)} fullWidth maxWidth="sm">
+                        <DialogTitle sx={{ pb: 1 }}>Confirm Adjudication Submission</DialogTitle>
                         <DialogContent dividers sx={{ px: 1.5 }}>
                             <Stack spacing={1.5}>
-                                {vehicleId && (
-                                    <>
-                                        <Box>
-                                            <Typography variant="subtitle2" color="text.secondary">Vehicle ID</Typography>
-                                            <Typography variant="body1">{vehicleId}</Typography>
-                                        </Box>
-                                        <Divider />
-                                    </>
-                                )}
-
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Adjudication Code</Typography>
-                                    <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>
-                                        {adjData.adjudicationCode?.label} ({adjData.adjudicationCode?.group})
-                                    </Typography>
-                                </Box>
+                                {vehicleId && (<><Box><Typography variant="subtitle2" color="text.secondary">Vehicle ID</Typography><Typography variant="body1">{vehicleId}</Typography></Box><Divider /></>)}
+                                <Box><Typography variant="subtitle2" color="text.secondary">Adjudication Code</Typography><Typography variant="body1" sx={{ wordBreak: 'break-word' }}>{adjData.adjudicationCode?.label} ({adjData.adjudicationCode?.group})</Typography></Box>
                                 <Divider />
-
-                                {isotope.length > 0 && (
-                                    <>
-                                        <Box>
-                                            <Typography variant="subtitle2" color="text.secondary">Isotopes</Typography>
-                                            <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>{isotope.join(', ')}</Typography>
-                                        </Box>
-                                        <Divider />
-                                    </>
-                                )}
-
-                                {feedback && (
-                                    <>
-                                        <Box>
-                                            <Typography variant="subtitle2" color="text.secondary">Notes</Typography>
-                                            <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{feedback}</Typography>
-                                        </Box>
-                                        <Divider />
-                                    </>
-                                )}
-
+                                {isotope.length > 0 && (<><Box><Typography variant="subtitle2" color="text.secondary">Isotopes</Typography><Typography variant="body1" sx={{ wordBreak: 'break-word' }}>{isotope.join(', ')}</Typography></Box><Divider /></>)}
+                                {feedback && (<><Box><Typography variant="subtitle2" color="text.secondary">Notes</Typography><Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{feedback}</Typography></Box><Divider /></>)}
                                 {uploadedFiles.length > 0 && (
-                                    <>
-                                        <Box>
-                                            <Typography variant="subtitle2" color="text.secondary">Files ({uploadedFiles.length})</Typography>
-                                            <Stack spacing={0.5} sx={{ mt: 0.5 }}>
-                                                {uploadedFiles.map((fileData, index) => (
-                                                    <Box key={index}>
-                                                        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ minWidth: 0 }}>
-                                                            <InsertDriveFileRoundedIcon fontSize="small" sx={{ flexShrink: 0 }} />
-                                                            <Typography variant="body2" noWrap sx={{ minWidth: 0 }}>{fileData.file.name}</Typography>
-                                                        </Stack>
-                                                        {fileData.webIdEnabled && (
-                                                            <Typography variant="caption" color="info.main" sx={{ pl: 3, display: 'block', wordBreak: 'break-word' }}>
-                                                                WebID: {fileData.spectrumType}, DRF: {fileData.detectorResponseFunction}
-                                                                {fileData.synthesizeBackground ? ', Synth BG' : ''}
-                                                            </Typography>
-                                                        )}
-                                                    </Box>
-                                                ))}
-                                            </Stack>
-                                        </Box>
-                                        <Divider />
-                                    </>
+                                    <><Box>
+                                        <Typography variant="subtitle2" color="text.secondary">Files ({uploadedFiles.length})</Typography>
+                                        <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+                                            {uploadedFiles.map((fileData, index) => (
+                                                <Box key={index}>
+                                                    <Stack direction="row" spacing={0.5} alignItems="center" sx={{ minWidth: 0 }}>
+                                                        <InsertDriveFileRoundedIcon fontSize="small" sx={{ flexShrink: 0 }} />
+                                                        <Typography variant="body2" noWrap sx={{ minWidth: 0 }}>{fileData.file.name}</Typography>
+                                                    </Stack>
+                                                    {fileData.webIdEnabled && (
+                                                        <Typography variant="caption" color="info.main" sx={{ pl: 3, display: 'block', wordBreak: 'break-word' }}>
+                                                            WebID: {fileData.spectrumType}, DRF: {fileData.detectorResponseFunction}{fileData.synthesizeBackground ? ', Synth BG' : ''}
+                                                        </Typography>
+                                                    )}
+                                                </Box>
+                                            ))}
+                                        </Stack>
+                                    </Box><Divider /></>
                                 )}
-
                                 {scannedData.length > 0 && (
-                                    <>
-                                        <Box>
-                                            <Typography variant="subtitle2" color="text.secondary">Scanned QR Codes ({scannedData.length})</Typography>
-                                            <Stack spacing={0.5} sx={{ mt: 0.5 }}>
-                                                {scannedData.map((data, idx) => (
-                                                    <Typography key={idx} variant="body2" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
-                                                        {data.text.length > 80 ? data.text.substring(0, 80) + '...' : data.text}
-                                                    </Typography>
-                                                ))}
-                                            </Stack>
-                                        </Box>
-                                        <Divider />
-                                    </>
+                                    <><Box>
+                                        <Typography variant="subtitle2" color="text.secondary">Scanned QR Codes ({scannedData.length})</Typography>
+                                        <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+                                            {scannedData.map((data, idx) => (
+                                                <Typography key={idx} variant="body2" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                                                    {data.text.length > 80 ? data.text.substring(0, 80) + '...' : data.text}
+                                                </Typography>
+                                            ))}
+                                        </Stack>
+                                    </Box><Divider /></>
                                 )}
-
-                                {secondaryInspection && (
-                                    <Box>
-                                        <Typography variant="subtitle2" color="text.secondary">Secondary Inspection</Typography>
-                                        <Typography variant="body1">{secondaryInspection}</Typography>
-                                    </Box>
-                                )}
+                                {secondaryInspection && (<Box><Typography variant="subtitle2" color="text.secondary">Secondary Inspection</Typography><Typography variant="body1">{secondaryInspection}</Typography></Box>)}
                             </Stack>
                         </DialogContent>
                         <DialogActions sx={{ px: 1.5, py: 1.5, flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
-                            <Button
-                                onClick={() => setOpenConfirmDialog(false)}
-                                color="error"
-                                fullWidth
-                                sx={{ width: { sm: 'auto' } }}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={confirmAndSubmitAdjudication}
-                                variant="contained"
-                                color="success"
-                                fullWidth
-                                sx={{ width: { sm: 'auto' } }}
-                            >
-                                Confirm & Submit
-                            </Button>
+                            <Button onClick={() => setOpenConfirmDialog(false)} color="error" fullWidth sx={{ width: { sm: 'auto' } }}>Cancel</Button>
+                            <Button onClick={confirmAndSubmitAdjudication} variant="contained" color="success" fullWidth sx={{ width: { sm: 'auto' } }}>Confirm & Submit</Button>
                         </DialogActions>
                     </Dialog>
 
@@ -1313,12 +987,23 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                         autoHideDuration={5000}
                         onClose={handleCloseSnack}
                         message={adjSnackMsg}
-                        sx={{
-                            '& .MuiSnackbarContent-root': {
-                                backgroundColor: colorStatus === 'success' ? 'green' : 'red',
-                            },
-                        }}
+                        sx={{ '& .MuiSnackbarContent-root': { backgroundColor: colorStatus === 'success' ? 'green' : 'red' } }}
                     />
+                </Grid>
+            </Paper>
+
+            {/* ROW 3: N42 Detail + Logged Adjudications (bottom) */}
+            <Paper variant='outlined' sx={{ p: 2 }}>
+                <Grid container spacing={2} sx={{ width: '100%' }}>
+                    <Grid item xs={12}>
+                        <N42Detail event={props.event}/>
+                    </Grid>
+                    <Grid item xs={12}>
+                        <AdjudicationLog
+                            event={props.event}
+                            node={laneMapRef.current?.get(props.event?.laneId)?.parentNode}
+                        />
+                    </Grid>
                 </Grid>
             </Paper>
 

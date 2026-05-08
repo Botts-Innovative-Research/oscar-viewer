@@ -26,6 +26,8 @@ import ObservationFilter from "osh-js/source/core/consysapi/observation/Observat
 import { convertToMap } from "@/app/utils/Utils";
 import DataStreamFilter from "osh-js/source/core/consysapi/datastream/DataStreamFilter.js";
 
+const ALARM_COLOR = '#d32f2f';
+const NORMAL_COLOR = '#2e7d32';
 
 export default function MapComponent() {
     const mapcontainer: string = "mapcontainer";
@@ -41,6 +43,31 @@ export default function MapComponent() {
     const [locationList, setLocationList] = useState<LaneWithLocation[] | null>(null);
     const [dsLocations, setDsLocations] = useState([]);
 
+    // Leaflet circleMarkers keyed by lane name, updated directly on alarm changes
+    const markersByLane = useRef<Map<string, L.CircleMarker>>(new Map());
+    const gammaAlarmByLane = useRef<Map<string, boolean>>(new Map());
+    const neutronAlarmByLane = useRef<Map<string, boolean>>(new Map());
+    const markerLatLngs = useRef<L.LatLng[]>([]);
+    const fitBoundsTimer = useRef<NodeJS.Timeout | null>(null);
+    const hasSiteDiagram = useRef(false);
+    const subscriptionsSetUp = useRef(false);
+
+    const isLaneInAlarm = (laneName: string) =>
+        (gammaAlarmByLane.current.get(laneName) ?? false) ||
+        (neutronAlarmByLane.current.get(laneName) ?? false);
+
+    const scheduleFitBounds = useCallback(() => {
+        if (hasSiteDiagram.current) return;
+        if (fitBoundsTimer.current) clearTimeout(fitBoundsTimer.current);
+        fitBoundsTimer.current = setTimeout(() => {
+            if (markerLatLngs.current.length > 0 && leafletViewRef.current?.map) {
+                leafletViewRef.current.map.fitBounds(
+                    L.latLngBounds(markerLatLngs.current),
+                    { padding: [50, 50], maxZoom: 16 }
+                );
+            }
+        }, 800);
+    }, []);
 
     useEffect(() =>{
         if(locationList == null || locationList.length === 0 && laneMap.size > 0) {
@@ -105,6 +132,12 @@ export default function MapComponent() {
         }
     }, [laneMapRef.current]);
 
+    const updateMarkerColor = (laneName: string) => {
+        const marker = markersByLane.current.get(laneName);
+        if (marker) {
+            marker.setStyle({ fillColor: isLaneInAlarm(laneName) ? ALARM_COLOR : NORMAL_COLOR });
+        }
+    };
 
     const addSubscriptionCallbacks = useCallback(() => {
         for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
@@ -117,12 +150,18 @@ export default function MapComponent() {
 
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
                 let alarmstate = message.values[0].data.alarmState;
+                gammaAlarmByLane.current.set(msgLaneName, alarmstate === 'Alarm');
+                updateMarkerColor(msgLaneName);
                 updateLocationList(msgLaneName, alarmstate);
             });
+
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
                 let alarmstate = message.values[0].data.alarmState;
+                neutronAlarmByLane.current.set(msgLaneName, alarmstate === 'Alarm');
+                updateMarkerColor(msgLaneName);
                 updateLocationList(msgLaneName, alarmstate);
             });
+
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
                 let tamperState = message.values[0].data.tamperStatus;
                 if (tamperState) {
@@ -134,7 +173,6 @@ export default function MapComponent() {
             laneDSColl.addConnectToALLDSMatchingName("neutronRT");
             laneDSColl.addConnectToALLDSMatchingName("tamperRT");
             laneDSColl.addConnectToALLDSMatchingName("connectionRT");
-
         }
 
         return ()=> {
@@ -143,16 +181,16 @@ export default function MapComponent() {
                 laneDSColl.addDisconnectToALLDSMatchingName("neutronRT");
                 laneDSColl.addDisconnectToALLDSMatchingName("tamperRT");
                 laneDSColl.addDisconnectToALLDSMatchingName("connectionRT");
-
             }
         }
     }, [dataSourcesByLane]);
 
     useEffect(() => {
-        if (locationList !== null && locationList.length > 0) {
+        if (locationList !== null && locationList.length > 0 && dataSourcesByLane.size > 0 && !subscriptionsSetUp.current) {
             addSubscriptionCallbacks();
+            subscriptionsSetUp.current = true;
         }
-    }, [dataSourcesByLane]);
+    }, [dataSourcesByLane, locationList]);
 
     useEffect(() => {
         if(!isInit)
@@ -165,7 +203,7 @@ export default function MapComponent() {
                 container: mapcontainer,
                 layers: [],
                 imageOverlays: [],
-                autoZoomOnFirstMarker: true
+                autoZoomOnFirstMarker: false,
             });
             leafletViewRef.current = view;
             setIsInit(true);
@@ -182,39 +220,53 @@ export default function MapComponent() {
     useEffect(() => {
         if (locationList && locationList.length > 0 && isInit) {
             locationList.forEach((location) => {
+                // Skip lanes that already have a marker created
+                if (markersByLane.current.has(location.laneName)) return;
+
                 location.locationSources.forEach((loc: any) => {
                     let newPointMarker = new PointMarkerLayer({
                         name: location.laneName,
                         dataSourceId: loc.id,
                         getLocation: (rec: any) => {
-                            return ({x: rec.location.lon, y: rec.location.lat, z: rec.location.alt})
-                        },
-                        label: `<div class='popup-text-lane'>` + location.laneName + `</div>`,
-                        markerId: () => this.getId(),
-                        icon: '/default.svg',
-                        iconColor: 'rgba(0,0,0,1.0)',
-                        getIcon: {
-                            dataSourceIds: [loc.getId()],
-                            handler: function (rec: any) {
-                                if (location.status === 'Alarm') {
-                                    return  '/alarm.svg';
-                                } else if (location.status.includes('Fault')) {
-                                    return  '/fault.svg';
-                                } else if(location.status === 'Offline') {
-                                    return '/offline.svg'
-                                } else {
-                                    return '/default.svg'
-                                }
-                            }
-                        },
-                        labelColor: 'rgba(255,255,255,1.0)',
-                        labelOutlineColor: 'rgba(0,0,0,1.0)',
-                        labelSize: 20,
-                        iconAnchor: [16, 16],
-                        labelOffset: [-5, -15],
-                        iconSize: [16, 16],
-                        description: getContent(location.status, location.laneName),
+                            const lat = rec.location.lat;
+                            const lon = rec.location.lon;
+                            const latlng = L.latLng(lat, lon);
 
+                            // Create a Leaflet circleMarker the first time location data arrives
+                            if (!markersByLane.current.has(location.laneName) && leafletViewRef.current?.map) {
+                                const isAlarm = isLaneInAlarm(location.laneName);
+                                const cm = L.circleMarker(latlng, {
+                                    radius: 10,
+                                    fillColor: isAlarm ? ALARM_COLOR : NORMAL_COLOR,
+                                    color: '#ffffff',
+                                    weight: 2,
+                                    opacity: 1,
+                                    fillOpacity: 0.9,
+                                }).addTo(leafletViewRef.current.map);
+
+                                cm.bindPopup(
+                                    `<div class='point-popup'>
+                                        <strong>${location.laneName}</strong>
+                                        <hr/>
+                                        <button onclick='location.href="/lane-view"' class="popup-button" type="button">VIEW LANE</button>
+                                    </div>`
+                                );
+                                cm.on('click', () => dispatch(setCurrentLane(location.laneName)));
+
+                                markersByLane.current.set(location.laneName, cm);
+                                markerLatLngs.current.push(latlng);
+                                scheduleFitBounds();
+                            }
+
+                            return { x: lon, y: lat, z: rec.location.alt };
+                        },
+                        // Hidden icon — circleMarker above handles the visual
+                        label: '',
+                        markerId: () => this.getId(),
+                        icon: '/transparent.svg',
+                        iconSize: [1, 1],
+                        iconAnchor: [0, 0],
+                        labelSize: 1,
                     });
 
                     leafletViewRef.current?.addLayer(newPointMarker);
@@ -226,12 +278,7 @@ export default function MapComponent() {
         return () => {
             if (locationList && locationList.length > 0) {
                 locationList.forEach((location) => {
-
-                    // location.locationSources.map((src: any) =>{
-                    //     if (src.isConnected()){
-                    //         src.disconnect();
-                    //     }
-                    // });
+                    // location.locationSources.map((src: any) => { if (src.isConnected()) src.disconnect(); });
                 });
             }
         }
@@ -248,9 +295,9 @@ export default function MapComponent() {
         }
 
         const addImageOverlay = async (node: INode, path: string, urb: any, llb: any) => {
-
             const bounds = L.latLngBounds([llb, urb]);
 
+            hasSiteDiagram.current = true;
             leafletViewRef.current.map.fitBounds(bounds);
             leafletViewRef.current.addImageOverlay(path, bounds, {
                 opacity: 0.45,
@@ -290,7 +337,6 @@ export default function MapComponent() {
                             node.setSiteMapPath(path);
                             node.setLowerLeftBox(llb);
                             node.setUpperRightBox(urb);
-
                         }
                     } else {
                         console.info("No sitemap or bounds provided for " + node.name)
@@ -309,15 +355,11 @@ export default function MapComponent() {
             const updatedList = prevState.map((data) =>
                 data.laneName === laneName ? {...data, status: newStatus} : data
             );
-
             return updatedList;
         });
     };
 
-    /***************content in popup************/
     function getContent(status: string, laneName: string) {
-        dispatch(setCurrentLane(laneName));
-
         return (
             `<div id='popup-data-layer' class='point-popup'><hr/>
                 <h3 class='popup-text-status'>Status: ${status}</h3>

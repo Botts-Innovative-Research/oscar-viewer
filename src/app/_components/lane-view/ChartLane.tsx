@@ -1,15 +1,10 @@
 "use client"
 
-
-import {Box, Grid} from "@mui/material";
+import React, { useCallback, useEffect, useRef } from "react";
+import { Box, Grid } from "@mui/material";
+import Chart from "chart.js/auto";
+import { EventType } from "osh-js/source/core/event/EventType";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
-import React, {useCallback, useEffect, useRef, useState} from "react";
-import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
-import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView";
-import {
-    createGammaViewCurve,
-    createNeutronViewCurve,
-} from "@/app/utils/ChartUtils";
 
 export class ChartInterceptProps {
     laneName: string;
@@ -21,163 +16,197 @@ export class ChartInterceptProps {
     setChartReady: Function;
 }
 
-export default function ChartLane({laneName, datasources, setChartReady}: ChartInterceptProps){
+const WINDOW_MS = 30_000;
 
-    const gammaChartID = "chart-view-gamma";
-    const neutronChartID = "chart-view-neutron";
+interface DataPoint {
+    time: number;
+    value: number;
+}
 
-    const [gammaCurve, setGammaCurve] = useState<typeof CurveLayer>();
-    const [neutronCurve, setNeutronCurve] = useState<typeof CurveLayer>();
+interface ScrollingBarChartProps {
+    title: string;
+    barColor: string;
+    datasource: any;
+    thresholdDatasource?: any;
+    dataField: string;
+    showThreshold?: boolean;
+}
 
-    const gammaChartViewRef = useRef<typeof ChartJsView | null>(null);
-    const neutronChartViewRef = useRef<typeof ChartJsView | null>(null);
+function ScrollingBarChart({ title, barColor, datasource, thresholdDatasource, dataField, showThreshold = false }: ScrollingBarChartProps) {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const chartRef = useRef<Chart | null>(null);
+    const pointsRef = useRef<DataPoint[]>([]);
+    const thresholdRef = useRef<number | null>(null);
 
-
+    // Create chart on mount, destroy on unmount
     useEffect(() => {
-        if(datasources.gamma)
-            setGammaCurve(createGammaViewCurve(datasources.gamma));
+        if (!canvasRef.current) return;
 
-        if(datasources.neutron)
-            setNeutronCurve(createNeutronViewCurve(datasources.neutron));
-
-    }, [datasources.gamma, datasources.neutron]);
-
-    const checkForMountableAndCreateCharts = useCallback(() => {
-        if (gammaCurve && !gammaChartViewRef.current) {
-            const container = document.getElementById(gammaChartID);
-
-            if (container) {
-                gammaChartViewRef.current = new ChartJsView({
-                    type: 'line',
-                    container: gammaChartID,
-                    layers: [gammaCurve],
-                    css: "chart-view",
-                    options:{
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Gamma Chart',
-                                font: {
-                                    size: 14,
-                                    weight: 'bold'
-                                },
-                                align: 'center',
-                                position: 'top',
-
-                            },
-                            legend: {
-                                display: true,
-                                align: 'center',
-                                position: 'bottom',
-                            }
-                        },
-                        responsive: true,
-                        scales: {
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Time',
-                                },
-                            },
-                            y:{
-                                title:{
-                                    display: true,
-                                    text: 'CPS',
-
-                                },
-                                display: true,
-                                position: 'left',
-                                align: 'center',
-                                grid: {beginAtZero: false},
-                                ticks: {
-                                },
-
-
-                            },
-                        },
+        chartRef.current = new Chart(canvasRef.current, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        type: 'bar',
+                        label: title,
+                        data: [],
+                        backgroundColor: barColor + '99',
+                        borderColor: barColor,
+                        borderWidth: 1,
+                        order: 2,
+                        barPercentage: 0.9,
+                        categoryPercentage: 1.0,
+                    } as any,
+                    {
+                        type: 'line',
+                        label: 'Threshold',
+                        data: [],
+                        borderColor: '#ff9800',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        stepped: true,
+                        order: 1,
+                    } as any,
+                ],
+            },
+            options: {
+                animation: false,
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: title,
+                        font: { size: 14, weight: 'bold' },
                     },
-                });
-            }
-        }
-
-        if (neutronCurve && !neutronChartViewRef.current) {
-            const containerN = document.getElementById(neutronChartID);
-
-            if (containerN) {
-                neutronChartViewRef.current = new ChartJsView({
-                    container: neutronChartID,
-                    layers: [neutronCurve],
-                    css: "chart-view",
-                    options: {
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Neutron Chart',
-                                font: {
-                                    size: 14,
-                                    weight: 'bold'
-                                },
-                                align: 'center',
-                                position: 'top',
-                                padding: {
-                                    top: 10,
-                                    bottom: 10,
-                                }
-                            },
-                            legend: {
-                                display: true,
-                                align: 'right',
-                                position: 'bottom',
-                            }
-                        },
-                        responsive: true,
-                        scales: {
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Time',
-                                },
-                            },
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: 'CPS',
-                                },
-                                display: true,
-                                position: 'left',
-                                align: 'center',
-                                ticks: {
-                                    stepSize: 1
-                                },
-
-                            },
-                        }
+                    legend: { display: true, position: 'bottom' },
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Time' },
+                        ticks: { maxTicksLimit: 6, maxRotation: 0 },
                     },
-                });
-            }
-        }
+                    y: {
+                        title: { display: true, text: 'CPS' },
+                        beginAtZero: true,
+                    },
+                },
+            },
+        });
 
-        if (gammaCurve || neutronCurve) {
-            setChartReady(true);
-        }
+        return () => {
+            chartRef.current?.destroy();
+            chartRef.current = null;
+        };
+    }, []);
 
-    }, [gammaCurve, neutronCurve, setChartReady]);
+    const renderChart = useCallback(() => {
+        const chart = chartRef.current;
+        if (!chart) return;
 
+        const points = pointsRef.current;
+        const labels = points.map(p => {
+            const d = new Date(p.time);
+            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+        });
+
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = points.map(p => p.value);
+        chart.data.datasets[1].data = (showThreshold && thresholdRef.current != null)
+            ? points.map(() => thresholdRef.current as number)
+            : [];
+
+        chart.update('none');
+    }, [showThreshold]);
+
+    // Subscribe to count datasource
     useEffect(() => {
-        checkForMountableAndCreateCharts();
-    }, [checkForMountableAndCreateCharts]);
+        if (!datasource) return;
 
+        const handler = (message: any) => {
+            const rec = message.values?.[0];
+            if (!rec) return;
+            const value = rec.data?.[dataField];
+            if (value == null) return;
+
+            const rawTs = rec.timeStamp ?? rec.data?.timestamp;
+            const time = rawTs ? new Date(rawTs).getTime() : Date.now();
+
+            const cutoff = time - WINDOW_MS;
+            pointsRef.current.push({ time, value });
+            // Trim points outside the 30s window from the front (data arrives in order)
+            while (pointsRef.current.length > 0 && pointsRef.current[0].time < cutoff) {
+                pointsRef.current.shift();
+            }
+
+            renderChart();
+        };
+
+        datasource.subscribe(handler, [EventType.DATA]);
+        return () => {
+            try { datasource.unsubscribe(handler, [EventType.DATA]); } catch (_) {}
+        };
+    }, [datasource, dataField, renderChart]);
+
+    // Subscribe to threshold datasource
+    useEffect(() => {
+        if (!thresholdDatasource || !showThreshold) return;
+
+        const handler = (message: any) => {
+            const rec = message.values?.[0];
+            if (!rec) return;
+            const val = rec.data?.threshold;
+            if (val != null) {
+                thresholdRef.current = val;
+                renderChart();
+            }
+        };
+
+        thresholdDatasource.subscribe(handler, [EventType.DATA]);
+        return () => {
+            try { thresholdDatasource.unsubscribe(handler, [EventType.DATA]); } catch (_) {}
+        };
+    }, [thresholdDatasource, showThreshold, renderChart]);
 
     return (
-        <Box display='flex' alignItems="center">
+        <Box sx={{ height: 250, position: 'relative', width: '100%' }}>
+            <canvas ref={canvasRef} />
+        </Box>
+    );
+}
+
+export default function ChartLane({ laneName, datasources, setChartReady }: ChartInterceptProps) {
+    useEffect(() => {
+        if (datasources.gamma || datasources.neutron) {
+            setChartReady(true);
+        }
+    }, [datasources.gamma, datasources.neutron]);
+
+    return (
+        <Box display='flex' alignItems="center" width="100%">
             <Grid container direction="row" marginTop={2} marginLeft={1} spacing={4}>
                 <Grid item xs>
-                    <div id={gammaChartID} style={{marginBottom: 50, height: '85%',}}></div>
+                    <ScrollingBarChart
+                        title="Gamma Chart"
+                        barColor="#f44336"
+                        datasource={datasources.gamma}
+                        thresholdDatasource={datasources.threshold}
+                        dataField="gammaGrossCount"
+                        showThreshold={true}
+                    />
                 </Grid>
                 <Grid item xs>
-                    <div id={neutronChartID} style={{marginBottom: 50, height: '85%',}}></div>
+                    <ScrollingBarChart
+                        title="Neutron Chart"
+                        barColor="#29b6f6"
+                        datasource={datasources.neutron}
+                        dataField="neutronGrossCount"
+                        showThreshold={false}
+                    />
                 </Grid>
             </Grid>
         </Box>
     );
-};
+}

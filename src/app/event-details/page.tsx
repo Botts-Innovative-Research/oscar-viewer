@@ -1,10 +1,9 @@
 "use client";
 
-import {Box, Button, Grid, Paper, Stack, Typography} from "@mui/material";
+import {Box, Button, Grid, Paper, Typography} from "@mui/material";
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import BackButton from "../_components/BackButton";
 import DataRow from "../_components/event-details/DataRow";
-import MiscTable from "../_components/event-details/MiscTable";
 import {useSelector} from "react-redux";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
@@ -16,6 +15,8 @@ import EventMedia from "../_components/event-preview/EventMedia";
 import CircularProgress from "@mui/material/CircularProgress";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 import AdjudicationDetail from "../_components/adjudication/AdjudicationDetail";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import {isSpeedDataStream} from "@/lib/data/oscar/Utilities";
 
 
 export default function EventDetailsPage() {
@@ -29,6 +30,8 @@ export default function EventDetailsPage() {
     const [gammaDatasources, setGammaDatasources] = useState<typeof ConSysApi[]>([]);
     const [neutronDatasources, setNeutronDatasources] = useState<typeof ConSysApi[]>([]);
     const [thresholdDatasources, setThresholdDatasources] = useState<typeof ConSysApi[]>([]);
+
+    const [speedVal, setSpeedVal] = useState<string>('N/A');
 
     const contentRef = useRef<HTMLDivElement>(null);
     const docTitle = eventPreview.eventData ? `eventdetails-${eventPreview.eventData.laneId}-${eventPreview.eventData.occupancyObsId}-${eventPreview.eventData.startTime}-${eventPreview.eventData.endTime}` : 'eventdetails';
@@ -68,6 +71,30 @@ export default function EventDetailsPage() {
     }, [eventPreview, laneMapRef]);
 
 
+    const checkForSpeed = useCallback(async () => {
+        if (!eventPreview.eventData || !laneMapRef.current) return;
+
+        try {
+            const lme = laneMapRef.current.get(eventPreview.eventData.laneId);
+            if (!lme) return;
+
+            const speedDS = lme.datastreams.find((ds: any) => isSpeedDataStream(ds));
+            if (!speedDS) return;
+
+            const initialRes = await speedDS.searchObservations(
+                new ObservationFilter({ resultTime: `${eventPreview.eventData.startTime}/${eventPreview.eventData.endTime}` }),
+                10000
+            );
+
+            const speedArr = await initialRes.nextPage();
+            const speed = speedArr?.[0]?.result?.speedKPH ?? 'N/A';
+            setSpeedVal(String(speed));
+        } catch (err) {
+            console.warn("Could not fetch speed:", err);
+        }
+    }, [eventPreview, laneMapRef]);
+
+
     useEffect(() => {
         async function callCollectDatasources(){
             await collectDataSources();
@@ -75,6 +102,13 @@ export default function EventDetailsPage() {
 
         if(laneMapRef.current && eventPreview) {
             callCollectDatasources();
+        }
+    }, [eventPreview, laneMapRef.current]);
+
+
+    useEffect(() => {
+        if (laneMapRef.current && eventPreview.eventData) {
+            checkForSpeed();
         }
     }, [eventPreview, laneMapRef.current]);
 
@@ -130,7 +164,7 @@ export default function EventDetailsPage() {
                 {/* EVENT PREVIEW */}
                 <Grid item xs={12}>
                     <Paper variant='outlined'>
-                        <DataRow eventData={eventPreview.eventData}/>
+                        <DataRow eventData={eventPreview.eventData} speed={speedVal}/>
                     </Paper>
                 </Grid>
 
@@ -153,13 +187,6 @@ export default function EventDetailsPage() {
                             <CircularProgress/>
                         </Box>
                     }
-                </Grid>
-
-                {/* MISC TABLE */}
-                <Grid item xs={12}>
-                    <Paper variant='outlined'>
-                        <MiscTable currentTime={eventPreview.eventData?.startTime}/>
-                    </Paper>
                 </Grid>
 
                 {/* ADJUDICATION */}
