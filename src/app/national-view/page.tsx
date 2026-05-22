@@ -8,7 +8,7 @@ import React, {useEffect, useRef, useState} from "react";
 import {RefreshRounded} from "@mui/icons-material";
 import {useSelector} from "react-redux";
 import {selectNodes} from "@/lib/state/OSHSlice";
-import {INationalTableData} from "../../../types/new-types";
+import {ILaneStat, INationalTableData} from "../../../types/new-types";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import {NATIONAL_DEF} from "@/lib/data/Constants";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
@@ -111,6 +111,7 @@ export default function NationalViewPage() {
                         numGammaFaults: results.numGammaFaults,
                         numNeutronFaults: results.numNeutronFaults,
                         numFaults: results.numFaults,
+                        lanes: parseLanes(results.byLane),
                     });
 
                 } else {
@@ -130,6 +131,7 @@ export default function NationalViewPage() {
                             numGammaFaults: allRangeCounts[range].numGammaFaults,
                             numNeutronFaults: allRangeCounts[range].numNeutronFaults,
                             numFaults: allRangeCounts[range].numFaults,
+                            lanes: allRangeCounts[range].lanes,
                         });
                     })
                 }
@@ -200,6 +202,7 @@ export default function NationalViewPage() {
                         numGammaFaults: allRangeCounts[range].numGammaFaults,
                         numNeutronFaults: allRangeCounts[range].numNeutronFaults,
                         numFaults: allRangeCounts[range].numFaults,
+                        lanes: allRangeCounts[range].lanes,
                     });
                 })
             }
@@ -247,7 +250,8 @@ export default function NationalViewPage() {
             numFaults: result.numFaults ?? 0,
             numGammaFaults: result.numGammaFaults ?? 0,
             numNeutronFaults: result.numNeutronFaults ?? 0,
-            numTampers: result.numTampers ?? 0
+            numTampers: result.numTampers ?? 0,
+            lanes: parseLanes(result.byLane),
         });
 
         return {
@@ -257,6 +261,23 @@ export default function NationalViewPage() {
             daily: parse(result.daily),
             custom: parse(result.custom ?? {})
         };
+    }
+
+    function parseLanes(byLane: any): ILaneStat[] {
+        if (!Array.isArray(byLane)) return [];
+        return byLane.map((l: any) => ({
+            laneId: l.laneId ?? "",
+            numOccupancies: l.numOccupancies ?? 0,
+            numGammaAlarms: l.numGammaAlarms ?? 0,
+            numNeutronAlarms: l.numNeutronAlarms ?? 0,
+            numGammaNeutronAlarms: l.numGammaNeutronAlarms ?? 0,
+            numFaults: l.numFaults ?? 0,
+            numGammaFaults: l.numGammaFaults ?? 0,
+            numNeutronFaults: l.numNeutronFaults ?? 0,
+            numTampers: l.numTampers ?? 0,
+            numAdjudicated: l.numAdjudicated ?? 0,
+            avgTimeToAdjudicateSec: l.avgTimeToAdjudicateSec ?? 0,
+        }));
     }
 
     return (

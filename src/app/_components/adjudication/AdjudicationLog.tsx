@@ -169,8 +169,13 @@ export default function AdjudicationLog(props: {
 
 
     const fetchStatuses = useCallback(async() => {
+        if (!props.event?.laneId || !laneMapRef.current) return;
         const currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+        if (!currLaneEntry) {
+            console.warn("AdjudicationLog: lane entry not ready yet for:", currentLane);
+            return;
+        }
 
         let controlStream: typeof ControlStream = currLaneEntry.controlStreams.find((cs) => isAdjudicationControlStream(cs));
         if(!controlStream) {
@@ -211,9 +216,13 @@ export default function AdjudicationLog(props: {
     }, [props.event]);
 
     useEffect(() => {
+        if (!props.event?.laneId || !laneMapRef.current) return;
         const currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-
+        if (!currLaneEntry) {
+            console.warn("AdjudicationLog: lane entry not ready yet for:", currentLane);
+            return;
+        }
 
         let controlStream: typeof ControlStream = currLaneEntry.controlStreams.find((cs) => isAdjudicationControlStream(cs));
         if(!controlStream) {

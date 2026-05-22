@@ -1,130 +1,98 @@
 
-import {useEffect, useRef, useState} from "react";
+import {Fragment, useState} from "react";
 import {INationalTableData} from "../../../../types/new-types";
-import { NationalTableDataCollection} from "@/lib/data/oscar/TableHelpers";
-import {DataGrid, GridColDef} from "@mui/x-data-grid";
-import {Box} from "@mui/material";
-import CustomToolbar from "@/app/_components/CustomToolbar";
+import {
+    Box,
+    Collapse,
+    IconButton,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+} from "@mui/material";
+import {KeyboardArrowDown, KeyboardArrowRight} from "@mui/icons-material";
+import LaneStatsTable from "./LaneStatsTable";
 
+type Props = {
+    selectedTimeRangeCounts: INationalTableData[];
+};
 
-export default function StatTable(selectedTimeRangeCounts: {selectedTimeRangeCounts: INationalTableData[]}){
-    const natlTableRef = useRef<NationalTableDataCollection>(new NationalTableDataCollection());
+const columns: { key: keyof INationalTableData; label: string; numeric?: boolean }[] = [
+    {key: "site", label: "Node ID"},
+    {key: "numGammaAlarms", label: "G Alarm", numeric: true},
+    {key: "numNeutronAlarms", label: "N Alarm", numeric: true},
+    {key: "numGammaNeutronAlarms", label: "G-N Alarm", numeric: true},
+    {key: "numOccupancies", label: "Occupancies", numeric: true},
+    {key: "numTampers", label: "Tamper", numeric: true},
+    {key: "numGammaFaults", label: "G Faults", numeric: true},
+    {key: "numNeutronFaults", label: "N Faults", numeric: true},
+    {key: "numFaults", label: "Faults", numeric: true},
+];
 
-    useEffect(() => {
-        if (selectedTimeRangeCounts) {
-            let tableData = new NationalTableDataCollection();
-            tableData.setData(selectedTimeRangeCounts.selectedTimeRangeCounts);
-            natlTableRef.current = tableData;
-        }
-    }, [selectedTimeRangeCounts]);
-
-    const columns: GridColDef<INationalTableData>[] = [
-        {
-            field: 'site',
-            headerName: 'Node ID',
-            type: 'string',
-            minWidth: 150,
-            flex: 1,
-        },
-        {
-            field: 'numGammaAlarms',
-            headerName: 'G Alarm',
-            valueFormatter: (value) => {
-                return typeof value === 'number' ? value : 0;
-            },
-            minWidth: 150,
-            flex: 1,
-        },
-        {
-            field: 'numNeutronAlarms',
-            headerName: 'N Alarm',
-            valueFormatter: (value) => {
-                return typeof value === 'number' ? value : 0;
-            },
-            minWidth: 150,
-            flex: 1,
-        },
-        {
-            field: 'numGammaNeutronAlarms',
-            headerName: 'G-N Alarm',
-            valueFormatter: (value) => {
-                return typeof value === 'number' ? value : 0;
-            },
-            minWidth: 150,
-            flex: 1,
-        },
-        {
-            field: 'numOccupancies',
-            headerName: 'Occupancies',
-            valueFormatter: (value) => {
-                return typeof value === 'number' ? value : 0;
-            },
-            minWidth: 150,
-            flex: 1,
-        },
-        {
-            field: 'numTampers',
-            headerName: 'Tamper',
-            valueFormatter: (value) => {
-                return typeof value === 'number' ? value : 0;
-            },
-            minWidth: 150,
-            flex: 1,
-        },
-        {
-            field: 'numGammaFaults',
-            headerName: 'G Faults',
-            valueFormatter: (value) => {
-                return typeof value === 'number' ? value : 0;
-            },
-            minWidth: 150,
-            flex: 1,
-        },
-        {
-            field: 'numNeutronFaults',
-            headerName: 'N Faults',
-            valueFormatter: (value) => {
-                return typeof value === 'number' ? value : 0;
-            },
-            minWidth: 150,
-            flex: 1,
-        },
-        {
-            field: 'numFaults',
-            headerName: 'Faults',
-            valueFormatter: (value) => {
-                return typeof value === 'number' ? value : 0;
-            },
-            minWidth: 150,
-            flex: 1,
-        },
-    ]
+function NodeRow({row}: { row: INationalTableData }) {
+    const [open, setOpen] = useState(false);
+    const hasLanes = row.lanes && row.lanes.length > 0;
 
     return (
-        <Box sx={{height: 800, width: '100%', overflowX: 'auto'}}>
-            <DataGrid
-                rows={natlTableRef.current.data}
-                columns={columns}
-                initialState={{
-                    pagination: {
-                        paginationModel: {
-                            pageSize: 20,
-                        },
-                    },
-                }}
-                pageSizeOptions={[20]}
-                slots={{toolbar: CustomToolbar}}
-                autosizeOnMount
-                autosizeOptions={{
-                    expand: true,
-                    includeOutliers: true,
-                    includeHeaders: false,
-                }}
-                sx={{
-                    border: "none",
-                    width: "100%"
-                }}
-            />
-        </Box>
-    )
+        <Fragment>
+            <TableRow hover>
+                <TableCell sx={{width: 48}}>
+                    <IconButton
+                        aria-label={open ? "collapse row" : "expand row"}
+                        size="small"
+                        onClick={() => setOpen(!open)}
+                        disabled={!hasLanes}
+                    >
+                        {open ? <KeyboardArrowDown/> : <KeyboardArrowRight/>}
+                    </IconButton>
+                </TableCell>
+                {columns.map((col) => (
+                    <TableCell key={col.key} align={col.numeric ? "right" : "left"}>
+                        {row[col.key] as React.ReactNode}
+                    </TableCell>
+                ))}
+            </TableRow>
+            <TableRow>
+                <TableCell colSpan={columns.length + 1} sx={{padding: 0, border: 0}}>
+                    <Collapse in={open} timeout="auto" unmountOnExit>
+                        <LaneStatsTable lanes={row.lanes ?? []}/>
+                    </Collapse>
+                </TableCell>
+            </TableRow>
+        </Fragment>
+    );
+}
+
+export default function NationalStatsTable({selectedTimeRangeCounts}: Props) {
+    const rows = selectedTimeRangeCounts ?? [];
+
+    return (
+        <TableContainer sx={{maxHeight: 800, width: "100%"}}>
+            <Table stickyHeader size="small">
+                <TableHead>
+                    <TableRow>
+                        <TableCell sx={{width: 48}}/>
+                        {columns.map((col) => (
+                            <TableCell key={col.key} align={col.numeric ? "right" : "left"}>
+                                {col.label}
+                            </TableCell>
+                        ))}
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                    {rows.length === 0 ? (
+                        <TableRow>
+                            <TableCell colSpan={columns.length + 1} align="center">
+                                <Box sx={{padding: 2, color: "text.secondary"}}>No statistics loaded.</Box>
+                            </TableCell>
+                        </TableRow>
+                    ) : (
+                        rows.map((row) => <NodeRow key={row.id} row={row}/>)
+                    )}
+                </TableBody>
+            </Table>
+        </TableContainer>
+    );
 }

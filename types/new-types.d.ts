@@ -36,6 +36,21 @@ export interface INationalTableData {
     numGammaFaults: number;
     numNeutronFaults: number;
     numTampers: number;
+    lanes: ILaneStat[];
+}
+
+export interface ILaneStat {
+    laneId: string;
+    numOccupancies: number;
+    numGammaAlarms: number;
+    numNeutronAlarms: number;
+    numGammaNeutronAlarms: number;
+    numFaults: number;
+    numGammaFaults: number;
+    numNeutronFaults: number;
+    numTampers: number;
+    numAdjudicated: number;
+    avgTimeToAdjudicateSec: number;
 }
 
 

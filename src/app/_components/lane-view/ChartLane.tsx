@@ -17,10 +17,17 @@ export class ChartInterceptProps {
 }
 
 const WINDOW_MS = 30_000;
+// Render cadence — one bar per tick, regardless of how often the datasource publishes.
+const TICK_MS = 200;
+// If no new reading arrives within this window, render gaps so a stale feed is visible.
+// 15s = 3× the 5s background publish cadence, so a single missed publish doesn't trigger it.
+const STALE_MS = 15_000;
+// 30_000 / 200 = 150. Fixed bar count → constant bar thickness via Chart.js category scale.
+const MAX_POINTS = WINDOW_MS / TICK_MS;
 
 interface DataPoint {
     time: number;
-    value: number;
+    value: number | null;
 }
 
 interface ScrollingBarChartProps {
@@ -37,6 +44,16 @@ function ScrollingBarChart({ title, barColor, datasource, thresholdDatasource, d
     const chartRef = useRef<Chart | null>(null);
     const pointsRef = useRef<DataPoint[]>([]);
     const thresholdRef = useRef<number | null>(null);
+    // Latest reading from the datasource (carry-forward source for the timer tick).
+    const lastValueRef = useRef<number | null>(null);
+    // Wall-clock time of the most recent reading; used to detect stale feeds.
+    const lastUpdateRef = useRef<number>(0);
+    // Don't begin pushing bars until the first real reading arrives, so we
+    // don't pre-fill the chart with a misleading row of zeros.
+    const startedRef = useRef<boolean>(false);
+    // Timer effect calls renderChartRef.current() so it doesn't need to restart
+    // when the renderChart callback identity changes.
+    const renderChartRef = useRef<() => void>(() => {});
 
     // Create chart on mount, destroy on unmount
     useEffect(() => {
@@ -121,7 +138,8 @@ function ScrollingBarChart({ title, barColor, datasource, thresholdDatasource, d
         chart.update('none');
     }, [showThreshold]);
 
-    // Subscribe to count datasource
+    // Subscribe to count datasource — only record the latest value here;
+    // the timer tick below owns all chart updates so cadence is fixed at TICK_MS.
     useEffect(() => {
         if (!datasource) return;
 
@@ -131,26 +149,19 @@ function ScrollingBarChart({ title, barColor, datasource, thresholdDatasource, d
             const value = rec.data?.[dataField];
             if (value == null) return;
 
-            const rawTs = rec.timeStamp ?? rec.data?.timestamp;
-            const time = rawTs ? new Date(rawTs).getTime() : Date.now();
-
-            const cutoff = time - WINDOW_MS;
-            pointsRef.current.push({ time, value });
-            // Trim points outside the 30s window from the front (data arrives in order)
-            while (pointsRef.current.length > 0 && pointsRef.current[0].time < cutoff) {
-                pointsRef.current.shift();
-            }
-
-            renderChart();
+            lastValueRef.current = value;
+            lastUpdateRef.current = Date.now();
+            startedRef.current = true;
         };
 
         datasource.subscribe(handler, [EventType.DATA]);
         return () => {
             try { datasource.unsubscribe(handler, [EventType.DATA]); } catch (_) {}
         };
-    }, [datasource, dataField, renderChart]);
+    }, [datasource, dataField]);
 
-    // Subscribe to threshold datasource
+    // Subscribe to threshold datasource — store the value only;
+    // the next timer tick will pick it up and redraw.
     useEffect(() => {
         if (!thresholdDatasource || !showThreshold) return;
 
@@ -160,7 +171,6 @@ function ScrollingBarChart({ title, barColor, datasource, thresholdDatasource, d
             const val = rec.data?.threshold;
             if (val != null) {
                 thresholdRef.current = val;
-                renderChart();
             }
         };
 
@@ -168,7 +178,38 @@ function ScrollingBarChart({ title, barColor, datasource, thresholdDatasource, d
         return () => {
             try { thresholdDatasource.unsubscribe(handler, [EventType.DATA]); } catch (_) {}
         };
-    }, [thresholdDatasource, showThreshold, renderChart]);
+    }, [thresholdDatasource, showThreshold]);
+
+    // Keep the timer's renderChart reference fresh without restarting the interval
+    // when renderChart's identity changes (it depends on showThreshold).
+    useEffect(() => {
+        renderChartRef.current = renderChart;
+    }, [renderChart]);
+
+    // Fixed-cadence renderer: one bar per TICK_MS, regardless of publish rate.
+    // Note: when the tab is hidden, browsers throttle setInterval to ~1Hz, so the
+    // buffer will refill over ~30s when the user refocuses. Acceptable here.
+    useEffect(() => {
+        const id = setInterval(() => {
+            // Don't push placeholder bars before any real data has arrived.
+            if (!startedRef.current) return;
+
+            const now = Date.now();
+            const stale = now - lastUpdateRef.current > STALE_MS;
+            // Carry the last value forward; render a gap (null) once stale so a
+            // dropped feed is visually obvious instead of silently held forever.
+            const value = stale ? null : lastValueRef.current;
+
+            pointsRef.current.push({ time: now, value });
+            while (pointsRef.current.length > MAX_POINTS) {
+                pointsRef.current.shift();
+            }
+
+            renderChartRef.current();
+        }, TICK_MS);
+
+        return () => clearInterval(id);
+    }, []);
 
     return (
         <Box sx={{ height: 250, position: 'relative', width: '100%' }}>
