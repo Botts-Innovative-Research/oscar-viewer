@@ -40,6 +40,15 @@ import { GridFilterModel } from "@mui/x-data-grid"
 
 import { useLanguage } from '@/app/contexts/LanguageContext';
 import {NotificationService, NotificationTemplates} from "../notifications/NotificationService";
+import {
+    AdjudicationGroup,
+    AlarmFilterState,
+    AlarmType,
+    DEFAULT_ALARM_FILTER,
+    cloneAlarmFilter
+} from "@/app/_components/event-table/AlarmFilterPopover";
+import { useAdjudicationMap, AdjudicationByOccupancy } from "@/app/_components/event-table/useAdjudicationMap";
+import { AdjudicationCodes } from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 
 
 interface TableProps {
@@ -72,6 +81,7 @@ export default function EventTable({
     const [totalCount, setTotalCount] = useState<Map<string, number>>(new Map());
     const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize });
     const [filterModel, setFilterModel] = useState<GridFilterModel>({ items: [] })
+    const [alarmFilter, setAlarmFilter] = useState<AlarmFilterState>(() => cloneAlarmFilter(DEFAULT_ALARM_FILTER));
     const adjudicatedEventId = useSelector(selectAdjudicatedEventId);
     const selectedEvent = useSelector(selectSelectedEvent);
     const dispatch = useAppDispatch();
@@ -79,6 +89,7 @@ export default function EventTable({
 
     const { t } = useLanguage();
     const stableLaneMap = useMemo(() => convertToMap(laneMap), [laneMap]);
+    const adjudicationMap: AdjudicationByOccupancy = useAdjudicationMap(stableLaneMap, tableMode === "alarmtable");
     const currentPageRef = useRef(0);
     const locale = navigator.language || 'en-US';
 
@@ -183,6 +194,22 @@ export default function EventTable({
             )
         },
         {
+            field: 'adjudicationGroup',
+            headerName: t('adjudicationStatus'),
+            minWidth: 150,
+            flex: 1.3,
+            filterable: false,
+            valueGetter: (_: any, row: EventTableData) => row.adjudicationGroup || 'Not Adjudicated'
+        },
+        {
+            field: 'secondaryInspection',
+            headerName: t('secondaryInspection'),
+            minWidth: 140,
+            flex: 1.1,
+            filterable: false,
+            valueGetter: (_: any, row: EventTableData) => row.secondaryInspection || 'NONE'
+        },
+        {
             field: 'Menu',
             headerName: '',
             type: 'actions',
@@ -242,11 +269,40 @@ export default function EventTable({
         return datastreamIds;
     }, [stableLaneMap, currentLane, tableMode]);
 
+    const enrichRowWithAdjudication = useCallback((row: EventTableData): EventTableData => {
+        const occId = row.occupancyObsId;
+        const adj = occId ? adjudicationMap.get(occId) : undefined;
+        if (adj) {
+            row.setSecondaryInspection(adj.secondaryInspectionStatus || "NONE");
+            row.setAdjudicationGroup(adj.adjudicationCode?.group || "Not Adjudicated");
+        } else {
+            row.setSecondaryInspection("NONE");
+            row.setAdjudicationGroup("Not Adjudicated");
+        }
+        return row;
+    }, [adjudicationMap]);
+
+    const passesAlarmFilter = useCallback((row: EventTableData): boolean => {
+        if (!alarmFilter.alarmTypes.has(row.status as AlarmType)) {
+            // status may be a raw alarmCategoryCode (Code N: ...) rather than one of the AlarmType strings.
+            // If so, treat as alarming and require one of Gamma/Neutron/Gamma & Neutron to be selected.
+            const knownStatuses = ['None', 'Gamma', 'Neutron', 'Gamma & Neutron'];
+            if (knownStatuses.includes(row.status)) return false;
+            const anyAlarmSelected =
+                alarmFilter.alarmTypes.has('Gamma') ||
+                alarmFilter.alarmTypes.has('Neutron') ||
+                alarmFilter.alarmTypes.has('Gamma & Neutron');
+            if (!anyAlarmSelected) return false;
+        }
+        if (!alarmFilter.adjudicationGroups.has(row.adjudicationGroup as AdjudicationGroup)) return false;
+        if (!alarmFilter.secondaryStatuses.has((row.secondaryInspection || "NONE") as any)) return false;
+        return true;
+    }, [alarmFilter]);
+
     const filterRows = useCallback((rows: EventTableData[]): EventTableData[] => {
         switch (tableMode) {
             case 'alarmtable':
-                // Only show alarming events that are not adjudicated
-                return rows.filter(row => row.status !== 'None' && row.adjudicatedIds.length == 0);
+                return rows.map(enrichRowWithAdjudication).filter(passesAlarmFilter);
             case 'lanelog':
                 // Only show events for the current lane
                 return rows.filter(row => row.laneId === currentLane);
@@ -255,7 +311,7 @@ export default function EventTable({
             default:
                 return rows;
         }
-    }, [tableMode, currentLane]);
+    }, [tableMode, currentLane, enrichRowWithAdjudication, passesAlarmFilter]);
 
     useEffect(() => {
         if (adjudicatedEventId && tableMode === 'alarmtable') {
@@ -300,7 +356,7 @@ export default function EventTable({
 
     useEffect(() => {
         fetchAllCounts();
-    }, [nodes, stableLaneMap, getDatastreamIds]);
+    }, [nodes, stableLaneMap, getDatastreamIds, alarmFilter]);
 
     const fetchPage = useCallback(async (userRequestedPage: number): Promise<boolean | undefined> => {
         if (stableLaneMap.size === 0 || nodes.size === 0 || totalPages === 0)
@@ -349,7 +405,7 @@ export default function EventTable({
             setLoading(false);
         }
 
-    }, [nodes, stableLaneMap, totalPages, pageLoadedTime, tableMode, getDatastreamIds, filterRows, filterModel]);
+    }, [nodes, stableLaneMap, totalPages, pageLoadedTime, tableMode, getDatastreamIds, filterRows, filterModel, alarmFilter]);
 
     function deduplicateById(arr: EventTableData[]): EventTableData[] {
         const map = new Map();
@@ -374,7 +430,8 @@ export default function EventTable({
             dataStream: `${datastreamIds.join(",")}`,
         });
         if (tableMode === "alarmtable") {
-            queryParams.set("filter", "gammaAlarm=true OR neutronAlarm=true")
+            const alarmQuery = buildAlarmFilterQuery(alarmFilter);
+            if (alarmQuery) queryParams.set("filter", alarmQuery);
         }
 //      `/observations/count?resultTime=../${pageLoadedTime}&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}${tableMode == "alarmtable" ? "&filter=gammaAlarm=true,neutronAlarm=true" : ""}`
         let fullUrl = endpoint + "/observations/count?" + queryParams;
@@ -459,7 +516,12 @@ export default function EventTable({
     useEffect(() => {
         if (totalPages > 0)
             fetchPage(paginationModel.page);
-    }, [totalPages, paginationModel.page, filterModel]);
+    }, [totalPages, paginationModel.page, filterModel, alarmFilter]);
+
+    useEffect(() => {
+        if (tableMode !== 'alarmtable') return;
+        setFilteredTableData(prev => prev.map(row => enrichRowWithAdjudication(row)).filter(passesAlarmFilter));
+    }, [adjudicationMap, tableMode, enrichRowWithAdjudication, passesAlarmFilter]);
 
     useEffect(() => {
         currentPageRef.current = paginationModel.page;
@@ -559,11 +621,19 @@ export default function EventTable({
     const getColumnList = () => {
         const excludeFields: string[] = [];
         if (!viewAdjudicated) excludeFields.push('adjudicatedIds');
+        if (tableMode !== 'alarmtable') {
+            excludeFields.push('adjudicationGroup', 'secondaryInspection');
+        }
 
         return columns
             .filter((column) => !excludeFields.includes(column.field))
             .map((column) => column.field);
     };
+
+    const handleAlarmFilterChange = useCallback((next: AlarmFilterState) => {
+        setAlarmFilter(next);
+        setPaginationModel(prev => ({ ...prev, page: 0 }));
+    }, []);
 
     const handleRowSelection = (params: GridRowParams) => {
         const selectedId = params.row.id;
@@ -633,10 +703,45 @@ export default function EventTable({
         return `../${pageLoadedTime}`;
     }
 
+    const buildAlarmTypeClause = (types: Set<AlarmType>): string | null => {
+        if (types.size === 0) return null;
+        if (types.size === 4) return null; // all selected — no filter needed
+
+        const clauses: string[] = [];
+        if (types.has('Gamma')) clauses.push("(gammaAlarm=true AND neutronAlarm=false)");
+        if (types.has('Neutron')) clauses.push("(gammaAlarm=false AND neutronAlarm=true)");
+        if (types.has('Gamma & Neutron')) clauses.push("(gammaAlarm=true AND neutronAlarm=true)");
+        if (types.has('None')) clauses.push("(gammaAlarm=false AND neutronAlarm=false)");
+        if (clauses.length === 0) return null;
+        return clauses.length === 1 ? clauses[0] : `(${clauses.join(" OR ")})`;
+    };
+
+    const buildAdjudicationClause = (groups: Set<AdjudicationGroup>): string | null => {
+        const onlyNotAdjudicated = groups.size === 1 && groups.has('Not Adjudicated');
+        const hasNotAdjudicated = groups.has('Not Adjudicated');
+        const adjudicatedGroupsSelected = Array.from(groups).filter(g => g !== 'Not Adjudicated').length > 0;
+
+        if (onlyNotAdjudicated) return "adjudicatedIdsCount=0";
+        if (adjudicatedGroupsSelected && !hasNotAdjudicated) return "adjudicatedIdsCount>0";
+        return null;
+    };
+
+    const buildAlarmFilterQuery = (state: AlarmFilterState): string => {
+        const clauses: string[] = [];
+        const alarmClause = buildAlarmTypeClause(state.alarmTypes);
+        if (alarmClause) clauses.push(alarmClause);
+        const adjClause = buildAdjudicationClause(state.adjudicationGroups);
+        if (adjClause) clauses.push(adjClause);
+        return clauses.join(" AND ");
+    };
+
     const buildFilterQuery = (filterModel: GridFilterModel, tableMode: string): string => {
+        if (tableMode === 'alarmtable') {
+            return buildAlarmFilterQuery(alarmFilter);
+        }
+
         let filter: string | null = null;
-        
-        // http://localhost:8282/sensorhub/api/observations?resultTime=../2026-01-26T13:22:44.048Z&format=application/om%2Bjson&dataStream=0g30&filter=adjudicatedIds>0&order=desc&offset=0&limit=15
+
         for (const item of filterModel.items) {
             if (!['status', 'adjudicatedIds'].includes(item.field))
                 continue;
@@ -662,11 +767,7 @@ export default function EventTable({
             }
         }
 
-        if (filter)
-            return filter;
-        if (tableMode === 'alarmtable')
-            return "gammaAlarm=true OR neutronAlarm=true";
-        return '';
+        return filter ?? '';
     }
 
     const handleFilterChange = useCallback((model: GridFilterModel) => {
@@ -695,7 +796,12 @@ export default function EventTable({
                 slotProps={{
                     columnsManagement: {
                         getTogglableColumns: getColumnList,
-                    }
+                    },
+                    toolbar: tableMode === 'alarmtable' ? {
+                        alarmFilter,
+                        onAlarmFilterChange: handleAlarmFilterChange,
+                        defaultAlarmFilter: DEFAULT_ALARM_FILTER
+                    } : {}
                 }}
                 initialState={{
                     sorting: {
@@ -704,7 +810,9 @@ export default function EventTable({
                     columns: {
                         // Manage visible columns in table based on component parameters
                         columnVisibilityModel: {
-                            adjudicatedIds: viewAdjudicated,
+                            adjudicatedIds: viewAdjudicated && tableMode !== 'alarmtable',
+                            adjudicationGroup: tableMode === 'alarmtable',
+                            secondaryInspection: tableMode === 'alarmtable',
                         },
                     },
                 }}
@@ -714,6 +822,13 @@ export default function EventTable({
                     includeHeaders: false,
                 }}
                 getCellClassName={(params: GridCellParams<any, any, string>) => {
+                    if (params.field === "adjudicationGroup") {
+                        if (params.value === "Real Alarm") return "highlightReal";
+                        if (params.value === "Innocent Alarm") return "highlightInnocent";
+                        if (params.value === "False Alarm") return "highlightFalse";
+                        if (params.value === "Test/Maintenance" || params.value === "Tamper/Fault" || params.value === "Other") return "highlightOther";
+                        return '';
+                    }
                     if (params.value === "Gamma")
                         return "highlightGamma";
                     else if (params.value === "Neutron")

@@ -22,5 +22,18 @@
   "eventDetails": "Détails de l'événement",
   "addServer": "Ajouter un nouveau serveur",
   "editNode": "Modifier le nœud",
-  "nodes": "Nœuds"
+  "nodes": "Nœuds",
+  "filters": "Filtres",
+  "alarmType": "Type d'alarme",
+  "adjudicationStatus": "Statut de jugement",
+  "secondaryInspection": "Inspection secondaire",
+  "notAdjudicated": "Non jugé",
+  "realAlarm": "Vraie alarme",
+  "innocentAlarm": "Alarme innocente",
+  "falseAlarm": "Fausse alarme",
+  "testMaintenance": "Test/Maintenance",
+  "tamperFault": "Sabotage/Défaut",
+  "other": "Autre",
+  "apply": "Appliquer",
+  "resetToDefault": "Réinitialiser"
 }

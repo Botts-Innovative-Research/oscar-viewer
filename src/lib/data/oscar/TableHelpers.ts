@@ -27,6 +27,7 @@ export class EventTableData implements IEventTableData {
     foiId: string;
     videoPaths: string[];
     adjudicatedIds: string[];
+    adjudicationGroup: string;
     parentNode: string;
     isRS350: boolean;
 
@@ -58,7 +59,8 @@ export class EventTableData implements IEventTableData {
         this.foiId = foiId;
         this.videoPaths = msgValue.videoPaths;
         this.adjudicatedIds = msgValue.adjudicatedIds;
-        this.secondaryInspection = this.setSecondaryStatus(msgValue.adjudicatedIds); //TODO: reference adjudicatedIds to get secondary status
+        this.secondaryInspection = "NONE";
+        this.adjudicationGroup = "Not Adjudicated";
         this.parentNode = parentNode;
         this.isRS350 = isRS350;
     }
@@ -113,8 +115,8 @@ export class EventTableData implements IEventTableData {
         this.occupancyObsId = id;
     }
 
-    setSecondaryStatus(adjudicatedIds: string[]){
-        return "NONE";
+    setAdjudicationGroup(group: string) {
+        this.adjudicationGroup = group;
     }
 }
 

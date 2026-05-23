@@ -25,5 +25,18 @@
   "nodes": "Nodes",
   "browserNotificationPermission": "Browser Notification Permission",
   "notificationPreferences": "Notification Preferences",
-  "settings": "Settings"
+  "settings": "Settings",
+  "filters": "Filters",
+  "alarmType": "Alarm Type",
+  "adjudicationStatus": "Adjudication Status",
+  "secondaryInspection": "Secondary Inspection",
+  "notAdjudicated": "Not Adjudicated",
+  "realAlarm": "Real Alarm",
+  "innocentAlarm": "Innocent Alarm",
+  "falseAlarm": "False Alarm",
+  "testMaintenance": "Test/Maintenance",
+  "tamperFault": "Tamper/Fault",
+  "other": "Other",
+  "apply": "Apply",
+  "resetToDefault": "Reset to Default"
 }

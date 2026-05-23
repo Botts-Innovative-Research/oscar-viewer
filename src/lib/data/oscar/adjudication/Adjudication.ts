@@ -93,3 +93,21 @@ export default class AdjudicationData implements IAdjudicationData {
         return this.adjudicationCode.code;
     }
 }
+
+export function parseAdjudicationStatus(statusData: any, occupancyCount: string = ""): AdjudicationData | null {
+    const results = statusData?.results?.[0]?.data;
+    if (!results) return null;
+
+    const data = new AdjudicationData(statusData.reportTime, occupancyCount, results.occupancyObsId);
+    data.setFeedback(results.feedback);
+    data.setIsotopes(results.isotopes ?? []);
+    data.setSecondaryInspectionStatus(results.secondaryInspectionStatus);
+    data.setAdjudicationCode(AdjudicationCodes.getCodeObjByIndex(results.adjudicationCode));
+    data.setVehicleId(results.vehicleId ?? "");
+    data.setFilePaths(results.filePaths ?? []);
+    data.setTime(statusData.reportTime);
+    data.setOccupancyObsId(results.occupancyObsId);
+    data.setUser(results.username ?? "");
+    return data;
+}
+

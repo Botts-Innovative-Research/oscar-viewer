@@ -22,5 +22,18 @@
   "eventDetails": "Detalles del evento",
   "addServer": "Agregar un nuevo servidor",
   "editNode": "Editar nodo",
-  "nodes": "Nodos"
+  "nodes": "Nodos",
+  "filters": "Filtros",
+  "alarmType": "Tipo de Alarma",
+  "adjudicationStatus": "Estado de Adjudicación",
+  "secondaryInspection": "Inspección Secundaria",
+  "notAdjudicated": "No Adjudicado",
+  "realAlarm": "Alarma Real",
+  "innocentAlarm": "Alarma Inocente",
+  "falseAlarm": "Alarma Falsa",
+  "testMaintenance": "Prueba/Mantenimiento",
+  "tamperFault": "Manipulación/Falla",
+  "other": "Otro",
+  "apply": "Aplicar",
+  "resetToDefault": "Restablecer"
 }
