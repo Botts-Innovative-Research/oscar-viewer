@@ -5,6 +5,7 @@ import { Box, Grid } from "@mui/material";
 import Chart from "chart.js/auto";
 import { EventType } from "osh-js/source/core/event/EventType";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
+import { useLanguage } from "@/app/contexts/LanguageContext";
 
 export class ChartInterceptProps {
     laneName: string;
@@ -219,6 +220,7 @@ function ScrollingBarChart({ title, barColor, datasource, thresholdDatasource, d
 }
 
 export default function ChartLane({ laneName, datasources, setChartReady }: ChartInterceptProps) {
+    const { t } = useLanguage();
     useEffect(() => {
         if (datasources.gamma || datasources.neutron) {
             setChartReady(true);
@@ -230,7 +232,7 @@ export default function ChartLane({ laneName, datasources, setChartReady }: Char
             <Grid container direction="row" marginTop={2} marginLeft={1} spacing={4}>
                 <Grid item xs>
                     <ScrollingBarChart
-                        title="Gamma Chart"
+                        title={t('gammaChart')}
                         barColor="#f44336"
                         datasource={datasources.gamma}
                         thresholdDatasource={datasources.threshold}
@@ -240,7 +242,7 @@ export default function ChartLane({ laneName, datasources, setChartReady }: Char
                 </Grid>
                 <Grid item xs>
                     <ScrollingBarChart
-                        title="Neutron Chart"
+                        title={t('neutronChart')}
                         barColor="#29b6f6"
                         datasource={datasources.neutron}
                         dataField="neutronGrossCount"

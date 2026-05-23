@@ -2,22 +2,23 @@
 
 import {FormControl, InputLabel, MenuItem, Select, SelectChangeEvent} from '@mui/material';
 import {useState} from "react";
+import {useLanguage} from "@/app/contexts/LanguageContext";
 
 export const reportTypes = [
     {
-        label: "RDS Site Report",
+        labelKey: "rdsSiteReport",
         value: "RDS_SITE",
     },
     {
-        label: "Lane Report",
+        labelKey: "laneReport",
         value: "LANE",
     },
     {
-        label: "Adjudication Report",
+        labelKey: "adjudicationReport",
         value: "ADJUDICATION",
     },
     {
-        label: "Event Report",
+        labelKey: "eventReport",
         value: "EVENT",
     }
 ]
@@ -26,6 +27,7 @@ export default function ReportTypeSelect(props: {
     onSelect: (value: string[] | string) => void,
     report: string
 }) {
+    const {t} = useLanguage();
 
 
     const handleChange = (event: SelectChangeEvent) => {
@@ -35,11 +37,11 @@ export default function ReportTypeSelect(props: {
 
     return (
         <FormControl size="small" fullWidth>
-            <InputLabel id="label">Report Type</InputLabel>
+            <InputLabel id="label">{t('reportType')}</InputLabel>
             <Select
                 variant="outlined"
                 id="label"
-                label="Report Type"
+                label={t('reportType')}
                 value= {props.report || ""}
                 onChange={handleChange}
                 MenuProps={{
@@ -72,7 +74,7 @@ export default function ReportTypeSelect(props: {
                 {
                     reportTypes.map((item) => (
                         <MenuItem key={item.value} value={item.value}>
-                            {item.label}
+                            {t(item.labelKey)}
                         </MenuItem>
                     ))
                 }

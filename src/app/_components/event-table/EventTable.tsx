@@ -220,7 +220,7 @@ export default function EventTable({
                     <GridActionsCellItem
                         key="details"
                         icon={<VisibilityRoundedIcon />}
-                        label="Details"
+                        label={t('details')}
                         onClick={() => handleEventPreview()}
                         showInMenu
                     />

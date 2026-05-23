@@ -50,9 +50,11 @@ import {isAdjudicationControlStream} from "@/lib/data/oscar/Utilities";
 import { EventTableData } from "@/lib/data/oscar/TableHelpers";
 import { useBreakpoint } from "@/app/providers";
 import BackButton from "../BackButton";
+import { useLanguage } from "@/app/contexts/LanguageContext";
 
 export function EventPreview() {
     const { isDesktop } = useBreakpoint();
+    const { t } = useLanguage();
 
     const dispatch = useAppDispatch();
     const router = useRouter();
@@ -388,7 +390,7 @@ export function EventPreview() {
                 <TextField
                     onChange={handleNotes}
                     id="outlined-multiline-static"
-                    label="Notes"
+                    label={t('notes')}
                     multiline
                     rows={4}
                     fullWidth

@@ -8,6 +8,7 @@ import ListItemText from "@mui/material/ListItemText";
 import {INode} from "@/lib/data/osh/Node";
 import {useEffect, useState} from "react";
 import {selectNodes} from "@/lib/state/OSHSlice";
+import {useLanguage} from "@/app/contexts/LanguageContext";
 
 
 export default function LaneSelect(props: {
@@ -16,6 +17,7 @@ export default function LaneSelect(props: {
     selectedNode: INode
 }) {
 
+    const {t} = useLanguage();
 
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
 
@@ -52,11 +54,11 @@ export default function LaneSelect(props: {
 
     return (
         <FormControl size="small" fullWidth>
-            <InputLabel id="label">Lane Selector</InputLabel>
+            <InputLabel id="label">{t('laneSelector')}</InputLabel>
             <Select
                 variant="outlined"
                 id="label"
-                label="Lane Selector"
+                label={t('laneSelector')}
                 multiple
                 value= {props.lane}
                 onChange={handleChange}
@@ -95,7 +97,7 @@ export default function LaneSelect(props: {
                             props.lane.length < lanes.length
                         }
                     />
-                    <ListItemText primary="Select All" />
+                    <ListItemText primary={t('selectAll')} />
                 </MenuItem>
 
                 {lanes.map((lane: any) => (

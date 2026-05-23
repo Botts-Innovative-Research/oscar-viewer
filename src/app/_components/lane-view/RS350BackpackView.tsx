@@ -13,6 +13,7 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import EventTable from "@/app/_components/event-table/EventTable";
 import BackButton from "@/app/_components/BackButton";
 import LaneStatus from "@/app/_components/dashboard/LaneStatus";
+import {useLanguage} from "@/app/contexts/LanguageContext";
 
 interface RS350BackpackViewProps {
     entry: LaneMapEntry;
@@ -21,6 +22,7 @@ interface RS350BackpackViewProps {
 }
 
 export default function RS350BackpackView({ entry, currentLane, laneMap }: RS350BackpackViewProps) {
+    const {t} = useLanguage();
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
     const [foregroundDatasources, setForegroundDatasources] = useState<typeof ConSysApi>();
     const [backgroundDatasources, setBackgroundDatasources] = useState<typeof ConSysApi>();
@@ -90,7 +92,7 @@ export default function RS350BackpackView({ entry, currentLane, laneMap }: RS350
                                         <N42Chart
                                             laneName={currentLane}
                                             datasource={foregroundDatasources}
-                                            title={"Foreground Linear Spectrum"}
+                                            title={t('foregroundLinearSpectrum')}
                                             yCurve={"Counts"}
                                             yValue={"linearSpectrum"}
                                             chartId={"chart-linear-fg-ls"}
@@ -100,7 +102,7 @@ export default function RS350BackpackView({ entry, currentLane, laneMap }: RS350
                                         <N42Chart
                                             laneName={currentLane}
                                             datasource={foregroundDatasources}
-                                            title={"Foreground Compressed Spectrum"}
+                                            title={t('foregroundCompressedSpectrum')}
                                             yCurve={"Counts"}
                                             yValue={"compressedSpectrum"}
                                             chartId={"chart-linear-fg-cs"}
@@ -110,7 +112,7 @@ export default function RS350BackpackView({ entry, currentLane, laneMap }: RS350
                                         <N42Chart
                                             laneName={currentLane}
                                             datasource={backgroundDatasources}
-                                            title={"Background Linear Spectrum"}
+                                            title={t('backgroundLinearSpectrum')}
                                             yCurve={"Counts"}
                                             yValue={"linearSpectrum"}
                                             chartId={"chart-linear-bkg-ls"}
@@ -120,7 +122,7 @@ export default function RS350BackpackView({ entry, currentLane, laneMap }: RS350
                                         <N42Chart
                                             laneName={currentLane}
                                             datasource={backgroundDatasources}
-                                            title={"Background Compressed Spectrum"}
+                                            title={t('backgroundCompressedSpectrum')}
                                             yCurve={"Counts"}
                                             yValue={"compressedSpectrum"}
                                             chartId={"chart-linear-bkg-cs"}

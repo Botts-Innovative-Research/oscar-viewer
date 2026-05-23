@@ -2,27 +2,28 @@
 
 import {FormControl, InputLabel, MenuItem, Select, SelectChangeEvent} from '@mui/material';
 import {useState} from 'react';
+import {useLanguage} from "@/app/contexts/LanguageContext";
 
 const timeRanges = [
     {
-        label: "Last 24 Hours",
+        labelKey: "last24Hours",
         value: "last24Hrs",
 
     },
     {
-        label: "Last 7 Days",
+        labelKey: "last7Days",
         value: 'last7days'
     },
     {
-        label: "Last 30 Days",
+        labelKey: "last30Days",
         value: 'last30days'
     },
     {
-        label: "This Month",
+        labelKey: "thisMonth",
         value: 'thisMonth'
     },
     {
-        label: 'Custom Range',
+        labelKey: 'customRange',
         value: 'custom'
     }
 ]
@@ -31,6 +32,7 @@ export default function TimeRangeSelect(props: {
     onSelect: (value: string[] | string) => void,
     timeRange: string
 }) {
+    const {t} = useLanguage();
 
     const handleChange = (event: SelectChangeEvent) => {
         const val = event.target.value;
@@ -39,11 +41,11 @@ export default function TimeRangeSelect(props: {
 
     return (
         <FormControl size="small" fullWidth>
-            <InputLabel id="label">Time Range</InputLabel>
+            <InputLabel id="label">{t('timeRange')}</InputLabel>
             <Select
                 variant="outlined"
                 id="label"
-                label="TimeRange"
+                label={t('timeRange')}
                 value={props.timeRange}
                 onChange={handleChange}
                 MenuProps={{
@@ -75,7 +77,7 @@ export default function TimeRangeSelect(props: {
                 {
                     timeRanges.map((range) => (
                         <MenuItem key={range.value} value={range.value}>
-                            {range.label}
+                            {t(range.labelKey)}
                         </MenuItem>
                     ))
                 }

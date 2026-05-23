@@ -277,28 +277,28 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
                 </Box>
             </>
             <Dialog open={ackDialog !== null} onClose={() => setAckDialog(null)}>
-                <DialogTitle>Active Alarm — {ackDialog?.laneName}</DialogTitle>
+                <DialogTitle>{t('activeAlarm')} — {ackDialog?.laneName}</DialogTitle>
                 <DialogContent>
                     <Stack spacing={1} sx={{ pt: 1 }}>
                         <Typography>
                             {ackLane?.parentNode} — {ackDialog?.laneName}
                         </Typography>
                         <Stack direction="row" spacing={1}>
-                            {ackLane?.isGammaAlarm && <Chip label="Gamma Alarm" color="error" size="small" />}
-                            {ackLane?.isNeutronAlarm && <Chip label="Neutron Alarm" color="info" size="small" />}
+                            {ackLane?.isGammaAlarm && <Chip label={t('gammaAlarm')} color="error" size="small" />}
+                            {ackLane?.isNeutronAlarm && <Chip label={t('neutronAlarm')} color="info" size="small" />}
                         </Stack>
                         <Typography variant="body2" color="text.secondary">
-                            Silence to clear this alarm. All active alarms must be silenced to stop the alert sound.
+                            {t('silenceInstructions')}
                         </Typography>
                     </Stack>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setAckDialog(null)}>Cancel</Button>
+                    <Button onClick={() => setAckDialog(null)}>{t('cancel')}</Button>
                     <Button onClick={() => { handleLaneView(ackDialog!.laneName); setAckDialog(null); }}>
-                        View Lane
+                        {t('viewLane')}
                     </Button>
                     <Button onClick={handleSilenceAlarm} color="error" variant="contained">
-                        Silence Alarm
+                        {t('silenceAlarm')}
                     </Button>
                 </DialogActions>
             </Dialog>

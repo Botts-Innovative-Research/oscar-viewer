@@ -9,7 +9,7 @@ export default function LanguageSelector() {
   const { language, setLanguage } = useLanguage();
 
   const handleChange = (event: SelectChangeEvent) => {
-    setLanguage(event.target.value as 'en' | 'es' | 'fr');
+    setLanguage(event.target.value as 'en' | 'es' | 'fr' | 'tk');
   };
 
   return (
@@ -25,12 +25,14 @@ export default function LanguageSelector() {
             if (selected === 'en') return 'English';
             if (selected === 'es') return 'Español';
             if (selected === 'fr') return 'Français';
+            if (selected === 'tk') return 'Türkmençe';
             return selected;
         }}
       >
         <MenuItem value="en">English</MenuItem>
         <MenuItem value="es">Español</MenuItem>
         <MenuItem value="fr">Français</MenuItem>
+        <MenuItem value="tk">Türkmençe</MenuItem>
       </Select>
     </FormControl>
   );

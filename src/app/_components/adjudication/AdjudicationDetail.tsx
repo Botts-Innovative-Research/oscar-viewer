@@ -58,6 +58,7 @@ import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import { useBreakpoint } from "@/app/providers";
 import N42Detail from "@/app/_components/n42/N42Detail";
+import { useLanguage } from "@/app/contexts/LanguageContext";
 
 interface FileWithWebId {
     file: File;
@@ -82,6 +83,7 @@ interface ScannedDataWithWebId {
 export default function AdjudicationDetail(props: { event: EventTableData }) {
     const { isMobile, isSmallTablet } = useBreakpoint();
     const dispatch = useAppDispatch();
+    const { t } = useLanguage();
 
     const [uploadedFiles, setUploadedFiles] = useState<FileWithWebId[]>([])
     const [adjudicationCode, setAdjudicationCode] = useState(AdjudicationCodes.codes[0]);
@@ -210,7 +212,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             const timeoutId = setTimeout(() => {
                 if (!videoElement.current) {
                     console.error("Video element not found");
-                    setAdjSnackMsg("Failed to initialize camera");
+                    setAdjSnackMsg(t('failedInitCamera'));
                     setOpenSnack(true);
                     return;
                 }
@@ -239,7 +241,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
                 scanner.current.start().catch((err) => {
                     console.error("Error starting scanner:", err);
-                    setAdjSnackMsg("Failed to start camera");
+                    setAdjSnackMsg(t('failedStartCamera'));
                     setColorStatus('error');
                     setOpenSnack(true);
                 });
@@ -726,7 +728,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                         <Grid container spacing={2}>
 
                             <Grid item xs={12}>
-                                <Typography variant="h5">Evidence Collection</Typography>
+                                <Typography variant="h5">{t('evidenceCollection')}</Typography>
                             </Grid>
 
                             {uploadedFiles.length > 0 && (
@@ -824,14 +826,14 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                 <IconButton aria-label="close" onClick={handleCloseQrCodeDialog} sx={{ position: 'absolute', right: 8, top: 8 }}>
                                     <CloseIcon/>
                                 </IconButton>
-                                <DialogTitle sx={{textAlign: 'center', pb: 1}}>Spectroscopic QR Code Scanner</DialogTitle>
+                                <DialogTitle sx={{textAlign: 'center', pb: 1}}>{t('spectroscopicQrScanner')}</DialogTitle>
                                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 3, pt: 1 }}>
                                     <Box className='qr-reader' sx={{ width: 400, height: 400, maxWidth: 400, borderRadius: 2, overflow: 'hidden', backgroundColor: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <video ref={videoElement} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                     </Box>
                                     {scannedData.length > 0 && (
                                         <Paper variant="outlined" sx={{mt: 2, p: 2, width: '100%', maxHeight: 150, overflowY: 'auto'}}>
-                                            <Typography variant="subtitle2" gutterBottom>Scanned Codes ({scannedData.length}):</Typography>
+                                            <Typography variant="subtitle2" gutterBottom>{t('scannedCodes')} ({scannedData.length}):</Typography>
                                             <Stack spacing={1}>
                                                 {scannedData.map((data, idx) => (
                                                     <Stack key={idx} direction="row" justifyContent="space-between" alignItems="center">
@@ -843,8 +845,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                         </Paper>
                                     )}
                                     <Stack direction="row" spacing={2} sx={{mt: 2}}>
-                                        {scannedData.length > 0 && (<Button variant="outlined" onClick={() => setScannedData([])}>Clear All</Button>)}
-                                        <Button variant="contained" onClick={handleCloseQrCodeDialog} sx={{minWidth: 120}}>Done Scanning</Button>
+                                        {scannedData.length > 0 && (<Button variant="outlined" onClick={() => setScannedData([])}>{t('clearAll')}</Button>)}
+                                        <Button variant="contained" onClick={handleCloseQrCodeDialog} sx={{minWidth: 120}}>{t('doneScanning')}</Button>
                                     </Stack>
                                 </Box>
                             </Dialog>
@@ -853,14 +855,14 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                 <Grid item xs={"auto"}>
                                     <Stack direction="row" spacing={2} alignItems="center">
                                         <Button component="label" startIcon={<UploadFileRoundedIcon/>} sx={{ display: "flex", alignItems: "center", width: "auto", padding: "8px", borderStyle: "solid", borderWidth: "1px", borderRadius: "10px", borderColor: "secondary.main", backgroundColor: "inherit", color: "secondary.main" }}>
-                                            Upload Files
+                                            {t('uploadFiles')}
                                             <input type="file" multiple onChange={handleFileUpload} ref={fileInputRef} style={{display: "none"}} />
                                         </Button>
                                         <Button component="label" startIcon={<QrCode/>} sx={{ display: "flex", alignItems: "center", width: "auto", padding: "8px", borderStyle: "solid", borderWidth: "1px", borderRadius: "10px", borderColor: "info.main", backgroundColor: "inherit", color: "info.main" }} onClick={handleQrCode}>
-                                            QR Scanner
+                                            {t('qrScanner')}
                                         </Button>
                                         <Button variant="outlined" color="info" onClick={submitToWebId} disabled={isSubmittingWebId || (!uploadedFiles.some(f => f.webIdEnabled && !f.serverPath) && !scannedData.some(d => d.webIdEnabled && !d.serverPath))} sx={{ padding: "8px", borderRadius: "10px" }}>
-                                            {isSubmittingWebId ? 'Uploading...' : 'Upload to WebID'}
+                                            {isSubmittingWebId ? 'Uploading...' : t('uploadToWebId')}
                                         </Button>
                                     </Stack>
                                 </Grid>
@@ -884,10 +886,10 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 <Grid container spacing={2} sx={{ width: '100%' }}>
                     <Grid item container xs={12} spacing={2}>
                         <Grid item xs={12}>
-                            <Typography variant="h5">Adjudication Form</Typography>
+                            <Typography variant="h5">{t('adjudicationForm')}</Typography>
                         </Grid>
                         <Grid item xs={12} sm={3} lg={2}>
-                            <TextField label="VehicleId" name="vehicleId" value={vehicleId} onChange={handleChange} fullWidth />
+                            <TextField label={t('vehicleId')} name="vehicleId" value={vehicleId} onChange={handleChange} fullWidth />
                         </Grid>
                         <Grid item xs={12} sm={9} lg={10} />
                         <Grid item xs={12} sm={6}>
@@ -900,8 +902,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                             <Grid item xs={12}>
                                 <Stack direction="row" spacing={1} alignItems="center">
                                     <FormControl size="small" sx={{ minWidth: 250 }}>
-                                        <InputLabel id="webid-result-select-label">WebID Evidence</InputLabel>
-                                        <Select multiple labelId="webid-result-select-label" label="WebID Evidence" value={selectedWebIdResultId} onChange={handleEvidenceSelection}>
+                                        <InputLabel id="webid-result-select-label">{t('webIdEvidence')}</InputLabel>
+                                        <Select multiple labelId="webid-result-select-label" label={t('webIdEvidence')} value={selectedWebIdResultId} onChange={handleEvidenceSelection}>
                                             {webIdResults.map((result) => (
                                                 <MenuItem key={result.id} value={result.id}>
                                                     <Checkbox size="small" checked={selectedWebIdResultId.includes(result.id)} />
@@ -917,7 +919,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                             </Grid>
                         )}
                         <Grid item xs={12}>
-                            <TextField id="outlined-multiline-static" label="Notes" name="notes" multiline rows={4} value={feedback} onChange={handleChange} fullWidth />
+                            <TextField id="outlined-multiline-static" label={t('notes')} name="notes" multiline rows={4} value={feedback} onChange={handleChange} fullWidth />
                         </Grid>
                     </Grid>
 
@@ -932,7 +934,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
                     {/* Confirm Dialog */}
                     <Dialog open={openConfirmDialog} onClose={() => setOpenConfirmDialog(false)} fullWidth maxWidth="sm">
-                        <DialogTitle sx={{ pb: 1 }}>Confirm Adjudication Submission</DialogTitle>
+                        <DialogTitle sx={{ pb: 1 }}>{t('confirmAdjudicationTitle')}</DialogTitle>
                         <DialogContent dividers sx={{ px: 1.5 }}>
                             <Stack spacing={1.5}>
                                 {vehicleId && (<><Box><Typography variant="subtitle2" color="text.secondary">Vehicle ID</Typography><Typography variant="body1">{vehicleId}</Typography></Box><Divider /></>)}
@@ -976,8 +978,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                             </Stack>
                         </DialogContent>
                         <DialogActions sx={{ px: 1.5, py: 1.5, flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
-                            <Button onClick={() => setOpenConfirmDialog(false)} color="error" fullWidth sx={{ width: { sm: 'auto' } }}>Cancel</Button>
-                            <Button onClick={confirmAndSubmitAdjudication} variant="contained" color="success" fullWidth sx={{ width: { sm: 'auto' } }}>Confirm & Submit</Button>
+                            <Button onClick={() => setOpenConfirmDialog(false)} color="error" fullWidth sx={{ width: { sm: 'auto' } }}>{t('cancel')}</Button>
+                            <Button onClick={confirmAndSubmitAdjudication} variant="contained" color="success" fullWidth sx={{ width: { sm: 'auto' } }}>{t('confirmAndSubmit')}</Button>
                         </DialogActions>
                     </Dialog>
 

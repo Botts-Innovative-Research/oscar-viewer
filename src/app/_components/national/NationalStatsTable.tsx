@@ -14,21 +14,22 @@ import {
 } from "@mui/material";
 import {KeyboardArrowDown, KeyboardArrowRight} from "@mui/icons-material";
 import LaneStatsTable from "./LaneStatsTable";
+import {useLanguage} from "@/app/contexts/LanguageContext";
 
 type Props = {
     selectedTimeRangeCounts: INationalTableData[];
 };
 
-const columns: { key: keyof INationalTableData; label: string; numeric?: boolean }[] = [
-    {key: "site", label: "Node ID"},
-    {key: "numGammaAlarms", label: "G Alarm", numeric: true},
-    {key: "numNeutronAlarms", label: "N Alarm", numeric: true},
-    {key: "numGammaNeutronAlarms", label: "G-N Alarm", numeric: true},
-    {key: "numOccupancies", label: "Occupancies", numeric: true},
-    {key: "numTampers", label: "Tamper", numeric: true},
-    {key: "numGammaFaults", label: "G Faults", numeric: true},
-    {key: "numNeutronFaults", label: "N Faults", numeric: true},
-    {key: "numFaults", label: "Faults", numeric: true},
+const columns: { key: keyof INationalTableData; labelKey: string; numeric?: boolean }[] = [
+    {key: "site", labelKey: "nodeId"},
+    {key: "numGammaAlarms", labelKey: "gAlarm", numeric: true},
+    {key: "numNeutronAlarms", labelKey: "nAlarm", numeric: true},
+    {key: "numGammaNeutronAlarms", labelKey: "gnAlarm", numeric: true},
+    {key: "numOccupancies", labelKey: "occupancies", numeric: true},
+    {key: "numTampers", labelKey: "tamper", numeric: true},
+    {key: "numGammaFaults", labelKey: "gFaults", numeric: true},
+    {key: "numNeutronFaults", labelKey: "nFaults", numeric: true},
+    {key: "numFaults", labelKey: "faults", numeric: true},
 ];
 
 function NodeRow({row}: { row: INationalTableData }) {
@@ -66,6 +67,7 @@ function NodeRow({row}: { row: INationalTableData }) {
 }
 
 export default function NationalStatsTable({selectedTimeRangeCounts}: Props) {
+    const {t} = useLanguage();
     const rows = selectedTimeRangeCounts ?? [];
 
     return (
@@ -76,7 +78,7 @@ export default function NationalStatsTable({selectedTimeRangeCounts}: Props) {
                         <TableCell sx={{width: 48}}/>
                         {columns.map((col) => (
                             <TableCell key={col.key} align={col.numeric ? "right" : "left"}>
-                                {col.label}
+                                {t(col.labelKey)}
                             </TableCell>
                         ))}
                     </TableRow>
@@ -85,7 +87,7 @@ export default function NationalStatsTable({selectedTimeRangeCounts}: Props) {
                     {rows.length === 0 ? (
                         <TableRow>
                             <TableCell colSpan={columns.length + 1} align="center">
-                                <Box sx={{padding: 2, color: "text.secondary"}}>No statistics loaded.</Box>
+                                <Box sx={{padding: 2, color: "text.secondary"}}>{t('noStatisticsLoaded')}</Box>
                             </TableCell>
                         </TableRow>
                     ) : (

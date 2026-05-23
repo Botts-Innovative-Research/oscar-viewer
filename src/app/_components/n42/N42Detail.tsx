@@ -9,6 +9,7 @@ import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import N42ChartPlayback from "@/app/_components/n42/N42ChartPlayback";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
+import {useLanguage} from "@/app/contexts/LanguageContext";
 
 export interface N42Report {
     samplingTime: string;
@@ -34,6 +35,7 @@ const FOREGROUND_REPORTS = "foregroundReports";
 const BACKGROUND_REPORTS = "backgroundReports";
 
 export default function N42Detail(props: { event: EventTableData }) {
+    const {t} = useLanguage();
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
     const [fileDataMap, setFileDataMap] = useState<Map<string, N42FileData>>(new Map());
     const [currentPage, setCurrentPage] = useState(0);
@@ -216,7 +218,7 @@ export default function N42Detail(props: { event: EventTableData }) {
                             <Grid item xs={6}>
                                 <N42ChartPlayback
                                     reports={activeFile.foregroundReports}
-                                    title={"Foreground Linear Spectrum"}
+                                    title={t('foregroundLinearSpectrum')}
                                     chartId={`n42-chart-foreground-${currentPage}`}
                                     yValue={"linearSpectrum"}
                                 />
@@ -230,7 +232,7 @@ export default function N42Detail(props: { event: EventTableData }) {
                             <Grid item xs={6}>
                                 <N42ChartPlayback
                                     reports={activeFile.backgroundReports}
-                                    title={"Background Linear Spectrum"}
+                                    title={t('backgroundLinearSpectrum')}
                                     chartId={`n42-chart-background-${currentPage}`}
                                     yValue={"linearSpectrum"}
                                 />

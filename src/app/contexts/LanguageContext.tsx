@@ -4,14 +4,16 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import en from '../../locales/en.json';
 import es from '../../locales/es.json';
 import fr from '../../locales/fr.json';
+import tk from '../../locales/tk.json';
 
-type Locale = 'en' | 'es' | 'fr';
+type Locale = 'en' | 'es' | 'fr' | 'tk';
 type Translations = Record<string, string>;
 
 const translations: Record<Locale, Translations> = {
   en,
   es,
   fr,
+  tk,
 };
 
 interface LanguageContextProps {
