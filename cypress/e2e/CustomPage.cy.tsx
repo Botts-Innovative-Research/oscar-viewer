@@ -39,6 +39,32 @@ describe('Custom Widget Pages (E2E)', () => {
         cy.get('[data-testid="widget-adjudication-table"]', {timeout: 10000}).should('exist');
     });
 
+    it('persists column visibility toggled via the grid column panel', () => {
+        cy.visit('/');
+        cy.get('[data-testid="widget-adjudication-table"]', {timeout: 10000}).should('exist');
+        cy.get('[data-testid="widget-adjudication-table"]')
+            .contains('.MuiDataGrid-columnHeaderTitle', 'Max Gamma').should('exist');
+
+        // Hide "Max Gamma" through the grid's own Columns panel
+        cy.get('[data-testid="widget-adjudication-table"]').contains('button', /columns/i).click();
+        cy.get('.MuiDataGrid-columnsManagement').contains('label', 'Max Gamma').click();
+        cy.get('body').type('{esc}');
+        cy.get('[data-testid="widget-adjudication-table"]')
+            .contains('.MuiDataGrid-columnHeaderTitle', 'Max Gamma').should('not.exist');
+
+        // Must survive a reload (persisted into the widget config)
+        cy.reload();
+        cy.get('[data-testid="widget-adjudication-table"]', {timeout: 10000}).should('exist');
+        cy.get('[data-testid="widget-adjudication-table"]')
+            .contains('.MuiDataGrid-columnHeaderTitle', 'Max Gamma').should('not.exist');
+
+        // Clean up: reset the page to defaults restores the column
+        cy.get('[data-testid="page-menu-button"]').click();
+        cy.contains('li', /reset/i).click();
+        cy.get('[data-testid="widget-adjudication-table"]')
+            .contains('.MuiDataGrid-columnHeaderTitle', 'Max Gamma', {timeout: 10000}).should('exist');
+    });
+
     it('import/export dialog opens and offers export buttons', () => {
         cy.visit('/');
         cy.get('[data-testid="page-menu-button"]').click();

@@ -77,6 +77,11 @@ interface TableProps {
     extraRowActions?: (row: EventTableData) => React.ReactNode[];
     /** Container height; the original pages use the default 800. */
     tableHeight?: number | string;
+    /**
+     * Fires when the user toggles columns via the grid's own column panel so
+     * the owner can persist the change (only used with columnSettings).
+     */
+    onColumnVisibilityChange?: (model: GridColumnVisibilityModel) => void;
 }
 
 
@@ -93,6 +98,7 @@ export default function EventTable({
                                        dateRange,
                                        extraRowActions,
                                        tableHeight = 800,
+                                       onColumnVisibilityChange,
                                    }: TableProps) {
 
     const nodes = useSelector(selectNodes);
@@ -858,7 +864,10 @@ export default function EventTable({
                 columns={orderedColumns}
                 {...(columnSettings ? {
                     columnVisibilityModel,
-                    onColumnVisibilityModelChange: setColumnVisibilityModel,
+                    onColumnVisibilityModelChange: (model: GridColumnVisibilityModel) => {
+                        setColumnVisibilityModel(model);
+                        onColumnVisibilityChange?.(model);
+                    },
                 } : {})}
                 onRowClick={handleRowSelection}
                 onRowDoubleClick={handleRowDoubleClick}
