@@ -2,12 +2,16 @@
 
 import {Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Grid, Stack, Typography} from '@mui/material';
 import LaneStatusItem from './LaneStatusItem';
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {setCurrentLane} from '@/lib/state/LaneViewSlice';
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/dist/client/components/navigation";
 import {setAlarmTrigger} from "@/lib/state/EventDataSlice";
 import {useLanguage} from "@/app/contexts/LanguageContext";
+import {LaneSelection} from "@/lib/layout/PageConfigTypes";
+import {useLaneStreams} from "@/lib/data/oscar/streams/useLaneStreams";
+import {LaneStreamName} from "@/lib/data/oscar/streams/LaneStreamRegistry";
+import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 
 
 export interface LaneStatusProps {
@@ -25,7 +29,10 @@ export interface LaneStatusProps {
 
 type AlarmSource = 'gamma' | 'neutron' | 'tamper' | 'connection';
 
-export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes: any[] }) {
+const STATUS_STREAMS: LaneStreamName[] = ['connectionRT', 'gammaRT', 'neutronRT', 'tamperRT'];
+
+export default function LaneStatus(props: { lanes?: LaneSelection, hideTitle?: boolean }) {
+    const lanes: LaneSelection = props.lanes ?? {mode: 'all'};
     const idVal = useRef(1);
     const [statusList, setStatusList] = useState<LaneStatusProps[]>([]);
     const [ackDialog, setAckDialog] = useState<{ laneName: string } | null>(null);
@@ -34,6 +41,7 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
     const audioContextRef = useRef<AudioContext | null>(null);
     const alarmIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+    const {laneMapRef} = useContext(DataSourceContext);
     const dispatch = useAppDispatch();
     const router = useRouter();
     const { t } = useLanguage();
@@ -43,11 +51,59 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
         [statusList]
     );
 
+    const {laneIds} = useLaneStreams(lanes, STATUS_STREAMS, (laneName, stream, message) => {
+        switch (stream) {
+            case 'connectionRT': {
+                const state = message.values[0].data.isConnected;
+                if (state == undefined) return;
+                updateStatus(laneName, (state ? 'Online' : 'Offline'), 'connection');
+                break;
+            }
+            case 'gammaRT': {
+                const state = message.values[0].data.alarmState;
+                if (state == undefined) return;
+                if (state === 'Alarm') dispatch(setAlarmTrigger(true));
+                updateStatus(laneName, state, 'gamma');
+                break;
+            }
+            case 'neutronRT': {
+                const state = message.values[0].data.alarmState;
+                if (state == undefined) return;
+                if (state === 'Alarm') dispatch(setAlarmTrigger(true));
+                updateStatus(laneName, state, 'neutron');
+                break;
+            }
+            case 'tamperRT': {
+                const state = message.values[0].data.tamperStatus;
+                if (state == undefined) return;
+                updateStatus(laneName, (state ? 'Tamper' : 'TamperOff'), 'tamper');
+                break;
+            }
+        }
+    });
+
+    const laneIdsKey = laneIds.join(',');
+
     useEffect(() => {
-        let sortedLanes = [...props.initialLanes]
-            .sort((a,b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }))
-            .map(lane => ({ ...lane, isGammaAlarm: false, isNeutronAlarm: false, isScanning: false, pulseCount: 0 }));
-        setStatusList(sortedLanes);
+        const sortedLanes: LaneStatusProps[] = [...laneIds]
+            .sort((a, b) => a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'}))
+            .map((laneName) => ({
+                id: idVal.current++,
+                name: laneName,
+                parentNode: laneMapRef.current?.get(laneName)?.parentNode?.name ?? '',
+                isOnline: false,
+                isTamper: false,
+                isFault: false,
+                isGammaAlarm: false,
+                isNeutronAlarm: false,
+                isScanning: false,
+                pulseCount: 0,
+            }));
+        // Keep live state for lanes that are still shown; add/remove the rest.
+        setStatusList((prev) => sortedLanes.map((fresh) => {
+            const existing = prev.find((l) => l.name === fresh.name);
+            return existing ?? fresh;
+        }));
 
         return () => {
             if (timersRef.current) {
@@ -57,58 +113,8 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
                 timersRef.current.clear();
             }
         };
-    }, [props.initialLanes]);
-
-    const addSubscriptionCallbacks = useCallback(() => {
-        for (let [laneName, laneDSColl] of props.dataSourcesByLane.entries()) {
-
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('connectionRT', (message: any) => {
-                const state = message.values[0].data.isConnected;
-                if (state == undefined) return;
-                updateStatus(laneName, (state ? 'Online' : 'Offline'), 'connection');
-            });
-
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
-                const state = message.values[0].data.alarmState;
-                if (state == undefined) return;
-                if (state === 'Alarm') dispatch(setAlarmTrigger(true));
-                updateStatus(laneName, state, 'gamma');
-            });
-
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
-                const state = message.values[0].data.alarmState;
-                if (state == undefined) return;
-                if (state === 'Alarm') dispatch(setAlarmTrigger(true));
-                updateStatus(laneName, state, 'neutron');
-            });
-
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
-                const state = message.values[0].data.tamperStatus;
-                if (state == undefined) return;
-                updateStatus(laneName, (state ? 'Tamper' : 'TamperOff'), 'tamper');
-            });
-
-            // connect to only necessary datasources
-            laneDSColl.addConnectToALLDSMatchingName('connectionRT');
-            laneDSColl.addConnectToALLDSMatchingName('tamperRT');
-            laneDSColl.addConnectToALLDSMatchingName('neutronRT');
-            laneDSColl.addConnectToALLDSMatchingName('gammaRT');
-        }
-
-        return () => {
-            for (let [laneName, laneDSColl] of props.dataSourcesByLane.entries()) {
-                laneDSColl.addDisconnectToALLDSMatchingName('connectionRT');
-                laneDSColl.addDisconnectToALLDSMatchingName('tamperRT');
-                laneDSColl.addDisconnectToALLDSMatchingName('neutronRT');
-                laneDSColl.addDisconnectToALLDSMatchingName('gammaRT');
-            }
-        }
-
-    }, [props.dataSourcesByLane]);
-
-    useEffect(() => {
-        addSubscriptionCallbacks();
-    }, [props.dataSourcesByLane]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [laneIdsKey]);
 
     function playBeep(audioCtx: AudioContext, freq: number, duration: number, startTime: number) {
         const osc = audioCtx.createOscillator();
@@ -247,10 +253,10 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
     const ackLane = ackDialog ? statusList.find(l => l.name === ackDialog.laneName) : null;
 
     return (
-        <Stack justifyContent={"start"} spacing={1}>
-            <Typography variant="h6">{t('laneStatus')}</Typography>
+        <Stack justifyContent={"start"} spacing={1} sx={{height: '100%', minHeight: 0}}>
+            {!props.hideTitle && <Typography variant="h6">{t('laneStatus')}</Typography>}
             <>
-                <Box sx={{overflowY: "auto", maxHeight: 275}}>
+                <Box sx={{overflowY: "auto", maxHeight: props.hideTitle ? '100%' : 275, flex: 1}}>
                     {(
                         <Grid container columns={{sm: 12, md: 24, lg: 36, xl: 48}} spacing={1}>
                             {statusList.map((item) => (
