@@ -5,7 +5,7 @@ import {INode} from "@/lib/data/osh/Node";
 import Hls, {ErrorTypes} from "hls.js";
 import {LiveVideoError} from "@/lib/data/Errors";
 
-export default function HLSVideoComponent({videoSource, selectedNode}: {videoSource: string, selectedNode: INode}) {
+export default function HLSVideoComponent({videoSource, selectedNode, height = "500px"}: {videoSource: string, selectedNode: INode, height?: string}) {
 
     const videoRef = useRef(null);
     const hlsRef: MutableRefObject<Hls> = useRef(null);
@@ -84,10 +84,8 @@ export default function HLSVideoComponent({videoSource, selectedNode}: {videoSou
 
     return (
         <video
-            id="video"
             ref={videoRef}
-            width="100%"
-            height="500px"
+            style={{width: '100%', height: height, objectFit: 'contain'}}
         />
     )
 }

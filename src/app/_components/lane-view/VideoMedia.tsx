@@ -1,104 +1,33 @@
-import React, {useContext, useEffect, useState} from "react";
-import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
-import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {generateHLSVideoCommandJSON, sendCommand} from "@/lib/data/oscar/OSCARCommands";
-import {isHLSVideoControlStream} from "@/lib/data/oscar/Utilities";
-import {LiveVideoError} from "@/lib/data/Errors";
-import {Box, Grid, Paper, Stack} from "@mui/material";
-import ChartLane from "@/app/_components/lane-view/ChartLane";
+import React, {useMemo, useState} from "react";
+import {Box, Stack} from "@mui/material";
 import IconButton from "@mui/material/IconButton";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import HLSVideoComponent from "@/app/_components/lane-view/HLSVideoComponent";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
+import {useHlsStream} from "@/lib/data/oscar/video/useHlsStream";
 
 
 export default function VideoMedia({ currentLane}: { currentLane: string}) {
-    const laneMapRef = useContext(DataSourceContext).laneMapRef;
+    // undefined = first available stream; the arrows pin an explicit stream id.
+    const [selectedStreamId, setSelectedStreamId] = useState<string | undefined>(undefined);
 
-    const [videoSource, setVideoSource] = useState(null);
-    const [videoStreams, setVideoStreams] = useState<typeof ControlStream[]>([]);
-    const [currentPage, setCurrentPage] = useState(0);
+    const {videoSource, streams, node, activeStreamId} = useHlsStream(currentLane, selectedStreamId);
 
-    useEffect(() => {
-        fetchVideoControlStreams()
-    }, []);
-
-    useEffect(() => {
-        if (videoStreams.length === 0)
-            return;
-
-        const currentStream = videoStreams[currentPage];
-
-        if (!currentStream)
-            return;
-
-        const startStream = async () => {
-            const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-
-            const response = await sendCommand(currLaneEntry.parentNode, currentStream.properties.id, generateHLSVideoCommandJSON(true));
-
-            if (!response.ok) {
-                console.error("Failed to start stream");
-                return;
-            }
-
-            const responseJson = await response.json();
-
-            const streamPath = responseJson?.results?.[0]?.data?.streamPath;
-
-            if (streamPath)
-                setVideoSource(streamPath);
-        }
-
-        const stopPreviousStream = async () => {
-            const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-
-            const prevStream = videoStreams[currentPage - 1];
-            if (!prevStream)
-                return;
-
-            await sendCommand(currLaneEntry.parentNode, prevStream.properties.id, generateHLSVideoCommandJSON(false));
-        }
-
-        stopPreviousStream().then(startStream);
-
-        return () => {
-            sendCommand(laneMapRef.current.get(currentLane).parentNode, currentStream.properties.id, generateHLSVideoCommandJSON(false));
-        }
-    }, [currentPage, videoStreams]);
-
-    const fetchVideoControlStreams = async () => {
-        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-
-        let videoControlStreams = currLaneEntry.controlStreams.filter((stream: typeof ControlStream) => isHLSVideoControlStream(stream));
-
-        if (!videoControlStreams || videoControlStreams.length == 0){
-            console.error("no video control stream");
-            throw new LiveVideoError("No video control stream available.");
-        }
-
-        let uniqueVideoControlStreams = videoControlStreams.reduce((acc: typeof ControlStream[], stream: typeof ControlStream) => {
-            const id = stream.properties?.id;
-            if (!id) return acc;
-            if (!acc.find(s => s.properties.id === id)) {
-                acc.push(stream);
-            }
-            return acc;
-        }, []);
-
-        setVideoStreams(uniqueVideoControlStreams)
-    }
+    const currentIndex = useMemo(() => {
+        if (!activeStreamId) return 0;
+        const idx = streams.findIndex((s: any) => s.properties.id === activeStreamId);
+        return idx >= 0 ? idx : 0;
+    }, [streams, activeStreamId]);
 
     const handleNextPage = () =>{
-        if (currentPage < videoStreams.length - 1) {
-            setCurrentPage(prev => prev + 1);
+        if (currentIndex < streams.length - 1) {
+            setSelectedStreamId(streams[currentIndex + 1].properties.id);
         }
     }
 
     const handlePreviousPage = () =>{
-        if (currentPage > 0) {
-            setCurrentPage(prev => prev - 1)
+        if (currentIndex > 0) {
+            setSelectedStreamId(streams[currentIndex - 1].properties.id);
         }
     }
 
@@ -114,7 +43,7 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
             <IconButton
                 onClick={handlePreviousPage}
                 sx={{ mx: { xs: 0.5, sm: 2 }, flexShrink: 0, cursor: 'pointer' }}
-                disabled={currentPage === 0}
+                disabled={currentIndex === 0}
             >
                 <NavigateBeforeIcon />
             </IconButton>
@@ -133,10 +62,10 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
                     overflow: "hidden",
                 }}
             >
-                {videoSource && laneMapRef.current?.get(currentLane)?.parentNode && (
+                {videoSource && node && (
                     <HLSVideoComponent
                         videoSource={videoSource}
-                        selectedNode={laneMapRef.current.get(currentLane).parentNode}
+                        selectedNode={node}
                     />
                 )}
             </Stack>
@@ -144,7 +73,7 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
             <IconButton
                 onClick={handleNextPage}
                 sx={{ mx: { xs: 0.5, sm: 2 }, flexShrink: 0, cursor: 'pointer' }}
-                disabled={currentPage === videoStreams.length - 1}
+                disabled={currentIndex >= streams.length - 1}
             >
                 <NavigateNextIcon />
             </IconButton>

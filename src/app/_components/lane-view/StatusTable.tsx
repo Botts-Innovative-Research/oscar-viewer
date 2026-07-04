@@ -26,10 +26,11 @@ import {convertToMap} from "@/app/utils/Utils";
 
 interface StatusTableProps {
     currentLane: string,
-    entry: LaneMapEntry
+    entry: LaneMapEntry,
+    tableHeight?: number | string,
 }
 
-export default function StatusTable({currentLane, entry}: StatusTableProps){
+export default function StatusTable({currentLane, entry, tableHeight = 800}: StatusTableProps){
     const locale = navigator.language || 'en-US';
 
     const nodes = useSelector(selectNodes);
@@ -391,7 +392,7 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
 
     }, [entry, currentPage, pageSize]);
     return(
-        <Box sx={{height: 800, width: '100%'}}>
+        <Box sx={{height: tableHeight, width: '100%'}}>
             <DataGrid
                 rows={data}
                 paginationMode="server"

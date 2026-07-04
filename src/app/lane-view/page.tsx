@@ -127,7 +127,7 @@ export default function LaneViewPage() {
                 <>
                     <Grid item xs={12}>
                         {dataSourcesByLane &&
-                            <LaneStatus dataSourcesByLane={dataSourcesByLane}/>
+                            <LaneStatus laneName={currentLane}/>
                         }
                     </Grid>
 
