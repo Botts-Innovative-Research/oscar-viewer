@@ -39,6 +39,11 @@ import { useRouter } from 'next/navigation';
 import {setEventPreview, setSelectedRowId} from "@/lib/state/EventPreviewSlice";
 import {setSelectedEvent} from "@/lib/state/EventDataSlice";
 import {setEventData} from "@/lib/state/EventDetailsSlice";
+import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import {selectNavPages} from "@/lib/state/PageLayoutSlice";
+import {PageConfig} from "@/lib/layout/PageConfigTypes";
+import {getPageIcon} from "@/app/_components/layout/WidgetRegistry";
+import AddPageDialog from "@/app/_components/layout/AddPageDialog";
 
 const drawerWidth = 240;
 const drawerWidthMobile = 200;
@@ -221,28 +226,17 @@ export default function Navbar({children}: { children: React.ReactNode }) {
         dispatch(setAlarmAudioVolume(volume));
     };
 
-    // Menu items for drawer
+    // Configurable pages shown in the drawer (seeded + user-created).
+    const navPages = useSelector(selectNavPages);
+    const [addPageOpen, setAddPageOpen] = useState(false);
+
+    // Menu items for drawer: configurable pages first, fixed pages after.
     const menuItems = [
-        {
-            title: t('dashboard'),
-            icon: <DashboardRoundedIcon/>,
-            href: "/",
-        },
-        {
-            title: t('events'),
-            icon: <WarningRoundedIcon/>,
-            href: "/event-log",
-        },
-        {
-            title: t('map'),
-            icon: <LocationOnRoundedIcon/>,
-            href: "/map",
-        },
-        {
-            title: t('national'),
-            icon: <MediationIcon/>,
-            href: "/national-view",
-        },
+        ...navPages.map((page: PageConfig) => ({
+            title: page.seededRoute ? t(page.title) : page.title,
+            icon: getPageIcon(page.icon),
+            href: page.seededRoute ?? `/custom-page/?id=${page.id}`,
+        })),
         {
             title: t('reportGenerator'),
             icon: <InsertChart/>,
@@ -270,7 +264,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
             <Divider/>
             <List>
                 {menuItems.map((item) => (
-                    <Link href={item.href} passHref key={item.title} onClick={!isDesktop ? handleDrawerClose : null}>
+                    <Link href={item.href} passHref key={item.href} onClick={!isDesktop ? handleDrawerClose : null}>
                         <ListItem disablePadding sx={{display: 'block'}}>
                             <ListItemButton
                                 sx={{
@@ -293,6 +287,28 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                         </ListItem>
                     </Link>
                 ))}
+                <ListItem disablePadding sx={{display: 'block'}}>
+                    <ListItemButton
+                        onClick={() => setAddPageOpen(true)}
+                        data-testid="add-page-button"
+                        sx={{
+                            minHeight: 48,
+                            justifyContent: drawerOpen ? 'initial' : 'center',
+                            px: 2.5,
+                        }}
+                    >
+                        <ListItemIcon
+                            sx={{
+                                minWidth: 0,
+                                mr: drawerOpen ? 3 : 'auto',
+                                justifyContent: 'center',
+                            }}
+                        >
+                            <AddRoundedIcon/>
+                        </ListItemIcon>
+                        <ListItemText primary={t('addPage')} sx={{opacity: drawerOpen ? 1 : 0}}/>
+                    </ListItemButton>
+                </ListItem>
             </List>
             <Divider/>
             <List>
@@ -464,6 +480,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
             <Box sx={{display: "none"}}>
                 <AlarmAudio/>
             </Box>
+            <AddPageDialog open={addPageOpen} onClose={() => setAddPageOpen(false)}/>
             <Box
                 component="main"
                 sx={(theme) => {
