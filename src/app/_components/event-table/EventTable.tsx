@@ -31,9 +31,7 @@ import { getObservations } from "@/app/utils/ChartUtils";
 import { isOccupancyDataStream, isThresholdDataStream } from "@/lib/data/oscar/Utilities";
 import { convertToMap, hashString } from "@/app/utils/Utils";
 import { OCCUPANCY_PILLAR_DEF } from "@/lib/data/Constants";
-import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import { selectNodes } from "@/lib/state/OSHSlice";
-import { EventType } from "osh-js/source/core/event/EventType";
 import {INode} from "@/lib/data/osh/Node";
 import Observations from "osh-js/source/core/consysapi/observation/Observations";
 import { GridFilterModel } from "@mui/x-data-grid"
@@ -49,6 +47,11 @@ import {
 } from "@/app/_components/event-table/AlarmFilterPopover";
 import { useAdjudicationMap, AdjudicationByOccupancy } from "@/app/_components/event-table/useAdjudicationMap";
 import { AdjudicationCodes } from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
+import { EventTableColumnSetting, LaneSelection } from "@/lib/layout/PageConfigTypes";
+import { resolveLaneSelection } from "@/lib/data/oscar/streams/LaneStreamRegistry";
+import { useLaneStreams } from "@/lib/data/oscar/streams/useLaneStreams";
+import { GridColumnVisibilityModel } from "@mui/x-data-grid";
+import * as React from "react";
 
 
 interface TableProps {
@@ -60,6 +63,20 @@ interface TableProps {
     viewAdjudicated?: boolean;
     laneMap: Map<string, LaneMapEntry>;
     setEvents?: unknown;
+    /** Widget config: restrict to a lane subset (applies to fetch + live rows). */
+    laneFilter?: LaneSelection;
+    /** Widget config: column order (array order) and visibility. */
+    columnSettings?: EventTableColumnSetting[];
+    /** Widget config: adjudication state filter. */
+    adjudicatedFilter?: 'any' | 'yes' | 'no';
+    /** Widget config: alarm status filter (e.g. ['Gamma','Neutron']). */
+    statusFilter?: string[];
+    /** Widget config: ISO date range for the fetch window. */
+    dateRange?: { start?: string; end?: string };
+    /** Extra per-row actions (e.g. widget adjudicate button). */
+    extraRowActions?: (row: EventTableData) => React.ReactNode[];
+    /** Container height; the original pages use the default 800. */
+    tableHeight?: number | string;
 }
 
 
@@ -68,7 +85,14 @@ export default function EventTable({
                                        viewLane = false,
                                        viewAdjudicated = false,
                                        laneMap,
-                                       currentLane
+                                       currentLane,
+                                       laneFilter,
+                                       columnSettings,
+                                       adjudicatedFilter,
+                                       statusFilter,
+                                       dateRange,
+                                       extraRowActions,
+                                       tableHeight = 800,
                                    }: TableProps) {
 
     const nodes = useSelector(selectNodes);
@@ -89,7 +113,18 @@ export default function EventTable({
 
     const { t } = useLanguage();
     const stableLaneMap = useMemo(() => convertToMap(laneMap), [laneMap]);
-    const adjudicationMap: AdjudicationByOccupancy = useAdjudicationMap(stableLaneMap, tableMode === "alarmtable");
+
+    // Lane subset from widget config; null = no restriction.
+    const laneFilterSet = useMemo<Set<string> | null>(() => {
+        if (!laneFilter || laneFilter.mode === 'all') return null;
+        return new Set(resolveLaneSelection(laneFilter, stableLaneMap));
+    }, [laneFilter, stableLaneMap]);
+
+    const wantsAdjudicationColumns = useMemo(() =>
+        (columnSettings ?? []).some((c) => c.visible && (c.key === 'adjudicationGroup' || c.key === 'secondaryInspection')),
+        [columnSettings]);
+    const adjudicationMap: AdjudicationByOccupancy = useAdjudicationMap(
+        stableLaneMap, tableMode === "alarmtable" || wantsAdjudicationColumns);
     const currentPageRef = useRef(0);
     const locale = navigator.language || 'en-US';
 
@@ -213,9 +248,10 @@ export default function EventTable({
             field: 'Menu',
             headerName: '',
             type: 'actions',
-            minWidth: 50,
+            minWidth: extraRowActions ? 90 : 50,
             flex: 0.5,
             getActions: (params) => [
+                ...(extraRowActions ? (extraRowActions(params.row) as any[]) : []),
                 selectionModel.includes(params.row.id) ? (
                     <GridActionsCellItem
                         key="details"
@@ -228,6 +264,35 @@ export default function EventTable({
             ],
         },
     ];
+
+    // Widget-configured column order: settings order first, remaining base
+    // columns (e.g. the actions column) keep their relative order at the end.
+    const orderedColumns: GridColDef<EventTableData>[] = (() => {
+        if (!columnSettings || columnSettings.length === 0) return columns;
+        const byField = new Map(columns.map((c) => [c.field, c]));
+        const ordered: GridColDef<EventTableData>[] = [];
+        for (const setting of columnSettings) {
+            const col = byField.get(setting.key);
+            if (col) {
+                ordered.push(col);
+                byField.delete(setting.key);
+            }
+        }
+        for (const col of columns) {
+            if (byField.has(col.field)) ordered.push(col);
+        }
+        return ordered;
+    })();
+
+    const columnSettingsKey = columnSettings ? JSON.stringify(columnSettings) : null;
+    const [columnVisibilityModel, setColumnVisibilityModel] = useState<GridColumnVisibilityModel>({});
+    useEffect(() => {
+        if (!columnSettings) return;
+        const model: GridColumnVisibilityModel = {};
+        for (const s of columnSettings) model[s.key] = s.visible;
+        setColumnVisibilityModel(model);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [columnSettingsKey]);
 
     const handlePaginationChange = useCallback((model: { page: number; pageSize: number }) => {
         if (model.page === 0 && paginationModel.page !== 0) {
@@ -255,8 +320,10 @@ export default function EventTable({
             }
 
         } else {
-            stableLaneMap.forEach((entry: LaneMapEntry) => {
+            stableLaneMap.forEach((entry: LaneMapEntry, laneId: string) => {
                 if (entry.parentNode.id !== node.id)
+                    return;
+                if (laneFilterSet && !laneFilterSet.has(laneId))
                     return;
 
                 const occStreams = entry.datastreams.filter((ds: typeof DataStream) => isOccupancyDataStream(ds));
@@ -267,7 +334,7 @@ export default function EventTable({
             });
         }
         return datastreamIds;
-    }, [stableLaneMap, currentLane, tableMode]);
+    }, [stableLaneMap, currentLane, tableMode, laneFilterSet]);
 
     const enrichRowWithAdjudication = useCallback((row: EventTableData): EventTableData => {
         const occId = row.occupancyObsId;
@@ -300,18 +367,21 @@ export default function EventTable({
     }, [alarmFilter]);
 
     const filterRows = useCallback((rows: EventTableData[]): EventTableData[] => {
+        const laneScoped = laneFilterSet
+            ? rows.filter((row) => laneFilterSet.has(row.laneId))
+            : rows;
         switch (tableMode) {
             case 'alarmtable':
-                return rows.map(enrichRowWithAdjudication).filter(passesAlarmFilter);
+                return laneScoped.map(enrichRowWithAdjudication).filter(passesAlarmFilter);
             case 'lanelog':
                 // Only show events for the current lane
-                return rows.filter(row => row.laneId === currentLane);
+                return laneScoped.filter(row => row.laneId === currentLane);
             case 'eventlog':
             // shows all events
             default:
-                return rows;
+                return wantsAdjudicationColumns ? laneScoped.map(enrichRowWithAdjudication) : laneScoped;
         }
-    }, [tableMode, currentLane, enrichRowWithAdjudication, passesAlarmFilter]);
+    }, [tableMode, currentLane, enrichRowWithAdjudication, passesAlarmFilter, laneFilterSet, wantsAdjudicationColumns]);
 
     useEffect(() => {
         if (adjudicatedEventId && tableMode === 'alarmtable') {
@@ -429,10 +499,12 @@ export default function EventTable({
             format: "application/om+json",
             dataStream: `${datastreamIds.join(",")}`,
         });
+        const countClauses: string[] = buildWidgetConfigClauses();
         if (tableMode === "alarmtable") {
             const alarmQuery = buildAlarmFilterQuery(alarmFilter);
-            if (alarmQuery) queryParams.set("filter", alarmQuery);
+            if (alarmQuery) countClauses.unshift(alarmQuery);
         }
+        if (countClauses.length > 0) queryParams.set("filter", countClauses.join(" AND "));
 //      `/observations/count?resultTime=../${pageLoadedTime}&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}${tableMode == "alarmtable" ? "&filter=gammaAlarm=true,neutronAlarm=true" : ""}`
         let fullUrl = endpoint + "/observations/count?" + queryParams;
 
@@ -527,70 +599,44 @@ export default function EventTable({
         currentPageRef.current = paginationModel.page;
     }, [paginationModel.page]);
 
-    useEffect(() => {
-        if (stableLaneMap.size === 0) return;
+    // Live occupancy rows via the shared LaneStreamRegistry: one dispatcher per
+    // lane, released on unmount (the old direct subscribe/connect stacked
+    // handlers on every filter change and never disconnected).
+    const liveSelection = useMemo<LaneSelection>(() => {
+        if (tableMode === 'lanelog' && currentLane) return {mode: 'include', lanes: [currentLane]};
+        return laneFilter ?? {mode: 'all'};
+    }, [tableMode, currentLane, laneFilter]);
 
-        const connectedSources: typeof ConSysApi[] = [];
+    useLaneStreams(liveSelection, ['occRT'], (laneId, _stream, msg) => {
+        try {
+            if (currentPageRef.current !== 0)
+                return;
 
-        for (const entry of stableLaneMap.values()) {
-            const occStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
+            const entry = stableLaneMap.get(laneId);
+            if (!entry) return;
 
-            if (!occStream) {
-                continue;
+            const obsData = msg.values?.[0]?.data || msg;
+            const event = eventFromObservation(obsData, entry, true);
+
+            const occStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
+            if (occStream) {
+                event.setDataStreamId(occStream.properties.id);
             }
 
-            const occSource = entry.datasourcesRealtime?.find((ds: any) => {
-                const parts = ds.properties.resource?.split("/");
-                return parts && parts[2] === occStream.properties.id;
+            const filtered = filterRows([event]);
+            if (filtered.length === 0) return;
+
+            setRowCount(prev => prev + 1);
+
+            setFilteredTableData(prev => {
+                const exists = prev.some(row => row.id === event.id);
+                if (exists) return prev;
+                return [event, ...prev].slice(0, pageSize);
             });
-
-            if (!occSource) {
-                continue;
-            }
-
-            const handleMessage = (msg: any) => {
-                try {
-                    if (currentPageRef.current !== 0)
-                        return;
-
-                    const obsData = msg.values?.[0]?.data || msg;
-                    const event = eventFromObservation(obsData, entry, true);
-
-                    const dsObsPath = occSource.properties.resource;
-                    if (dsObsPath) {
-                        event.setDataStreamId(dsObsPath.split("/")[2]);
-                    }
-
-                    const filtered = filterRows([event]);
-                    if (filtered.length === 0) return;
-
-                    setRowCount(prev => prev + 1);
-
-                    if (currentPageRef.current  === 0) {
-
-                        setFilteredTableData(prev => {
-                            const exists = prev.some(row => row.id === event.id);
-                            if (exists) return prev;
-                            return [event, ...prev].slice(0, pageSize);
-                        });
-                    }
-                } catch (err) {
-                    console.error("Error creating event from observation:", err);
-                }
-            };
-
-
-            occSource.subscribe(handleMessage, [EventType.DATA]);
-
-            try {
-                occSource.connect();
-                connectedSources.push(occSource);
-            } catch (err) {
-                console.error("Error connecting occSource:", err);
-            }
+        } catch (err) {
+            console.error("Error creating event from observation:", err);
         }
-
-    }, [stableLaneMap, filterRows]);
+    }, stableLaneMap.size > 0);
 
     useEffect(() => {
         if (!selectedRowId)
@@ -619,6 +665,8 @@ export default function EventTable({
     };
 
     const getColumnList = () => {
+        if (columnSettings) return columnSettings.map((c) => c.key as string);
+
         const excludeFields: string[] = [];
         if (!viewAdjudicated) excludeFields.push('adjudicatedIds');
         if (tableMode !== 'alarmtable') {
@@ -700,6 +748,11 @@ export default function EventTable({
             }
         }
 
+        // Widget-configured date window (grid filters take precedence above).
+        if (dateRange?.start && dateRange?.end) return `${dateRange.start}/${dateRange.end}`;
+        if (dateRange?.start) return `${dateRange.start}/${pageLoadedTime}`;
+        if (dateRange?.end) return `../${dateRange.end}`;
+
         return `../${pageLoadedTime}`;
     }
 
@@ -735,9 +788,24 @@ export default function EventTable({
         return clauses.join(" AND ");
     };
 
+    /** Server-side filter clauses from widget config (status + adjudicated). */
+    const buildWidgetConfigClauses = (): string[] => {
+        const clauses: string[] = [];
+        if (statusFilter && statusFilter.length > 0 && statusFilter.length < 4) {
+            const clause = buildAlarmTypeClause(new Set(statusFilter as AlarmType[]));
+            if (clause) clauses.push(clause);
+        }
+        if (adjudicatedFilter === 'yes') clauses.push('adjudicatedIdsCount>0');
+        if (adjudicatedFilter === 'no') clauses.push('adjudicatedIdsCount=0');
+        return clauses;
+    };
+
     const buildFilterQuery = (filterModel: GridFilterModel, tableMode: string): string => {
+        const widgetClauses = buildWidgetConfigClauses();
+
         if (tableMode === 'alarmtable') {
-            return buildAlarmFilterQuery(alarmFilter);
+            const base = buildAlarmFilterQuery(alarmFilter);
+            return [base, ...widgetClauses].filter(Boolean).join(" AND ");
         }
 
         let filter: string | null = null;
@@ -767,7 +835,7 @@ export default function EventTable({
             }
         }
 
-        return filter ?? '';
+        return [filter, ...widgetClauses].filter(Boolean).join(" AND ");
     }
 
     const handleFilterChange = useCallback((model: GridFilterModel) => {
@@ -776,7 +844,7 @@ export default function EventTable({
     }, []);
 
     return (
-        <Box sx={{ height: 800, width: '100%' }}>
+        <Box sx={{ height: tableHeight, width: '100%' }}>
             <DataGrid
                 rows={filteredTableData}
                 paginationMode="server"
@@ -787,7 +855,11 @@ export default function EventTable({
                 paginationModel={paginationModel}
                 onPaginationModelChange={handlePaginationChange}
                 rowCount={rowCount}
-                columns={columns}
+                columns={orderedColumns}
+                {...(columnSettings ? {
+                    columnVisibilityModel,
+                    onColumnVisibilityModelChange: setColumnVisibilityModel,
+                } : {})}
                 onRowClick={handleRowSelection}
                 onRowDoubleClick={handleRowDoubleClick}
                 rowSelectionModel={selectionModel}

@@ -1,7 +1,9 @@
 "use client"
 
-import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
-import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
+import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import {LaneSelection} from "@/lib/layout/PageConfigTypes";
+import {useLaneStreams} from "@/lib/data/oscar/streams/useLaneStreams";
 import PointMarkerLayer from "osh-js/source/core/ui/layer/PointMarkerLayer";
 import LeafletView from "osh-js/source/core/ui/view/map/LeafletView";
 import {useSelector} from "react-redux";
@@ -29,8 +31,17 @@ import DataStreamFilter from "osh-js/source/core/consysapi/datastream/DataStream
 const ALARM_COLOR = '#d32f2f';
 const NORMAL_COLOR = '#2e7d32';
 
-export default function MapComponent() {
-    const mapcontainer: string = "mapcontainer";
+interface MapComponentProps {
+    /** Widget config: restrict markers/streams to a lane subset. */
+    laneFilter?: LaneSelection;
+    /** Unique DOM id when several maps are on one page (default keeps the original id). */
+    containerId?: string;
+    /** Container height; the full map page uses the default 100vh. */
+    height?: string | number;
+}
+
+export default function MapComponent({laneFilter, containerId, height = '100vh'}: MapComponentProps) {
+    const mapcontainer: string = containerId ?? "mapcontainer";
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
     const leafletViewRef = useRef<typeof LeafletView | null>(null);
     const {laneMapRef} = useContext(DataSourceContext);
@@ -39,9 +50,14 @@ export default function MapComponent() {
     const nodes = useSelector((state: RootState) => selectNodes(state));
 
     const [isInit, setIsInit] = useState(false);
-    const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
     const [locationList, setLocationList] = useState<LaneWithLocation[] | null>(null);
     const [dsLocations, setDsLocations] = useState([]);
+
+    const laneSelection = useMemo<LaneSelection>(() => laneFilter ?? {mode: 'all'}, [JSON.stringify(laneFilter)]);
+    const laneFilterSet = useMemo<Set<string> | null>(() => {
+        if (laneSelection.mode === 'all') return null;
+        return new Set(laneSelection.lanes);
+    }, [laneSelection]);
 
     // Leaflet circleMarkers keyed by lane name, updated directly on alarm changes
     const markersByLane = useRef<Map<string, L.CircleMarker>>(new Map());
@@ -50,7 +66,6 @@ export default function MapComponent() {
     const markerLatLngs = useRef<L.LatLng[]>([]);
     const fitBoundsTimer = useRef<NodeJS.Timeout | null>(null);
     const hasSiteDiagram = useRef(false);
-    const subscriptionsSetUp = useRef(false);
 
     const isLaneInAlarm = (laneName: string) =>
         (gammaAlarmByLane.current.get(laneName) ?? false) ||
@@ -77,6 +92,7 @@ export default function MapComponent() {
 
             laneMapToMap.forEach((value, key) => {
                 if (laneMapToMap.has(key)) {
+                    if (laneFilterSet && !laneFilterSet.has(key)) return;
                     let ds: LaneMapEntry = laneMapToMap.get(key);
 
                     dsLocations.map((dss) => {
@@ -96,41 +112,21 @@ export default function MapComponent() {
             setLocationList(locations);
         }
 
-    }, [laneMap, dsLocations]);
+    }, [laneMap, dsLocations, laneFilterSet]);
 
     const datasourceSetup = useCallback(async () => {
-        // @ts-ignore
-        let laneDSMap = new Map<string, LaneDSColl>();
         let locationDs: any[] = [];
 
         for (let [laneid, lane] of laneMapRef.current.entries()) {
-            laneDSMap.set(laneid, new LaneDSColl());
+            if (laneFilterSet && !laneFilterSet.has(laneid)) continue;
             for (let ds of lane.datastreams) {
-
-                let idx: number = lane.datastreams.indexOf(ds);
-                let rtDS = lane.datasourcesRealtime[idx];
-                let batchDS = lane.datasourcesBatch[idx];
-                let laneDSColl = laneDSMap.get(laneid);
-
                 if (isLocationDataStream(ds)) {
-                    laneDSColl.addDS('locBatch', batchDS);
                     locationDs.push(ds);
                 }
-
-                if (isGammaDataStream(ds)) {
-                    laneDSColl.addDS('gammaRT', rtDS);
-                }
-                if (isNeutronDataStream(ds)) {
-                    laneDSColl.addDS('neutronRT', rtDS);
-                }
-                if (isTamperDataStream(ds)) {
-                    laneDSColl.addDS('tamperRT', rtDS);
-                }
             }
-            setDsLocations(locationDs);
-            setDataSourcesByLane(laneDSMap);
         }
-    }, [laneMapRef.current]);
+        setDsLocations(locationDs);
+    }, [laneMapRef, laneFilterSet]);
 
     const updateMarkerColor = (laneName: string) => {
         const marker = markersByLane.current.get(laneName);
@@ -139,63 +135,42 @@ export default function MapComponent() {
         }
     };
 
-    const addSubscriptionCallbacks = useCallback(() => {
-        for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
-            const msgLaneName = laneName;
-
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('connectionRT', (message: any) => {
-                let connection = message.values[0].data.connection;
-                updateLocationList(msgLaneName, connection);
-            });
-
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
-                let alarmstate = message.values[0].data.alarmState;
-                gammaAlarmByLane.current.set(msgLaneName, alarmstate === 'Alarm');
-                updateMarkerColor(msgLaneName);
-                updateLocationList(msgLaneName, alarmstate);
-            });
-
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
-                let alarmstate = message.values[0].data.alarmState;
-                neutronAlarmByLane.current.set(msgLaneName, alarmstate === 'Alarm');
-                updateMarkerColor(msgLaneName);
-                updateLocationList(msgLaneName, alarmstate);
-            });
-
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
-                let tamperState = message.values[0].data.tamperStatus;
+    // Realtime alarm/connection status via the shared LaneStreamRegistry.
+    useLaneStreams(laneSelection, ['connectionRT', 'gammaRT', 'neutronRT', 'tamperRT'], (laneName, stream, message) => {
+        switch (stream) {
+            case 'connectionRT': {
+                const connection = message.values[0].data.connection;
+                updateLocationList(laneName, connection);
+                break;
+            }
+            case 'gammaRT': {
+                const alarmstate = message.values[0].data.alarmState;
+                gammaAlarmByLane.current.set(laneName, alarmstate === 'Alarm');
+                updateMarkerColor(laneName);
+                updateLocationList(laneName, alarmstate);
+                break;
+            }
+            case 'neutronRT': {
+                const alarmstate = message.values[0].data.alarmState;
+                neutronAlarmByLane.current.set(laneName, alarmstate === 'Alarm');
+                updateMarkerColor(laneName);
+                updateLocationList(laneName, alarmstate);
+                break;
+            }
+            case 'tamperRT': {
+                const tamperState = message.values[0].data.tamperStatus;
                 if (tamperState) {
-                    updateLocationList(msgLaneName, 'Tamper');
+                    updateLocationList(laneName, 'Tamper');
                 }
-            });
-
-            laneDSColl.addConnectToALLDSMatchingName("gammaRT");
-            laneDSColl.addConnectToALLDSMatchingName("neutronRT");
-            laneDSColl.addConnectToALLDSMatchingName("tamperRT");
-            laneDSColl.addConnectToALLDSMatchingName("connectionRT");
-        }
-
-        return ()=> {
-            for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
-                laneDSColl.addDisconnectToALLDSMatchingName("gammaRT");
-                laneDSColl.addDisconnectToALLDSMatchingName("neutronRT");
-                laneDSColl.addDisconnectToALLDSMatchingName("tamperRT");
-                laneDSColl.addDisconnectToALLDSMatchingName("connectionRT");
+                break;
             }
         }
-    }, [dataSourcesByLane]);
-
-    useEffect(() => {
-        if (locationList !== null && locationList.length > 0 && dataSourcesByLane.size > 0 && !subscriptionsSetUp.current) {
-            addSubscriptionCallbacks();
-            subscriptionsSetUp.current = true;
-        }
-    }, [dataSourcesByLane, locationList]);
+    });
 
     useEffect(() => {
         if(!isInit)
             datasourceSetup();
-    }, [isInit]);
+    }, [isInit, datasourceSetup]);
 
     useEffect(() => {
         if (!leafletViewRef.current && !isInit) {
@@ -213,9 +188,24 @@ export default function MapComponent() {
             if(isInit && leafletViewRef.current != null){
                 leafletViewRef.current.destroy();
                 leafletViewRef.current = undefined;
+                markersByLane.current.clear();
+                markerLatLngs.current = [];
+                hasSiteDiagram.current = false;
             }
         }
     }, [isInit]);
+
+    // Keep Leaflet tiles in sync with container size (widget resize/drag).
+    useEffect(() => {
+        if (!isInit) return;
+        const el = document.getElementById(mapcontainer);
+        if (!el || typeof ResizeObserver === 'undefined') return;
+        const observer = new ResizeObserver(() => {
+            leafletViewRef.current?.map?.invalidateSize();
+        });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [isInit, mapcontainer]);
 
     useEffect(() => {
         if (locationList && locationList.length > 0 && isInit) {
@@ -370,8 +360,8 @@ export default function MapComponent() {
 
     return (
         <Box
-            id="mapcontainer"
-            sx={{width: '100%', height: '100vh'}}
+            id={mapcontainer}
+            sx={{width: '100%', height: height}}
         />
     );
 }

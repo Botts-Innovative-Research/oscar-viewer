@@ -8,12 +8,13 @@ import {
     isConnectionDataStream,
     isGammaDataStream,
     isNeutronDataStream,
+    isOccupancyDataStream,
     isTamperDataStream,
     isThresholdDataStream,
 } from "@/lib/data/oscar/Utilities";
 import {LaneSelection} from "@/lib/layout/PageConfigTypes";
 
-export type LaneStreamName = 'connectionRT' | 'gammaRT' | 'neutronRT' | 'tamperRT' | 'gammaTrshldRT';
+export type LaneStreamName = 'connectionRT' | 'gammaRT' | 'neutronRT' | 'tamperRT' | 'gammaTrshldRT' | 'occRT';
 
 export type LaneStreamHandler = (laneId: string, stream: LaneStreamName, message: any) => void;
 
@@ -40,7 +41,7 @@ interface LaneEntry {
     channels: Map<LaneStreamName, StreamChannel>;
 }
 
-const ALL_STREAM_NAMES: LaneStreamName[] = ['connectionRT', 'gammaRT', 'neutronRT', 'tamperRT', 'gammaTrshldRT'];
+const ALL_STREAM_NAMES: LaneStreamName[] = ['connectionRT', 'gammaRT', 'neutronRT', 'tamperRT', 'gammaTrshldRT', 'occRT'];
 
 class LaneStreamRegistryImpl {
     private lanes = new Map<string, LaneEntry>();
@@ -61,6 +62,7 @@ class LaneStreamRegistryImpl {
             if (isTamperDataStream(ds)) coll.addDS('tamperRT', rtDS);
             if (isConnectionDataStream(ds)) coll.addDS('connectionRT', rtDS);
             if (isThresholdDataStream(ds)) coll.addDS('gammaTrshldRT', rtDS);
+            if (isOccupancyDataStream(ds)) coll.addDS('occRT', rtDS);
         });
         return coll;
     }
