@@ -18,17 +18,10 @@ describe('Lane View Page (E2E)', () => {
                     expect(duration).to.be.lessThan(5000);
                 });
 
-            // gamma chart
-            cy.get('[id="chart-view-gamma"]', {timeout: 10000})
-                .should('be.visible')
-                .then(() => {
-                    const duration = Date.now() - start;
-                    expect(duration).to.be.lessThan(5000);
-                });
-
-            // neutron chart
-            cy.get('[id="chart-view-neutron"]', {timeout: 10000})
-                .should('be.visible')
+            // gamma + neutron chart widgets
+            cy.get('[data-testid="widget-chart"] canvas', {timeout: 10000})
+                .should('have.length.at.least', 2)
+                .and('be.visible')
                 .then(() => {
                     const duration = Date.now() - start;
                     expect(duration).to.be.lessThan(5000);

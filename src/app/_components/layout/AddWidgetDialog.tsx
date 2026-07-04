@@ -55,7 +55,8 @@ export default function AddWidgetDialog({pageId, open, onClose}: AddWidgetDialog
                         return (
                             <Grid item xs={6} sm={4} md={3} key={type}>
                                 <Card variant="outlined" sx={{height: '100%'}}>
-                                    <CardActionArea onClick={() => handleAdd(type)} sx={{height: '100%'}}>
+                                    <CardActionArea onClick={() => handleAdd(type)} sx={{height: '100%'}}
+                                                    data-testid={`add-widget-${type}`}>
                                         <CardContent>
                                             <Stack alignItems="center" spacing={1}>
                                                 {entry.icon}

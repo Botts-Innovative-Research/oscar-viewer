@@ -361,6 +361,7 @@ export default function MapComponent({laneFilter, containerId, height = '100vh'}
     return (
         <Box
             id={mapcontainer}
+            className="oscar-map-container"
             sx={{width: '100%', height: height}}
         />
     );

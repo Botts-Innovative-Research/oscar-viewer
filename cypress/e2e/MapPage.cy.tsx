@@ -6,7 +6,7 @@ describe('Map View Page (E2E)', () => {
 
     it.skip('selecting point marker displays popup with lanename, status, and button', () => {
         //todo
-        cy.get('[id="mapcontainer"]')
+        cy.get('.oscar-map-container')
             .should('be.visible');
 
         // find the pointmarker and click

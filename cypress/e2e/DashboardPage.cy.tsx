@@ -18,8 +18,8 @@ describe('Dashboard', () => {
                 });
 
             cy.get('body').then(($body) => {
-                if ($body.find('[id="mapcontainer"]').is(':visible')) {
-                    cy.get('[id="mapcontainer"]').should('be.visible');
+                if ($body.find('.oscar-map-container').is(':visible')) {
+                    cy.get('.oscar-map-container').should('be.visible');
                 } else {
                     // No map on this deployment — alarm table being present is sufficient
                     cy.get('.MuiDataGrid-root').should('be.visible');
