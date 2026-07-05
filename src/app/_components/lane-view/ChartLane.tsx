@@ -141,6 +141,16 @@ export const ScrollingBarChartCore = forwardRef<ScrollingChartHandle, ScrollingB
             };
         }, []);
 
+        // Chart config is baked at creation; apply in-place title changes
+        // (e.g. language switch) without recreating the instance.
+        useEffect(() => {
+            const chart = chartRef.current;
+            if (!chart) return;
+            if (chart.options.plugins?.title) chart.options.plugins.title.text = title;
+            chart.data.datasets[0].label = title;
+            chart.update('none');
+        }, [title]);
+
         const renderChart = useCallback(() => {
             const chart = chartRef.current;
             if (!chart) return;

@@ -56,6 +56,7 @@ export default function ChartWidget({page, widget}: WidgetProps) {
 
     return (
         <ScrollingBarChartCore
+            key={lane}
             ref={coreRef}
             title={`${isGamma ? t('gammaChart') : t('neutronChart')} — ${lane}`}
             barColor={isGamma ? '#f44336' : '#29b6f6'}
