@@ -10,7 +10,7 @@
  * datasource objects.
  */
 
-export const PAGE_CONFIG_SCHEMA_VERSION = 1;
+export const PAGE_CONFIG_SCHEMA_VERSION = 2;
 
 export type WidgetType =
     | 'system-status'
@@ -28,7 +28,12 @@ export type RGLBreakpoint = 'lg' | 'md' | 'sm';
 
 export const RGL_BREAKPOINTS: Record<RGLBreakpoint, number> = {lg: 1200, md: 900, sm: 0};
 export const RGL_COLS: Record<RGLBreakpoint, number> = {lg: 12, md: 8, sm: 4};
-export const RGL_ROW_HEIGHT = 40;
+/**
+ * Fine-grained rows: with the 8px margin each resize step is 16px. Schema v1
+ * used rowHeight 40 (48px steps); v1 row units are migrated x3, which keeps
+ * pixel heights identical because 48 = 3 x 16.
+ */
+export const RGL_ROW_HEIGHT = 8;
 
 /** RGL-native layout entry; `i` is the WidgetInstance id. */
 export interface LayoutItem {
@@ -193,18 +198,18 @@ export const KNOWN_WIDGET_TYPES: WidgetType[] = [
     'chart', 'national-stats', 'lane-detail-status', 'status-table', 'quick-view'
 ];
 
-/** Default/min widget sizes in grid units (lg 12-col basis, row height 40px). */
+/** Default/min widget sizes in grid units (lg 12-col basis, 8px rows / 16px steps). */
 export const WIDGET_SIZES: Record<WidgetType, { defaultSize: { w: number, h: number }, minSize: { w: number, h: number } }> = {
-    'system-status': {defaultSize: {w: 8, h: 5}, minSize: {w: 2, h: 2}},
-    'map': {defaultSize: {w: 6, h: 8}, minSize: {w: 3, h: 4}},
-    'event-table': {defaultSize: {w: 12, h: 8}, minSize: {w: 4, h: 5}},
-    'adjudication-table': {defaultSize: {w: 12, h: 8}, minSize: {w: 4, h: 5}},
-    'video': {defaultSize: {w: 4, h: 7}, minSize: {w: 2, h: 4}},
-    'chart': {defaultSize: {w: 6, h: 5}, minSize: {w: 3, h: 3}},
-    'national-stats': {defaultSize: {w: 12, h: 9}, minSize: {w: 6, h: 5}},
-    'lane-detail-status': {defaultSize: {w: 12, h: 2}, minSize: {w: 4, h: 2}},
-    'status-table': {defaultSize: {w: 12, h: 8}, minSize: {w: 4, h: 4}},
-    'quick-view': {defaultSize: {w: 4, h: 13}, minSize: {w: 3, h: 6}},
+    'system-status': {defaultSize: {w: 8, h: 15}, minSize: {w: 2, h: 7}},
+    'map': {defaultSize: {w: 6, h: 24}, minSize: {w: 3, h: 12}},
+    'event-table': {defaultSize: {w: 12, h: 24}, minSize: {w: 4, h: 15}},
+    'adjudication-table': {defaultSize: {w: 12, h: 24}, minSize: {w: 4, h: 15}},
+    'video': {defaultSize: {w: 4, h: 21}, minSize: {w: 2, h: 12}},
+    'chart': {defaultSize: {w: 6, h: 15}, minSize: {w: 3, h: 9}},
+    'national-stats': {defaultSize: {w: 12, h: 27}, minSize: {w: 6, h: 15}},
+    'lane-detail-status': {defaultSize: {w: 12, h: 6}, minSize: {w: 4, h: 6}},
+    'status-table': {defaultSize: {w: 12, h: 24}, minSize: {w: 4, h: 12}},
+    'quick-view': {defaultSize: {w: 4, h: 39}, minSize: {w: 3, h: 18}},
 };
 
 export const DEFAULT_EVENT_TABLE_COLUMNS: EventTableColumnSetting[] = [

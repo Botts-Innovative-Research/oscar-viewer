@@ -69,19 +69,19 @@ export function buildDefaultPages(): PageConfig[] {
         widgets: [dashStatus, dashAlarms, dashQuickView],
         layouts: {
             lg: [
-                item(dashStatus.id, 'system-status', 0, 0, 8, 5),
-                item(dashAlarms.id, 'adjudication-table', 0, 5, 8, 8),
-                item(dashQuickView.id, 'quick-view', 8, 0, 4, 13),
+                item(dashStatus.id, 'system-status', 0, 0, 8, 15),
+                item(dashAlarms.id, 'adjudication-table', 0, 15, 8, 24),
+                item(dashQuickView.id, 'quick-view', 8, 0, 4, 39),
             ],
             md: stacked('md', [
-                {i: dashStatus.id, type: 'system-status', h: 5},
-                {i: dashAlarms.id, type: 'adjudication-table', h: 8},
-                {i: dashQuickView.id, type: 'quick-view', h: 8},
+                {i: dashStatus.id, type: 'system-status', h: 15},
+                {i: dashAlarms.id, type: 'adjudication-table', h: 24},
+                {i: dashQuickView.id, type: 'quick-view', h: 24},
             ]),
             sm: stacked('sm', [
-                {i: dashStatus.id, type: 'system-status', h: 5},
-                {i: dashAlarms.id, type: 'adjudication-table', h: 8},
-                {i: dashQuickView.id, type: 'quick-view', h: 8},
+                {i: dashStatus.id, type: 'system-status', h: 15},
+                {i: dashAlarms.id, type: 'adjudication-table', h: 24},
+                {i: dashQuickView.id, type: 'quick-view', h: 24},
             ]),
         },
     };
@@ -110,9 +110,9 @@ export function buildDefaultPages(): PageConfig[] {
         showInNav: true,
         widgets: [eventTable],
         layouts: {
-            lg: [item(eventTable.id, 'event-table', 0, 0, 12, 14)],
-            md: [item(eventTable.id, 'event-table', 0, 0, 8, 14)],
-            sm: [item(eventTable.id, 'event-table', 0, 0, 4, 14)],
+            lg: [item(eventTable.id, 'event-table', 0, 0, 12, 42)],
+            md: [item(eventTable.id, 'event-table', 0, 0, 8, 42)],
+            sm: [item(eventTable.id, 'event-table', 0, 0, 4, 42)],
         },
     };
 
@@ -126,9 +126,9 @@ export function buildDefaultPages(): PageConfig[] {
         showInNav: true,
         widgets: [mapWidget],
         layouts: {
-            lg: [item(mapWidget.id, 'map', 0, 0, 12, 14)],
-            md: [item(mapWidget.id, 'map', 0, 0, 8, 14)],
-            sm: [item(mapWidget.id, 'map', 0, 0, 4, 12)],
+            lg: [item(mapWidget.id, 'map', 0, 0, 12, 42)],
+            md: [item(mapWidget.id, 'map', 0, 0, 8, 42)],
+            sm: [item(mapWidget.id, 'map', 0, 0, 4, 36)],
         },
     };
 
@@ -142,9 +142,9 @@ export function buildDefaultPages(): PageConfig[] {
         showInNav: true,
         widgets: [nationalStats],
         layouts: {
-            lg: [item(nationalStats.id, 'national-stats', 0, 0, 12, 14)],
-            md: [item(nationalStats.id, 'national-stats', 0, 0, 8, 14)],
-            sm: [item(nationalStats.id, 'national-stats', 0, 0, 4, 14)],
+            lg: [item(nationalStats.id, 'national-stats', 0, 0, 12, 42)],
+            md: [item(nationalStats.id, 'national-stats', 0, 0, 8, 42)],
+            sm: [item(nationalStats.id, 'national-stats', 0, 0, 4, 42)],
         },
     };
 
@@ -170,25 +170,25 @@ export function buildDefaultPages(): PageConfig[] {
         widgets: [laneStatus, laneVideo, laneGamma, laneNeutron, laneTable],
         layouts: {
             lg: [
-                item(laneStatus.id, 'lane-detail-status', 0, 0, 12, 2),
-                item(laneVideo.id, 'video', 0, 2, 6, 8),
-                item(laneGamma.id, 'chart', 6, 2, 6, 4),
-                item(laneNeutron.id, 'chart', 6, 6, 6, 4),
-                item(laneTable.id, 'status-table', 0, 10, 12, 8),
+                item(laneStatus.id, 'lane-detail-status', 0, 0, 12, 6),
+                item(laneVideo.id, 'video', 0, 6, 6, 24),
+                item(laneGamma.id, 'chart', 6, 6, 6, 12),
+                item(laneNeutron.id, 'chart', 6, 18, 6, 12),
+                item(laneTable.id, 'status-table', 0, 30, 12, 24),
             ],
             md: stacked('md', [
-                {i: laneStatus.id, type: 'lane-detail-status', h: 2},
-                {i: laneVideo.id, type: 'video', h: 8},
-                {i: laneGamma.id, type: 'chart', h: 4},
-                {i: laneNeutron.id, type: 'chart', h: 4},
-                {i: laneTable.id, type: 'status-table', h: 8},
+                {i: laneStatus.id, type: 'lane-detail-status', h: 6},
+                {i: laneVideo.id, type: 'video', h: 24},
+                {i: laneGamma.id, type: 'chart', h: 12},
+                {i: laneNeutron.id, type: 'chart', h: 12},
+                {i: laneTable.id, type: 'status-table', h: 24},
             ]),
             sm: stacked('sm', [
-                {i: laneStatus.id, type: 'lane-detail-status', h: 2},
-                {i: laneVideo.id, type: 'video', h: 6},
-                {i: laneGamma.id, type: 'chart', h: 4},
-                {i: laneNeutron.id, type: 'chart', h: 4},
-                {i: laneTable.id, type: 'status-table', h: 8},
+                {i: laneStatus.id, type: 'lane-detail-status', h: 6},
+                {i: laneVideo.id, type: 'video', h: 18},
+                {i: laneGamma.id, type: 'chart', h: 12},
+                {i: laneNeutron.id, type: 'chart', h: 12},
+                {i: laneTable.id, type: 'status-table', h: 24},
             ]),
         },
     };

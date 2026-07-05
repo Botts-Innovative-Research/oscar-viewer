@@ -134,8 +134,21 @@ export function validateExportedConfig(raw: unknown): ValidationResult {
  */
 export function migratePages(pages: PageConfig[], fromVersion: number): PageConfig[] {
     let migrated = pages;
-    // Future: if (fromVersion < 2) { migrated = migrated.map(v1ToV2); }
-    void fromVersion;
+    if (fromVersion < 2) {
+        // v2 changed rowHeight 40 -> 8 (48px -> 16px steps with the 8px
+        // margin). Tripling row units keeps pixel sizes identical: old height
+        // 48h - 8 == new height 16*(3h) - 8. Per-item minima are dropped —
+        // PageHost stamps them from WIDGET_SIZES at render.
+        migrated = migrated.map((page) => ({
+            ...page,
+            layouts: Object.fromEntries(
+                Object.entries(page.layouts ?? {}).map(([bp, items]) => [
+                    bp,
+                    (items ?? []).map(({i, x, y, w, h}: LayoutItem) => ({i, x, y: y * 3, w, h: h * 3})),
+                ])
+            ) as PageConfig['layouts'],
+        }));
+    }
     return migrated;
 }
 
