@@ -20,6 +20,7 @@ import {
     RGL_COLS,
     RGL_ROW_HEIGHT,
     RGLBreakpoint,
+    WIDGET_SIZES,
     WidgetInstance,
 } from "@/lib/layout/PageConfigTypes";
 import {
@@ -55,13 +56,28 @@ export default function PageHost({pageId}: PageHostProps) {
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
 
+    // Min sizes come from WIDGET_SIZES at render time (code is the source of
+    // truth) so tuning them in a release reaches layouts persisted earlier.
+    const widgetTypeById = useMemo(() => {
+        const map = new Map<string, WidgetInstance['type']>();
+        page?.widgets.forEach((w) => map.set(w.id, w.type));
+        return map;
+    }, [page?.widgets]);
+
     const layouts: ReactGridLayout.Layouts = useMemo(() => {
         const result: ReactGridLayout.Layouts = {};
         (['lg', 'md', 'sm'] as RGLBreakpoint[]).forEach((bp) => {
-            result[bp] = (page?.layouts?.[bp] ?? []).map((item: LayoutItem) => ({...item}));
+            const cols = RGL_COLS[bp];
+            result[bp] = (page?.layouts?.[bp] ?? []).map((item: LayoutItem) => {
+                const type = widgetTypeById.get(item.i);
+                const sizes = type ? WIDGET_SIZES[type] : undefined;
+                return sizes
+                    ? {...item, minW: Math.min(sizes.minSize.w, cols), minH: sizes.minSize.h}
+                    : {...item};
+            });
         });
         return result;
-    }, [page?.layouts]);
+    }, [page?.layouts, widgetTypeById]);
 
     if (!page) {
         return (

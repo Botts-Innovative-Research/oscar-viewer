@@ -195,7 +195,7 @@ export const KNOWN_WIDGET_TYPES: WidgetType[] = [
 
 /** Default/min widget sizes in grid units (lg 12-col basis, row height 40px). */
 export const WIDGET_SIZES: Record<WidgetType, { defaultSize: { w: number, h: number }, minSize: { w: number, h: number } }> = {
-    'system-status': {defaultSize: {w: 8, h: 5}, minSize: {w: 3, h: 3}},
+    'system-status': {defaultSize: {w: 8, h: 5}, minSize: {w: 2, h: 2}},
     'map': {defaultSize: {w: 6, h: 8}, minSize: {w: 3, h: 4}},
     'event-table': {defaultSize: {w: 12, h: 8}, minSize: {w: 4, h: 5}},
     'adjudication-table': {defaultSize: {w: 12, h: 8}, minSize: {w: 4, h: 5}},

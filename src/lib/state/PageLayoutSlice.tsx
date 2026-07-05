@@ -122,7 +122,8 @@ export const Slice = createSlice({
             const page = findPage(state, action.payload.pageId);
             if (!page) return;
             // Keep only entries for widgets that still exist, and strip RGL
-            // runtime fields we don't persist.
+            // runtime fields. Min sizes are NOT persisted — PageHost stamps
+            // them from WIDGET_SIZES on render so code stays the source of truth.
             const widgetIds = new Set(page.widgets.map((w) => w.id));
             const cleaned: Partial<Record<RGLBreakpoint, LayoutItem[]>> = {};
             (['lg', 'md', 'sm'] as RGLBreakpoint[]).forEach((bp) => {
@@ -130,7 +131,7 @@ export const Slice = createSlice({
                 if (!items) return;
                 cleaned[bp] = items
                     .filter((it) => widgetIds.has(it.i))
-                    .map(({i, x, y, w, h, minW, minH}) => ({i, x, y, w, h, minW, minH}));
+                    .map(({i, x, y, w, h}) => ({i, x, y, w, h}));
             });
             page.layouts = cleaned;
         },

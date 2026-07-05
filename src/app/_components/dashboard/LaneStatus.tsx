@@ -1,6 +1,6 @@
 "use client";
 
-import {Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Grid, Stack, Typography} from '@mui/material';
+import {Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Typography} from '@mui/material';
 import LaneStatusItem from './LaneStatusItem';
 import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {setCurrentLane} from '@/lib/state/LaneViewSlice';
@@ -257,29 +257,32 @@ export default function LaneStatus(props: { lanes?: LaneSelection, hideTitle?: b
             {!props.hideTitle && <Typography variant="h6">{t('laneStatus')}</Typography>}
             <>
                 <Box sx={{overflowY: "auto", maxHeight: props.hideTitle ? '100%' : 275, flex: 1}}>
-                    {(
-                        <Grid container columns={{sm: 12, md: 24, lg: 36, xl: 48}} spacing={1}>
-                            {statusList.map((item) => (
-                                <Grid key={item.id} item sm={8} md={8} lg={8} xl={6}>
-                                    <div onClick={() => handleLaneClick(item)}>
-                                        <LaneStatusItem
-                                            key={item.id}
-                                            id={item.id}
-                                            name={item.name}
-                                            parentNode={item.parentNode}
-                                            isOnline={item.isOnline}
-                                            isFault={item.isFault}
-                                            isTamper={item.isTamper}
-                                            isGammaAlarm={item.isGammaAlarm}
-                                            isNeutronAlarm={item.isNeutronAlarm}
-                                            isScanning={item.isScanning}
-                                            pulseCount={item.pulseCount}
-                                        />
-                                    </div>
-                                </Grid>
-                            ))}
-                        </Grid>
-                    )}
+                    {/* Container-driven grid: chips keep a readable minimum width and
+                        wrap to more rows as the widget narrows, instead of being
+                        compressed by viewport-based breakpoints. */}
+                    <Box sx={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                        gap: 1,
+                    }}>
+                        {statusList.map((item) => (
+                            <div key={item.id} onClick={() => handleLaneClick(item)}>
+                                <LaneStatusItem
+                                    key={item.id}
+                                    id={item.id}
+                                    name={item.name}
+                                    parentNode={item.parentNode}
+                                    isOnline={item.isOnline}
+                                    isFault={item.isFault}
+                                    isTamper={item.isTamper}
+                                    isGammaAlarm={item.isGammaAlarm}
+                                    isNeutronAlarm={item.isNeutronAlarm}
+                                    isScanning={item.isScanning}
+                                    pulseCount={item.pulseCount}
+                                />
+                            </div>
+                        ))}
+                    </Box>
                 </Box>
             </>
             <Dialog open={ackDialog !== null} onClose={() => setAckDialog(null)}>
