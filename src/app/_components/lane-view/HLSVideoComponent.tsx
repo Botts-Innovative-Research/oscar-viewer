@@ -28,6 +28,11 @@ export default function HLSVideoComponent({videoSource, selectedNode, height = "
 
 
             const hlsjsConfig = {
+                // Our bundler transpiles hls.js, so the stringified inline-worker
+                // bootstrap references helpers that don't exist in the worker scope
+                // (ReferenceError from blob: URL); hls.js then falls back to
+                // main-thread transmuxing anyway. Disable the worker explicitly.
+                enableWorker: false,
                 xhrSetup: function (xhr: XMLHttpRequest, url: string) {
                     xhr.setRequestHeader("Authorization", `Basic ${encoded}`);
                     xhr.setRequestHeader("Cache-Control", "no-cache");
