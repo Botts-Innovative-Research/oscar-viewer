@@ -1,21 +1,8 @@
 "use client"
 
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
-import { Box, Grid } from "@mui/material";
+import { Box } from "@mui/material";
 import Chart from "chart.js/auto";
-import { EventType } from "osh-js/source/core/event/EventType";
-import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
-import { useLanguage } from "@/app/contexts/LanguageContext";
-
-export class ChartInterceptProps {
-    laneName: string;
-    datasources: {
-        gamma: typeof ConSysApi,
-        neutron: typeof ConSysApi,
-        threshold: typeof ConSysApi
-    };
-    setChartReady: Function;
-}
 
 const WINDOW_MS = 30_000;
 // Render cadence — one bar per tick, regardless of how often the datasource publishes.
@@ -46,8 +33,8 @@ interface ScrollingBarChartCoreProps {
 
 /**
  * Chart rendering + fixed-cadence tick, decoupled from data delivery.
- * Values arrive through the imperative handle so the same chart serves both
- * the legacy direct-datasource path and registry-fed widgets.
+ * Values arrive through the imperative handle, so any registry-fed
+ * consumer can drive the chart without owning its render cadence.
  */
 export const ScrollingBarChartCore = forwardRef<ScrollingChartHandle, ScrollingBarChartCoreProps>(
     function ScrollingBarChartCore({ title, barColor, showThreshold = false, height = 250 }, ref) {
@@ -208,100 +195,3 @@ export const ScrollingBarChartCore = forwardRef<ScrollingChartHandle, ScrollingB
         );
     });
 
-interface ScrollingBarChartProps {
-    title: string;
-    barColor: string;
-    datasource: any;
-    thresholdDatasource?: any;
-    dataField: string;
-    showThreshold?: boolean;
-    height?: number | string;
-}
-
-export function ScrollingBarChart({ title, barColor, datasource, thresholdDatasource, dataField, showThreshold = false, height }: ScrollingBarChartProps) {
-    const coreRef = useRef<ScrollingChartHandle>(null);
-
-    // Subscribe to count datasource — only record the latest value here;
-    // the timer tick in the core owns all chart updates so cadence is fixed.
-    useEffect(() => {
-        if (!datasource) return;
-
-        const handler = (message: any) => {
-            const rec = message.values?.[0];
-            if (!rec) return;
-            const value = rec.data?.[dataField];
-            if (value == null) return;
-            coreRef.current?.pushValue(value);
-        };
-
-        datasource.subscribe(handler, [EventType.DATA]);
-        return () => {
-            try { datasource.unsubscribe(handler, [EventType.DATA]); } catch (_) {}
-        };
-    }, [datasource, dataField]);
-
-    // Subscribe to threshold datasource — store the value only;
-    // the next timer tick will pick it up and redraw.
-    useEffect(() => {
-        if (!thresholdDatasource || !showThreshold) return;
-
-        const handler = (message: any) => {
-            const rec = message.values?.[0];
-            if (!rec) return;
-            const val = rec.data?.threshold;
-            if (val != null) {
-                coreRef.current?.setThreshold(val);
-            }
-        };
-
-        thresholdDatasource.subscribe(handler, [EventType.DATA]);
-        return () => {
-            try { thresholdDatasource.unsubscribe(handler, [EventType.DATA]); } catch (_) {}
-        };
-    }, [thresholdDatasource, showThreshold]);
-
-    return (
-        <ScrollingBarChartCore
-            ref={coreRef}
-            title={title}
-            barColor={barColor}
-            showThreshold={showThreshold}
-            height={height}
-        />
-    );
-}
-
-export default function ChartLane({ laneName, datasources, setChartReady }: ChartInterceptProps) {
-    const { t } = useLanguage();
-    useEffect(() => {
-        if (datasources.gamma || datasources.neutron) {
-            setChartReady(true);
-        }
-    }, [datasources.gamma, datasources.neutron]);
-
-    return (
-        <Box display='flex' alignItems="center" width="100%">
-            <Grid container direction="row" marginTop={2} marginLeft={1} spacing={4}>
-                <Grid item xs>
-                    <ScrollingBarChart
-                        title={t('gammaChart')}
-                        barColor="#f44336"
-                        datasource={datasources.gamma}
-                        thresholdDatasource={datasources.threshold}
-                        dataField="gammaGrossCount"
-                        showThreshold={true}
-                    />
-                </Grid>
-                <Grid item xs>
-                    <ScrollingBarChart
-                        title={t('neutronChart')}
-                        barColor="#29b6f6"
-                        datasource={datasources.neutron}
-                        dataField="neutronGrossCount"
-                        showThreshold={false}
-                    />
-                </Grid>
-            </Grid>
-        </Box>
-    );
-}
