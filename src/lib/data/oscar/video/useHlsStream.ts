@@ -3,7 +3,7 @@
  * All Rights Reserved
  */
 
-import {useContext, useEffect, useMemo, useState} from "react";
+import {useCallback, useContext, useEffect, useMemo, useState} from "react";
 import {useSelector} from "react-redux";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
@@ -26,14 +26,8 @@ interface HlsEntry {
 
 const activeStreams = new Map<string, HlsEntry>();
 
-async function acquireHlsStream(node: INode, controlStreamId: string): Promise<string | null> {
-    let entry = activeStreams.get(controlStreamId);
-    if (!entry) {
-        entry = {count: 0};
-        activeStreams.set(controlStreamId, entry);
-    }
-    entry.count++;
-
+/** Send the startStream command and return the bucket-relative stream path (idempotent server-side). */
+async function sendStartCommand(node: INode, controlStreamId: string): Promise<string | null> {
     const response = await sendCommand(node, controlStreamId, generateHLSVideoCommandJSON(true));
     if (!response.ok) {
         console.error("Failed to start HLS stream", controlStreamId);
@@ -41,6 +35,16 @@ async function acquireHlsStream(node: INode, controlStreamId: string): Promise<s
     }
     const responseJson = await response.json();
     return responseJson?.results?.[0]?.data?.streamPath ?? null;
+}
+
+async function acquireHlsStream(node: INode, controlStreamId: string): Promise<string | null> {
+    let entry = activeStreams.get(controlStreamId);
+    if (!entry) {
+        entry = {count: 0};
+        activeStreams.set(controlStreamId, entry);
+    }
+    entry.count++;
+    return sendStartCommand(node, controlStreamId);
 }
 
 function releaseHlsStream(node: INode, controlStreamId: string) {
@@ -63,6 +67,12 @@ export interface UseHlsStreamResult {
     activeStreamId: string | null;
     /** The lane's parent node (auth + endpoint for playback). */
     node: INode | null;
+    /**
+     * Re-arm the server-side stream without changing the ref count, returning the fresh
+     * path. Used by the player to recover after the server's inactivity watchdog tears a
+     * stream down (manifest/segment 404).
+     */
+    restartStream: () => Promise<string | null>;
 }
 
 /**
@@ -121,5 +131,12 @@ export function useHlsStream(laneId: string | null, streamId?: string): UseHlsSt
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeStreamId, node]);
 
-    return {videoSource, streams, activeStreamId, node};
+    const restartStream = useCallback(async (): Promise<string | null> => {
+        if (!activeStreamId || !node) return null;
+        const path = await sendStartCommand(node, activeStreamId);
+        if (path) setVideoSource(path);
+        return path;
+    }, [activeStreamId, node]);
+
+    return {videoSource, streams, activeStreamId, node, restartStream};
 }

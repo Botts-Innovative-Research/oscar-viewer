@@ -25,7 +25,7 @@ export default function VideoWidget({page, widget}: WidgetProps) {
     const pinnedStreamId = config.streamId;
     const [browsedStreamId, setBrowsedStreamId] = useState<string | undefined>(undefined);
 
-    const {videoSource, streams, node, activeStreamId} = useHlsStream(lane, pinnedStreamId ?? browsedStreamId);
+    const {videoSource, streams, node, activeStreamId, restartStream} = useHlsStream(lane, pinnedStreamId ?? browsedStreamId);
 
     const currentIndex = useMemo(() => {
         if (!activeStreamId) return 0;
@@ -57,7 +57,7 @@ export default function VideoWidget({page, widget}: WidgetProps) {
 
             <Stack sx={{flex: 1, minWidth: 0, height: '100%', alignItems: 'center', justifyContent: 'center'}}>
                 {videoSource && node ? (
-                    <HLSVideoComponent videoSource={videoSource} selectedNode={node} height="100%"/>
+                    <HLSVideoComponent videoSource={videoSource} selectedNode={node} height="100%" onRequestRestart={restartStream}/>
                 ) : (
                     <Typography color="text.secondary" variant="body2">
                         {streams.length === 0 ? t('noVideoStream') : t('connectingVideo')}

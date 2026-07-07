@@ -11,7 +11,7 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
     // undefined = first available stream; the arrows pin an explicit stream id.
     const [selectedStreamId, setSelectedStreamId] = useState<string | undefined>(undefined);
 
-    const {videoSource, streams, node, activeStreamId} = useHlsStream(currentLane, selectedStreamId);
+    const {videoSource, streams, node, activeStreamId, restartStream} = useHlsStream(currentLane, selectedStreamId);
 
     const currentIndex = useMemo(() => {
         if (!activeStreamId) return 0;
@@ -66,6 +66,7 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
                     <HLSVideoComponent
                         videoSource={videoSource}
                         selectedNode={node}
+                        onRequestRestart={restartStream}
                     />
                 )}
             </Stack>
