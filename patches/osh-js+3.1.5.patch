@@ -1,0 +1,44 @@
+diff --git a/node_modules/osh-js/source/core/connector/MqttTopicConnector.js b/node_modules/osh-js/source/core/connector/MqttTopicConnector.js
+index eaedb0a..ffbb4c1 100644
+--- a/node_modules/osh-js/source/core/connector/MqttTopicConnector.js
++++ b/node_modules/osh-js/source/core/connector/MqttTopicConnector.js
+@@ -24,6 +24,15 @@ class MqttTopicConnector extends DataConnector {
+     }
+ 
+     doRequest(topic = '',queryString= undefined) {
++        if (this.broadcastChannel === null) {
++            // recreate after a prior fullDisconnect(); a closed BroadcastChannel cannot be reused
++            this.broadcastChannel = new BroadcastChannel(this.getUrl());
++            this.broadcastChannel.onmessage = (message) => {
++                if(message.data.topic === this.fullTopic) {
++                    this.onMessage(message.data.data);
++                }
++            }
++        }
+         this.fullTopic = topic + '?'+queryString;
+         this.broadcastChannel.postMessage({
+             message: 'subscribe',
+diff --git a/node_modules/osh-js/source/core/mqtt/MqttProvider.js b/node_modules/osh-js/source/core/mqtt/MqttProvider.js
+index f9a21db..7ab8117 100644
+--- a/node_modules/osh-js/source/core/mqtt/MqttProvider.js
++++ b/node_modules/osh-js/source/core/mqtt/MqttProvider.js
+@@ -134,6 +134,8 @@ class MqttProvider {
+      * @param topic
+      */
+     async unsubscribe(topic) {
++        // remove from the dedupe list so a later subscribe() is not skipped
++        this.topics = this.topics.filter(t => t !== topic);
+         const topicQuery = `${this.mqttPrefix}${topic}`;
+         return this.client.unsubscribe(topicQuery, {}, err => {
+             delete mqttCallbacks[topicQuery];
+@@ -148,8 +150,8 @@ class MqttProvider {
+     }
+ 
+     async unsubscribeAll() {
+-        // unsubscribe topic
+-        for (let topic of this.topics) {
++        // unsubscribe topic (iterate a copy: unsubscribe() mutates this.topics)
++        for (let topic of [...this.topics]) {
+             await this.unsubscribe(topic);
+         }
+         this.topics = [];

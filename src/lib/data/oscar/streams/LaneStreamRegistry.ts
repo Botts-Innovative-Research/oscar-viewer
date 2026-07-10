@@ -26,7 +26,16 @@ export type LaneStreamHandler = (laneId: string, stream: LaneStreamName, message
  * multiple widgets would stack duplicate handlers and disconnect streams out
  * from under each other. This registry attaches exactly one dispatcher per
  * lane stream and fans messages out to registered handlers; streams connect
- * when the first handler arrives and disconnect when the last one leaves.
+ * when the first handler arrives and stay connected for the app session.
+ *
+ * Streams are deliberately NEVER disconnected when the last handler leaves:
+ * in osh-js, disconnect is a one-way door. The shared MqttProvider keeps an
+ * unsubscribed topic in its dedupe list so a resubscribe is silently skipped,
+ * and MqttTopicConnector nulls its BroadcastChannel on disconnect and never
+ * recreates it — either one permanently kills the stream until a full page
+ * reload (this is what froze the dashboard Lane Status after navigating away
+ * and back). An empty handler map already gates delivery, so idle streams
+ * only cost the broker push itself.
  */
 interface StreamChannel {
     handlers: Map<string, LaneStreamHandler>; // bundleId -> handler
@@ -105,8 +114,11 @@ class LaneStreamRegistryImpl {
             channel.dispatcherAttached = true;
         }
         if (!channel.connected && channel.handlers.size > 0) {
-            entry.coll.addConnectToALLDSMatchingName(stream);
             channel.connected = true;
+            entry.coll.addConnectToALLDSMatchingName(stream).catch((e: any) => {
+                console.error(`[LaneStreamRegistry] connect failed for ${laneId}/${stream}:`, e);
+                channel.connected = false;
+            });
         }
     }
 
@@ -138,15 +150,14 @@ class LaneStreamRegistryImpl {
         }
     }
 
-    /** Remove a handler bundle everywhere; disconnect streams nobody uses. */
+    /**
+     * Remove a handler bundle everywhere. Streams stay connected even with no
+     * handlers left — see the class comment for why disconnecting is unsafe.
+     */
     release(bundleId: string) {
         for (const entry of this.lanes.values()) {
-            for (const [stream, channel] of entry.channels) {
-                if (!channel.handlers.delete(bundleId)) continue;
-                if (channel.handlers.size === 0 && channel.connected) {
-                    entry.coll.addDisconnectToALLDSMatchingName(stream);
-                    channel.connected = false;
-                }
+            for (const channel of entry.channels.values()) {
+                channel.handlers.delete(bundleId);
             }
         }
     }

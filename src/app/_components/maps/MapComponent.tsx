@@ -167,10 +167,13 @@ export default function MapComponent({laneFilter, containerId, height = '100vh'}
         }
     });
 
+    // Re-run whenever the lane map changes: on a fresh dashboard load this
+    // component mounts before lane discovery finishes, so a one-shot setup
+    // would capture an empty laneMapRef and the map would never get markers
+    // (and never zoom in) until a remount.
     useEffect(() => {
-        if(!isInit)
-            datasourceSetup();
-    }, [isInit, datasourceSetup]);
+        datasourceSetup();
+    }, [datasourceSetup, laneMap]);
 
     useEffect(() => {
         if (!leafletViewRef.current && !isInit) {
