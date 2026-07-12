@@ -2,7 +2,7 @@
 
 import { LaneMapEntry } from "@/lib/data/oscar/LaneCollection";
 import { useCallback, useEffect, useState, useMemo, useRef } from "react";
-import { Box } from "@mui/material";
+import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Snackbar } from "@mui/material";
 import { useSelector } from "react-redux";
 import {
     setEventPreview,
@@ -11,6 +11,7 @@ import {
     setLatestGB
 } from "@/lib/state/EventPreviewSlice";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
+import ConSysObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 import { EventTableData } from "@/lib/data/oscar/TableHelpers";
 import {
@@ -28,7 +29,8 @@ import { useAppDispatch } from "@/lib/state/Hooks";
 import {selectAdjudicatedEventId, selectSelectedEvent, setAdjudicatedEventId, setSelectedEvent} from "@/lib/state/EventDataSlice";
 import { useRouter } from "next/dist/client/components/navigation";
 import { getObservations } from "@/app/utils/ChartUtils";
-import { isOccupancyDataStream, isThresholdDataStream } from "@/lib/data/oscar/Utilities";
+import { isAdjudicationControlStream, isOccupancyDataStream, isThresholdDataStream } from "@/lib/data/oscar/Utilities";
+import { bulkAdjudicate, BulkAdjudicationTarget, BULK_ADJUDICATION_NOTE } from "@/lib/data/oscar/OSCARCommands";
 import { convertToMap, hashString } from "@/app/utils/Utils";
 import { OCCUPANCY_PILLAR_DEF } from "@/lib/data/Constants";
 import { selectNodes } from "@/lib/state/OSHSlice";
@@ -116,6 +118,12 @@ export default function EventTable({
     const selectedEvent = useSelector(selectSelectedEvent);
     const dispatch = useAppDispatch();
     const router = useRouter();
+
+    // "Adjudicate All" bulk action state.
+    const [bulkBusy, setBulkBusy] = useState(false);
+    const [bulkTargets, setBulkTargets] = useState<BulkAdjudicationTarget[]>([]);
+    const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+    const [bulkSnack, setBulkSnack] = useState<{ msg: string, severity: 'success' | 'error' | 'info' } | null>(null);
 
     const { t } = useLanguage();
     const stableLaneMap = useMemo(() => convertToMap(laneMap), [laneMap]);
@@ -849,7 +857,109 @@ export default function EventTable({
         setPaginationModel(prev => ({ ...prev, page: 0 }));
     }, []);
 
+    // Resolve a lane's adjudication control stream id (mirrors AdjudicationDialog),
+    // caching per lane for the duration of a bulk run.
+    const resolveAdjControlStreamId = async (
+        entry: LaneMapEntry,
+        cache: Map<string, string | null>,
+    ): Promise<string | null> => {
+        if (cache.has(entry.laneName)) return cache.get(entry.laneName)!;
+        let streamId: string | null = null;
+        try {
+            const streams = entry.controlStreams.length > 0
+                ? entry.controlStreams
+                : await entry.parentNode.fetchNodeControlStreams();
+            const adjStream = streams.find((s: any) => isAdjudicationControlStream(s));
+            streamId = adjStream ? adjStream.properties.id : null;
+        } catch (err) {
+            console.error("resolveAdjControlStreamId: failed", err);
+        }
+        cache.set(entry.laneName, streamId);
+        return streamId;
+    };
+
+    // Gather every unadjudicated occupancy across the widget's lane scope, spanning
+    // the whole dataset (no alarm/date clause — only adjudicatedIdsCount=0). Ids are
+    // read from the datastream's own observation search (the shape that carries a
+    // usable `.id`), mirroring AdjudicationDialog's occupancyObsId lookup.
+    const gatherUnadjudicatedTargets = async (): Promise<BulkAdjudicationTarget[]> => {
+        const targets: BulkAdjudicationTarget[] = [];
+        const streamCache = new Map<string, string | null>();
+        const fetchSize = 200;
+
+        for (const [laneId, entry] of stableLaneMap) {
+            if (laneFilterSet && !laneFilterSet.has(laneId)) continue;
+
+            const adjControlStreamId = await resolveAdjControlStreamId(entry, streamCache);
+            if (!adjControlStreamId) continue;
+
+            const occStreams = entry.datastreams.filter((ds: typeof DataStream) => isOccupancyDataStream(ds));
+            for (const ds of occStreams) {
+                try {
+                    const query = await ds.searchObservations(
+                        new ConSysObservationFilter({filter: "adjudicatedIdsCount=0"}),
+                        fetchSize,
+                    );
+                    while (query.hasNext()) {
+                        const page = await query.nextPage();
+                        if (!page || page.length === 0) break;
+                        for (const obs of page) {
+                            if (!obs?.id) continue;
+                            targets.push({node: entry.parentNode, adjControlStreamId, occupancyObsId: obs.id});
+                        }
+                    }
+                } catch (err) {
+                    console.error(`gatherUnadjudicatedTargets: search failed for lane ${laneId}`, err);
+                }
+            }
+        }
+        return targets;
+    };
+
+    const handleAdjudicateAllClick = async () => {
+        setBulkBusy(true);
+        try {
+            const targets = await gatherUnadjudicatedTargets();
+            if (targets.length === 0) {
+                setBulkSnack({msg: t('adjBulkNone'), severity: 'info'});
+                return;
+            }
+            setBulkTargets(targets);
+            setBulkConfirmOpen(true);
+        } catch (err) {
+            console.error("Adjudicate All: gather failed", err);
+            setBulkSnack({msg: t('adjFailed'), severity: 'error'});
+        } finally {
+            setBulkBusy(false);
+        }
+    };
+
+    const handleBulkConfirm = async () => {
+        setBulkBusy(true);
+        try {
+            const {success, failed} = await bulkAdjudicate(
+                bulkTargets,
+                AdjudicationCodes.getCodeObjByIndex(11),
+                BULK_ADJUDICATION_NOTE,
+            );
+            const msg = failed > 0
+                ? `${t('adjBulkResultPrefix')} ${success}/${bulkTargets.length} — ${failed} ${t('adjBulkResultFailed')}`
+                : `${t('adjBulkResultPrefix')} ${success}/${bulkTargets.length}`;
+            setBulkSnack({msg, severity: failed > 0 ? 'error' : 'success'});
+        } catch (err) {
+            console.error("Adjudicate All: submit failed", err);
+            setBulkSnack({msg: t('adjFailed'), severity: 'error'});
+        } finally {
+            setBulkConfirmOpen(false);
+            setBulkTargets([]);
+            setBulkBusy(false);
+            fetchAllCounts();
+            fetchPage(currentPageRef.current);
+        }
+    };
+
     return (
+      <>
         <Box sx={{ height: tableHeight, width: '100%' }}>
             <DataGrid
                 rows={filteredTableData}
@@ -881,7 +991,9 @@ export default function EventTable({
                     toolbar: tableMode === 'alarmtable' ? {
                         alarmFilter,
                         onAlarmFilterChange: handleAlarmFilterChange,
-                        defaultAlarmFilter: DEFAULT_ALARM_FILTER
+                        defaultAlarmFilter: DEFAULT_ALARM_FILTER,
+                        onAdjudicateAll: handleAdjudicateAllClick,
+                        adjudicateAllBusy: bulkBusy
                     } : {}
                 }}
                 initialState={{
@@ -961,5 +1073,30 @@ export default function EventTable({
                 }}
             />
         </Box>
+        <Dialog open={bulkConfirmOpen} onClose={() => !bulkBusy && setBulkConfirmOpen(false)} maxWidth="xs" fullWidth>
+            <DialogTitle>{t('adjBulkConfirmTitle')}</DialogTitle>
+            <DialogContent>
+                <DialogContentText>
+                    {`${bulkTargets.length} ${t('adjBulkConfirmBody')}`}
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => setBulkConfirmOpen(false)} disabled={bulkBusy}>{t('cancel')}</Button>
+                <Button onClick={handleBulkConfirm} variant="contained" color="warning" disabled={bulkBusy}>
+                    {t('adjudicateAll')}
+                </Button>
+            </DialogActions>
+        </Dialog>
+        <Snackbar
+            open={bulkSnack !== null}
+            autoHideDuration={bulkSnack?.severity === 'error' ? null : 5000}
+            onClose={() => setBulkSnack(null)}
+            anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+        >
+            <Alert severity={bulkSnack?.severity ?? 'success'} onClose={() => setBulkSnack(null)} sx={{maxWidth: 600, wordBreak: 'break-word'}}>
+                {bulkSnack?.msg}
+            </Alert>
+        </Snackbar>
+      </>
     );
 }

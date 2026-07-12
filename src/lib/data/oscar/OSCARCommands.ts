@@ -1,6 +1,9 @@
 import {INode} from "@/lib/data/osh/Node";
 import {AdjudicationCode} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 
+/** Fixed feedback note stamped on every bulk-adjudicated alarm (server data, not localized). */
+export const BULK_ADJUDICATION_NOTE = "Bulk administrative alarm adjudication.";
+
 
 export async function sendCommand(node: INode, controlStreamId: string, command: any) {
     console.log("[Command Generation] Body:", command);
@@ -143,6 +146,79 @@ export function generateAdjudicationCommandJSON(feedback: string, adjudicationCo
             "vehicleId": vehicleId ?? ""
         }
     })
+}
+
+export interface BulkAdjudicationTarget {
+    node: INode;
+    adjControlStreamId: string;
+    occupancyObsId: string;
+}
+
+export interface BulkAdjudicationResult {
+    success: number;
+    failed: number;
+    /** Short description of the first failure, for surfacing why a run failed. */
+    firstError?: string;
+}
+
+/**
+ * Adjudicate many occupancies in one pass, reusing the single-alarm submit path
+ * (one command per lane's adjudication control stream). Runs with bounded
+ * concurrency; a non-ok response or a thrown error counts as a failure.
+ */
+export async function bulkAdjudicate(
+    targets: BulkAdjudicationTarget[],
+    code: AdjudicationCode,
+    feedback: string,
+    onProgress?: (done: number, total: number) => void,
+    concurrency: number = 5,
+): Promise<BulkAdjudicationResult> {
+    const total = targets.length;
+    let success = 0;
+    let failed = 0;
+    let done = 0;
+    let next = 0;
+    let firstError: string | undefined;
+
+    const runOne = async (target: BulkAdjudicationTarget) => {
+        try {
+            const response = await sendCommand(
+                target.node,
+                target.adjControlStreamId,
+                generateAdjudicationCommandJSON(feedback, code, [], '', [], target.occupancyObsId, ''),
+            );
+            if (response.ok) {
+                success++;
+            } else {
+                failed++;
+                if (!firstError) {
+                    let body = '';
+                    try { body = (await response.text()).slice(0, 200); } catch { /* ignore */ }
+                    firstError = `HTTP ${response.status} (cs=${target.adjControlStreamId}, obs=${target.occupancyObsId}) ${body}`;
+                    console.error("bulkAdjudicate: command rejected", firstError);
+                }
+            }
+        } catch (error: any) {
+            failed++;
+            if (!firstError) {
+                firstError = `threw: ${error?.message ?? error} (cs=${target.adjControlStreamId}, obs=${target.occupancyObsId})`;
+            }
+            console.error("bulkAdjudicate: command failed", error);
+        } finally {
+            done++;
+            onProgress?.(done, total);
+        }
+    };
+
+    const worker = async () => {
+        while (next < total) {
+            const idx = next++;
+            await runOne(targets[idx]);
+        }
+    };
+
+    await Promise.all(Array.from({length: Math.min(concurrency, total)}, () => worker()));
+    return {success, failed, firstError};
 }
 
 export function generateHLSVideoCommandJSON(streamControl: boolean) {
