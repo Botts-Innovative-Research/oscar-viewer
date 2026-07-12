@@ -86,8 +86,20 @@ export interface SystemStatusWidgetConfig {
     lanes: LaneSelection;
 }
 
+export type MapAlarmWindow = 'today' | '1h' | '8h' | '24h';
+
 export interface MapWidgetConfig {
     lanes: LaneSelection;
+    /** Live-track mobile detectors (RS350 backpack / Kromek D5). Default true. */
+    showMobileUnits?: boolean;
+    /** Breadcrumb trail behind each mobile detector. Default true. */
+    showTrail?: boolean;
+    /** Trail length in fixes (~1/s). Default 300. */
+    trailLength?: number;
+    /** Markers where mobile alarms occurred, colored by adjudication. Default true. */
+    showAlarmMarkers?: boolean;
+    /** Historical mobile-alarm window. Default 'today'. */
+    alarmTimeWindow?: MapAlarmWindow;
 }
 
 export interface EventTableWidgetConfig {
@@ -229,8 +241,18 @@ export const DEFAULT_EVENT_TABLE_COLUMNS: EventTableColumnSetting[] = [
 export function buildDefaultWidgetConfig(type: WidgetType): WidgetConfig {
     switch (type) {
         case 'system-status':
-        case 'map':
             return {lanes: {mode: 'all'}};
+        case 'map':
+            // Mobile fields are optional-with-defaults so persisted configs
+            // from before this change stay valid without a schema bump
+            return {
+                lanes: {mode: 'all'},
+                showMobileUnits: true,
+                showTrail: true,
+                trailLength: 300,
+                showAlarmMarkers: true,
+                alarmTimeWindow: 'today',
+            };
         case 'event-table':
         case 'adjudication-table':
             return {

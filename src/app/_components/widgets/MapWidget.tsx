@@ -19,6 +19,11 @@ export default function MapWidget({widget}: WidgetProps) {
             laneFilter={config.lanes ?? {mode: 'all'}}
             containerId={containerId}
             height="100%"
+            showMobileUnits={config.showMobileUnits ?? true}
+            showTrail={config.showTrail ?? true}
+            trailLength={config.trailLength ?? 300}
+            showAlarmMarkers={config.showAlarmMarkers ?? true}
+            alarmTimeWindow={config.alarmTimeWindow ?? 'today'}
         />
     );
 }

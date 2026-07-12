@@ -179,5 +179,15 @@
   "videoStream": "Wideo akymy",
   "weekly": "Hepdelik",
   "widgetSettings": "Widget sazlamalary",
-  "widgetTitle": "Widget ady"
+  "widgetTitle": "Widget ady",
+  "mobileDetectors": "Göçme detektorlar",
+  "showMobileUnits": "Göçme detektorlary görkez",
+  "showTrail": "Hereket yzyny görkez",
+  "trailLength": "Yz uzynlygy (nokatlar)",
+  "showAlarmMarkers": "Duýduryş bellikleri görkez",
+  "alarmTimeWindow": "Duýduryş taryhy penjiresi",
+  "alarmWindow_today": "Şu gün",
+  "alarmWindow_1h": "Soňky sagat",
+  "alarmWindow_8h": "Soňky 8 sagat",
+  "alarmWindow_24h": "Soňky 24 sagat"
 }

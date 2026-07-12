@@ -48,6 +48,16 @@ export class LaneMeta implements ILaneMeta {
     }
 }
 
+export type LaneDeviceKind = 'rpm' | 'rs350' | 'd5';
+
+/**
+ * Property-based check (rather than the isMobile getter) so it also works on
+ * entries that lost their prototype crossing redux/serialization boundaries.
+ */
+export function isMobileLane(entry: { deviceKind?: LaneDeviceKind } | undefined | null): boolean {
+    return entry?.deviceKind === 'rs350' || entry?.deviceKind === 'd5';
+}
+
 export class LaneMapEntry {
     systems: typeof System[];
     datastreams: typeof DataStream[];
@@ -59,6 +69,7 @@ export class LaneMapEntry {
     laneName: string;
     controlStreams: typeof ControlStream[]
     isRS350Backpack: boolean;
+    deviceKind: LaneDeviceKind;
 
     constructor(node: INode) {
         this.systems = [];
@@ -70,6 +81,12 @@ export class LaneMapEntry {
         this.laneName = undefined;
         this.controlStreams = [];
         this.isRS350Backpack = false;
+        this.deviceKind = 'rpm';
+    }
+
+    /** Mobile detectors (person-carried) get live map tracking instead of a static marker. */
+    get isMobile(): boolean {
+        return this.deviceKind === 'rs350' || this.deviceKind === 'd5';
     }
 
     setLaneSystem(system: typeof System) {
@@ -114,6 +131,13 @@ export class LaneMapEntry {
 
     setIsRS350Backpack(value: boolean) {
         this.isRS350Backpack = value;
+    }
+
+    setDeviceKind(kind: LaneDeviceKind) {
+        this.deviceKind = kind;
+        // Keep the legacy flag in lockstep so RS350-specific views keep working
+        if (kind === 'rs350')
+            this.isRS350Backpack = true;
     }
 
     resetDatasources() {

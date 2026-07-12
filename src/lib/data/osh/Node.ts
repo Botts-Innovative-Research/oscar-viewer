@@ -409,7 +409,9 @@ export class Node implements INode {
 
                     const systemLinkUid = dataStream.properties?.["system@link"]?.uid;
                     if (systemLinkUid && systemLinkUid.includes("rsi:rs350")) {
-                        laneEntry.setIsRS350Backpack(true);
+                        laneEntry.setDeviceKind('rs350');
+                    } else if (systemLinkUid && systemLinkUid.includes("kromek:d5")) {
+                        laneEntry.setDeviceKind('d5');
                     }
                 }
             }

@@ -179,5 +179,15 @@
   "videoStream": "Transmisión de video",
   "weekly": "Semanal",
   "widgetSettings": "Configuración del widget",
-  "widgetTitle": "Título del widget"
+  "widgetTitle": "Título del widget",
+  "mobileDetectors": "Detectores móviles",
+  "showMobileUnits": "Mostrar detectores móviles",
+  "showTrail": "Mostrar rastro de movimiento",
+  "trailLength": "Longitud del rastro (posiciones)",
+  "showAlarmMarkers": "Mostrar marcadores de alarma",
+  "alarmTimeWindow": "Ventana de historial de alarmas",
+  "alarmWindow_today": "Hoy",
+  "alarmWindow_1h": "Última hora",
+  "alarmWindow_8h": "Últimas 8 horas",
+  "alarmWindow_24h": "Últimas 24 horas"
 }

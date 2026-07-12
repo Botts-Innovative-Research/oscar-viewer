@@ -1,7 +1,8 @@
 "use client"
 
 import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
-import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import {LaneMapEntry, isMobileLane} from "@/lib/data/oscar/LaneCollection";
+import {MapAlarmWindow, useMobileDetectors} from "@/app/_components/maps/useMobileDetectors";
 import {LaneSelection} from "@/lib/layout/PageConfigTypes";
 import {useLaneStreams} from "@/lib/data/oscar/streams/useLaneStreams";
 import PointMarkerLayer from "osh-js/source/core/ui/layer/PointMarkerLayer";
@@ -38,9 +39,23 @@ interface MapComponentProps {
     containerId?: string;
     /** Container height; the full map page uses the default 100vh. */
     height?: string | number;
+    /** Live-track mobile detectors (RS350 backpack / Kromek D5). */
+    showMobileUnits?: boolean;
+    /** Breadcrumb trail behind each mobile detector. */
+    showTrail?: boolean;
+    /** Trail length in fixes (~1 per second). */
+    trailLength?: number;
+    /** Markers where mobile alarms occurred, colored by adjudication state. */
+    showAlarmMarkers?: boolean;
+    /** How far back to load historical mobile alarms. */
+    alarmTimeWindow?: MapAlarmWindow;
 }
 
-export default function MapComponent({laneFilter, containerId, height = '100vh'}: MapComponentProps) {
+export default function MapComponent({
+    laneFilter, containerId, height = '100vh',
+    showMobileUnits = true, showTrail = true, trailLength = 300,
+    showAlarmMarkers = true, alarmTimeWindow = 'today',
+}: MapComponentProps) {
     const mapcontainer: string = containerId ?? "mapcontainer";
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
     const leafletViewRef = useRef<typeof LeafletView | null>(null);
@@ -119,6 +134,10 @@ export default function MapComponent({laneFilter, containerId, height = '100vh'}
 
         for (let [laneid, lane] of laneMapRef.current.entries()) {
             if (laneFilterSet && !laneFilterSet.has(laneid)) continue;
+            // Mobile detectors are tracked live by useMobileDetectors; keeping
+            // them out of the batch path avoids replaying a 1 Hz location
+            // history through PointMarkerLayer and freezing them as static dots
+            if (isMobileLane(lane)) continue;
             for (let ds of lane.datastreams) {
                 if (isLocationDataStream(ds)) {
                     locationDs.push(ds);
@@ -174,6 +193,21 @@ export default function MapComponent({laneFilter, containerId, height = '100vh'}
     useEffect(() => {
         datasourceSetup();
     }, [datasourceSetup, laneMap]);
+
+    // Mobile detectors: live moving markers + trails + alarm-location markers
+    useMobileDetectors({
+        enabled: isInit && showMobileUnits,
+        showTrail,
+        trailLength,
+        showAlarmMarkers,
+        alarmTimeWindow,
+        laneFilterSet,
+        getMap: () => leafletViewRef.current?.map ?? null,
+        onFirstFix: (latlng) => {
+            markerLatLngs.current.push(latlng);
+            scheduleFitBounds();
+        },
+    });
 
     useEffect(() => {
         if (!leafletViewRef.current && !isInit) {

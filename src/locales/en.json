@@ -179,5 +179,15 @@
   "videoStream": "Video Stream",
   "weekly": "Weekly",
   "widgetSettings": "Widget settings",
-  "widgetTitle": "Widget title"
+  "widgetTitle": "Widget title",
+  "mobileDetectors": "Mobile Detectors",
+  "showMobileUnits": "Show mobile detectors",
+  "showTrail": "Show movement trail",
+  "trailLength": "Trail length (fixes)",
+  "showAlarmMarkers": "Show alarm markers",
+  "alarmTimeWindow": "Alarm history window",
+  "alarmWindow_today": "Today",
+  "alarmWindow_1h": "Last hour",
+  "alarmWindow_8h": "Last 8 hours",
+  "alarmWindow_24h": "Last 24 hours"
 }
