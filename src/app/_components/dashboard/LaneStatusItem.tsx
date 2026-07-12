@@ -23,7 +23,7 @@ const HEARTBEAT_KF = {
 };
 
 export default function LaneStatusItem(props: {
-    id: number;
+    id: number | string;
     name: string;
     parentNode: string;
     isOnline: boolean;
