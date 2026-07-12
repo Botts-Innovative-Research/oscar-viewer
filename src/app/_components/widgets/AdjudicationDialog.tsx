@@ -5,7 +5,7 @@
  * All Rights Reserved
  */
 
-import React, {useContext, useState} from "react";
+import React, {useContext, useEffect, useState} from "react";
 import {
     Alert,
     Button,
@@ -33,6 +33,8 @@ import {setAdjudicatedEventId, setSelectedEvent} from "@/lib/state/EventDataSlic
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/dist/client/components/navigation";
 import {useLanguage} from "@/app/contexts/LanguageContext";
+import VehicleIdOcr from "@/app/_components/adjudication/VehicleIdOcr";
+import {computeAutofill, IVehicleOcrResult} from "@/lib/data/oscar/adjudication/VehicleOcr";
 
 interface AdjudicationDialogProps {
     open: boolean;
@@ -58,6 +60,9 @@ export default function AdjudicationDialog({open, event, onClose}: AdjudicationD
     const [feedback, setFeedback] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [snack, setSnack] = useState<{ msg: string, severity: 'success' | 'error' } | null>(null);
+    const [ocrResults, setOcrResults] = useState<IVehicleOcrResult[]>([]);
+    const [vehicleIdTouched, setVehicleIdTouched] = useState(false);
+    const [vehicleIdAutoFilled, setVehicleIdAutoFilled] = useState(false);
 
     const resetForm = () => {
         setAdjCode(AdjudicationCodes.codes[0]);
@@ -65,7 +70,19 @@ export default function AdjudicationDialog({open, event, onClose}: AdjudicationD
         setSecondaryInspection('');
         setVehicleId('');
         setFeedback('');
+        setVehicleIdTouched(false);
+        setVehicleIdAutoFilled(false);
     };
+
+    // threshold-hybrid auto-fill: only into an empty, untouched field
+    useEffect(() => {
+        if (vehicleIdTouched || vehicleId !== '') return;
+        const auto = computeAutofill(ocrResults);
+        if (auto) {
+            setVehicleId(auto.normalizedValue);
+            setVehicleIdAutoFilled(true);
+        }
+    }, [ocrResults]);
 
     const handleOpenFullDetails = () => {
         if (!event) return;
@@ -151,10 +168,27 @@ export default function AdjudicationDialog({open, event, onClose}: AdjudicationD
                         <TextField
                             label={t('vehicleId')}
                             value={vehicleId}
-                            onChange={(e) => setVehicleId(e.target.value)}
+                            onChange={(e) => {
+                                setVehicleId(e.target.value);
+                                setVehicleIdTouched(true);
+                                setVehicleIdAutoFilled(false);
+                            }}
                             size="small"
                             fullWidth
+                            helperText={vehicleIdAutoFilled && !vehicleIdTouched ? t('ocrAutoFilled') : undefined}
                         />
+                        {event && (
+                            <VehicleIdOcr
+                                event={event}
+                                appliedValue={vehicleId}
+                                onApply={(value) => {
+                                    setVehicleId(value);
+                                    setVehicleIdTouched(true);
+                                    setVehicleIdAutoFilled(false);
+                                }}
+                                onOcrResults={setOcrResults}
+                            />
+                        )}
                         <TextField
                             label={t('feedback')}
                             value={feedback}

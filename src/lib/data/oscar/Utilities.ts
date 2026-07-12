@@ -15,7 +15,7 @@ import {
     OCCUPANCY_PILLAR_DEF, RASTER_IMAGE_DEF, N42_DEF, REPORT_DEF, SENSOR_LOCATION_DEF,
     SITE_DIAGRAM_DEF, SPEED_DEF, START_DEF,
     TAMPER_STATUS_DEF,
-    THRESHOLD_DEF, VIDEO_FRAME_DEF, WEB_ID_DEF
+    THRESHOLD_DEF, VIDEO_FRAME_DEF, WEB_ID_DEF, OCR_DEF
 } from "@/lib/data/Constants";
 
 
@@ -153,6 +153,13 @@ export function isWebIdAnalysisDataStream(datastream: typeof DataStream): boolea
         return false;
 
     return datastream.properties.observedProperties[0].definition.includes(WEB_ID_DEF);
+}
+
+export function isVehicleOcrDataStream(datastream: typeof DataStream): boolean {
+    if (!hasDefinitionProperties(datastream))
+        return false;
+
+    return datastream.properties.observedProperties[0].definition.includes(OCR_DEF);
 }
 
 export function isHLSVideoControlStream(controlStream: typeof ControlStream): boolean {

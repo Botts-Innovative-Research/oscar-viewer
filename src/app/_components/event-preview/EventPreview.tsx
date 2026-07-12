@@ -51,6 +51,8 @@ import { EventTableData } from "@/lib/data/oscar/TableHelpers";
 import { useBreakpoint } from "@/app/providers";
 import BackButton from "../BackButton";
 import { useLanguage } from "@/app/contexts/LanguageContext";
+import VehicleIdOcr from "@/app/_components/adjudication/VehicleIdOcr";
+import {computeAutofill, IVehicleOcrResult} from "@/lib/data/oscar/adjudication/VehicleOcr";
 
 export function EventPreview() {
     const { isDesktop } = useBreakpoint();
@@ -78,6 +80,20 @@ export function EventPreview() {
     const [adjudicationCode, setAdjudicationCode] = useState<AdjudicationCode>(AdjudicationCodes.codes[0]);
     const [adjudication, setAdjudication] = useState<AdjudicationData | null>();
     const [secondaryInspection, setSecondaryInspection] = useState<"NONE" | "COMPLETED"| "REQUESTED" | "">("");
+    const [vehicleId, setVehicleId] = useState<string>("");
+    const [ocrResults, setOcrResults] = useState<IVehicleOcrResult[]>([]);
+    const [vehicleIdTouched, setVehicleIdTouched] = useState(false);
+    const [vehicleIdAutoFilled, setVehicleIdAutoFilled] = useState(false);
+
+    // threshold-hybrid auto-fill: only into an empty, untouched field
+    useEffect(() => {
+        if (vehicleIdTouched || vehicleId !== '') return;
+        const auto = computeAutofill(ocrResults);
+        if (auto) {
+            setVehicleId(auto.normalizedValue);
+            setVehicleIdAutoFilled(true);
+        }
+    }, [ocrResults]);
 
     //snackbar
     const [adjSnackMsg, setAdjSnackMsg] = useState('');
@@ -132,6 +148,7 @@ export function EventPreview() {
         comboData.setFeedback(notes);
         comboData.setTime(phenomenonTime);
         comboData.setSecondaryInspectionStatus(secondaryInspection);
+        comboData.setVehicleId(vehicleId);
 
         // send to server
         const currentLane = eventPreview.eventData.laneId;
@@ -218,6 +235,10 @@ export function EventPreview() {
         setAdjudication(null);
         setNotes("");
         setAdjudicationCode(AdjudicationCodes.codes[0]);
+        setVehicleId("");
+        setOcrResults([]);
+        setVehicleIdTouched(false);
+        setVehicleIdAutoFilled(false);
     }
 
     const handleCloseRounded = () => {
@@ -384,6 +405,36 @@ export function EventPreview() {
                     onSelect={handleInspectionSelect}
                 />
             </Grid>
+
+            {/* VEHICLE ID + CAMERA OCR SUGGESTIONS */}
+            <Grid item xs={12}>
+                <TextField
+                    label={t('vehicleId')}
+                    value={vehicleId}
+                    onChange={(e) => {
+                        setVehicleId(e.target.value);
+                        setVehicleIdTouched(true);
+                        setVehicleIdAutoFilled(false);
+                    }}
+                    size="small"
+                    fullWidth
+                    helperText={vehicleIdAutoFilled && !vehicleIdTouched ? t('ocrAutoFilled') : undefined}
+                />
+            </Grid>
+            {eventPreview.eventData && (
+                <Grid item xs={12}>
+                    <VehicleIdOcr
+                        event={eventPreview.eventData}
+                        appliedValue={vehicleId}
+                        onApply={(value) => {
+                            setVehicleId(value);
+                            setVehicleIdTouched(true);
+                            setVehicleIdAutoFilled(false);
+                        }}
+                        onOcrResults={setOcrResults}
+                    />
+                </Grid>
+            )}
 
             {/* NOTES */}
             <Grid item xs={12}>

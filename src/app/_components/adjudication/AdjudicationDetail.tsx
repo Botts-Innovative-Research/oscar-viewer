@@ -52,6 +52,8 @@ import DetectorResponseFunction from "./DetectorResponseFunction";
 import SpectrumTypeSelector from "@/app/_components/adjudication/SpectrumTypeSelector";
 import WebIdAnalysis from "@/app/_components/adjudication/WebIdAnalysis";
 import WebIdAnalysisResult from "@/lib/data/oscar/adjudication/WebId";
+import VehicleIdOcr from "@/app/_components/adjudication/VehicleIdOcr";
+import {computeAutofill, IVehicleOcrResult} from "@/lib/data/oscar/adjudication/VehicleOcr";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
@@ -112,6 +114,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const [webIdResults, setWebIdResults] = useState<WebIdAnalysisResult[]>([]);
     const [selectedWebIdResultId, setSelectedWebIdResultId] = useState<string[]>([]);
     const [isSubmittingWebId, setIsSubmittingWebId] = useState(false);
+    const [ocrResults, setOcrResults] = useState<IVehicleOcrResult[]>([]);
+    const [vehicleIdTouched, setVehicleIdTouched] = useState(false);
+    const [vehicleIdAutoFilled, setVehicleIdAutoFilled] = useState(false);
 
     function onFetchComplete() {
         setShouldFetchLogs(false);
@@ -357,6 +362,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         if (name === 'vehicleId') {
             setVehicleId(value);
             tempAdjData.vehicleId = value;
+            setVehicleIdTouched(true);
+            setVehicleIdAutoFilled(false);
         } else if (name === 'notes') {
             setFeedback(value)
             tempAdjData.feedback = value;
@@ -376,6 +383,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         setFeedback('')
         setWebIdResults([]);
         setSelectedWebIdResultId([]);
+        setVehicleIdTouched(false);
+        setVehicleIdAutoFilled(false);
     }
 
     const sendAdjudicationData = async () => {
@@ -626,6 +635,24 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const handleWebIdResults = (results: WebIdAnalysisResult[]) => {
         setWebIdResults(results);
     };
+
+    const applyOcrValue = (value: string, isAuto: boolean = false) => {
+        let tempAdjData = adjData;
+        setVehicleId(value);
+        tempAdjData.vehicleId = value;
+        setAdjData(tempAdjData);
+        setVehicleIdAutoFilled(isAuto);
+        if (!isAuto)
+            setVehicleIdTouched(true);
+    };
+
+    // threshold-hybrid auto-fill: only into an empty, untouched field
+    useEffect(() => {
+        if (vehicleIdTouched || vehicleId !== '') return;
+        const auto = computeAutofill(ocrResults);
+        if (auto)
+            applyOcrValue(auto.normalizedValue, true);
+    }, [ocrResults]);
 
     const applySelectedWebIdResult = () => {
         if (selectedWebIdResultId.length === 0) return;
@@ -889,9 +916,23 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                             <Typography variant="h5">{t('adjudicationForm')}</Typography>
                         </Grid>
                         <Grid item xs={12} sm={3} lg={2}>
-                            <TextField label={t('vehicleId')} name="vehicleId" value={vehicleId} onChange={handleChange} fullWidth />
+                            <TextField
+                                label={t('vehicleId')}
+                                name="vehicleId"
+                                value={vehicleId}
+                                onChange={handleChange}
+                                fullWidth
+                                helperText={vehicleIdAutoFilled && !vehicleIdTouched ? t('ocrAutoFilled') : undefined}
+                            />
                         </Grid>
-                        <Grid item xs={12} sm={9} lg={10} />
+                        <Grid item xs={12} sm={9} lg={10}>
+                            <VehicleIdOcr
+                                event={props.event}
+                                appliedValue={vehicleId}
+                                onApply={(value) => applyOcrValue(value)}
+                                onOcrResults={setOcrResults}
+                            />
+                        </Grid>
                         <Grid item xs={12} sm={6}>
                             <AdjudicationSelect adjCode={adjudicationCode} onSelect={handleAdjudicationSelect} />
                         </Grid>

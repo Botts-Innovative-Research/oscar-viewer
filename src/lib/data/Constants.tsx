@@ -101,6 +101,9 @@ export const START_DEF =  smlUri + "StartDateTime";
 export const END_DEF =  smlUri + "EndDateTime";
 export const HLS_VIDEO_DEF =  smlUri + "StreamControl";
 export const WEB_ID_DEF =  radUri + "NumberOfIsotopes";
+export const OCR_DEF =  radUri + "OCRValue";
+// plates have no checksum, so the UI only auto-fills at/above this confidence
+export const OCR_PLATE_AUTOFILL_CONFIDENCE = 0.85;
 export const DURATION_DEF =  radUri + "Duration";
 export const LINEARSPEC_DEF =  radUri + "LinearSpectrum";
 export const DOSE_DEF =  radUri + "Dose";
