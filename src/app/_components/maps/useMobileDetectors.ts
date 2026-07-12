@@ -36,15 +36,6 @@ const FIX_BUFFER_MAX = 600;
 const FIX_JOIN_MAX_DELTA_MS = 90_000;
 const HISTORICAL_ALARMS_MAX = 300;
 
-const ADJUDICATION_GROUP_COLORS: Record<string, string> = {
-    'Real Alarm': '#d32f2f',
-    'Innocent Alarm': '#2e7d32',
-    'False Alarm': '#757575',
-    'Test/Maintenance': '#f57c00',
-    'Tamper/Fault': '#f57c00',
-    'Other': '#f57c00',
-};
-
 interface Fix {
     t: number;
     lat: number;
@@ -114,6 +105,10 @@ function readFix(rec: any): { lat: number, lon: number } | null {
  * refs and mutated directly (never through React state) so a 1 Hz location
  * stream doesn't re-render the host component — same pattern as the static
  * lane circleMarkers in MapComponent.
+ *
+ * The alarm layer shows UNADJUDICATED alarms only: adjudicating an event
+ * (any code with a real group) removes its marker — live via the command
+ * status stream, and on load by filtering the historical fetch.
  */
 export function useMobileDetectors(options: MobileDetectorOptions) {
     const {enabled, showTrail, trailLength, showAlarmMarkers, alarmTimeWindow, laneFilterSet, getMap, onFirstFix} = options;
@@ -152,6 +147,7 @@ export function useMobileDetectors(options: MobileDetectorOptions) {
     const fixBufferByLane = useRef<Map<string, Fix[]>>(new Map());
     const alarmFlashTimer = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
     const alarmMarkers = useRef<Map<number, AlarmMarkerEntry>>(new Map());
+    const adjudicatedKeys = useRef<Set<number>>(new Set());
     const seededInitialPos = useRef<Set<string>>(new Set());
     const historicalKey = useRef<string>('');
 
@@ -171,6 +167,17 @@ export function useMobileDetectors(options: MobileDetectorOptions) {
     );
 
     const adjudicationMap = useAdjudicationMap(laneMap, enabled && showAlarmMarkers && mobileLaneNames.length > 0);
+    // Ref mirror so addAlarmMarker (called from long-lived effects/handlers
+    // with stale closures) always checks the latest adjudication state
+    const adjMapRef = useRef(adjudicationMap);
+    adjMapRef.current = adjudicationMap;
+    // Historical markers must wait for the adjudication statuses, or every
+    // previously-adjudicated alarm flashes on the map until they arrive.
+    // useAdjudicationMap publishes a fresh Map identity when its historical
+    // fetch completes (even when empty), so the second identity we observe
+    // means "adjudication data has loaded".
+    const [adjLoaded, setAdjLoaded] = useState(false);
+    const adjPublishes = useRef(0);
 
     const laneEntry = (laneName: string): LaneMapEntry | undefined => laneMap?.get(laneName);
 
@@ -276,22 +283,24 @@ export function useMobileDetectors(options: MobileDetectorOptions) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [enabled, mapReady, mobileLaneNames.join(','), laneMap]);
 
-    // ---- alarm markers ----
+    // ---- alarm markers (unadjudicated only) ----
 
-    function alarmColorForGroup(group: string | undefined): { color: string, fillOpacity: number } {
-        if (group && ADJUDICATION_GROUP_COLORS[group])
-            return {color: ADJUDICATION_GROUP_COLORS[group], fillOpacity: 0.9};
-        // Not adjudicated: hollow red — the "needs attention" state
-        return {color: MOBILE_ALARM_COLOR, fillOpacity: 0.15};
+    /** Code 0 is the "none" placeholder with an empty group, so a real
+     *  adjudication is any status whose code carries a non-empty group. */
+    function isAdjudicated(obsId: string | null | undefined): boolean {
+        if (!obsId) return false;
+        const group = adjMapRef.current.get(obsId)?.adjudicationCode?.group;
+        return typeof group === 'string' && group.length > 0;
     }
 
-    function styleAlarmMarker(entry: AlarmMarkerEntry) {
-        const adj = entry.eventData.occupancyObsId
-            ? adjudicationMap.get(entry.eventData.occupancyObsId)
-            : undefined;
-        const group = adj?.adjudicationCode?.group;
-        const {color, fillOpacity} = alarmColorForGroup(group);
-        entry.marker.setStyle({color, fillColor: color, fillOpacity});
+    function removeAlarmMarker(key: number) {
+        const entry = alarmMarkers.current.get(key);
+        if (!entry) return;
+        entry.marker.remove();
+        alarmMarkers.current.delete(key);
+        // Remember it so a live re-delivery or historical re-fetch that runs
+        // before the adjudication map refreshes can't resurrect the marker
+        adjudicatedKeys.current.add(key);
     }
 
     function resolveAlarmPosition(laneName: string, result: any): L.LatLng | null {
@@ -328,7 +337,14 @@ export function useMobileDetectors(options: MobileDetectorOptions) {
 
         const laneName = entry.laneName;
         const key = hashString(`${result.occupancyCount}${laneName}${result.startTime}${result.endTime}`);
-        if (alarmMarkers.current.has(key)) return;
+        if (alarmMarkers.current.has(key) || adjudicatedKeys.current.has(key)) return;
+
+        let obsId: string | null = isLive ? null : (obs.id ?? obs.properties?.id ?? null);
+        // Adjudicated events don't belong on the map at all
+        if (isAdjudicated(obsId)) {
+            adjudicatedKeys.current.add(key);
+            return;
+        }
 
         const latlng = resolveAlarmPosition(laneName, result);
         if (!latlng) {
@@ -336,7 +352,6 @@ export function useMobileDetectors(options: MobileDetectorOptions) {
             return;
         }
 
-        let obsId: string | null = isLive ? null : (obs.id ?? obs.properties?.id ?? null);
         const eventData = new EventTableData(key, laneName, result, obsId,
             obs['foi@id'] ?? obs.properties?.foiId ?? null, entry.parentNode?.name, entry.isRS350Backpack);
 
@@ -360,6 +375,9 @@ export function useMobileDetectors(options: MobileDetectorOptions) {
 
         const markerEntry: AlarmMarkerEntry = {marker, eventData};
         alarmMarkers.current.set(key, markerEntry);
+        // Tag the SVG element with the observation id (test hook + debugging)
+        if (obsId)
+            marker.getElement()?.setAttribute('data-occ-obs', obsId);
 
         // Prime redux ONLY on VIEW EVENT (not on marker click): dispatching
         // setEventPreview({isOpen:true}) opens the event-preview overlay, and
@@ -391,15 +409,18 @@ export function useMobileDetectors(options: MobileDetectorOptions) {
                         (o.result ?? o.properties?.result)?.startTime === result.startTime);
                     if (match) {
                         obsId = match.id ?? match.properties?.id ?? null;
-                        if (obsId) eventData.setOccupancyObsId(obsId);
+                        if (obsId) {
+                            eventData.setOccupancyObsId(obsId);
+                            marker.getElement()?.setAttribute('data-occ-obs', obsId);
+                            if (isAdjudicated(obsId))
+                                removeAlarmMarker(key);
+                        }
                     }
                 }
             } catch (e) {
                 console.warn('[mobile] failed to back-fill occupancy obs id', e);
             }
         }
-
-        styleAlarmMarker(markerEntry);
     }
 
     // Live alarms via the shared registry
@@ -414,9 +435,10 @@ export function useMobileDetectors(options: MobileDetectorOptions) {
         }
     }, enabled && mapReady && showAlarmMarkers && mobileLaneNames.length > 0);
 
-    // Historical alarms over the configured window
+    // Historical alarms over the configured window (only once adjudication
+    // state is known, so adjudicated events never render at all)
     useEffect(() => {
-        if (!enabled || !mapReady || !showAlarmMarkers || mobileLaneNames.length === 0) return;
+        if (!enabled || !mapReady || !adjLoaded || !showAlarmMarkers || mobileLaneNames.length === 0) return;
         const key = `${alarmTimeWindow}|${mobileLaneNames.join(',')}`;
         if (historicalKey.current === key) return;
         historicalKey.current = key;
@@ -447,12 +469,19 @@ export function useMobileDetectors(options: MobileDetectorOptions) {
         })();
         return () => { cancelled = true; };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [enabled, mapReady, showAlarmMarkers, alarmTimeWindow, mobileLaneNames.join(','), laneMap]);
+    }, [enabled, mapReady, adjLoaded, showAlarmMarkers, alarmTimeWindow, mobileLaneNames.join(','), laneMap]);
 
-    // Restyle markers whenever adjudication state changes
+    // Drop markers whose event got adjudicated (live adjudications via the
+    // command status stream, or statuses arriving after a live marker)
     useEffect(() => {
-        for (const entry of alarmMarkers.current.values()) {
-            styleAlarmMarker(entry);
+        adjPublishes.current += 1;
+        // Identity #1 is the hook's initial state at mount; any later one is a
+        // real publish from the historical fetch or the realtime subscription
+        if (adjPublishes.current >= 2 && !adjLoaded)
+            setAdjLoaded(true);
+        for (const [key, entry] of Array.from(alarmMarkers.current.entries())) {
+            if (isAdjudicated(entry.eventData.occupancyObsId))
+                removeAlarmMarker(key);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [adjudicationMap]);
@@ -476,6 +505,7 @@ export function useMobileDetectors(options: MobileDetectorOptions) {
         markersByLane.current.clear();
         trailByLane.current.clear();
         alarmMarkers.current.clear();
+        adjudicatedKeys.current.clear();
         alarmFlashTimer.current.clear();
         fixBufferByLane.current.clear();
         seededInitialPos.current.clear();

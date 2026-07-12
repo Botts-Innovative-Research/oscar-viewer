@@ -10,11 +10,13 @@
 //    between fixes (pre-feature, markers were create-once static circles).
 // 2. Mobile alarms drop persistent markers (class mobile-alarm-marker) at the
 //    coordinates carried on the occupancy observation.
-// 3. Adjudicating an alarm recolors its marker from hollow-red (unadjudicated)
-//    to the adjudication group color.
+// 3. The alarm layer shows UNADJUDICATED alarms only: adjudicating an event
+//    removes its marker live and keeps it gone on reload.
 // 4. Walker alarms appear in the dashboard alarm table alongside RPM lanes.
 //
-// Requires: the local node with WALKER1/WALKER2 lanes fed by the mock sims
+// The mobile lane is DISCOVERED from the node (any lane whose subsystem UID
+// matches rsi:rs350 or kromek:d5), so the spec doesn't depend on how lanes
+// are named. Requires a live mobile lane fed by the mock sims
 // (tools/mobile-detector-mocks) and the same-origin verification proxy:
 //   STATIC_ROOT=web PORT=8090 node serve-proxy.js
 //   npx cypress run --spec cypress/e2e/MobileDetectorMapRegression.cy.tsx \
@@ -22,6 +24,7 @@
 
 const NODE_PORT = Number(Cypress.env('nodePort') || 8090);
 const API = `http://localhost:${NODE_PORT}/sensorhub/api`;
+const AUTH = {user: 'admin', pass: 'oscar'};
 
 const LOCAL_NODE = [{
     name: 'cypress-local',
@@ -35,6 +38,13 @@ const LOCAL_NODE = [{
     isDefaultNode: true,
 }];
 
+interface MobileLaneCtx {
+    laneName: string;
+    laneId: string;
+    adjCsId: string;
+    occDsId: string;
+}
+
 function visitDashboard() {
     cy.visit('/', {
         auth: {username: 'admin', password: 'oscar'},
@@ -45,6 +55,69 @@ function visitDashboard() {
             // replace the quick-view map. Start each test with clean UI state.
             win.localStorage.removeItem('persist:root');
         },
+    });
+}
+
+/** Newest occupancy obs with no adjudication yet; polls until one exists —
+ *  earlier runs / Adjudicate All may have consumed every existing alarm, and
+ *  the mock walkers produce a fresh one on every hotspot pass (minutes). */
+function newestUnadjudicated(occDsId: string, attemptsLeft: number): Cypress.Chainable<string> {
+    return cy.request({
+        url: `${API}/datastreams/${occDsId}/observations?limit=100`,
+        auth: AUTH,
+    }).then((resp) => {
+        const candidates = (resp.body.items || [])
+            .filter((o: any) => !((o.result || {}).adjudicatedIds || []).length);
+        if (candidates.length > 0) {
+            const newest = candidates.reduce((a: any, b: any) =>
+                Date.parse(a.phenomenonTime) >= Date.parse(b.phenomenonTime) ? a : b);
+            return cy.wrap<string>(newest.id, {log: false});
+        }
+        expect(attemptsLeft, 'attempts left waiting for an unadjudicated walker alarm').to.be.greaterThan(0);
+        cy.wait(15000);
+        return newestUnadjudicated(occDsId, attemptsLeft - 1);
+    });
+}
+
+/** Find a mobile lane (RS350/D5 subsystem), its adjudication control stream
+ *  and its occupancy datastream — whatever the lane happens to be named. */
+function discoverMobileLane(): Cypress.Chainable<MobileLaneCtx> {
+    return cy.request({url: `${API}/systems?limit=100`, auth: AUTH}).then((resp) => {
+        const items = resp.body.items || [];
+        const sensor = items.find((s: any) => /rsi:rs350|kromek:d5/i.test(s.properties?.uid || ''));
+        expect(sensor, 'a mobile detector sensor system').to.exist;
+        const suffix = (sensor.properties.uid.split(':').pop() || '').toLowerCase();
+
+        const lane = items.find((s: any) => {
+            const uid = s.properties?.uid || '';
+            return uid.startsWith('urn:osh:system:lane:')
+                && (uid.split(':').pop() || '').toLowerCase() === suffix;
+        });
+        expect(lane, `lane system for mobile suffix ${suffix}`).to.exist;
+
+        return cy.request({url: `${API}/systems/${lane.id}/controlstreams`, auth: AUTH}).then((csResp) => {
+            const adjCs = (csResp.body.items || []).find((cs: any) =>
+                JSON.stringify(cs).toLowerCase().includes('adjudication')
+                || JSON.stringify(cs).toLowerCase().includes('feedback'));
+            expect(adjCs, 'adjudication control stream').to.exist;
+
+            return cy.request({url: `${API}/datastreams?limit=200`, auth: AUTH}).then((dsResp) => {
+                const occDs = (dsResp.body.items || []).find((d: any) => {
+                    const sysUid = (d['system@link']?.uid || '').toLowerCase();
+                    return d.outputName === 'occupancy'
+                        && /:(rs350|d5)-occupancy:/.test(sysUid)
+                        && sysUid.endsWith(`:${suffix}`);
+                });
+                expect(occDs, 'mobile occupancy datastream').to.exist;
+
+                return cy.wrap<MobileLaneCtx>({
+                    laneName: lane.properties.name,
+                    laneId: lane.id,
+                    adjCsId: adjCs.id,
+                    occDsId: occDs.id,
+                }, {log: false});
+            });
+        });
     });
 }
 
@@ -79,102 +152,83 @@ describe('Mobile detector map + alarm integration', () => {
     it('drops alarm markers where mobile alarms occurred', () => {
         visitDashboard();
 
-        // The mock hotspots fire on every route pass, so the 'today' window is
-        // guaranteed to contain occupancies once the sims have run a loop.
-        cy.get('#mapcontainer path.mobile-alarm-marker', {timeout: 90000})
+        // Only UNADJUDICATED alarms get markers; if every existing event has
+        // been adjudicated, this waits for the next live hotspot pass.
+        cy.get('#mapcontainer path.mobile-alarm-marker', {timeout: 300000})
             .should('have.length.greaterThan', 0);
     });
 
-    it('recolors an alarm marker when its occupancy is adjudicated', () => {
-        // Find an occupancy obs + the WALKER1 adjudication control stream first
-        cy.request({
-            url: `${API}/systems?limit=100`,
-            auth: {user: 'admin', pass: 'oscar'},
-        }).then((resp) => {
-            const lane = resp.body.items.find((s: any) => s.properties?.uid === 'urn:osh:system:lane:WALKER1');
-            expect(lane, 'WALKER1 lane system').to.exist;
+    it('removes an alarm marker when its occupancy is adjudicated', () => {
+        discoverMobileLane().then((ctx) => {
+            newestUnadjudicated(ctx.occDsId, 20).as('obsId');
 
-            cy.request({
-                url: `${API}/systems/${lane.id}/controlstreams`,
-                auth: {user: 'admin', pass: 'oscar'},
-            }).then((csResp) => {
-                const adjCs = csResp.body.items.find((cs: any) =>
-                    JSON.stringify(cs).toLowerCase().includes('adjudication')
-                    || JSON.stringify(cs).toLowerCase().includes('feedback'));
-                expect(adjCs, 'adjudication control stream').to.exist;
+            // The unadjudicated event has a marker...
+            visitDashboard();
+            cy.get<string>('@obsId').then((obsId) => {
+                cy.get(`#mapcontainer path.mobile-alarm-marker[data-occ-obs="${obsId}"]`, {timeout: 90000})
+                    .should('exist');
 
+                // ...adjudicate it while the page is open (Code 4: NORM Found)...
                 cy.request({
-                    url: `${API}/datastreams?limit=200`,
-                    auth: {user: 'admin', pass: 'oscar'},
-                }).then((dsResp) => {
-                    const occDs = dsResp.body.items.find((d: any) =>
-                        d.outputName === 'occupancy'
-                        && d['system@link']?.uid?.includes('rs350-occupancy:WALKER1'));
-                    expect(occDs, 'WALKER1 occupancy datastream').to.exist;
+                    method: 'POST',
+                    url: `${API}/controlstreams/${ctx.adjCsId}/commands`,
+                    auth: AUTH,
+                    headers: {'Content-Type': 'application/json'},
+                    body: {
+                        parameters: {
+                            feedback: 'cypress mobile adjudication test',
+                            adjudicationCode: 4,
+                            isotopesCount: 0,
+                            isotopes: [],
+                            secondaryInspectionStatus: 'NONE',
+                            filePathCount: 0,
+                            filePaths: [],
+                            occupancyObsId: obsId,
+                            vehicleId: '',
+                        },
+                    },
+                }).its('status').should('be.within', 200, 299);
 
-                    cy.request({
-                        url: `${API}/datastreams/${occDs.id}/observations?limit=1`,
-                        auth: {user: 'admin', pass: 'oscar'},
-                    }).then((obsResp) => {
-                        const obs = obsResp.body.items[0];
-                        expect(obs, 'a WALKER1 occupancy observation').to.exist;
+                // ...and the marker disappears live (realtime command status)...
+                cy.get(`#mapcontainer path.mobile-alarm-marker[data-occ-obs="${obsId}"]`, {timeout: 30000})
+                    .should('not.exist');
 
-                        // Adjudicate it: Code 4 (NORM Found) => group "Innocent Alarm" (green)
-                        cy.request({
-                            method: 'POST',
-                            url: `${API}/controlstreams/${adjCs.id}/commands`,
-                            auth: {user: 'admin', pass: 'oscar'},
-                            headers: {'Content-Type': 'application/json'},
-                            body: {
-                                parameters: {
-                                    feedback: 'cypress mobile adjudication test',
-                                    adjudicationCode: 4,
-                                    isotopesCount: 0,
-                                    isotopes: [],
-                                    secondaryInspectionStatus: 'NONE',
-                                    filePathCount: 0,
-                                    filePaths: [],
-                                    occupancyObsId: obs.id,
-                                    vehicleId: '',
-                                },
-                            },
-                        }).its('status').should('be.within', 200, 299);
-                    });
-                });
+                // ...and never renders on a fresh load (the historical pass is
+                // gated on adjudication data, so there is no flash either).
+                visitDashboard();
+                cy.get('#mapcontainer .mobile-unit-marker', {timeout: 60000}).should('exist');
+                cy.wait(15000); // adjudication statuses + gated historical pass
+                cy.get(`#mapcontainer path.mobile-alarm-marker[data-occ-obs="${obsId}"]`)
+                    .should('not.exist');
             });
         });
-
-        // Load the app AFTER adjudicating: the marker for that occupancy must
-        // come up in the Innocent Alarm color (#2e7d32), not hollow red.
-        visitDashboard();
-        cy.get('#mapcontainer path.mobile-alarm-marker', {timeout: 90000})
-            .should(($paths) => {
-                const greens = $paths.toArray().filter((p) =>
-                    (p.getAttribute('stroke') || '').toLowerCase() === '#2e7d32');
-                expect(greens.length, 'adjudicated (green) alarm markers').to.be.greaterThan(0);
-            });
     });
 
     it('opens event details from an alarm marker popup (SPA, no crash)', () => {
-        visitDashboard();
+        discoverMobileLane().then((ctx) => {
+            visitDashboard();
 
-        cy.get('#mapcontainer path.mobile-alarm-marker', {timeout: 90000})
-            .first().click({force: true});
-        cy.get('.mobile-view-event', {timeout: 15000}).click();
+            cy.get('#mapcontainer path.mobile-alarm-marker', {timeout: 300000})
+                .first().click({force: true});
+            cy.get('.mobile-view-event', {timeout: 15000}).click();
 
-        cy.url({timeout: 15000}).should('include', '/event-details');
-        // The page must actually render the event (redux state survived the
-        // client-side navigation) and not hit an error boundary
-        cy.contains(/Backpack 1|D5 Walker/, {timeout: 30000}).should('exist');
-        cy.contains('Application error').should('not.exist');
+            cy.url({timeout: 15000}).should('include', '/event-details');
+            // The page must actually render the event (redux state survived the
+            // client-side navigation) and not hit an error boundary
+            cy.contains(ctx.laneName, {timeout: 30000}).should('exist');
+            cy.contains('Application error').should('not.exist');
+        });
     });
 
     it('lists walker alarms in the dashboard alarm table and keeps zoom stable', () => {
-        visitDashboard();
+        discoverMobileLane().then((ctx) => {
+            visitDashboard();
 
-        // Walker rows alongside the RPM lanes
-        cy.contains('[role="row"], .MuiDataGrid-row', /Backpack 1|D5 Walker/, {timeout: 90000})
-            .should('exist');
+            // Walker rows alongside the RPM lanes. The alarm table hides
+            // adjudicated events, so this may wait for the next live alarm.
+            cy.contains('[role="row"], .MuiDataGrid-row', ctx.laneName, {timeout: 300000})
+                .should('exist');
+        });
 
         // Live fixes must not re-trigger fitBounds: while the walker markers
         // move, a FIXED-POSITION alarm marker's screen position must stay put
@@ -182,7 +236,7 @@ describe('Mobile detector map + alarm integration', () => {
         // reference because they're guaranteed present; static lane markers
         // ride a batch-datasource chain that can lag under load (pre-existing).
         const fixedSel = '#mapcontainer path.mobile-alarm-marker';
-        cy.get(fixedSel, {timeout: 90000}).should('have.length.greaterThan', 0);
+        cy.get(fixedSel, {timeout: 300000}).should('have.length.greaterThan', 0);
         cy.wait(5000); // let the initial fitBounds (800ms debounce) fully settle
         cy.get(fixedSel).first().then(($p) => {
             const before = $p[0].getBoundingClientRect();
