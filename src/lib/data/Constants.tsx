@@ -107,6 +107,11 @@ export const OCR_PLATE_AUTOFILL_CONFIDENCE = 0.85;
 export const DURATION_DEF =  radUri + "Duration";
 export const LINEARSPEC_DEF =  radUri + "LinearSpectrum";
 export const DOSE_DEF =  radUri + "Dose";
+// Mobile detector live alarm streams. Never key a predicate on the ALARM_DEF
+// prefix: ".../def/AlarmCategoryCode".includes(ALARM_DEF) is true.
+export const MEASUREMENT_CLASS_DEF = radUri + "MeasurementClassCode";
+export const ALARM_CAT_CODE_DEF = radUri + "AlarmCategoryCode";
+export const D5_RAD_STATUS_DEF = smlUri + "doseAlarmActive";
 export const REMARK_DEF =  radUri + "Remark";
 export const N42_DEF =  radUri + "Remark";
 export const N42_REPORT_DEF = radUri + "ForegroundReports"

@@ -8,9 +8,9 @@ import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStr
 import ConnectedSystemsApi from "osh-js/source/core/consysapi/ConnectedSystemsApi";
 import {
     ADJ_DEF,
-    ALARM_DEF, CONFIG_DEF,
-    CONNECTION_DEF, DOSE_DEF, DURATION_DEF, END_DEF, GAMMA_COUNT_DEF, HLS_VIDEO_DEF,
-    LINEARSPEC_DEF, LOCATION_VECTOR_DEF, NATIONAL_DEF,
+    ALARM_DEF, ALARM_CAT_CODE_DEF, CONFIG_DEF,
+    CONNECTION_DEF, D5_RAD_STATUS_DEF, DOSE_DEF, DURATION_DEF, END_DEF, GAMMA_COUNT_DEF, HLS_VIDEO_DEF,
+    LINEARSPEC_DEF, LOCATION_VECTOR_DEF, MEASUREMENT_CLASS_DEF, NATIONAL_DEF,
     NEUTRON_COUNT_DEF,
     OCCUPANCY_PILLAR_DEF, RASTER_IMAGE_DEF, N42_DEF, REPORT_DEF, SENSOR_LOCATION_DEF,
     SITE_DIAGRAM_DEF, SPEED_DEF, START_DEF,
@@ -100,6 +100,23 @@ export function isRs350DataStream(datastream: typeof DataStream): boolean {
     return datastream.properties.observedProperties[0]?.definition?.includes(DURATION_DEF)
         && datastream.properties.observedProperties[2]?.definition?.includes(LINEARSPEC_DEF)
         && datastream.properties.observedProperties[9]?.definition?.includes(DOSE_DEF);
+}
+
+/** RS-350 `alarm` output: one record per device radiation alarm event. */
+export function isRs350AlarmDataStream(datastream: typeof DataStream): boolean {
+    if (!hasDefinitionProperties(datastream))
+        return false;
+
+    return datastream.properties.observedProperties[2]?.definition?.includes(MEASUREMENT_CLASS_DEF)
+        && datastream.properties.observedProperties[3]?.definition?.includes(ALARM_CAT_CODE_DEF);
+}
+
+/** Kromek D5 1 Hz radiometric status report (live alarm-active booleans). */
+export function isD5RadiometricStatusDataStream(datastream: typeof DataStream): boolean {
+    if (!hasDefinitionProperties(datastream))
+        return false;
+
+    return datastream.properties.observedProperties[0].definition.includes(D5_RAD_STATUS_DEF);
 }
 export function isThresholdDataStream(datastream: typeof DataStream): boolean {
 

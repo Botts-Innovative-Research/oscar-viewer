@@ -205,17 +205,20 @@ describe('Mobile detector map + alarm integration', () => {
     });
 
     it('opens event details from an alarm marker popup (SPA, no crash)', () => {
-        discoverMobileLane().then((ctx) => {
-            visitDashboard();
+        visitDashboard();
 
-            cy.get('#mapcontainer path.mobile-alarm-marker', {timeout: 300000})
-                .first().click({force: true});
-            cy.get('.mobile-view-event', {timeout: 15000}).click();
+        // With multiple mobile lanes (RS350 + D5 walkers) the first marker can
+        // belong to either — assert against the lane name the popup itself
+        // shows rather than a separately-discovered lane.
+        cy.get('#mapcontainer path.mobile-alarm-marker', {timeout: 300000})
+            .first().click({force: true});
+        cy.get('.point-popup strong', {timeout: 15000}).invoke('text').then((markerLane) => {
+            cy.get('.mobile-view-event').click();
 
             cy.url({timeout: 15000}).should('include', '/event-details');
             // The page must actually render the event (redux state survived the
             // client-side navigation) and not hit an error boundary
-            cy.contains(ctx.laneName, {timeout: 30000}).should('exist');
+            cy.contains(markerLane.trim(), {timeout: 30000}).should('exist');
             cy.contains('Application error').should('not.exist');
         });
     });

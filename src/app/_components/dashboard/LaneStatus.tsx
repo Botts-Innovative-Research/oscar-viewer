@@ -14,6 +14,7 @@ import {LaneStreamName} from "@/lib/data/oscar/streams/LaneStreamRegistry";
 import {useLaneStatusReconciliation} from "@/lib/data/oscar/streams/useLaneStatusReconciliation";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {applyStatusUpdate, ensureLanes, selectLaneStatusMap, silenceAlarms} from "@/lib/state/LaneStatusSlice";
+import {isMobileLane} from "@/lib/data/oscar/LaneCollection";
 
 /** One rendered chip, derived from the persisted per-lane status entry. */
 interface RenderedLaneStatus {
@@ -28,7 +29,9 @@ interface RenderedLaneStatus {
     pulseCount: number;
 }
 
-const STATUS_STREAMS: LaneStreamName[] = ['connectionRT', 'gammaRT', 'neutronRT', 'tamperRT'];
+// Mobile lanes (RS-350/D5) have no alarmState streams: their live alarms ride
+// rs350AlarmRT/radStatusRT, with the (delayed) occupancy record as a backstop.
+const STATUS_STREAMS: LaneStreamName[] = ['connectionRT', 'gammaRT', 'neutronRT', 'tamperRT', 'occRT', 'rs350AlarmRT', 'radStatusRT'];
 
 export default function LaneStatus(props: { lanes?: LaneSelection, hideTitle?: boolean }) {
     const lanes: LaneSelection = props.lanes ?? {mode: 'all'};
@@ -81,6 +84,73 @@ export default function LaneStatus(props: { lanes?: LaneSelection, hideTitle?: b
                 if (state == undefined) return;
                 dispatch(applyStatusUpdate({laneName, source: 'tamper', newState: state ? 'Tamper' : 'TamperOff'}));
                 bumpPulse(laneName);
+                break;
+            }
+            case 'rs350AlarmRT': {
+                // RS-350 only publishes this stream for actual radiation alarm
+                // events, so every message alerts. Gamma/neutron split mirrors
+                // Rs350OutputToOccupancy.processAlarm, including the both-true
+                // fallback for unknown/combined categories.
+                for (const value of message?.values ?? []) {
+                    const rec = value?.data;
+                    if (!rec) continue;
+                    const cat = (typeof rec.alarmCategoryCode === 'string' ? rec.alarmCategoryCode : '').toLowerCase();
+                    let gamma = cat.includes('gamma');
+                    let neutron = cat.includes('neutron');
+                    if (!gamma && !neutron) {
+                        gamma = true;
+                        neutron = true;
+                    }
+                    dispatch(setAlarmTrigger(true));
+                    if (gamma) dispatch(applyStatusUpdate({laneName, source: 'gamma', newState: 'Alarm'}));
+                    if (neutron) dispatch(applyStatusUpdate({laneName, source: 'neutron', newState: 'Alarm'}));
+                    bumpPulse(laneName);
+                }
+                break;
+            }
+            case 'radStatusRT': {
+                // Kromek D5 1 Hz status — the only device publishing this
+                // stream. Doubles as the liveness signal: the D5 driver has no
+                // connectionStatus output, so without this the chip shows a
+                // permanent red X. immer no-ops same-value writes, so the 1 Hz
+                // 'Online' dispatch doesn't churn redux-persist.
+                for (const value of message?.values ?? []) {
+                    const rec = value?.data;
+                    if (!rec) continue;
+                    const gamma = rec.doseAlarmActive === true || rec.gammaCpsAlarmActive === true;
+                    const neutron = rec.neutronCpsAlarmActive === true;
+                    if (gamma || neutron) dispatch(setAlarmTrigger(true));
+                    if (gamma) dispatch(applyStatusUpdate({laneName, source: 'gamma', newState: 'Alarm'}));
+                    if (neutron) dispatch(applyStatusUpdate({laneName, source: 'neutron', newState: 'Alarm'}));
+                    dispatch(applyStatusUpdate({laneName, source: 'connection', newState: 'Online'}));
+                }
+                bumpPulse(laneName);
+                break;
+            }
+            case 'occRT': {
+                // Backstop for mobile alarms only (RS-350 occupancy publishes
+                // ~10 s after alarm start, D5 after the episode closes — the
+                // live streams above are the timely path). RPM lanes emit the
+                // same record shape at occupancy end, but their alarm was
+                // already latched via gammaRT/neutronRT — alerting again here
+                // would re-sound (and re-latch after a silence) every RPM
+                // occupancy.
+                if (!isMobileLane(laneMapRef.current?.get(laneName))) return;
+                for (const value of message?.values ?? []) {
+                    const rec = value?.data?.result ?? value?.data;
+                    if (!rec) continue;
+                    const cat = typeof rec.alarmCategoryCode === 'string' ? rec.alarmCategoryCode : '';
+                    let gamma = rec.gammaAlarm === true || cat.includes('Gamma');
+                    const neutron = rec.neutronAlarm === true || cat.includes('Neutron');
+                    // Unknown categories (Alpha/Other/...) still must alert;
+                    // same fallback as the occupancy processes.
+                    if (!gamma && !neutron && cat.trim().length > 0) gamma = true;
+                    if (!gamma && !neutron) continue;
+                    dispatch(setAlarmTrigger(true));
+                    if (gamma) dispatch(applyStatusUpdate({laneName, source: 'gamma', newState: 'Alarm'}));
+                    if (neutron) dispatch(applyStatusUpdate({laneName, source: 'neutron', newState: 'Alarm'}));
+                    bumpPulse(laneName);
+                }
                 break;
             }
         }

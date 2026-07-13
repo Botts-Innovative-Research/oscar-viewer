@@ -6,10 +6,12 @@
 import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {
     isConnectionDataStream,
+    isD5RadiometricStatusDataStream,
     isGammaDataStream,
     isLocationDataStream,
     isNeutronDataStream,
     isOccupancyDataStream,
+    isRs350AlarmDataStream,
     isTamperDataStream,
     isThresholdDataStream,
 } from "@/lib/data/oscar/Utilities";
@@ -17,7 +19,7 @@ import {LaneSelection} from "@/lib/layout/PageConfigTypes";
 
 // NOTE: stream names double as LaneDSColl property names (see buildColl/addDS),
 // so a new name here must have a matching array slot in LaneDSColl.
-export type LaneStreamName = 'connectionRT' | 'gammaRT' | 'neutronRT' | 'tamperRT' | 'gammaTrshldRT' | 'occRT' | 'locRT';
+export type LaneStreamName = 'connectionRT' | 'gammaRT' | 'neutronRT' | 'tamperRT' | 'gammaTrshldRT' | 'occRT' | 'locRT' | 'rs350AlarmRT' | 'radStatusRT';
 
 export type LaneStreamHandler = (laneId: string, stream: LaneStreamName, message: any) => void;
 
@@ -53,7 +55,7 @@ interface LaneEntry {
     channels: Map<LaneStreamName, StreamChannel>;
 }
 
-const ALL_STREAM_NAMES: LaneStreamName[] = ['connectionRT', 'gammaRT', 'neutronRT', 'tamperRT', 'gammaTrshldRT', 'occRT', 'locRT'];
+const ALL_STREAM_NAMES: LaneStreamName[] = ['connectionRT', 'gammaRT', 'neutronRT', 'tamperRT', 'gammaTrshldRT', 'occRT', 'locRT', 'rs350AlarmRT', 'radStatusRT'];
 
 class LaneStreamRegistryImpl {
     private lanes = new Map<string, LaneEntry>();
@@ -76,6 +78,8 @@ class LaneStreamRegistryImpl {
             if (isThresholdDataStream(ds)) coll.addDS('gammaTrshldRT', rtDS);
             if (isOccupancyDataStream(ds)) coll.addDS('occRT', rtDS);
             if (isLocationDataStream(ds)) coll.addDS('locRT', rtDS);
+            if (isRs350AlarmDataStream(ds)) coll.addDS('rs350AlarmRT', rtDS);
+            if (isD5RadiometricStatusDataStream(ds)) coll.addDS('radStatusRT', rtDS);
         });
         return coll;
     }
