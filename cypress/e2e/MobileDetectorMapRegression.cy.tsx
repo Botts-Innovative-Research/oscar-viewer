@@ -82,23 +82,41 @@ function newestUnadjudicated(occDsId: string, attemptsLeft: number): Cypress.Cha
 /** Find a mobile lane (RS350/D5 subsystem), its adjudication control stream
  *  and its occupancy datastream — whatever the lane happens to be named. */
 function discoverMobileLane(): Cypress.Chainable<MobileLaneCtx> {
-    return cy.request({url: `${API}/systems?limit=100`, auth: AUTH}).then((resp) => {
+    // searchMembers: detector drivers are lane MEMBERS and never appear in the flat
+    // list; the response also carries every validTime version, so page big enough
+    return cy.request({url: `${API}/systems?limit=1000&searchMembers=true`, auth: AUTH}).then((resp) => {
         const items = resp.body.items || [];
-        const sensor = items.find((s: any) => /rsi:rs350|kromek:d5/i.test(s.properties?.uid || ''));
-        expect(sensor, 'a mobile detector sensor system').to.exist;
-        const suffix = (sensor.properties.uid.split(':').pop() || '').toLowerCase();
+        // Deleted lanes can leave orphan driver features behind: only accept a
+        // detector whose lane system actually exists.
+        const sensors = items.filter((s: any) => /rsi:rs350|kromek:d5/i.test(s.properties?.uid || ''));
+        expect(sensors.length, 'mobile detector sensor systems').to.be.greaterThan(0);
 
-        const lane = items.find((s: any) => {
-            const uid = s.properties?.uid || '';
-            return uid.startsWith('urn:osh:system:lane:')
-                && (uid.split(':').pop() || '').toLowerCase() === suffix;
-        });
-        expect(lane, `lane system for mobile suffix ${suffix}`).to.exist;
+        let lane: any;
+        let suffix = '';
+        for (const sensor of sensors) {
+            const sfx = (sensor.properties.uid.split(':').pop() || '').toLowerCase();
+            const laneMatch = items.find((s: any) => {
+                const uid = s.properties?.uid || '';
+                return uid.startsWith('urn:osh:system:lane:')
+                    && (uid.split(':').pop() || '').toLowerCase() === sfx;
+            });
+            if (laneMatch) {
+                lane = laneMatch;
+                suffix = sfx;
+                break;
+            }
+        }
+        expect(lane, 'a lane system with a live mobile detector member').to.exist;
 
-        return cy.request({url: `${API}/systems/${lane.id}/controlstreams`, auth: AUTH}).then((csResp) => {
+        // Global list keyed by system@link.uid: the by-system endpoint
+        // (/systems/{id}/controlstreams) returns [] on the PostGIS store when the
+        // lane feature gained a validTime version newer than the control stream's.
+        return cy.request({url: `${API}/controlstreams?limit=100`, auth: AUTH}).then((csResp) => {
+            const laneUid = lane.properties.uid;
             const adjCs = (csResp.body.items || []).find((cs: any) =>
-                JSON.stringify(cs).toLowerCase().includes('adjudication')
-                || JSON.stringify(cs).toLowerCase().includes('feedback'));
+                cs['system@link']?.uid === laneUid
+                && (JSON.stringify(cs).toLowerCase().includes('adjudication')
+                    || JSON.stringify(cs).toLowerCase().includes('feedback')));
             expect(adjCs, 'adjudication control stream').to.exist;
 
             return cy.request({url: `${API}/datastreams?limit=200`, auth: AUTH}).then((dsResp) => {
