@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Grid, Paper } from '@mui/material';
+import { Box } from '@mui/material';
 import { useSelector } from "react-redux";
 import {selectEventPreview} from "@/lib/state/EventPreviewSlice";
 import { EventPreview } from "@/app/_components/event-preview/EventPreview";
@@ -18,19 +18,28 @@ export default function QuickView() {
 
     if (isLoading) {
         return (
-            <Grid item xs={4}>
-                <Paper variant='outlined' sx={{height: "100%"}}>
-                    <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}>
-                        <CircularProgress/>
-                    </Box>
-                </Paper>
-            </Grid>
+            <Box sx={{display: 'flex', height: '100%', justifyContent: 'center', alignItems: 'center'}}>
+                <CircularProgress/>
+            </Box>
         )
     }
 
+    // The event preview is a tall form and needs to scroll; the map must not,
+    // or it scrolls instead of fitting. So the overflow lives on the branch
+    // that needs it rather than on a shared wrapper.
+    if (eventPreview.isOpen && eventPreview.eventData) {
+        return (
+            <Box sx={{width: '100%', height: '100%', minHeight: 0, overflowY: 'auto'}}>
+                <EventPreview/>
+            </Box>
+        );
+    }
+
     return (
-        <Grid container width={"100%"}>
-            {eventPreview.isOpen && eventPreview.eventData ? <EventPreview /> : <MapComponent/>}
-        </Grid>
+        <Box sx={{width: '100%', height: '100%', minHeight: 0}}>
+            {/* height="100%" so the map fills its widget cell — the default is
+                100vh, which overflows the card. Cf. MapWidget. */}
+            <MapComponent height="100%"/>
+        </Box>
     );
 }

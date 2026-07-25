@@ -14,6 +14,12 @@ import {WidgetInstance} from "@/lib/layout/PageConfigTypes";
 import {WIDGET_REGISTRY} from "./WidgetRegistry";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 
+/**
+ * Height of the widget title bar. Exported so widget bodies that size
+ * themselves against the grid cell can subtract it.
+ */
+export const WIDGET_HEADER_HEIGHT = 28;
+
 interface WidgetFrameProps {
     widget: WidgetInstance;
     editMode: boolean;
@@ -36,7 +42,10 @@ export default function WidgetFrame({widget, editMode, onConfigure, onRemove, ch
         <Paper
             variant="outlined"
             data-testid={`widget-${widget.type}`}
-            sx={{height: '100%', width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden'}}
+            // p: 0 cancels the 16px padding the theme applies to every outlined
+            // Paper — meant for standalone content cards, not for widget frames,
+            // where it costs 32px of the data area in each direction.
+            sx={{height: '100%', width: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', p: 0}}
         >
             <Box
                 className={editMode ? 'widget-drag-handle' : undefined}
@@ -50,7 +59,7 @@ export default function WidgetFrame({widget, editMode, onConfigure, onRemove, ch
                     borderColor: 'divider',
                     cursor: editMode ? 'move' : 'default',
                     userSelect: 'none',
-                    minHeight: 34,
+                    minHeight: WIDGET_HEADER_HEIGHT,
                     flexShrink: 0,
                 }}
             >
@@ -86,7 +95,7 @@ export default function WidgetFrame({widget, editMode, onConfigure, onRemove, ch
                     </>
                 )}
             </Box>
-            <Box sx={{flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', p: 0.5}}>
+            <Box sx={{flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', p: 0.25}}>
                 {children}
             </Box>
         </Paper>

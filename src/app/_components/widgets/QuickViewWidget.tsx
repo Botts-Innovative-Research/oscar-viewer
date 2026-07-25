@@ -12,7 +12,7 @@ import {WidgetProps} from "@/app/_components/layout/WidgetTypes";
 
 export default function QuickViewWidget(_props: WidgetProps) {
     return (
-        <Box sx={{height: '100%', overflowY: 'auto'}}>
+        <Box sx={{height: '100%', minHeight: 0}}>
             <QuickView/>
         </Box>
     );

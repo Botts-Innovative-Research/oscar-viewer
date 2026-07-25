@@ -26,7 +26,7 @@ import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
 import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
 import SettingsIcon from '@mui/icons-material/Settings';
 import MediationIcon from '@mui/icons-material/Mediation';
-import {FormControlLabel, Menu, MenuItem, Slider, Stack, Switch, Tooltip} from '@mui/material';
+import {FormControlLabel, Menu, MenuItem, Slider, Stack, Switch, Tooltip, useTheme} from '@mui/material';
 import Link from 'next/link';
 import {Download, InsertChart, VolumeDown, VolumeUp} from "@mui/icons-material";
 import AlarmAudio from "@/app/_components/AlarmAudio";
@@ -44,6 +44,7 @@ import {selectNavPages} from "@/lib/state/PageLayoutSlice";
 import {PageConfig} from "@/lib/layout/PageConfigTypes";
 import {getPageIcon} from "@/app/_components/layout/WidgetRegistry";
 import AddPageDialog from "@/app/_components/layout/AddPageDialog";
+import {HeaderSlotProvider} from "@/app/_components/layout/HeaderSlot";
 
 const drawerWidth = 240;
 const drawerWidthMobile = 200;
@@ -69,7 +70,8 @@ const closedMixin = (theme: Theme): CSSObject => ({
     },
 });
 
-// Used to place content below the app bar
+// Used to place content below the app bar. Matches the dense Toolbar height so
+// the spacer and the fixed bar stay in sync.
 const DrawerHeader = styled('div')(({theme}) => ({
     display: 'flex',
     alignItems: 'center',
@@ -77,6 +79,10 @@ const DrawerHeader = styled('div')(({theme}) => ({
     padding: theme.spacing(0, 1),
     // necessary for content to be below app bar
     ...theme.mixins.toolbar,
+    minHeight: 48,
+    [theme.breakpoints.up('sm')]: {
+        minHeight: 48,
+    },
 }));
 
 interface AppBarProps extends MuiAppBarProps {
@@ -131,11 +137,14 @@ const Drawer = styled(MuiDrawer, {shouldForwardProp: (prop) => prop !== 'open'})
 
 export default function Navbar({children}: { children: React.ReactNode }) {
     const { isDesktop } = useBreakpoint();
+    const isDarkMode = useTheme().palette.mode === 'dark';
 
     const [settingsAnchorEl, setSettingsAnchorEl] = useState<null | HTMLElement>(null); // Anchor element for settings menu
     const settingsMenuOpen = Boolean(settingsAnchorEl); // Open state for settings menu
 
     const [drawerOpen, setDrawerOpen] = useState(false);  // Open state for navigation drawer
+    // Slot in the app bar that the active page's PageToolbar portals into.
+    const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
     const { t } = useLanguage();
 
     const dispatch = useDispatch();
@@ -356,36 +365,50 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                 }}
                 isDesktop={isDesktop}
             >
-                <Toolbar>
+                <Toolbar variant="dense" sx={{gap: 1}}>
                     <IconButton
                         color="inherit"
                         aria-label="open drawer"
                         onClick={handleDrawerOpen}
                         edge="start"
                         sx={{
-                            marginRight: 5,
+                            marginRight: 1,
                             ...(drawerOpen && {display: 'none'}),
                         }}
                     >
                         <MenuIcon/>
                     </IconButton>
-                    <Stack direction={"row"} width={"100%"} alignItems={"center"} justifyContent={"space-between"}>
-                        <Typography variant="h6" noWrap component="div">
-                            {t('appTitle')}
-                        </Typography>
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                            <LanguageSelector />
-                            <Tooltip title={t('settings')} arrow placement="top">
-                                <IconButton
-                                    color="inherit"
-                                    aria-label="open settings"
-                                    onClick={handleSettingsMenuOpen}
-                                >
-                                    {<SettingsIcon  />}
-                                </IconButton>
-                            </Tooltip>
-                        </Stack>
-                    </Stack>
+                    {/* Dark theme gets the bare mark so it sits on the bar
+                        seamlessly; light theme gets the logo's own black tile,
+                        since the cream glyph would vanish on a white bar. */}
+                    <Box
+                        component="img"
+                        src={isDarkMode ? '/icons/logo-mark.png' : '/icons/logo-mark-tile.png'}
+                        alt=""
+                        sx={{
+                            height: 26,
+                            width: 26,
+                            flexShrink: 0,
+                            ...(isDarkMode ? {} : {borderRadius: 1}),
+                        }}
+                    />
+                    <Typography variant="h6" noWrap component="div">
+                        {t('appTitle')}
+                    </Typography>
+                    {/* The active page's title and edit controls render here. */}
+                    <Box
+                        ref={setHeaderSlot}
+                        sx={{display: 'flex', flex: 1, minWidth: 0, alignItems: 'center', gap: 1, overflow: 'hidden'}}
+                    />
+                    <Tooltip title={t('settings')} arrow placement="top">
+                        <IconButton
+                            color="inherit"
+                            aria-label="open settings"
+                            onClick={handleSettingsMenuOpen}
+                        >
+                            {<SettingsIcon  />}
+                        </IconButton>
+                    </Tooltip>
                 </Toolbar>
             </AppBar>
             <Menu
@@ -411,6 +434,13 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                 <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
                     <Typography variant="h6">{ t('settings') }</Typography>
                 </Box>
+                <Box sx={{ px: 2, pt: 2, pb: 0.5 }}>
+                    <Typography variant="subtitle2">
+                        { t('language') }
+                    </Typography>
+                </Box>
+                <LanguageSelector />
+                <Divider />
                 <Box sx={{ p: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>
                         { t('notificationPreferences') }
@@ -500,8 +530,10 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                 }}
             >
                 <DrawerHeader/>
-                <Box sx={{ m: 2, mr: 0 }}>
-                    {children}
+                <Box sx={{ mx: 1, mt: 1, mb: 0 }}>
+                    <HeaderSlotProvider node={headerSlot}>
+                        {children}
+                    </HeaderSlotProvider>
                 </Box>
             </Box>
         </Box>

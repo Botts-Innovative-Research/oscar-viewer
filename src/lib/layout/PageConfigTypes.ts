@@ -214,8 +214,8 @@ export const KNOWN_WIDGET_TYPES: WidgetType[] = [
 export const WIDGET_SIZES: Record<WidgetType, { defaultSize: { w: number, h: number }, minSize: { w: number, h: number } }> = {
     'system-status': {defaultSize: {w: 8, h: 15}, minSize: {w: 2, h: 7}},
     'map': {defaultSize: {w: 6, h: 24}, minSize: {w: 3, h: 12}},
-    'event-table': {defaultSize: {w: 12, h: 24}, minSize: {w: 4, h: 15}},
-    'adjudication-table': {defaultSize: {w: 12, h: 24}, minSize: {w: 4, h: 15}},
+    'event-table': {defaultSize: {w: 12, h: 24}, minSize: {w: 4, h: 11}},
+    'adjudication-table': {defaultSize: {w: 12, h: 24}, minSize: {w: 4, h: 11}},
     'video': {defaultSize: {w: 4, h: 21}, minSize: {w: 2, h: 12}},
     'chart': {defaultSize: {w: 6, h: 15}, minSize: {w: 3, h: 9}},
     'national-stats': {defaultSize: {w: 12, h: 27}, minSize: {w: 6, h: 15}},

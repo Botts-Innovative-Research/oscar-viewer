@@ -62,6 +62,7 @@ export default function ChartWidget({page, widget}: WidgetProps) {
             barColor={isGamma ? '#f44336' : '#29b6f6'}
             showThreshold={showThreshold}
             height="100%"
+            showTitle={false}
         />
     );
 }

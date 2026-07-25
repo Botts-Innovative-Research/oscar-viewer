@@ -37,7 +37,12 @@ export default function CustomToolbar(props: CustomToolbarProps = {} as CustomTo
             sx={{
                 display: "flex",
                 justifyContent: "space-between",
-                paddingInline: "1em"
+                px: 1,
+                py: 0.25,
+                gap: 0.5,
+                minHeight: 0,
+                // Height here is set by the buttons, not the container padding.
+                "& .MuiButton-root": {paddingBlock: 0.25, minHeight: 26}
             }}
         >
             <Stack direction={"row"} alignItems="center">

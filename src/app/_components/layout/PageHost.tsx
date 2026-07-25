@@ -105,6 +105,9 @@ export default function PageHost({pageId}: PageHostProps) {
                 cols={RGL_COLS}
                 rowHeight={RGL_ROW_HEIGHT}
                 margin={[8, 8]}
+                // Without this RGL falls back to `margin`, padding the whole
+                // grid; the page wrapper already provides the outer margin.
+                containerPadding={[0, 0]}
                 draggableHandle=".widget-drag-handle"
                 isDraggable={editMode}
                 isResizable={editMode}

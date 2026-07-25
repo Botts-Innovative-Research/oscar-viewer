@@ -29,6 +29,12 @@ interface ScrollingBarChartCoreProps {
     barColor: string;
     showThreshold?: boolean;
     height?: number | string;
+    /**
+     * Draw the title inside the canvas. Off for widget-hosted charts, where the
+     * widget frame already shows a title and the canvas is the scarce space.
+     * The title still labels the dataset in the legend either way.
+     */
+    showTitle?: boolean;
 }
 
 /**
@@ -37,7 +43,7 @@ interface ScrollingBarChartCoreProps {
  * consumer can drive the chart without owning its render cadence.
  */
 export const ScrollingBarChartCore = forwardRef<ScrollingChartHandle, ScrollingBarChartCoreProps>(
-    function ScrollingBarChartCore({ title, barColor, showThreshold = false, height = 250 }, ref) {
+    function ScrollingBarChartCore({ title, barColor, showThreshold = false, height = 250, showTitle = true }, ref) {
         const canvasRef = useRef<HTMLCanvasElement>(null);
         const chartRef = useRef<Chart | null>(null);
         const pointsRef = useRef<DataPoint[]>([]);
@@ -103,7 +109,7 @@ export const ScrollingBarChartCore = forwardRef<ScrollingChartHandle, ScrollingB
                     maintainAspectRatio: false,
                     plugins: {
                         title: {
-                            display: true,
+                            display: showTitle,
                             text: title,
                             font: { size: 14, weight: 'bold' },
                         },

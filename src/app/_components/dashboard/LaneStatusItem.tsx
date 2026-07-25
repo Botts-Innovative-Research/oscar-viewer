@@ -73,7 +73,7 @@ export default function LaneStatusItem(props: {
     return (
         <Paper key={props.id} variant='outlined'
                sx={{ cursor: 'pointer',
-                   padding: 1,
+                   padding: 0.5,
                    height: 25,
                    display: 'flex',
                    alignItems: 'center',

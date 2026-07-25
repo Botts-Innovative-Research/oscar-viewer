@@ -26,6 +26,7 @@
   "browserNotificationPermission": "Browser Notification Permission",
   "notificationPreferences": "Notification Preferences",
   "settings": "Settings",
+  "language": "Language",
   "filters": "Filters",
   "alarmType": "Alarm Type",
   "adjudicationStatus": "Adjudication Status",

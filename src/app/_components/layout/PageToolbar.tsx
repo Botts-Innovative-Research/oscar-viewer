@@ -6,6 +6,7 @@
  */
 
 import React, {useState} from "react";
+import {createPortal} from "react-dom";
 import {
     Box,
     Button,
@@ -18,9 +19,10 @@ import {
     Menu,
     MenuItem,
     Select,
-    Stack,
     Tooltip,
     Typography,
+    useMediaQuery,
+    useTheme,
 } from "@mui/material";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import LockRoundedIcon from "@mui/icons-material/LockRounded";
@@ -48,6 +50,7 @@ import {
 import AddWidgetDialog from "./AddWidgetDialog";
 import PageSettingsDialog from "./PageSettingsDialog";
 import ImportExportDialog from "./ImportExportDialog";
+import {useHeaderSlot} from "./HeaderSlot";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 
 interface PageToolbarProps {
@@ -56,11 +59,19 @@ interface PageToolbarProps {
     leading?: React.ReactNode;
 }
 
-/** Title row of a widget page: lane selector, edit-mode toggle, page menu. */
+/**
+ * Title and controls for a widget page: lane selector, edit-mode toggle, page
+ * menu. Rendered into the app bar's slot rather than inline, so it costs no
+ * vertical space of its own. Pages still mount it themselves — see HeaderSlot.
+ */
 export default function PageToolbar({pageId, leading}: PageToolbarProps) {
     const dispatch = useAppDispatch();
     const router = useRouter();
     const {t} = useLanguage();
+    const theme = useTheme();
+    const headerSlot = useHeaderSlot();
+    // Below md the bar has no room for button labels; collapse to icons.
+    const showLabels = useMediaQuery(theme.breakpoints.up('md'));
 
     const page: PageConfig | undefined = useSelector(selectPageById(pageId));
     const editMode = useSelector(selectEditModePageId) === pageId;
@@ -98,13 +109,23 @@ export default function PageToolbar({pageId, leading}: PageToolbarProps) {
         router.push('/');
     };
 
-    return (
-        <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5, flexWrap: 'wrap'}}>
+    const content = (
+        <>
+            {/* Explicit 1px rule rather than <Divider orientation="vertical"/>,
+                which resolves to the full flex-container width here and starves
+                everything after it. */}
+            <Box sx={{width: '1px', alignSelf: 'stretch', my: 1, bgcolor: 'divider', flexShrink: 0}}/>
             {leading}
-            <Typography variant="h5" sx={{fontWeight: 500}}>{title}</Typography>
+            <Typography
+                variant="subtitle1"
+                noWrap
+                sx={{fontWeight: 500, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis'}}
+            >
+                {title}
+            </Typography>
 
             {page.laneContext && laneNames.length > 0 && (
-                <FormControl size="small" sx={{minWidth: 180}}>
+                <FormControl size="small" sx={{minWidth: 140, flexShrink: 0}}>
                     <InputLabel id={`lane-ctx-${pageId}`}>{t('laneId')}</InputLabel>
                     <Select
                         labelId={`lane-ctx-${pageId}`}
@@ -122,31 +143,62 @@ export default function PageToolbar({pageId, leading}: PageToolbarProps) {
             <Box sx={{flex: 1}}/>
 
             {editMode && (
-                <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<AddRoundedIcon/>}
-                    onClick={() => setAddWidgetOpen(true)}
-                    data-testid="add-widget-button"
-                >
-                    {t('addWidget')}
-                </Button>
+                <Tooltip title={t('addWidget')}>
+                    {showLabels ? (
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<AddRoundedIcon/>}
+                            onClick={() => setAddWidgetOpen(true)}
+                            data-testid="add-widget-button"
+                            sx={{flexShrink: 0}}
+                        >
+                            {t('addWidget')}
+                        </Button>
+                    ) : (
+                        <IconButton
+                            size="small"
+                            color="inherit"
+                            onClick={() => setAddWidgetOpen(true)}
+                            data-testid="add-widget-button"
+                        >
+                            <AddRoundedIcon/>
+                        </IconButton>
+                    )}
+                </Tooltip>
             )}
 
             <Tooltip title={editMode ? t('lockLayout') : t('editLayout')}>
-                <Button
-                    variant={editMode ? 'contained' : 'outlined'}
-                    size="small"
-                    color={editMode ? 'primary' : 'inherit'}
-                    startIcon={editMode ? <LockRoundedIcon/> : <EditRoundedIcon/>}
-                    onClick={() => dispatch(setEditMode(editMode ? null : pageId))}
-                    data-testid="edit-mode-toggle"
-                >
-                    {editMode ? t('done') : t('editLayout')}
-                </Button>
+                {showLabels ? (
+                    <Button
+                        variant={editMode ? 'contained' : 'outlined'}
+                        size="small"
+                        color={editMode ? 'primary' : 'inherit'}
+                        startIcon={editMode ? <LockRoundedIcon/> : <EditRoundedIcon/>}
+                        onClick={() => dispatch(setEditMode(editMode ? null : pageId))}
+                        data-testid="edit-mode-toggle"
+                        sx={{flexShrink: 0}}
+                    >
+                        {editMode ? t('done') : t('editLayout')}
+                    </Button>
+                ) : (
+                    <IconButton
+                        size="small"
+                        color={editMode ? 'primary' : 'inherit'}
+                        onClick={() => dispatch(setEditMode(editMode ? null : pageId))}
+                        data-testid="edit-mode-toggle"
+                    >
+                        {editMode ? <LockRoundedIcon/> : <EditRoundedIcon/>}
+                    </IconButton>
+                )}
             </Tooltip>
 
-            <IconButton size="small" onClick={(e) => setMenuAnchor(e.currentTarget)} data-testid="page-menu-button">
+            <IconButton
+                size="small"
+                onClick={(e) => setMenuAnchor(e.currentTarget)}
+                data-testid="page-menu-button"
+                sx={{flexShrink: 0}}
+            >
                 <MoreVertRoundedIcon/>
             </IconButton>
             <Menu anchorEl={menuAnchor} open={menuAnchor !== null} onClose={() => setMenuAnchor(null)}>
@@ -174,6 +226,12 @@ export default function PageToolbar({pageId, leading}: PageToolbarProps) {
             <AddWidgetDialog pageId={pageId} open={addWidgetOpen} onClose={() => setAddWidgetOpen(false)}/>
             <PageSettingsDialog page={page} open={settingsOpen} onClose={() => setSettingsOpen(false)}/>
             <ImportExportDialog open={importExportOpen} onClose={() => setImportExportOpen(false)} currentPage={page}/>
-        </Box>
+        </>
     );
+
+    // The slot is published by Navbar's ref callback, so it is null for the
+    // first render only. Menu/dialogs portal to document.body themselves, so
+    // living inside the app bar subtree doesn't affect their stacking.
+    if (!headerSlot) return null;
+    return createPortal(content, headerSlot);
 }

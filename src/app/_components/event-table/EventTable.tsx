@@ -151,7 +151,9 @@ export default function EventTable({
             flex: 1,
             filterable: false,
             renderCell: (params) => (
-                <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', py: 0.5 }}>
+                // No vertical padding: the two stacked lines are ~30px, which
+                // only fits a 36px compact row unpadded.
+                <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <span style={{ lineHeight: 1.25 }}>{params.row.laneId}</span>
                     <span style={{ fontSize: '0.8rem', color: 'gray', lineHeight: 1.25 }}>{params.row.parentNode}</span>
                 </Box>

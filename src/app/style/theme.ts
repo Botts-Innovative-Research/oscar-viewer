@@ -82,8 +82,33 @@ export const getTheme = (mode: PaletteMode) => {
         },
       },
       MuiDataGrid: {
+        // Tables live inside resizable widget cells, where the standard 56px
+        // headers / 52px rows leave room for only a handful of rows. Compact
+        // roughly doubles the visible count; the grid's own density selector
+        // still lets users switch back.
+        defaultProps: {
+          density: "compact",
+        },
         styleOverrides: {
           root: {},
+          // Default is a fixed 52px for what is one line of pagination text.
+          // The inner TablePagination toolbar carries its own 52px, so shrinking
+          // the container alone leaves the height unchanged.
+          footerContainer: {
+            minHeight: 38,
+            "& .MuiTablePagination-toolbar": {
+              minHeight: 38,
+            },
+            // Full-size icon buttons (40px) would otherwise set the height.
+            "& .MuiTablePagination-actions .MuiIconButton-root": {
+              padding: 4,
+            },
+            // These are <p> elements: the default 14px block margins turn one
+            // 20px line of text into a 48px row, which set the footer height.
+            "& .MuiTablePagination-displayedRows, & .MuiTablePagination-selectLabel": {
+              margin: 0,
+            },
+          },
         },
       },
       MuiTextField: {
