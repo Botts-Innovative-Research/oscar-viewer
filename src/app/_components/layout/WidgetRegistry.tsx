@@ -20,6 +20,7 @@ import BarChartRoundedIcon from "@mui/icons-material/BarChartRounded";
 import MonitorHeartRoundedIcon from "@mui/icons-material/MonitorHeartRounded";
 import FactCheckRoundedIcon from "@mui/icons-material/FactCheckRounded";
 import PreviewRoundedIcon from "@mui/icons-material/PreviewRounded";
+import QueryStatsRoundedIcon from "@mui/icons-material/QueryStatsRounded";
 import GridViewRoundedIcon from "@mui/icons-material/GridViewRounded";
 import PublicRoundedIcon from "@mui/icons-material/PublicRounded";
 import StarRoundedIcon from "@mui/icons-material/StarRounded";
@@ -44,6 +45,7 @@ import ChartConfigForm from "@/app/_components/widgets/config/ChartConfigForm";
 import StatusTableConfigForm from "@/app/_components/widgets/config/StatusTableConfigForm";
 import NationalStatsConfigForm from "@/app/_components/widgets/config/NationalStatsConfigForm";
 import LaneDetailStatusConfigForm from "@/app/_components/widgets/config/LaneDetailStatusConfigForm";
+import AlarmStatsConfigForm from "@/app/_components/widgets/config/AlarmStatsConfigForm";
 
 const widgetLoading = () => (
     <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%'}}>
@@ -57,6 +59,7 @@ const MapWidget = dynamic(() => import("@/app/_components/widgets/MapWidget"), {
 const VideoWidget = dynamic(() => import("@/app/_components/widgets/VideoWidget"), {ssr: false, loading: widgetLoading});
 const ChartWidget = dynamic(() => import("@/app/_components/widgets/ChartWidget"), {ssr: false, loading: widgetLoading});
 const QuickViewWidget = dynamic(() => import("@/app/_components/widgets/QuickViewWidget"), {ssr: false, loading: widgetLoading});
+const AlarmStatsWidget = dynamic(() => import("@/app/_components/widgets/AlarmStatsWidget"), {ssr: false, loading: widgetLoading});
 
 export interface WidgetRegistryEntry {
     component: WidgetComponent;
@@ -126,6 +129,12 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetRegistryEntry> = {
         ConfigForm: undefined,
         titleKey: 'quickView',
         icon: <PreviewRoundedIcon/>,
+    },
+    'alarm-stats': {
+        component: AlarmStatsWidget as WidgetComponent,
+        ConfigForm: AlarmStatsConfigForm,
+        titleKey: 'alarmStats',
+        icon: <QueryStatsRoundedIcon/>,
     },
 };
 

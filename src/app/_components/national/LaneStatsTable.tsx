@@ -3,6 +3,7 @@ import {useSelector} from "react-redux";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {ILaneStat} from "../../../../types/new-types";
+import {formatDuration} from "@/lib/data/oscar/stats/formatDuration";
 
 interface Props {
     lanes: ILaneStat[];
@@ -11,16 +12,6 @@ interface Props {
 function formatPercent(numerator: number, denominator: number): string {
     if (!denominator) return "—";
     return `${((numerator / denominator) * 100).toFixed(1)}%`;
-}
-
-function formatDuration(seconds: number): string {
-    if (!seconds || seconds <= 0) return "—";
-    if (seconds < 60) return `${seconds.toFixed(1)}s`;
-    const m = Math.floor(seconds / 60);
-    const s = Math.round(seconds % 60);
-    if (m < 60) return `${m}m ${s.toString().padStart(2, "0")}s`;
-    const h = Math.floor(m / 60);
-    return `${h}h ${(m % 60).toString().padStart(2, "0")}m`;
 }
 
 function laneDisplayName(laneUid: string, laneMap: Map<string, LaneMapEntry>): string {

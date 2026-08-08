@@ -22,7 +22,8 @@ export type WidgetType =
     | 'national-stats'
     | 'lane-detail-status'
     | 'status-table'
-    | 'quick-view';
+    | 'quick-view'
+    | 'alarm-stats';
 
 export type RGLBreakpoint = 'lg' | 'md' | 'sm';
 
@@ -139,6 +140,73 @@ export interface StatusTableWidgetConfig {
 export interface QuickViewWidgetConfig {
 }
 
+export type AlarmStatsVisualization =
+    | 'rate-trend'
+    | 'adjudication-time'
+    | 'lane-comparison'
+    | 'lane-stack'
+    | 'time-profile';
+/** '30d' is offered for time-profile only — day-of-week needs several samples per weekday. */
+export type AlarmStatsWindow = '1h' | '8h' | '24h' | '7d' | '30d';
+export type AlarmStatsBucket = 'auto' | '1m' | '5m' | '15m' | '1h' | '6h' | '1d';
+export type LaneCompareMetric =
+    | 'occupancies'
+    | 'alarms'
+    | 'alarmRate'
+    | 'adjudicatedPct'
+    | 'meanAdjTime';
+
+/**
+ * Only `visualization` and `lanes` are required — everything else is
+ * optional-with-default (same approach as MapWidgetConfig). validatePageConfig
+ * only checks that config is an object, so a config persisted before a field
+ * existed still validates; every read must use `??` or it crashes on the
+ * undefined. Keeping fields optional also means adding a new toggle later needs
+ * no schema bump and no migration.
+ */
+export interface AlarmStatsWidgetConfig {
+    visualization: AlarmStatsVisualization;
+    lanes: LaneSelection;
+    /** History window seeded over REST. Default '24h'. */
+    window?: AlarmStatsWindow;
+    /** Bucket width; 'auto' derives from the window. Default 'auto'. */
+    bucket?: AlarmStatsBucket;
+
+    // rate-trend
+    showOccupancies?: boolean;
+    showAlarms?: boolean;
+    /** Alarm rate % on a right-hand axis. */
+    showAlarmRate?: boolean;
+    trendStyle?: 'line' | 'area';
+
+    // adjudication-time
+    showAdjMeanTrend?: boolean;
+
+    // lane-comparison
+    laneCompareMode?: 'bars' | 'kpis' | 'both';
+    laneCompareMetric?: LaneCompareMetric;
+    laneCompareTopN?: number;
+
+    // lane-stack (alarms over time, stacked by lane)
+    laneStackMetric?: 'alarms' | 'occupancies';
+    /** Lanes drawn individually; the rest fold into "Other". Clamped to 7 so the stack stays readable. */
+    laneStackTopN?: number;
+
+    // time-profile (hour-of-day / day-of-week)
+    profileAxis?: 'hourOfDay' | 'dayOfWeek';
+    /**
+     * Show the mean per hour/weekday rather than the raw total. Default true:
+     * a window that doesn't cover whole weeks gives some bins more occurrences
+     * than others, so raw totals misrepresent the shape.
+     */
+    profileNormalize?: boolean;
+
+    /** Append live occupancies from the occRT streams. Default true. */
+    liveAppend?: boolean;
+    /** Re-seed cadence in seconds; 0 = manual refresh only. Default 300. */
+    refreshSec?: number;
+}
+
 export type WidgetConfig =
     | SystemStatusWidgetConfig
     | MapWidgetConfig
@@ -149,7 +217,8 @@ export type WidgetConfig =
     | NationalStatsWidgetConfig
     | LaneDetailStatusWidgetConfig
     | StatusTableWidgetConfig
-    | QuickViewWidgetConfig;
+    | QuickViewWidgetConfig
+    | AlarmStatsWidgetConfig;
 
 export interface WidgetInstance {
     /** Unique per page; doubles as the RGL layout key. */
@@ -205,11 +274,6 @@ export interface ExportedConfig {
 export const SEEDED_PAGE_IDS = ['dashboard', 'event-log', 'map', 'national-view', 'lane-view'] as const;
 export type SeededPageId = typeof SEEDED_PAGE_IDS[number];
 
-export const KNOWN_WIDGET_TYPES: WidgetType[] = [
-    'system-status', 'map', 'event-table', 'adjudication-table', 'video',
-    'chart', 'national-stats', 'lane-detail-status', 'status-table', 'quick-view'
-];
-
 /** Default/min widget sizes in grid units (lg 12-col basis, 8px rows / 16px steps). */
 export const WIDGET_SIZES: Record<WidgetType, { defaultSize: { w: number, h: number }, minSize: { w: number, h: number } }> = {
     'system-status': {defaultSize: {w: 8, h: 15}, minSize: {w: 2, h: 7}},
@@ -222,7 +286,16 @@ export const WIDGET_SIZES: Record<WidgetType, { defaultSize: { w: number, h: num
     'lane-detail-status': {defaultSize: {w: 12, h: 6}, minSize: {w: 4, h: 6}},
     'status-table': {defaultSize: {w: 12, h: 24}, minSize: {w: 4, h: 12}},
     'quick-view': {defaultSize: {w: 4, h: 39}, minSize: {w: 3, h: 18}},
+    'alarm-stats': {defaultSize: {w: 6, h: 21}, minSize: {w: 3, h: 12}},
 };
+
+/**
+ * Derived from WIDGET_SIZES rather than hand-listed: validatePageConfig drops
+ * the *entire page* for an unknown widget type, so a type missing from this
+ * list silently deletes the user's page on the next rehydrate. WIDGET_SIZES is
+ * Record<WidgetType,...>, so the compiler keeps it exhaustive for us.
+ */
+export const KNOWN_WIDGET_TYPES: WidgetType[] = Object.keys(WIDGET_SIZES) as WidgetType[];
 
 export const DEFAULT_EVENT_TABLE_COLUMNS: EventTableColumnSetting[] = [
     {key: 'laneId', visible: true},
@@ -271,5 +344,26 @@ export function buildDefaultWidgetConfig(type: WidgetType): WidgetConfig {
             return {laneSource: {source: 'page'}, defaultView: 'occupancy'};
         case 'quick-view':
             return {};
+        case 'alarm-stats':
+            return {
+                visualization: 'rate-trend',
+                lanes: {mode: 'all'},
+                window: '24h',
+                bucket: 'auto',
+                showOccupancies: true,
+                showAlarms: true,
+                showAlarmRate: true,
+                trendStyle: 'area',
+                showAdjMeanTrend: true,
+                laneCompareMode: 'both',
+                laneCompareMetric: 'alarmRate',
+                laneCompareTopN: 15,
+                laneStackMetric: 'alarms',
+                laneStackTopN: 7,
+                profileAxis: 'hourOfDay',
+                profileNormalize: true,
+                liveAppend: true,
+                refreshSec: 300,
+            };
     }
 }
