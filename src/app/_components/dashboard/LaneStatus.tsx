@@ -10,10 +10,11 @@ import {setAlarmTrigger} from "@/lib/state/EventDataSlice";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 import {LaneSelection} from "@/lib/layout/PageConfigTypes";
 import {useLaneStreams} from "@/lib/data/oscar/streams/useLaneStreams";
-import {LaneStreamName} from "@/lib/data/oscar/streams/LaneStreamRegistry";
+import {LaneStreamName, LaneStreamRegistry} from "@/lib/data/oscar/streams/LaneStreamRegistry";
 import {useLaneStatusReconciliation} from "@/lib/data/oscar/streams/useLaneStatusReconciliation";
+import {useStalenessSweep} from "@/lib/data/oscar/streams/useStalenessSweep";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import {applyStatusUpdate, ensureLanes, selectLaneStatusMap, silenceAlarms} from "@/lib/state/LaneStatusSlice";
+import {applyStatusUpdate, ensureLanes, markCommsLost, selectLaneStatusMap, silenceAlarms} from "@/lib/state/LaneStatusSlice";
 import {isMobileLane} from "@/lib/data/oscar/LaneCollection";
 
 /** One rendered chip, derived from the persisted per-lane status entry. */
@@ -50,6 +51,10 @@ export default function LaneStatus(props: { lanes?: LaneSelection, hideTitle?: b
     const { t } = useLanguage();
 
     const laneStatusMap = useAppSelector(selectLaneStatusMap);
+    // Ref mirror so the staleness sweep reads current state without being a
+    // dependency (it runs on a timer, not on renders).
+    const laneStatusMapRef = useRef(laneStatusMap);
+    laneStatusMapRef.current = laneStatusMap;
 
     const bumpPulse = (laneName: string) =>
         setPulses((p) => ({...p, [laneName]: (p[laneName] ?? 0) + 1}));
@@ -161,6 +166,20 @@ export default function LaneStatus(props: { lanes?: LaneSelection, hideTitle?: b
     // Reconcile persisted fault/tamper/connection against the device's latest
     // observation on load, so a fault cleared while the tab was closed clears.
     useLaneStatusReconciliation(laneIds);
+
+    // Comms watchdog: a stopped/crashed producer goes silent without ever
+    // publishing isConnected:false, so silence past the threshold flips the
+    // chip to Comm Failure. Level-checked each tick but dispatched only on
+    // transition (the !== false guard); recovery needs no code here — every
+    // live handler above already forces isOnline back to true.
+    useStalenessSweep(() => {
+        for (const laneName of laneIds) {
+            if (LaneStreamRegistry.isLaneStale(laneName)
+                && laneStatusMapRef.current[laneName]?.isOnline !== false) {
+                dispatch(markCommsLost({laneName}));
+            }
+        }
+    }, laneIds.length > 0);
 
     // Merge the currently-known lanes into the persisted slice (adds new lanes,
     // refreshes parentNode) without wiping live or persisted flags.

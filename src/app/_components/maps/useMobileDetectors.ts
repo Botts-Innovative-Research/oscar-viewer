@@ -13,6 +13,8 @@ import ObservationFilter from "osh-js/source/core/consysapi/observation/Observat
 import {LaneMapEntry, isMobileLane} from "@/lib/data/oscar/LaneCollection";
 import {LaneSelection, MapAlarmWindow} from "@/lib/layout/PageConfigTypes";
 import {useLaneStreams} from "@/lib/data/oscar/streams/useLaneStreams";
+import {LaneStreamRegistry} from "@/lib/data/oscar/streams/LaneStreamRegistry";
+import {useStalenessSweep} from "@/lib/data/oscar/streams/useStalenessSweep";
 import {useAdjudicationMap} from "@/app/_components/event-table/useAdjudicationMap";
 import {isOccupancyDataStream} from "@/lib/data/oscar/Utilities";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
@@ -28,8 +30,20 @@ export type {MapAlarmWindow};
 
 const MOBILE_NORMAL_COLOR = '#1565c0';
 const MOBILE_ALARM_COLOR = '#d32f2f';
+const MOBILE_OFFLINE_COLOR = '#9e9e9e';
 /** How long the walker icon stays red after a live alarm event. */
 const MOBILE_ALARM_FLASH_MS = 30_000;
+
+/** Walker visual state. Alarm outranks offline (same precedence as the fixed
+ *  lane circles): an unacknowledged rad alarm must never be visually
+ *  downgraded because comms went quiet. */
+type MobileMarkerState = 'normal' | 'alarm' | 'offline';
+
+const MOBILE_STATE_COLORS: Record<MobileMarkerState, string> = {
+    normal: MOBILE_NORMAL_COLOR,
+    alarm: MOBILE_ALARM_COLOR,
+    offline: MOBILE_OFFLINE_COLOR,
+};
 /** Ring buffer of recent fixes per lane, for alarm->position time joins. */
 const FIX_BUFFER_MAX = 600;
 /** Max |alarm time - fix time| for a ring-buffer/REST position join. */
@@ -76,18 +90,34 @@ function windowStartMs(window: MapAlarmWindow): number {
     }
 }
 
-function mobileIcon(laneName: string, alarming: boolean): L.DivIcon {
-    const color = alarming ? MOBILE_ALARM_COLOR : MOBILE_NORMAL_COLOR;
+function mobileIcon(laneName: string, state: MobileMarkerState, lastSeenMs?: number): L.DivIcon {
+    const color = MOBILE_STATE_COLORS[state];
+    const offline = state === 'offline';
+    const title = offline && lastSeenMs !== undefined
+        ? `${laneName} — no data since ${new Date(lastSeenMs).toLocaleTimeString()}`
+        : laneName;
     // Material "directions walk" glyph inside a ringed disc
     return L.divIcon({
         className: 'mobile-unit-marker',
         iconSize: [30, 30],
         iconAnchor: [15, 15],
         popupAnchor: [0, -14],
-        html: `<div title="${laneName}" style="width:30px;height:30px;border-radius:50%;background:#ffffff;border:3px solid ${color};box-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;">
+        html: `<div title="${title}" style="width:30px;height:30px;border-radius:50%;background:#ffffff;border:3px solid ${color};box-shadow:0 1px 4px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;${offline ? 'opacity:.8;' : ''}">
 <svg viewBox="0 0 24 24" width="20" height="20" fill="${color}"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7"/></svg>
 </div>`,
     });
+}
+
+/** Popup for a walker marker; offline walkers get a "no data since" line. */
+function walkerPopupHtml(laneName: string, offlineSinceMs?: number): string {
+    const offlineLine = offlineSinceMs !== undefined
+        ? `<span class='popup-text-status' style='color:${MOBILE_OFFLINE_COLOR};'>No data since ${new Date(offlineSinceMs).toLocaleTimeString()}</span>`
+        : '';
+    return `<div class='point-popup'>
+        <strong>${laneName}</strong>${offlineLine}
+        <hr/>
+        <button onclick='location.href="/lane-view"' class="popup-button" type="button">VIEW LANE</button>
+    </div>`;
 }
 
 /** Normalize the location record shape: driver outputs name the vector
@@ -146,6 +176,8 @@ export function useMobileDetectors(options: MobileDetectorOptions) {
     const trailByLane = useRef<Map<string, L.Polyline>>(new Map());
     const fixBufferByLane = useRef<Map<string, Fix[]>>(new Map());
     const alarmFlashTimer = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+    const flashUntil = useRef<Map<string, number>>(new Map());
+    const iconStateByLane = useRef<Map<string, MobileMarkerState>>(new Map());
     const alarmMarkers = useRef<Map<number, AlarmMarkerEntry>>(new Map());
     const adjudicatedKeys = useRef<Set<number>>(new Set());
     const seededInitialPos = useRef<Set<string>>(new Set());
@@ -205,14 +237,9 @@ export function useMobileDetectors(options: MobileDetectorOptions) {
 
         let marker = markersByLane.current.get(laneName);
         if (!marker) {
-            marker = L.marker(latlng, {icon: mobileIcon(laneName, false), zIndexOffset: 500}).addTo(map);
-            marker.bindPopup(
-                `<div class='point-popup'>
-                    <strong>${laneName}</strong>
-                    <hr/>
-                    <button onclick='location.href="/lane-view"' class="popup-button" type="button">VIEW LANE</button>
-                </div>`
-            );
+            marker = L.marker(latlng, {icon: mobileIcon(laneName, 'normal'), zIndexOffset: 500}).addTo(map);
+            iconStateByLane.current.set(laneName, 'normal');
+            marker.bindPopup(walkerPopupHtml(laneName));
             marker.on('click', () => dispatch(setCurrentLane(laneName)));
             markersByLane.current.set(laneName, marker);
             // Join the initial fitBounds exactly once; live fixes must never
@@ -235,14 +262,33 @@ export function useMobileDetectors(options: MobileDetectorOptions) {
         }
     }
 
+    /** Re-derive one walker's icon + popup from alarm-flash and comms
+     *  staleness. setIcon replaces the marker's DOM node, so only real state
+     *  changes are applied. */
+    function refreshWalkerIcon(laneName: string) {
+        const marker = markersByLane.current.get(laneName);
+        if (!marker) return;
+        const flashActive = (flashUntil.current.get(laneName) ?? 0) > Date.now();
+        const state: MobileMarkerState = flashActive ? 'alarm'
+            : LaneStreamRegistry.isLaneStale(laneName) ? 'offline' : 'normal';
+        if (iconStateByLane.current.get(laneName) === state) return;
+        iconStateByLane.current.set(laneName, state);
+        const offlineSince = state === 'offline' ? LaneStreamRegistry.getLastSeen(laneName) : undefined;
+        marker.setIcon(mobileIcon(laneName, state, offlineSince));
+        marker.setPopupContent(walkerPopupHtml(laneName, offlineSince));
+    }
+
     function flashMobileAlarm(laneName: string) {
         const marker = markersByLane.current.get(laneName);
         if (!marker) return;
-        marker.setIcon(mobileIcon(laneName, true));
+        flashUntil.current.set(laneName, Date.now() + MOBILE_ALARM_FLASH_MS);
+        refreshWalkerIcon(laneName);
         const existing = alarmFlashTimer.current.get(laneName);
         if (existing) clearTimeout(existing);
         alarmFlashTimer.current.set(laneName, setTimeout(() => {
-            markersByLane.current.get(laneName)?.setIcon(mobileIcon(laneName, false));
+            // Re-derive instead of hardcoding the revert color: a unit that
+            // went silent mid-flash lands on the offline style, not blue.
+            refreshWalkerIcon(laneName);
         }, MOBILE_ALARM_FLASH_MS));
     }
 
@@ -255,7 +301,19 @@ export function useMobileDetectors(options: MobileDetectorOptions) {
                 : Date.now();
             upsertMobileMarker(laneName, L.latLng(fix.lat, fix.lon), t);
         }
+        // Instant recovery from the offline style: the registry stamped this
+        // arrival before the fan-out, so isLaneStale is already false here.
+        refreshWalkerIcon(laneName);
     }, enabled && mapReady && mobileLaneNames.length > 0);
+
+    // Comms staleness sweep for walkers (fixed-lane circles are swept by
+    // MapComponent). Greys out units silent past the threshold; the locRT
+    // handler above restores them the moment fixes resume.
+    useStalenessSweep(() => {
+        for (const laneName of markersByLane.current.keys()) {
+            refreshWalkerIcon(laneName);
+        }
+    }, enabled && mapReady);
 
     // Seed each walker's marker from the latest stored fix so it appears even
     // before the first live message (or while the unit is stationary/offline)
@@ -281,10 +339,19 @@ export function useMobileDetectors(options: MobileDetectorOptions) {
                     const page = await locDs.searchObservations(new ObservationFilter({resultTime: 'latest'}), 1);
                     const obs = (await page.nextPage())?.[0];
                     if (cancelled || !obs) continue;
-                    const rec = obs.result ?? obs.properties?.result;
+                    const props = obs.properties ?? obs;
+                    const rec = obs.result ?? props?.result;
                     const fix = readFix(rec);
-                    if (fix && !markersByLane.current.has(laneName))
-                        upsertMobileMarker(laneName, L.latLng(fix.lat, fix.lon), Date.now());
+                    // The stored fix's age is comms evidence: a unit that was
+                    // already down at page load seeds directly into the
+                    // offline style instead of waiting out the grace window.
+                    const tMs = Date.parse(props?.phenomenonTime ?? props?.resultTime);
+                    if (Number.isFinite(tMs)) LaneStreamRegistry.noteObservedAt(laneName, tMs);
+                    if (fix && !markersByLane.current.has(laneName)) {
+                        upsertMobileMarker(laneName, L.latLng(fix.lat, fix.lon),
+                            Number.isFinite(tMs) ? tMs : Date.now());
+                        refreshWalkerIcon(laneName);
+                    }
                 } catch (e) {
                     console.warn(`[mobile] failed to seed initial position for ${laneName}`, e);
                 }
@@ -518,6 +585,8 @@ export function useMobileDetectors(options: MobileDetectorOptions) {
         alarmMarkers.current.clear();
         adjudicatedKeys.current.clear();
         alarmFlashTimer.current.clear();
+        flashUntil.current.clear();
+        iconStateByLane.current.clear();
         fixBufferByLane.current.clear();
         seededInitialPos.current.clear();
         historicalKey.current = '';

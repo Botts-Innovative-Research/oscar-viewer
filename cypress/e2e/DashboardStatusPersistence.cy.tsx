@@ -28,7 +28,10 @@ const LANE = Cypress.env('laneName') || 'AFM Gate';
 
 const LOCAL_NODE = [{
     name: 'cypress-local',
-    address: 'localhost',
+    // Overridable so the spec can run on 127.0.0.1 (a separate cypress
+    // superdomain), immune to the stale-document artifact described in
+    // commFailureShared.ts.
+    address: String(Cypress.env('nodeAddress') || 'localhost'),
     port: NODE_PORT,
     oshPathRoot: '/sensorhub',
     csAPIEndpoint: '/api',

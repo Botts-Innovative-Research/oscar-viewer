@@ -58,8 +58,28 @@ interface LaneEntry {
 
 const ALL_STREAM_NAMES: LaneStreamName[] = ['connectionRT', 'gammaRT', 'neutronRT', 'tamperRT', 'gammaTrshldRT', 'occRT', 'locRT', 'rs350AlarmRT', 'radStatusRT', 'adjStatusRT'];
 
+/**
+ * A lane with no message on ANY of its streams for this long has lost comms.
+ * A stopped/crashed module never publishes a final isConnected:false — silence
+ * is the only signal. Every live device carries at least one 1 Hz stream
+ * (connectionStatus on RPMs and the RS-350, radiometric status on the D5,
+ * sensor location on mobiles), so this is ~15 missed heartbeats.
+ */
+export const LANE_COMMS_STALE_MS = 15_000;
+
+/** Cadence for consumers' staleness sweeps (see useStalenessSweep). */
+export const LANE_COMMS_SWEEP_MS = 5_000;
+
 class LaneStreamRegistryImpl {
     private lanes = new Map<string, LaneEntry>();
+    /** Wall-clock arrival time of the newest realtime message per lane. */
+    private lastMessageAt = new Map<string, number>();
+    /**
+     * Per-lane staleness grace baseline: seeded at first touch so a lane is
+     * never declared stale before its first message had a chance to arrive,
+     * and only ever lowered afterwards (see noteObservedAt).
+     */
+    private baselineAt = new Map<string, number>();
 
     private buildColl(mapEntry: LaneMapEntry): LaneDSColl {
         const coll = new LaneDSColl();
@@ -108,6 +128,9 @@ class LaneStreamRegistryImpl {
     }
 
     private ensureLane(laneId: string, mapEntry: LaneMapEntry): LaneEntry {
+        // First touch starts the grace window. Never reset on the rebuild
+        // branch below: a lane-map refetch must not un-stale a silent lane.
+        if (!this.baselineAt.has(laneId)) this.baselineAt.set(laneId, Date.now());
         let entry = this.lanes.get(laneId);
         if (entry && entry.sourceEntry === mapEntry) return entry;
 
@@ -134,6 +157,9 @@ class LaneStreamRegistryImpl {
     private attachAndConnect(laneId: string, entry: LaneEntry, stream: LaneStreamName, channel: StreamChannel) {
         if (!channel.dispatcherAttached) {
             entry.coll.addSubscribeHandlerToALLDSMatchingName(stream, (message: any) => {
+                // Liveness stamp before the fan-out, even with an empty
+                // handler map — every widget's staleness view keys off this.
+                this.lastMessageAt.set(laneId, Date.now());
                 for (const handler of channel.handlers.values()) {
                     try {
                         handler(laneId, stream, message);
@@ -203,6 +229,42 @@ class LaneStreamRegistryImpl {
         if (!mapEntry) return [];
         const entry = this.ensureLane(laneId, mapEntry);
         return entry.coll.getDSArray(stream);
+    }
+
+    /**
+     * Newest evidence of life for a lane: the later of the last realtime
+     * message arrival and the grace baseline (first touch, lowered by REST
+     * evidence). Undefined if the lane was never touched.
+     */
+    getLastSeen(laneId: string): number | undefined {
+        const arrived = this.lastMessageAt.get(laneId);
+        const baseline = this.baselineAt.get(laneId);
+        if (arrived === undefined && baseline === undefined) return undefined;
+        return Math.max(arrived ?? -Infinity, baseline ?? -Infinity);
+    }
+
+    /**
+     * True when a touched lane has been silent on ALL its streams for longer
+     * than LANE_COMMS_STALE_MS. Never-touched lanes return false — liveness is
+     * unjudgeable without a subscription; consumers' own defaults cover them.
+     */
+    isLaneStale(laneId: string, nowMs: number = Date.now()): boolean {
+        const lastSeen = this.getLastSeen(laneId);
+        return lastSeen !== undefined && nowMs - lastSeen > LANE_COMMS_STALE_MS;
+    }
+
+    /**
+     * Feed REST evidence ("the newest stored observation is from tMs") into
+     * the grace baseline. Only ever LOWERS it: a stored observation bounds how
+     * long the producer has been silent but never proves it alive now —
+     * raising freshness is exclusively the live dispatcher's job. This makes
+     * a system that is already down at page load show stale immediately
+     * instead of waiting out the grace window.
+     */
+    noteObservedAt(laneId: string, tMs: number) {
+        if (!Number.isFinite(tMs)) return;
+        const current = this.baselineAt.get(laneId);
+        if (current === undefined || tMs < current) this.baselineAt.set(laneId, tMs);
     }
 }
 

@@ -5,6 +5,8 @@ import {LaneMapEntry, isMobileLane} from "@/lib/data/oscar/LaneCollection";
 import {MapAlarmWindow, useMobileDetectors} from "@/app/_components/maps/useMobileDetectors";
 import {LaneSelection} from "@/lib/layout/PageConfigTypes";
 import {useLaneStreams} from "@/lib/data/oscar/streams/useLaneStreams";
+import {LaneStreamRegistry} from "@/lib/data/oscar/streams/LaneStreamRegistry";
+import {useStalenessSweep} from "@/lib/data/oscar/streams/useStalenessSweep";
 import PointMarkerLayer from "osh-js/source/core/ui/layer/PointMarkerLayer";
 import LeafletView from "osh-js/source/core/ui/view/map/LeafletView";
 import {useSelector} from "react-redux";
@@ -31,6 +33,7 @@ import DataStreamFilter from "osh-js/source/core/consysapi/datastream/DataStream
 
 const ALARM_COLOR = '#d32f2f';
 const NORMAL_COLOR = '#2e7d32';
+const OFFLINE_COLOR = '#9e9e9e';
 
 interface MapComponentProps {
     /** Widget config: restrict markers/streams to a lane subset. */
@@ -78,6 +81,7 @@ export default function MapComponent({
     const markersByLane = useRef<Map<string, L.CircleMarker>>(new Map());
     const gammaAlarmByLane = useRef<Map<string, boolean>>(new Map());
     const neutronAlarmByLane = useRef<Map<string, boolean>>(new Map());
+    const offlineByLane = useRef<Map<string, boolean>>(new Map());
     const markerLatLngs = useRef<L.LatLng[]>([]);
     const fitBoundsTimer = useRef<NodeJS.Timeout | null>(null);
     const hasSiteDiagram = useRef(false);
@@ -85,6 +89,14 @@ export default function MapComponent({
     const isLaneInAlarm = (laneName: string) =>
         (gammaAlarmByLane.current.get(laneName) ?? false) ||
         (neutronAlarmByLane.current.get(laneName) ?? false);
+
+    // Alarm outranks offline: never visually downgrade an unacknowledged alarm
+    // because comms went quiet — the Lane Status chip carries the comm failure
+    // for the same lane. Offline = explicit device report OR comms silence.
+    const markerFillColor = (laneName: string) =>
+        isLaneInAlarm(laneName) ? ALARM_COLOR
+            : (offlineByLane.current.get(laneName) || LaneStreamRegistry.isLaneStale(laneName)) ? OFFLINE_COLOR
+                : NORMAL_COLOR;
 
     const scheduleFitBounds = useCallback(() => {
         if (hasSiteDiagram.current) return;
@@ -150,7 +162,7 @@ export default function MapComponent({
     const updateMarkerColor = (laneName: string) => {
         const marker = markersByLane.current.get(laneName);
         if (marker) {
-            marker.setStyle({ fillColor: isLaneInAlarm(laneName) ? ALARM_COLOR : NORMAL_COLOR });
+            marker.setStyle({ fillColor: markerFillColor(laneName) });
         }
     };
 
@@ -158,8 +170,11 @@ export default function MapComponent({
     useLaneStreams(laneSelection, ['connectionRT', 'gammaRT', 'neutronRT', 'tamperRT'], (laneName, stream, message) => {
         switch (stream) {
             case 'connectionRT': {
-                const connection = message.values[0].data.connection;
-                updateLocationList(laneName, connection);
+                const isConnected = message.values[0].data.isConnected;
+                if (isConnected == undefined) return;
+                offlineByLane.current.set(laneName, !isConnected);
+                updateMarkerColor(laneName);
+                updateLocationList(laneName, isConnected ? 'Online' : 'Offline');
                 break;
             }
             case 'gammaRT': {
@@ -185,6 +200,15 @@ export default function MapComponent({
             }
         }
     });
+
+    // Comms staleness sweep: a stopped producer never reports Offline, so grey
+    // out lanes silent past the threshold from message-arrival age. Fixed
+    // lanes only — mobile walkers are restyled by useMobileDetectors.
+    useStalenessSweep(() => {
+        for (const laneName of markersByLane.current.keys()) {
+            updateMarkerColor(laneName);
+        }
+    }, isInit);
 
     // Re-run whenever the lane map changes: on a fresh dashboard load this
     // component mounts before lane discovery finishes, so a one-shot setup
@@ -261,10 +285,9 @@ export default function MapComponent({
 
                             // Create a Leaflet circleMarker the first time location data arrives
                             if (!markersByLane.current.has(location.laneName) && leafletViewRef.current?.map) {
-                                const isAlarm = isLaneInAlarm(location.laneName);
                                 const cm = L.circleMarker(latlng, {
                                     radius: 10,
-                                    fillColor: isAlarm ? ALARM_COLOR : NORMAL_COLOR,
+                                    fillColor: markerFillColor(location.laneName),
                                     color: '#ffffff',
                                     weight: 2,
                                     opacity: 1,

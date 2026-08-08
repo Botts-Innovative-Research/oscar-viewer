@@ -113,6 +113,20 @@ export const Slice = createSlice({
             }
         },
 
+        /**
+         * Client comms watchdog tripped: no message on any lane stream for
+         * LANE_COMMS_STALE_MS. Only isOnline flips — unlike the explicit
+         * device-reported Offline above, silence is a client inference and
+         * must not destroy last-known device truth (latched alarm/tamper/
+         * fault). Recovery is the existing path: any live message forces
+         * isOnline back to true. Deliberately no ensureEntry — a watchdog
+         * must not create entries for lanes it never saw.
+         */
+        markCommsLost: (state, action: PayloadAction<{ laneName: string }>) => {
+            const entry = state.lanes[action.payload.laneName];
+            if (entry) entry.isOnline = false;
+        },
+
         /** User acknowledged/silenced the active alarms for a lane. */
         silenceAlarms: (state, action: PayloadAction<{ laneName: string }>) => {
             const entry = state.lanes[action.payload.laneName];
@@ -171,6 +185,7 @@ export const Slice = createSlice({
 export const {
     ensureLanes,
     applyStatusUpdate,
+    markCommsLost,
     silenceAlarms,
     reconcileLane,
 } = Slice.actions;
