@@ -166,7 +166,18 @@ export function useMobileDetectors(options: MobileDetectorOptions) {
         [mobileLaneNames.join(',')]
     );
 
-    const adjudicationMap = useAdjudicationMap(laneMap, enabled && showAlarmMarkers && mobileLaneNames.length > 0);
+    // The alarm layer only shows alarms inside alarmTimeWindow, and an alarm
+    // can only be adjudicated after it happened, so [windowStart, now] covers
+    // every adjudication that could apply to a visible marker. Memoized because
+    // windowStartMs() reads the clock — recomputing it per render would move
+    // the window on every render and re-trigger the fetch forever.
+    const adjOptions = useMemo(() => ({
+        startIso: new Date(windowStartMs(alarmTimeWindow)).toISOString(),
+        laneIds: mobileLaneNames,
+    }), [alarmTimeWindow, mobileLaneNames.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const adjudicationMap = useAdjudicationMap(
+        laneMap, enabled && showAlarmMarkers && mobileLaneNames.length > 0, adjOptions);
     // Ref mirror so addAlarmMarker (called from long-lived effects/handlers
     // with stale closures) always checks the latest adjudication state
     const adjMapRef = useRef(adjudicationMap);

@@ -396,6 +396,14 @@ export class LaneDSColl {
     radStatusRT: typeof ConSysApi[];
     radStatusBatch: typeof ConSysApi[];
 
+    /**
+     * Adjudication command *statuses*. Unlike every other slot here this is fed
+     * from a control stream rather than a datastream, so it has no counterpart
+     * in LaneMapEntry.datasourcesRealtime — LaneStreamRegistry builds it.
+     * Distinct from the legacy (unpopulated) adjRT slot.
+     */
+    adjStatusRT: typeof ConSysApi[];
+
     constructor() {
         this.occRT = [];
         this.occBatch = [];
@@ -426,6 +434,7 @@ export class LaneDSColl {
         this.rs350AlarmBatch = [];
         this.radStatusRT = [];
         this.radStatusBatch = [];
+        this.adjStatusRT = [];
     }
 
     getDSArray(propName: string): typeof ConSysApi[] {
@@ -460,6 +469,7 @@ export class LaneDSColl {
             'backgroundRT',
             'rs350AlarmRT',
             'radStatusRT',
+            'adjStatusRT',
             'forgroundBatch',
             'backgroundBatch',
             'rs350AlarmBatch',
@@ -504,6 +514,7 @@ export class LaneDSColl {
             'backgroundRT',
             'rs350AlarmRT',
             'radStatusRT',
+            'adjStatusRT',
         ];
     }
 

@@ -5,6 +5,7 @@
 
 import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {
+    isAdjudicationControlStream,
     isConnectionDataStream,
     isD5RadiometricStatusDataStream,
     isGammaDataStream,
@@ -19,7 +20,7 @@ import {LaneSelection} from "@/lib/layout/PageConfigTypes";
 
 // NOTE: stream names double as LaneDSColl property names (see buildColl/addDS),
 // so a new name here must have a matching array slot in LaneDSColl.
-export type LaneStreamName = 'connectionRT' | 'gammaRT' | 'neutronRT' | 'tamperRT' | 'gammaTrshldRT' | 'occRT' | 'locRT' | 'rs350AlarmRT' | 'radStatusRT';
+export type LaneStreamName = 'connectionRT' | 'gammaRT' | 'neutronRT' | 'tamperRT' | 'gammaTrshldRT' | 'occRT' | 'locRT' | 'rs350AlarmRT' | 'radStatusRT' | 'adjStatusRT';
 
 export type LaneStreamHandler = (laneId: string, stream: LaneStreamName, message: any) => void;
 
@@ -55,7 +56,7 @@ interface LaneEntry {
     channels: Map<LaneStreamName, StreamChannel>;
 }
 
-const ALL_STREAM_NAMES: LaneStreamName[] = ['connectionRT', 'gammaRT', 'neutronRT', 'tamperRT', 'gammaTrshldRT', 'occRT', 'locRT', 'rs350AlarmRT', 'radStatusRT'];
+const ALL_STREAM_NAMES: LaneStreamName[] = ['connectionRT', 'gammaRT', 'neutronRT', 'tamperRT', 'gammaTrshldRT', 'occRT', 'locRT', 'rs350AlarmRT', 'radStatusRT', 'adjStatusRT'];
 
 class LaneStreamRegistryImpl {
     private lanes = new Map<string, LaneEntry>();
@@ -81,6 +82,28 @@ class LaneStreamRegistryImpl {
             if (isRs350AlarmDataStream(ds)) coll.addDS('rs350AlarmRT', rtDS);
             if (isD5RadiometricStatusDataStream(ds)) coll.addDS('radStatusRT', rtDS);
         });
+
+        // Adjudications arrive as command statuses on a CONTROL stream, so
+        // there is no entry in datasourcesRealtime to reuse and the datasource
+        // has to be built here. Routing it through the registry is the point:
+        // useAdjudicationMap used to build, connect and then disconnect its own
+        // per-lane source on effect cleanup, which is precisely the one-way
+        // door described above — react-grid-layout remounts widgets on a
+        // breakpoint change, so an ordinary window resize was enough to kill
+        // the adjudication stream for the rest of the page's life.
+        //
+        // No startTime stamp here, unlike the datastreams above: ConSysApi
+        // already defaults REAL_TIME sources to startTime 'now'.
+        const adjControlStream = mapEntry.controlStreams?.find((cs: any) => isAdjudicationControlStream(cs));
+        if (adjControlStream) {
+            try {
+                const adjRtDS = mapEntry.createRealTimeConSysApi(adjControlStream);
+                if (adjRtDS) coll.addDS('adjStatusRT', adjRtDS);
+            } catch (e) {
+                console.warn(`[LaneStreamRegistry] failed to build adjudication status source for lane ${mapEntry.laneName}:`, e);
+            }
+        }
+
         return coll;
     }
 

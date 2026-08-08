@@ -47,7 +47,11 @@ import {
     DEFAULT_ALARM_FILTER,
     cloneAlarmFilter
 } from "@/app/_components/event-table/AlarmFilterPopover";
-import { useAdjudicationMap, AdjudicationByOccupancy } from "@/app/_components/event-table/useAdjudicationMap";
+import {
+    useAdjudicationMap,
+    AdjudicationByOccupancy,
+    DEFAULT_ADJ_LOOKBACK_MS
+} from "@/app/_components/event-table/useAdjudicationMap";
 import { AdjudicationCodes } from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import { EventTableColumnSetting, LaneSelection } from "@/lib/layout/PageConfigTypes";
 import { resolveLaneSelection } from "@/lib/data/oscar/streams/LaneStreamRegistry";
@@ -55,6 +59,9 @@ import { useLaneStreams } from "@/lib/data/oscar/streams/useLaneStreams";
 import { GridColumnVisibilityModel } from "@mui/x-data-grid";
 import * as React from "react";
 
+
+/** Adjudication window starts are floored to this so paging doesn't refetch for a few extra seconds of history. */
+const ADJ_WINDOW_QUANTUM_MS = 60 * 60 * 1000;
 
 interface TableProps {
     tableMode: "eventlog" | "alarmtable" | "lanelog";
@@ -137,8 +144,40 @@ export default function EventTable({
     const wantsAdjudicationColumns = useMemo(() =>
         (columnSettings ?? []).some((c) => c.visible && (c.key === 'adjudicationGroup' || c.key === 'secondaryInspection')),
         [columnSettings]);
+    // Adjudication statuses are queried by report time, but what the table needs
+    // to know is whether the occupancies ON SCREEN have been adjudicated. An
+    // occupancy can only be adjudicated after it happened, so a window that
+    // starts at the oldest displayed row and runs to now is complete for those
+    // rows — and it is bounded by what the user actually asked to see instead
+    // of by the node's whole retention. It only ever widens (paging back
+    // through history), so known adjudications never blink back to "Not
+    // Adjudicated" while a refetch is in flight.
+    const [adjWindowStartIso, setAdjWindowStartIso] = useState<string>(
+        () => new Date(Date.now() - DEFAULT_ADJ_LOOKBACK_MS).toISOString());
+
+    useEffect(() => {
+        let oldest = Number.POSITIVE_INFINITY;
+        for (const row of filteredTableData) {
+            const t = Date.parse(row.startTime);
+            if (!Number.isNaN(t) && t < oldest) oldest = t;
+        }
+        if (!Number.isFinite(oldest)) return;
+        const startIso = new Date(Math.floor(oldest / ADJ_WINDOW_QUANTUM_MS) * ADJ_WINDOW_QUANTUM_MS).toISOString();
+        // Same-format UTC ISO strings compare chronologically.
+        setAdjWindowStartIso(prev => (startIso < prev ? startIso : prev));
+    }, [filteredTableData]);
+
+    const adjLaneIds = useMemo<string[] | undefined>(() => {
+        if (tableMode === 'lanelog' && currentLane) return [currentLane];
+        return laneFilterSet ? [...laneFilterSet] : undefined;
+    }, [tableMode, currentLane, laneFilterSet]);
+
+    const adjOptions = useMemo(
+        () => ({ startIso: adjWindowStartIso, laneIds: adjLaneIds }),
+        [adjWindowStartIso, adjLaneIds]);
+
     const adjudicationMap: AdjudicationByOccupancy = useAdjudicationMap(
-        stableLaneMap, tableMode === "alarmtable" || wantsAdjudicationColumns);
+        stableLaneMap, tableMode === "alarmtable" || wantsAdjudicationColumns, adjOptions);
     const currentPageRef = useRef(0);
     const locale = navigator.language || 'en-US';
 
