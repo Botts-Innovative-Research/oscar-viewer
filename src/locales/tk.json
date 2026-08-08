@@ -260,5 +260,6 @@
   "dayOfWeek": "Hepdäniň güni",
   "profileNormalize": "Sagat/gün ortaçasyny görkezmek",
   "avgPerHour": "Sagatda ortaça",
-  "avgPerDay": "Günde ortaça"
+  "avgPerDay": "Günde ortaça",
+  "profileNoCoverage": "Boş aralyklar saýlanan wagt aralygynyň daşynda"
 }

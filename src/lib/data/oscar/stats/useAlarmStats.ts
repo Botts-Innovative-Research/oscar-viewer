@@ -15,7 +15,14 @@ import {convertToMap} from "@/app/utils/Utils";
 import {AlarmStatsBucket, AlarmStatsWindow, LaneSelection} from "@/lib/layout/PageConfigTypes";
 import {resolveLaneSelection} from "@/lib/data/oscar/streams/LaneStreamRegistry";
 import {AlarmStatsRegistry} from "./AlarmStatsRegistry";
-import {AlarmStatsResult, AlarmStatsSnapshot, EMPTY_TOTALS, resolveBucketMs, WINDOW_SPAN_MS} from "./alarmStatsTypes";
+import {
+    AlarmStatsResult,
+    AlarmStatsSeedMode,
+    AlarmStatsSnapshot,
+    EMPTY_TOTALS,
+    resolveBucketMs,
+    WINDOW_SPAN_MS,
+} from "./alarmStatsTypes";
 
 export interface UseAlarmStatsOptions {
     lanes: LaneSelection;
@@ -29,6 +36,8 @@ export interface UseAlarmStatsOptions {
     needAdjudication: boolean;
     liveAppend: boolean;
     refreshSec: number;
+    /** 'counts' seeds via /observations/count — uncapped totals. Default 'observations'. */
+    seedMode?: AlarmStatsSeedMode;
     enabled?: boolean;
 }
 
@@ -60,7 +69,7 @@ function idleSnapshot(window: AlarmStatsWindow, bucket: AlarmStatsBucket): Alarm
  * fetch and one live subscription.
  */
 export function useAlarmStats(opts: UseAlarmStatsOptions): AlarmStatsResult {
-    const {lanes, window, bucket, needAdjudication, liveAppend, refreshSec, enabled = true} = opts;
+    const {lanes, window, bucket, needAdjudication, liveAppend, refreshSec, seedMode = 'observations', enabled = true} = opts;
 
     const {laneMapRef} = useContext(DataSourceContext);
     // Re-render trigger: DataSourceContext populates/replaces the redux laneMap.
@@ -88,7 +97,7 @@ export function useAlarmStats(opts: UseAlarmStatsOptions): AlarmStatsResult {
         AlarmStatsRegistry.setLaneMap(laneMap ?? laneMapRef.current);
         const initial = AlarmStatsRegistry.acquire(
             subscriberId,
-            {lanes: laneIds, window, bucket, needAdjudication, liveAppend, refreshSec},
+            {lanes: laneIds, window, bucket, needAdjudication, liveAppend, refreshSec, seedMode},
             setSnapshot,
         );
         setSnapshot(initial);
@@ -97,7 +106,7 @@ export function useAlarmStats(opts: UseAlarmStatsOptions): AlarmStatsResult {
             AlarmStatsRegistry.release(subscriberId);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [enabled, laneKey, window, bucket, needAdjudication, liveAppend, refreshSec, laneMap]);
+    }, [enabled, laneKey, window, bucket, needAdjudication, liveAppend, refreshSec, seedMode, laneMap]);
 
     const refresh = useCallback(() => {
         AlarmStatsRegistry.refresh(subscriberIdRef.current);

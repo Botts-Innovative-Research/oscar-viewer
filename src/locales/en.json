@@ -260,5 +260,6 @@
   "dayOfWeek": "Day of week",
   "profileNormalize": "Show average per hour/day",
   "avgPerHour": "Avg per hour",
-  "avgPerDay": "Avg per day"
+  "avgPerDay": "Avg per day",
+  "profileNoCoverage": "Blank bins are outside the selected time window"
 }

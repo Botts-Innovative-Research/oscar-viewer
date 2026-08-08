@@ -492,6 +492,12 @@ export function buildTimeProfileSpec(
             new Intl.DateTimeFormat(locale, {weekday: 'short'}).format(new Date(2026, 0, 4 + wd)));
 
     const round = (v: number | null) => (v == null ? null : (normalize ? Math.round(v * 10) / 10 : v));
+    const occData = occ.map((v, i) => round(scale(v, i)));
+    const almData = alm.map((v, i) => round(scale(v, i)));
+    // A null bin means the window never covered that hour/weekday. It renders
+    // as an empty slot, which reads as "zero traffic" without an explanation —
+    // say so in a subtitle whenever any bin lacks coverage.
+    const hasUncovered = occData.some((v) => v === null);
 
     return {
         type: 'bar',
@@ -500,14 +506,14 @@ export function buildTimeProfileSpec(
             datasets: [
                 {
                     label: t('occupancies'),
-                    data: occ.map((v, i) => round(scale(v, i))),
+                    data: occData,
                     backgroundColor: c.occupancy,
                     borderColor: surface,
                     borderWidth: {top: 0, right: 2, bottom: 0, left: 2},
                 },
                 {
                     label: t('alarms'),
-                    data: alm.map((v, i) => round(scale(v, i))),
+                    data: almData,
                     backgroundColor: c.alarm,
                     borderColor: surface,
                     borderWidth: {top: 0, right: 2, bottom: 0, left: 2},
@@ -516,6 +522,18 @@ export function buildTimeProfileSpec(
         },
         options: {
             ...baseOptions(theme),
+            plugins: {
+                ...baseOptions(theme).plugins,
+                ...(hasUncovered ? {
+                    subtitle: {
+                        display: true,
+                        text: t('profileNoCoverage'),
+                        color: c.tick,
+                        font: {size: 11},
+                        padding: {top: 2, bottom: 6},
+                    },
+                } : {}),
+            },
             scales: {
                 x: axis(theme, {
                     ticks: {autoSkip: true, maxRotation: 0},

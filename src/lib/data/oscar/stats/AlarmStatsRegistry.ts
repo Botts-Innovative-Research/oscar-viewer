@@ -9,10 +9,12 @@ import {isOccupancyDataStream} from "@/lib/data/oscar/Utilities";
 import {AlarmStatsBucket, AlarmStatsWindow} from "@/lib/layout/PageConfigTypes";
 import {LaneStreamName, LaneStreamRegistry} from "@/lib/data/oscar/streams/LaneStreamRegistry";
 import {fetchAdjudicationWindow} from "./fetchAdjudicationWindow";
+import {buildProfileIntervals, fetchObservationCount} from "./fetchObservationCounts";
 import {
     AlarmStatsBucketRow,
     AlarmStatsLaneRow,
     AlarmStatsLaneSeries,
+    AlarmStatsSeedMode,
     AlarmStatsSnapshot,
     AlarmStatsTotals,
     CACHE_TTL_MS,
@@ -31,6 +33,15 @@ export interface AlarmStatsParams {
     needAdjudication: boolean;
     liveAppend: boolean;
     refreshSec: number;
+    /**
+     * 'observations' (default) paginates occupancy rows — rich data, OBS_CAP.
+     * 'counts' seeds each bucket from /observations/count — totals only, but
+     * uncapped, so long windows get full coverage. Counts mode is seed+refresh
+     * only: no live append, no rolling-window tick (its '1d' buckets are
+     * local-midnight aligned, which the floor-based slide/prune math must
+     * never touch).
+     */
+    seedMode: AlarmStatsSeedMode;
 }
 
 export type AlarmStatsListener = (snapshot: AlarmStatsSnapshot) => void;
@@ -141,6 +152,7 @@ export function alarmStatsKey(p: AlarmStatsParams): string {
         p.bucket,
         p.needAdjudication ? 'adj' : 'noadj',
         p.liveAppend ? 'live' : 'static',
+        p.seedMode,
     ].join('|');
 }
 
@@ -264,7 +276,9 @@ class AlarmStatsRegistryImpl {
             liveBound: false,
             seeding: false,
         };
-        this.seedBucketRange(entry);
+        // Counts mode creates a bucket only for intervals that were actually
+        // queried successfully — coverage IS the bucket set, so no pre-fill.
+        if (params.seedMode !== 'counts') this.seedBucketRange(entry);
         return entry;
     }
 
@@ -278,7 +292,11 @@ class AlarmStatsRegistryImpl {
     }
 
     private startTimers(entry: Entry) {
-        entry.tickTimer = setInterval(() => this.advanceWindow(entry), PUBLISH_TICK_MS);
+        // Counts mode has no live stream to publish and no rolling window to
+        // slide — the whole series is replaced on each re-seed instead.
+        if (entry.params.seedMode !== 'counts') {
+            entry.tickTimer = setInterval(() => this.advanceWindow(entry), PUBLISH_TICK_MS);
+        }
         const refreshSec = entry.params.refreshSec ?? 300;
         if (refreshSec > 0) {
             entry.refreshTimer = setInterval(() => this.startSeed(entry), refreshSec * 1000);
@@ -315,6 +333,7 @@ class AlarmStatsRegistryImpl {
     }
 
     private async runSeed(entry: Entry, runId: number) {
+        if (entry.params.seedMode === 'counts') return this.runCountSeed(entry, runId);
         const cancelled = () => entry.runId !== runId;
         const laneMap = this.laneMap;
 
@@ -442,6 +461,132 @@ class AlarmStatsRegistryImpl {
         this.commit(entry, acc, effectiveStartMs, windowEndMs);
     }
 
+    /**
+     * Count-based seed: one /observations/count pair (all occupancies, then
+     * alarms-only) per interval per node, folded straight into buckets.
+     *
+     * A successful count of 0 is real data — the interval was covered and had
+     * no traffic — so its bucket IS created. A failed interval creates no
+     * bucket, so the profile's normalization (which divides by covered
+     * occurrences) never counts hours it has no answer for.
+     *
+     * Cost: intervals × 2 × nodes requests at ~0.02s each. Worst realistic
+     * case (hour-of-day over 30d) is ~1,440 requests, a few seconds at this
+     * pool width. POOL stays at 4 so at most 4 of the browser's ~6 sockets
+     * per origin are held — the initial dashboard seed saturating all 6 is
+     * exactly what starved route-chunk fetches in the cypress suite.
+     */
+    private async runCountSeed(entry: Entry, runId: number) {
+        const cancelled = () => entry.runId !== runId;
+        const laneMap = this.laneMap;
+
+        const windowEndMs = Date.now();
+        let windowStartMs = windowEndMs - (WINDOW_SPAN_MS[entry.params.window] ?? WINDOW_SPAN_MS['24h']);
+
+        const acc = emptyAcc();
+
+        // Counts are per-node (the endpoint takes a csv of that node's
+        // datastreams), so group the selection's occupancy streams by node.
+        // Keep the datastream objects too — the retention probe below needs
+        // their searchObservations method.
+        const byNode = new Map<string, { node: any; dsIds: string[] }>();
+        const allDs: any[] = [];
+        for (const laneId of entry.params.lanes) {
+            const laneEntry = laneMap.get(laneId);
+            if (!laneEntry?.parentNode) continue;
+            const occDs = (laneEntry.datastreams ?? []).filter((ds: any) => isOccupancyDataStream(ds));
+            if (occDs.length === 0) continue;
+            allDs.push(...occDs);
+            const group = byNode.get(laneEntry.parentNode.id) ?? {node: laneEntry.parentNode, dsIds: []};
+            group.dsIds.push(...occDs.map((ds: any) => ds.properties.id));
+            byNode.set(laneEntry.parentNode.id, group);
+        }
+
+        if (byNode.size === 0) {
+            if (cancelled()) return;
+            this.commit(entry, acc, windowStartMs, windowEndMs);
+            return;
+        }
+
+        // Retention clamp. The node purges observations on a rolling horizon
+        // (30 days here), so the oldest edge of a long window can lie beyond
+        // what the store still has. A count of 0 for a purged day is
+        // indistinguishable from a genuinely quiet day and would silently drag
+        // that weekday's average down — measured on this node: three purged
+        // edge days read Fri/Sat ~25% low. So find the earliest observation
+        // still stored in the window (limit=1 per datastream; the API's
+        // default order is oldest-first) and start coverage there. Days with
+        // real zero traffic INSIDE retention remain honest zeros.
+        const earliest: number[] = [];
+        const probeStartIso = new Date(windowStartMs).toISOString();
+        const probeEndIso = new Date(windowEndMs).toISOString();
+        for (let i = 0; i < allDs.length; i += POOL) {
+            if (cancelled()) return;
+            const probes = await Promise.all(allDs.slice(i, i + POOL).map(async (ds: any) => {
+                try {
+                    const page = await ds.searchObservations(
+                        new ObservationFilter({resultTime: `${probeStartIso}/${probeEndIso}`}), 1);
+                    const items = page.hasNext() ? await page.nextPage() : [];
+                    const p = items?.[0]?.properties ?? items?.[0];
+                    const tMs = p ? Date.parse(p.phenomenonTime ?? p.resultTime) : NaN;
+                    return Number.isFinite(tMs) ? tMs : null;
+                } catch (err) {
+                    console.warn('[alarm-stats] earliest-observation probe failed', err);
+                    return null;
+                }
+            }));
+            for (const t of probes) if (t != null) earliest.push(t);
+        }
+        if (earliest.length === 0) {
+            // Nothing stored in the window at all.
+            if (cancelled()) return;
+            this.commit(entry, acc, windowStartMs, windowEndMs);
+            return;
+        }
+        const earliestMs = Math.min(...earliest);
+        if (earliestMs > windowStartMs) {
+            console.info(`[alarm-stats] profile window clamped to stored history: ${new Date(earliestMs).toISOString()}`);
+            windowStartMs = earliestMs;
+        }
+
+        const intervals = buildProfileIntervals(entry.bucketMs, windowStartMs, windowEndMs);
+        let ok = 0;
+
+        for (let i = 0; i < intervals.length; i += POOL) {
+            if (cancelled()) return;
+            await Promise.all(intervals.slice(i, i + POOL).map(async (iv) => {
+                const startIso = new Date(iv.startMs).toISOString();
+                const endIso = new Date(iv.endMs).toISOString();
+                try {
+                    let occupancies = 0;
+                    let alarms = 0;
+                    for (const {node, dsIds} of byNode.values()) {
+                        // Sequential pair: a parallel pair would double the
+                        // sockets this seed holds. Any node failing fails the
+                        // whole interval — partial coverage would skew the bin.
+                        occupancies += await fetchObservationCount(node, dsIds, startIso, endIso);
+                        alarms += await fetchObservationCount(
+                            node, dsIds, startIso, endIso, 'gammaAlarm=true OR neutronAlarm=true');
+                    }
+                    const bucket = blankBucket(iv.startMs);
+                    bucket.occupancies = occupancies;
+                    bucket.alarms = alarms;
+                    acc.buckets.set(iv.startMs, bucket);
+                    acc.fetchedCount += occupancies;
+                    ok++;
+                } catch (err) {
+                    console.warn(`[alarm-stats] count seed failed for ${startIso}/${endIso}`, err);
+                }
+            }));
+        }
+
+        if (cancelled()) return;
+        if (ok === 0 && intervals.length > 0) {
+            throw new Error('all observation count queries failed');
+        }
+        this.commit(entry, acc, windowStartMs, windowEndMs);
+    }
+
     /** Folds one observation into the accumulator; returns its event time, or null if unusable. */
     private foldObservation(entry: Entry, acc: Accumulator, laneId: string, obs: any): number | null {
         // The per-datastream route returns flat objects; the node-level route
@@ -520,9 +665,15 @@ class AlarmStatsRegistryImpl {
         // Remember the truncation point so the 5s tick can't slide the window
         // back past it and re-create the empty buckets we just excluded.
         entry.dataFloorMs = acc.capped ? windowStartMs : null;
-        this.seedBucketRange(entry);
-        this.pruneBuckets(entry);
-        this.bindLive(entry);
+        // Counts-mode buckets ('1d') are local-midnight aligned; the UTC-floor
+        // pre-fill/prune math would interleave misaligned keys with them. The
+        // whole series is replaced per re-seed instead, and there is no live
+        // stream to bind.
+        if (entry.params.seedMode !== 'counts') {
+            this.seedBucketRange(entry);
+            this.pruneBuckets(entry);
+            this.bindLive(entry);
+        }
         entry.snapshot = this.buildSnapshot(entry);
         this.publish(entry);
     }
@@ -530,6 +681,7 @@ class AlarmStatsRegistryImpl {
     // ------------------------------------------------------------ live append
 
     private bindLive(entry: Entry) {
+        if (entry.params.seedMode === 'counts') return;
         if (!entry.params.liveAppend || entry.liveBound) return;
         const laneMap = this.laneMap;
         if (!laneMap || laneMap.size === 0) return;

@@ -260,5 +260,6 @@
   "dayOfWeek": "Día de la semana",
   "profileNormalize": "Mostrar promedio por hora/día",
   "avgPerHour": "Promedio por hora",
-  "avgPerDay": "Promedio por día"
+  "avgPerDay": "Promedio por día",
+  "profileNoCoverage": "Los intervalos vacíos están fuera de la ventana de tiempo seleccionada"
 }

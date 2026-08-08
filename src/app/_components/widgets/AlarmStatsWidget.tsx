@@ -52,6 +52,7 @@ export default function AlarmStatsWidget({widget}: WidgetProps) {
         ));
 
     const isProfile = visualization === 'time-profile';
+    const profileAxis = config.profileAxis ?? 'hourOfDay';
 
     // 30d is only meaningful for the profile views (day-of-week needs several
     // samples per weekday) and would otherwise always trip the observation cap.
@@ -60,18 +61,24 @@ export default function AlarmStatsWidget({widget}: WidgetProps) {
     const rawWindow = config.window ?? '24h';
     const window = (rawWindow === '30d' && !isProfile) ? '7d' : rawWindow;
 
-    // The profile folds buckets into hour-of-day / day-of-week bins, so buckets
-    // must not be coarser than an hour or the binning is wrong. Force 1h rather
-    // than trusting the user's bucket choice.
-    const bucket = isProfile ? '1h' : (config.bucket ?? 'auto');
+    // The profile seeds from /observations/count — one query per interval, so
+    // it is uncapped and a 30d window gets full coverage (the observation path
+    // truncated it at OBS_CAP, which blanked whole weekdays). Day-of-week uses
+    // local-day intervals; hour-of-day per-hour intervals. The bucket choice is
+    // forced, not the user's: coarser buckets would break the binning.
+    const seedMode = isProfile ? 'counts' as const : 'observations' as const;
+    const bucket = isProfile ? (profileAxis === 'dayOfWeek' ? '1d' : '1h') : (config.bucket ?? 'auto');
 
     const stats = useAlarmStats({
         lanes: config.lanes ?? {mode: 'all'},
         window,
         bucket,
         needAdjudication,
-        liveAppend: config.liveAppend ?? true,
+        // Counts mode has no per-row live path; pin false so toggling the
+        // (ignored) switch doesn't churn the registry key and re-seed.
+        liveAppend: isProfile ? false : (config.liveAppend ?? true),
         refreshSec: config.refreshSec ?? 300,
+        seedMode,
     });
 
     const specs = useMemo(() => {

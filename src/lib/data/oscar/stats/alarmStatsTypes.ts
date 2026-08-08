@@ -68,6 +68,16 @@ export interface AlarmStatsSnapshot {
     error: string | null;
 }
 
+/**
+ * How the window is seeded.
+ * - 'observations': paginate the occupancy observations (rich per-row data:
+ *   per-lane series, adjudication join, live append) but subject to OBS_CAP.
+ * - 'counts': one /observations/count per interval (~0.02s each) — totals
+ *   only, but uncapped, so a 30d window gets full coverage. Used by the
+ *   time-profile view, which only needs per-bin totals.
+ */
+export type AlarmStatsSeedMode = 'observations' | 'counts';
+
 export interface AlarmStatsResult extends AlarmStatsSnapshot {
     /** Lanes the selection actually resolved to; 0 means "nothing to show". */
     laneCount: number;

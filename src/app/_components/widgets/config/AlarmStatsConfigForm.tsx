@@ -280,15 +280,19 @@ export default function AlarmStatsConfigForm({draft, onChange}: WidgetConfigForm
 
             <Divider/>
 
-            <FormControlLabel
-                control={
-                    <Switch
-                        checked={config.liveAppend ?? true}
-                        onChange={(e) => set({liveAppend: e.target.checked})}
-                    />
-                }
-                label={t('liveAppend')}
-            />
+            {/* The profile seeds from count queries and has no per-row live
+                path — the toggle would be ignored, so don't offer it. */}
+            {!isProfile && (
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={config.liveAppend ?? true}
+                            onChange={(e) => set({liveAppend: e.target.checked})}
+                        />
+                    }
+                    label={t('liveAppend')}
+                />
+            )}
             <TextField
                 size="small"
                 type="number"
