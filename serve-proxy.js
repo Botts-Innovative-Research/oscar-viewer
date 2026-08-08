@@ -51,6 +51,16 @@ function serveStatic(req, res) {
         if (!err && stat.isDirectory()) filePath = path.join(filePath, 'index.html');
         fs.readFile(filePath, (err2, data) => {
             if (err2) {
+                // A missing hashed asset is always a bug (stale client state
+                // or torn-down build) — log it with the initiator, and answer
+                // with a real 404 rather than SPA-falling-back HTML into a
+                // <script> tag, where it dies as "Unexpected token '<'".
+                if (/\.(js|css|map|woff2?)$/.test(urlPath)) {
+                    console.warn(`[static-miss] ${urlPath} referer=${req.headers.referer || '-'}`);
+                    res.writeHead(404, {'Content-Type': 'text/plain', ...NO_CACHE});
+                    res.end('Not found');
+                    return;
+                }
                 // Static export: /foo -> /foo.html, then SPA-fallback to the
                 // 404 page Next exports (client router takes over from there).
                 const htmlPath = filePath + '.html';
