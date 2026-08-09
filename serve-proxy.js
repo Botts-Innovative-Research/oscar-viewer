@@ -105,20 +105,64 @@ const server = http.createServer((req, res) => {
 });
 
 // WebSocket (MQTT et al.): replay the handshake to the node, then splice the
-// sockets into a raw TCP tunnel.
+// sockets into a raw TCP tunnel — but only once the node commits with a 101.
+//
+// Two hard-won rules live here (the "stale document" flake, 2026-08-08):
+//
+//  - Browsers cannot attach Authorization to a WebSocket handshake, so the
+//    page's first MQTT attempt reaches the node bare and Jetty answers 401.
+//    Inject basic auth (NODE_AUTH, default admin:oscar) so the first attempt
+//    succeeds instead of manufacturing a non-101 response.
+//
+//  - Never splice before seeing the node's status line. A spliced socket that
+//    carried a non-101 (e.g. that 401) looks to the client's HTTP agent like a
+//    healthy keep-alive socket to THIS server — Cypress pools it, and every
+//    later request that reuses it flows raw into Jetty, which happily serves
+//    the DEPLOYED app's index.html/chunks for it. That is how second boots
+//    loaded a different build's document while this proxy logged nothing.
+const AUTH = process.env.NODE_AUTH || 'admin:oscar';
+
 server.on('upgrade', (req, clientSocket, head) => {
     const upSocket = net.connect(NODE_PORT, NODE_HOST, () => {
         let handshake = `${req.method} ${req.url} HTTP/1.1\r\n`;
+        let sawAuth = false;
         for (let i = 0; i < req.rawHeaders.length; i += 2) {
             const name = req.rawHeaders[i];
             const value = /^host$/i.test(name) ? `${NODE_HOST}:${NODE_PORT}` : req.rawHeaders[i + 1];
+            if (/^authorization$/i.test(name)) sawAuth = true;
             handshake += `${name}: ${value}\r\n`;
+        }
+        if (!sawAuth && AUTH) {
+            handshake += `Authorization: Basic ${Buffer.from(AUTH).toString('base64')}\r\n`;
         }
         upSocket.write(handshake + '\r\n');
         if (head && head.length) upSocket.write(head);
-        upSocket.pipe(clientSocket);
-        clientSocket.pipe(upSocket);
     });
+
+    let preface = Buffer.alloc(0);
+    const onUpstreamData = (chunk) => {
+        preface = Buffer.concat([preface, chunk]);
+        const headerEnd = preface.indexOf('\r\n\r\n');
+        if (headerEnd === -1) {
+            if (preface.length > 16384) kill();
+            return;
+        }
+        upSocket.removeListener('data', onUpstreamData);
+        const statusLine = preface.slice(0, preface.indexOf('\r\n')).toString();
+        if (/^HTTP\/1\.\d 101 /.test(statusLine)) {
+            clientSocket.write(preface);
+            upSocket.pipe(clientSocket);
+            clientSocket.pipe(upSocket);
+            return;
+        }
+        // Refused handshake: answer with a closed one-shot error so neither
+        // side can mistake this socket for a reusable HTTP connection.
+        console.warn(`[ws-refused] ${req.url} -> ${statusLine}`);
+        clientSocket.end('HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\n\r\n');
+        upSocket.destroy();
+    };
+    upSocket.on('data', onUpstreamData);
+
     const kill = () => { clientSocket.destroy(); upSocket.destroy(); };
     upSocket.on('error', kill);
     clientSocket.on('error', kill);
