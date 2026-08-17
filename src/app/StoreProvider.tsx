@@ -4,12 +4,11 @@
  */
 
 'use client'
-import React, {useEffect, useRef} from 'react';
+import React, {useRef} from 'react';
 import {Provider} from 'react-redux';
 import {store, persistor, AppStore} from "@/lib/state/Store";
 import { PersistGate } from 'redux-persist/integration/react';
-import CircularProgress from '@mui/material/CircularProgress';
-import Box from '@mui/material/Box';
+import SuspenseLoad from "@/app/_components/SuspenseLoad";
 
 
 export default function StoreProvider({children,}: {
@@ -27,7 +26,7 @@ export default function StoreProvider({children,}: {
     return (
         <Provider store={store}>
             <PersistGate
-                loading={<Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center', minHeight: '100vh'}}><CircularProgress/></Box>}
+                loading={<SuspenseLoad />}
                 persistor={persistor}
                 onBeforeLift={() => {
                     console.log("Redux persist rehydration complete");

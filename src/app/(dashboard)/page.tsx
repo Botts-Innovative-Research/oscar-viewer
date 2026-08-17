@@ -1,6 +1,6 @@
 "use client";
 
-import {Box, Grid, Paper} from "@mui/material";
+import {Grid, Paper} from "@mui/material";
 import LaneStatus, { LaneStatusProps } from "../_components/dashboard/LaneStatus";
 
 import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
@@ -19,8 +19,8 @@ import {
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import dynamic from "next/dynamic";
-import CircularProgress from "@mui/material/CircularProgress";
 import { useBreakpoint } from "../providers";
+import SuspenseLoad from "@/app/_components/SuspenseLoad";
 
 export default function DashboardPage() {
     const { isTablet, isDesktop } = useBreakpoint();
@@ -100,7 +100,7 @@ export default function DashboardPage() {
     const QuickView = useMemo(() => dynamic(
         () => import('@/app/_components/dashboard/QuickView'),
         {
-            loading: () => <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center', minHeight: '100vh'}}><CircularProgress/></Box>,
+            loading: () => <SuspenseLoad />,
             ssr: false
         }
     ), [])
