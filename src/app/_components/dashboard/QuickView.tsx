@@ -7,6 +7,7 @@ import { EventPreview } from "@/app/_components/event-preview/EventPreview";
 import MapComponent from '../maps/MapComponent';
 import React, { useEffect, useState } from "react";
 import CircularProgress from "@mui/material/CircularProgress";
+import SuspenseLoad from "@/app/_components/SuspenseLoad";
 
 export default function QuickView() {
     const eventPreview = useSelector(selectEventPreview);
@@ -20,9 +21,7 @@ export default function QuickView() {
         return (
             <Grid item xs={4}>
                 <Paper variant='outlined' sx={{height: "100%"}}>
-                    <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}>
-                        <CircularProgress/>
-                    </Box>
+                    <SuspenseLoad />
                 </Paper>
             </Grid>
         )

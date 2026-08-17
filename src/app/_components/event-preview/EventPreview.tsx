@@ -12,7 +12,6 @@ import {
     IconButton,
     Snackbar,
     SnackbarCloseReason,
-    Stack,
     TextField,
     Typography
 } from "@mui/material";
@@ -40,7 +39,6 @@ import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {setSelectedEvent, setAdjudicatedEventId} from "@/lib/state/EventDataSlice";
 import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelect";
 import { setEventData } from "@/lib/state/EventDetailsSlice";
-import CircularProgress from "@mui/material/CircularProgress";
 import EventMedia from "@/app/_components/event-preview/EventMedia";
 import SecondaryInspectionSelect from "@/app/_components/adjudication/SecondaryInspectionSelect";
 import {generateAdjudicationCommandJSON, sendCommand} from "@/lib/data/oscar/OSCARCommands";
@@ -50,6 +48,7 @@ import {isAdjudicationControlStream} from "@/lib/data/oscar/Utilities";
 import { EventTableData } from "@/lib/data/oscar/TableHelpers";
 import { useBreakpoint } from "@/app/providers";
 import BackButton from "../BackButton";
+import SuspenseLoad from "@/app/_components/SuspenseLoad";
 
 export function EventPreview() {
     const { isDesktop } = useBreakpoint();
@@ -361,9 +360,7 @@ export function EventPreview() {
                         </Box>
 
                     ) :
-                    <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}>
-                        <CircularProgress/>
-                    </Box>
+                    <SuspenseLoad />
                 }
             </Grid>
 

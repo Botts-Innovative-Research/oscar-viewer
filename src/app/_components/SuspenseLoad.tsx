@@ -1,12 +1,15 @@
-"use client";
+import CircularProgress from "@mui/material/CircularProgress";
+import {Container} from "@mui/material";
 
-import { CircularProgress, Container } from "@mui/material";
-
-export default function SuspenseLoad() {
-
-  return (
-    <Container sx={{ display: 'flex' }}>
-      <CircularProgress />
-    </Container>
-  );
+export default function SuspenseLoad({ fullPage = true }: { fullPage?: boolean }) {
+    return (
+        <Container
+            sx={{
+                display: 'flex',
+                ...(fullPage && { minHeight: '100vh' }),
+        }}
+        >
+            <CircularProgress/>
+        </Container>
+    )
 }
