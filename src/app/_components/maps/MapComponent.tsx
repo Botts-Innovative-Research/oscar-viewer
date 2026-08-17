@@ -257,6 +257,7 @@ export default function MapComponent() {
                 interactive: false,
                 alt: `SiteMap for ${node.name}-${node.id}`,
             });
+            leafletViewRef.current.map.fitBounds(bounds);
 
             leafletViewRef.current.map.invalidateSize();
         }
@@ -292,10 +293,12 @@ export default function MapComponent() {
                             node.setUpperRightBox(urb);
 
                         }
-                    } else {
-                        console.info("No sitemap or bounds provided for " + node.name)
-                        return;
                     }
+                }
+
+                if (!path) {
+                    console.info("No sitemap or bounds provided for " + node.name);
+                    return;
                 }
             }
 
