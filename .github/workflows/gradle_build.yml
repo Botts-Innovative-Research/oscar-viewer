@@ -1,0 +1,33 @@
+name: Build OSCAR-Viewer
+on:
+  push:
+    branches: [ main, dev, cicd ]
+  pull_request:
+    branches: [ main, dev ]
+  workflow_dispatch:
+env:
+  NODE_VERSION: '22'
+  OSCAR_DIR: 'oscar-viewer'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          repository: Botts-Innovative-Research/oscar-viewer
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache-dependency-path: package-lock.json
+
+      - name: Install oscar-viewer dependencies
+        run: npm i
+
+      - name: Build oscar-viewer
+        run: npm run build
+
+      - name: Install Cypress
+        run: npx cypress install
