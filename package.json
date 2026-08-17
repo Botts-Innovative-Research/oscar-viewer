@@ -1,6 +1,5 @@
 {
-  "name": "OSCARViewer",
-  "version": "3.0.0-alpha",
+  "name": "OSCAR-Viewer",
   "description": "",
   "main": "index.js",
   "scripts": {
