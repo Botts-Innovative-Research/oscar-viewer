@@ -25,7 +25,7 @@ export default function Providers({ children }: { children: ReactNode }) {
   );
 
   return (
-    <Suspense fallback={<SuspenseLoad />}>
+    <Suspense fallback={<SuspenseLoad fullPage={false} />}>
       <LanguageProvider>
           <ThemeProvider theme={theme}>
             <Box sx={{backgroundColor: "background.default"}}>

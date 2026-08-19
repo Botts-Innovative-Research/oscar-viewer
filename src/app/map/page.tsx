@@ -1,9 +1,10 @@
 "use client";
 
-import {Box, Grid, Paper, Typography} from "@mui/material";
+import {Grid, Paper, Typography} from "@mui/material";
 import dynamic from "next/dynamic";
 import {useMemo} from "react";
 import {useLanguage} from "@/app/contexts/LanguageContext";
+import SuspenseLoad from "@/app/_components/SuspenseLoad";
 
 export default function MapViewPage() {
     const { t } = useLanguage();
@@ -12,7 +13,7 @@ export default function MapViewPage() {
     const Map = useMemo(() => dynamic(
         () => import('@/app/_components/maps/MapComponent'),
         {
-            loading: () => <p> loading </p>,
+            loading: () => <SuspenseLoad />,
             ssr: false
         }
     ),[])

@@ -1,6 +1,6 @@
 "use client";
 
-import {Box, Button, Grid, Paper, Stack, Typography} from "@mui/material";
+import {Button, Grid, Paper, Typography} from "@mui/material";
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import BackButton from "../_components/BackButton";
 import DataRow from "../_components/event-details/DataRow";
@@ -13,9 +13,9 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {PictureAsPdfRounded} from "@mui/icons-material";
 import {useReactToPrint} from "react-to-print";
 import EventMedia from "../_components/event-preview/EventMedia";
-import CircularProgress from "@mui/material/CircularProgress";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 import AdjudicationDetail from "../_components/adjudication/AdjudicationDetail";
+import SuspenseLoad from "@/app/_components/SuspenseLoad";
 
 
 export default function EventDetailsPage() {
@@ -149,9 +149,7 @@ export default function EventDetailsPage() {
                                 laneMap={laneMapRef.current}
                             />
                         ) :
-                        <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}>
-                            <CircularProgress/>
-                        </Box>
+                       <SuspenseLoad />
                     }
                 </Grid>
 
