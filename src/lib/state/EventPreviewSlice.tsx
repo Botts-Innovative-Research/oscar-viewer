@@ -10,7 +10,7 @@ export interface IEventPreviewState {
     shouldForceAlarmTableDeselect: boolean;
     selectedRowId: any | null;
     latestGB: number;
-}3
+}
 
 const initState: IEventPreviewState = {
     eventPreview: {
