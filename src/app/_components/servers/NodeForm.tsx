@@ -151,18 +151,15 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         setColorStatus('info')
         setOpenSnack(true)
 
-
         const endpoint = `${node.getConnectedSystemsEndpoint()}`;
-
-        const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
 
         const options: RequestInit = {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Basic ${encoded}`
             },
             mode: 'cors',
+            credentials: 'include'
         }
 
         try {

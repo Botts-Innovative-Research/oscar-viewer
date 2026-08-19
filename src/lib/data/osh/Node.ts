@@ -40,8 +40,6 @@ export interface INode {
 
     getConnectedSystemsEndpoint(noProtocolPrefix: boolean): string,
 
-    getBasicAuthHeader(): any,
-
     fetchSystems(): Promise<any[]>,
 
     fetchDataStreams(laneMap: Map<string, LaneMapEntry>): void,
@@ -130,23 +128,27 @@ export class Node implements INode {
         this.isDefaultNode = options.isDefaultNode || false;
 
 
-        let mqttOpts = {
+        let mqttOpts: any = {
             shared: true,
             prefix: this.csAPIEndpoint,
             endpointUrl: `${this.address}:${this.port}${this.oshPathRoot}`,
-            username: this.auth.username,
-            password: this.auth.password,
         }
 
-        let networkProperties = {
+        let connectorOpts: any = {};
+
+        if (this.auth && this.auth.username) {
+            mqttOpts.username = this.auth.username;
+            mqttOpts.password = this.auth.password;
+            connectorOpts.username = this.auth.username;
+            connectorOpts.password = this.auth.password;
+        }
+
+        let networkProperties: any = {
             endpointUrl: `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`,
             tls: this.isSecure,
             streamProtocol: "mqtt",
             mqttOpts: mqttOpts,
-            connectorOpts: {
-                username: this.auth.username,
-                password: this.auth.password
-            }
+            connectorOpts: connectorOpts
         }
 
         this.dataStreamsApi = new DataStreams(networkProperties);
@@ -201,11 +203,6 @@ export class Node implements INode {
             : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}/buckets`;
     }
 
-    getBasicAuthHeader() {
-        const encoded = btoa(`${this.auth.username}:${this.auth.password}`);
-        return {"Authorization": `Basic ${encoded}`};
-    }
-
     async checkForEndpoint() {
         let ep: string = `${this.getConnectedSystemsEndpoint()}`;
 
@@ -213,9 +210,9 @@ export class Node implements INode {
             method: 'GET',
             mode: 'cors',
             headers: {
-                ...this.getBasicAuthHeader(),
                 'Content-Type': 'application/sml+json'
-            }
+            },
+            credentials: 'include'
         });
 
         if (response.ok) {

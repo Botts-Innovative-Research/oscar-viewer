@@ -104,10 +104,6 @@ export default function ReportGeneratorView(){
                         endpointUrl: `${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}${selectedNode.csAPIEndpoint}`,
                         tls: selectedNode.isSecure,
                         streamProtocol: 'ws',
-                        connectorOpts: {
-                            username: selectedNode.auth.username,
-                            password: selectedNode.auth.password
-                        }
                     };
 
                     const properties = {

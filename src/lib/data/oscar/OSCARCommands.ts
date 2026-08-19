@@ -9,11 +9,11 @@ export async function sendCommand(node: INode, controlStreamId: string, command:
     return await fetch(ep, {
         method: "POST",
         headers: {
-            ...node.getBasicAuthHeader(),
             'Content-Type': 'application/json'
         },
         mode: 'cors',
-        body: command
+        body: command,
+        credentials: 'include'
     });
 }
 

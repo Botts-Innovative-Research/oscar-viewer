@@ -146,8 +146,6 @@ export class LaneMapEntry {
                 shared: true,
                 prefix: this.parentNode.csAPIEndpoint,
                 endpointUrl: mqttOptUrl,
-                username: this.parentNode.auth.username,
-                password: this.parentNode.auth.password,
             }
 
             try {
@@ -195,8 +193,6 @@ export class LaneMapEntry {
             shared: true,
             prefix: this.parentNode.csAPIEndpoint,
             endpointUrl: mqttOptUrl,
-            username: this.parentNode.auth.username,
-            password: this.parentNode.auth.password,
         }
         return new ConSysApi(`rtds - ${stream.properties.name}`, {
             endpointUrl: stream.networkProperties.endpointUrl,
@@ -217,8 +213,6 @@ export class LaneMapEntry {
             shared: true,
             prefix: this.parentNode.csAPIEndpoint,
             endpointUrl: mqttOptUrl,
-            username: this.parentNode.auth.username,
-            password: this.parentNode.auth.password,
         }
         return new ConSysApi(`rtds-${datastream.properties.id}`, {
             protocol: 'mqtt',
@@ -242,8 +236,6 @@ export class LaneMapEntry {
             shared: true,
             prefix: this.parentNode.csAPIEndpoint,
             endpointUrl: mqttOptUrl,
-            username: this.parentNode.auth.username,
-            password: this.parentNode.auth.password,
         }
 
         return new ConSysApi(`batchds-${datastream.properties.id}`, {

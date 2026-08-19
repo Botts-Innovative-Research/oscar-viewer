@@ -89,10 +89,10 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
             const response = await fetch(fullUrl, {
                 method: 'GET',
                 headers: {
-                    ...node.getBasicAuthHeader(),
                     'Content-Type': 'sml+json'
                 },
-                mode: "cors"
+                mode: "cors",
+                credentials: 'include'
             });
 
             if (!response.ok) {

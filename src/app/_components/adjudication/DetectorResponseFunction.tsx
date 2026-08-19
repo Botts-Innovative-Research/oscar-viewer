@@ -23,7 +23,12 @@ export default function DetectorResponseFunction(props: {
         const url = "https://full-spectrum.sandia.gov/api/v1/info";
 
         try {
-            const response = await fetch(url, { method: 'GET' });
+            const options: RequestInit = {
+                method: 'GET',
+                mode: 'cors',
+                credentials: 'include'
+            };
+            const response = await fetch(url, options);
 
             if (!response.ok) {
                 console.error('Could not reach Sandia spectrum values.');

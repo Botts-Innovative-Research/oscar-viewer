@@ -534,7 +534,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     async function sendFileUploadRequest(filePaths: FileWithWebId[], node: INode) {
         let newFileNames: any[] = [];
 
-        const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
         const protocol = node.isSecure ? 'https://' : 'http://';
 
         const webIdFiles = filePaths.filter(f => f.webIdEnabled);
@@ -555,9 +554,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             const options: RequestInit = {
                 method: 'POST',
-                headers: {'Authorization': `Basic ${encoded}`},
                 mode: 'cors',
-                body: formData
+                body: formData,
+                credentials: 'include'
             };
 
             const response = await fetch(url, options);
@@ -581,8 +580,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             if (fileData.webIdEnabled)
                 fileName = fileName + `&drf=${fileData.detectorResponseFunction}&synthesizeBackground=${fileData.synthesizeBackground}`
 
-
-
             let endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/${fileName}`;
 
             const url = new URL(endpoint);
@@ -592,9 +589,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             const options: RequestInit = {
                 method: 'POST',
-                headers: {'Authorization': `Basic ${encoded}`},
                 mode: 'cors',
-                body: formData
+                body: formData,
+                credentials: 'include'
             };
 
             const response = await fetch(url, options);
