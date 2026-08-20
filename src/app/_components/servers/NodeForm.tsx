@@ -20,6 +20,7 @@ import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {useSelector} from "react-redux";
 import {useLanguage} from "@/app/contexts/LanguageContext";
+import {FederationClient} from "@/lib/data/osh/FederationClient";
 
 
 export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
@@ -31,6 +32,8 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     const [openSnack, setOpenSnack] = useState(false);
     const [nodeSnackMsg, setNodeSnackMsg] = useState("");
     const [colorStatus, setColorStatus] = useState("");
+    const [useFederation, setUseFederation] = useState(false);
+    const [allowPrivateNetwork, setAllowPrivateNetwork] = useState(true);
 
     const dispatch = useAppDispatch();
     const nodes = useSelector(selectNodes);
@@ -62,8 +65,10 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
         let tNode = new Node(newNode);
         if (name === "username") {
+            if (!tNode.auth) tNode.auth = {username: "", password: ""};
             tNode.auth.username = value;
         } else if (name === "password") {
+            if (!tNode.auth) tNode.auth = {username: "", password: ""};
             tNode.auth.password = value;
         } else if (name === "isSecure") {
             tNode.isSecure = checked;
@@ -113,6 +118,11 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
     const handleAddSave = async(e: React.FormEvent)=> {
 
+        if (!isEditNode && useFederation) {
+            await registerFederatedNode(e);
+            return;
+        }
+
         let reachable = await checkReachable(newNode)
         setOpenSnack(true)
 
@@ -130,6 +140,63 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         // update the list of nodes using the edit/update
         handleButtonAction(e);
     }
+
+    const registerFederatedNode = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setNodeSnackMsg('Registering node through this OSCAR gateway...');
+        setColorStatus('info');
+        setOpenSnack(true);
+
+        try {
+            const scheme = newNode.isSecure ? 'https' : 'http';
+            const upstreamBaseUrl = `${scheme}://${newNode.address}:${newNode.port}`;
+            const client = new FederationClient(window.location.origin);
+            const registered = await client.registerNode({
+                upstreamBaseUrl,
+                username: newNode.auth?.username || '',
+                password: newNode.auth?.password || '',
+                allowPrivateNetwork,
+                enabled: true,
+            });
+
+            if (nodes.some((node: INode) => node.uid === registered.uid)) {
+                await client.removeNode(registered.uid);
+                throw new Error(`Node ${registered.uid} is already present in the viewer`);
+            }
+
+            const gateway = new URL(window.location.origin);
+            const federatedNode = new Node({
+                name: newNode.name || registered.uid,
+                uid: registered.uid,
+                address: gateway.hostname,
+                port: gateway.port ? Number(gateway.port) : gateway.protocol === 'https:' ? 443 : 80,
+                oshPathRoot: '/sensorhub',
+                csAPIEndpoint: '/api',
+                auth: null,
+                isSecure: gateway.protocol === 'https:',
+                isDefaultNode: false,
+                route: {
+                    type: 'federated',
+                    gatewayUrl: gateway.origin,
+                    targetUid: registered.uid,
+                },
+            });
+
+            if (!await federatedNode.checkForEndpoint()) {
+                await client.removeNode(registered.uid);
+                throw new Error('Node registered, but its federated API could not be reached');
+            }
+
+            dispatch(addNode(federatedNode));
+            setNodeSnackMsg(`Node "${federatedNode.name}" registered securely`);
+            setColorStatus('success');
+            modeChangeCallback(false, null);
+        } catch (error) {
+            setNodeSnackMsg(error instanceof Error ? error.message : 'Federation registration failed');
+            setColorStatus('error');
+            setOpenSnack(true);
+        }
+    };
 
     if (!newNode) {
         return <Container><Typography variant="h4" align="center">Loading...</Typography></Container>
@@ -208,9 +275,18 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                         value={newNode.csAPIEndpoint}
                         onChange={handleChange}
                     />
-                    <TextField label="Username" name="username" value={newNode.auth.username} onChange={handleChange}/>
-                    <TextField label="Password" name="password" type={"password"} value={newNode.auth.password}
+                    <TextField label="Username" name="username" value={newNode.auth?.username || ''} onChange={handleChange}/>
+                    <TextField label="Password" name="password" type={"password"} value={newNode.auth?.password || ''}
                                onChange={handleChange}/>
+
+                    {!isEditNode && <FormControlLabel
+                        control={<Checkbox checked={useFederation} onChange={event => setUseFederation(event.target.checked)}/>}
+                        label="Store remote credentials securely on this OSCAR node"
+                    />}
+                    {!isEditNode && useFederation && <FormControlLabel
+                        control={<Checkbox checked={allowPrivateNetwork} onChange={event => setAllowPrivateNetwork(event.target.checked)}/>}
+                        label="Allow this private-network target"
+                    />}
 
                     <FormControlLabel control={<Checkbox name="isSecure" checked={newNode.isSecure} onChange={handleChange}/>} label="Is Secure"/>
 

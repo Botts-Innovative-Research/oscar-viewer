@@ -14,6 +14,7 @@ import {INode, Node} from "@/lib/data/osh/Node";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import React, {useState} from "react";
 import {useLanguage} from "@/app/contexts/LanguageContext";
+import {FederationClient} from "@/lib/data/osh/FederationClient";
 
 interface NodeListProps {
     modeChangeCallback?: (editMode: boolean, editNode: INode) => void
@@ -48,8 +49,17 @@ export default function NodeList({modeChangeCallback}: NodeListProps) {
              return;
          }
 
-        dispatch(removeNode(nodeID));
-        modeChangeCallback(false, null);
+        try {
+            if (nodeToRemove.route?.type === 'federated' && nodeToRemove.uid) {
+                await new FederationClient(window.location.origin).removeNode(nodeToRemove.uid);
+            }
+            dispatch(removeNode(nodeID));
+            modeChangeCallback(false, null);
+        } catch (error) {
+            setNodeSnackMsg(error instanceof Error ? error.message : 'Cannot remove federated node');
+            setColorStatus('error');
+            setOpenSnack(true);
+        }
     }
 
     const getBGColor = (isDefault: boolean) => {
@@ -76,7 +86,7 @@ export default function NodeList({modeChangeCallback}: NodeListProps) {
             ) : (
                 <List>
                     {nodes.map((node: INode) => (
-                        <Card key={node.address + node.port} sx={{backgroundColor: getBGColor(node.isDefaultNode)}}>
+                        <Card key={node.id} sx={{backgroundColor: getBGColor(node.isDefaultNode)}}>
                             <ListItem sx={{m: 0}}>
                                 <ListItemText primary={node.name} secondary={node.address}/>
                                 <Button
@@ -84,6 +94,7 @@ export default function NodeList({modeChangeCallback}: NodeListProps) {
                                     size={"small"}
                                     color="primary"
                                     sx={{m: 1}}
+                                    disabled={node.route?.type === 'federated'}
                                     onClick={() => setEditNode(node)}
                                 >
                                     Edit

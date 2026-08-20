@@ -18,11 +18,13 @@ import {LatLngExpression} from "leaflet";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
+import {NodeRoute, resolveRouteBaseUrl} from "@/lib/data/osh/NodeRoute";
 
 const SYSTEM_UID_PREFIX = "urn:osh:system:";
 
 export interface INode {
     id: string,
+    uid?: string,
     name: string,
     address: string,
     port: number,
@@ -31,6 +33,7 @@ export interface INode {
     bucketsEndpoint: string,
     isSecure: boolean,
     auth: { username: string, password: string } | null,
+    route?: NodeRoute,
     isDefaultNode: boolean
     laneAdjMap?: Map<string, string>,
     oscarServiceSystem: any;
@@ -39,6 +42,10 @@ export interface INode {
     upperRightBound: LatLngExpression;
 
     getConnectedSystemsEndpoint(noProtocolPrefix: boolean): string,
+
+    getFileServerEndpoint(noProtocolPrefix?: boolean): string,
+
+    getMqttEndpoint(noProtocolPrefix: boolean): string,
 
     getBasicAuthHeader(): any,
 
@@ -89,6 +96,8 @@ export interface NodeOptions {
     csAPIEndpoint?: string,
     bucketsEndpoint?: string,
     auth?: { username: string, password: string } | null,
+    uid?: string,
+    route?: NodeRoute,
     isSecure?: boolean,
     isDefaultNode?: boolean
     laneAdjMap?: Map<string, string>,
@@ -97,6 +106,7 @@ export interface NodeOptions {
 
 export class Node implements INode {
     id: string;
+    uid?: string;
     name: string;
     address: string;
     port: number;
@@ -105,6 +115,7 @@ export class Node implements INode {
     bucketsEndpoint: string;
     isSecure: boolean;
     auth: { username: string, password: string } | null = null;
+    route?: NodeRoute;
     isDefaultNode: boolean;
     laneAdjMap: Map<string, string> = new Map<string, string>();
     siteMapPath: string;
@@ -118,7 +129,9 @@ export class Node implements INode {
     controlStreamApi: typeof ControlStreams;
 
     constructor(options: NodeOptions) {
-        this.id = "node-" + hashString(options.address + "-" + options.port); // TODO: maybe do something else here
+        this.uid = options.uid;
+        this.route = options.route;
+        this.id = options.uid || "node-" + hashString(options.address + "-" + options.port);
         this.name = options.name;
         this.address = options.address;
         this.port = options.port;
@@ -126,26 +139,27 @@ export class Node implements INode {
         this.csAPIEndpoint = options.csAPIEndpoint || '/api';
         this.bucketsEndpoint = options.bucketsEndpoint || '/buckets';
         this.auth = options.auth || null;
-        this.isSecure = options.isSecure || false;
+        this.isSecure = options.route ? resolveRouteBaseUrl(options.route).startsWith("https://") : options.isSecure || false;
         this.isDefaultNode = options.isDefaultNode || false;
 
 
+        const auth = this.auth || {username: undefined, password: undefined};
         let mqttOpts = {
             shared: true,
             prefix: this.csAPIEndpoint,
-            endpointUrl: `${this.address}:${this.port}${this.oshPathRoot}`,
-            username: this.auth.username,
-            password: this.auth.password,
+            endpointUrl: this.getMqttEndpoint(true),
+            username: auth.username,
+            password: auth.password,
         }
 
         let networkProperties = {
-            endpointUrl: `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`,
+            endpointUrl: this.getConnectedSystemsEndpoint(true),
             tls: this.isSecure,
             streamProtocol: "mqtt",
             mqttOpts: mqttOpts,
             connectorOpts: {
-                username: this.auth.username,
-                password: this.auth.password
+                username: auth.username,
+                password: auth.password
             }
         }
 
@@ -190,18 +204,40 @@ export class Node implements INode {
     }
 
     getConnectedSystemsEndpoint(noProtocolPrefix: boolean = false) {
+        if (this.route) {
+            const base = resolveRouteBaseUrl(this.route);
+            const endpoint = `${base}${this.oshPathRoot}${this.csAPIEndpoint}`;
+            return noProtocolPrefix ? endpoint.replace(/^https?:\/\//, "") : endpoint;
+        }
         let protocol = this.isSecure ? 'https' : 'http';
         return noProtocolPrefix ? `${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`
             : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}${this.csAPIEndpoint}`;
     }
 
+    getMqttEndpoint(noProtocolPrefix: boolean = false) {
+        if (this.route) {
+            const endpoint = this.route.type === 'federated'
+                ? resolveRouteBaseUrl(this.route)
+                : `${resolveRouteBaseUrl(this.route)}${this.oshPathRoot}`;
+            return noProtocolPrefix ? endpoint.replace(/^https?:\/\//, "") : endpoint;
+        }
+        const protocol = this.isSecure ? 'https' : 'http';
+        return noProtocolPrefix ? `${this.address}:${this.port}${this.oshPathRoot}`
+            : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}`;
+    }
+
     getFileServerEndpoint(noProtocolPrefix: boolean = false) {
+        if (this.route) {
+            const endpoint = `${resolveRouteBaseUrl(this.route)}${this.oshPathRoot}/buckets`;
+            return noProtocolPrefix ? endpoint.replace(/^https?:\/\//, "") : endpoint;
+        }
         let protocol = this.isSecure ? 'https' : 'http';
         return noProtocolPrefix ? `${this.address}:${this.port}${this.oshPathRoot}/buckets`
             : `${protocol}://${this.address}:${this.port}${this.oshPathRoot}/buckets`;
     }
 
     getBasicAuthHeader() {
+        if (!this.auth) return {};
         const encoded = btoa(`${this.auth.username}:${this.auth.password}`);
         return {"Authorization": `Basic ${encoded}`};
     }

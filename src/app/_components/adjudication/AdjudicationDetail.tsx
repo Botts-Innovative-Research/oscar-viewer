@@ -534,8 +534,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     async function sendFileUploadRequest(filePaths: FileWithWebId[], node: INode) {
         let newFileNames: any[] = [];
 
-        const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
-        const protocol = node.isSecure ? 'https://' : 'http://';
+        const authHeaders = node.getBasicAuthHeader();
 
         const webIdFiles = filePaths.filter(f => f.webIdEnabled);
         const foregroundFile = webIdFiles.find(f => f.spectrumType === 'foreground');
@@ -546,7 +545,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
         if (hasPair) {
             const drf = foregroundFile.detectorResponseFunction || backgroundFile.detectorResponseFunction;
-            const endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/adjudication?occupancyObsId=${props.event.occupancyObsId}&laneUid=${laneUid}&webIdEnabled=${foregroundFile.webIdEnabled}&drf=${drf}`;
+            const endpoint = `${node.getFileServerEndpoint()}/adjudication?occupancyObsId=${props.event.occupancyObsId}&laneUid=${laneUid}&webIdEnabled=${foregroundFile.webIdEnabled}&drf=${drf}`;
             const url = new URL(endpoint);
 
             const formData = new FormData();
@@ -555,7 +554,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             const options: RequestInit = {
                 method: 'POST',
-                headers: {'Authorization': `Basic ${encoded}`},
+                headers: authHeaders,
                 mode: 'cors',
                 body: formData
             };
@@ -583,7 +582,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
 
 
-            let endpoint = `${protocol}${node.address}:${node.port}${node.oshPathRoot}${node.bucketsEndpoint}/${fileName}`;
+            let endpoint = `${node.getFileServerEndpoint()}/${fileName}`;
 
             const url = new URL(endpoint);
 
@@ -592,7 +591,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             const options: RequestInit = {
                 method: 'POST',
-                headers: {'Authorization': `Basic ${encoded}`},
+                headers: authHeaders,
                 mode: 'cors',
                 body: formData
             };

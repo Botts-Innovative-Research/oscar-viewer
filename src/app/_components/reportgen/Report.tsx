@@ -101,12 +101,12 @@ export default function ReportGeneratorView(){
                     setCommandStatus('PENDING');
 
                     const networkProperties = {
-                        endpointUrl: `${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}${selectedNode.csAPIEndpoint}`,
+                        endpointUrl: selectedNode.getConnectedSystemsEndpoint(true),
                         tls: selectedNode.isSecure,
                         streamProtocol: 'ws',
                         connectorOpts: {
-                            username: selectedNode.auth.username,
-                            password: selectedNode.auth.password
+                            username: selectedNode.auth?.username,
+                            password: selectedNode.auth?.password
                         }
                     };
 
