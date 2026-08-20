@@ -41,14 +41,14 @@ export enum TimeScale {
 
 export function asMillis(scale: TimeScale): number {
 
-    let millis: number = 1000;
+    let millis: number = SECONDS_TO_MS;
 
     switch(scale) {
         case TimeScale.HOURS:
-            millis = 3600000;
+            millis = HOURS_TO_MS;
             break;
         case TimeScale.MINUTES:
-            millis = 60000;
+            millis = MINUTES_TO_MS;
             break;
         case TimeScale.SECONDS:
         default:
@@ -107,3 +107,15 @@ export const DOSE_DEF =  radUri + "Dose";
 export const REMARK_DEF =  radUri + "Remark";
 export const N42_DEF =  radUri + "Remark";
 export const N42_REPORT_DEF = radUri + "ForegroundReports"
+
+// Time Constants ===========================================================
+export const SECONDS_TO_MS = 1000;
+export const MINUTES_TO_MS = 60_000;
+export const HOURS_TO_MS = 3_600_000;
+export const MS_PER_DAY = 24 * HOURS_TO_MS;
+export const MS_PER_WEEK = 7 * MS_PER_DAY;
+export const MS_PER_30_DAYS = 30 * MS_PER_DAY;
+
+export const STREAM_START_EPOCH = "2020-01-01T08:13:25.845Z";
+export const STREAM_END_EPOCH = "2055-01-01T08:13:25.845Z";
+

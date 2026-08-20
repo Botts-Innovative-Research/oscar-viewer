@@ -24,6 +24,7 @@ import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStr
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
 import Command from "osh-js/source/core/consysapi/command/Command";
 import CommandFilter from "osh-js/source/core/consysapi/command/CommandFilter";
+import {MS_PER_DAY, MS_PER_WEEK, MS_PER_30_DAYS} from "@/lib/data/Constants";
 
 
 export default function ReportGeneratorView(){
@@ -231,13 +232,13 @@ export default function ReportGeneratorView(){
 
         switch(timeRange){
             case "last24Hrs":
-                startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+                startTime = new Date(now.getTime() - MS_PER_DAY).toISOString();
                 break;
             case "last7days":
-                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+                startTime = new Date(now.getTime() - MS_PER_WEEK).toISOString();
                 break;
             case "last30days":
-                startTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+                startTime = new Date(now.getTime() - MS_PER_30_DAYS).toISOString();
                 break;
             case "thisMonth":
                 startTime = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();

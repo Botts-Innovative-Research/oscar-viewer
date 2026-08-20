@@ -17,20 +17,21 @@ import {
     createNSigmaCalcViewCurve,
     createThresholdViewCurve, createThreshSigmaViewCurve
 } from "@/app/utils/ChartUtils";
+import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
 
 
 type CurveLayers = {
-    neutron: any;
-    gamma: any;
-    threshold: any;
-    threshNsigma: any;
-    nsigma: any;
+    neutron: typeof CurveLayer;
+    gamma: typeof CurveLayer;
+    threshold: typeof CurveLayer;
+    threshNsigma: typeof CurveLayer;
+    nsigma: typeof CurveLayer;
 };
 
 type ChartTypes ={
-    gamma?: any;
-    neutron?: any;
-    nsigma?: any;
+    gamma?: typeof ChartJsView;
+    neutron?: typeof ChartJsView;
+    nsigma?: typeof ChartJsView;
 }
 
 Chart.register(...registerables, annotationPlugin);
@@ -40,7 +41,7 @@ export class ChartInterceptProps {
     datasources: { gamma: typeof ConSysApi, neutron: typeof ConSysApi, threshold: typeof ConSysApi };
     eventData: EventTableData;
     latestGB: number;
-    currentTime: any;
+    currentTime: string;
 }
 
 export default function ChartTimeHighlight(props: ChartInterceptProps) {
@@ -132,7 +133,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
 
 
-    function annotateCharts(currTime: any) {
+    function annotateCharts(currTime: string) {
         if (!currTime) return;
 
         const timeVal = new Date(currTime);
@@ -228,7 +229,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
      *
      * TODO Probably should guarantee order in the API / datastore, or fix this in osh-js
      */
-    const patchChartSorting = (chartView: any) => {
+    const patchChartSorting = (chartView: typeof ChartJsView) => {
         const originalUpdate = chartView.chart.update.bind(chartView.chart);
         chartView.chart.update = (mode?: any) => {
             for (const dataset of chartView.chart.data.datasets) {
@@ -243,7 +244,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     const renderCharts = (layers: CurveLayers, elementIds: string[]) => {
 
         if (layers?.gamma && gammaChartViewRef?.current) {
-            const gammaLayers: any[] = [];
+            const gammaLayers: CurveLayers[] = [];
 
             if (layers.gamma) gammaLayers.push(layers.gamma);
             if (layers.threshold) gammaLayers.push(layers.threshold);

@@ -21,6 +21,7 @@ import {useAppDispatch} from "@/lib/state/Hooks";
 import dynamic from "next/dynamic";
 import { useBreakpoint } from "../providers";
 import SuspenseLoad from "@/app/_components/SuspenseLoad";
+import {STREAM_END_EPOCH} from "@/lib/data/Constants";
 
 export default function DashboardPage() {
     const { isTablet, isDesktop } = useBreakpoint();
@@ -53,7 +54,7 @@ export default function DashboardPage() {
                 }
 
                 rtDS.properties.startTime = new Date().toISOString();
-                rtDS.properties.endTime = "2055-01-01T08:13:25.845Z";
+                rtDS.properties.endTime = STREAM_END_EPOCH;
 
                 let laneDSColl = laneDSMap.get(laneid);
 

@@ -23,6 +23,7 @@ import {
     isThresholdDataStream,
     isVideoDataStream
 } from "./Utilities";
+import {STREAM_START_EPOCH, STREAM_END_EPOCH} from "@/lib/data/Constants";
 
 class ILaneMeta {
     id: string;
@@ -171,8 +172,8 @@ export class LaneMapEntry {
                     protocol: 'mqtt',
                     mode: Mode.BATCH,
                     responseFormat: isVideoDataStream(dsObj) ?'application/swe+binary' :  'application/swe+json',
-                    startTime: "2020-01-01T08:13:25.845Z",
-                    endTime: "2055-01-01T08:13:25.845Z",
+                    startTime: STREAM_START_EPOCH,
+                    endTime: STREAM_END_EPOCH,
                     mqttOpts: mqttOpts,
                 });
 

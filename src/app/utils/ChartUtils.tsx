@@ -1,7 +1,8 @@
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
 
-export  function createNeutronViewCurve(neutronDatasource: { id: any; }) {
+export  function createNeutronViewCurve(neutronDatasource: { id: string; }) {
     if (!neutronDatasource) return null;
 
     let nCurve = new CurveLayer({
@@ -23,7 +24,7 @@ export  function createNeutronViewCurve(neutronDatasource: { id: any; }) {
     return nCurve;
 }
 
-export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
+export function createThresholdViewCurve(thresholdDatasource: { id: string; }) {
     if (!thresholdDatasource) return null;
 
     let thresholdCurve = new CurveLayer({
@@ -46,7 +47,7 @@ export function createThresholdViewCurve(thresholdDatasource: { id: any; }) {
 
     return thresholdCurve;
 }
-export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
+export  function createGammaViewCurve(gammaDatasource: { id: string; }) {
     if (!gammaDatasource) return null;
 
     let gCurve = new CurveLayer({
@@ -100,7 +101,7 @@ export function createNSigmaCalcViewCurve(gammaDatasource: any, latestGB: number
     return nCurve;
 }
 
-export async function getObservations(startTime: any, endTime: any, datastream: any){
+export async function getObservations(startTime: string, endTime: string, datastream: typeof DataStream){
 
     let lastestGammaBackground: number;
 
@@ -117,7 +118,7 @@ export async function getObservations(startTime: any, endTime: any, datastream: 
     return lastestGammaBackground;
 }
 
-export  function createThreshSigmaViewCurve(thresholdDatasource: { id: any; }) {
+export  function createThreshSigmaViewCurve(thresholdDatasource: { id: string; }) {
     if (!thresholdDatasource) return null;
 
     let gCurve = new CurveLayer({

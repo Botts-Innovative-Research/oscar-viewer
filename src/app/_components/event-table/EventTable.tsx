@@ -210,7 +210,7 @@ export default function EventTable({
         setPaginationModel(model);
     }, [paginationModel.page]);
 
-    const getDatastreamIds = useCallback((node: any): string[] => {
+    const getDatastreamIds = useCallback((node: INode): string[] => {
         const datastreamIds: string[] = [];
 
         if (tableMode === "lanelog" && currentLane != null) {
@@ -415,7 +415,7 @@ export default function EventTable({
         }
     }, []);
 
-    function sendNotification(alarmData: { laneName: string, status: string, eventData?: any }) {
+    function sendNotification(alarmData: { laneName: string, status: string, eventData?: EventTableData }) {
         const notificationService = notificationServiceRef.current;
         if (notificationService?.isReady()) {
             notificationService.showNotification(
@@ -477,7 +477,7 @@ export default function EventTable({
                 continue;
             }
 
-            const occSource = entry.datasourcesRealtime?.find((ds: any) => {
+            const occSource = entry.datasourcesRealtime?.find((ds: typeof ConSysApi) => {
                 const parts = ds.properties.resource?.split("/");
                 return parts && parts[2] === occStream.properties.id;
             });
@@ -590,9 +590,9 @@ export default function EventTable({
         }
     };
 
-    async function getLatestGB(eventData: any) {
+    async function getLatestGB(eventData: EventTableData) {
         for (const lane of laneMap.values()) {
-            let datastreams = lane.datastreams.filter((ds: any) => isThresholdDataStream(ds));
+            let datastreams = lane.datastreams.filter((ds: typeof DataStream) => isThresholdDataStream(ds));
             let gammaThreshDs = datastreams.find((ds: typeof DataStream) =>
                 ds.properties["system@id"] === eventData.rpmSystemId
             );

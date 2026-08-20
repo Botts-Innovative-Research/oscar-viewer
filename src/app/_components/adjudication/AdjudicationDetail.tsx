@@ -58,6 +58,7 @@ import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import { useBreakpoint } from "@/app/providers";
 import N42Detail from "@/app/_components/n42/N42Detail";
+import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
 
 interface FileWithWebId {
     file: File;
@@ -128,7 +129,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     }
 
                     const ds = currLaneEntry.datastreams.find(
-                        (ds: any) => ds.properties.id === props.event.dataStreamId
+                        (ds: typeof DataStream) => ds.properties.id === props.event.dataStreamId
                     );
 
                     if (!ds) {
@@ -409,9 +410,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         await submitAdjudication(currLaneEntry, tempAdjData, uploadedFiles)
     }
 
-    const submitAdjudication = async (currLaneEntry: any, tempAdjData: any, files: FileWithWebId[]) => {
+    const submitAdjudication = async (currLaneEntry: LaneMapEntry, tempAdjData: AdjudicationData, files: FileWithWebId[]) => {
         try {
-            let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == props.event.dataStreamId);
+            let ds = currLaneEntry.datastreams.find((ds: typeof DataStream) => ds.properties.id == props.event.dataStreamId);
 
             let streams = currLaneEntry.controlStreams.length > 0 ? currLaneEntry.controlStreams : await currLaneEntry.parentNode.fetchNodeControlStreams();
             let adjControlStream = streams.find((stream: typeof ControlStream) => isAdjudicationControlStream(stream));
@@ -532,7 +533,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     }
 
     async function sendFileUploadRequest(filePaths: FileWithWebId[], node: INode) {
-        let newFileNames: any[] = [];
+        let newFileNames: string[] = [];
 
         const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
         const protocol = node.isSecure ? 'https://' : 'http://';

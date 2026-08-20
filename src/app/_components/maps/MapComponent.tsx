@@ -25,6 +25,7 @@ import {INode} from "@/lib/data/osh/Node";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import { convertToMap } from "@/app/utils/Utils";
 import DataStreamFilter from "osh-js/source/core/consysapi/datastream/DataStreamFilter.js";
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 
 
 export default function MapComponent() {
@@ -74,7 +75,7 @@ export default function MapComponent() {
     const datasourceSetup = useCallback(async () => {
         // @ts-ignore
         let laneDSMap = new Map<string, LaneDSColl>();
-        let locationDs: any[] = [];
+        let locationDs: typeof ConSysApi[] = [];
 
         for (let [laneid, lane] of laneMapRef.current.entries()) {
             laneDSMap.set(laneid, new LaneDSColl());
@@ -182,7 +183,7 @@ export default function MapComponent() {
     useEffect(() => {
         if (locationList && locationList.length > 0 && isInit) {
             locationList.forEach((location) => {
-                location.locationSources.forEach((loc: any) => {
+                location.locationSources.forEach((loc: typeof ConSysApi) => {
                     let newPointMarker = new PointMarkerLayer({
                         name: location.laneName,
                         dataSourceId: loc.id,
@@ -219,7 +220,7 @@ export default function MapComponent() {
 
                     leafletViewRef.current?.addLayer(newPointMarker);
                 });
-                location.locationSources.map((src: any) => src.connect());
+                location.locationSources.map((src: typeof ConSysApi) => src.connect());
             });
         }
 
