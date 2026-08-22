@@ -13,6 +13,7 @@ export async function sendCommand(node: INode, controlStreamId: string, command:
             'Content-Type': 'application/json'
         },
         mode: 'cors',
+        credentials: 'include',
         body: command
     });
 }

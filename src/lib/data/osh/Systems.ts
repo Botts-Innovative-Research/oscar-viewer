@@ -35,7 +35,10 @@ export class System implements ISystem {
     async fetchDataStreams() {
         // console.log(`fetching data streams for system: ${this.id}`);
         // fetch data streams from the server with CSAPI
-        const response = await fetch(`${this.parentNode.getConnectedSystemsEndpoint()}/systems/${this.id}/datastreams`);
+        const response = await fetch(`${this.parentNode.getConnectedSystemsEndpoint()}/systems/${this.id}/datastreams`, {
+            headers: this.parentNode.getBasicAuthHeader(),
+            credentials: "include"
+        });
 
         if (response.ok) {
             const data = await response.json();
@@ -47,7 +50,10 @@ export class System implements ISystem {
 
     async fetchSubsystems() {
         // fetch subsystems from the server with CSAPI
-        const response = await fetch(`${this.parentNode.getConnectedSystemsEndpoint()}/systems/${this.id}/subsystems`);
+        const response = await fetch(`${this.parentNode.getConnectedSystemsEndpoint()}/systems/${this.id}/subsystems`, {
+            headers: this.parentNode.getBasicAuthHeader(),
+            credentials: "include"
+        });
         if (response.ok) {
             const data = await response.json();
             let subsystems: ISystem[] = [];

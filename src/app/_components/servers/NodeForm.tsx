@@ -43,6 +43,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         oshPathRoot: "/sensorhub",
         csAPIEndpoint: "/api",
         auth: {username: "", password: ""},
+        authenticationMode: "session",
         isSecure: false,
         isDefaultNode: false
     };
@@ -67,6 +68,8 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
             tNode.auth.password = value;
         } else if (name === "isSecure") {
             tNode.isSecure = checked;
+        } else if (name === "useBasicAuthentication") {
+            tNode.authenticationMode = checked ? "basic" : "session";
         } else if (name === "port") {
             tNode.port = Number.parseInt(value);
         } else if (name === 'address'){
@@ -79,32 +82,32 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
     };
 
-    const handleButtonAction = async (e: React.FormEvent) => {
+    const handleButtonAction = async (e: React.FormEvent, nodeToSave: INode = newNode) => {
         e.preventDefault();
 
         if (isEditNode) {
-            dispatch(updateNode(newNode));
+            dispatch(updateNode(nodeToSave));
             modeChangeCallback(false, null);
         } else {
             const hasDuplicate = nodes.some(
-                (n: INode) => n.address === newNode.address && n.port === newNode.port
+                (n: INode) => n.address === nodeToSave.address && n.port === nodeToSave.port
             );
             if (hasDuplicate) {
-                setNodeSnackMsg(`Node with address ${newNode.address}:${newNode.port} already exists`);
+                setNodeSnackMsg(`Node with address ${nodeToSave.address}:${nodeToSave.port} already exists`);
                 setColorStatus('error');
                 setOpenSnack(true);
                 return;
             }
-            const nameExists = nodes.some((n: INode) => n.name === newNode.name);
+            const nameExists = nodes.some((n: INode) => n.name === nodeToSave.name);
             if (nameExists) {
-                setNodeSnackMsg(`Node with name "${newNode.name}" already exists`);
+                setNodeSnackMsg(`Node with name "${nodeToSave.name}" already exists`);
                 setColorStatus('error');
                 setOpenSnack(true);
                 return;
             }
 
-            dispatch(addNode(newNode));
-            setNodeSnackMsg(`Node "${newNode.name}" added successfully`);
+            dispatch(addNode(nodeToSave));
+            setNodeSnackMsg(`Node "${nodeToSave.name}" added successfully`);
             setColorStatus('success');
             setOpenSnack(true);
             modeChangeCallback(false, null);
@@ -127,8 +130,13 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         setColorStatus('success')
         setOpenSnack(true);
 
-        // update the list of nodes using the edit/update
-        handleButtonAction(e);
+        const nodeToSave = new Node(newNode);
+        if (nodeToSave.authenticationMode === "session")
+            nodeToSave.clearRuntimeCredentials();
+
+        // Session-capable nodes retain only their opaque HttpOnly cookie. Basic-only
+        // nodes retain credentials in memory until the page is closed, never in storage.
+        handleButtonAction(e, nodeToSave);
     }
 
     if (!newNode) {
@@ -154,15 +162,14 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
         const endpoint = `${node.getConnectedSystemsEndpoint()}`;
 
-        const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
-
         const options: RequestInit = {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Basic ${encoded}`
+                ...node.getBasicAuthHeader()
             },
             mode: 'cors',
+            credentials: 'include',
         }
 
         try {
@@ -213,6 +220,14 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                                onChange={handleChange}/>
 
                     <FormControlLabel control={<Checkbox name="isSecure" checked={newNode.isSecure} onChange={handleChange}/>} label="Is Secure"/>
+                    <FormControlLabel
+                        control={<Checkbox name="useBasicAuthentication"
+                                           checked={newNode.authenticationMode === "basic"}
+                                           onChange={handleChange}/>}
+                        label="Basic-only node (keep credentials in memory until this page is reloaded or closed)"/>
+                    <Typography variant="body2" color="text.secondary">
+                        Session-capable nodes discard the password immediately after authentication. Node passwords are never saved in browser storage.
+                    </Typography>
 
                     <Stack direction="row" spacing={2}>
                         <Button variant={"contained"} color={"primary"}

@@ -8,6 +8,8 @@ import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/dist/client/components/navigation";
 import {setAlarmTrigger} from "@/lib/state/EventDataSlice";
 import {useLanguage} from "@/app/contexts/LanguageContext";
+import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js";
+import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter.js";
 
 
 export interface LaneStatusProps {
@@ -24,6 +26,7 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
     const [statusList, setStatusList] = useState<LaneStatusProps[]>([]);
 
     let timersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+    const liveTamperLanesRef = useRef<Set<string>>(new Set());
     let alarmStates = ['Alarm', 'Scan', 'Background']
 
     const dispatch = useAppDispatch();
@@ -86,6 +89,7 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
 
                 if (state == undefined)
                     return;
+                liveTamperLanesRef.current.add(laneName);
                 updateStatus(laneName, (state ? 'Tamper' : 'TamperOff'));
             });
 
@@ -107,9 +111,44 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
 
     }, [props.dataSourcesByLane]);
 
+    async function fetchLatestTamperStatuses() {
+        const entries = Array.from(props.dataSourcesByLane.entries()) as [string, any][];
+        const requests = entries.map(async ([laneName, laneDSColl]) => {
+            const tamperDatasource = laneDSColl.tamperRT[0];
+            if (!tamperDatasource)
+                return;
+
+            try {
+                const dataStreamId = tamperDatasource.properties.resource.split('/')[2];
+                const dataStreams = new DataStreams({
+                    endpointUrl: tamperDatasource.properties.endpointUrl,
+                    tls: tamperDatasource.properties.tls,
+                    connectorOpts: tamperDatasource.properties.connectorOpts,
+                    mqttOpts: tamperDatasource.properties.mqttOpts,
+                    streamProtocol: 'mqtt'
+                });
+                const dataStream = await dataStreams.getDataStreamById(dataStreamId);
+                const query = await dataStream.searchObservations(
+                    new ObservationFilter({resultTime: 'latest'}), 1);
+                const observations = await query.nextPage();
+                const state = observations[0]?.result?.tamperStatus;
+
+                // A live message received while the fetch was running is newer.
+                if (typeof state === 'boolean' && !liveTamperLanesRef.current.has(laneName))
+                    updateStatus(laneName, state ? 'Tamper' : 'TamperOff');
+            } catch (error) {
+                console.warn(`Unable to fetch latest tamper status for lane ${laneName}`, error);
+            }
+        });
+        await Promise.allSettled(requests);
+    }
+
     useEffect(() => {
-        addSubscriptionCallbacks();
-    }, [props.dataSourcesByLane]);
+        liveTamperLanesRef.current.clear();
+        const cleanup = addSubscriptionCallbacks();
+        void fetchLatestTamperStatuses();
+        return cleanup;
+    }, [addSubscriptionCallbacks]);
 
 
     function updateStatus(laneName: string, newState: string) {

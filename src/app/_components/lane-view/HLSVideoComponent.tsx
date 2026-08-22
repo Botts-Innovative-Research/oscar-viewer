@@ -24,12 +24,11 @@ export default function HLSVideoComponent({videoSource, selectedNode}: {videoSou
 
             const Hls = (await import('hls.js')).default;
 
-            const encoded = btoa(`${selectedNode.auth.username}:${selectedNode.auth.password}`);
-
-
             const hlsjsConfig = {
                 xhrSetup: function (xhr: XMLHttpRequest, url: string) {
-                    xhr.setRequestHeader("Authorization", `Basic ${encoded}`);
+                    const authHeader = selectedNode.getBasicAuthHeader().Authorization;
+                    if (authHeader)
+                        xhr.setRequestHeader("Authorization", authHeader);
                     xhr.setRequestHeader("Cache-Control", "no-cache");
                     xhr.withCredentials = true;
                 },

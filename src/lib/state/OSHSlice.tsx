@@ -32,7 +32,10 @@ function loadNodesFromLocalStorage(): INode[] {
 
         const parsed = JSON.parse(stored);
 
-        return parsed.map((n: any) => rehydrateNode(n));
+        const nodes = parsed.map((n: any) => rehydrateNode(n));
+        // Rewrite legacy entries immediately so previously saved credentials are removed.
+        persistNodes(nodes);
+        return nodes;
     } catch(e) {
         console.error("Failed to load nodes from local storage", e);
         return [];
@@ -48,7 +51,9 @@ function loadConfigNodeFromStorage(): INode | null {
 
         const parsed = JSON.parse(stored);
 
-        return rehydrateNode(parsed);
+        const node = rehydrateNode(parsed);
+        persistConfigNode(node);
+        return node;
     } catch(e) {
         console.error("Failed to load config node from local storage", e);
         return null;
@@ -66,8 +71,35 @@ function rehydrateNode(obj: any): Node {
         obj.port = obj.isSecure ? 443 : 80;
     }
     return new Node({
-        ...obj
+        ...obj,
+        // Authentication secrets are intentionally never restored from browser storage.
+        auth: {username: "", password: ""}
     });
+}
+
+function serializeNode(node: INode) {
+    return {
+        name: node.name,
+        address: node.address,
+        port: node.port,
+        oshPathRoot: node.oshPathRoot,
+        csAPIEndpoint: node.csAPIEndpoint,
+        bucketsEndpoint: node.bucketsEndpoint,
+        isSecure: node.isSecure,
+        authenticationMode: node.authenticationMode,
+        isDefaultNode: node.isDefaultNode,
+        siteMapPath: node.siteMapPath,
+        lowerLeftBound: node.lowerLeftBound,
+        upperRightBound: node.upperRightBound,
+    };
+}
+
+function persistNodes(nodes: INode[]) {
+    localStorage.setItem("osh_nodes", JSON.stringify(nodes.map(serializeNode)));
+}
+
+function persistConfigNode(node: INode) {
+    localStorage.setItem("osh_config_node", JSON.stringify(serializeNode(node)));
 }
 export const Slice = createSlice({
     name: 'OSHSlice',
@@ -75,29 +107,29 @@ export const Slice = createSlice({
     reducers: {
         addNode: (state, action: PayloadAction<INode>) => {
             state.nodes.push(action.payload);
-            localStorage.setItem("osh_nodes", JSON.stringify(state.nodes));
+            persistNodes(state.nodes);
 
         },
         setNodes: (state, action: PayloadAction<INode[]>) => {
             state.nodes = action.payload
-            localStorage.setItem("osh_nodes", JSON.stringify(state.nodes));
+            persistNodes(state.nodes);
         },
         updateNode: (state, action: PayloadAction<INode>) => {
             const nodeIndex = state.nodes.findIndex((node: INode) => node.name === action.payload.name);
 
             if (nodeIndex !== -1) {
                 state.nodes[nodeIndex] = action.payload as Node;
-                localStorage.setItem("osh_nodes", JSON.stringify(state.nodes));
+                persistNodes(state.nodes);
             }
         },
         removeNode: (state, action: PayloadAction<string>) => {
             const nodeIndex = state.nodes.findIndex((node: INode) => node.id === action.payload);
             state.nodes.splice(nodeIndex, 1);
-            localStorage.setItem("osh_nodes", JSON.stringify(state.nodes));
+            persistNodes(state.nodes);
         },
         changeConfigNode: (state, action: PayloadAction<INode>) => {
             state.configNode = action.payload;
-            localStorage.setItem("osh_config_node", JSON.stringify(state.configNode));
+            persistConfigNode(state.configNode);
 
         },
     },

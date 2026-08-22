@@ -16,10 +16,18 @@ import EventDetailsReducer from "@/lib/state/EventDetailsSlice";
 import EventPreviewReducer from "@/lib/state/EventPreviewSlice";
 import LaneViewReducer from "@/lib/state/LaneViewSlice";
 
+// One-time removal of older Redux snapshots. Previous releases could persist
+// graphs containing Node objects indirectly, so retaining selected keys is not
+// sufficient to prove that legacy credentials have been removed.
+if (typeof window !== "undefined" && !localStorage.getItem("oscar_credentials_migrated_v1")) {
+    localStorage.removeItem("persist:root");
+    localStorage.setItem("oscar_credentials_migrated_v1", "true");
+}
+
 const persistConfig ={
     key: 'root',
     storage,
-    whitelist: ['oscarClientSlice', 'eventPreview', 'laneSlice', 'laneView', 'eventLogSlice', "eventDetails"],
+    whitelist: ['oscarClientSlice', 'eventPreview', 'laneView', 'eventLogSlice', "eventDetails"],
     version: 1,
 }
 
