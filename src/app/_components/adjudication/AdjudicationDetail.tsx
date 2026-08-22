@@ -534,7 +534,6 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     async function sendFileUploadRequest(filePaths: FileWithWebId[], node: INode) {
         let newFileNames: any[] = [];
 
-        const encoded = btoa(`${node.auth.username}:${node.auth.password}`);
         const protocol = node.isSecure ? 'https://' : 'http://';
 
         const webIdFiles = filePaths.filter(f => f.webIdEnabled);
@@ -555,8 +554,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             const options: RequestInit = {
                 method: 'POST',
-                headers: {'Authorization': `Basic ${encoded}`},
+                headers: node.getBasicAuthHeader(),
                 mode: 'cors',
+                credentials: 'include',
                 body: formData
             };
 
@@ -592,8 +592,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             const options: RequestInit = {
                 method: 'POST',
-                headers: {'Authorization': `Basic ${encoded}`},
+                headers: node.getBasicAuthHeader(),
                 mode: 'cors',
+                credentials: 'include',
                 body: formData
             };
 

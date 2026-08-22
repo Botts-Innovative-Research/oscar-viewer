@@ -20,6 +20,7 @@ import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 
 const SYSTEM_UID_PREFIX = "urn:osh:system:";
+export type NodeAuthenticationMode = "session" | "basic";
 
 export interface INode {
     id: string,
@@ -30,7 +31,8 @@ export interface INode {
     csAPIEndpoint: string,
     bucketsEndpoint: string,
     isSecure: boolean,
-    auth: { username: string, password: string } | null,
+    authenticationMode: NodeAuthenticationMode,
+    auth: { username: string, password: string },
     isDefaultNode: boolean
     laneAdjMap?: Map<string, string>,
     oscarServiceSystem: any;
@@ -89,6 +91,7 @@ export interface NodeOptions {
     csAPIEndpoint?: string,
     bucketsEndpoint?: string,
     auth?: { username: string, password: string } | null,
+    authenticationMode?: NodeAuthenticationMode,
     isSecure?: boolean,
     isDefaultNode?: boolean
     laneAdjMap?: Map<string, string>,
@@ -104,7 +107,9 @@ export class Node implements INode {
     csAPIEndpoint: string;
     bucketsEndpoint: string;
     isSecure: boolean;
-    auth: { username: string, password: string } | null = null;
+    authenticationMode: NodeAuthenticationMode;
+    /** Runtime-only credentials. Persistence code must never serialize this field. */
+    auth: { username: string, password: string };
     isDefaultNode: boolean;
     laneAdjMap: Map<string, string> = new Map<string, string>();
     siteMapPath: string;
@@ -125,17 +130,24 @@ export class Node implements INode {
         this.oshPathRoot = options.oshPathRoot || '/sensorhub';
         this.csAPIEndpoint = options.csAPIEndpoint || '/api';
         this.bucketsEndpoint = options.bucketsEndpoint || '/buckets';
-        this.auth = options.auth || null;
+        this.authenticationMode = options.authenticationMode || "session";
+        this.auth = options.auth || {username: "", password: ""};
         this.isSecure = options.isSecure || false;
         this.isDefaultNode = options.isDefaultNode || false;
 
 
-        let mqttOpts = {
+        let mqttOpts: any = {
             shared: true,
             prefix: this.csAPIEndpoint,
             endpointUrl: `${this.address}:${this.port}${this.oshPathRoot}`,
-            username: this.auth.username,
-            password: this.auth.password,
+        }
+
+        let connectorOpts: any = {};
+        if (this.authenticationMode === "basic" && this.hasRuntimeCredentials()) {
+            mqttOpts.username = this.auth.username;
+            mqttOpts.password = this.auth.password;
+            connectorOpts.username = this.auth.username;
+            connectorOpts.password = this.auth.password;
         }
 
         let networkProperties = {
@@ -143,10 +155,7 @@ export class Node implements INode {
             tls: this.isSecure,
             streamProtocol: "mqtt",
             mqttOpts: mqttOpts,
-            connectorOpts: {
-                username: this.auth.username,
-                password: this.auth.password
-            }
+            connectorOpts
         }
 
         this.dataStreamsApi = new DataStreams(networkProperties);
@@ -202,8 +211,18 @@ export class Node implements INode {
     }
 
     getBasicAuthHeader() {
+        if (!this.hasRuntimeCredentials())
+            return {};
         const encoded = btoa(`${this.auth.username}:${this.auth.password}`);
         return {"Authorization": `Basic ${encoded}`};
+    }
+
+    hasRuntimeCredentials() {
+        return this.auth.username.length > 0 || this.auth.password.length > 0;
+    }
+
+    clearRuntimeCredentials() {
+        this.auth = {username: "", password: ""};
     }
 
     async checkForEndpoint() {
@@ -212,6 +231,7 @@ export class Node implements INode {
         const response = await fetch(ep, {
             method: 'GET',
             mode: 'cors',
+            credentials: 'include',
             headers: {
                 ...this.getBasicAuthHeader(),
                 'Content-Type': 'application/sml+json'

@@ -1,0 +1,22 @@
+diff --git a/node_modules/osh-js/source/core/connector/HttpConnector.js b/node_modules/osh-js/source/core/connector/HttpConnector.js
+index 7ff052a..87fdabd 100644
+--- a/node_modules/osh-js/source/core/connector/HttpConnector.js
++++ b/node_modules/osh-js/source/core/connector/HttpConnector.js
+@@ -82,7 +82,8 @@ class HttpConnector extends DataConnector {
+         // default
+         const promiseResponse = fetch(fullUrl, {
+             method: this.method,
+-            headers: this.headers
++            headers: this.headers,
++            credentials: 'include'
+         })
+             .then(function process(response) {
+                 if (!response.ok) {
+@@ -121,6 +122,7 @@ class HttpConnector extends DataConnector {
+                 'Content-Type': 'application/json',
+                 ...this.headers
+             },
++            credentials: 'include',
+             body: payload
+         });
+     }

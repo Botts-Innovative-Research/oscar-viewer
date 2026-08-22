@@ -386,7 +386,8 @@ export default function EventTable({
                     ...node.getBasicAuthHeader(),
                     'Content-Type': 'sml+json'
                 },
-                mode: "cors"
+                mode: "cors",
+                credentials: "include"
             });
 
             if (!response.ok) {

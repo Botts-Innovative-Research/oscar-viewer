@@ -142,12 +142,14 @@ export class LaneMapEntry {
             let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
 
 
-            let mqttOpts = {
+            let mqttOpts: any = {
                 shared: true,
                 prefix: this.parentNode.csAPIEndpoint,
                 endpointUrl: mqttOptUrl,
-                username: this.parentNode.auth.username,
-                password: this.parentNode.auth.password,
+            }
+            if (this.parentNode.authenticationMode === "basic") {
+                mqttOpts.username = this.parentNode.auth.username;
+                mqttOpts.password = this.parentNode.auth.password;
             }
 
             try {
@@ -191,12 +193,14 @@ export class LaneMapEntry {
         let mqttOptUrlArray = (stream.networkProperties.endpointUrl).split("/");
         let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
 
-        let mqttOpts = {
+        let mqttOpts: any = {
             shared: true,
             prefix: this.parentNode.csAPIEndpoint,
             endpointUrl: mqttOptUrl,
-            username: this.parentNode.auth.username,
-            password: this.parentNode.auth.password,
+        }
+        if (this.parentNode.authenticationMode === "basic") {
+            mqttOpts.username = this.parentNode.auth.username;
+            mqttOpts.password = this.parentNode.auth.password;
         }
         return new ConSysApi(`rtds - ${stream.properties.name}`, {
             endpointUrl: stream.networkProperties.endpointUrl,
@@ -213,12 +217,14 @@ export class LaneMapEntry {
         let mqttOptUrlArray = (datastream.networkProperties.endpointUrl).split("/");
         let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
 
-        let mqttOpts = {
+        let mqttOpts: any = {
             shared: true,
             prefix: this.parentNode.csAPIEndpoint,
             endpointUrl: mqttOptUrl,
-            username: this.parentNode.auth.username,
-            password: this.parentNode.auth.password,
+        }
+        if (this.parentNode.authenticationMode === "basic") {
+            mqttOpts.username = this.parentNode.auth.username;
+            mqttOpts.password = this.parentNode.auth.password;
         }
         return new ConSysApi(`rtds-${datastream.properties.id}`, {
             protocol: 'mqtt',
@@ -238,12 +244,14 @@ export class LaneMapEntry {
         let mqttOptUrlArray = (datastream.networkProperties.endpointUrl).split("/");
         let mqttOptUrl = mqttOptUrlArray[0] + "/" + mqttOptUrlArray[1];
 
-        let mqttOpts = {
+        let mqttOpts: any = {
             shared: true,
             prefix: this.parentNode.csAPIEndpoint,
             endpointUrl: mqttOptUrl,
-            username: this.parentNode.auth.username,
-            password: this.parentNode.auth.password,
+        }
+        if (this.parentNode.authenticationMode === "basic") {
+            mqttOpts.username = this.parentNode.auth.username;
+            mqttOpts.password = this.parentNode.auth.password;
         }
 
         return new ConSysApi(`batchds-${datastream.properties.id}`, {
