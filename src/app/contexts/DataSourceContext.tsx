@@ -108,8 +108,14 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
 export const initializeDefaultNode = () => (dispatch: AppDispatch) => {
     const hostName = window.location.hostname;
-    const port = window.location.port;
     const isSecure = window.location.protocol === "https:";
+    let port: number;
+
+    if (window.location.port) {
+        port = Number(window.location.port);
+    } else {
+        port = isSecure ? 443 : 80;
+    }
 
     const initialNodeOpts: NodeOptions = {
         name: "Local Node",

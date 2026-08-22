@@ -67,6 +67,9 @@ const initialState: IOSHSlice = {
 }
 
 function rehydrateNode(obj: any): Node {
+    if (!obj.port) {
+        obj.port = obj.isSecure ? 443 : 80;
+    }
     return new Node({
         ...obj,
         // Authentication secrets are intentionally never restored from browser storage.
