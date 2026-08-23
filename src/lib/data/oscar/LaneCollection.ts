@@ -12,6 +12,35 @@ import {INode} from "@/lib/data/osh/Node";
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
 
+function manageSharedConnection(dataSource: any) {
+    const originalConnect = dataSource.connect.bind(dataSource);
+    const originalDisconnect = dataSource.disconnect.bind(dataSource);
+    let connection: Promise<any> | null = null;
+
+    dataSource.connect = () => {
+        if (!connection) {
+            connection = Promise.resolve(originalConnect()).catch((error) => {
+                connection = null;
+                throw error;
+            });
+        }
+        return connection;
+    };
+
+    dataSource.disconnect = async () => {
+        if (!connection)
+            return;
+        try {
+            await connection;
+            await originalDisconnect();
+        } finally {
+            connection = null;
+        }
+    };
+
+    return dataSource;
+}
+
 import {
     isAdjudicationControlStream,
     isConnectionDataStream,
@@ -165,6 +194,7 @@ export class LaneMapEntry {
                     responseFormat: isVideoDataStream(dsObj) ?'application/swe+binary' :  'application/swe+json',
                     mqttOpts: mqttOpts,
                 });
+                dsRT = manageSharedConnection(dsRT);
 
                 dsBatch = new ConSysApi(`batchds - ${dsObj.properties.name}`, {
                     endpointUrl: dsObj.networkProperties.endpointUrl,

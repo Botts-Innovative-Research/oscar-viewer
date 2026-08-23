@@ -3,7 +3,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "prebuild": "node scripts/clean-build-output.js",
     "build": "next build",
+    "postbuild": "node scripts/verify-mqtt-bundle.js",
     "start": "next start",
     "postinstall": "patch-package",
     "dev": "next dev",

@@ -9,6 +9,7 @@ import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView";
 import {
     createGammaViewCurve,
     createNeutronViewCurve,
+    createThresholdViewCurve,
 } from "@/app/utils/ChartUtils";
 
 export class ChartInterceptProps {
@@ -28,6 +29,7 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
 
     const [gammaCurve, setGammaCurve] = useState<typeof CurveLayer>();
     const [neutronCurve, setNeutronCurve] = useState<typeof CurveLayer>();
+    const [thresholdCurve, setThresholdCurve] = useState<typeof CurveLayer>();
 
     const gammaChartViewRef = useRef<typeof ChartJsView | null>(null);
     const neutronChartViewRef = useRef<typeof ChartJsView | null>(null);
@@ -40,7 +42,10 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
         if(datasources.neutron)
             setNeutronCurve(createNeutronViewCurve(datasources.neutron));
 
-    }, [datasources.gamma, datasources.neutron]);
+        if(datasources.threshold)
+            setThresholdCurve(createThresholdViewCurve(datasources.threshold));
+
+    }, [datasources.gamma, datasources.neutron, datasources.threshold]);
 
     const checkForMountableAndCreateCharts = useCallback(() => {
         if (gammaCurve && !gammaChartViewRef.current) {
@@ -50,7 +55,7 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
                 gammaChartViewRef.current = new ChartJsView({
                     type: 'line',
                     container: gammaChartID,
-                    layers: [gammaCurve],
+                    layers: thresholdCurve ? [gammaCurve, thresholdCurve] : [gammaCurve],
                     css: "chart-view",
                     options:{
                         plugins: {
@@ -161,7 +166,7 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
             setChartReady(true);
         }
 
-    }, [gammaCurve, neutronCurve, setChartReady]);
+    }, [gammaCurve, neutronCurve, thresholdCurve, setChartReady]);
 
     useEffect(() => {
         checkForMountableAndCreateCharts();

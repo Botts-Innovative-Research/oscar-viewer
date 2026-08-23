@@ -48,7 +48,7 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
         };
     }, [props.initialLanes]);
 
-    const addSubscriptionCallbacks = useCallback(() => {
+    const addSubscriptionCallbacks = useCallback((): (() => void) => {
         for (let [laneName, laneDSColl] of props.dataSourcesByLane.entries()) {
 
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('connectionRT', (message: any) => {
@@ -100,14 +100,12 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
             laneDSColl.addConnectToALLDSMatchingName('gammaRT');
         }
 
-        return () => {
-            for (let [laneName, laneDSColl] of props.dataSourcesByLane.entries()) {
-                laneDSColl.addDisconnectToALLDSMatchingName('connectionRT');
-                laneDSColl.addDisconnectToALLDSMatchingName('tamperRT');
-                laneDSColl.addDisconnectToALLDSMatchingName('neutronRT');
-                laneDSColl.addDisconnectToALLDSMatchingName('gammaRT');
-            }
-        }
+        // These datasource objects belong to the application-level lane map and
+        // are reused by lane view, map, and event components. Disconnecting them
+        // during a route transition races the next view's connect and removes
+        // that view's shared MQTT subscriptions. They remain live for the life
+        // of the node and are explicitly reset when the lane map is rebuilt.
+        return () => {};
 
     }, [props.dataSourcesByLane]);
 

@@ -26,7 +26,7 @@ import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
 import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
 import SettingsIcon from '@mui/icons-material/Settings';
 import MediationIcon from '@mui/icons-material/Mediation';
-import {FormControlLabel, Menu, MenuItem, Slider, Stack, Switch, Tooltip} from '@mui/material';
+import {Button, FormControlLabel, Menu, MenuItem, Slider, Stack, Switch, Tooltip} from '@mui/material';
 import Link from 'next/link';
 import {Download, InsertChart, VolumeDown, VolumeUp} from "@mui/icons-material";
 import AlarmAudio from "@/app/_components/AlarmAudio";
@@ -136,6 +136,31 @@ export default function Navbar({children}: { children: React.ReactNode }) {
     const dispatch = useDispatch();
     const router = useRouter();
     const savedVolume = useSelector(selectAlarmAudioVolume);
+    const [authenticatedUsername, setAuthenticatedUsername] = useState<string | null>(null);
+
+    useEffect(() => {
+        const controller = new AbortController();
+        fetch('/session', {
+            credentials: 'include',
+            headers: {'Accept': 'application/json'},
+            signal: controller.signal,
+        })
+            .then((response) => response.ok ? response.json() : Promise.reject(new Error(`Session lookup returned ${response.status}`)))
+            .then((session) => setAuthenticatedUsername(typeof session.username === 'string' ? session.username : null))
+            .catch((error) => {
+                if (error.name !== 'AbortError')
+                    console.warn('Unable to read the current OSCAR session', error);
+            });
+        return () => controller.abort();
+    }, []);
+
+    const handleLogout = async () => {
+        try {
+            await fetch('/logout', {method: 'POST', credentials: 'include'});
+        } finally {
+            window.location.assign('/login');
+        }
+    };
 
     const handleSettingsMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
         setSettingsAnchorEl(event.currentTarget);
@@ -358,6 +383,14 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                             {t('appTitle')}
                         </Typography>
                         <Stack direction="row" alignItems="center" spacing={1}>
+                            {authenticatedUsername && (
+                                <Typography variant="body2" noWrap sx={{maxWidth: {xs: 110, sm: 240}, overflow: 'hidden', textOverflow: 'ellipsis'}}>
+                                    Signed in as &quot;{authenticatedUsername}&quot;
+                                </Typography>
+                            )}
+                            <Button color="inherit" size="small" onClick={handleLogout}>
+                                Log out
+                            </Button>
                             <LanguageSelector />
                             <Tooltip title={t('settings')} arrow placement="top">
                                 <IconButton
