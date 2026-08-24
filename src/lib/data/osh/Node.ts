@@ -19,7 +19,20 @@ import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/Cont
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 
-const SYSTEM_UID_PREFIX = "urn:osh:system:";
+const LANE_SYSTEM_UID_PREFIX = "urn:osh:system:lane:";
+
+/**
+ * Returns the terminal lane identifier used by subsystem UIDs.
+ */
+function getTerminalLaneId(laneUid: string): string | null {
+    if (!laneUid.startsWith(LANE_SYSTEM_UID_PREFIX))
+        return null;
+
+    const lanePath = laneUid.substring(LANE_SYSTEM_UID_PREFIX.length)
+        .split(":")
+        .filter(Boolean);
+    return lanePath.length > 0 ? lanePath[lanePath.length - 1] : null;
+}
 export type NodeAuthenticationMode = "session" | "basic";
 
 export interface INode {
@@ -260,8 +273,8 @@ export class Node implements INode {
         if (!systems || systems.length == 0) return;
 
         systems.sort((a, b) => {
-            const aIsLane = a.properties.properties?.uid.includes(SYSTEM_UID_PREFIX) ? 0 : 1;
-            const bIsLane = b.properties.properties?.uid.includes(SYSTEM_UID_PREFIX) ? 0 : 1;
+            const aIsLane = a.properties.properties?.uid.startsWith(LANE_SYSTEM_UID_PREFIX) ? 0 : 1;
+            const bIsLane = b.properties.properties?.uid.startsWith(LANE_SYSTEM_UID_PREFIX) ? 0 : 1;
             return aIsLane - bIsLane;
         });
 
@@ -269,7 +282,7 @@ export class Node implements INode {
 
         // filter into lanes
         for (let system of systems) {
-            if (system.properties.properties?.uid.includes(SYSTEM_UID_PREFIX)) {
+            if (system.properties.properties?.uid.startsWith(LANE_SYSTEM_UID_PREFIX)) {
                 let laneName = system.properties.properties.name;
 
                 if (laneMap.has(laneName)) {
@@ -294,11 +307,8 @@ export class Node implements INode {
                     const laneUid = entry.laneSystem?.properties?.properties?.uid;
                     if (!laneUid) continue;
 
-                    const laneParts = laneUid.split(":");
-                    const laneIdx = laneParts.indexOf("lane");
-                    if (laneIdx < 0) continue;
-
-                    const laneSuffix = laneParts[laneIdx + 1];
+                    const laneSuffix = getTerminalLaneId(laneUid);
+                    if (!laneSuffix) continue;
 
                     const isStandardSubsystem =
                         uidParts[uidParts.length - 1] === laneSuffix;
@@ -308,14 +318,14 @@ export class Node implements INode {
                     const ffmpegIdx = uidParts.indexOf("ffmpeg");
                     if (ffmpegIdx >= 0) {
                         const subLaneIdx = uidParts.indexOf("lane", ffmpegIdx);
-                        const hasCorrectSuffix =
-                            uidParts[subLaneIdx + 1] === laneSuffix;
-
-                        const n = uidParts[subLaneIdx + 2];
-                        const isInteger = Number.isInteger(Number(n));
+                        const n = uidParts[uidParts.length - 1];
+                        const subsystemLaneSuffix = uidParts[uidParts.length - 2];
+                        const hasCorrectSuffix = subsystemLaneSuffix === laneSuffix;
+                        const isInteger = /^\d+$/.test(n);
 
                         isFFmpegSubsystem =
                             subLaneIdx > ffmpegIdx &&
+                            uidParts.length - subLaneIdx >= 3 &&
                             hasCorrectSuffix &&
                             isInteger;
 

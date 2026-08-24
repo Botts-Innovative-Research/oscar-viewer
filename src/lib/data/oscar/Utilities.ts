@@ -18,164 +18,122 @@ import {
     THRESHOLD_DEF, VIDEO_FRAME_DEF, WEB_ID_DEF
 } from "@/lib/data/Constants";
 
+function getPropertyDefinitions(stream: typeof ConnectedSystemsApi, propertyName: "observedProperties" | "controlledProperties"): string[] {
+    const properties = stream?.properties?.[propertyName];
+    if (!Array.isArray(properties))
+        return [];
+
+    return properties
+        .map((property: any) => property?.definition)
+        .filter((definition: unknown): definition is string => typeof definition === "string");
+}
+
+function getObservedDefinitions(datastream: typeof DataStream): string[] {
+    return getPropertyDefinitions(datastream, "observedProperties");
+}
+
+function getControlledDefinitions(controlStream: typeof ControlStream): string[] {
+    return getPropertyDefinitions(controlStream, "controlledProperties");
+}
+
+function includesDefinition(definitions: string[], expected: string): boolean {
+    return definitions.some((definition) => definition.includes(expected));
+}
+
 
 export function isLocationDataStream(datastream: typeof DataStream): boolean {
-    if (!hasDefinitionProperties(datastream))
-        return false;
-
-    return datastream.properties.observedProperties[0].definition.includes(SENSOR_LOCATION_DEF)
-        || datastream.properties.observedProperties[0].definition.includes(LOCATION_VECTOR_DEF);
+    const definitions = getObservedDefinitions(datastream);
+    return includesDefinition(definitions, SENSOR_LOCATION_DEF)
+        || includesDefinition(definitions, LOCATION_VECTOR_DEF);
 }
 
 export function isVideoDataStream(datastream: typeof DataStream): boolean {
-
-    if (!hasDefinitionProperties(datastream))
-        return false;
-
-    return datastream.properties.observedProperties[0].definition.includes(RASTER_IMAGE_DEF)
-    || datastream.properties.observedProperties[0].definition.includes(VIDEO_FRAME_DEF);
+    const definitions = getObservedDefinitions(datastream);
+    return includesDefinition(definitions, RASTER_IMAGE_DEF)
+        || includesDefinition(definitions, VIDEO_FRAME_DEF);
 }
 
 export function isGammaDataStream(datastream: typeof DataStream): boolean {
-
-    if (!hasDefinitionProperties(datastream))
-        return false;
-
-    return datastream.properties.observedProperties[0].definition.includes(ALARM_DEF)
-        && datastream.properties.observedProperties[1].definition.includes(GAMMA_COUNT_DEF);
+    const definitions = getObservedDefinitions(datastream);
+    return includesDefinition(definitions, ALARM_DEF)
+        && includesDefinition(definitions, GAMMA_COUNT_DEF);
 }
 
 export function isNeutronDataStream(datastream: typeof DataStream): boolean {
-
-    if (!hasDefinitionProperties(datastream))
-        return false;
-
-    return datastream.properties.observedProperties[0].definition.includes(ALARM_DEF)
-        && datastream.properties.observedProperties[1].definition.includes(NEUTRON_COUNT_DEF);
+    const definitions = getObservedDefinitions(datastream);
+    return includesDefinition(definitions, ALARM_DEF)
+        && includesDefinition(definitions, NEUTRON_COUNT_DEF);
 }
 
 export function isTamperDataStream(datastream: typeof DataStream): boolean {
-
-    if (!hasDefinitionProperties(datastream))
-        return false;
-
-    return datastream.properties.observedProperties[0].definition.includes(TAMPER_STATUS_DEF);
+    return includesDefinition(getObservedDefinitions(datastream), TAMPER_STATUS_DEF);
 }
 
 export function isOccupancyDataStream(datastream: typeof DataStream): boolean {
-    if (!hasDefinitionProperties(datastream))
-        return false;
-
-    return datastream.properties.observedProperties[0].definition.includes(OCCUPANCY_PILLAR_DEF);
+    return includesDefinition(getObservedDefinitions(datastream), OCCUPANCY_PILLAR_DEF);
 }
 
 export function isConnectionDataStream(datastream: typeof DataStream): boolean {
-
-    if (!hasDefinitionProperties(datastream))
-        return false;
-
-    return datastream.properties.observedProperties[0].definition.includes(CONNECTION_DEF);
+    return includesDefinition(getObservedDefinitions(datastream), CONNECTION_DEF);
 }
 
 export function isSpeedDataStream(datastream: typeof DataStream): boolean {
-
-    if (!hasDefinitionProperties(datastream))
-        return false;
-
-    return datastream.properties.observedProperties[0].definition.includes(SPEED_DEF);
+    return includesDefinition(getObservedDefinitions(datastream), SPEED_DEF);
 }
 
 export function isForegroundDataStream(datastream: typeof DataStream): boolean {
-    return datastream.properties.observedProperties[0]?.definition?.includes(DURATION_DEF)
-        && datastream.properties.observedProperties[2]?.definition?.includes(LINEARSPEC_DEF)
-        && datastream.properties.observedProperties[9]?.definition?.includes(DOSE_DEF);
+    const definitions = getObservedDefinitions(datastream);
+    return includesDefinition(definitions, DURATION_DEF)
+        && includesDefinition(definitions, LINEARSPEC_DEF)
+        && includesDefinition(definitions, DOSE_DEF);
 }
 export function isBackgroundDataStream(datastream: typeof DataStream): boolean {
-    return datastream.properties.observedProperties[0]?.definition?.includes(DURATION_DEF)
-        && datastream.properties.observedProperties[2]?.definition?.includes(LINEARSPEC_DEF)
-        && datastream.properties.observedProperties.length < 10;
+    const definitions = getObservedDefinitions(datastream);
+    return includesDefinition(definitions, DURATION_DEF)
+        && includesDefinition(definitions, LINEARSPEC_DEF)
+        && !includesDefinition(definitions, DOSE_DEF);
 }
 
 export function isRs350DataStream(datastream: typeof DataStream): boolean {
-    return datastream.properties.observedProperties[0]?.definition?.includes(DURATION_DEF)
-        && datastream.properties.observedProperties[2]?.definition?.includes(LINEARSPEC_DEF)
-        && datastream.properties.observedProperties[9]?.definition?.includes(DOSE_DEF);
+    return isForegroundDataStream(datastream);
 }
 export function isThresholdDataStream(datastream: typeof DataStream): boolean {
-
-    if (!hasDefinitionProperties(datastream))
-        return false;
-
-    return datastream.properties.observedProperties[0].definition.includes(THRESHOLD_DEF);
+    return includesDefinition(getObservedDefinitions(datastream), THRESHOLD_DEF);
 }
 
 export function isConfigurationDataStream(datastream: typeof DataStream): boolean {
-    if (!hasDefinitionProperties(datastream))
-        return false;
-
-    return datastream.properties.observedProperties[0].definition.includes(CONFIG_DEF);
+    return includesDefinition(getObservedDefinitions(datastream), CONFIG_DEF);
 }
 
 export function isSiteDiagramPathDataStream(datastream: typeof DataStream): boolean {
-
-    if (!hasDefinitionProperties(datastream))
-        return false;
-
-    return datastream.properties.observedProperties[0].definition.includes(SITE_DIAGRAM_DEF);
+    return includesDefinition(getObservedDefinitions(datastream), SITE_DIAGRAM_DEF);
 }
 
 
 export function isReportControlStream(controlStream: typeof ControlStream): boolean {
-
-    if (!hasDefinitionProperties(controlStream))
-        return false;
-
-    return controlStream.properties.controlledProperties[0].definition.includes(REPORT_DEF);
+    return includesDefinition(getControlledDefinitions(controlStream), REPORT_DEF);
 }
 export function isNationalControlStream(controlStream: typeof ControlStream): boolean {
-    if (!hasDefinitionProperties(controlStream))
-        return false;
-
-    return controlStream.properties.controlledProperties[0].definition.includes(START_DEF) &&
-        controlStream.properties.controlledProperties[1].definition.includes(END_DEF) &&
-        controlStream.properties.controlledProperties.length == 2;
+    const definitions = getControlledDefinitions(controlStream);
+    return includesDefinition(definitions, START_DEF)
+        && includesDefinition(definitions, END_DEF)
+        && definitions.length === 2;
 }
 
 export function isAdjudicationControlStream(controlStream: typeof ControlStream): boolean {
-    if (!hasDefinitionProperties(controlStream))
-        return false;
-
-    return controlStream.properties.controlledProperties[0].definition.includes(ADJ_DEF);
+    return includesDefinition(getControlledDefinitions(controlStream), ADJ_DEF);
 }
 
 export function isWebIdAnalysisDataStream(datastream: typeof DataStream): boolean {
-    if (!hasDefinitionProperties(datastream))
-        return false;
-
-    return datastream.properties.observedProperties[0].definition.includes(WEB_ID_DEF);
+    return includesDefinition(getObservedDefinitions(datastream), WEB_ID_DEF);
 }
 
 export function isHLSVideoControlStream(controlStream: typeof ControlStream): boolean {
-    if (!hasDefinitionProperties(controlStream))
-        return false;
-
-    return controlStream.properties.controlledProperties[0].definition.includes(HLS_VIDEO_DEF);
+    return includesDefinition(getControlledDefinitions(controlStream), HLS_VIDEO_DEF);
 }
 
 
 export function hasDefinitionProperties(stream: typeof ConnectedSystemsApi){
-    if (stream.properties.length == 0)
-        return false;
-
-    let definition = null;
-
-    if (stream instanceof ControlStream)
-        definition = stream.properties.controlledProperties[0].definition;
-    else if (stream instanceof DataStream)
-        definition = stream.properties.observedProperties[0].definition
-
-    if (definition == undefined)
-        return false;
-
-    return true;
+    return getObservedDefinitions(stream as typeof DataStream).length > 0
+        || getControlledDefinitions(stream as typeof ControlStream).length > 0;
 }
