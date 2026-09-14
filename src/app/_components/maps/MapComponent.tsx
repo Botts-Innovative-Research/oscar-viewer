@@ -161,11 +161,32 @@ export default function MapComponent() {
 
     useEffect(() => {
         if (!leafletViewRef.current && !isInit) {
+            // define base layers
+
+            const osmLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 22,
+                maxNativeZoom: 19,
+                referrerPolicy: "strict-origin-when-cross-origin"
+            });
+            const esriLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+                attribution: '&copy; <a href="https://www.esri.com/">Esri</a>, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+                maxZoom: 22,
+                maxNativeZoom: 19,
+                referrerPolicy: "strict-origin-when-cross-origin"
+            });
+
             let view = new LeafletView({
                 container: mapcontainer,
                 layers: [],
                 imageOverlays: [],
-                autoZoomOnFirstMarker: true
+                autoZoomOnFirstMarker: true,
+                baseLayers:{
+                    "OSM Streets": osmLayer,
+                    "Esri Satellite": esriLayer
+                },
+                overlayLayers: {},
+                defaultLayer: osmLayer
             });
             leafletViewRef.current = view;
             setIsInit(true);
