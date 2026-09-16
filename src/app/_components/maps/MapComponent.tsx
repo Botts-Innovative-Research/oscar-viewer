@@ -274,7 +274,7 @@ export default function MapComponent() {
 
             leafletViewRef.current.map.fitBounds(bounds);
             leafletViewRef.current.addImageOverlay(path, bounds, {
-                opacity: 0.45,
+                opacity: 0.85,
                 interactive: false,
                 alt: `SiteMap for ${node.name}-${node.id}`,
             });
