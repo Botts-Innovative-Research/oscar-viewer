@@ -273,7 +273,7 @@ export default function MapComponent() {
             const bounds = L.latLngBounds([llb, urb]);
 
             leafletViewRef.current.addImageOverlay(path, bounds, {
-                opacity: 0.45,
+                opacity: 0.85,
                 interactive: false,
                 alt: `SiteMap for ${node.name}-${node.id}`,
             });
