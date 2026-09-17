@@ -19,7 +19,7 @@ import {
 } from "@/lib/data/oscar/Utilities";
 import {setCurrentLane} from "@/lib/state/LaneViewSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import L from "leaflet";
+import L, {LatLngExpression} from "leaflet";
 import {selectNodes} from "@/lib/state/OSHSlice";
 import {INode} from "@/lib/data/osh/Node";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
@@ -188,6 +188,7 @@ export default function MapComponent() {
                 overlayLayers: {},
                 defaultLayer: osmLayer
             });
+            view.map.options.zoomSnap = 0;
             leafletViewRef.current = view;
             setIsInit(true);
         }
@@ -268,19 +269,17 @@ export default function MapComponent() {
             return;
         }
 
-        const addImageOverlay = async (node: INode, path: string, urb: any, llb: any) => {
-
+        const addImageOverlay = (node: INode, path: string, urb: LatLngExpression, llb: LatLngExpression) => {
             const bounds = L.latLngBounds([llb, urb]);
 
-            leafletViewRef.current.map.fitBounds(bounds);
             leafletViewRef.current.addImageOverlay(path, bounds, {
                 opacity: 0.45,
                 interactive: false,
                 alt: `SiteMap for ${node.name}-${node.id}`,
             });
-            leafletViewRef.current.map.fitBounds(bounds);
-
+            leafletViewRef.current.autoZoomOnFirstMarker = false;
             leafletViewRef.current.map.invalidateSize();
+            leafletViewRef.current.map.fitBounds(bounds);
         }
 
         nodes.forEach(async (node: INode) => {
