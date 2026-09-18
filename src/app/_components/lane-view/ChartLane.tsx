@@ -3,8 +3,7 @@
 
 import {Box, Grid} from "@mui/material";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
-import React, {useCallback, useEffect, useRef, useState} from "react";
-import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
+import React, {useEffect, useRef} from "react";
 import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView";
 import {
     createGammaViewCurve,
@@ -27,28 +26,17 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
     const gammaChartID = "chart-view-gamma";
     const neutronChartID = "chart-view-neutron";
 
-    const [gammaCurve, setGammaCurve] = useState<typeof CurveLayer>();
-    const [neutronCurve, setNeutronCurve] = useState<typeof CurveLayer>();
-    const [thresholdCurve, setThresholdCurve] = useState<typeof CurveLayer>();
-
     const gammaChartViewRef = useRef<typeof ChartJsView | null>(null);
     const neutronChartViewRef = useRef<typeof ChartJsView | null>(null);
 
-
     useEffect(() => {
-        if(datasources.gamma)
-            setGammaCurve(createGammaViewCurve(datasources.gamma));
+        setChartReady(false);
 
-        if(datasources.neutron)
-            setNeutronCurve(createNeutronViewCurve(datasources.neutron));
+        const gammaCurve = createGammaViewCurve(datasources.gamma);
+        const neutronCurve = createNeutronViewCurve(datasources.neutron);
+        const thresholdCurve = createThresholdViewCurve(datasources.threshold);
 
-        if(datasources.threshold)
-            setThresholdCurve(createThresholdViewCurve(datasources.threshold));
-
-    }, [datasources.gamma, datasources.neutron, datasources.threshold]);
-
-    const checkForMountableAndCreateCharts = useCallback(() => {
-        if (gammaCurve && !gammaChartViewRef.current) {
+        if (gammaCurve) {
             const container = document.getElementById(gammaChartID);
 
             if (container) {
@@ -105,7 +93,7 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
             }
         }
 
-        if (neutronCurve && !neutronChartViewRef.current) {
+        if (neutronCurve) {
             const containerN = document.getElementById(neutronChartID);
 
             if (containerN) {
@@ -166,11 +154,14 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
             setChartReady(true);
         }
 
-    }, [gammaCurve, neutronCurve, thresholdCurve, setChartReady]);
-
-    useEffect(() => {
-        checkForMountableAndCreateCharts();
-    }, [checkForMountableAndCreateCharts]);
+        return () => {
+            gammaChartViewRef.current?.destroy();
+            neutronChartViewRef.current?.destroy();
+            gammaChartViewRef.current = null;
+            neutronChartViewRef.current = null;
+            setChartReady(false);
+        };
+    }, [laneName, datasources.gamma, datasources.neutron, datasources.threshold, setChartReady]);
 
 
     return (

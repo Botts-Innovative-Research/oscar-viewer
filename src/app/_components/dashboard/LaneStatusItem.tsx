@@ -2,11 +2,12 @@
 
 
 import Paper from '@mui/material/Paper';
-import {Stack, Tooltip, Typography} from '@mui/material';
+import {IconButton, Stack, Tooltip, Typography} from '@mui/material';
 import TamperIcon from '@mui/icons-material/ReportProblem';
 import FaultIcon from '@mui/icons-material/Error';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import OfflineIcon from '@mui/icons-material/ReportOff'
+import ClearIcon from '@mui/icons-material/Clear';
 import React from "react";
 
 
@@ -17,6 +18,7 @@ export default function LaneStatusItem(props: {
     isOnline: boolean;
     isTamper: boolean;
     isFault: boolean;
+    onClearTamper: (event: React.MouseEvent<HTMLButtonElement>) => void;
 
 }) {
 
@@ -42,9 +44,21 @@ export default function LaneStatusItem(props: {
                     }
 
                     {props.isTamper &&
-                        <Tooltip title={'Tamper'} arrow placement="top">
-                            <TamperIcon fontSize="small" sx={{color: "#FFFFFF" }}/>
-                        </Tooltip>
+                        <>
+                            <Tooltip title={'Tamper'} arrow placement="top">
+                                <TamperIcon fontSize="small" sx={{color: "#FFFFFF" }}/>
+                            </Tooltip>
+                            <Tooltip title={'Clear tamper'} arrow placement="top">
+                                <IconButton
+                                    aria-label={`Clear tamper for ${props.name}`}
+                                    size="small"
+                                    onClick={props.onClearTamper}
+                                    sx={{color: "#FFFFFF", marginLeft: 'auto !important', padding: 0.25}}
+                                >
+                                    <ClearIcon fontSize="small"/>
+                                </IconButton>
+                            </Tooltip>
+                        </>
                     }
                     {/*{!props.isTamper && !props.isFault && props.isOnline && (*/}
                     {props.isOnline ? (

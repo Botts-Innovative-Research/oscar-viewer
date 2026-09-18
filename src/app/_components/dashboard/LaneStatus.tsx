@@ -1,8 +1,8 @@
 "use client";
 
-import {Box, Grid, Stack, Typography} from '@mui/material';
+import {Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Grid, Stack, Typography} from '@mui/material';
 import LaneStatusItem from './LaneStatusItem';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useContext, useEffect, useRef, useState} from 'react';
 import {setCurrentLane} from '@/lib/state/LaneViewSlice';
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/dist/client/components/navigation";
@@ -10,6 +10,10 @@ import {setAlarmTrigger} from "@/lib/state/EventDataSlice";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter.js";
+import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import {generateManualTamperCommandJSON, sendCommand} from "@/lib/data/oscar/OSCARCommands";
+import {isTamperControlStream} from "@/lib/data/oscar/Utilities";
+import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 
 
 export interface LaneStatusProps {
@@ -24,6 +28,9 @@ export interface LaneStatusProps {
 export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes: any[] }) {
     const idVal = useRef(1);
     const [statusList, setStatusList] = useState<LaneStatusProps[]>([]);
+    const [tamperLaneToClear, setTamperLaneToClear] = useState<string | null>(null);
+    const [isClearingTamper, setIsClearingTamper] = useState(false);
+    const [clearTamperError, setClearTamperError] = useState<string | null>(null);
 
     let timersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
     const liveTamperLanesRef = useRef<Set<string>>(new Set());
@@ -32,6 +39,7 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
     const dispatch = useAppDispatch();
     const router = useRouter();
     const { t } = useLanguage();
+    const {laneMapRef} = useContext(DataSourceContext);
 
     useEffect(() => {
         let sortedLanes = [...props.initialLanes].sort((a,b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
@@ -215,6 +223,64 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
         router.push("/lane-view");
     }
 
+    const handleOpenClearTamper = (event: React.MouseEvent<HTMLButtonElement>, laneName: string) => {
+        event.stopPropagation();
+        setClearTamperError(null);
+        setTamperLaneToClear(laneName);
+    };
+
+    const handleCloseClearTamper = () => {
+        if (isClearingTamper)
+            return;
+        setTamperLaneToClear(null);
+        setClearTamperError(null);
+    };
+
+    const handleConfirmClearTamper = async () => {
+        if (!tamperLaneToClear)
+            return;
+
+        setIsClearingTamper(true);
+        setClearTamperError(null);
+
+        try {
+            const laneEntry = laneMapRef.current.get(tamperLaneToClear);
+            if (!laneEntry)
+                throw new Error(`Unable to find lane ${tamperLaneToClear}.`);
+
+            let tamperControl = laneEntry.controlStreams.find(
+                (stream: typeof ControlStream) => isTamperControlStream(stream));
+
+            if (!tamperControl) {
+                const laneSystemIds = new Set(laneEntry.systems.map(
+                    (system: any) => system.properties.id));
+                const nodeControlStreams = await laneEntry.parentNode.fetchNodeControlStreams() ?? [];
+                tamperControl = nodeControlStreams.find((stream: typeof ControlStream) =>
+                    laneSystemIds.has(stream.properties["system@id"]) && isTamperControlStream(stream));
+            }
+
+            if (!tamperControl)
+                throw new Error(`No manual tamper control is available for ${tamperLaneToClear}.`);
+
+            const response = await sendCommand(
+                laneEntry.parentNode,
+                tamperControl.properties.id,
+                generateManualTamperCommandJSON(false)
+            );
+
+            if (!response.ok)
+                throw new Error(`The clear tamper command failed (${response.status}).`);
+
+            updateStatus(tamperLaneToClear, 'TamperOff');
+            setTamperLaneToClear(null);
+        } catch (error) {
+            console.error("Failed to clear tamper", error);
+            setClearTamperError(error instanceof Error ? error.message : 'Failed to clear tamper.');
+        } finally {
+            setIsClearingTamper(false);
+        }
+    };
+
     return (
 
         <Stack justifyContent={"start"} spacing={1}>
@@ -234,6 +300,7 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
                                             isOnline={item.isOnline}
                                             isFault={item.isFault}
                                             isTamper={item.isTamper}
+                                            onClearTamper={(event) => handleOpenClearTamper(event, item.name)}
                                         />
                                     </div>
                                 </Grid>
@@ -242,6 +309,30 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
                     )}
                 </Box>
             </>
+            <Dialog
+                open={tamperLaneToClear !== null}
+                onClose={handleCloseClearTamper}
+                aria-labelledby="clear-tamper-dialog-title"
+            >
+                <DialogTitle id="clear-tamper-dialog-title">Clear tamper?</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Are you sure you want to clear tamper for {tamperLaneToClear}?
+                    </DialogContentText>
+                    {clearTamperError && <Alert severity="error" sx={{mt: 2}}>{clearTamperError}</Alert>}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseClearTamper} disabled={isClearingTamper}>Cancel</Button>
+                    <Button
+                        onClick={handleConfirmClearTamper}
+                        disabled={isClearingTamper}
+                        color="error"
+                        variant="contained"
+                    >
+                        {isClearingTamper ? 'Clearing…' : 'Clear tamper'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Stack>
     );
 }

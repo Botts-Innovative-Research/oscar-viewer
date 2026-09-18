@@ -1,13 +1,51 @@
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 
+function asFiniteNumber(value: unknown): number | undefined {
+    if (value === null || value === undefined || value === '')
+        return undefined;
+
+    const number = Number(value);
+    return Number.isFinite(number) ? number : undefined;
+}
+
+function sumCountFields(record: any, fieldNames: string[]): number | undefined {
+    const values = fieldNames
+        .map(fieldName => asFiniteNumber(record?.[fieldName]))
+        .filter((value): value is number => value !== undefined);
+
+    return values.length > 0 ? values.reduce((sum, value) => sum + value, 0) : undefined;
+}
+
+export function getGammaGrossCount(record: any): number | undefined {
+    return asFiniteNumber(record?.gammaGrossCount)
+        ?? sumCountFields(record, ['gammaCount1', 'gammaCount2', 'gammaCount3', 'gammaCount4'])
+        ?? sumCountFields(record, [
+            'gammaGrossCount1',
+            'gammaGrossCount2',
+            'gammaGrossCount3',
+            'gammaGrossCount4'
+        ]);
+}
+
+export function getNeutronGrossCount(record: any): number | undefined {
+    return asFiniteNumber(record?.neutronGrossCount)
+        ?? sumCountFields(record, ['neutronCount1', 'neutronCount2', 'neutronCount3', 'neutronCount4'])
+        ?? sumCountFields(record, [
+            'neutronGrossCount1',
+            'neutronGrossCount2',
+            'neutronGrossCount3',
+            'neutronGrossCount4'
+        ]);
+}
+
 export  function createNeutronViewCurve(neutronDatasource: { id: any; }) {
     if (!neutronDatasource) return null;
 
     let nCurve = new CurveLayer({
         dataSourceIds: [neutronDatasource.id],
         getValues: (rec: any) => {
-            return {x: rec.timestamp, y: rec.neutronGrossCount}
+            return {x: rec.timestamp, y: getNeutronGrossCount(rec)}
         },
         name: 'Neutron',
         maxValues: 500,
@@ -52,7 +90,7 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }) {
     let gCurve = new CurveLayer({
         dataSourceIds: [gammaDatasource.id],
         getValues: (rec: any) => {
-            return ({ x: rec.timestamp, y: rec.gammaGrossCount})
+            return ({ x: rec.timestamp, y: getGammaGrossCount(rec)})
         },
         name: "Gamma",
         xLabel: 'Time',
@@ -79,10 +117,13 @@ export function createNSigmaCalcViewCurve(gammaDatasource: any, latestGB: number
         dataSourceIds: [gammaDatasource.id],
         getValues: (rec: any) => {
             if (latestGB != null) {
-                let nSigmaValue: number = (rec.gammaGrossCount - latestGB) / Math.sqrt(latestGB)
-                return {x: rec.timestamp, y: nSigmaValue}
+                const gammaGrossCount = getGammaGrossCount(rec);
+                if (gammaGrossCount !== undefined) {
+                    let nSigmaValue: number = (gammaGrossCount - latestGB) / Math.sqrt(latestGB)
+                    return {x: rec.timestamp, y: nSigmaValue}
+                }
             }
-
+            return {x: rec.timestamp, y: undefined}
         },
         name: "Gamma Nσ",
         borderWidth: 1.5,

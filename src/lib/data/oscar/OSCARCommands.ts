@@ -153,3 +153,9 @@ export function generateHLSVideoCommandJSON(streamControl: boolean) {
         }
     })
 }
+
+export function generateManualTamperCommandJSON(tamperState: boolean) {
+    return JSON.stringify({
+        "parameters": tamperState
+    });
+}

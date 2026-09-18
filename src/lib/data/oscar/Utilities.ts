@@ -40,6 +40,10 @@ function includesDefinition(definitions: string[], expected: string): boolean {
     return definitions.some((definition) => definition.includes(expected));
 }
 
+function hasDefinition(definitions: string[], expected: string): boolean {
+    return definitions.some((definition) => definition === expected);
+}
+
 
 export function isLocationDataStream(datastream: typeof DataStream): boolean {
     const definitions = getObservedDefinitions(datastream);
@@ -55,13 +59,13 @@ export function isVideoDataStream(datastream: typeof DataStream): boolean {
 
 export function isGammaDataStream(datastream: typeof DataStream): boolean {
     const definitions = getObservedDefinitions(datastream);
-    return includesDefinition(definitions, ALARM_DEF)
+    return hasDefinition(definitions, ALARM_DEF)
         && includesDefinition(definitions, GAMMA_COUNT_DEF);
 }
 
 export function isNeutronDataStream(datastream: typeof DataStream): boolean {
     const definitions = getObservedDefinitions(datastream);
-    return includesDefinition(definitions, ALARM_DEF)
+    return hasDefinition(definitions, ALARM_DEF)
         && includesDefinition(definitions, NEUTRON_COUNT_DEF);
 }
 
@@ -122,6 +126,10 @@ export function isNationalControlStream(controlStream: typeof ControlStream): bo
 
 export function isAdjudicationControlStream(controlStream: typeof ControlStream): boolean {
     return includesDefinition(getControlledDefinitions(controlStream), ADJ_DEF);
+}
+
+export function isTamperControlStream(controlStream: typeof ControlStream): boolean {
+    return includesDefinition(getControlledDefinitions(controlStream), TAMPER_STATUS_DEF);
 }
 
 export function isWebIdAnalysisDataStream(datastream: typeof DataStream): boolean {
