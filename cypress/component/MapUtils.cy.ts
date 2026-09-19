@@ -16,7 +16,8 @@ describe("map configuration", () => {
     };
 
     it("uses the standard HTTPS OpenStreetMap tile service by default", () => {
-        expect(OSM_TILE_URL).to.equal("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
+        expect(OSM_TILE_URL).to.equal("https://tile.openstreetmap.org/{z}/{x}/{y}.png");
+        expect(OSM_TILE_URL).not.to.include("{s}");
     });
 
     it("builds site diagram URLs from the node bucket endpoint", () => {

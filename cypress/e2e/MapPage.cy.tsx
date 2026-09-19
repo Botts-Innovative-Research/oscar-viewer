@@ -12,7 +12,7 @@ describe('Map View Page (E2E)', () => {
         cy.get('.leaflet-tile-pane img.leaflet-tile', {timeout: 20000})
             .should(($tiles) => {
                 const loadedOsmTile = [...$tiles].some((tile: HTMLImageElement) =>
-                    /^https:\/\/[abc]\.tile\.openstreetmap\.org\//.test(tile.src) &&
+                    /^https:\/\/tile\.openstreetmap\.org\//.test(tile.src) &&
                     tile.complete && tile.naturalWidth > 0);
                 expect(loadedOsmTile, 'at least one rendered OSM tile').to.equal(true);
             });

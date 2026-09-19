@@ -181,8 +181,7 @@ export default function MapComponent() {
                 minZoom: 1,
                 maxZoom: 22,
                 maxNativeZoom: 19,
-                subdomains: "abc",
-                crossOrigin: true,
+                referrerPolicy: "strict-origin-when-cross-origin",
             });
             const esriLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
                 attribution: '&copy; <a href="https://www.esri.com/">Esri</a>, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',

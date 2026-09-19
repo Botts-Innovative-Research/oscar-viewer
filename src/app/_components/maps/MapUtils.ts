@@ -1,6 +1,8 @@
 import {INode} from "@/lib/data/osh/Node";
 
-export const OSM_TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+// OSM's tile policy requires this exact hostname. Do not restore Leaflet's
+// historical a/b/c subdomains; OSM may return policy-block tiles for them.
+export const OSM_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 export const SITE_DIAGRAM_PANE = "site-diagram";
 
 // Leaflet renders tiles at 200, ordinary image overlays at 400, and markers at
