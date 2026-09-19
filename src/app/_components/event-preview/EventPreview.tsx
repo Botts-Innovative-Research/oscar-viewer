@@ -6,6 +6,7 @@
 'use client'
 
 import {
+    Alert,
     Box,
     Button,
     Grid,
@@ -30,7 +31,6 @@ import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {useRouter} from "next/dist/client/components/navigation";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
-import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import AdjudicationData, {
     IAdjudicationData,
 } from "@/lib/data/oscar/adjudication/Adjudication";
@@ -49,9 +49,11 @@ import { EventTableData } from "@/lib/data/oscar/TableHelpers";
 import { useBreakpoint } from "@/app/providers";
 import BackButton from "../BackButton";
 import SuspenseLoad from "@/app/_components/SuspenseLoad";
+import {useLanguage} from '@/app/contexts/LanguageContext';
 
 export function EventPreview() {
     const { isDesktop } = useBreakpoint();
+    const {t} = useLanguage();
 
     const dispatch = useAppDispatch();
     const router = useRouter();
@@ -59,9 +61,11 @@ export function EventPreview() {
 
     const prevEventIdRef = useRef<string | null>(null);
 
-    const laneMapRef = useContext(DataSourceContext).laneMapRef;
+    const {laneMapRef, laneMapReady} = useContext(DataSourceContext);
+    const laneEntry = eventPreview.eventData?.laneId
+        ? laneMapRef.current.get(eventPreview.eventData.laneId)
+        : undefined;
 
-    const [localDSMap, setLocalDSMap] = useState<Map<string, typeof ConSysApi[]>>(new Map<string, typeof ConSysApi[]>());
     const [datasourcesReady, setDatasourcesReady] = useState<boolean>(false);
 
     // Chart Specifics
@@ -117,7 +121,7 @@ export function EventPreview() {
 
     const sendAdjudicationData = async () => {
         if (!adjudication) {
-            setAdjSnackMsg('Please fill out the adjudication fields.');
+            setAdjSnackMsg(t('fillAdjudicationFields'));
             setColorStatus('error')
             setOpenSnack(true);
             return;
@@ -131,9 +135,13 @@ export function EventPreview() {
         comboData.setSecondaryInspectionStatus(secondaryInspection);
 
         // send to server
-        const currentLane = eventPreview.eventData.laneId;
-        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-        await submitAdjudication(currLaneEntry, comboData)
+        if (!laneEntry) {
+            setAdjSnackMsg(t('eventLaneUnavailable', {lane: eventPreview.eventData.laneId}));
+            setColorStatus('error');
+            setOpenSnack(true);
+            return;
+        }
+        await submitAdjudication(laneEntry, comboData)
     }
 
 
@@ -145,6 +153,9 @@ export function EventPreview() {
 
             if (!adjControlStream){
                 console.error("Failed: cannot find adjudication control stream for occupancy.");
+                setAdjSnackMsg(t('adjudicationControlStreamMissing'));
+                setColorStatus('error');
+                setOpenSnack(true);
                 return;
             }
 
@@ -158,7 +169,7 @@ export function EventPreview() {
                 const occupancyObservation: any[] = await query.nextPage();
 
                 if (occupancyObservation.length == 0) {
-                    setAdjSnackMsg('Failed to adjudicate occupancy. Please refresh the page and try again.');
+                    setAdjSnackMsg(t('failedToAdjudicateRefresh'));
                     setColorStatus('error')
                     setOpenSnack(true);
                     return;
@@ -185,7 +196,7 @@ export function EventPreview() {
             );
 
             if (!response.ok) {
-                setAdjSnackMsg('Adjudication failed to submit.')
+                setAdjSnackMsg(t('adjudicationSubmitFailed'))
                 setColorStatus('error')
                 return;
             }
@@ -199,11 +210,12 @@ export function EventPreview() {
             dispatch(setAdjudicatedEventId(eventPreview.eventData.id));
             // dispatch(triggerEventTableRefresh());
 
-            setAdjSnackMsg('Adjudication successful for Occupancy ID: ' + eventPreview.eventData.occupancyCount);
+            setAdjSnackMsg(t('adjudicationSuccessful', {occupancyId: eventPreview.eventData.occupancyCount}));
             setColorStatus('success')
 
         } catch(error) {
             console.error( error)
+            setAdjSnackMsg(t('adjudicationSubmitFailed'))
             setColorStatus('error')
         } finally {
             setOpenSnack(true);
@@ -247,29 +259,19 @@ export function EventPreview() {
             }
 
             prevEventIdRef.current = eventPreview.eventData?.occupancyCount;
-
-            if (eventPreview.eventData?.laneId && laneMapRef.current) {
-                callCollectDataSources();
-                dispatch(setEventData(eventPreview.eventData));
-            }
         }
 
-    }, [eventPreview.eventData?.occupancyCount]);
+        if (eventPreview.eventData?.laneId && laneMapReady && laneEntry && !datasourcesReady) {
+            callCollectDataSources();
+            dispatch(setEventData(eventPreview.eventData));
+        }
+
+    }, [eventPreview.eventData?.occupancyCount, laneEntry, laneMapReady, datasourcesReady]);
 
     const collectDataSources = useCallback(async() => {
-        if (!eventPreview.eventData?.laneId || !laneMapRef.current) return;
+        if (!eventPreview.eventData?.laneId || !laneEntry) return;
 
-        let currentLane = eventPreview.eventData.laneId;
-
-        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-        if (!currLaneEntry) {
-            console.error("LaneMapEntry not found for:", currentLane);
-            return;
-        }
-
-        let datasources = await currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
-
-        setLocalDSMap(datasources);
+        let datasources = await laneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
 
         const updatedGamma = datasources.get("gamma") || [];
         const updatedNeutron = datasources.get("neutron") || [];
@@ -280,11 +282,18 @@ export function EventPreview() {
         setThresholdDatasources(updatedThreshold);
 
         setDatasourcesReady(true);
-    }, [eventPreview, laneMapRef]);
+    }, [eventPreview, laneEntry]);
 
 
     async function callCollectDataSources(){
-        await collectDataSources();
+        try {
+            await collectDataSources();
+        } catch (error) {
+            console.error("Failed to load event preview data sources:", error);
+            setAdjSnackMsg(t('eventDataLoadFailed'));
+            setColorStatus('error');
+            setOpenSnack(true);
+        }
     }
 
     useEffect(() => {
@@ -301,6 +310,18 @@ export function EventPreview() {
         handleCloseRounded();
     };
 
+    if (!eventPreview.eventData) {
+        return <Alert severity="warning">{t('eventDetailsUnavailable')}</Alert>;
+    }
+
+    if (!laneMapReady) {
+        return <SuspenseLoad />;
+    }
+
+    if (!laneEntry) {
+        return <Alert severity="error">{t('eventLaneUnavailable', {lane: eventPreview.eventData.laneId})}</Alert>;
+    }
+
     return (
         <Grid container spacing={isDesktop ? 0 : 2} gap={isDesktop ? 2 : 0} width={"100%"}>
 
@@ -316,13 +337,13 @@ export function EventPreview() {
                         <Typography
                             variant="h6"
                         >
-                            Occupancy ID: {eventPreview.eventData.occupancyCount}
+                            {t('occupancyIdValue', {occupancyId: eventPreview.eventData.occupancyCount})}
                         </Typography>
                     </Grid>
                     <Grid item>
                         <IconButton
                             onClick={handleExpand}
-                            aria-label="expand"
+                            aria-label={t('expand')}
                         >
                             <OpenInFullRoundedIcon
                                 fontSize="small"
@@ -334,7 +355,7 @@ export function EventPreview() {
                   <Grid item>
                         <IconButton
                             onClick={handleCloseRounded}
-                            aria-label="close"
+                            aria-label={t('close')}
                         >
                             <CloseRoundedIcon fontSize="small"/>
                         </IconButton>
@@ -347,7 +368,7 @@ export function EventPreview() {
                 { datasourcesReady ? (
                         <Box>
                             <EventMedia
-                                selectedNode={laneMapRef.current.get(eventPreview.eventData.laneId).parentNode}
+                                selectedNode={laneEntry.parentNode}
                                 datasources={{
                                     gamma: gammaDatasources[0],
                                     neutron: neutronDatasources[0],
@@ -385,7 +406,7 @@ export function EventPreview() {
                 <TextField
                     onChange={handleNotes}
                     id="outlined-multiline-static"
-                    label="Notes"
+                    label={t('notes')}
                     multiline
                     rows={4}
                     fullWidth
@@ -402,7 +423,7 @@ export function EventPreview() {
                         color={"success"}
                         disabled={adjFormData === null}
                     >
-                        Submit
+                        {t('submit')}
                     </Button>
                 </Grid>
                 <Grid item xs={6}>
@@ -412,7 +433,7 @@ export function EventPreview() {
                         fullWidth
                         color={"secondary"}
                     >
-                        Reset
+                        {t('reset')}
                     </Button>
                 </Grid>
             </Grid>            

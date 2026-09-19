@@ -9,6 +9,7 @@ import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import N42ChartPlayback from "@/app/_components/n42/N42ChartPlayback";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
+import {useLanguage} from '@/app/contexts/LanguageContext';
 
 export interface N42Report {
     samplingTime: string;
@@ -34,6 +35,7 @@ const FOREGROUND_REPORTS = "foregroundReports";
 const BACKGROUND_REPORTS = "backgroundReports";
 
 export default function N42Detail(props: { event: EventTableData }) {
+    const {t} = useLanguage();
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
     const [fileDataMap, setFileDataMap] = useState<Map<string, N42FileData>>(new Map());
     const [currentPage, setCurrentPage] = useState(0);
@@ -62,6 +64,10 @@ export default function N42Detail(props: { event: EventTableData }) {
         }
 
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLaneId);
+        if (!currLaneEntry) {
+            console.warn("Cannot load N42 data: lane entry is unavailable:", currentLaneId);
+            return;
+        }
 
         const n42Stream = currLaneEntry.findDataStreamByObsProperty(N42_REPORT_DEF);
         if (!n42Stream) {
@@ -118,6 +124,10 @@ export default function N42Detail(props: { event: EventTableData }) {
         }
 
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLaneId);
+        if (!currLaneEntry) {
+            console.warn("Cannot subscribe to N42 data: lane entry is unavailable:", currentLaneId);
+            return;
+        }
 
         const n42Stream = currLaneEntry.findDataStreamByObsProperty(N42_REPORT_DEF);
         if (!n42Stream) {
@@ -191,11 +201,11 @@ export default function N42Detail(props: { event: EventTableData }) {
         <Grid container spacing={2} sx={{width: '100%'}}>
             <Grid item xs={12}>
                 <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-                    <IconButton onClick={handlePrevPage} disabled={currentPage === 0}>
+                    <IconButton aria-label={t('previousReport')} onClick={handlePrevPage} disabled={currentPage === 0}>
                         <NavigateBeforeIcon/>
                     </IconButton>
                     <Box sx={{textAlign: 'center'}}>
-                        <Typography variant="h5">N42 Report</Typography>
+                        <Typography variant="h5">{t('n42Report')}</Typography>
                         <Typography variant="subtitle1">{activeFile.fileName}</Typography>
                         {fileEntries.length > 1 && (
                             <Typography variant="caption">
@@ -203,7 +213,7 @@ export default function N42Detail(props: { event: EventTableData }) {
                             </Typography>
                         )}
                     </Box>
-                    <IconButton onClick={handleNextPage} disabled={currentPage >= fileEntries.length - 1}>
+                    <IconButton aria-label={t('nextReport')} onClick={handleNextPage} disabled={currentPage >= fileEntries.length - 1}>
                         <NavigateNextIcon/>
                     </IconButton>
                 </Box>
@@ -216,7 +226,7 @@ export default function N42Detail(props: { event: EventTableData }) {
                             <Grid item xs={6}>
                                 <N42ChartPlayback
                                     reports={activeFile.foregroundReports}
-                                    title={"Foreground Linear Spectrum"}
+                                    title={t('foregroundLinearSpectrum')}
                                     chartId={`n42-chart-foreground-${currentPage}`}
                                     yValue={"linearSpectrum"}
                                 />
@@ -230,7 +240,7 @@ export default function N42Detail(props: { event: EventTableData }) {
                             <Grid item xs={6}>
                                 <N42ChartPlayback
                                     reports={activeFile.backgroundReports}
-                                    title={"Background Linear Spectrum"}
+                                    title={t('backgroundLinearSpectrum')}
                                     chartId={`n42-chart-background-${currentPage}`}
                                     yValue={"linearSpectrum"}
                                 />

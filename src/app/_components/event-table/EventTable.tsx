@@ -40,6 +40,7 @@ import { GridFilterModel } from "@mui/x-data-grid"
 
 import { useLanguage } from '@/app/contexts/LanguageContext';
 import {NotificationService, NotificationTemplates} from "../notifications/NotificationService";
+import {getDataGridLocaleText, getIntlLocale} from '@/app/utils/LocaleUtils';
 
 
 interface TableProps {
@@ -77,10 +78,10 @@ export default function EventTable({
     const dispatch = useAppDispatch();
     const router = useRouter();
 
-    const { t } = useLanguage();
+    const { language, t } = useLanguage();
     const stableLaneMap = useMemo(() => convertToMap(laneMap), [laneMap]);
     const currentPageRef = useRef(0);
-    const locale = navigator.language || 'en-US';
+    const locale = getIntlLocale(language);
 
     const columns: GridColDef<EventTableData>[] = [
         {
@@ -163,7 +164,12 @@ export default function EventTable({
             minWidth: 125,
             flex: 1.2,
             type: 'singleSelect',
-            valueOptions: ['None', 'Gamma', 'Neutron', 'Gamma & Neutron'],
+            valueOptions: [
+                {value: 'None', label: t('none')},
+                {value: 'Gamma', label: t('gamma')},
+                {value: 'Neutron', label: t('neutron')},
+                {value: 'Gamma & Neutron', label: t('gammaAndNeutron')},
+            ],
             filterOperators: getGridSingleSelectOperators().filter(
                 (op) => ['is'].includes(op.value)
                 // (op) => ['is', 'not'].includes(op.value)
@@ -172,12 +178,15 @@ export default function EventTable({
         {
             field: 'adjudicatedIds',
             headerName: t('adjudicated'),
-            valueFormatter: (params: any) => params.length > 0 ? "Yes" : "No",
+            valueFormatter: (params: any) => params.length > 0 ? t('yes') : t('no'),
             minWidth: 100,
             flex: 1,
             filterable: viewAdjudicated,
             type: 'singleSelect',
-            valueOptions: ['Yes', 'No'],
+            valueOptions: [
+                {value: 'Yes', label: t('yes')},
+                {value: 'No', label: t('no')},
+            ],
             filterOperators: getGridSingleSelectOperators().filter(
                 (op) => ['is', 'equal'].includes(op.value)
             )
@@ -193,7 +202,7 @@ export default function EventTable({
                     <GridActionsCellItem
                         key="details"
                         icon={<VisibilityRoundedIcon />}
-                        label="Details"
+                        label={t('details')}
                         onClick={() => handleEventPreview()}
                         showInMenu
                     />
@@ -420,7 +429,15 @@ export default function EventTable({
         const notificationService = notificationServiceRef.current;
         if (notificationService?.isReady()) {
             notificationService.showNotification(
-                NotificationTemplates.newAlarm(alarmData.laneName, alarmData.status, alarmData.eventData)
+                NotificationTemplates.newAlarm(
+                    alarmData.eventData,
+                    {
+                        title: t('newAlarmTitle', {status: t(alarmData.status === 'Gamma & Neutron' ? 'gammaAndNeutron' : alarmData.status.toLowerCase())}),
+                        body: t('newAlarmBody', {lane: alarmData.laneName, occupancyId: alarmData.eventData?.occupancyCount ?? ''}),
+                        viewAlarm: t('viewAlarm'),
+                        dismiss: t('dismiss'),
+                    },
+                )
             )
         }
     }
@@ -678,6 +695,7 @@ export default function EventTable({
     return (
         <Box sx={{ height: 800, width: '100%' }}>
             <DataGrid
+                localeText={getDataGridLocaleText(language)}
                 rows={filteredTableData}
                 paginationMode="server"
                 filterMode="server"

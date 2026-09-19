@@ -7,6 +7,7 @@ import NodeList from "@/app/_components/servers/NodeList";
 import {INode} from "@/lib/data/osh/Node";
 import { useBreakpoint } from "../providers";
 import { ButtonProps } from "@mui/material/Button";
+import {useLanguage} from '@/app/contexts/LanguageContext';
 
 interface mobileButton {
   text: string;
@@ -16,6 +17,7 @@ interface mobileButton {
 
 export default function Servers() {
     const { isMobile, isSmallTablet } = useBreakpoint();
+    const {t} = useLanguage();
 
     const [isEditNode, setIsEditNode] = React.useState(false);
     const [selectedNode, setSelectedNode] = React.useState(null);
@@ -46,10 +48,10 @@ export default function Servers() {
 
     // Styling for mobile form
     const mobileButtonConfig: mobileButton = React.useMemo(() => ({
-        text: mobileFormOpen ? "Cancel" : "Add Node",
+        text: mobileFormOpen ? t('cancel') : t('addNode'),
         variant: mobileFormOpen ? "outlined" : "contained",
         color: mobileFormOpen ? "secondary" : "primary",
-    }), [mobileFormOpen])
+    }), [mobileFormOpen, t])
 
     return (
         <Grid container spacing={2} width={"100%"} direction={{ xs: "column-reverse", md: "row" }}>

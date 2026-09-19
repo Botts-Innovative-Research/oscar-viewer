@@ -24,9 +24,11 @@ import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStr
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
 import Command from "osh-js/source/core/consysapi/command/Command";
 import CommandFilter from "osh-js/source/core/consysapi/command/CommandFilter";
+import {useLanguage} from '@/app/contexts/LanguageContext';
 
 
 export default function ReportGeneratorView(){
+    const {t} = useLanguage();
     const[isGenerating, setIsGenerating] = useState(false);
 
     const [selectedReportType, setSelectedReportType]= useState<string | null>("");
@@ -46,13 +48,13 @@ export default function ReportGeneratorView(){
 
     const handleGenerateReport = async() => {
         if (selectedTimeRange === "custom" && (!customStartTime || !customEndTime)){
-            setSnackMessage("Please select both custom start and end dates.");
+            setSnackMessage(t('selectCustomDates'));
             setSeverity("error");
             setOpenSnack(true)
         }
 
         if (selectedReportType === "LANE" && !selectedLaneUID){
-            setSnackMessage("Please select a lane for the Lane Report.");
+            setSnackMessage(t('selectLaneForReport'));
             setSeverity("error");
             setOpenSnack(true)
         }
@@ -135,14 +137,14 @@ export default function ReportGeneratorView(){
                                         `${isTls}${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${reportPath}`
                                     );
                                 }
-                                setSnackMessage("Report created successfully");
+                                setSnackMessage(t('reportCreated'));
                                 setSeverity("success");
                                 setOpenSnack(true);
                                 setIsGenerating(false);
                                 setCommandStatus(null);
                                 resetForm();
                             } else if (statusCode === 'FAILED') {
-                                setSnackMessage("Report generation failed.");
+                                setSnackMessage(t('reportGenerationFailed'));
                                 setSeverity("error");
                                 setOpenSnack(true);
                                 setIsGenerating(false);
@@ -154,7 +156,7 @@ export default function ReportGeneratorView(){
                         }
                     })
 
-                    setSnackMessage("Report is being generated...");
+                    setSnackMessage(t('reportBeingGenerated'));
                     setSeverity("success");
                     setOpenSnack(true);
                     return;
@@ -164,17 +166,17 @@ export default function ReportGeneratorView(){
                     setGeneratedURL(
                         `${isTls}${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${json.results[0].data.reportPath}`
                     );
-                    setSnackMessage("Report created successfully");
+                    setSnackMessage(t('reportCreated'));
                     setSeverity("success");
                 }
             }
             else {
-                setSnackMessage("Report request failed to submit.");
+                setSnackMessage(t('reportRequestFailed'));
                 setSeverity("error");
             }
 
         } catch (error) {
-            setSnackMessage("Report request failed to submit.");
+            setSnackMessage(t('reportRequestFailed'));
             setSeverity("error");
         } finally {
             setOpenSnack(true);
@@ -265,7 +267,7 @@ export default function ReportGeneratorView(){
             <Grid container spacing={4}>
                 <Grid item xs={12} md={5}>
                     <Typography variant="h5" align="center" gutterBottom>
-                        Generate A Report
+                        {t('generateAReport')}
                     </Typography>
 
                     <Stack spacing={3}>
@@ -300,14 +302,14 @@ export default function ReportGeneratorView(){
                             onClick={handleGenerateReport}
                             disabled={isGenerating || !selectedReportType || !selectedTimeRange || !selectedNode}
                         >
-                            {isGenerating ? 'Generating Report...' : 'Generate Report'}
+                            {isGenerating ? t('generatingReport') : t('generateReport')}
                         </Button>
 
                         {commandStatus && (
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mt: 1 }}>
                                 <CircularProgress size={20} />
                                 <Typography variant="body2" color="text.secondary">
-                                    Status: {commandStatus}
+                                    {t('statusValue', {status: commandStatus})}
                                 </Typography>
                             </Box>
                         )}
@@ -318,7 +320,7 @@ export default function ReportGeneratorView(){
                 <Grid item xs={12} md={7}>
                     <Paper elevation={3} sx={{ padding: 2, height: "100%" }}>
                         <Typography variant="h5" align="center" gutterBottom>
-                            Generated Report
+                            {t('generatedReport')}
                         </Typography>
 
                         {generatedURL ? (
@@ -335,7 +337,7 @@ export default function ReportGeneratorView(){
                                 }}
                             >
                                 <Typography variant="body1">
-                                    Please generate a report to view and download it here.
+                                    {t('generateReportPrompt')}
                                 </Typography>
                             </Box>}
                     </Paper>

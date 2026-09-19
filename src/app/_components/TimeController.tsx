@@ -5,6 +5,7 @@ import Slider from '@mui/material/Slider';
 import React, { useEffect, useState } from "react";
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 import PauseRoundedIcon from '@mui/icons-material/PauseRounded';
+import {useLanguage} from '@/app/contexts/LanguageContext';
 
 interface TimeControllerProps {
     startTime: string;
@@ -18,6 +19,7 @@ interface TimeControllerProps {
 }
 
 export default function TimeController({syncTime, startTime, endTime, pause, play, handleCommitChange, onTimeUpdate, onPlayStateChange}: TimeControllerProps) {
+    const {language, t} = useLanguage();
 
     const [isPlaying, setIsPlaying] = useState(false);
     const [isScrubbing, setIsScrubbing] = useState(false);
@@ -87,11 +89,12 @@ export default function TimeController({syncTime, startTime, endTime, pause, pla
                         >
                             <IconButton
                                 onClick={handlePlaying}
+                                aria-label={isPlaying ? t('pause') : t('play')}
                             >
                                 { isPlaying ? (<PauseRoundedIcon />) : (<PlayArrowRoundedIcon />) }
                             </IconButton>
                             <Typography variant="body1">
-                                {formatTime(currentTime)} / {formatTime(maxTime)}
+                                {formatTime(currentTime, language)} / {formatTime(maxTime, language)}
                             </Typography>
                         </Stack>
                     </div>
@@ -101,7 +104,7 @@ export default function TimeController({syncTime, startTime, endTime, pause, pla
     )
 }
 
-export const formatTime = (timestamp: number): string => {
+export const formatTime = (timestamp: number, locale?: string): string => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 };

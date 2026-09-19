@@ -15,14 +15,15 @@ import { Dialog, DialogTitle, DialogContent } from "@mui/material";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 import {INode} from "@/lib/data/osh/Node";
 import {EventType} from "osh-js/source/core/event/EventType";
+import {getDataGridLocaleText, getIntlLocale} from '@/app/utils/LocaleUtils';
 
 
 export default function AdjudicationLog(props: {
     event: EventTableData;
     node: INode;
 }) {
-    const { t } = useLanguage();
-    const locale = navigator.language || 'en-US';
+    const { language, t } = useLanguage();
+    const locale = getIntlLocale(language);
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
     const [adjLog, setAdjLog] = useState<AdjudicationData[]>([]);
     const [filteredLog, setFilteredLog] = useState<AdjudicationData[]>([]);
@@ -35,14 +36,14 @@ export default function AdjudicationLog(props: {
     const logColumns: GridColDef<AdjudicationData>[] = [
         {
             field: 'occupancyCount',
-            headerName: 'Occupancy ID',
+            headerName: t('occupancyId'),
             minWidth: 100,
             flex: 1,
             type: 'string',
         },
         {
             field: 'time',
-            headerName: 'Timestamp',
+            headerName: t('timestamp'),
             minWidth: 140,
             flex: 1,
             type: 'string',
@@ -57,23 +58,23 @@ export default function AdjudicationLog(props: {
         },
         {
             field: 'username',
-            headerName: 'User',
+            headerName: t('user'),
             minWidth: 80,
             flex: 0.8,
             type: 'string',
         },
         {
             field: 'adjudicationCode',
-            headerName: 'Adjudication Code',
+            headerName: t('adjudicationCode'),
             minWidth: 150,
             flex: 1.5,
             valueGetter: (value, row) => {
-                return row.adjudicationCode.label
+                return t(`adjudicationCode.${row.adjudicationCode.code}`)
             }
         },
         {
             field: 'feedback',
-            headerName: 'Feedback',
+            headerName: t('feedback'),
             minWidth: 120,
             flex: 1,
             type: 'string',
@@ -93,7 +94,7 @@ export default function AdjudicationLog(props: {
                                 style={{ color: "#1976d2", border: "none", background: "none", cursor: "pointer" }}
                                 onClick={() => setFeedbackDialog({ open: true, text: fullText })}
                             >
-                                Read more
+                                {t('readMore')}
                             </button>
                         )}
                     </div>
@@ -102,17 +103,17 @@ export default function AdjudicationLog(props: {
         },
         {
             field: 'isotopes',
-            headerName: 'Isotopes',
+            headerName: t('isotopes'),
             minWidth: 100,
             flex: 1,
             valueGetter: (value) => {
-                if (value === "") return "Unknown";
+                if (value === "") return t('unknown');
                 else return value;
             }
         },
         {
             field: 'filePaths',
-            headerName: 'FilePaths',
+            headerName: t('filePaths'),
             minWidth: 100,
             flex: 1,
             renderCell: (params) => {
@@ -142,17 +143,18 @@ export default function AdjudicationLog(props: {
         },
         {
             field: 'secondaryInspectionStatus',
-            headerName: 'Secondary Inspection',
+            headerName: t('secondaryInspection'),
             minWidth: 120,
             flex: 1,
+            valueFormatter: (value) => value ? t(`secondaryInspection.${String(value).toLowerCase()}`) : '',
         },
         {
             field: 'vehicleId',
-            headerName: 'Vehicle ID',
+            headerName: t('vehicleId'),
             minWidth: 80,
             flex: 0.8,
             valueGetter: (value) => {
-                if (value === "") return "Unknown";
+                if (value === "") return t('unknown');
                 else return value;
             }
         },
@@ -171,6 +173,10 @@ export default function AdjudicationLog(props: {
     const fetchStatuses = useCallback(async() => {
         const currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+        if (!currLaneEntry) {
+            console.warn("Cannot load adjudication statuses: lane entry is unavailable:", currentLane);
+            return;
+        }
 
         let controlStream: typeof ControlStream = currLaneEntry.controlStreams.find((cs) => isAdjudicationControlStream(cs));
         if(!controlStream) {
@@ -213,6 +219,10 @@ export default function AdjudicationLog(props: {
     useEffect(() => {
         const currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+        if (!currLaneEntry) {
+            console.warn("Cannot subscribe to adjudication statuses: lane entry is unavailable:", currentLane);
+            return;
+        }
 
 
         let controlStream: typeof ControlStream = currLaneEntry.controlStreams.find((cs) => isAdjudicationControlStream(cs));
@@ -274,10 +284,11 @@ export default function AdjudicationLog(props: {
     return (
         <Stack spacing={2} sx={{ width: '100%' }}>
             <Stack direction={"column"} spacing={1}>
-                <Typography variant="h5">Logged Adjudications</Typography>
+                <Typography variant="h5">{t('loggedAdjudications')}</Typography>
             </Stack>
             <Box sx={{ width: '100%' }}>
                 <DataGrid
+                    localeText={getDataGridLocaleText(language)}
                     rows={filteredLog}
                     columns={logColumns}
                     initialState={{
@@ -297,7 +308,7 @@ export default function AdjudicationLog(props: {
                 maxWidth="sm"
                 fullWidth
             >
-                <DialogTitle>Feedback</DialogTitle>
+                <DialogTitle>{t('feedback')}</DialogTitle>
                 <DialogContent>
                     <Typography whiteSpace="pre-wrap">
                         {feedbackDialog.text}

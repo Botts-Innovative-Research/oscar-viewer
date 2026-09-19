@@ -13,6 +13,7 @@ import {
     Theme
 } from '@mui/material';
 import {useEffect, useState} from 'react';
+import {useLanguage} from '@/app/contexts/LanguageContext';
 
 const isotopeChoices=[
     "Unknown",
@@ -52,6 +53,7 @@ export default function IsotopeSelect(props: {
   onSelect: (value: string[]) => void, // Return selected value
   isotopeValue: string[]
 }) {
+  const {t} = useLanguage();
   const [isotope, setIsotope] = useState<string[]>([""]);
 
   const handleChange = (event: SelectChangeEvent<typeof isotope>) => {
@@ -70,15 +72,15 @@ export default function IsotopeSelect(props: {
 
   return (
       <FormControl size="small" fullWidth>
-        <InputLabel id="label">Isotope</InputLabel>
+        <InputLabel id="label">{t('isotope')}</InputLabel>
         <Select
-            label="Isotope"
+            label={t('isotope')}
             variant="outlined"
             id="label"
             multiple
             value={props.isotopeValue}
             onChange={handleChange}
-            renderValue={(selected) => selected.join(', ')}
+            renderValue={(selected) => selected.map((item) => t(`isotope.${item}`)).join(', ')}
             MenuProps={{
               MenuListProps: {
                 style: {
@@ -108,7 +110,7 @@ export default function IsotopeSelect(props: {
             {isotopeChoices.map((item) =>(
                 <MenuItem key={item} value={item}>
                     <Checkbox checked={props.isotopeValue.includes(item)} />
-                    <ListItemText primary={item}/>
+                    <ListItemText primary={t(`isotope.${item}`)}/>
                 </MenuItem>
                 ))
             }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, {createContext, MutableRefObject, ReactNode, useCallback, useEffect, useRef} from "react";
+import React, {createContext, MutableRefObject, ReactNode, useCallback, useEffect, useRef, useState} from "react";
 import {useSelector} from "react-redux";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {addNode, changeConfigNode, setNodes} from "@/lib/state/OSHSlice";
@@ -12,7 +12,8 @@ import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
 
 
 interface IDataSourceContext {
-    laneMapRef: MutableRefObject<Map<string, LaneMapEntry>> | undefined
+    laneMapRef: MutableRefObject<Map<string, LaneMapEntry>> | undefined;
+    laneMapReady: boolean;
 }
 
 // create context with a default value of undefined (This will differ if there is a file import at page load)
@@ -27,6 +28,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     const dispatch = useAppDispatch();
     const nodes = useSelector((state: RootState) => state.oshSlice.nodes);
     const laneMapRef = useRef<Map<string, LaneMapEntry>>(new Map<string, LaneMapEntry>());
+    const [laneMapReady, setLaneMapReady] = useState(false);
 
 
     useEffect(() => {
@@ -49,50 +51,61 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
 
     const testSysFetch = async () => {
+        setLaneMapReady(false);
 
         let allLanes: Map<string, LaneMapEntry> = new Map();
 
-        await Promise.all(nodes.map(async (node: INode) => {
-            let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
-            if(!nodeLaneMap) return;
+        try {
+            await Promise.all(nodes.map(async (node: INode) => {
+                let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
+                if(!nodeLaneMap) return;
 
-            await node.fetchDataStreams(nodeLaneMap);
-            await node.fetchLaneControlStreams(nodeLaneMap);
+                await node.fetchDataStreams(nodeLaneMap);
+                await node.fetchLaneControlStreams(nodeLaneMap);
 
 
-            for (const [key, mapEntry] of nodeLaneMap.entries()) {
-                try {
-                    mapEntry.addDefaultConSysApis();
-                } catch (e) {
-                    console.error(`[ERROR] addDefaultConSysApis failed for ${key}:`, e);
-                }
-            }
-
-            nodeLaneMap.forEach((value: LaneMapEntry, key: string) => {
-                if (allLanes.has(key)) {
-                    const prefixedKey = `${node.name} - ${key}`;
-                    value.setLaneName(prefixedKey);
-                    allLanes.set(prefixedKey, value);
-
-                    const existing = allLanes.get(key);
-                    if (existing) {
-                        const existingPrefixedKey = `${existing.parentNode.name} - ${key}`;
-                        existing.setLaneName(existingPrefixedKey);
-                        allLanes.set(existingPrefixedKey, existing);
-                        allLanes.delete(key);
+                for (const [key, mapEntry] of nodeLaneMap.entries()) {
+                    try {
+                        mapEntry.addDefaultConSysApis();
+                    } catch (e) {
+                        console.error(`[ERROR] addDefaultConSysApis failed for ${key}:`, e);
                     }
-                } else {
-                    allLanes.set(key, value);
                 }
-            });
-        }));
 
-        dispatch(setLaneMap(allLanes));
-        laneMapRef.current = allLanes;
+                nodeLaneMap.forEach((value: LaneMapEntry, key: string) => {
+                    if (allLanes.has(key)) {
+                        const prefixedKey = `${node.name} - ${key}`;
+                        value.setLaneName(prefixedKey);
+                        allLanes.set(prefixedKey, value);
+
+                        const existing = allLanes.get(key);
+                        if (existing) {
+                            const existingPrefixedKey = `${existing.parentNode.name} - ${key}`;
+                            existing.setLaneName(existingPrefixedKey);
+                            allLanes.set(existingPrefixedKey, existing);
+                            allLanes.delete(key);
+                        }
+                    } else {
+                        allLanes.set(key, value);
+                    }
+                });
+            }));
+
+            laneMapRef.current = allLanes;
+            dispatch(setLaneMap(allLanes));
+        } catch (error) {
+            console.error("Failed to initialize lane data:", error);
+        } finally {
+            setLaneMapReady(true);
+        }
     }
 
     useEffect(() => {
         const init = async () => {
+            if (nodes.length === 0) {
+                setLaneMapReady(false);
+                return;
+            }
             await InitializeApplication();
             await testSysFetch();
         }
@@ -100,7 +113,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }, [nodes]);
 
     return (
-        <DataSourceContext.Provider value={{laneMapRef}}>
+        <DataSourceContext.Provider value={{laneMapRef, laneMapReady}}>
             {children}
         </DataSourceContext.Provider>
     );

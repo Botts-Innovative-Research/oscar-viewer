@@ -8,6 +8,16 @@ describe('Event Details', () => {
         cy.selectEventAndExpandDetails();
     });
 
+    describe('Lane initialization regression', () => {
+        it('waits for the lane map after a direct reload instead of crashing', () => {
+            cy.reload();
+
+            cy.contains('Event Details', {timeout: 20000}).should('be.visible');
+            cy.contains('Application error').should('not.exist');
+            cy.contains('Lane ID', {timeout: 20000}).should('be.visible');
+        });
+    });
+
     describe('Performance Test', () => {
         it('FE-PERF-007 Load initial data', () => {
             const start = Date.now();

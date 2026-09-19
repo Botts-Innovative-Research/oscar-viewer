@@ -9,6 +9,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import OfflineIcon from '@mui/icons-material/ReportOff'
 import ClearIcon from '@mui/icons-material/Clear';
 import React from "react";
+import {useLanguage} from '@/app/contexts/LanguageContext';
 
 
 export default function LaneStatusItem(props: {
@@ -21,6 +22,7 @@ export default function LaneStatusItem(props: {
     onClearTamper: (event: React.MouseEvent<HTMLButtonElement>) => void;
 
 }) {
+    const {t} = useLanguage();
 
     return (
         <Paper key={props.id} variant='outlined'
@@ -38,19 +40,19 @@ export default function LaneStatusItem(props: {
                     <Typography variant="body1" style={{fontSize: 12, textWrap: 'nowrap',  }}>{props.name.length <= 15 ? props.name : (props.name.substr(0, 15)) }</Typography>
 
                     {props.isFault &&
-                        <Tooltip title={'Fault'} arrow placement="top">
+                        <Tooltip title={t('fault')} arrow placement="top">
                             <FaultIcon fontSize="small" color="info" />
                         </Tooltip>
                     }
 
                     {props.isTamper &&
                         <>
-                            <Tooltip title={'Tamper'} arrow placement="top">
+                            <Tooltip title={t('tamper')} arrow placement="top">
                                 <TamperIcon fontSize="small" sx={{color: "#FFFFFF" }}/>
                             </Tooltip>
-                            <Tooltip title={'Clear tamper'} arrow placement="top">
+                            <Tooltip title={t('clearTamper')} arrow placement="top">
                                 <IconButton
-                                    aria-label={`Clear tamper for ${props.name}`}
+                                    aria-label={t('clearTamperForLane', {lane: props.name})}
                                     size="small"
                                     onClick={props.onClearTamper}
                                     sx={{color: "#FFFFFF", marginLeft: 'auto !important', padding: 0.25}}
@@ -62,11 +64,11 @@ export default function LaneStatusItem(props: {
                     }
                     {/*{!props.isTamper && !props.isFault && props.isOnline && (*/}
                     {props.isOnline ? (
-                        <Tooltip title="Online" arrow placement="top">
+                        <Tooltip title={t('online')} arrow placement="top">
                             <CheckCircleIcon fontSize="small" color="success"/>
                         </Tooltip>
                     ) : (
-                        <Tooltip title="Offline" arrow placement="top">
+                        <Tooltip title={t('offline')} arrow placement="top">
                             <OfflineIcon fontSize="small" color="error"/>
                         </Tooltip>
                     )}

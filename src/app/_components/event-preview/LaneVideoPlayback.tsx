@@ -8,6 +8,7 @@ import {Box, IconButton, Typography} from "@mui/material";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import '../../../Styles.css';
+import {useLanguage} from '@/app/contexts/LanguageContext';
 
 
 export class LaneVideoPlaybackProps {
@@ -23,6 +24,7 @@ export class LaneVideoPlaybackProps {
 }
 
 export default function LaneVideoPlayback({selectedNode, videos, modeType, startTime, endTime, isPlaying, syncTime, onVideoTimeUpdate, onSelectedVideoIdxChange}: LaneVideoPlaybackProps) {
+    const {t} = useLanguage();
     const [videoHeight, setVideoHeight] = useState("320px");
     const videoRefs = useRef<HTMLVideoElement[]>([]);
     const [videoDuration, setVideoDuration] = useState<number>(0);
@@ -150,6 +152,7 @@ export default function LaneVideoPlayback({selectedNode, videos, modeType, start
             {videos?.length > 0 && selectedNode ? (
                 <div style={{display: "flex"}}>
                     <IconButton
+                        aria-label={t('previousVideo')}
                         onClick={handlePrevPage}
                         sx={{ mx: { xs: 0.5, sm: 2 }, flexShrink: 0, cursor: 'pointer' }}
                         disabled={selVideoIdx === 0}
@@ -170,13 +173,14 @@ export default function LaneVideoPlayback({selectedNode, videos, modeType, start
                                     playsInline
                                 >
                                     <source src={`${tls}://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${video.trim()}`} type="video/mp4" />
-                                    Your browser does not support the video tag.
+                                    {t('videoNotSupported')}
                                 </video>
                             );
                         })}
                     </Box>
 
                     <IconButton
+                        aria-label={t('nextVideo')}
                         onClick={handleNextPage}
                         sx={{ mx: { xs: 0.5, sm: 2 }, flexShrink: 0, cursor: 'pointer' }}
                         disabled={selVideoIdx >= videos.length - 1}
@@ -187,7 +191,7 @@ export default function LaneVideoPlayback({selectedNode, videos, modeType, start
                 )
                 : (
                     <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center'}}>
-                        <Typography>No Video Available</Typography>
+                        <Typography>{t('noVideoAvailable')}</Typography>
                     </Box>
                 )}
         </Box>

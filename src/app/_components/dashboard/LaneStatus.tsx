@@ -246,7 +246,7 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
         try {
             const laneEntry = laneMapRef.current.get(tamperLaneToClear);
             if (!laneEntry)
-                throw new Error(`Unable to find lane ${tamperLaneToClear}.`);
+                throw new Error(t('unableToFindLane', {lane: tamperLaneToClear}));
 
             let tamperControl = laneEntry.controlStreams.find(
                 (stream: typeof ControlStream) => isTamperControlStream(stream));
@@ -260,7 +260,7 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
             }
 
             if (!tamperControl)
-                throw new Error(`No manual tamper control is available for ${tamperLaneToClear}.`);
+                throw new Error(t('noManualTamperControl', {lane: tamperLaneToClear}));
 
             const response = await sendCommand(
                 laneEntry.parentNode,
@@ -269,13 +269,13 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
             );
 
             if (!response.ok)
-                throw new Error(`The clear tamper command failed (${response.status}).`);
+                throw new Error(t('clearTamperCommandFailed', {status: response.status}));
 
             updateStatus(tamperLaneToClear, 'TamperOff');
             setTamperLaneToClear(null);
         } catch (error) {
             console.error("Failed to clear tamper", error);
-            setClearTamperError(error instanceof Error ? error.message : 'Failed to clear tamper.');
+            setClearTamperError(error instanceof Error ? error.message : t('failedToClearTamper'));
         } finally {
             setIsClearingTamper(false);
         }
@@ -314,22 +314,22 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
                 onClose={handleCloseClearTamper}
                 aria-labelledby="clear-tamper-dialog-title"
             >
-                <DialogTitle id="clear-tamper-dialog-title">Clear tamper?</DialogTitle>
+                <DialogTitle id="clear-tamper-dialog-title">{t('clearTamperQuestion')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Are you sure you want to clear tamper for {tamperLaneToClear}?
+                        {t('confirmClearTamper', {lane: tamperLaneToClear ?? ''})}
                     </DialogContentText>
                     {clearTamperError && <Alert severity="error" sx={{mt: 2}}>{clearTamperError}</Alert>}
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseClearTamper} disabled={isClearingTamper}>Cancel</Button>
+                    <Button onClick={handleCloseClearTamper} disabled={isClearingTamper}>{t('cancel')}</Button>
                     <Button
                         onClick={handleConfirmClearTamper}
                         disabled={isClearingTamper}
                         color="error"
                         variant="contained"
                     >
-                        {isClearingTamper ? 'Clearing…' : 'Clear tamper'}
+                        {isClearingTamper ? t('clearing') : t('clearTamper')}
                     </Button>
                 </DialogActions>
             </Dialog>

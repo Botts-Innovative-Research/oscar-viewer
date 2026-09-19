@@ -93,21 +93,21 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
                 (n: INode) => n.address === nodeToSave.address && n.port === nodeToSave.port
             );
             if (hasDuplicate) {
-                setNodeSnackMsg(`Node with address ${nodeToSave.address}:${nodeToSave.port} already exists`);
+                setNodeSnackMsg(t('nodeAddressExists', {address: nodeToSave.address, port: nodeToSave.port}));
                 setColorStatus('error');
                 setOpenSnack(true);
                 return;
             }
             const nameExists = nodes.some((n: INode) => n.name === nodeToSave.name);
             if (nameExists) {
-                setNodeSnackMsg(`Node with name "${nodeToSave.name}" already exists`);
+                setNodeSnackMsg(t('nodeNameExists', {name: nodeToSave.name}));
                 setColorStatus('error');
                 setOpenSnack(true);
                 return;
             }
 
             dispatch(addNode(nodeToSave));
-            setNodeSnackMsg(`Node "${nodeToSave.name}" added successfully`);
+            setNodeSnackMsg(t('nodeAdded', {name: nodeToSave.name}));
             setColorStatus('success');
             setOpenSnack(true);
             modeChangeCallback(false, null);
@@ -120,13 +120,13 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         setOpenSnack(true)
 
         if(!reachable){
-            setNodeSnackMsg('Node is not reachable. Try again.')
+            setNodeSnackMsg(t('nodeNotReachable'))
             setColorStatus('error')
             setOpenSnack(true);
             return;
         }
 
-        setNodeSnackMsg('Node is reachable')
+        setNodeSnackMsg(t('nodeReachable'))
         setColorStatus('success')
         setOpenSnack(true);
 
@@ -140,7 +140,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     }
 
     if (!newNode) {
-        return <Container><Typography variant="h4" align="center">Loading...</Typography></Container>
+        return <Container><Typography variant="h4" align="center">{t('loading')}</Typography></Container>
     }
 
     const handleCloseSnack = (
@@ -155,7 +155,7 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
     };
 
     async function checkReachable(node: any){
-        setNodeSnackMsg('Trying to connect...')
+        setNodeSnackMsg(t('tryingToConnect'))
         setColorStatus('info')
         setOpenSnack(true)
 
@@ -175,17 +175,17 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
         try {
             const response = await fetch(endpoint, options);
             if (response.ok) {
-                setNodeSnackMsg(`Successfully connected to server at ${node.address}`);
+                setNodeSnackMsg(t('connectedToServer', {address: node.address}));
                 setColorStatus('success')
                 return true;
             }else{
-                setNodeSnackMsg(`Connection failed. Unreachable server at ${node.address}.`);
+                setNodeSnackMsg(t('serverUnreachable', {address: node.address}));
                 setColorStatus('error')
                 return false;
             }
 
         } catch (error) {
-            setNodeSnackMsg('Connection failed. Confirm IP, port, and server availability.');
+            setNodeSnackMsg(t('connectionFailedCheckServer'));
             setColorStatus('error')
             return false;
         }
@@ -205,35 +205,35 @@ export default function NodeForm({isEditNode, modeChangeCallback, editNode}: {
 
             <Box component="form" sx={{margin: 2}}>
                 <Stack spacing={4}>
-                    {isEditNode ? <Typography variant={"h6"}>Editing Node: {editNode.id}</Typography> : null}
-                    <TextField label="Name" name="name" value={newNode.name} onChange={handleChange}/>
-                    <TextField label="Address" name="address" value={newNode.address} onChange={handleChange}/>
-                    <TextField label="Port" name="port" value={newNode.port} onChange={handleChange}/>
+                    {isEditNode ? <Typography variant={"h6"}>{t('editingNode', {id: editNode.id})}</Typography> : null}
+                    <TextField label={t('name')} name="name" value={newNode.name} onChange={handleChange}/>
+                    <TextField label={t('address')} name="address" value={newNode.address} onChange={handleChange}/>
+                    <TextField label={t('port')} name="port" value={newNode.port} onChange={handleChange}/>
                     <TextField
-                        label="CS API Endpoint"
+                        label={t('csApiEndpoint')}
                         name="csAPIEndpoint"
                         value={newNode.csAPIEndpoint}
                         onChange={handleChange}
                     />
-                    <TextField label="Username" name="username" value={newNode.auth.username} onChange={handleChange}/>
-                    <TextField label="Password" name="password" type={"password"} value={newNode.auth.password}
+                    <TextField label={t('username')} name="username" value={newNode.auth.username} onChange={handleChange}/>
+                    <TextField label={t('password')} name="password" type={"password"} value={newNode.auth.password}
                                onChange={handleChange}/>
 
-                    <FormControlLabel control={<Checkbox name="isSecure" checked={newNode.isSecure} onChange={handleChange}/>} label="Is Secure"/>
+                    <FormControlLabel control={<Checkbox name="isSecure" checked={newNode.isSecure} onChange={handleChange}/>} label={t('isSecure')}/>
                     <FormControlLabel
                         control={<Checkbox name="useBasicAuthentication"
                                            checked={newNode.authenticationMode === "basic"}
                                            onChange={handleChange}/>}
-                        label="Basic-only node (keep credentials in memory until this page is reloaded or closed)"/>
+                        label={t('basicOnlyNode')}/>
                     <Typography variant="body2" color="text.secondary">
-                        Session-capable nodes discard the password immediately after authentication. Node passwords are never saved in browser storage.
+                        {t('passwordStorageNotice')}
                     </Typography>
 
                     <Stack direction="row" spacing={2}>
                         <Button variant={"contained"} color={"primary"}
-                                onClick={handleAddSave}>{isEditNode ? "Save Changes" : "Add Node"}</Button>
+                                onClick={handleAddSave}>{isEditNode ? t('saveChanges') : t('addNode')}</Button>
                         <Button variant={"outlined"} color={"secondary"}
-                                onClick={() => modeChangeCallback(false, null)}>Cancel</Button>
+                                onClick={() => modeChangeCallback(false, null)}>{t('cancel')}</Button>
                     </Stack>
 
 

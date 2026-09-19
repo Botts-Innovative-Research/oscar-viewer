@@ -3,13 +3,16 @@
 
 import Paper from '@mui/material/Paper';
 import CircleRoundedIcon from '@mui/icons-material/CircleRounded';
-import {capitalize, Stack, Typography} from '@mui/material';
+import {Stack, Typography} from '@mui/material';
+import {useLanguage} from '@/app/contexts/LanguageContext';
 
 export default function LaneItem(props: {
     id: number;
     name: string;
     status: string;
 }) {
+    const {t} = useLanguage();
+    const statusKey = props.status.toLowerCase().replace(/[ -]/g, '');
 
     const colors = (status: string) => {
 
@@ -49,7 +52,7 @@ export default function LaneItem(props: {
                     )
                     }
                     sx={{ marginRight: 2}} />
-                <Typography variant="h6" color={colors(props.status)}>{props.name} - Status: {capitalize(props.status)}</Typography>
+                <Typography variant="h6" color={colors(props.status)}>{t('laneStatusValue', {lane: props.name, status: t(`status.${statusKey}`)})}</Typography>
             </Stack>
         </Paper>
     );

@@ -58,6 +58,8 @@ import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import { useBreakpoint } from "@/app/providers";
 import N42Detail from "@/app/_components/n42/N42Detail";
+import {useLanguage} from '@/app/contexts/LanguageContext';
+import {getIntlLocale} from '@/app/utils/LocaleUtils';
 
 interface FileWithWebId {
     file: File;
@@ -81,6 +83,7 @@ interface ScannedDataWithWebId {
 
 export default function AdjudicationDetail(props: { event: EventTableData }) {
     const { isMobile, isSmallTablet } = useBreakpoint();
+    const {language, t} = useLanguage();
     const dispatch = useAppDispatch();
 
     const [uploadedFiles, setUploadedFiles] = useState<FileWithWebId[]>([])
@@ -144,7 +147,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     const occupancyObservation = await query.nextPage();
 
                     if (!occupancyObservation || occupancyObservation.length === 0) {
-                        setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
+                        setAdjSnackMsg(t('observationNotFound'));
                         setColorStatus('error');
                         setOpenSnack(true);
                         return;
@@ -162,7 +165,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
                 } catch (err) {
                     console.error(err);
-                    setAdjSnackMsg('Error loading observation.');
+                    setAdjSnackMsg(t('observationLoadError'));
                     setColorStatus('error');
                     setOpenSnack(true);
                 }
@@ -210,7 +213,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             const timeoutId = setTimeout(() => {
                 if (!videoElement.current) {
                     console.error("Video element not found");
-                    setAdjSnackMsg("Failed to initialize camera");
+                    setAdjSnackMsg(t('cameraInitializationFailed'));
                     setOpenSnack(true);
                     return;
                 }
@@ -239,7 +242,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
                 scanner.current.start().catch((err) => {
                     console.error("Error starting scanner:", err);
-                    setAdjSnackMsg("Failed to start camera");
+                    setAdjSnackMsg(t('cameraStartFailed'));
                     setColorStatus('error');
                     setOpenSnack(true);
                 });
@@ -378,7 +381,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const sendAdjudicationData = async () => {
         if (adjData.adjudicationCode === null || !adjData.adjudicationCode || adjData.adjudicationCode === AdjudicationCodes.codes[0]) {
-            setAdjSnackMsg("Please selected a valid adjudication code before submitting.");
+            setAdjSnackMsg(t('selectValidAdjudicationCode'));
             setColorStatus('error');
             setOpenSnack(true)
             return;
@@ -411,13 +414,20 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const submitAdjudication = async (currLaneEntry: any, tempAdjData: any, files: FileWithWebId[]) => {
         try {
+            if (!currLaneEntry) {
+                setAdjSnackMsg(t('eventLaneUnavailable', {lane: props.event.laneId}));
+                setColorStatus('error');
+                setOpenSnack(true);
+                return;
+            }
+
             let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == props.event.dataStreamId);
 
             let streams = currLaneEntry.controlStreams.length > 0 ? currLaneEntry.controlStreams : await currLaneEntry.parentNode.fetchNodeControlStreams();
             let adjControlStream = streams.find((stream: typeof ControlStream) => isAdjudicationControlStream(stream));
 
             if (!adjControlStream) {
-                setAdjSnackMsg("Failed: cannot find adjudication control stream for occupancy.");
+                setAdjSnackMsg(t('adjudicationControlStreamMissing'));
                 setColorStatus('error')
                 setOpenSnack(true);
                 return;
@@ -431,7 +441,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 const occupancyObservation = await query.nextPage();
 
                 if (!occupancyObservation) {
-                    setAdjSnackMsg('Cannot find observation to adjudicate. Please try again.');
+                    setAdjSnackMsg(t('observationNotFound'));
                     setColorStatus('error')
                     setOpenSnack(true);
                     return;
@@ -478,7 +488,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             );
 
             if (!response.ok) {
-                setAdjSnackMsg('Adjudication failed to submit.')
+                setAdjSnackMsg(t('adjudicationSubmitFailed'))
                 setColorStatus('error')
                 setOpenSnack(true);
                 return;
@@ -486,7 +496,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             props.event.adjudicatedData = tempAdjData;
 
-            setAdjSnackMsg('Adjudication successful for Occupancy ID: ' + props.event.occupancyCount);
+            setAdjSnackMsg(t('adjudicationSuccessful', {occupancyId: props.event.occupancyCount}));
             setColorStatus('success')
 
             dispatch(setSelectedEvent(props.event));
@@ -496,7 +506,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             setOpenSnack(true);
             resetForm();
         } catch (error) {
-            setAdjSnackMsg('Adjudication failed to submit.')
+            setAdjSnackMsg(t('adjudicationSubmitFailed'))
             setColorStatus('error')
             setOpenSnack(true);
         }
@@ -563,7 +573,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             const response = await fetch(url, options);
             if (!response.ok) {
                 console.error("Failed uploading paired WebID files:", response);
-                setAdjSnackMsg('Failed to upload paired WebID files.');
+                setAdjSnackMsg(t('pairedWebIdUploadFailed'));
                 setColorStatus('error');
                 setOpenSnack(true);
             }
@@ -601,13 +611,13 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             const response = await fetch(url, options);
             if (!response.ok) {
                 console.error("Failed uploading file:", fileData.file.name, response);
-                setAdjSnackMsg(`Failed to upload file: ${fileData.file.name}`);
+                setAdjSnackMsg(t('fileUploadFailed', {file: fileData.file.name}));
                 setColorStatus('error');
                 setOpenSnack(true);
                 return;
             }
 
-            setAdjSnackMsg(`Successfully uploaded file: ${fileName}`);
+            setAdjSnackMsg(t('fileUploadSuccessful', {file: fileName}));
             setColorStatus('success');
             setOpenSnack(true);
 
@@ -639,6 +649,12 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         try {
             const currentLane = props.event.laneId;
             const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+            if (!currLaneEntry) {
+                setAdjSnackMsg(t('eventLaneUnavailable', {lane: currentLane}));
+                setColorStatus('error');
+                setOpenSnack(true);
+                return;
+            }
             const node = currLaneEntry.parentNode;
 
             const webIdFileIndices: number[] = [];
@@ -663,7 +679,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
             const allToUpload = [...webIdFilesToUpload, ...qrAsFiles];
 
             if (allToUpload.length === 0) {
-                setAdjSnackMsg('No new WebID files to submit.');
+                setAdjSnackMsg(t('noNewWebIdFiles'));
                 setColorStatus('info');
                 setOpenSnack(true);
                 return;
@@ -689,11 +705,11 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 return d;
             }));
 
-            setAdjSnackMsg('Files submitted to WebID successfully.');
+            setAdjSnackMsg(t('webIdSubmitSuccessful'));
             setColorStatus('success');
             setOpenSnack(true);
         } catch (error) {
-            setAdjSnackMsg('Failed to submit files to WebID.');
+            setAdjSnackMsg(t('webIdSubmitFailed'));
             setColorStatus('error');
             setOpenSnack(true);
         } finally {
@@ -742,7 +758,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
                     <Grid item xs={12}>
                         <Typography variant="h5">
-                            Evidence Collection
+                            {t('evidenceCollection')}
                         </Typography>
                     </Grid>
 
@@ -764,7 +780,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                     {fileData.file.name}
                                                     {fileData.serverPath && (
                                                         <Typography component="span" variant="caption" color="success.main" sx={{ ml: 1 }}>
-                                                            (uploaded)
+                                                            {t('uploaded')}
                                                         </Typography>
                                                     )}
                                                 </Typography>
@@ -806,7 +822,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                                             onChange={handleSynthesizeBackground(index)}
                                                                         />
                                                                     }
-                                                                    label={<Typography variant="body2">Synthesize Background</Typography>}
+                                                                    label={<Typography variant="body2">{t('synthesizeBackground')}</Typography>}
                                                                     sx={{mr: 0}}
                                                                 />
 
@@ -816,6 +832,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                 )}
                                             </Stack>
                                             <IconButton
+                                                aria-label={t('deleteFile', {file: fileData.file.name})}
                                                 onClick={() => handleFileDelete(index)}
                                                 size="small"
                                                 sx={{
@@ -853,7 +870,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                     {data.text.length > 40 ? data.text.substring(0, 40) + '...' : data.text}
                                                     {data.serverPath && (
                                                         <Typography component="span" variant="caption" color="success.main" sx={{ ml: 1 }}>
-                                                            (uploaded)
+                                                            {t('uploaded')}
                                                         </Typography>
                                                     )}
                                                 </Typography>
@@ -894,7 +911,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                                             onChange={handleScannedDataSynthesizeBackground(index)}
                                                                         />
                                                                     }
-                                                                    label={<Typography variant="body2">Synthesize Background</Typography>}
+                                                                    label={<Typography variant="body2">{t('synthesizeBackground')}</Typography>}
                                                                     sx={{mr: 0}}
                                                                 />
                                                             )
@@ -903,6 +920,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                     </>
                                                 )}
                                                 <IconButton
+                                                    aria-label={t('deleteScannedCode')}
                                                     onClick={() => handleScannedDataDelete(index)}
                                                     size="small"
                                                     sx={{
@@ -930,7 +948,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                         maxWidth="sm"
                     >
                         <IconButton
-                            aria-label="close"
+                            aria-label={t('close')}
                             onClick={handleCloseQrCodeDialog}
                             sx={{
                                 position: 'absolute',
@@ -941,7 +959,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                             <CloseIcon/>
                         </IconButton>
                         <DialogTitle sx={{textAlign: 'center', pb: 1}}>
-                            Spectroscopic QR Code Scanner
+                            {t('spectroscopicQrScanner')}
                         </DialogTitle>
                         <Box
                             sx={{
@@ -982,7 +1000,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                     sx={{mt: 2, p: 2, width: '100%', maxHeight: 150, overflowY: 'auto'}}
                                 >
                                     <Typography variant="subtitle2" gutterBottom>
-                                        Scanned Codes ({scannedData.length}):
+                                        {t('scannedCodesCount', {count: scannedData.length})}
                                     </Typography>
                                     <Stack spacing={1}>
                                         {scannedData.map((data, idx) => (
@@ -996,6 +1014,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                     {data.text.length > 60 ? data.text.substring(0, 60) + '...' : data.text}
                                                 </Typography>
                                                 <IconButton
+                                                    aria-label={t('deleteScannedCode')}
                                                     size="small"
                                                     onClick={() => handleScannedDataDelete(idx)}
                                                 >
@@ -1013,7 +1032,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                         variant="outlined"
                                         onClick={() => setScannedData([])}
                                     >
-                                        Clear All
+                                        {t('clearAll')}
                                     </Button>
                                 )}
                                 <Button
@@ -1021,7 +1040,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                     onClick={handleCloseQrCodeDialog}
                                     sx={{minWidth: 120}}
                                 >
-                                    Done Scanning
+                                    {t('doneScanning')}
                                 </Button>
                             </Stack>
                         </Box>
@@ -1045,7 +1064,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                         color: "secondary.main"
                                     }}
                                 >
-                                    Upload Files
+                                    {t('uploadFiles')}
                                     <input
                                         type="file"
                                         multiple
@@ -1071,7 +1090,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                     }}
                                     onClick={handleQrCode}
                                 >
-                                    QR Scanner
+                                    {t('qrScanner')}
                                 </Button>
                                 <Button
                                     variant="outlined"
@@ -1083,7 +1102,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                         borderRadius: "10px",
                                     }}
                                 >
-                                    {isSubmittingWebId ? 'Uploading...' : 'Upload to WebID'}
+                                    {isSubmittingWebId ? t('uploading') : t('uploadToWebId')}
                                 </Button>
                             </Stack>
                         </Grid>
@@ -1096,12 +1115,12 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                     <Grid item container xs={12} spacing={2}>
                         <Grid item xs={12}>
                             <Typography variant="h5">
-                                Adjudication Form
+                                {t('adjudicationForm')}
                             </Typography>
                         </Grid>
                         <Grid item xs={12} sm={3} lg={2}>
                             <TextField
-                                label="VehicleId"
+                                label={t('vehicleId')}
                                 name="vehicleId"
                                 value={vehicleId}
                                 onChange={handleChange}
@@ -1125,18 +1144,18 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                             <Grid item xs={12}>
                                 <Stack direction="row" spacing={1} alignItems="center">
                                     <FormControl size="small" sx={{ minWidth: 250 }}>
-                                        <InputLabel id="webid-result-select-label">WebID Evidence</InputLabel>
+                                        <InputLabel id="webid-result-select-label">{t('webIdEvidence')}</InputLabel>
                                         <Select
                                             multiple
                                             labelId="webid-result-select-label"
-                                            label="WebID Evidence"
+                                            label={t('webIdEvidence')}
                                             value={selectedWebIdResultId}
                                             onChange={handleEvidenceSelection}
                                         >
                                             {webIdResults.map((result) => (
                                                 <MenuItem key={result.id} value={result.id}>
                                                     <Checkbox size="small" checked={selectedWebIdResultId.includes(result.id)} />
-                                                    {new Date(result.time).toLocaleString()} — {result.isotopeString || result.isotopes?.map(i => i.name).join(', ') || 'No isotopes'}
+                                                    {new Date(result.time).toLocaleString(getIntlLocale(language))} — {result.isotopeString || result.isotopes?.map(i => i.name).join(', ') || t('noIsotopes')}
                                                 </MenuItem>
                                             ))}
                                         </Select>
@@ -1149,7 +1168,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                         onClick={applySelectedWebIdResult}
                                         sx={{ whiteSpace: 'nowrap' }}
                                     >
-                                        Use Selected Result
+                                        {t('useSelectedResult')}
                                     </Button>
                                 </Stack>
                             </Grid>
@@ -1158,7 +1177,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                         <Grid item xs={12}>
                             <TextField
                                 id="outlined-multiline-static"
-                                label="Notes"
+                                label={t('notes')}
                                 name="notes"
                                 multiline
                                 rows={4}
@@ -1183,7 +1202,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                     color={"success"}
                                     onClick={sendAdjudicationData}
                                 >
-                                    Submit
+                                    {t('submit')}
                                 </Button>
                             </Stack>
                         </Grid>
@@ -1196,14 +1215,14 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                         maxWidth="sm"
                     >
                         <DialogTitle sx={{ pb: 1 }}>
-                            Confirm Adjudication Submission
+                            {t('confirmAdjudicationSubmission')}
                         </DialogTitle>
                         <DialogContent dividers sx={{ px: 1.5 }}>
                             <Stack spacing={1.5}>
                                 {vehicleId && (
                                     <>
                                         <Box>
-                                            <Typography variant="subtitle2" color="text.secondary">Vehicle ID</Typography>
+                                            <Typography variant="subtitle2" color="text.secondary">{t('vehicleId')}</Typography>
                                             <Typography variant="body1">{vehicleId}</Typography>
                                         </Box>
                                         <Divider />
@@ -1211,9 +1230,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                 )}
 
                                 <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">Adjudication Code</Typography>
+                                    <Typography variant="subtitle2" color="text.secondary">{t('adjudicationCode')}</Typography>
                                     <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>
-                                        {adjData.adjudicationCode?.label} ({adjData.adjudicationCode?.group})
+                                        {t(`adjudicationCode.${adjData.adjudicationCode?.code}`)} ({t(`adjudicationGroup.${adjData.adjudicationCode?.group}`)})
                                     </Typography>
                                 </Box>
                                 <Divider />
@@ -1221,8 +1240,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                 {isotope.length > 0 && (
                                     <>
                                         <Box>
-                                            <Typography variant="subtitle2" color="text.secondary">Isotopes</Typography>
-                                            <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>{isotope.join(', ')}</Typography>
+                                            <Typography variant="subtitle2" color="text.secondary">{t('isotopes')}</Typography>
+                                            <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>{isotope.map(item => t(`isotope.${item}`)).join(', ')}</Typography>
                                         </Box>
                                         <Divider />
                                     </>
@@ -1231,7 +1250,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                 {feedback && (
                                     <>
                                         <Box>
-                                            <Typography variant="subtitle2" color="text.secondary">Notes</Typography>
+                                            <Typography variant="subtitle2" color="text.secondary">{t('notes')}</Typography>
                                             <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{feedback}</Typography>
                                         </Box>
                                         <Divider />
@@ -1241,7 +1260,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                 {uploadedFiles.length > 0 && (
                                     <>
                                         <Box>
-                                            <Typography variant="subtitle2" color="text.secondary">Files ({uploadedFiles.length})</Typography>
+                                            <Typography variant="subtitle2" color="text.secondary">{t('filesCount', {count: uploadedFiles.length})}</Typography>
                                             <Stack spacing={0.5} sx={{ mt: 0.5 }}>
                                                 {uploadedFiles.map((fileData, index) => (
                                                     <Box key={index}>
@@ -1251,8 +1270,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                                         </Stack>
                                                         {fileData.webIdEnabled && (
                                                             <Typography variant="caption" color="info.main" sx={{ pl: 3, display: 'block', wordBreak: 'break-word' }}>
-                                                                WebID: {fileData.spectrumType}, DRF: {fileData.detectorResponseFunction}
-                                                                {fileData.synthesizeBackground ? ', Synth BG' : ''}
+                                                                {t('webIdFileDetails', {spectrum: t(fileData.spectrumType), drf: fileData.detectorResponseFunction})}
+                                                                {fileData.synthesizeBackground ? `, ${t('synthesizedBackgroundShort')}` : ''}
                                                             </Typography>
                                                         )}
                                                     </Box>
@@ -1266,7 +1285,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                 {scannedData.length > 0 && (
                                     <>
                                         <Box>
-                                            <Typography variant="subtitle2" color="text.secondary">Scanned QR Codes ({scannedData.length})</Typography>
+                                            <Typography variant="subtitle2" color="text.secondary">{t('scannedQrCodesCount', {count: scannedData.length})}</Typography>
                                             <Stack spacing={0.5} sx={{ mt: 0.5 }}>
                                                 {scannedData.map((data, idx) => (
                                                     <Typography key={idx} variant="body2" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
@@ -1281,8 +1300,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
                                 {secondaryInspection && (
                                     <Box>
-                                        <Typography variant="subtitle2" color="text.secondary">Secondary Inspection</Typography>
-                                        <Typography variant="body1">{secondaryInspection}</Typography>
+                                        <Typography variant="subtitle2" color="text.secondary">{t('secondaryInspection')}</Typography>
+                                        <Typography variant="body1">{t(`secondaryInspection.${secondaryInspection.toLowerCase()}`)}</Typography>
                                     </Box>
                                 )}
                             </Stack>
@@ -1294,7 +1313,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                 fullWidth
                                 sx={{ width: { sm: 'auto' } }}
                             >
-                                Cancel
+                                {t('cancel')}
                             </Button>
                             <Button
                                 onClick={confirmAndSubmitAdjudication}
@@ -1303,7 +1322,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                 fullWidth
                                 sx={{ width: { sm: 'auto' } }}
                             >
-                                Confirm & Submit
+                                {t('confirmAndSubmit')}
                             </Button>
                         </DialogActions>
                     </Dialog>

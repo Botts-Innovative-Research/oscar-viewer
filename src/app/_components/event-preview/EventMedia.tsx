@@ -14,9 +14,11 @@ import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
 import {isBackgroundDataStream, isForegroundDataStream, isRs350DataStream} from "@/lib/data/oscar/Utilities";
 import Rs350ChartPlayback from "@/app/_components/event-preview/Rs350ChartPlayback";
+import {useLanguage} from '@/app/contexts/LanguageContext';
 
 
 export default function EventMedia({selectedNode, datasources, eventData, mode, laneMap}: {selectedNode: any, datasources: typeof ConSysApi, eventData: EventTableData, mode: string,  laneMap: Map<string, LaneMapEntry>},) {
+    const {t} = useLanguage();
     let latestGB = useSelector((state: RootState) => selectLatestGB(state));
 
     const [videoCurrentTime, setVideoCurrentTime] = useState<number | null>(null);
@@ -38,6 +40,12 @@ export default function EventMedia({selectedNode, datasources, eventData, mode, 
     useEffect(() => {
         if (eventData.isRS350 && laneMap) {
             const entry = laneMap.get(eventData.laneId);
+            if (!entry) {
+                console.warn("Cannot load RS350 media: lane entry is unavailable:", eventData.laneId);
+                setForegroundDataStream(undefined);
+                setBackgroundDataStream(undefined);
+                return;
+            }
             const dss = entry.datastreams.find((ds: typeof DataStream)=> isForegroundDataStream(ds));
             setForegroundDataStream(dss);
 
@@ -62,7 +70,7 @@ export default function EventMedia({selectedNode, datasources, eventData, mode, 
                                     <Grid item xs={12}>
                                         <Rs350ChartPlayback
                                             datastream={foregroundDataStream}
-                                            title={"Foreground Linear Spectrum"}
+                                            title={t('foregroundLinearSpectrum')}
                                             chartId={"linear-spec-replay-fg"}
                                             startTime={eventData.startTime}
                                             endTime={eventData.endTime}
@@ -72,7 +80,7 @@ export default function EventMedia({selectedNode, datasources, eventData, mode, 
                                     <Grid item xs={12}>
                                         <Rs350ChartPlayback
                                             datastream={foregroundDataStream}
-                                            title={"Foreground Compressed Spectrum"}
+                                            title={t('foregroundCompressedSpectrum')}
                                             chartId={"compressed-spec-replay-fg"}
                                             startTime={eventData.startTime}
                                             endTime={eventData.endTime}
@@ -83,7 +91,7 @@ export default function EventMedia({selectedNode, datasources, eventData, mode, 
                                     <Grid item xs={12}>
                                         <Rs350ChartPlayback
                                             datastream={backgroundDataStream}
-                                            title={"Background Linear Spectrum"}
+                                            title={t('backgroundLinearSpectrum')}
                                             chartId={"linear-spec-replay-bg"}
                                             startTime={eventData.startTime}
                                             endTime={eventData.endTime}
@@ -93,7 +101,7 @@ export default function EventMedia({selectedNode, datasources, eventData, mode, 
                                     <Grid item xs={12}>
                                         <Rs350ChartPlayback
                                             datastream={backgroundDataStream}
-                                            title={"Background Compressed Spectrum"}
+                                            title={t('backgroundCompressedSpectrum')}
                                             chartId={"compressed-spec-replay-bg"}
                                             startTime={eventData.startTime}
                                             endTime={eventData.endTime}
@@ -152,7 +160,7 @@ export default function EventMedia({selectedNode, datasources, eventData, mode, 
                                     <Grid item xs={12}>
                                         <Rs350ChartPlayback
                                             datastream={foregroundDataStream}
-                                            title={"Foreground Linear Spectrum"}
+                                            title={t('foregroundLinearSpectrum')}
                                             chartId={"linear-spec-replay-fg"}
                                             startTime={eventData.startTime}
                                             endTime={eventData.endTime}
@@ -162,7 +170,7 @@ export default function EventMedia({selectedNode, datasources, eventData, mode, 
                                     <Grid item xs={12}>
                                         <Rs350ChartPlayback
                                             datastream={foregroundDataStream}
-                                            title={"Foreground Compressed Spectrum"}
+                                            title={t('foregroundCompressedSpectrum')}
                                             chartId={"compressed-spec-replay-fg"}
                                             startTime={eventData.startTime}
                                             endTime={eventData.endTime}
@@ -173,7 +181,7 @@ export default function EventMedia({selectedNode, datasources, eventData, mode, 
                                     <Grid item xs={12}>
                                         <Rs350ChartPlayback
                                             datastream={backgroundDataStream}
-                                            title={"Background Linear Spectrum"}
+                                            title={t('backgroundLinearSpectrum')}
                                             chartId={"linear-spec-replay-bg"}
                                             startTime={eventData.startTime}
                                             endTime={eventData.endTime}
@@ -183,7 +191,7 @@ export default function EventMedia({selectedNode, datasources, eventData, mode, 
                                     <Grid item xs={12}>
                                         <Rs350ChartPlayback
                                             datastream={backgroundDataStream}
-                                            title={"Background Compressed Spectrum"}
+                                            title={t('backgroundCompressedSpectrum')}
                                             chartId={"compressed-spec-replay-bg"}
                                             startTime={eventData.startTime}
                                             endTime={eventData.endTime}
