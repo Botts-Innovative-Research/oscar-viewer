@@ -1,13 +1,12 @@
 "use client";
 
-import {Button, Grid, Paper, Typography} from "@mui/material";
+import {Alert, Button, Grid, Paper, Typography} from "@mui/material";
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import BackButton from "../_components/BackButton";
 import DataRow from "../_components/event-details/DataRow";
 import MiscTable from "../_components/event-details/MiscTable";
 import {useSelector} from "react-redux";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
-import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {selectEventPreview} from "@/lib/state/EventPreviewSlice";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {PictureAsPdfRounded} from "@mui/icons-material";
@@ -21,10 +20,11 @@ import SuspenseLoad from "@/app/_components/SuspenseLoad";
 export default function EventDetailsPage() {
 
     const eventPreview = useSelector(selectEventPreview);
-    const laneMapRef = useContext(DataSourceContext).laneMapRef;
-    const laneEntry = laneMapRef.current?.get(eventPreview.eventData?.laneId);
-    const [localDSMap, setLocalDSMap] = useState<Map<string, typeof ConSysApi[]>>(new Map<string, typeof ConSysApi[]>());
+    const eventData = eventPreview.eventData;
+    const {laneMapRef, laneMapReady} = useContext(DataSourceContext);
+    const laneEntry = eventData?.laneId ? laneMapRef.current?.get(eventData.laneId) : undefined;
     const [datasourcesReady, setDatasourcesReady] = useState<boolean>(false);
+    const [dataSourceError, setDataSourceError] = useState(false);
 
     const [gammaDatasources, setGammaDatasources] = useState<typeof ConSysApi[]>([]);
     const [neutronDatasources, setNeutronDatasources] = useState<typeof ConSysApi[]>([]);
@@ -36,36 +36,29 @@ export default function EventDetailsPage() {
     const { t } = useLanguage();
 
     const collectDataSources = useCallback(async() => {
-        if(!eventPreview.eventData?.laneId || !laneMapRef.current) return;
+        if(!eventData || !laneEntry) return;
 
-        let currentLane = eventPreview.eventData.laneId;
+        setDatasourcesReady(false);
+        setDataSourceError(false);
 
-        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-        if (!currLaneEntry) {
-            console.error("LaneMapEntry not found for:", currentLane);
-            return;
+        try {
+            const datasources = await laneEntry.getDatastreamsForEventDetail(eventData.startTime, eventData.endTime);
+
+            const updatedGamma = datasources.get("gamma") || [];
+            const updatedNeutron = datasources.get("neutron") || [];
+            const updatedThreshold = datasources.get("gammaTrshld") || [];
+
+            setGammaDatasources(updatedGamma);
+            setNeutronDatasources(updatedNeutron);
+            setThresholdDatasources(updatedThreshold);
+
+            setDatasourcesReady(true);
+        } catch (error) {
+            console.error("Failed to load event detail data sources:", error);
+            setDataSourceError(true);
         }
 
-        // @ts-ignore
-        let tempDSMap: Map<string, typeof ConSysApi[]>;
-
-        let datasources = await currLaneEntry.getDatastreamsForEventDetail(eventPreview.eventData.startTime, eventPreview.eventData.endTime);
-
-        setLocalDSMap(datasources);
-        tempDSMap = datasources;
-
-
-        const updatedGamma = tempDSMap.get("gamma") || [];
-        const updatedNeutron = tempDSMap.get("neutron") || [];
-        const updatedThreshold = tempDSMap.get("gammaTrshld") || [];
-
-        setGammaDatasources(updatedGamma);
-        setNeutronDatasources(updatedNeutron);
-        setThresholdDatasources(updatedThreshold);
-
-        setDatasourcesReady(true);
-
-    }, [eventPreview, laneMapRef]);
+    }, [eventData, laneEntry]);
 
 
     useEffect(() => {
@@ -73,10 +66,10 @@ export default function EventDetailsPage() {
             await collectDataSources();
         }
 
-        if(laneMapRef.current && eventPreview) {
+        if(laneMapReady && laneEntry && eventData) {
             callCollectDatasources();
         }
-    }, [eventPreview, laneMapRef.current]);
+    }, [collectDataSources, eventData, laneEntry, laneMapReady]);
 
 
     useEffect(() => {
@@ -113,7 +106,7 @@ export default function EventDetailsPage() {
                             </Typography>
                         </Grid>
                     </Grid>
-                    <Grid item xs={12} sm={"auto"}>
+                    {eventData && <Grid item xs={12} sm={"auto"}>
                         <Button
                             variant="outlined"
                             startIcon={<PictureAsPdfRounded/>}
@@ -121,49 +114,62 @@ export default function EventDetailsPage() {
                                 reactToPrintFn()
                             }}
                         >
-                            Export as PDF
+                            {t('exportAsPdf')}
                         </Button>
+                    </Grid>}
+                </Grid>
+
+                {!eventData ? (
+                    <Grid item xs={12}>
+                        <Alert severity="warning">{t('eventDetailsUnavailable')}</Alert>
                     </Grid>
-                </Grid>
+                ) : !laneMapReady ? (
+                    <Grid item xs={12}><SuspenseLoad /></Grid>
+                ) : !laneEntry ? (
+                    <Grid item xs={12}>
+                        <Alert severity="error">{t('eventLaneUnavailable', {lane: eventData.laneId})}</Alert>
+                    </Grid>
+                ) : (
+                    <>
+                        {/* EVENT PREVIEW */}
+                        <Grid item xs={12}>
+                            <Paper variant='outlined'>
+                                <DataRow eventData={eventData}/>
+                            </Paper>
+                        </Grid>
 
+                        {/* EVENT MEDIA */}
+                        <Grid item xs={12}>
+                            {dataSourceError ? (
+                                <Alert severity="error">{t('eventDataLoadFailed')}</Alert>
+                            ) : datasourcesReady ? (
+                                <EventMedia
+                                    selectedNode={laneEntry.parentNode}
+                                    datasources={{
+                                        gamma: gammaDatasources[0],
+                                        neutron: neutronDatasources[0],
+                                        threshold: thresholdDatasources[0],
+                                    }}
+                                    mode="details"
+                                    eventData={eventData}
+                                    laneMap={laneMapRef.current}
+                                />
+                            ) : <SuspenseLoad />}
+                        </Grid>
 
-                {/* EVENT PREVIEW */}
-                <Grid item xs={12}>
-                    <Paper variant='outlined'>
-                        <DataRow eventData={eventPreview.eventData}/>
-                    </Paper>
-                </Grid>
+                        {/* MISC TABLE */}
+                        <Grid item xs={12}>
+                            <Paper variant='outlined'>
+                                <MiscTable currentTime={eventData.startTime}/>
+                            </Paper>
+                        </Grid>
 
-                {/* EVENT MEDIA */}
-                <Grid item xs={12}>
-                    { datasourcesReady ? (
-                            <EventMedia
-                                selectedNode={laneEntry?.parentNode}
-                                datasources={{
-                                    gamma: gammaDatasources[0],
-                                    neutron: neutronDatasources[0],
-                                    threshold: thresholdDatasources[0],
-                                }}
-                                mode="details"
-                                eventData={eventPreview.eventData}
-                                laneMap={laneMapRef.current}
-                            />
-                        ) :
-                       <SuspenseLoad />
-                    }
-                </Grid>
-
-                {/* MISC TABLE */}
-                <Grid item xs={12}>
-                    <Paper variant='outlined'>
-                        <MiscTable currentTime={eventPreview.eventData?.startTime}/>
-                    </Paper>
-                </Grid>
-
-                {/* ADJUDICATION */}
-                <Grid item xs={12}>
-                    <AdjudicationDetail event={eventPreview.eventData}/>
-                </Grid>
+                        {/* ADJUDICATION */}
+                        <Grid item xs={12}>
+                            <AdjudicationDetail event={eventData}/>
+                        </Grid>
+                    </>
+                )}
             </Grid>
         </Grid>
     );

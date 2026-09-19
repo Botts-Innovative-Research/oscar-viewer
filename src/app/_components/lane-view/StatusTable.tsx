@@ -23,6 +23,8 @@ import DataStream from "osh-js/source/core/sweapi/datastream/DataStream";
 import {ALARM_DEF, TAMPER_STATUS_DEF} from "@/lib/data/Constants";
 import {EventType} from "osh-js/source/core/event/EventType";
 import {convertToMap} from "@/app/utils/Utils";
+import {useLanguage} from '@/app/contexts/LanguageContext';
+import {getDataGridLocaleText, getIntlLocale} from '@/app/utils/LocaleUtils';
 
 interface StatusTableProps {
     currentLane: string,
@@ -30,7 +32,8 @@ interface StatusTableProps {
 }
 
 export default function StatusTable({currentLane, entry}: StatusTableProps){
-    const locale = navigator.language || 'en-US';
+    const {language, t} = useLanguage();
+    const locale = getIntlLocale(language);
 
     const nodes = useSelector(selectNodes);
 
@@ -47,14 +50,14 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
     const columns: GridColDef<AlarmTableData>[] = [
         {
             field: 'laneId',
-            headerName: 'Lane ID',
+            headerName: t('laneId'),
             type: 'string',
             minWidth: 100,
             flex: 1,
         },
         {
             field: 'timestamp',
-            headerName: 'Timestamp',
+            headerName: t('timestamp'),
             valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
                 year: 'numeric',
                 month: 'numeric',
@@ -68,7 +71,11 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
         },
         {
             field: 'status',
-            headerName: 'Status',
+            headerName: t('status'),
+            valueFormatter: (value) => {
+                const status = String(value ?? '');
+                return t(`status.${status.toLowerCase().replace(/[ -]/g, '')}`);
+            },
             type: 'string',
             minWidth: 150,
             flex: 1,
@@ -394,6 +401,7 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
     return(
         <Box sx={{height: 800, width: '100%'}}>
             <DataGrid
+                localeText={getDataGridLocaleText(language)}
                 rows={data}
                 paginationMode="server"
                 loading={loading}

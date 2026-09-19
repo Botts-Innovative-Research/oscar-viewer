@@ -6,16 +6,15 @@ import {useSelector} from "react-redux";
 import {useCallback, useContext, useEffect, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
-import {selectEventData, selectSpeed, setSpeed} from "@/lib/state/EventDetailsSlice";
-import {useAppDispatch} from "@/lib/state/Hooks";
+import {selectEventData, selectSpeed} from "@/lib/state/EventDetailsSlice";
 import {isSpeedDataStream} from "@/lib/data/oscar/Utilities";
 import { useBreakpoint } from "@/app/providers";
+import {useLanguage} from '@/app/contexts/LanguageContext';
 
 
 export default function MiscTable({currentTime}: {currentTime: string}) {
   const { isMobile } = useBreakpoint();
-
-  const dispatch = useAppDispatch();
+  const {t} = useLanguage();
 
   const savedSpeed = useSelector(selectSpeed)
   const eventData = useSelector(selectEventData);
@@ -26,21 +25,26 @@ export default function MiscTable({currentTime}: {currentTime: string}) {
 
   const checkForSpeed = useCallback(async () => {
     if (eventData) {
-      let lme = laneMapRef.current.get(eventData.laneId);
+      const lme = laneMapRef.current.get(eventData.laneId);
+      if (!lme) {
+        console.warn("Cannot load speed: lane entry is unavailable:", eventData.laneId);
+        return;
+      }
 
-      let speedDS = lme.datastreams.find(ds => isSpeedDataStream(ds));
+      const speedDS = lme.datastreams.find(ds => isSpeedDataStream(ds));
+      if (!speedDS) return;
 
-      let initialRes = await speedDS.searchObservations(new ObservationFilter({ resultTime: `${eventData?.startTime}/${eventData?.endTime}`}), 10000);
+      try {
+        const initialRes = await speedDS.searchObservations(new ObservationFilter({ resultTime: `${eventData?.startTime}/${eventData?.endTime}`}), 10000);
 
-      // while(initialRes.hasNext()){
-        let speedArr = await initialRes.nextPage();
-        // make CSAPI request for speed in different output
-        let speed = speedArr[0].result.speedKPH ? speedArr[0].result.speedKPH : "N/A";
+        const speedArr = await initialRes.nextPage();
+        const speed = speedArr?.[0]?.result?.speedKPH ?? "N/A";
 
         setSpeedval(speed);
-        // dispatch(setSpeed(speed));
         return speed;
-      // }
+      } catch (error) {
+        console.error("Failed to load event speed:", error);
+      }
     }
   }, [eventData, currentTime]);
 
@@ -54,41 +58,41 @@ export default function MiscTable({currentTime}: {currentTime: string}) {
       <Box>
         <TableContainer>
           <Table
-            aria-label="simple table"
+            aria-label={t('eventMeasurements')}
             sx={{ minWidth: 500 }}
           >
             <TableBody>
               {!isMobile ? (
                 <>
                   <TableRow>
-                    <TableCell>Max Gamma Count Rate (cps)</TableCell>
+                    <TableCell>{t('maxGammaCountRate')}</TableCell>
                     <TableCell>{eventData?.maxGamma}</TableCell>
-                    <TableCell>Neutron Background Count Rate</TableCell>
+                    <TableCell>{t('neutronBackgroundCountRate')}</TableCell>
                       <TableCell>{eventData?.neutronBackground}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell>Max Neutron Count Rate (cps)</TableCell>
+                    <TableCell>{t('maxNeutronCountRate')}</TableCell>
                     <TableCell>{eventData?.maxNeutron}</TableCell>
-                    <TableCell>Speed (kph)</TableCell>
+                    <TableCell>{t('speedKph')}</TableCell>
                     <TableCell>{speedVal}</TableCell>
                   </TableRow>
                 </>
               ) : (
                 <>
                   <TableRow>
-                    <TableCell>Max Gamma Count Rate (cps)</TableCell>
+                    <TableCell>{t('maxGammaCountRate')}</TableCell>
                     <TableCell>{eventData?.maxGamma}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell>Neutron Background Count Rate</TableCell>
+                    <TableCell>{t('neutronBackgroundCountRate')}</TableCell>
                       <TableCell>{eventData?.neutronBackground}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell>Max Neutron Count Rate (cps)</TableCell>
+                    <TableCell>{t('maxNeutronCountRate')}</TableCell>
                     <TableCell>{eventData?.maxNeutron}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell>Speed (kph)</TableCell>
+                    <TableCell>{t('speedKph')}</TableCell>
                     <TableCell>{speedVal}</TableCell>
                   </TableRow>
                 </>

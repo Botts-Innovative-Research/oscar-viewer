@@ -210,7 +210,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
     // fix where u can actually turn notifications off
     const handleNotifications = async () => {
         if (!('Notification' in window)) {
-            alert('Notifications are not supported in this browser');
+            alert(t('notificationsNotSupported'));
             return;
         }
 
@@ -222,8 +222,8 @@ export default function Navbar({children}: { children: React.ReactNode }) {
         setNotificationsEnabled(permission);
 
         if (permission === 'granted') {
-            new Notification('Notifications enabled', {
-                body: 'You will now receive OSCAR notifications'
+            new Notification(t('notificationsEnabled'), {
+                body: t('notificationsEnabledBody')
             });
         }
     }
@@ -288,7 +288,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
     const drawerContent = (
         <>
             <DrawerHeader>
-                <IconButton onClick={handleDrawerClose} aria-label="close drawer">
+                <IconButton onClick={handleDrawerClose} aria-label={t('closeDrawer')}>
                     <ChevronLeftIcon/>
                 </IconButton>
             </DrawerHeader>
@@ -368,7 +368,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                 <Toolbar>
                     <IconButton
                         color="inherit"
-                        aria-label="open drawer"
+                        aria-label={t('openDrawer')}
                         onClick={handleDrawerOpen}
                         edge="start"
                         sx={{
@@ -385,17 +385,17 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                         <Stack direction="row" alignItems="center" spacing={1}>
                             {authenticatedUsername && (
                                 <Typography variant="body2" noWrap sx={{maxWidth: {xs: 110, sm: 240}, overflow: 'hidden', textOverflow: 'ellipsis'}}>
-                                    Signed in as &quot;{authenticatedUsername}&quot;
+                                    {t('signedInAs', {username: authenticatedUsername})}
                                 </Typography>
                             )}
                             <Button color="inherit" size="small" onClick={handleLogout}>
-                                Log out
+                                {t('logOut')}
                             </Button>
                             <LanguageSelector />
                             <Tooltip title={t('settings')} arrow placement="top">
                                 <IconButton
                                     color="inherit"
-                                    aria-label="open settings"
+                                    aria-label={t('openSettings')}
                                     onClick={handleSettingsMenuOpen}
                                 >
                                     {<SettingsIcon  />}
@@ -464,7 +464,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                     <Stack spacing={2} direction="row" sx={{ alignItems: 'center', mt: 1.5 }}>
                         <VolumeDown fontSize="small" color="action"/>
                         <Slider
-                            aria-label="Volume"
+                            aria-label={t('alarmVolume')}
                             value={volumeValue}
                             onChange={handleVolumeChange}
                             valueLabelDisplay="auto"

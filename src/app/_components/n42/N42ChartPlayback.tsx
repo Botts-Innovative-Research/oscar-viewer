@@ -4,6 +4,7 @@ import React, {useCallback, useEffect, useRef, useState} from "react";
 import {Box, Typography} from "@mui/material";
 import Chart from "chart.js/auto";
 import {N42Report} from "@/app/_components/n42/N42Detail";
+import {useLanguage} from '@/app/contexts/LanguageContext';
 
 interface N42ChartPlaybackProps {
     reports: N42Report[];
@@ -13,6 +14,7 @@ interface N42ChartPlaybackProps {
 }
 
 export default function N42ChartPlayback({reports, title, yValue = "linearSpectrum", chartId}: N42ChartPlaybackProps) {
+    const {t} = useLanguage();
     const chartRef = useRef<Chart | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
@@ -31,9 +33,14 @@ export default function N42ChartPlayback({reports, title, yValue = "linearSpectr
         if (chartRef.current) {
             chartRef.current.data.labels = channels;
             chartRef.current.data.datasets[0].data = spectrumData;
+            chartRef.current.data.datasets[0].label = title;
             if (chartRef.current.options.plugins?.title) {
-                chartRef.current.options.plugins.title.text = `${title} - Frame ${frameIndex + 1}/${totalFrames}`;
+                chartRef.current.options.plugins.title.text = t('frameProgress', {title, frame: frameIndex + 1, total: totalFrames});
             }
+            const xScale = chartRef.current.options.scales?.x as any;
+            const yScale = chartRef.current.options.scales?.y as any;
+            if (xScale?.title) xScale.title.text = t('channel');
+            if (yScale?.title) yScale.title.text = t('counts');
             chartRef.current.update('none');
         } else {
             chartRef.current = new Chart(canvasRef.current, {
@@ -58,7 +65,7 @@ export default function N42ChartPlayback({reports, title, yValue = "linearSpectr
                     plugins: {
                         title: {
                             display: true,
-                            text: `${title} - Frame ${frameIndex + 1}/${totalFrames}`,
+                            text: t('frameProgress', {title, frame: frameIndex + 1, total: totalFrames}),
                             font: {size: 14, weight: 'bold'},
                         },
                         legend: {
@@ -68,18 +75,18 @@ export default function N42ChartPlayback({reports, title, yValue = "linearSpectr
                     },
                     scales: {
                         x: {
-                            title: {display: true, text: 'Channel'},
+                            title: {display: true, text: t('channel')},
                             ticks: {maxTicksLimit: 20},
                         },
                         y: {
-                            title: {display: true, text: 'Counts'},
+                            title: {display: true, text: t('counts')},
                             beginAtZero: true,
                         },
                     },
                 }
             });
         }
-    }, [title]);
+    }, [t, title]);
 
     useEffect(() => {
         if (spectrumFrames.length > 0 && spectrumFrames[currentFrameIndex]) {
@@ -112,7 +119,7 @@ export default function N42ChartPlayback({reports, title, yValue = "linearSpectr
     if (spectrumFrames.length === 0) {
         return (
             <Box sx={{height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                <Typography color="text.secondary">No {yValue} data available</Typography>
+                <Typography color="text.secondary">{t('noSpectrumData', {spectrum: t(yValue)})}</Typography>
             </Box>
         );
     }

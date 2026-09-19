@@ -10,6 +10,7 @@ import {
     createNeutronViewCurve,
     createThresholdViewCurve,
 } from "@/app/utils/ChartUtils";
+import {useLanguage} from '@/app/contexts/LanguageContext';
 
 export class ChartInterceptProps {
     laneName: string;
@@ -22,6 +23,7 @@ export class ChartInterceptProps {
 }
 
 export default function ChartLane({laneName, datasources, setChartReady}: ChartInterceptProps){
+    const {t} = useLanguage();
 
     const gammaChartID = "chart-view-gamma";
     const neutronChartID = "chart-view-neutron";
@@ -32,9 +34,10 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
     useEffect(() => {
         setChartReady(false);
 
-        const gammaCurve = createGammaViewCurve(datasources.gamma);
-        const neutronCurve = createNeutronViewCurve(datasources.neutron);
-        const thresholdCurve = createThresholdViewCurve(datasources.threshold);
+        const labels = {time: t('time'), gamma: t('gamma'), neutron: t('neutron'), threshold: t('threshold')};
+        const gammaCurve = createGammaViewCurve(datasources.gamma, labels);
+        const neutronCurve = createNeutronViewCurve(datasources.neutron, labels);
+        const thresholdCurve = createThresholdViewCurve(datasources.threshold, labels);
 
         if (gammaCurve) {
             const container = document.getElementById(gammaChartID);
@@ -49,7 +52,7 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
                         plugins: {
                             title: {
                                 display: true,
-                                text: 'Gamma Chart',
+                                text: t('gammaChart'),
                                 font: {
                                     size: 14,
                                     weight: 'bold'
@@ -69,7 +72,7 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
                             x: {
                                 title: {
                                     display: true,
-                                    text: 'Time',
+                                    text: t('time'),
                                 },
                             },
                             y:{
@@ -105,7 +108,7 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
                         plugins: {
                             title: {
                                 display: true,
-                                text: 'Neutron Chart',
+                                text: t('neutronChart'),
                                 font: {
                                     size: 14,
                                     weight: 'bold'
@@ -128,7 +131,7 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
                             x: {
                                 title: {
                                     display: true,
-                                    text: 'Time',
+                                    text: t('time'),
                                 },
                             },
                             y: {
@@ -161,7 +164,7 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
             neutronChartViewRef.current = null;
             setChartReady(false);
         };
-    }, [laneName, datasources.gamma, datasources.neutron, datasources.threshold, setChartReady]);
+    }, [laneName, datasources.gamma, datasources.neutron, datasources.threshold, setChartReady, t]);
 
 
     return (

@@ -55,7 +55,7 @@ export default function NationalViewPage() {
         });
 
         if (selectedTimeRange == "custom" && (!customStartTime || !customEndTime)) {
-            setSnackMessage("Please select both custom start and end dates.");
+            setSnackMessage(t('selectCustomDates'));
             setSeverity("error");
             setOpenSnack(true)
         }
@@ -78,7 +78,7 @@ export default function NationalViewPage() {
                 let controlStream = streams.find((stream: typeof ControlStream) => isNationalControlStream(stream));
 
                 if (!controlStream){
-                    setSnackMessage("No control stream found.");
+                    setSnackMessage(t('noControlStream'));
                     setSeverity("error");
                     setOpenSnack(true)
                 }
@@ -86,14 +86,14 @@ export default function NationalViewPage() {
                 let response = await sendCommand(node, controlStream.properties.id, generateNationalCommandJSON(customStartTime, customEndTime));
 
                 if (!response.ok) {
-                    setSnackMessage("Failed to refresh the statistics");
+                    setSnackMessage(t('statisticsRefreshFailed'));
                     setSeverity("error");
                 }
 
                 let respJson = await response.json();
 
                 if (selectedTimeRange == "custom") {
-                    setSnackMessage("Refreshing the custom time range stats");
+                    setSnackMessage(t('refreshingCustomStats'));
                     setSeverity("success");
                     setOpenSnack(true);
 
@@ -134,7 +134,7 @@ export default function NationalViewPage() {
                     })
                 }
 
-                setSnackMessage("Refreshing the stats");
+                setSnackMessage(t('refreshingStats'));
                 setSeverity("success");
             }
 
@@ -145,7 +145,7 @@ export default function NationalViewPage() {
             setSelectedTimeRangeCounts(tempRangeData.get(selectedTimeRange));
 
         } catch (error) {
-            setSnackMessage("Failed to refresh the statistics");
+            setSnackMessage(t('statisticsRefreshFailed'));
             setSeverity("error");
 
         } finally {
@@ -224,7 +224,7 @@ export default function NationalViewPage() {
     }, [selectedTimeRange]);
 
     const fetchAllTimeRangesForNode = async(node: any): Promise<any> => {
-        setSnackMessage("Fetching counts for stats!")
+        setSnackMessage(t('fetchingStatistics'))
         setSeverity('success');
         setOpenSnack(true);
 
@@ -232,7 +232,7 @@ export default function NationalViewPage() {
         const observation = await node.fetchLatestObservationWithFilter(filter);
 
         if (observation == null) {
-            setSnackMessage("no observations found")
+            setSnackMessage(t('noObservationsFound'))
             setSeverity('error');
             setOpenSnack(true);
         }
@@ -295,7 +295,7 @@ export default function NationalViewPage() {
                         disabled={isRefreshing}
                         fullWidth
                     >
-                        { isRefreshing ? 'Refreshing Stats...' : 'Refresh Stats'}
+                        {isRefreshing ? t('refreshingStats') : t('refreshStats')}
                     </Button>
                 </Grid>
             </Grid>

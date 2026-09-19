@@ -25,12 +25,15 @@ import {INode} from "@/lib/data/osh/Node";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import { convertToMap } from "@/app/utils/Utils";
 import DataStreamFilter from "osh-js/source/core/consysapi/datastream/DataStreamFilter.js";
+import {useLanguage} from '@/app/contexts/LanguageContext';
 
 
 export default function MapComponent() {
+    const {language, t} = useLanguage();
     const mapcontainer: string = "mapcontainer";
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
     const leafletViewRef = useRef<typeof LeafletView | null>(null);
+    const previousLanguageRef = useRef(language);
     const {laneMapRef} = useContext(DataSourceContext);
     const dispatch = useAppDispatch();
 
@@ -182,8 +185,8 @@ export default function MapComponent() {
                 imageOverlays: [],
                 autoZoomOnFirstMarker: true,
                 baseLayers:{
-                    "OSM Streets": osmLayer,
-                    "Esri Satellite": esriLayer
+                    [t('osmStreets')]: osmLayer,
+                    [t('esriSatellite')]: esriLayer
                 },
                 overlayLayers: {},
                 defaultLayer: osmLayer
@@ -200,6 +203,17 @@ export default function MapComponent() {
             }
         }
     }, [isInit]);
+
+    useEffect(() => {
+        if (previousLanguageRef.current === language) return;
+        previousLanguageRef.current = language;
+
+        if (leafletViewRef.current) {
+            leafletViewRef.current.destroy();
+            leafletViewRef.current = null;
+            setIsInit(false);
+        }
+    }, [language]);
 
     useEffect(() => {
         if (locationList && locationList.length > 0 && isInit) {
@@ -258,7 +272,7 @@ export default function MapComponent() {
             }
         }
 
-    }, [locationList, isInit]);
+    }, [locationList, isInit, language, t]);
 
     const getSiteDiagramPath = (path: string, node: INode) => {
         return node.isSecure ? `https://${node.address}:${node.port}${node.oshPathRoot}/buckets/${path}` : `http://${node.address}:${node.port}${node.oshPathRoot}/buckets/${path}`;
@@ -275,7 +289,7 @@ export default function MapComponent() {
             leafletViewRef.current.addImageOverlay(path, bounds, {
                 opacity: 0.85,
                 interactive: false,
-                alt: `SiteMap for ${node.name}-${node.id}`,
+                alt: t('siteMapForNode', {name: node.name, id: node.id}),
             });
             leafletViewRef.current.autoZoomOnFirstMarker = false;
             leafletViewRef.current.map.invalidateSize();
@@ -340,11 +354,12 @@ export default function MapComponent() {
     /***************content in popup************/
     function getContent(status: string, laneName: string) {
         dispatch(setCurrentLane(laneName));
+        const statusKey = status.toLowerCase().replace(/[ -]/g, '');
 
         return (
             `<div id='popup-data-layer' class='point-popup'><hr/>
-                <h3 class='popup-text-status'>Status: ${status}</h3>
-                <button onClick='location.href="/lane-view"' class="popup-button" type="button">VIEW LANE</button>
+                <h3 class='popup-text-status'>${t('statusValue', {status: t(`status.${statusKey}`)})}</h3>
+                <button onClick='location.href="/lane-view"' class="popup-button" type="button">${t('viewLane')}</button>
             </div>`
         );
     }

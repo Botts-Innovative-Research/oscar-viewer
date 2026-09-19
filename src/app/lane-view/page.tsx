@@ -46,8 +46,8 @@ export default function LaneViewPage() {
 
 
     const toggleButtons = [
-        <ToggleButton value={"occupancy"} key={"occupancy"} disabled={toggleView == 'occupancy'}>Occupancy Table</ToggleButton>,
-        <ToggleButton value={"fault"} key={"fault"} disabled={toggleView == 'fault'}>Fault Table</ToggleButton>
+        <ToggleButton value={"occupancy"} key={"occupancy"} disabled={toggleView == 'occupancy'}>{t('occupancyTable')}</ToggleButton>,
+        <ToggleButton value={"fault"} key={"fault"} disabled={toggleView == 'fault'}>{t('faultTable')}</ToggleButton>
     ];
 
     const handleToggle = (event: React.MouseEvent<HTMLElement>, newView: string) =>{
@@ -115,8 +115,7 @@ export default function LaneViewPage() {
                 </Grid>
                 <Grid item xs>
                     <Typography variant="h4">
-                        { t('laneId') } :
-                        {currentLane}
+                        {t('laneIdValue', {lane: currentLane})}
                     </Typography>
                 </Grid>
             </Grid>

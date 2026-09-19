@@ -11,16 +11,19 @@ import {IWebIdIsotope} from "@/lib/data/oscar/adjudication/WebId";
 import WebIdAnalysisResult from "@/lib/data/oscar/adjudication/WebId";
 import {WEB_ID_DEF} from "@/lib/data/Constants";
 import {EventType} from "osh-js/source/core/event/EventType";
+import {useLanguage} from '@/app/contexts/LanguageContext';
+import {getDataGridLocaleText, getIntlLocale} from '@/app/utils/LocaleUtils';
 
 
 export default function WebIdAnalysis(props: { event: EventTableData; onWebIdResults?: (results: WebIdAnalysisResult[]) => void; }) {
+    const {language, t} = useLanguage();
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
 
     const [webIdLog, setWebIdLog] = useState<any[]>([]);
     const [filteredLog, setFilteredLog] = useState<any[]>([]);
     const [expandDialog, setExpandDialog] = useState({ open: false, title: "", text: "" });
 
-    const locale = navigator.language || 'en-US';
+    const locale = getIntlLocale(language);
 
     const MAX_CELL_LENGTH = 50;
 
@@ -37,7 +40,7 @@ export default function WebIdAnalysis(props: { event: EventTableData; onWebIdRes
                         style={{ color: "#1976d2", border: "none", background: "none", cursor: "pointer", paddingLeft: 4 }}
                         onClick={() => setExpandDialog({ open: true, title: headerName, text: fullText })}
                     >
-                        Read more
+                        {t('readMore')}
                     </button>
                 )}
             </div>
@@ -47,7 +50,7 @@ export default function WebIdAnalysis(props: { event: EventTableData; onWebIdRes
     const logColumns: GridColDef<WebIdAnalysisResult>[] = [
         {
             field: 'time',
-            headerName: 'Timestamp',
+            headerName: t('timestamp'),
             minWidth: 140,
             flex: 1,
             type: 'string',
@@ -62,101 +65,101 @@ export default function WebIdAnalysis(props: { event: EventTableData; onWebIdRes
         },
         {
             field: 'name',
-            headerName: 'Name',
+            headerName: t('name'),
             minWidth: 100,
             flex: 1,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.name).join(', '),
-            renderCell: renderStringCell('Name'),
+            renderCell: renderStringCell(t('name')),
         },
         {
             field: 'type',
-            headerName: 'Type',
+            headerName: t('type'),
             minWidth: 80,
             flex: 0.8,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.type).join(', '),
-            renderCell: renderStringCell('Type'),
+            renderCell: renderStringCell(t('type')),
         },
         {
             field: 'confidence',
-            headerName: 'Confidence',
+            headerName: t('confidence'),
             minWidth: 90,
             flex: 0.8,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.confidence).join(', '),
-            renderCell: renderStringCell('Confidence'),
+            renderCell: renderStringCell(t('confidence')),
         },
         {
             field: 'confidenceStr',
-            headerName: 'Confidence String',
+            headerName: t('confidenceString'),
             minWidth: 120,
             flex: 1,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.confidenceStr).join(', '),
-            renderCell: renderStringCell('Confidence String'),
+            renderCell: renderStringCell(t('confidenceString')),
         },
         {
             field: 'countRate',
-            headerName: 'Count Rate',
+            headerName: t('countRate'),
             minWidth: 90,
             flex: 0.8,
             valueGetter: (value, row) => row.isotopes?.map((i: IWebIdIsotope) => i.countRate).join(', '),
-            renderCell: renderStringCell('Count Rate'),
+            renderCell: renderStringCell(t('countRate')),
         },
         {
             field: 'isotopeString',
-            headerName: 'Isotope String',
+            headerName: t('isotopeString'),
             minWidth: 100,
             flex: 1,
             type: 'string',
-            renderCell: renderStringCell('Isotope String'),
+            renderCell: renderStringCell(t('isotopeString')),
         },
         {
             field: 'numIsotopes',
-            headerName: '# Isotopes',
+            headerName: t('isotopeCount'),
             minWidth: 80,
             flex: 0.6,
             type: 'number',
         },
         {
             field: 'numAnalysisWarning',
-            headerName: '# Warnings',
+            headerName: t('warningCount'),
             minWidth: 80,
             flex: 0.6,
             type: 'string',
-            renderCell: renderStringCell('# Warnings'),
+            renderCell: renderStringCell(t('warningCount')),
         },
         {
             field: 'analysisWarning',
-            headerName: 'Analysis Warning',
+            headerName: t('analysisWarning'),
             minWidth: 120,
             flex: 1,
             type: 'string',
-            renderCell: renderStringCell('Analysis Warning'),
+            renderCell: renderStringCell(t('analysisWarning')),
         },
         {
             field: 'chiSquare',
-            headerName: 'Chi Square',
+            headerName: t('chiSquare'),
             minWidth: 90,
             flex: 0.7,
             type: 'number',
         },
         {
             field: 'detectorResponseFunction',
-            headerName: 'DRF',
+            headerName: t('drf'),
             minWidth: 80,
             flex: 0.6,
             type: 'string',
-            renderCell: renderStringCell('DRF'),
+            renderCell: renderStringCell(t('drf')),
         },
         {
             field: 'errorMessage',
-            headerName: 'Error Message',
+            headerName: t('errorMessage'),
             minWidth: 100,
             flex: 1,
             type: 'string',
-            renderCell: renderStringCell('Error Message'),
+            renderCell: renderStringCell(t('errorMessage')),
         },
         {
             field: 'estimatedDose',
-            headerName: 'Est. Dose',
+            headerName: t('estimatedDose'),
             minWidth: 80,
             flex: 0.6,
             type: 'number',
@@ -166,6 +169,10 @@ export default function WebIdAnalysis(props: { event: EventTableData; onWebIdRes
     const fetchData = useCallback(async() => {
         const currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+        if (!currLaneEntry) {
+            console.warn("Cannot load WebID data: lane entry is unavailable:", currentLane);
+            return;
+        }
 
         let webIdDatastream: typeof DataStream = currLaneEntry.findDataStreamByObsProperty(WEB_ID_DEF);
         if(!webIdDatastream) {
@@ -193,6 +200,10 @@ export default function WebIdAnalysis(props: { event: EventTableData; onWebIdRes
     useEffect(() => {
         const currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+        if (!currLaneEntry) {
+            console.warn("Cannot subscribe to WebID data: lane entry is unavailable:", currentLane);
+            return;
+        }
 
         let webIdStream = currLaneEntry.findDataStreamByObsProperty(WEB_ID_DEF);
         if(!webIdStream) {
@@ -247,11 +258,12 @@ export default function WebIdAnalysis(props: { event: EventTableData; onWebIdRes
         <Stack spacing={2} sx={{ width: '100%' }}>
             <Stack direction={"column"} spacing={1}>
                 <Typography variant="h5">
-                    WebID Analysis Results
+                    {t('webIdAnalysisResults')}
                 </Typography>
             </Stack>
             <Box sx={{ width: '100%' }}>
                 <DataGrid
+                    localeText={getDataGridLocaleText(language)}
                     rows={filteredLog}
                     columns={logColumns}
                     initialState={{

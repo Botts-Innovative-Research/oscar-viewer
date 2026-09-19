@@ -4,6 +4,7 @@ import React, {useCallback, useEffect, useRef, useState} from "react";
 import {Box, Typography} from "@mui/material";
 import Chart from "chart.js/auto";
 import {EventType} from "osh-js/source/core/event/EventType";
+import {useLanguage} from '@/app/contexts/LanguageContext';
 
 interface ChartInterceptProps {
     laneName?: string;
@@ -15,6 +16,7 @@ interface ChartInterceptProps {
 }
 
 export default function N42Chart({datasource, title, yValue = "linearSpectrum", chartId}: ChartInterceptProps) {
+    const {t} = useLanguage();
     const chartRef = useRef<Chart | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -69,7 +71,7 @@ export default function N42Chart({datasource, title, yValue = "linearSpectrum", 
                         x: {
                             title: {
                                 display: true,
-                                text: 'Channel',
+                                text: t('channel'),
                             },
                             ticks: {
                                 maxTicksLimit: 20,
@@ -78,7 +80,7 @@ export default function N42Chart({datasource, title, yValue = "linearSpectrum", 
                         y: {
                             title: {
                                 display: true,
-                                text: 'Counts',
+                                text: t('counts'),
                             },
                             beginAtZero: true,
                         },
@@ -86,7 +88,7 @@ export default function N42Chart({datasource, title, yValue = "linearSpectrum", 
                 }
             });
         }
-    }, [title]);
+    }, [t, title]);
 
     useEffect(() => {
         if (!datasource) return;
@@ -127,7 +129,7 @@ export default function N42Chart({datasource, title, yValue = "linearSpectrum", 
                         {title}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                        No data available at this time
+                        {t('noDataAvailable')}
                     </Typography>
                 </Box>
             )}

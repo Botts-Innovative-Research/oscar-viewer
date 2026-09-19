@@ -17,6 +17,7 @@ import {
     createNSigmaCalcViewCurve,
     createThresholdViewCurve, createThreshSigmaViewCurve
 } from "@/app/utils/ChartUtils";
+import {useLanguage} from '@/app/contexts/LanguageContext';
 
 
 type CurveLayers = {
@@ -44,6 +45,7 @@ export class ChartInterceptProps {
 }
 
 export default function ChartTimeHighlight(props: ChartInterceptProps) {
+    const {language, t} = useLanguage();
 
     const gammaChartViewRef = useRef<HTMLDivElement | null>(null);
     const nSigmaChartViewRef = useRef<HTMLDivElement | null>(null);
@@ -130,6 +132,24 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         }
     }, [props.currentTime, chartViews]);
 
+    useEffect(() => {
+        const updateLabels = (view: any, datasetLabels: string[]) => {
+            if (!view?.chart) return;
+
+            view.chart.options.scales.x.title.text = t('time');
+            view.chart.data.datasets.forEach((dataset: any, index: number) => {
+                if (datasetLabels[index]) dataset.label = datasetLabels[index];
+            });
+            view.chart.update();
+        };
+
+        updateLabels(chartViews.gamma, [t('gamma'), t('threshold')]);
+        updateLabels(chartViews.neutron, [t('neutron')]);
+        updateLabels(chartViews.nsigma, [t('gammaNSigma'), t('threshold')]);
+
+        if (props.currentTime) annotateCharts(props.currentTime);
+    }, [language, chartViews, props.currentTime]);
+
 
 
     function annotateCharts(currTime: any) {
@@ -147,7 +167,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                     borderWidth: 4,
                     label: {
                         enabled: true,
-                        content: 'Current Time'
+                        content: t('currentTime')
                     }
                 }
             }
@@ -203,12 +223,20 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
     async function createCurveLayers() {
 
+        const labels = {
+            time: t('time'),
+            neutron: t('neutron'),
+            gamma: t('gamma'),
+            threshold: t('threshold'),
+            gammaNSigma: t('gammaNSigma'),
+        };
+
         let result = await Promise.all([
-            createNeutronViewCurve(props.datasources.neutron),
-            createGammaViewCurve(props.datasources.gamma),
-            createThresholdViewCurve(props.datasources.threshold),
-            createThreshSigmaViewCurve(props.datasources.threshold),
-            createNSigmaCalcViewCurve(props.datasources.gamma, props.latestGB)
+            createNeutronViewCurve(props.datasources.neutron, labels),
+            createGammaViewCurve(props.datasources.gamma, labels),
+            createThresholdViewCurve(props.datasources.threshold, labels),
+            createThreshSigmaViewCurve(props.datasources.threshold, labels),
+            createNSigmaCalcViewCurve(props.datasources.gamma, props.latestGB, labels)
         ]);
 
         const [neutron, gamma, threshold, threshNsigma, nsigma] = result;
@@ -260,7 +288,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 type: 'line',
                 options: {
                     scales: {
-                        x: {title: {display: true, text: 'Time', padding: 5}, type: 'time'},
+                        x: {title: {display: true, text: t('time'), padding: 5}, type: 'time'},
                         y: {title: {display: true, text: 'CPS', padding: 15}, beginAtZero: false}
                     }
                 }
@@ -284,7 +312,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 type: 'line',
                 options: {
                     scales: {
-                        x: {title: {display: true, text: 'Time', padding: 5}, type: 'time'},
+                        x: {title: {display: true, text: t('time'), padding: 5}, type: 'time'},
                         y: {
                             type: 'linear',
                             position: 'left',
@@ -315,7 +343,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 type: 'line',
                 options: {
                     scales: {
-                        x: {title: {display: true, text: 'Time', padding: 5}, type: 'time'},
+                        x: {title: {display: true, text: t('time'), padding: 5}, type: 'time'},
                         y: {
                             type: 'linear',
                             position: 'left',
@@ -409,4 +437,3 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         </Box>
     )
 }
-
