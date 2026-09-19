@@ -34,6 +34,7 @@ import {
     SITE_DIAGRAM_PANE_Z_INDEX,
     SiteDiagramBounds,
     toLaneMapLocation,
+    toLaneMapLocationFromSystem,
     toLeafletSiteDiagramBounds,
 } from "@/app/_components/maps/MapUtils";
 
@@ -66,17 +67,24 @@ export default function MapComponent() {
 
         let cancelled = false;
         const laneDSMap = new Map<string, LaneDSColl>();
-        const locationStreams: Array<{laneName: string; dataStream: any}> = [];
+        const locationSources: Array<{
+            laneName: string;
+            dataStream: any | null;
+            systemLocation: LaneMapLocation | null;
+        }> = [];
 
         for (const [laneName, lane] of laneMapRef.current.entries()) {
             const laneDSColl = new LaneDSColl();
             laneDSMap.set(laneName, laneDSColl);
 
+            const laneSystemId = lane.laneSystem?.properties?.id;
+            const locationStreams: any[] = [];
+
             lane.datastreams.forEach((dataStream, index) => {
                 const realtimeSource = lane.datasourcesRealtime[index];
 
                 if (isLocationDataStream(dataStream))
-                    locationStreams.push({laneName, dataStream});
+                    locationStreams.push(dataStream);
                 if (realtimeSource && isGammaDataStream(dataStream))
                     laneDSColl.addDS('gammaRT', realtimeSource);
                 if (realtimeSource && isNeutronDataStream(dataStream))
@@ -86,16 +94,32 @@ export default function MapComponent() {
                 if (realtimeSource && isConnectionDataStream(dataStream))
                     laneDSColl.addDS('connectionRT', realtimeSource);
             });
+
+            const laneLocationStream = locationStreams.find((dataStream) =>
+                dataStream?.properties?.["system@id"] === laneSystemId) ?? locationStreams[0] ?? null;
+            locationSources.push({
+                laneName,
+                dataStream: laneLocationStream,
+                systemLocation: toLaneMapLocationFromSystem(lane.laneSystem),
+            });
         }
         setDataSourcesByLane(laneDSMap);
 
         const loadLatestLocations = async () => {
-            const markers = await Promise.all(locationStreams.map(async ({laneName, dataStream}) => {
+            const markers = await Promise.all(locationSources.map(async ({laneName, dataStream, systemLocation}) => {
+                if (!dataStream) {
+                    if (!systemLocation)
+                        console.warn(`No configured location is available for lane ${laneName}`);
+                    return systemLocation
+                        ? {laneName, location: systemLocation, status: 'None'} as LaneMarkerState
+                        : null;
+                }
+
                 try {
                     const observations = await dataStream.searchObservations(
                         new ObservationFilter({resultTime: "latest"}), 1);
                     const results = await observations.nextPage();
-                    const location = toLaneMapLocation(results[0]?.result);
+                    const location = toLaneMapLocation(results[0]?.result) ?? systemLocation;
                     if (!location) {
                         console.warn(`No valid latest location is available for lane ${laneName}`);
                         return null;
@@ -103,7 +127,9 @@ export default function MapComponent() {
                     return {laneName, location, status: 'None'} as LaneMarkerState;
                 } catch (error) {
                     console.error(`Unable to load the latest location for lane ${laneName}`, error);
-                    return null;
+                    return systemLocation
+                        ? {laneName, location: systemLocation, status: 'None'} as LaneMarkerState
+                        : null;
                 }
             }));
 

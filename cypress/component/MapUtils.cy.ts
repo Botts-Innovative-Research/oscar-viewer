@@ -5,8 +5,10 @@ import {
     SITE_DIAGRAM_FIT_OPTIONS,
     SITE_DIAGRAM_PANE_Z_INDEX,
     toLaneMapLocation,
+    toLaneMapLocationFromSystem,
     toLeafletSiteDiagramBounds,
 } from "../../src/app/_components/maps/MapUtils";
+import {isLocationDataStream} from "../../src/lib/data/oscar/Utilities";
 
 describe("map configuration", () => {
     const node = {
@@ -67,6 +69,29 @@ describe("map configuration", () => {
             .to.equal(null);
         expect(toLaneMapLocation({location: {lat: 35.8855, lon: undefined}}))
             .to.equal(null);
+    });
+
+    it("recognizes the canonical fixed-position output when property metadata is incomplete", () => {
+        expect(isLocationDataStream({
+            properties: {outputName: "sensorLocation", observedProperties: []},
+        } as any)).to.equal(true);
+        expect(isLocationDataStream({
+            properties: {name: "Sensor Location", observedProperties: []},
+        } as any)).to.equal(true);
+    });
+
+    it("uses the lane system GeoJSON point when no location observation is available", () => {
+        expect(toLaneMapLocationFromSystem({
+            properties: {
+                geometry: {
+                    type: "Point",
+                    coordinates: [-84.2115, 35.8855, 12],
+                },
+            },
+        })).to.deep.equal({lat: 35.8855, lon: -84.2115, alt: 12});
+        expect(toLaneMapLocationFromSystem({
+            properties: {geometry: {type: "LineString", coordinates: []}},
+        })).to.equal(null);
     });
 
     it("fits the initial map viewport tightly to the uploaded diagram extent", () => {

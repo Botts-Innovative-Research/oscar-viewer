@@ -105,3 +105,37 @@ export function toLaneMapLocation(result: unknown): LaneMapLocation | null {
 
     return {lat, lon, alt};
 }
+
+export function toLaneMapLocationFromSystem(system: unknown): LaneMapLocation | null {
+    const rawSystem = system as {
+        geometry?: unknown;
+        properties?: {
+            geometry?: unknown;
+            properties?: {geometry?: unknown};
+        };
+    };
+    const geometryCandidates = [
+        rawSystem?.geometry,
+        rawSystem?.properties?.geometry,
+        rawSystem?.properties?.properties?.geometry,
+    ];
+
+    for (const candidate of geometryCandidates) {
+        const geometry = candidate as {type?: unknown; coordinates?: unknown};
+        if (geometry?.type !== "Point" || !Array.isArray(geometry.coordinates))
+            continue;
+
+        // GeoJSON point coordinates are ordered longitude, latitude, altitude.
+        const [lon, lat, rawAlt = 0] = geometry.coordinates;
+        const alt = rawAlt ?? 0;
+        if (typeof lat !== "number" || typeof lon !== "number" || typeof alt !== "number" ||
+            !Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(alt))
+            continue;
+        if (Math.abs(lat) > 90 || Math.abs(lon) > 180)
+            continue;
+
+        return {lat, lon, alt};
+    }
+
+    return null;
+}
