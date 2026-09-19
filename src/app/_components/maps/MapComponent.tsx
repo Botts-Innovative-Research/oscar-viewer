@@ -19,13 +19,22 @@ import {
 } from "@/lib/data/oscar/Utilities";
 import {setCurrentLane} from "@/lib/state/LaneViewSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import L, {LatLngExpression} from "leaflet";
+import L from "leaflet";
 import {selectNodes} from "@/lib/state/OSHSlice";
 import {INode} from "@/lib/data/osh/Node";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import { convertToMap } from "@/app/utils/Utils";
 import DataStreamFilter from "osh-js/source/core/consysapi/datastream/DataStreamFilter.js";
 import {useLanguage} from '@/app/contexts/LanguageContext';
+import {
+    buildSiteDiagramUrl,
+    OSM_TILE_URL,
+    SITE_DIAGRAM_FIT_OPTIONS,
+    SITE_DIAGRAM_PANE,
+    SITE_DIAGRAM_PANE_Z_INDEX,
+    SiteDiagramBounds,
+    toLeafletSiteDiagramBounds,
+} from "@/app/_components/maps/MapUtils";
 
 
 export default function MapComponent() {
@@ -33,8 +42,9 @@ export default function MapComponent() {
     const mapcontainer: string = "mapcontainer";
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
     const leafletViewRef = useRef<typeof LeafletView | null>(null);
+    const siteDiagramLayersRef = useRef<Map<string, L.ImageOverlay>>(new Map());
     const previousLanguageRef = useRef(language);
-    const {laneMapRef} = useContext(DataSourceContext);
+    const {laneMapRef, laneMapReady} = useContext(DataSourceContext);
     const dispatch = useAppDispatch();
 
     const nodes = useSelector((state: RootState) => selectNodes(state));
@@ -166,11 +176,13 @@ export default function MapComponent() {
         if (!leafletViewRef.current && !isInit) {
             // define base layers
 
-            const osmLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            const osmLayer = L.tileLayer(OSM_TILE_URL, {
                 attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                minZoom: 1,
                 maxZoom: 22,
                 maxNativeZoom: 19,
-                referrerPolicy: "strict-origin-when-cross-origin"
+                subdomains: "abc",
+                crossOrigin: true,
             });
             const esriLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
                 attribution: '&copy; <a href="https://www.esri.com/">Esri</a>, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
@@ -192,12 +204,22 @@ export default function MapComponent() {
                 defaultLayer: osmLayer
             });
             view.map.options.zoomSnap = 0;
+            const siteDiagramPane = view.map.createPane(SITE_DIAGRAM_PANE);
+            siteDiagramPane.style.zIndex = String(SITE_DIAGRAM_PANE_Z_INDEX);
+            siteDiagramPane.style.pointerEvents = "none";
+
+            // LeafletView accepts a default layer, but explicitly enforce OSM
+            // here so an empty map never depends on the layer-control state.
+            if (!view.map.hasLayer(osmLayer))
+                osmLayer.addTo(view.map);
+
             leafletViewRef.current = view;
             setIsInit(true);
         }
 
         return () =>{
             if(isInit && leafletViewRef.current != null){
+                siteDiagramLayersRef.current.clear();
                 leafletViewRef.current.destroy();
                 leafletViewRef.current = undefined;
             }
@@ -274,72 +296,116 @@ export default function MapComponent() {
 
     }, [locationList, isInit, language, t]);
 
-    const getSiteDiagramPath = (path: string, node: INode) => {
-        return node.isSecure ? `https://${node.address}:${node.port}${node.oshPathRoot}/buckets/${path}` : `http://${node.address}:${node.port}${node.oshPathRoot}/buckets/${path}`;
-    }
-
     useEffect(() => {
-        if (!leafletViewRef.current || !isInit) {
+        const view = leafletViewRef.current;
+        if (!view || !isInit || !laneMapReady) {
             return;
         }
 
-        const addImageOverlay = (node: INode, path: string, urb: LatLngExpression, llb: LatLngExpression) => {
-            const bounds = L.latLngBounds([llb, urb]);
+        let cancelled = false;
+        let fitFrameId: number | null = null;
 
-            leafletViewRef.current.addImageOverlay(path, bounds, {
-                opacity: 0.85,
-                interactive: false,
-                alt: t('siteMapForNode', {name: node.name, id: node.id}),
-            });
-            leafletViewRef.current.autoZoomOnFirstMarker = false;
-            leafletViewRef.current.map.invalidateSize();
-            leafletViewRef.current.map.fitBounds(bounds);
-        }
+        type LoadedSiteDiagram = {
+            node: INode,
+            path: string,
+            bounds: SiteDiagramBounds,
+        };
 
-        nodes.forEach(async (node: INode) => {
-            let path = node.siteMapPath;
-            let llb = node.lowerLeftBound;
-            let urb = node.upperRightBound;
+        const loadSiteDiagram = async (node: INode): Promise<LoadedSiteDiagram | null> => {
+            const oscarSystem = node.getOscarServiceSystem();
+            if (!oscarSystem)
+                return null;
 
-            if (!path || !urb || !llb) {
-                let oscarSystem = await node.getOscarServiceSystem();
-                let oscarSystemDatastreams = [];
-                if (!oscarSystem)
-                    return;
-                let dataStreamsCol = await oscarSystem.searchDataStreams(new DataStreamFilter({ validTime: "latest" }), 10);
-                while (dataStreamsCol.hasNext()) {
-                    const datastreamResults = await dataStreamsCol.nextPage();
-                    oscarSystemDatastreams.push(...datastreamResults);
-                }
-
-                for (const ds of oscarSystemDatastreams) {
-                    if (isSiteDiagramPathDataStream(ds)) {
-                        let obsCollections = await ds.searchObservations(new ObservationFilter({resultTime: 'latest'}), 1);
-                        let results = await obsCollections.nextPage();
-                        let result = results[0];
-
-                        if (result != undefined) {
-                            path = getSiteDiagramPath(result.result.siteDiagramPath, node);
-                            llb = [result.result.siteBoundingBox.lowerLeftBound.lon, result.result.siteBoundingBox.lowerLeftBound.lat]
-                            urb = [result.result.siteBoundingBox.upperRightBound.lon, result.result.siteBoundingBox.upperRightBound.lat]
-                            node.setSiteMapPath(path);
-                            node.setLowerLeftBox(llb);
-                            node.setUpperRightBox(urb);
-
-                        }
-                    }
-                }
-
-                if (!path) {
-                    console.info("No sitemap or bounds provided for " + node.name);
-                    return;
-                }
+            const oscarSystemDatastreams = [];
+            const dataStreamsCol = await oscarSystem.searchDataStreams(
+                new DataStreamFilter({validTime: "latest"}), 10);
+            while (dataStreamsCol.hasNext()) {
+                const datastreamResults = await dataStreamsCol.nextPage();
+                oscarSystemDatastreams.push(...datastreamResults);
             }
 
-            addImageOverlay(node, path, urb, llb)
-        })
+            const siteDiagramStream = oscarSystemDatastreams.find(isSiteDiagramPathDataStream);
+            if (!siteDiagramStream)
+                return null;
 
-    }, [isInit, nodes]);
+            const observations = await siteDiagramStream.searchObservations(
+                new ObservationFilter({resultTime: "latest"}), 1);
+            const results = await observations.nextPage();
+            const siteDiagram = results[0]?.result;
+            if (!siteDiagram?.siteDiagramPath)
+                return null;
+
+            const bounds = toLeafletSiteDiagramBounds(siteDiagram.siteBoundingBox);
+            if (!bounds) {
+                console.warn(`Invalid site diagram bounds for ${node.name}`, siteDiagram.siteBoundingBox);
+                return null;
+            }
+
+            const path = buildSiteDiagramUrl(siteDiagram.siteDiagramPath, node);
+            node.setSiteMapPath(path);
+            node.setLowerLeftBox(bounds[0]);
+            node.setUpperRightBox(bounds[1]);
+            return {node, path, bounds};
+        };
+
+        const renderSiteDiagrams = async () => {
+            const diagramResults: Array<LoadedSiteDiagram | null> = await Promise.all(
+                (nodes as INode[]).map(async (node: INode) => {
+                    try {
+                        return await loadSiteDiagram(node);
+                    } catch (error) {
+                        console.error(`Unable to load the site diagram for ${node.name}`, error);
+                        return null;
+                    }
+                }));
+            const diagrams: LoadedSiteDiagram[] = diagramResults.filter(
+                (diagram): diagram is LoadedSiteDiagram => diagram !== null);
+
+            if (cancelled || leafletViewRef.current !== view)
+                return;
+
+            siteDiagramLayersRef.current.forEach((layer) => view.map.removeLayer(layer));
+            siteDiagramLayersRef.current.clear();
+
+            const combinedBounds = L.latLngBounds([]);
+            diagrams.forEach(({node, path, bounds}: LoadedSiteDiagram) => {
+                const leafletBounds = L.latLngBounds(bounds);
+                const overlay = view.addImageOverlay(path, leafletBounds, {
+                    opacity: 0.85,
+                    interactive: false,
+                    pane: SITE_DIAGRAM_PANE,
+                    alt: t('siteMapForNode', {name: node.name, id: node.id}),
+                }) as L.ImageOverlay;
+
+                overlay.on("load", () => overlay.bringToFront());
+                overlay.on("error", () => console.error(`Unable to render the site diagram for ${node.name}: ${path}`));
+                overlay.bringToFront();
+                siteDiagramLayersRef.current.set(node.id, overlay);
+                combinedBounds.extend(leafletBounds);
+            });
+
+            if (diagrams.length > 0) {
+                view.autoZoomOnFirstMarker = false;
+                // Wait for the dashboard grid to finish laying out the map.
+                // Leaflet then computes the tightest fractional zoom that
+                // contains the exact uploaded lower-left/upper-right extent.
+                fitFrameId = window.requestAnimationFrame(() => {
+                    if (cancelled || leafletViewRef.current !== view)
+                        return;
+
+                    view.map.invalidateSize({pan: false, animate: false});
+                    view.map.fitBounds(combinedBounds, SITE_DIAGRAM_FIT_OPTIONS);
+                });
+            }
+        };
+
+        void renderSiteDiagrams();
+        return () => {
+            cancelled = true;
+            if (fitFrameId !== null)
+                window.cancelAnimationFrame(fitFrameId);
+        };
+    }, [isInit, laneMapReady, nodes, language]);
 
     const updateLocationList = (laneName: string, newStatus: string) => {
         setLocationList((prevState) => {

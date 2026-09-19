@@ -31,3 +31,6 @@ jobs:
 
       - name: Install Cypress
         run: npx cypress install
+
+      - name: Test map configuration
+        run: npm run test:map
