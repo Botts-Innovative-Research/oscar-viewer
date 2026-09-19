@@ -1,8 +1,10 @@
 import {
     buildSiteDiagramUrl,
+    LANE_MARKER_PANE_Z_INDEX,
     OSM_TILE_URL,
     SITE_DIAGRAM_FIT_OPTIONS,
     SITE_DIAGRAM_PANE_Z_INDEX,
+    toLaneMapLocation,
     toLeafletSiteDiagramBounds,
 } from "../../src/app/_components/maps/MapUtils";
 
@@ -55,7 +57,16 @@ describe("map configuration", () => {
 
     it("keeps diagrams above base tiles while leaving markers visible", () => {
         expect(SITE_DIAGRAM_PANE_Z_INDEX).to.be.greaterThan(200);
-        expect(SITE_DIAGRAM_PANE_Z_INDEX).to.be.lessThan(600);
+        expect(SITE_DIAGRAM_PANE_Z_INDEX).to.be.lessThan(LANE_MARKER_PANE_Z_INDEX);
+    });
+
+    it("reads the latest lane location record used by the dashboard marker", () => {
+        expect(toLaneMapLocation({location: {lat: 35.8855, lon: -84.2115, alt: 12}}))
+            .to.deep.equal({lat: 35.8855, lon: -84.2115, alt: 12});
+        expect(toLaneMapLocation({location: {lat: 95, lon: -84.2115, alt: 12}}))
+            .to.equal(null);
+        expect(toLaneMapLocation({location: {lat: 35.8855, lon: undefined}}))
+            .to.equal(null);
     });
 
     it("fits the initial map viewport tightly to the uploaded diagram extent", () => {

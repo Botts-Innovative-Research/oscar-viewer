@@ -4,11 +4,13 @@ import {INode} from "@/lib/data/osh/Node";
 // historical a/b/c subdomains; OSM may return policy-block tiles for them.
 export const OSM_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 export const SITE_DIAGRAM_PANE = "site-diagram";
+export const LANE_MARKER_PANE = "lane-markers";
 
 // Leaflet renders tiles at 200, ordinary image overlays at 400, and markers at
 // 600. Keeping site diagrams at 450 makes them the top raster layer without
 // hiding lane markers or their popups.
 export const SITE_DIAGRAM_PANE_Z_INDEX = 450;
+export const LANE_MARKER_PANE_Z_INDEX = 650;
 
 // Zero padding and fractional zoom make the initial viewport the tightest
 // possible fit for the coordinates supplied when the diagram was uploaded.
@@ -30,6 +32,12 @@ interface GeographicPoint {
 interface SiteBoundingBox {
     lowerLeftBound: GeographicPoint;
     upperRightBound: GeographicPoint;
+}
+
+export interface LaneMapLocation {
+    lat: number;
+    lon: number;
+    alt: number;
 }
 
 type SiteDiagramNode = Pick<INode,
@@ -80,4 +88,20 @@ export function toLeafletSiteDiagramBounds(siteBoundingBox: SiteBoundingBox): Si
         [lowerLeft.lat, lowerLeft.lon],
         [upperRight.lat, upperRight.lon],
     ];
+}
+
+export function toLaneMapLocation(result: unknown): LaneMapLocation | null {
+    const location = (result as {location?: {lat?: unknown; lon?: unknown; alt?: unknown}})?.location;
+    const lat = location?.lat;
+    const lon = location?.lon;
+    const alt = location?.alt ?? 0;
+
+    if (typeof lat !== "number" || typeof lon !== "number" || typeof alt !== "number" ||
+        !Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(alt))
+        return null;
+
+    if (Math.abs(lat) > 90 || Math.abs(lon) > 180)
+        return null;
+
+    return {lat, lon, alt};
 }

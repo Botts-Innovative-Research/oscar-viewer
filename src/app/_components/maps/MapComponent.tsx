@@ -1,19 +1,17 @@
 "use client"
 
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
-import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import PointMarkerLayer from "osh-js/source/core/ui/layer/PointMarkerLayer";
+import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 import LeafletView from "osh-js/source/core/ui/view/map/LeafletView";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import Box from "@mui/material/Box";
 import '../../style/map.css';
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import { LaneWithLocation } from "types/new-types";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import "leaflet/dist/leaflet.css"
 import {
-    isGammaDataStream, isLocationDataStream,
+    isConnectionDataStream, isGammaDataStream, isLocationDataStream,
     isNeutronDataStream, isSiteDiagramPathDataStream,
     isTamperDataStream
 } from "@/lib/data/oscar/Utilities";
@@ -23,18 +21,27 @@ import L from "leaflet";
 import {selectNodes} from "@/lib/state/OSHSlice";
 import {INode} from "@/lib/data/osh/Node";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
-import { convertToMap } from "@/app/utils/Utils";
 import DataStreamFilter from "osh-js/source/core/consysapi/datastream/DataStreamFilter.js";
 import {useLanguage} from '@/app/contexts/LanguageContext';
 import {
     buildSiteDiagramUrl,
+    LANE_MARKER_PANE,
+    LANE_MARKER_PANE_Z_INDEX,
+    LaneMapLocation,
     OSM_TILE_URL,
     SITE_DIAGRAM_FIT_OPTIONS,
     SITE_DIAGRAM_PANE,
     SITE_DIAGRAM_PANE_Z_INDEX,
     SiteDiagramBounds,
+    toLaneMapLocation,
     toLeafletSiteDiagramBounds,
 } from "@/app/_components/maps/MapUtils";
+
+interface LaneMarkerState {
+    laneName: string;
+    location: LaneMapLocation;
+    status: string;
+}
 
 
 export default function MapComponent() {
@@ -43,6 +50,7 @@ export default function MapComponent() {
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
     const leafletViewRef = useRef<typeof LeafletView | null>(null);
     const siteDiagramLayersRef = useRef<Map<string, L.ImageOverlay>>(new Map());
+    const laneMarkerLayersRef = useRef<Map<string, L.Marker>>(new Map());
     const previousLanguageRef = useRef(language);
     const {laneMapRef, laneMapReady} = useContext(DataSourceContext);
     const dispatch = useAppDispatch();
@@ -51,72 +59,68 @@ export default function MapComponent() {
 
     const [isInit, setIsInit] = useState(false);
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
-    const [locationList, setLocationList] = useState<LaneWithLocation[] | null>(null);
-    const [dsLocations, setDsLocations] = useState([]);
+    const [locationList, setLocationList] = useState<LaneMarkerState[]>([]);
 
+    useEffect(() => {
+        if (!laneMapReady) return;
 
-    useEffect(() =>{
-        if(locationList == null || locationList.length === 0 && laneMap.size > 0) {
-            let locations: LaneWithLocation[] = [];
+        let cancelled = false;
+        const laneDSMap = new Map<string, LaneDSColl>();
+        const locationStreams: Array<{laneName: string; dataStream: any}> = [];
 
-            const laneMapToMap = convertToMap(laneMap);
+        for (const [laneName, lane] of laneMapRef.current.entries()) {
+            const laneDSColl = new LaneDSColl();
+            laneDSMap.set(laneName, laneDSColl);
 
-            laneMapToMap.forEach((value, key) => {
-                if (laneMapToMap.has(key)) {
-                    let ds: LaneMapEntry = laneMapToMap.get(key);
+            lane.datastreams.forEach((dataStream, index) => {
+                const realtimeSource = lane.datasourcesRealtime[index];
 
-                    dsLocations.map((dss) => {
-                        const locationSources = ds.datasourcesBatch.filter((item) =>
-                            (item.properties.resource === ("/datastreams/" + dss.properties.id + "/observations")))
-
-                        const laneWithLocation: LaneWithLocation = {
-                            laneName: key,
-                            locationSources: locationSources,
-                            status: 'None',
-                        };
-
-                        locations.push(laneWithLocation);
-                    });
-                }
+                if (isLocationDataStream(dataStream))
+                    locationStreams.push({laneName, dataStream});
+                if (realtimeSource && isGammaDataStream(dataStream))
+                    laneDSColl.addDS('gammaRT', realtimeSource);
+                if (realtimeSource && isNeutronDataStream(dataStream))
+                    laneDSColl.addDS('neutronRT', realtimeSource);
+                if (realtimeSource && isTamperDataStream(dataStream))
+                    laneDSColl.addDS('tamperRT', realtimeSource);
+                if (realtimeSource && isConnectionDataStream(dataStream))
+                    laneDSColl.addDS('connectionRT', realtimeSource);
             });
-            setLocationList(locations);
         }
+        setDataSourcesByLane(laneDSMap);
 
-    }, [laneMap, dsLocations]);
-
-    const datasourceSetup = useCallback(async () => {
-        // @ts-ignore
-        let laneDSMap = new Map<string, LaneDSColl>();
-        let locationDs: any[] = [];
-
-        for (let [laneid, lane] of laneMapRef.current.entries()) {
-            laneDSMap.set(laneid, new LaneDSColl());
-            for (let ds of lane.datastreams) {
-
-                let idx: number = lane.datastreams.indexOf(ds);
-                let rtDS = lane.datasourcesRealtime[idx];
-                let batchDS = lane.datasourcesBatch[idx];
-                let laneDSColl = laneDSMap.get(laneid);
-
-                if (isLocationDataStream(ds)) {
-                    laneDSColl.addDS('locBatch', batchDS);
-                    locationDs.push(ds);
+        const loadLatestLocations = async () => {
+            const markers = await Promise.all(locationStreams.map(async ({laneName, dataStream}) => {
+                try {
+                    const observations = await dataStream.searchObservations(
+                        new ObservationFilter({resultTime: "latest"}), 1);
+                    const results = await observations.nextPage();
+                    const location = toLaneMapLocation(results[0]?.result);
+                    if (!location) {
+                        console.warn(`No valid latest location is available for lane ${laneName}`);
+                        return null;
+                    }
+                    return {laneName, location, status: 'None'} as LaneMarkerState;
+                } catch (error) {
+                    console.error(`Unable to load the latest location for lane ${laneName}`, error);
+                    return null;
                 }
+            }));
 
-                if (isGammaDataStream(ds)) {
-                    laneDSColl.addDS('gammaRT', rtDS);
-                }
-                if (isNeutronDataStream(ds)) {
-                    laneDSColl.addDS('neutronRT', rtDS);
-                }
-                if (isTamperDataStream(ds)) {
-                    laneDSColl.addDS('tamperRT', rtDS);
-                }
-            }
-            setDsLocations(locationDs);
-            setDataSourcesByLane(laneDSMap);
-        }
-    }, [laneMapRef.current]);
+            if (cancelled) return;
+            setLocationList((current) => markers
+                .filter((marker): marker is LaneMarkerState => marker !== null)
+                .map((marker) => ({
+                    ...marker,
+                    status: current.find((item) => item.laneName === marker.laneName)?.status ?? marker.status,
+                })));
+        };
+
+        void loadLatestLocations();
+        return () => {
+            cancelled = true;
+        };
+    }, [laneMapReady, laneMap]);
 
 
     const addSubscriptionCallbacks = useCallback(() => {
@@ -162,15 +166,9 @@ export default function MapComponent() {
     }, [dataSourcesByLane]);
 
     useEffect(() => {
-        if (locationList !== null && locationList.length > 0) {
-            addSubscriptionCallbacks();
-        }
-    }, [dataSourcesByLane]);
-
-    useEffect(() => {
-        if(!isInit)
-            datasourceSetup();
-    }, [isInit]);
+        if (dataSourcesByLane.size === 0) return;
+        return addSubscriptionCallbacks();
+    }, [addSubscriptionCallbacks, dataSourcesByLane]);
 
     useEffect(() => {
         if (!leafletViewRef.current && !isInit) {
@@ -206,6 +204,8 @@ export default function MapComponent() {
             const siteDiagramPane = view.map.createPane(SITE_DIAGRAM_PANE);
             siteDiagramPane.style.zIndex = String(SITE_DIAGRAM_PANE_Z_INDEX);
             siteDiagramPane.style.pointerEvents = "none";
+            const laneMarkerPane = view.map.createPane(LANE_MARKER_PANE);
+            laneMarkerPane.style.zIndex = String(LANE_MARKER_PANE_Z_INDEX);
 
             // LeafletView accepts a default layer, but explicitly enforce OSM
             // here so an empty map never depends on the layer-control state.
@@ -219,6 +219,7 @@ export default function MapComponent() {
         return () =>{
             if(isInit && leafletViewRef.current != null){
                 siteDiagramLayersRef.current.clear();
+                laneMarkerLayersRef.current.clear();
                 leafletViewRef.current.destroy();
                 leafletViewRef.current = undefined;
             }
@@ -230,6 +231,8 @@ export default function MapComponent() {
         previousLanguageRef.current = language;
 
         if (leafletViewRef.current) {
+            siteDiagramLayersRef.current.clear();
+            laneMarkerLayersRef.current.clear();
             leafletViewRef.current.destroy();
             leafletViewRef.current = null;
             setIsInit(false);
@@ -237,62 +240,51 @@ export default function MapComponent() {
     }, [language]);
 
     useEffect(() => {
-        if (locationList && locationList.length > 0 && isInit) {
-            locationList.forEach((location) => {
-                location.locationSources.forEach((loc: any) => {
-                    let newPointMarker = new PointMarkerLayer({
-                        name: location.laneName,
-                        dataSourceId: loc.id,
-                        getLocation: (rec: any) => {
-                            return ({x: rec.location.lon, y: rec.location.lat, z: rec.location.alt})
-                        },
-                        label: `<div class='popup-text-lane'>` + location.laneName + `</div>`,
-                        markerId: () => this.getId(),
-                        icon: '/default.svg',
-                        iconColor: 'rgba(0,0,0,1.0)',
-                        getIcon: {
-                            dataSourceIds: [loc.getId()],
-                            handler: function (rec: any) {
-                                if (location.status === 'Alarm') {
-                                    return  '/alarm.svg';
-                                } else if (location.status.includes('Fault')) {
-                                    return  '/fault.svg';
-                                } else if(location.status === 'Offline') {
-                                    return '/offline.svg'
-                                } else {
-                                    return '/default.svg'
-                                }
-                            }
-                        },
-                        labelColor: 'rgba(255,255,255,1.0)',
-                        labelOutlineColor: 'rgba(0,0,0,1.0)',
-                        labelSize: 20,
-                        iconAnchor: [16, 16],
-                        labelOffset: [-5, -15],
-                        iconSize: [16, 16],
-                        description: getContent(location.status, location.laneName),
+        const view = leafletViewRef.current;
+        if (!view || !isInit) return;
 
-                    });
-
-                    leafletViewRef.current?.addLayer(newPointMarker);
-                });
-                location.locationSources.map((src: any) => src.connect());
+        const renderedLaneNames = new Set<string>();
+        locationList.forEach(({laneName, location, status}) => {
+            renderedLaneNames.add(laneName);
+            const iconPath = getMarkerIcon(status);
+            const markerIcon = L.icon({
+                iconUrl: iconPath,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12],
             });
-        }
+            let marker = laneMarkerLayersRef.current.get(laneName);
 
-        return () => {
-            if (locationList && locationList.length > 0) {
-                locationList.forEach((location) => {
-
-                    // location.locationSources.map((src: any) =>{
-                    //     if (src.isConnected()){
-                    //         src.disconnect();
-                    //     }
-                    // });
+            if (!marker) {
+                marker = L.marker([location.lat, location.lon], {
+                    icon: markerIcon,
+                    pane: LANE_MARKER_PANE,
+                    zIndexOffset: 1000,
+                    title: laneName,
+                    alt: laneName,
+                }).addTo(view.map);
+                marker.bindTooltip(`<div class='popup-text-lane'>${laneName}</div>`, {
+                    direction: 'center',
+                    offset: L.point(-5, -15),
                 });
+                marker.on('click', () => dispatch(setCurrentLane(laneName)));
+                laneMarkerLayersRef.current.set(laneName, marker);
+            } else {
+                marker.setLatLng([location.lat, location.lon]);
+                marker.setIcon(markerIcon);
             }
-        }
 
+            if (marker.getPopup())
+                marker.setPopupContent(getContent(status));
+            else
+                marker.bindPopup(getContent(status), {offset: L.point(-5, -15)});
+        });
+
+        laneMarkerLayersRef.current.forEach((marker, laneName) => {
+            if (!renderedLaneNames.has(laneName)) {
+                view.map.removeLayer(marker);
+                laneMarkerLayersRef.current.delete(laneName);
+            }
+        });
     }, [locationList, isInit, language, t]);
 
     useEffect(() => {
@@ -416,10 +408,18 @@ export default function MapComponent() {
         });
     };
 
+    function getMarkerIcon(status: string) {
+        const normalizedStatus = typeof status === 'string' ? status : '';
+        if (normalizedStatus === 'Alarm') return '/alarm.svg';
+        if (normalizedStatus.includes('Fault')) return '/fault.svg';
+        if (normalizedStatus === 'Offline') return '/offline.svg';
+        return '/default.svg';
+    }
+
     /***************content in popup************/
-    function getContent(status: string, laneName: string) {
-        dispatch(setCurrentLane(laneName));
-        const statusKey = status.toLowerCase().replace(/[ -]/g, '');
+    function getContent(status: string) {
+        const normalizedStatus = typeof status === 'string' && status ? status : 'None';
+        const statusKey = normalizedStatus.toLowerCase().replace(/[ -]/g, '');
 
         return (
             `<div id='popup-data-layer' class='point-popup'><hr/>

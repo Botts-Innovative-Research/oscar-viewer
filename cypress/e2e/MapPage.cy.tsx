@@ -19,6 +19,8 @@ describe('Map View Page (E2E)', () => {
 
         cy.get('.leaflet-site-diagram-pane')
             .should('have.css', 'z-index', '450');
+        cy.get('.leaflet-lane-markers-pane')
+            .should('have.css', 'z-index', '650');
     });
 
     it.skip('selecting point marker displays popup with lanename, status, and button', () => {
