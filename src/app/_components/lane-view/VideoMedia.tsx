@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useState} from "react";
+import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
@@ -18,6 +18,11 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
     const [videoStreams, setVideoStreams] = useState<typeof ControlStream[]>([]);
     const [currentPage, setCurrentPage] = useState(0);
     const [laneEntry, setLaneEntry] = useState<LaneMapEntry | null>(null);
+    const restartStreamRef = useRef<(() => void) | null>(null);
+
+    const handleManifestNotFound = useCallback(() => {
+        restartStreamRef.current?.();
+    }, []);
 
     useEffect(() => {
         if (!laneMapReady || !currentLane) {
@@ -48,6 +53,10 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
             return;
 
         let cancelled = false;
+        let startInFlight = false;
+        let retryTimer: ReturnType<typeof setTimeout> | null = null;
+        let startAttempts = 0;
+        const maxStartAttempts = 30;
         const streamId = currentStream.properties.id;
         const node = laneEntry.parentNode;
 
@@ -59,7 +68,21 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
             }
         };
 
+        const scheduleStart = (delayMs: number) => {
+            if (cancelled || retryTimer || startAttempts >= maxStartAttempts)
+                return;
+            retryTimer = setTimeout(() => {
+                retryTimer = null;
+                void startStream();
+            }, delayMs);
+        };
+
         const startStream = async () => {
+            if (cancelled || startInFlight)
+                return;
+
+            startInFlight = true;
+            startAttempts++;
             try {
                 const response = await sendCommand(
                     node,
@@ -69,6 +92,7 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
 
                 if (!response.ok) {
                     console.error(`Failed to start video stream ${streamId}`);
+                    scheduleStart(Math.min(1000 * startAttempts, 5000));
                     return;
                 }
 
@@ -82,19 +106,34 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
                     return;
                 }
 
-                if (streamPath)
+                if (streamPath) {
+                    startAttempts = 0;
                     setVideoSource(streamPath);
+                } else {
+                    scheduleStart(Math.min(1000 * startAttempts, 5000));
+                }
             } catch (error) {
-                if (!cancelled)
+                if (!cancelled) {
                     console.error(`Failed to start video stream ${streamId}`, error);
+                    scheduleStart(Math.min(1000 * startAttempts, 5000));
+                }
+            } finally {
+                startInFlight = false;
             }
         };
+
+        const restartStream = () => scheduleStart(0);
+        restartStreamRef.current = restartStream;
 
         setVideoSource(null);
         void startStream();
 
         return () => {
             cancelled = true;
+            if (retryTimer)
+                clearTimeout(retryTimer);
+            if (restartStreamRef.current === restartStream)
+                restartStreamRef.current = null;
             void stopStream();
         };
     }, [currentPage, laneEntry, laneMapReady, videoStreams]);
@@ -146,6 +185,7 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
                     <HLSVideoComponent
                         videoSource={videoSource}
                         selectedNode={laneEntry.parentNode}
+                        onManifestNotFound={handleManifestNotFound}
                     />
                 )}
             </Stack>
