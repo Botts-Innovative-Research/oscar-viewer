@@ -4,6 +4,25 @@ describe('Map View Page (E2E)', () => {
         cy.visit('/map');
     });
 
+    it('uses OSM as the default base map and reserves a top raster pane for site diagrams', () => {
+        cy.contains('.leaflet-control-layers-base label', 'OSM', {timeout: 20000})
+            .find('input.leaflet-control-layers-selector')
+            .should('be.checked');
+
+        cy.get('.leaflet-tile-pane img.leaflet-tile', {timeout: 20000})
+            .should(($tiles) => {
+                const loadedOsmTile = [...$tiles].some((tile: HTMLImageElement) =>
+                    /^https:\/\/tile\.openstreetmap\.org\//.test(tile.src) &&
+                    tile.complete && tile.naturalWidth > 0);
+                expect(loadedOsmTile, 'at least one rendered OSM tile').to.equal(true);
+            });
+
+        cy.get('.leaflet-site-diagram-pane')
+            .should('have.css', 'z-index', '450');
+        cy.get('.leaflet-lane-markers-pane')
+            .should('have.css', 'z-index', '650');
+    });
+
     it.skip('selecting point marker displays popup with lanename, status, and button', () => {
         //todo
         cy.get('[id="mapcontainer"]')

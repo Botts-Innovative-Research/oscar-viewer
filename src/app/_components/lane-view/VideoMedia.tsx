@@ -1,31 +1,50 @@
-import React, {useContext, useEffect, useState} from "react";
+import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {generateHLSVideoCommandJSON, sendCommand} from "@/lib/data/oscar/OSCARCommands";
-import {isHLSVideoControlStream} from "@/lib/data/oscar/Utilities";
-import {LiveVideoError} from "@/lib/data/Errors";
-import {Box, Grid, Paper, Stack} from "@mui/material";
-import ChartLane from "@/app/_components/lane-view/ChartLane";
+import {Box, Stack} from "@mui/material";
 import IconButton from "@mui/material/IconButton";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import HLSVideoComponent from "@/app/_components/lane-view/HLSVideoComponent";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
+import {getUniqueVideoControlStreams} from "@/app/_components/lane-view/VideoStreamUtils";
 
 
 export default function VideoMedia({ currentLane}: { currentLane: string}) {
-    const laneMapRef = useContext(DataSourceContext).laneMapRef;
+    const {laneMapRef, laneMapReady} = useContext(DataSourceContext);
 
     const [videoSource, setVideoSource] = useState(null);
     const [videoStreams, setVideoStreams] = useState<typeof ControlStream[]>([]);
     const [currentPage, setCurrentPage] = useState(0);
+    const [laneEntry, setLaneEntry] = useState<LaneMapEntry | null>(null);
+    const restartStreamRef = useRef<(() => void) | null>(null);
 
-    useEffect(() => {
-        fetchVideoControlStreams()
+    const handleManifestNotFound = useCallback(() => {
+        restartStreamRef.current?.();
     }, []);
 
     useEffect(() => {
-        if (videoStreams.length === 0)
+        if (!laneMapReady || !currentLane) {
+            setLaneEntry(null);
+            setVideoStreams([]);
+            setVideoSource(null);
+            return;
+        }
+
+        const resolvedLane = laneMapRef.current.get(currentLane);
+        const resolvedStreams = getUniqueVideoControlStreams(resolvedLane);
+        setLaneEntry(resolvedLane ?? null);
+        setCurrentPage(0);
+        setVideoSource(null);
+        setVideoStreams(resolvedStreams);
+
+        if (resolvedStreams.length === 0)
+            console.error(`No video control stream is available for lane ${currentLane}`);
+    }, [currentLane, laneMapReady, laneMapRef]);
+
+    useEffect(() => {
+        if (!laneMapReady || !laneEntry || videoStreams.length === 0)
             return;
 
         const currentStream = videoStreams[currentPage];
@@ -33,62 +52,91 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
         if (!currentStream)
             return;
 
-        const startStream = async () => {
-            const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+        let cancelled = false;
+        let startInFlight = false;
+        let retryTimer: ReturnType<typeof setTimeout> | null = null;
+        let startAttempts = 0;
+        const maxStartAttempts = 30;
+        const streamId = currentStream.properties.id;
+        const node = laneEntry.parentNode;
 
-            const response = await sendCommand(currLaneEntry.parentNode, currentStream.properties.id, generateHLSVideoCommandJSON(true));
-
-            if (!response.ok) {
-                console.error("Failed to start stream");
-                return;
+        const stopStream = async () => {
+            try {
+                await sendCommand(node, streamId, generateHLSVideoCommandJSON(false));
+            } catch (error) {
+                console.error(`Failed to stop video stream ${streamId}`, error);
             }
+        };
 
-            const responseJson = await response.json();
+        const scheduleStart = (delayMs: number) => {
+            if (cancelled || retryTimer || startAttempts >= maxStartAttempts)
+                return;
+            retryTimer = setTimeout(() => {
+                retryTimer = null;
+                void startStream();
+            }, delayMs);
+        };
 
-            const streamPath = responseJson?.results?.[0]?.data?.streamPath;
-
-            if (streamPath)
-                setVideoSource(streamPath);
-        }
-
-        const stopPreviousStream = async () => {
-            const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-
-            const prevStream = videoStreams[currentPage - 1];
-            if (!prevStream)
+        const startStream = async () => {
+            if (cancelled || startInFlight)
                 return;
 
-            await sendCommand(currLaneEntry.parentNode, prevStream.properties.id, generateHLSVideoCommandJSON(false));
-        }
+            startInFlight = true;
+            startAttempts++;
+            try {
+                const response = await sendCommand(
+                    node,
+                    streamId,
+                    generateHLSVideoCommandJSON(true),
+                );
 
-        stopPreviousStream().then(startStream);
+                if (!response.ok) {
+                    console.error(`Failed to start video stream ${streamId}`);
+                    scheduleStart(Math.min(1000 * startAttempts, 5000));
+                    return;
+                }
+
+                const responseJson = await response.json();
+                const streamPath = responseJson?.results?.[0]?.data?.streamPath;
+
+                // A lane/page change may finish while the command is in flight.
+                // Stop the now-stale server stream instead of attaching it.
+                if (cancelled) {
+                    await stopStream();
+                    return;
+                }
+
+                if (streamPath) {
+                    startAttempts = 0;
+                    setVideoSource(streamPath);
+                } else {
+                    scheduleStart(Math.min(1000 * startAttempts, 5000));
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    console.error(`Failed to start video stream ${streamId}`, error);
+                    scheduleStart(Math.min(1000 * startAttempts, 5000));
+                }
+            } finally {
+                startInFlight = false;
+            }
+        };
+
+        const restartStream = () => scheduleStart(0);
+        restartStreamRef.current = restartStream;
+
+        setVideoSource(null);
+        void startStream();
 
         return () => {
-            sendCommand(laneMapRef.current.get(currentLane).parentNode, currentStream.properties.id, generateHLSVideoCommandJSON(false));
-        }
-    }, [currentPage, videoStreams]);
-
-    const fetchVideoControlStreams = async () => {
-        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-
-        let videoControlStreams = currLaneEntry.controlStreams.filter((stream: typeof ControlStream) => isHLSVideoControlStream(stream));
-
-        if (!videoControlStreams || videoControlStreams.length == 0){
-            console.error("no video control stream");
-            throw new LiveVideoError("No video control stream available.");
-        }
-
-        let uniqueVideoControlStreams = videoControlStreams.reduce((acc: typeof ControlStream[], stream: typeof ControlStream) => {
-            const id = stream.properties?.id;
-            if (!id) return acc;
-            if (!acc.find(s => s.properties.id === id)) {
-                acc.push(stream);
-            }
-            return acc;
-        }, []);
-
-        setVideoStreams(uniqueVideoControlStreams)
-    }
+            cancelled = true;
+            if (retryTimer)
+                clearTimeout(retryTimer);
+            if (restartStreamRef.current === restartStream)
+                restartStreamRef.current = null;
+            void stopStream();
+        };
+    }, [currentPage, laneEntry, laneMapReady, videoStreams]);
 
     const handleNextPage = () =>{
         if (currentPage < videoStreams.length - 1) {
@@ -133,10 +181,11 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
                     overflow: "hidden",
                 }}
             >
-                {videoSource && laneMapRef.current?.get(currentLane)?.parentNode && (
+                {videoSource && laneEntry?.parentNode && (
                     <HLSVideoComponent
                         videoSource={videoSource}
-                        selectedNode={laneMapRef.current.get(currentLane).parentNode}
+                        selectedNode={laneEntry.parentNode}
+                        onManifestNotFound={handleManifestNotFound}
                     />
                 )}
             </Stack>

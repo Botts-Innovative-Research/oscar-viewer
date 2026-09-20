@@ -47,8 +47,19 @@ function hasDefinition(definitions: string[], expected: string): boolean {
 
 export function isLocationDataStream(datastream: typeof DataStream): boolean {
     const definitions = getObservedDefinitions(datastream);
+    const outputName = datastream?.properties?.outputName;
+    const streamName = datastream?.properties?.name;
+    const normalizedNames = [outputName, streamName]
+        .filter((name): name is string => typeof name === "string")
+        .map((name) => name.replace(/[\s_-]/g, "").toLowerCase());
+
     return includesDefinition(definitions, SENSOR_LOCATION_DEF)
-        || includesDefinition(definitions, LOCATION_VECTOR_DEF);
+        || includesDefinition(definitions, LOCATION_VECTOR_DEF)
+        // AbstractSensorModule's fixed-position output is guaranteed to use
+        // the output name "sensorLocation". Some ConSys API responses omit
+        // the nested vector definition from observedProperties, so retaining
+        // this canonical-name fallback keeps fixed lane positions discoverable.
+        || normalizedNames.includes("sensorlocation");
 }
 
 export function isVideoDataStream(datastream: typeof DataStream): boolean {

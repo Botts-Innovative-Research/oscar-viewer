@@ -5,7 +5,15 @@ import {INode} from "@/lib/data/osh/Node";
 import Hls, {ErrorTypes} from "hls.js";
 import {LiveVideoError} from "@/lib/data/Errors";
 
-export default function HLSVideoComponent({videoSource, selectedNode}: {videoSource: string, selectedNode: INode}) {
+export default function HLSVideoComponent({
+    videoSource,
+    selectedNode,
+    onManifestNotFound,
+}: {
+    videoSource: string,
+    selectedNode: INode,
+    onManifestNotFound?: () => void,
+}) {
 
     const videoRef = useRef(null);
     const hlsRef: MutableRefObject<Hls> = useRef(null);
@@ -42,8 +50,7 @@ export default function HLSVideoComponent({videoSource, selectedNode}: {videoSou
                     console.warn("Failed to load manifest, attempting retry #" + currentRetry);
                     if (data.type == ErrorTypes.NETWORK_ERROR) {
                         if (data.error.message.includes("(status 404)")) {
-                            // TODO implement here
-                            console.log("Need to send startStream command again");
+                            onManifestNotFound?.();
                         }
                         if (++currentRetry < MAX_RETRIES) {
                             setTimeout(() => {
@@ -79,7 +86,7 @@ export default function HLSVideoComponent({videoSource, selectedNode}: {videoSou
             }
         }
 
-    }, [videoSource]);
+    }, [videoSource, selectedNode, onManifestNotFound]);
 
     return (
         <video
