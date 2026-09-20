@@ -14,6 +14,7 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {generateManualTamperCommandJSON, sendCommand} from "@/lib/data/oscar/OSCARCommands";
 import {isTamperControlStream} from "@/lib/data/oscar/Utilities";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
+import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
 
 
 export interface LaneStatusProps {
@@ -34,6 +35,7 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
 
     let timersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
     const liveTamperLanesRef = useRef<Set<string>>(new Set());
+    const subscribedCollectionsRef = useRef<WeakSet<LaneDSColl>>(new WeakSet());
     let alarmStates = ['Alarm', 'Scan', 'Background']
 
     const dispatch = useAppDispatch();
@@ -43,7 +45,15 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
 
     useEffect(() => {
         let sortedLanes = [...props.initialLanes].sort((a,b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
-        setStatusList(sortedLanes);
+        setStatusList((current) => sortedLanes.map((lane) => {
+            const existing = current.find((item) => item.name === lane.name);
+            return existing ? {
+                ...lane,
+                isOnline: existing.isOnline,
+                isTamper: existing.isTamper,
+                isFault: existing.isFault,
+            } : lane;
+        }));
 
         return () => {
             if (timersRef.current) {
@@ -56,8 +66,15 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
         };
     }, [props.initialLanes]);
 
-    const addSubscriptionCallbacks = useCallback((): (() => void) => {
+    const addSubscriptionCallbacks = useCallback((): Set<string> => {
+        const newlySubscribedLanes = new Set<string>();
         for (let [laneName, laneDSColl] of props.dataSourcesByLane.entries()) {
+            if (subscribedCollectionsRef.current.has(laneDSColl))
+                continue;
+
+            subscribedCollectionsRef.current.add(laneDSColl);
+            newlySubscribedLanes.add(laneName);
+            liveTamperLanesRef.current.delete(laneName);
 
             laneDSColl.addSubscribeHandlerToALLDSMatchingName('connectionRT', (message: any) => {
                 const state = message.values[0].data.isConnected;
@@ -108,18 +125,16 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
             laneDSColl.addConnectToALLDSMatchingName('gammaRT');
         }
 
-        // These datasource objects belong to the application-level lane map and
-        // are reused by lane view, map, and event components. Disconnecting them
-        // during a route transition races the next view's connect and removes
-        // that view's shared MQTT subscriptions. They remain live for the life
-        // of the node and are explicitly reset when the lane map is rebuilt.
-        return () => {};
+        return newlySubscribedLanes;
 
     }, [props.dataSourcesByLane]);
 
-    async function fetchLatestTamperStatuses() {
+    async function fetchLatestTamperStatuses(laneNames: ReadonlySet<string>) {
         const entries = Array.from(props.dataSourcesByLane.entries()) as [string, any][];
         const requests = entries.map(async ([laneName, laneDSColl]) => {
+            if (!laneNames.has(laneName))
+                return;
+
             const tamperDatasource = laneDSColl.tamperRT[0];
             if (!tamperDatasource)
                 return;
@@ -150,10 +165,13 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
     }
 
     useEffect(() => {
-        liveTamperLanesRef.current.clear();
-        const cleanup = addSubscriptionCallbacks();
-        void fetchLatestTamperStatuses();
-        return cleanup;
+        if (props.dataSourcesByLane.size === 0) {
+            liveTamperLanesRef.current.clear();
+            return;
+        }
+
+        const newlySubscribedLanes = addSubscriptionCallbacks();
+        void fetchLatestTamperStatuses(newlySubscribedLanes);
     }, [addSubscriptionCallbacks]);
 
 

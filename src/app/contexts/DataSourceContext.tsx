@@ -3,17 +3,19 @@
 import React, {createContext, MutableRefObject, ReactNode, useCallback, useEffect, useRef, useState} from "react";
 import {useSelector} from "react-redux";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {addNode, changeConfigNode, setNodes} from "@/lib/state/OSHSlice";
+import {addNode, changeConfigNode} from "@/lib/state/OSHSlice";
 import {setLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {AppDispatch, RootState} from "@/lib/state/Store";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {INode, Node, NodeOptions} from "@/lib/data/osh/Node";
+import {Node, NodeOptions} from "@/lib/data/osh/Node";
+import {discoverLanesIncrementally} from "@/lib/data/oscar/LaneDiscovery";
 
 
 
 interface IDataSourceContext {
     laneMapRef: MutableRefObject<Map<string, LaneMapEntry>> | undefined;
     laneMapReady: boolean;
+    readyLaneNames: ReadonlySet<string>;
 }
 
 // create context with a default value of undefined (This will differ if there is a file import at page load)
@@ -29,6 +31,8 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     const nodes = useSelector((state: RootState) => state.oshSlice.nodes);
     const laneMapRef = useRef<Map<string, LaneMapEntry>>(new Map<string, LaneMapEntry>());
     const [laneMapReady, setLaneMapReady] = useState(false);
+    const [readyLaneNames, setReadyLaneNames] = useState<Set<string>>(new Set());
+    const discoveryGenerationRef = useRef(0);
 
 
     useEffect(() => {
@@ -51,59 +55,40 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
 
 
     const testSysFetch = async () => {
+        const generation = ++discoveryGenerationRef.current;
         setLaneMapReady(false);
+        setReadyLaneNames(new Set());
+        laneMapRef.current = new Map();
+        dispatch(setLaneMap(new Map()));
 
-        let allLanes: Map<string, LaneMapEntry> = new Map();
+        const result = await discoverLanesIncrementally(nodes, (laneMap) => {
+            if (generation !== discoveryGenerationRef.current)
+                return;
 
-        try {
-            await Promise.all(nodes.map(async (node: INode) => {
-                let nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
-                if(!nodeLaneMap) return;
+            laneMapRef.current = laneMap;
+            setReadyLaneNames(new Set(laneMap.keys()));
+            dispatch(setLaneMap(laneMap));
+        });
 
-                await node.fetchDataStreams(nodeLaneMap);
-                await node.fetchLaneControlStreams(nodeLaneMap);
+        if (generation !== discoveryGenerationRef.current)
+            return;
 
+        result.failures.forEach(({node, reason}) =>
+            console.error(`Failed to initialize lane data for ${node.name}:`, reason));
 
-                for (const [key, mapEntry] of nodeLaneMap.entries()) {
-                    try {
-                        mapEntry.addDefaultConSysApis();
-                    } catch (e) {
-                        console.error(`[ERROR] addDefaultConSysApis failed for ${key}:`, e);
-                    }
-                }
-
-                nodeLaneMap.forEach((value: LaneMapEntry, key: string) => {
-                    if (allLanes.has(key)) {
-                        const prefixedKey = `${node.name} - ${key}`;
-                        value.setLaneName(prefixedKey);
-                        allLanes.set(prefixedKey, value);
-
-                        const existing = allLanes.get(key);
-                        if (existing) {
-                            const existingPrefixedKey = `${existing.parentNode.name} - ${key}`;
-                            existing.setLaneName(existingPrefixedKey);
-                            allLanes.set(existingPrefixedKey, existing);
-                            allLanes.delete(key);
-                        }
-                    } else {
-                        allLanes.set(key, value);
-                    }
-                });
-            }));
-
-            laneMapRef.current = allLanes;
-            dispatch(setLaneMap(allLanes));
-        } catch (error) {
-            console.error("Failed to initialize lane data:", error);
-        } finally {
-            setLaneMapReady(true);
-        }
+        // Publish the final snapshot even when every node returned no lanes.
+        laneMapRef.current = result.laneMap;
+        setReadyLaneNames(new Set(result.laneMap.keys()));
+        dispatch(setLaneMap(result.laneMap));
+        setLaneMapReady(true);
     }
 
     useEffect(() => {
         const init = async () => {
             if (nodes.length === 0) {
+                discoveryGenerationRef.current++;
                 setLaneMapReady(false);
+                setReadyLaneNames(new Set());
                 return;
             }
             await InitializeApplication();
@@ -113,7 +98,7 @@ export default function DataSourceProvider({children}: { children: ReactNode }) 
     }, [nodes]);
 
     return (
-        <DataSourceContext.Provider value={{laneMapRef, laneMapReady}}>
+        <DataSourceContext.Provider value={{laneMapRef, laneMapReady, readyLaneNames}}>
             {children}
         </DataSourceContext.Provider>
     );

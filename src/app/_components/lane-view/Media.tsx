@@ -8,18 +8,20 @@ import VideoMedia from "./VideoMedia";
 
 export default function Media({datasources, currentLane}: {datasources: any, currentLane: string}) {
     const [chartReady, setChartReady] = useState<boolean>(false);
+    const neutronDataSource = datasources?.neutron;
+    const gammaDataSource = datasources?.gamma;
+    const thresholdDataSource = datasources?.threshold;
 
     useEffect(() => {
-        if (!datasources)
+        const sources = [neutronDataSource, gammaDataSource, thresholdDataSource]
+            .filter(Boolean);
+        if (sources.length === 0)
             return;
 
-        async function connectDataSources(){
-            await datasources?.neutron?.connect();
-            await datasources?.gamma?.connect();
-            await datasources?.threshold?.connect();
-        }
-        connectDataSources();
-    }, [datasources, currentLane]);
+        // Each feed is independent. Start them together so a slow or failed
+        // RPM cannot delay the other live charts.
+        void Promise.allSettled(sources.map((source) => source.connect()));
+    }, [currentLane, gammaDataSource, neutronDataSource, thresholdDataSource]);
 
     return (
         <Paper variant='outlined' sx={{ width: "100%" }}>
