@@ -34,3 +34,6 @@ jobs:
 
       - name: Test map configuration
         run: npm run test:map
+
+      - name: Test refreshed video discovery
+        run: npm run test:video

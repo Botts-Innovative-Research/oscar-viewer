@@ -31,7 +31,7 @@ export default function LaneViewPage() {
 
     const savedToggleState = useSelector(selectLastToggleState)
     const laneMap = useSelector((state: RootState) => selectLaneMap(state))
-    const {laneMapRef} = useContext(DataSourceContext);
+    const {laneMapRef, laneMapReady} = useContext(DataSourceContext);
 
     const currentLane = useSelector((state: RootState) => state.laneView.currentLane);
 
@@ -56,6 +56,9 @@ export default function LaneViewPage() {
     }
 
     const collectDataSources = useCallback(async() => {
+
+        if (!laneMapReady || !currentLane)
+            return;
 
         let laneDsCollection = new LaneDSColl();
 
@@ -97,13 +100,12 @@ export default function LaneViewPage() {
 
         setDataSourcesByLane(laneDsCollection);
 
-    }, [laneMapRef, laneMapRef.current.size]);
+    }, [currentLane, laneMapReady, laneMapRef]);
 
     useEffect(() => {
-        if(laneMapRef?.current && currentLane){
-            collectDataSources();
-        }
-    }, [laneMapRef, currentLane, laneMapRef.current.size]);
+        if (laneMapReady && currentLane)
+            void collectDataSources();
+    }, [collectDataSources, currentLane, laneMapReady]);
 
     return (
         <Grid container spacing={2} width={"100%"}>
