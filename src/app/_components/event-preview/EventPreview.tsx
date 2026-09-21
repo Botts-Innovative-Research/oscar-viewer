@@ -61,7 +61,9 @@ export function EventPreview() {
 
     const prevEventIdRef = useRef<string | null>(null);
 
-    const {laneMapRef, laneMapReady} = useContext(DataSourceContext);
+    const {laneMapRef, laneMapReady, readyLaneNames} = useContext(DataSourceContext);
+    const laneReady = Boolean(
+        eventPreview.eventData?.laneId && readyLaneNames.has(eventPreview.eventData.laneId));
     const laneEntry = eventPreview.eventData?.laneId
         ? laneMapRef.current.get(eventPreview.eventData.laneId)
         : undefined;
@@ -261,12 +263,12 @@ export function EventPreview() {
             prevEventIdRef.current = eventPreview.eventData?.occupancyCount;
         }
 
-        if (eventPreview.eventData?.laneId && laneMapReady && laneEntry && !datasourcesReady) {
+        if (eventPreview.eventData?.laneId && laneReady && laneEntry && !datasourcesReady) {
             callCollectDataSources();
             dispatch(setEventData(eventPreview.eventData));
         }
 
-    }, [eventPreview.eventData?.occupancyCount, laneEntry, laneMapReady, datasourcesReady]);
+    }, [eventPreview.eventData?.occupancyCount, laneEntry, laneReady, datasourcesReady]);
 
     const collectDataSources = useCallback(async() => {
         if (!eventPreview.eventData?.laneId || !laneEntry) return;
@@ -314,7 +316,7 @@ export function EventPreview() {
         return <Alert severity="warning">{t('eventDetailsUnavailable')}</Alert>;
     }
 
-    if (!laneMapReady) {
+    if (!laneReady && !laneMapReady) {
         return <SuspenseLoad />;
     }
 

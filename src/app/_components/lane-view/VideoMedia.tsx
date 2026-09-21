@@ -12,7 +12,8 @@ import {getUniqueVideoControlStreams} from "@/app/_components/lane-view/VideoStr
 
 
 export default function VideoMedia({ currentLane}: { currentLane: string}) {
-    const {laneMapRef, laneMapReady} = useContext(DataSourceContext);
+    const {laneMapRef, readyLaneNames} = useContext(DataSourceContext);
+    const laneReady = Boolean(currentLane && readyLaneNames.has(currentLane));
 
     const [videoSource, setVideoSource] = useState(null);
     const [videoStreams, setVideoStreams] = useState<typeof ControlStream[]>([]);
@@ -25,7 +26,7 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
     }, []);
 
     useEffect(() => {
-        if (!laneMapReady || !currentLane) {
+        if (!laneReady || !currentLane) {
             setLaneEntry(null);
             setVideoStreams([]);
             setVideoSource(null);
@@ -41,10 +42,10 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
 
         if (resolvedStreams.length === 0)
             console.error(`No video control stream is available for lane ${currentLane}`);
-    }, [currentLane, laneMapReady, laneMapRef]);
+    }, [currentLane, laneMapRef, laneReady]);
 
     useEffect(() => {
-        if (!laneMapReady || !laneEntry || videoStreams.length === 0)
+        if (!laneEntry || videoStreams.length === 0)
             return;
 
         const currentStream = videoStreams[currentPage];
@@ -136,7 +137,7 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
                 restartStreamRef.current = null;
             void stopStream();
         };
-    }, [currentPage, laneEntry, laneMapReady, videoStreams]);
+    }, [currentPage, laneEntry, videoStreams]);
 
     const handleNextPage = () =>{
         if (currentPage < videoStreams.length - 1) {

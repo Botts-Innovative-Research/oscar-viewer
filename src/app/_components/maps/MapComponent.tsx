@@ -53,7 +53,7 @@ export default function MapComponent() {
     const siteDiagramLayersRef = useRef<Map<string, L.ImageOverlay>>(new Map());
     const laneMarkerLayersRef = useRef<Map<string, L.Marker>>(new Map());
     const previousLanguageRef = useRef(language);
-    const {laneMapRef, laneMapReady} = useContext(DataSourceContext);
+    const {laneMapReady} = useContext(DataSourceContext);
     const dispatch = useAppDispatch();
 
     const nodes = useSelector((state: RootState) => selectNodes(state));
@@ -73,7 +73,7 @@ export default function MapComponent() {
             systemLocation: LaneMapLocation | null;
         }> = [];
 
-        for (const [laneName, lane] of laneMapRef.current.entries()) {
+        for (const [laneName, lane] of laneMap.entries()) {
             const laneDSColl = new LaneDSColl();
             laneDSMap.set(laneName, laneDSColl);
 
@@ -146,7 +146,7 @@ export default function MapComponent() {
         return () => {
             cancelled = true;
         };
-    }, [laneMapReady, laneMap]);
+    }, [laneMap, laneMapReady]);
 
 
     const addSubscriptionCallbacks = useCallback(() => {
@@ -422,7 +422,7 @@ export default function MapComponent() {
             if (fitFrameId !== null)
                 window.cancelAnimationFrame(fitFrameId);
         };
-    }, [isInit, laneMapReady, nodes, language]);
+    }, [isInit, laneMap, laneMapReady, nodes, language]);
 
     const updateLocationList = (laneName: string, newStatus: string) => {
         setLocationList((prevState) => {

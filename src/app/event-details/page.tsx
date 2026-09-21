@@ -21,7 +21,8 @@ export default function EventDetailsPage() {
 
     const eventPreview = useSelector(selectEventPreview);
     const eventData = eventPreview.eventData;
-    const {laneMapRef, laneMapReady} = useContext(DataSourceContext);
+    const {laneMapRef, laneMapReady, readyLaneNames} = useContext(DataSourceContext);
+    const laneReady = Boolean(eventData?.laneId && readyLaneNames.has(eventData.laneId));
     const laneEntry = eventData?.laneId ? laneMapRef.current?.get(eventData.laneId) : undefined;
     const [datasourcesReady, setDatasourcesReady] = useState<boolean>(false);
     const [dataSourceError, setDataSourceError] = useState(false);
@@ -66,10 +67,10 @@ export default function EventDetailsPage() {
             await collectDataSources();
         }
 
-        if(laneMapReady && laneEntry && eventData) {
+        if(laneReady && laneEntry && eventData) {
             callCollectDatasources();
         }
-    }, [collectDataSources, eventData, laneEntry, laneMapReady]);
+    }, [collectDataSources, eventData, laneEntry, laneReady]);
 
 
     useEffect(() => {
@@ -123,7 +124,7 @@ export default function EventDetailsPage() {
                     <Grid item xs={12}>
                         <Alert severity="warning">{t('eventDetailsUnavailable')}</Alert>
                     </Grid>
-                ) : !laneMapReady ? (
+                ) : !laneReady && !laneMapReady ? (
                     <Grid item xs={12}><SuspenseLoad /></Grid>
                 ) : !laneEntry ? (
                     <Grid item xs={12}>

@@ -3,12 +3,12 @@
 import {Grid, Paper} from "@mui/material";
 import LaneStatus, { LaneStatusProps } from "../_components/dashboard/LaneStatus";
 
-import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
+import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
-import {selectLaneMap, setLaneMap} from "@/lib/state/OSCARLaneSlice";
+import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import EventTable from "@/app/_components/event-table/EventTable";
-import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
+import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {
     isConnectionDataStream,
     isGammaDataStream,
@@ -16,8 +16,6 @@ import {
     isTamperDataStream,
     isThresholdDataStream,
 } from "@/lib/data/oscar/Utilities";
-import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import {useAppDispatch} from "@/lib/state/Hooks";
 import dynamic from "next/dynamic";
 import { useBreakpoint } from "../providers";
 import SuspenseLoad from "@/app/_components/SuspenseLoad";
@@ -26,55 +24,54 @@ export default function DashboardPage() {
     const { isTablet, isDesktop } = useBreakpoint();
 
     const laneMap = useSelector((state: RootState) => selectLaneMap(state))
-
-    const {laneMapRef} = useContext(DataSourceContext);
     const [dataSourcesByLane, setDataSourcesByLane] = useState<Map<string, LaneDSColl>>(new Map<string, LaneDSColl>());
-    const dispatch = useAppDispatch();
     const [statusList, setStatusList] = useState<LaneStatusProps[]>([]);
-    const idVal = useRef(1);
+    const laneCollectionsRef = useRef<Map<string, {lane: LaneMapEntry, collection: LaneDSColl}>>(new Map());
 
-    const datasourceSetup = useCallback(async () => {
-        // @ts-ignore
-        let laneDSMap = new Map<string, LaneDSColl>();
+    const datasourceSetup = useCallback(() => {
+        const laneDSMap = new Map<string, LaneDSColl>();
+        const nextLaneCollections = new Map<string, {lane: LaneMapEntry, collection: LaneDSColl}>();
+        const newStatusList: LaneStatusProps[] = [];
+        let id = 1;
 
-        let newStatusList: LaneStatusProps[] = [];
+        for (const [laneid, lane] of laneMap.entries()) {
+            const cached = laneCollectionsRef.current.get(laneid);
+            const laneDSColl = cached?.lane === lane ? cached.collection : new LaneDSColl();
 
-        for (let [laneid, lane] of laneMapRef.current.entries()) {
+            laneDSMap.set(laneid, laneDSColl);
+            nextLaneCollections.set(laneid, {lane, collection: laneDSColl});
 
-            laneDSMap.set(laneid, new LaneDSColl());
+            if (!cached || cached.lane !== lane) {
+                lane.datastreams.forEach((ds, idx) => {
+                    const rtDS = lane.datasourcesRealtime?.[idx];
 
-            lane.datastreams.forEach((ds, idx) => {
+                    if (!rtDS) {
+                        console.warn(`Missing RT data for datastream in lane ${laneid} at index ${idx}`);
+                        return;
+                    }
 
-                let rtDS = lane.datasourcesRealtime?.[idx];
+                    rtDS.properties.startTime = new Date().toISOString();
+                    rtDS.properties.endTime = "2055-01-01T08:13:25.845Z";
 
-                if (!rtDS) {
-                    console.warn(`Missing RT data for datastream in lane ${laneid} at index ${idx}`);
-                    return;
-                }
+                    if(isGammaDataStream(ds))
+                        laneDSColl.addDS('gammaRT', rtDS);
 
-                rtDS.properties.startTime = new Date().toISOString();
-                rtDS.properties.endTime = "2055-01-01T08:13:25.845Z";
+                    if(isNeutronDataStream(ds))
+                        laneDSColl.addDS('neutronRT', rtDS);
 
-                let laneDSColl = laneDSMap.get(laneid);
+                    if(isTamperDataStream(ds))
+                        laneDSColl.addDS('tamperRT', rtDS);
 
-                if(isGammaDataStream(ds))
-                    laneDSColl.addDS('gammaRT', rtDS);
+                    if(isConnectionDataStream(ds))
+                        laneDSColl.addDS('connectionRT', rtDS);
 
-                if(isNeutronDataStream(ds))
-                    laneDSColl.addDS('neutronRT', rtDS);
-
-                if(isTamperDataStream(ds))
-                    laneDSColl.addDS('tamperRT', rtDS);
-
-                if(isConnectionDataStream(ds))
-                    laneDSColl.addDS('connectionRT', rtDS);
-
-                if(isThresholdDataStream(ds))
-                    laneDSColl.addDS('gammaTrshldRT', rtDS);
-            });
+                    if(isThresholdDataStream(ds))
+                        laneDSColl.addDS('gammaTrshldRT', rtDS);
+                });
+            }
 
             newStatusList.push({
-                id: idVal.current++,
+                id: id++,
                 name: laneid,
                 parentNode: lane.parentNode.name,
                 isOnline: false,
@@ -83,19 +80,16 @@ export default function DashboardPage() {
             });
 
 
-            const newMap = new Map(laneDSMap)
-
-            setDataSourcesByLane(newMap);
-            dispatch(setLaneMap(laneMap))
         }
-        setStatusList(prevState => [...newStatusList,
-            ...prevState.filter(item => !newStatusList.some(newItem => newItem.name === item.name))]);
+        laneCollectionsRef.current = nextLaneCollections;
+        setDataSourcesByLane(laneDSMap);
+        setStatusList(newStatusList);
 
-    }, [laneMapRef, laneMapRef.current.size]);
+    }, [laneMap]);
 
     useEffect(() => {
         datasourceSetup();
-    }, [laneMapRef, laneMapRef.current.size]);
+    }, [datasourceSetup]);
 
     const QuickView = useMemo(() => dynamic(
         () => import('@/app/_components/dashboard/QuickView'),

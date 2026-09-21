@@ -31,9 +31,10 @@ export default function LaneViewPage() {
 
     const savedToggleState = useSelector(selectLastToggleState)
     const laneMap = useSelector((state: RootState) => selectLaneMap(state))
-    const {laneMapRef, laneMapReady} = useContext(DataSourceContext);
+    const {laneMapRef, readyLaneNames} = useContext(DataSourceContext);
 
     const currentLane = useSelector((state: RootState) => state.laneView.currentLane);
+    const laneReady = Boolean(currentLane && readyLaneNames.has(currentLane));
 
     const [entry, setEntry] = useState<LaneMapEntry>();
     const [gammaDS, setGammaDS] =  useState<typeof ConSysApi>();
@@ -57,8 +58,15 @@ export default function LaneViewPage() {
 
     const collectDataSources = useCallback(async() => {
 
-        if (!laneMapReady || !currentLane)
+        if (!laneReady || !currentLane) {
+            setEntry(undefined);
+            setGammaDS(undefined);
+            setNeutronDS(undefined);
+            setThresholdDS(undefined);
+            setTamperDS(undefined);
+            setDataSourcesByLane(null);
             return;
+        }
 
         let laneDsCollection = new LaneDSColl();
 
@@ -100,12 +108,11 @@ export default function LaneViewPage() {
 
         setDataSourcesByLane(laneDsCollection);
 
-    }, [currentLane, laneMapReady, laneMapRef]);
+    }, [currentLane, laneMapRef, laneReady]);
 
     useEffect(() => {
-        if (laneMapReady && currentLane)
-            void collectDataSources();
-    }, [collectDataSources, currentLane, laneMapReady]);
+        void collectDataSources();
+    }, [collectDataSources]);
 
     return (
         <Grid container spacing={2} width={"100%"}>
