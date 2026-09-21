@@ -1,47 +1,64 @@
-"use client"
+"use client";
 
-import { LaneMapEntry } from "@/lib/data/oscar/LaneCollection";
-import { useCallback, useEffect, useState, useMemo, useRef } from "react";
-import { Box } from "@mui/material";
-import { useSelector } from "react-redux";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {Alert, Box, Snackbar} from "@mui/material";
+import {useSelector} from "react-redux";
 import {
-    setEventPreview,
-    setSelectedRowId,
-    selectSelectedRowId,
-    setLatestGB
-} from "@/lib/state/EventPreviewSlice";
-import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
-import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
-import { EventTableData } from "@/lib/data/oscar/TableHelpers";
-import {
-    DataGrid, getGridDateOperators, getGridSingleSelectOperators,
+    DataGrid,
+    GRID_CHECKBOX_SELECTION_FIELD,
     GridActionsCellItem,
     GridCellParams,
     gridClasses,
     GridColDef,
     GridRowParams,
-    GridRowSelectionModel
+    GridRowSelectionModel,
 } from "@mui/x-data-grid";
-import CustomToolbar from "@/app/_components/CustomToolbar";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
-import { useAppDispatch } from "@/lib/state/Hooks";
-import {selectAdjudicatedEventId, selectSelectedEvent, setAdjudicatedEventId, setSelectedEvent} from "@/lib/state/EventDataSlice";
-import { useRouter } from "next/dist/client/components/navigation";
-import { getObservations } from "@/app/utils/ChartUtils";
-import { isOccupancyDataStream, isThresholdDataStream } from "@/lib/data/oscar/Utilities";
-import { convertToMap, hashString } from "@/app/utils/Utils";
-import { OCCUPANCY_PILLAR_DEF } from "@/lib/data/Constants";
-import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
-import { selectNodes } from "@/lib/state/OSHSlice";
-import { EventType } from "osh-js/source/core/event/EventType";
-import {INode} from "@/lib/data/osh/Node";
+import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
+import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
 import Observations from "osh-js/source/core/consysapi/observation/Observations";
-import { GridFilterModel } from "@mui/x-data-grid"
+import {EventType} from "osh-js/source/core/event/EventType";
+import {useRouter} from "next/dist/client/components/navigation";
 
-import { useLanguage } from '@/app/contexts/LanguageContext';
+import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import {EventTableData} from "@/lib/data/oscar/TableHelpers";
+import {isOccupancyDataStream, isThresholdDataStream} from "@/lib/data/oscar/Utilities";
+import {convertToMap, hashString} from "@/app/utils/Utils";
+import {OCCUPANCY_PILLAR_DEF} from "@/lib/data/Constants";
+import {getObservations} from "@/app/utils/ChartUtils";
+import {useAppDispatch} from "@/lib/state/Hooks";
+import {
+    selectSelectedRowId,
+    setEventPreview,
+    setLatestGB,
+    setSelectedRowId,
+} from "@/lib/state/EventPreviewSlice";
+import {
+    selectAdjudicatedEventId,
+    setAdjudicatedEventId,
+    setSelectedEvent,
+} from "@/lib/state/EventDataSlice";
+import {useLanguage} from "@/app/contexts/LanguageContext";
 import {NotificationService, NotificationTemplates} from "../notifications/NotificationService";
-import {getDataGridLocaleText, getIntlLocale} from '@/app/utils/LocaleUtils';
-
+import {getDataGridLocaleText, getIntlLocale} from "@/app/utils/LocaleUtils";
+import CustomToolbar from "@/app/_components/CustomToolbar";
+import NestedEventFilterDialog from "@/app/_components/event-table/NestedEventFilterDialog";
+import BulkAdjudicationDialog, {BulkAdjudicationSummary} from "@/app/_components/event-table/BulkAdjudicationDialog";
+import {
+    combineServerFilters,
+    compileEventFilterForLane,
+    countEventFilterRules,
+    createEventFilterGroup,
+    EventFilterGroup,
+    eventMatchesFilter,
+    eventSelectionKey,
+} from "@/lib/data/oscar/EventFilter";
+import {
+    adjudicateEvents,
+    BulkAdjudicationOutcome,
+    BulkAdjudicationValues,
+    runWithConcurrency,
+} from "@/lib/data/oscar/BulkAdjudication";
 
 interface TableProps {
     tableMode: "eventlog" | "alarmtable" | "lanelog";
@@ -54,735 +71,548 @@ interface TableProps {
     setEvents?: unknown;
 }
 
+interface QueryPlan {
+    key: string;
+    node: LaneMapEntry["parentNode"];
+    datastreamIds: string[];
+    filter: string;
+}
+
+const PAGE_SIZE = 15;
+const BULK_FETCH_SIZE = 250;
+
+const deduplicateEvents = (events: EventTableData[]): EventTableData[] => {
+    const result = new Map<string, EventTableData>();
+    events.forEach(event => result.set(eventSelectionKey(event), event));
+    return Array.from(result.values());
+};
 
 export default function EventTable({
-                                       tableMode,
-                                       viewLane = false,
-                                       viewAdjudicated = false,
-                                       laneMap,
-                                       currentLane
-                                   }: TableProps) {
-
-    const nodes = useSelector(selectNodes);
+    tableMode,
+    viewAdjudicated = false,
+    laneMap,
+    currentLane,
+}: TableProps) {
     const selectedRowId = useSelector(selectSelectedRowId);
-    const [loading, setLoading] = useState(false);
-    const pageSize = 15;
-    const [rowCount, setRowCount] = useState(0);
-    const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([selectedRowId]);
-    const [filteredTableData, setFilteredTableData] = useState<EventTableData[]>([]);
-    const [totalCount, setTotalCount] = useState<Map<string, number>>(new Map());
-    const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize });
-    const [filterModel, setFilterModel] = useState<GridFilterModel>({ items: [] })
     const adjudicatedEventId = useSelector(selectAdjudicatedEventId);
-    const selectedEvent = useSelector(selectSelectedEvent);
     const dispatch = useAppDispatch();
     const router = useRouter();
-
-    const { language, t } = useLanguage();
-    const stableLaneMap = useMemo(() => convertToMap(laneMap), [laneMap]);
-    const currentPageRef = useRef(0);
+    const {language, t} = useLanguage();
     const locale = getIntlLocale(language);
 
-    const columns: GridColDef<EventTableData>[] = [
-        {
-            field: 'laneId',
-            headerName: t('laneId'),
-            type: 'string',
-            minWidth: 100,
-            flex: 1,
-            filterable: false,
-            renderCell: (params) => (
-                <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', py: 0.5 }}>
-                    <span style={{ lineHeight: 1.25 }}>{params.row.laneId}</span>
-                    <span style={{ fontSize: '0.8rem', color: 'gray', lineHeight: 1.25 }}>{params.row.parentNode}</span>
-                </Box>
-            )
-        },
-        {
-            field: 'occupancyCount',
-            headerName: t('occupancyId'),
-            type: 'string',
-            minWidth: 125,
-            flex: 1.5,
-            filterable: false
-        },
-        {
-            field: 'startTime',
-            headerName: t('startTime'),
-            valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
-                year: 'numeric',
-                month: 'numeric',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: 'numeric',
-                second: 'numeric'
-            }),
-            minWidth: 200,
-            flex: 2,
-            type: "dateTime",
-            filterOperators: getGridDateOperators(true).filter(
-                (op) => ['after', 'before'].includes(op.value)
-            )
-        },
-        {
-            field: 'endTime',
-            headerName: t('endTime'),
-            valueFormatter: (params) => (new Date(params)).toLocaleString(locale, {
-                year: 'numeric',
-                month: 'numeric',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: 'numeric',
-                second: 'numeric'
-            }),
-            minWidth: 200,
-            flex: 2,
-            type: "dateTime",
-            filterOperators: getGridDateOperators(true).filter(
-                (op) => ['after', 'before'].includes(op.value)
-            )
-        },
-        {
-            field: 'maxGamma',
-            headerName: t('maxGamma'),
-            valueFormatter: (params) => (typeof params === 'number' ? params : 0),
-            minWidth: 150,
-            flex: 1.2,
-            filterable: false
-        },
-        {
-            field: 'maxNeutron',
-            headerName: t('maxNeutron'),
-            valueFormatter: (params) => (typeof params === 'number' ? params : 0),
-            minWidth: 150,
-            flex: 1.2,
-            filterable: false
-        },
-        {
-            field: 'status',
-            headerName: t('status'),
-            minWidth: 125,
-            flex: 1.2,
-            type: 'singleSelect',
-            valueOptions: [
-                {value: 'None', label: t('none')},
-                {value: 'Gamma', label: t('gamma')},
-                {value: 'Neutron', label: t('neutron')},
-                {value: 'Gamma & Neutron', label: t('gammaAndNeutron')},
-            ],
-            filterOperators: getGridSingleSelectOperators().filter(
-                (op) => ['is'].includes(op.value)
-                // (op) => ['is', 'not'].includes(op.value)
-            )
-        },
-        {
-            field: 'adjudicatedIds',
-            headerName: t('adjudicated'),
-            valueFormatter: (params: any) => params.length > 0 ? t('yes') : t('no'),
-            minWidth: 100,
-            flex: 1,
-            filterable: viewAdjudicated,
-            type: 'singleSelect',
-            valueOptions: [
-                {value: 'Yes', label: t('yes')},
-                {value: 'No', label: t('no')},
-            ],
-            filterOperators: getGridSingleSelectOperators().filter(
-                (op) => ['is', 'equal'].includes(op.value)
-            )
-        },
-        {
-            field: 'Menu',
-            headerName: '',
-            type: 'actions',
-            minWidth: 50,
-            flex: 0.5,
-            getActions: (params) => [
-                selectionModel.includes(params.row.id) ? (
-                    <GridActionsCellItem
-                        key="details"
-                        icon={<VisibilityRoundedIcon />}
-                        label={t('details')}
-                        onClick={() => handleEventPreview()}
-                        showInMenu
-                    />
-                ) : <></>,
-            ],
-        },
-    ];
-
-    const handlePaginationChange = useCallback((model: { page: number; pageSize: number }) => {
-        if (model.page === 0 && paginationModel.page !== 0) {
-            setPageLoadedTime(new Date().toISOString());
-            fetchAllCounts();
-        }
-        setPaginationModel(model);
-    }, [paginationModel.page]);
-
-    const getDatastreamIds = useCallback((node: any): string[] => {
-        const datastreamIds: string[] = [];
-
-        if (tableMode === "lanelog" && currentLane != null) {
-
-            const entry = stableLaneMap.get(currentLane);
-            if (!entry) return datastreamIds;
-
-            if (entry.parentNode.id !== node.id)
-                return;
-
-
-            const occStreams = entry.datastreams.filter((ds: typeof DataStream) => isOccupancyDataStream(ds));
-            for (const ds of occStreams) {
-                datastreamIds.push(ds.properties.id);
-            }
-
-        } else {
-            stableLaneMap.forEach((entry: LaneMapEntry) => {
-                if (entry.parentNode.id !== node.id)
-                    return;
-
-                const occStreams = entry.datastreams.filter((ds: typeof DataStream) => isOccupancyDataStream(ds));
-                for (const ds of occStreams) {
-                    datastreamIds.push(ds.properties.id);
-                }
-
-            });
-        }
-        return datastreamIds;
-    }, [stableLaneMap, currentLane, tableMode]);
-
-    const filterRows = useCallback((rows: EventTableData[]): EventTableData[] => {
-        switch (tableMode) {
-            case 'alarmtable':
-                // Only show alarming events that are not adjudicated
-                return rows.filter(row => row.status !== 'None' && row.adjudicatedIds.length == 0);
-            case 'lanelog':
-                // Only show events for the current lane
-                return rows.filter(row => row.laneId === currentLane);
-            case 'eventlog':
-            // shows all events
-            default:
-                return rows;
-        }
-    }, [tableMode, currentLane]);
-
-    useEffect(() => {
-        if (adjudicatedEventId && tableMode === 'alarmtable') {
-            // Remove the adjudicated event from the table immediately
-            setFilteredTableData(prev => prev.filter(row => row.id !== adjudicatedEventId));
-
-            dispatch(setAdjudicatedEventId(null));
-        }
-    }, [adjudicatedEventId, tableMode, selectedEvent, dispatch]);
-
-    const totalObservations = useMemo(() => {
-        let sum = 0;
-        totalCount.forEach(count => sum += count);
-        return sum;
-    }, [totalCount]);
-
-    const totalPages = Math.ceil(totalObservations / pageSize);
-
+    const stableLaneMap = useMemo(() => convertToMap(laneMap), [laneMap]);
+    const [rows, setRows] = useState<EventTableData[]>([]);
+    const [rowCount, setRowCount] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [paginationModel, setPaginationModel] = useState({page: 0, pageSize: PAGE_SIZE});
     const [pageLoadedTime, setPageLoadedTime] = useState(() => new Date().toISOString());
+    const [filter, setFilter] = useState<EventFilterGroup>(() => createEventFilterGroup());
+    const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+    const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+    const [bulkSelectionError, setBulkSelectionError] = useState(false);
+    const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+    const [allFilteredSelected, setAllFilteredSelected] = useState(false);
+    const [allFilteredTotal, setAllFilteredTotal] = useState(0);
+    const [excludedKeys, setExcludedKeys] = useState<Set<string>>(new Set());
+    const [postSelectionKeys, setPostSelectionKeys] = useState<Set<string>>(new Set());
+    const allFilteredCutoffRef = useRef<string | null>(null);
+    const currentPageRef = useRef(0);
+    const eventCacheRef = useRef<Map<string, EventTableData>>(new Map());
+    const failedBulkRef = useRef<EventTableData[]>([]);
+    const countRequestRef = useRef(0);
+    const pageRequestRef = useRef(0);
 
-    const fetchAllCounts = async () => {
-        if (nodes.size === 0 || stableLaneMap.size === 0)
-            return;
+    const nodeOptions = useMemo(() => Array.from(new Set(Array.from(stableLaneMap.values()).map(lane => lane.parentNode.name))).sort(), [stableLaneMap]);
+    const laneOptions = useMemo(() => Array.from(new Set(Array.from(stableLaneMap.values()).map(lane => lane.laneName))).sort(), [stableLaneMap]);
 
-        const counts = new Map<string, number>();
-        let total: number = 0;
+    const baseServerFilter = useMemo(() => {
+        if (tableMode === "alarmtable")
+            return "(gammaAlarm=true OR neutronAlarm=true) AND adjudicatedIdsCount=0";
+        return "";
+    }, [tableMode]);
 
-        for (const node of nodes) {
-            const datastreamIds = getDatastreamIds(node);
-
-            if (datastreamIds.length === 0) continue;
-
-            const count = await fetchTotalCount(node, datastreamIds);
-            counts.set(node.id, count);
-
-            total += count;
-        }
-
-        setTotalCount(counts);
-        setRowCount(total);
-    }
-
-    useEffect(() => {
-        fetchAllCounts();
-    }, [nodes, stableLaneMap, getDatastreamIds]);
-
-    const fetchPage = useCallback(async (userRequestedPage: number): Promise<boolean | undefined> => {
-        if (stableLaneMap.size === 0 || nodes.size === 0 || totalPages === 0)
-            return;
-
-        setLoading(true);
-
-        try {
-            const pageOffset = userRequestedPage * pageSize;
-            const allRows: EventTableData[] = [];
-
-            for (const node of nodes) {
-                const datastreamIds = getDatastreamIds(node);
-                if (datastreamIds.length === 0) continue;
-
-                const observationFilter = new ObservationFilter({
-                    dataStream: datastreamIds,
-                    resultTime: buildResultTimeQuery(filterModel),
-                    // resultTime: `../${pageLoadedTime}`,
-                    filter: buildFilterQuery(filterModel, tableMode),
-                    // filter: tableMode == "alarmtable" ? "gammaAlarm=true OR neutronAlarm=true" : "",
-                    order: 'desc'
-                });
-
-                const obsApi: typeof Observations = await node.getObservationsApi();
-                const obsCollection = await obsApi.searchObservations(observationFilter, pageSize, pageOffset);
-                const results = await obsCollection.fetchData(pageOffset);
-
-                for (const obs of results) {
-                    const laneEntry = findLaneByDataStreamId(stableLaneMap, obs.properties["datastream@id"]);
-                    if (!laneEntry) continue;
-
-                    const evt = eventFromObservation(obs, laneEntry, false);
-                    allRows.push(evt);
-                }
-            }
-
-            const deduped = deduplicateById(allRows);
-            const filtered = filterRows(deduped);
-            setFilteredTableData(filtered);
-            currentPageRef.current = userRequestedPage;
-        } catch (error) {
-            console.error("Error fetching observations,", error)
-            setFilteredTableData([])
-        } finally {
-            setLoading(false);
-        }
-
-    }, [nodes, stableLaneMap, totalPages, pageLoadedTime, tableMode, getDatastreamIds, filterRows, filterModel]);
-
-    function deduplicateById(arr: EventTableData[]): EventTableData[] {
-        const map = new Map();
-        for (const row of arr) map.set(row.id, row);
-        return [...map.values()];
-    }
-
-    function findLaneByDataStreamId(laneMap: Map<string, LaneMapEntry>, datastreamId: string): LaneMapEntry | null {
-        for (const entry of laneMap.values()) {
-            if (entry.datastreams.some(ds => ds.properties.id === datastreamId)) {
-                return entry;
-            }
-        }
-        return null;
-    }
-
-    async function fetchTotalCount(node: INode, datastreamIds: string[]) {
-        let endpoint = node.getConnectedSystemsEndpoint(false);
-        const queryParams = new URLSearchParams({
-            // resultTime: `../${pageLoadedTime}`, I think it is safe to fetch count of all here
-            format: "application/om+json",
-            dataStream: `${datastreamIds.join(",")}`,
-        });
-        if (tableMode === "alarmtable") {
-            queryParams.set("filter", "gammaAlarm=true OR neutronAlarm=true")
-        }
-//      `/observations/count?resultTime=../${pageLoadedTime}&format=application/om%2Bjson&dataStream=${datastreamIds.join(",")}${tableMode == "alarmtable" ? "&filter=gammaAlarm=true,neutronAlarm=true" : ""}`
-        let fullUrl = endpoint + "/observations/count?" + queryParams;
-
-        try {
-            const response = await fetch(fullUrl, {
-                method: 'GET',
-                headers: {
-                    ...node.getBasicAuthHeader(),
-                    'Content-Type': 'sml+json'
-                },
-                mode: "cors",
-                credentials: "include"
+    const queryPlans = useMemo<QueryPlan[]>(() => {
+        const grouped = new Map<string, QueryPlan>();
+        for (const lane of stableLaneMap.values()) {
+            if (tableMode === "lanelog" && currentLane && lane.laneName !== currentLane) continue;
+            const compiled = compileEventFilterForLane(filter, {
+                nodeId: lane.parentNode.id,
+                nodeName: lane.parentNode.name,
+                laneId: lane.laneName,
             });
-
-            if (!response.ok) {
-                console.error("Cannot fetch total count");
-                return 0;
+            if (compiled === false) continue;
+            const serverFilter = combineServerFilters(baseServerFilter, compiled || "");
+            const groupKey = `${lane.parentNode.id}\u001f${serverFilter}`;
+            let plan = grouped.get(groupKey);
+            if (!plan) {
+                plan = {key: groupKey, node: lane.parentNode, datastreamIds: [], filter: serverFilter};
+                grouped.set(groupKey, plan);
             }
-            let responseJson = await response.json();
-            return responseJson.count || 0;
-        } catch (error) {
-            console.error("Error fetching total observation count", error);
-            return 0;
+            lane.datastreams
+                .filter((stream: typeof DataStream) => isOccupancyDataStream(stream))
+                .forEach((stream: typeof DataStream) => plan!.datastreamIds.push(stream.properties.id));
         }
-    }
+        return Array.from(grouped.values())
+            .map(plan => ({...plan, datastreamIds: Array.from(new Set(plan.datastreamIds))}))
+            .filter(plan => plan.datastreamIds.length > 0);
+    }, [stableLaneMap, tableMode, currentLane, filter, baseServerFilter]);
+
+    const bulkQueryPlans = useMemo<QueryPlan[]>(() => queryPlans.map(plan => ({
+        ...plan,
+        key: `${plan.key}\u001fbulk-eligible`,
+        filter: combineServerFilters(plan.filter, "gammaAlarm=true OR neutronAlarm=true", "adjudicatedIdsCount=0"),
+    })), [queryPlans]);
+
+    const findLaneByDataStreamId = useCallback((datastreamId: string): LaneMapEntry | undefined =>
+        Array.from(stableLaneMap.values()).find(lane => lane.datastreams.some((stream: any) => stream.properties.id === datastreamId)), [stableLaneMap]);
 
     const notificationServiceRef = useRef<NotificationService | null>(null);
-
     useEffect(() => {
-        if (!notificationServiceRef.current) {
-            notificationServiceRef.current = new NotificationService();
-        }
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.ready.then((registration) => {
-                notificationServiceRef.current?.init(registration);
-            });
+        if (!notificationServiceRef.current) notificationServiceRef.current = new NotificationService();
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.ready.then(registration => notificationServiceRef.current?.init(registration));
         }
     }, []);
 
-    function sendNotification(alarmData: { laneName: string, status: string, eventData?: any }) {
-        const notificationService = notificationServiceRef.current;
-        if (notificationService?.isReady()) {
-            notificationService.showNotification(
-                NotificationTemplates.newAlarm(
-                    alarmData.eventData,
-                    {
-                        title: t('newAlarmTitle', {status: t(alarmData.status === 'Gamma & Neutron' ? 'gammaAndNeutron' : alarmData.status.toLowerCase())}),
-                        body: t('newAlarmBody', {lane: alarmData.laneName, occupancyId: alarmData.eventData?.occupancyCount ?? ''}),
-                        viewAlarm: t('viewAlarm'),
-                        dismiss: t('dismiss'),
-                    },
-                )
-            )
+    const sendNotification = useCallback((event: EventTableData) => {
+        if (event.status === "None" || !notificationServiceRef.current?.isReady()) return;
+        notificationServiceRef.current.showNotification(NotificationTemplates.newAlarm(event, {
+            title: t("newAlarmTitle", {status: t(event.status === "Gamma & Neutron" ? "gammaAndNeutron" : event.status.toLowerCase())}),
+            body: t("newAlarmBody", {lane: event.laneId, occupancyId: event.occupancyCount ?? ""}),
+            viewAlarm: t("viewAlarm"),
+            dismiss: t("dismiss"),
+        }));
+    }, [t]);
+
+    const eventFromObservation = useCallback((observation: any, lane: LaneMapEntry, live: boolean): EventTableData => {
+        const result = observation.properties?.result || observation.result || observation;
+        const id = hashString(`${result.occupancyCount}${lane.laneName}${result.startTime}${result.endTime}`);
+        const event = new EventTableData(
+            id,
+            lane.laneName,
+            result,
+            live ? null : observation.properties.id,
+            observation.properties?.foiId || observation["foi@id"] || observation.foiId,
+            lane.parentNode.name,
+            lane.isRS350Backpack,
+        );
+        const datastreamId = live ? undefined : observation.properties["datastream@id"];
+        if (datastreamId) {
+            event.setDataStreamId(datastreamId);
+            event.setRPMSystemId(lane.lookupSystemIdFromDataStreamId(datastreamId));
         }
-    }
+        event.setFoiId(observation.properties?.["foi@id"] || observation["foi@id"] || observation.foiId);
+        if (!live) event.setOccupancyObsId(observation.id);
+        if (live) sendNotification(event);
+        eventCacheRef.current.set(eventSelectionKey(event), event);
+        return event;
+    }, [sendNotification]);
 
-    function eventFromObservation(obs: any, laneEntry: LaneMapEntry, isLive: boolean): EventTableData {
-        const id = prngFromStr(obs, laneEntry.laneName);
-        let newEvent: EventTableData;
+    const fetchPlanRows = useCallback(async (plan: QueryPlan, limit: number, offset: number, cutoff = pageLoadedTime) => {
+        const observationFilter = new ObservationFilter({
+            dataStream: plan.datastreamIds,
+            resultTime: `../${cutoff}`,
+            filter: plan.filter,
+            order: "desc",
+        });
+        const api: typeof Observations = await plan.node.getObservationsApi();
+        const collection = await api.searchObservations(observationFilter, limit, offset);
+        const observations = await collection.fetchData();
+        return observations.flatMap((observation: any) => {
+            const lane = findLaneByDataStreamId(observation.properties["datastream@id"]);
+            return lane ? [eventFromObservation(observation, lane, false)] : [];
+        });
+    }, [eventFromObservation, findLaneByDataStreamId, pageLoadedTime]);
 
-        if (isLive) {
-            // Handle live observations
-            const result = obs.result || obs;
-            newEvent = new EventTableData(id, laneEntry.laneName, result, null, obs["foi@id"] || obs.foiId, laneEntry.parentNode.name, laneEntry.isRS350Backpack);
-            newEvent.setFoiId(obs["foi@id"] || obs.foiId);
+    const fetchPlanCount = useCallback(async (plan: QueryPlan, cutoff = pageLoadedTime, strict = false): Promise<number> => {
+        const params = new URLSearchParams({
+            resultTime: `../${cutoff}`,
+            format: "application/om+json",
+            dataStream: plan.datastreamIds.join(","),
+        });
+        if (plan.filter) params.set("filter", plan.filter);
+        try {
+            const response = await fetch(`${plan.node.getConnectedSystemsEndpoint(false)}/observations/count?${params}`, {
+                headers: {...plan.node.getBasicAuthHeader(), "Content-Type": "sml+json"},
+                credentials: "include",
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return Number((await response.json()).count) || 0;
+        } catch (error) {
+            console.error("Error fetching filtered event count", error);
+            if (strict) throw error;
+            return 0;
+        }
+    }, [pageLoadedTime]);
 
+    const refreshCounts = useCallback(async () => {
+        const requestId = ++countRequestRef.current;
+        if (queryPlans.length === 0) {
+            setRowCount(0);
+            return;
+        }
+        const counts = await runWithConcurrency(queryPlans, 6, plan => fetchPlanCount(plan));
+        if (requestId !== countRequestRef.current) return;
+        setRowCount(counts.reduce((sum, count) => sum + count, 0));
+    }, [queryPlans, fetchPlanCount]);
 
-            if (newEvent.status !== 'None') {
-                sendNotification({ laneName: laneEntry.laneName, status: newEvent.status, eventData: newEvent});
+    const fetchPage = useCallback(async (page: number) => {
+        const requestId = ++pageRequestRef.current;
+        if (queryPlans.length === 0) {
+            setRows([]);
+            setLoading(false);
+            return;
+        }
+        setLoading(true);
+        try {
+            if (queryPlans.length === 1) {
+                const pageRows = await fetchPlanRows(queryPlans[0], PAGE_SIZE, page * PAGE_SIZE);
+                if (requestId !== pageRequestRef.current) return;
+                setRows(deduplicateEvents(pageRows));
+                currentPageRef.current = page;
+                return;
             }
-        } else {
-            // Handle historical observations
-            newEvent = new EventTableData(id, laneEntry.laneName, obs.properties.result, obs.properties.id, obs.properties.foiId, laneEntry.parentNode.name, laneEntry.isRS350Backpack);
-            newEvent.setRPMSystemId(laneEntry.lookupSystemIdFromDataStreamId(obs.properties["datastream@id"]));
-            newEvent.setDataStreamId(obs.properties["datastream@id"]);
-            newEvent.setFoiId(obs.properties["foi@id"]);
-            newEvent.setOccupancyObsId(obs.id);
+            const required = (page + 1) * PAGE_SIZE;
+            const results = await runWithConcurrency(queryPlans, 6, plan => fetchPlanRows(plan, required, 0));
+            if (requestId !== pageRequestRef.current) return;
+            const merged = deduplicateEvents(results.flat())
+                .sort((left, right) => new Date(right.startTime).getTime() - new Date(left.startTime).getTime());
+            setRows(merged.slice(page * PAGE_SIZE, required));
+            currentPageRef.current = page;
+        } catch (error) {
+            if (requestId !== pageRequestRef.current) return;
+            console.error("Error fetching filtered events", error);
+            setRows([]);
+        } finally {
+            if (requestId === pageRequestRef.current) setLoading(false);
         }
-
-        return newEvent;
-    }
-
-    function prngFromStr(obs: any, laneName: string): number {
-        const result = obs.properties?.result || obs.result || obs;
-        const baseId = `${result.occupancyCount}${laneName}${result.startTime}${result.endTime}`;
-        return hashString(baseId);
-    }
+    }, [queryPlans, fetchPlanRows]);
 
     useEffect(() => {
-        if (totalPages > 0)
-            fetchPage(paginationModel.page);
-    }, [totalPages, paginationModel.page, filterModel]);
+        refreshCounts();
+        fetchPage(0);
+    }, [refreshCounts, fetchPage]);
 
     useEffect(() => {
+        if (paginationModel.page > 0) fetchPage(paginationModel.page);
         currentPageRef.current = paginationModel.page;
-    }, [paginationModel.page]);
+    }, [paginationModel.page, fetchPage]);
+
+    const rowPassesLocalFilters = useCallback((event: EventTableData, lane: LaneMapEntry): boolean => {
+        if (tableMode === "alarmtable" && (event.status === "None" || event.adjudicatedIds?.length > 0)) return false;
+        if (tableMode === "lanelog" && currentLane && event.laneId !== currentLane) return false;
+        return eventMatchesFilter(filter, event, {
+            nodeId: lane.parentNode.id,
+            nodeName: lane.parentNode.name,
+            laneId: lane.laneName,
+        });
+    }, [tableMode, currentLane, filter]);
 
     useEffect(() => {
         if (stableLaneMap.size === 0) return;
-
-        const connectedSources: typeof ConSysApi[] = [];
-
-        for (const entry of stableLaneMap.values()) {
-            const occStream: typeof DataStream = entry.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
-
-            if (!occStream) {
-                continue;
-            }
-
-            const occSource = entry.datasourcesRealtime?.find((ds: any) => {
-                const parts = ds.properties.resource?.split("/");
-                return parts && parts[2] === occStream.properties.id;
-            });
-
-            if (!occSource) {
-                continue;
-            }
-
-            const handleMessage = (msg: any) => {
+        const subscriptions: Array<{source: any; handler: (message: any) => void}> = [];
+        for (const lane of stableLaneMap.values()) {
+            const occupancyStream: typeof DataStream = lane.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
+            if (!occupancyStream) continue;
+            const source = lane.datasourcesRealtime?.find((item: any) => item.properties.resource?.split("/")[2] === occupancyStream.properties.id);
+            if (!source) continue;
+            const handleMessage = (message: any) => {
+                if (currentPageRef.current !== 0) return;
                 try {
-                    if (currentPageRef.current !== 0)
-                        return;
-
-                    const obsData = msg.values?.[0]?.data || msg;
-                    const event = eventFromObservation(obsData, entry, true);
-
-                    const dsObsPath = occSource.properties.resource;
-                    if (dsObsPath) {
-                        event.setDataStreamId(dsObsPath.split("/")[2]);
+                    const event = eventFromObservation(message.values?.[0]?.data || message, lane, true);
+                    event.setDataStreamId(occupancyStream.properties.id);
+                    if (!rowPassesLocalFilters(event, lane)) return;
+                    if (allFilteredCutoffRef.current && event.status !== "None" && !event.adjudicatedIds?.length) {
+                        setPostSelectionKeys(previous => new Set(previous).add(eventSelectionKey(event)));
                     }
-
-                    const filtered = filterRows([event]);
-                    if (filtered.length === 0) return;
-
-                    setRowCount(prev => prev + 1);
-
-                    if (currentPageRef.current  === 0) {
-
-                        setFilteredTableData(prev => {
-                            const exists = prev.some(row => row.id === event.id);
-                            if (exists) return prev;
-                            return [event, ...prev].slice(0, pageSize);
-                        });
-                    }
-                } catch (err) {
-                    console.error("Error creating event from observation:", err);
+                    setRowCount(previous => previous + 1);
+                    setRows(previous => deduplicateEvents([event, ...previous]).slice(0, PAGE_SIZE));
+                } catch (error) {
+                    console.error("Error processing live occupancy event", error);
                 }
             };
-
-
-            occSource.subscribe(handleMessage, [EventType.DATA]);
-
+            source.subscribe(handleMessage, [EventType.DATA]);
             try {
-                occSource.connect();
-                connectedSources.push(occSource);
-            } catch (err) {
-                console.error("Error connecting occSource:", err);
+                source.connect();
+                subscriptions.push({source, handler: handleMessage});
+            } catch (error) {
+                console.error("Error connecting occupancy source", error);
             }
         }
-
-    }, [stableLaneMap, filterRows]);
+        return () => subscriptions.forEach(({source, handler}) => {
+            const listeners = source.eventSubscriptionMap?.[EventType.DATA];
+            if (!Array.isArray(listeners)) return;
+            const index = listeners.indexOf(handler);
+            if (index >= 0) listeners.splice(index, 1);
+        });
+    }, [stableLaneMap, eventFromObservation, rowPassesLocalFilters]);
 
     useEffect(() => {
-        if (!selectedRowId)
-            setSelectionModel([]);
-    }, [selectedRowId]);
+        if (!adjudicatedEventId || tableMode !== "alarmtable") return;
+        setRows(previous => previous.filter(row => row.id !== adjudicatedEventId));
+        setRowCount(previous => Math.max(0, previous - 1));
+        dispatch(setAdjudicatedEventId(null));
+    }, [adjudicatedEventId, tableMode, dispatch]);
 
-    useEffect(() => {
-        setRowCount(totalObservations);
-    }, [totalObservations]);
-
-    const handleEventPreview = () => {
-        router.push("/event-details");
-    };
-
-    const handleRowDoubleClick = (params: GridRowParams) => {
-        const selectedRow = params.row as EventTableData;
-        if (!selectedRow) return;
-
-        setSelectionModel([selectedRow.id]);
-        dispatch(setSelectedRowId(selectedRow.id));
-        getLatestGB(selectedRow);
-        dispatch(setEventPreview({ isOpen: true, eventData: selectedRow }));
-        dispatch(setSelectedEvent(selectedRow));
-
-        router.push("/event-details");
-    };
-
-    const getColumnList = () => {
-        const excludeFields: string[] = [];
-        if (!viewAdjudicated) excludeFields.push('adjudicatedIds');
-
-        return columns
-            .filter((column) => !excludeFields.includes(column.field))
-            .map((column) => column.field);
-    };
-
-    const handleRowSelection = (params: GridRowParams) => {
-        const selectedId = params.row.id;
-
-        if (selectedRowId === selectedId) {
-            setSelectionModel([]);
-            dispatch(setLatestGB(null));
-            dispatch(setSelectedEvent(null));
-            dispatch(setSelectedRowId(null));
-            dispatch(setEventPreview({ isOpen: false, eventData: null }));
-        } else {
-            dispatch(setEventPreview({ isOpen: false, eventData: null }));
-            setSelectionModel([selectedId]);
-            dispatch(setSelectedRowId(selectedId));
-
-            setTimeout(() => {
-                const selectedRow = filteredTableData.find((row) => row.id === selectedId);
-                if (!selectedRow) return;
-
-                getLatestGB(selectedRow);
-                dispatch(setEventPreview({ isOpen: true, eventData: selectedRow }));
-                dispatch(setSelectedEvent(selectedRow));
-            }, 10);
-        }
-    };
-
-    async function getLatestGB(eventData: any) {
-        for (const lane of laneMap.values()) {
-            let datastreams = lane.datastreams.filter((ds: any) => isThresholdDataStream(ds));
-            let gammaThreshDs = datastreams.find((ds: typeof DataStream) =>
-                ds.properties["system@id"] === eventData.rpmSystemId
-            );
-
-            if (gammaThreshDs) {
-                let latestGB = await getObservations(eventData.startTime, eventData.endTime, gammaThreshDs);
-                dispatch(setLatestGB(latestGB));
-            }
-        }
-    }
-
-    const buildResultTimeQuery = (filterModel: GridFilterModel): string => {
-        for (const item of filterModel.items) {
-            if (!['startTime', 'endTime'].includes(item.field)) continue;
-
-            const isoDate = new Date(item.value).toISOString();
-
-            // if (item.field === 'startTime') {
-            //     if (item.operator === 'after') {
-            //         return `${isoDate}/${pageLoadedTime}`
-            //     } else if (item.operator === 'before') {
-            //         return `../${isoDate}`
-            //     }
-            // } else if (item.field === 'endTime') {
-            //     if (item.operator === 'after') {
-            //         return `${isoDate}/${pageLoadedTime}`
-            //     } else if (item.operator === 'before') {
-            //         return `../${isoDate}`
-            //     }
-            // }
-            if (item.operator === 'after') {
-                return `${isoDate}/${pageLoadedTime}`
-            } else if (item.operator === 'before') {
-                return `../${isoDate}`
-            }
-        }
-
-        return `../${pageLoadedTime}`;
-    }
-
-    const buildFilterQuery = (filterModel: GridFilterModel, tableMode: string): string => {
-        let filter: string | null = null;
-        
-        // http://localhost:8282/sensorhub/api/observations?resultTime=../2026-01-26T13:22:44.048Z&format=application/om%2Bjson&dataStream=0g30&filter=adjudicatedIds>0&order=desc&offset=0&limit=15
-        for (const item of filterModel.items) {
-            if (!['status', 'adjudicatedIds'].includes(item.field))
-                continue;
-
-            switch (item.field) {
-                case 'status':
-                    if (item.value === 'Gamma') {
-                        filter =`gammaAlarm=true AND neutronAlarm=false`
-                    } else if (item.value === 'Neutron') {
-                        filter =`gammaAlarm=false AND neutronAlarm=true`
-                    } else if (item.value === 'Gamma & Neutron') {
-                        filter =`gammaAlarm=true AND neutronAlarm=true`
-                    } else if (item.value === 'None') {
-                        filter =`gammaAlarm=false AND neutronAlarm=false`
-                    }
-                    break;
-                case 'adjudicatedIds':
-                    if (item.value === 'Yes')
-                        filter =`adjudicatedIdsCount>0`
-                    else if (item.value === 'No')
-                        filter =`adjudicatedIdsCount=0`
-                    break;
-            }
-        }
-
-        if (filter)
-            return filter;
-        if (tableMode === 'alarmtable')
-            return "gammaAlarm=true OR neutronAlarm=true";
-        return '';
-    }
-
-    const handleFilterChange = useCallback((model: GridFilterModel) => {
-        setFilterModel(model);
-        setPaginationModel(prev => ({ ...prev, page: 0 }));
+    const clearSelection = useCallback(() => {
+        setSelectedKeys(new Set());
+        setExcludedKeys(new Set());
+        setPostSelectionKeys(new Set());
+        setAllFilteredSelected(false);
+        setAllFilteredTotal(0);
+        allFilteredCutoffRef.current = null;
+        failedBulkRef.current = [];
     }, []);
 
+    const applyFilter = (next: EventFilterGroup) => {
+        setFilter(next);
+        setFilterDialogOpen(false);
+        setPaginationModel(previous => ({...previous, page: 0}));
+        setPageLoadedTime(new Date().toISOString());
+        clearSelection();
+    };
+
+    const visibleSelectionModel = useMemo<GridRowSelectionModel>(() => rows
+        .filter(row => row.status !== "None" && !row.adjudicatedIds?.length)
+        .filter(row => allFilteredSelected
+            ? !excludedKeys.has(eventSelectionKey(row)) && !postSelectionKeys.has(eventSelectionKey(row))
+            : selectedKeys.has(eventSelectionKey(row)))
+        .map(eventSelectionKey), [rows, allFilteredSelected, excludedKeys, postSelectionKeys, selectedKeys]);
+
+    const handleSelectionChange = (model: GridRowSelectionModel) => {
+        const visible = new Set(model.map(String));
+        if (allFilteredSelected) {
+            setExcludedKeys(previous => {
+                const next = new Set(previous);
+                rows.filter(row => row.status !== "None" && !row.adjudicatedIds?.length).forEach(row => {
+                    const key = eventSelectionKey(row);
+                    if (visible.has(key)) next.delete(key); else next.add(key);
+                });
+                return next;
+            });
+        } else {
+            setSelectedKeys(previous => {
+                const next = new Set(previous);
+                rows.filter(row => row.status !== "None" && !row.adjudicatedIds?.length).forEach(row => {
+                    const key = eventSelectionKey(row);
+                    if (visible.has(key)) next.add(key); else next.delete(key);
+                });
+                return next;
+            });
+        }
+    };
+
+    const selectedCount = allFilteredSelected ? Math.max(0, allFilteredTotal - excludedKeys.size) : selectedKeys.size;
+
+    const getLatestGB = async (event: EventTableData) => {
+        for (const lane of stableLaneMap.values()) {
+            const threshold = lane.datastreams
+                .filter((stream: any) => isThresholdDataStream(stream))
+                .find((stream: typeof DataStream) => stream.properties["system@id"] === event.rpmSystemId);
+            if (threshold) dispatch(setLatestGB(await getObservations(event.startTime, event.endTime, threshold)));
+        }
+    };
+
+    const previewEvent = (event: EventTableData, navigate = false) => {
+        dispatch(setEventPreview({isOpen: true, eventData: event}));
+        dispatch(setSelectedRowId(event.id));
+        dispatch(setSelectedEvent(event));
+        getLatestGB(event);
+        if (navigate) router.push("/event-details");
+    };
+
+    const enumerateAllFiltered = useCallback(async (): Promise<EventTableData[]> => {
+        const cutoff = allFilteredCutoffRef.current ?? pageLoadedTime;
+        const planRows = await runWithConcurrency(bulkQueryPlans, 4, async plan => {
+            const count = await fetchPlanCount(plan, cutoff, true);
+            const collected: EventTableData[] = [];
+            for (let offset = 0; offset < count; offset += BULK_FETCH_SIZE)
+                collected.push(...await fetchPlanRows(plan, BULK_FETCH_SIZE, offset, cutoff));
+            return collected;
+        });
+        return deduplicateEvents(planRows.flat())
+            .filter(event => !excludedKeys.has(eventSelectionKey(event)));
+    }, [bulkQueryPlans, fetchPlanCount, fetchPlanRows, excludedKeys, pageLoadedTime]);
+
+    const selectAllFilteredAlarms = async () => {
+        const cutoff = pageLoadedTime;
+        setLoading(true);
+        try {
+            const counts = await runWithConcurrency(bulkQueryPlans, 6, plan => fetchPlanCount(plan, cutoff, true));
+            allFilteredCutoffRef.current = cutoff;
+            setAllFilteredTotal(counts.reduce((sum, count) => sum + count, 0));
+            setAllFilteredSelected(true);
+            setSelectedKeys(new Set());
+            setExcludedKeys(new Set());
+            setPostSelectionKeys(new Set());
+        } catch (error) {
+            console.error("Unable to select all filtered alarms", error);
+            clearSelection();
+            setBulkSelectionError(true);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleBulkSubmit = async (
+        values: BulkAdjudicationValues,
+        retryFailures: boolean,
+        onProgress: (complete: number, total: number) => void,
+    ): Promise<BulkAdjudicationSummary> => {
+        let events: EventTableData[];
+        if (retryFailures) {
+            events = failedBulkRef.current;
+        } else if (allFilteredSelected) {
+            events = await enumerateAllFiltered();
+        } else {
+            events = Array.from(selectedKeys).flatMap(key => {
+                const event = eventCacheRef.current.get(key);
+                return event ? [event] : [];
+            });
+            if (events.length !== selectedKeys.size)
+                throw new Error("One or more selected events are no longer available");
+        }
+        const outcomes: BulkAdjudicationOutcome[] = await adjudicateEvents(events, stableLaneMap, values, onProgress);
+        const successful = outcomes.filter(outcome => outcome.ok);
+        const failed = outcomes.filter(outcome => !outcome.ok);
+        failedBulkRef.current = failed.map(outcome => outcome.event);
+        const successfulKeys = new Set(successful.map(outcome => eventSelectionKey(outcome.event)));
+        if (tableMode === "alarmtable") {
+            setRows(previous => previous.filter(event => !successfulKeys.has(eventSelectionKey(event))));
+            setRowCount(previous => Math.max(0, previous - successful.length));
+        } else {
+            setRows(previous => previous.map(event => {
+                if (successfulKeys.has(eventSelectionKey(event))) event.adjudicatedIds = ["bulk-adjudicated"];
+                return event;
+            }));
+        }
+        setAllFilteredSelected(false);
+        setAllFilteredTotal(0);
+        allFilteredCutoffRef.current = null;
+        setExcludedKeys(new Set());
+        setPostSelectionKeys(new Set());
+        setSelectedKeys(new Set(failed.map(outcome => eventSelectionKey(outcome.event))));
+        return {success: successful.length, failed: failed.length};
+    };
+
+    const columns = useMemo<GridColDef<EventTableData>[]>(() => [
+        {
+            field: "laneId", headerName: t("laneId"), minWidth: 110, flex: 1,
+            renderCell: params => <Box sx={{display: "flex", flexDirection: "column", justifyContent: "center", py: 0.5}}>
+                <span>{params.row.laneId}</span>
+                <span style={{fontSize: "0.8rem", color: "gray"}}>{params.row.parentNode}</span>
+            </Box>,
+        },
+        {field: "occupancyCount", headerName: t("occupancyId"), minWidth: 125, flex: 1.2},
+        {
+            field: "startTime", headerName: t("startTime"), minWidth: 200, flex: 1.8, type: "dateTime",
+            valueGetter: value => new Date(value),
+            valueFormatter: value => new Date(value).toLocaleString(locale),
+        },
+        {
+            field: "endTime", headerName: t("endTime"), minWidth: 200, flex: 1.8, type: "dateTime",
+            valueGetter: value => new Date(value),
+            valueFormatter: value => new Date(value).toLocaleString(locale),
+        },
+        {field: "maxGamma", headerName: t("maxGamma"), minWidth: 150, flex: 1.2},
+        {field: "maxNeutron", headerName: t("maxNeutron"), minWidth: 150, flex: 1.2},
+        {field: "status", headerName: t("status"), minWidth: 135, flex: 1.2},
+        {
+            field: "adjudicatedIds", headerName: t("adjudicated"), minWidth: 110, flex: 1,
+            valueFormatter: (value: any) => value?.length > 0 ? t("yes") : t("no"),
+        },
+        {
+            field: "Menu", headerName: "", type: "actions", minWidth: 50,
+            getActions: params => [<GridActionsCellItem key="details" icon={<VisibilityRoundedIcon />} label={t("details")} onClick={() => previewEvent(params.row, true)} showInMenu />],
+        },
+    ], [locale, t]);
+
+    const getColumnList = () => columns
+        .filter(column => viewAdjudicated || column.field !== "adjudicatedIds")
+        .map(column => column.field);
+
     return (
-        <Box sx={{ height: 800, width: '100%' }}>
+        <Box sx={{height: 800, width: "100%"}}>
             <DataGrid
                 localeText={getDataGridLocaleText(language)}
-                rows={filteredTableData}
-                paginationMode="server"
-                filterMode="server"
-                filterModel={filterModel}
-                onFilterModelChange={handleFilterChange}
-                loading={loading}
-                paginationModel={paginationModel}
-                onPaginationModelChange={handlePaginationChange}
-                rowCount={rowCount}
+                rows={rows}
+                getRowId={eventSelectionKey}
                 columns={columns}
-                onRowClick={handleRowSelection}
-                onRowDoubleClick={handleRowDoubleClick}
-                rowSelectionModel={selectionModel}
-                pageSizeOptions={[15]}
-                slots={{ toolbar: CustomToolbar }}
+                loading={loading}
+                paginationMode="server"
+                paginationModel={paginationModel}
+                onPaginationModelChange={model => setPaginationModel(model)}
+                rowCount={rowCount}
+                pageSizeOptions={[PAGE_SIZE]}
+                checkboxSelection
+                isRowSelectable={params => params.row.status !== "None" && !params.row.adjudicatedIds?.length}
+                disableRowSelectionOnClick
+                keepNonExistentRowsSelected
+                rowSelectionModel={visibleSelectionModel}
+                onRowSelectionModelChange={handleSelectionChange}
+                onRowClick={(params, event) => {
+                    const cell = (event.target as HTMLElement).closest("[data-field]");
+                    const field = cell?.getAttribute("data-field");
+                    if (field !== GRID_CHECKBOX_SELECTION_FIELD && field !== "Menu") previewEvent(params.row);
+                }}
+                onRowDoubleClick={(params: GridRowParams<EventTableData>) => previewEvent(params.row, true)}
+                slots={{toolbar: CustomToolbar}}
                 slotProps={{
-                    columnsManagement: {
-                        getTogglableColumns: getColumnList,
-                    }
+                    toolbar: {
+                        activeFilterCount: countEventFilterRules(filter),
+                        selectedCount,
+                        rowCount,
+                        allFilteredSelected,
+                        filterLabel: t("advancedFilters"),
+                        selectAllFilteredLabel: t("selectAllFiltered"),
+                        clearSelectionLabel: t("clearSelection"),
+                        bulkAdjudicateLabel: t("bulkAdjudicateSelected", {count: selectedCount}),
+                        onOpenFilters: () => setFilterDialogOpen(true),
+                        onSelectAllFiltered: selectAllFilteredAlarms,
+                        onClearSelection: clearSelection,
+                        onBulkAdjudicate: () => setBulkDialogOpen(true),
+                    },
+                    columnsManagement: {getTogglableColumns: getColumnList},
                 }}
                 initialState={{
-                    sorting: {
-                        sortModel: [{field: 'startTime', sort: 'desc'}]
-                    },
-                    columns: {
-                        // Manage visible columns in table based on component parameters
-                        columnVisibilityModel: {
-                            adjudicatedIds: viewAdjudicated,
-                        },
-                    },
-                }}
-                autosizeOptions={{
-                    expand: true,
-                    includeOutliers: true,
-                    includeHeaders: false,
+                    sorting: {sortModel: [{field: "startTime", sort: "desc"}]},
+                    columns: {columnVisibilityModel: {adjudicatedIds: viewAdjudicated}},
                 }}
                 getCellClassName={(params: GridCellParams<any, any, string>) => {
-                    if (params.value === "Gamma")
-                        return "highlightGamma";
-                    else if (params.value === "Neutron")
-                        return "highlightNeutron";
-                    else if (params.value === "Gamma & Neutron" || (params.value !== "None" && params.field === "status"))
-                        return "highlightGammaNeutron";
-                    else if (params.formattedValue === 'Code 1: Contraband Found' || params.formattedValue === 'Code 2: Other' || params.formattedValue === 'Code 3: Medical Isotope Found')
-                        return "highlightReal";
-                    else if (params.formattedValue === 'Code 4: Norm Found' || params.formattedValue === 'Code 5: Declared Shipment of Radioactive Material' || params.formattedValue === 'Code 6: Physical Inspection Negative')
-                        return "highlightInnocent";
-                    else if (params.formattedValue === 'Code 7: RIID/ASP Indicates Background Only' || params.formattedValue === 'Code 8: Other' || params.formattedValue === 'Code 9: Authorized Test, Maintenance, or Training Activity')
-                        return "highlightFalse";
-                    else if (params.formattedValue === 'Code 10: Unauthorized Activity' || params.formattedValue === 'Code 11: Other')
-                        return "highlightOther";
-                    return '';
+                    if (params.value === "Gamma") return "highlightGamma";
+                    if (params.value === "Neutron") return "highlightNeutron";
+                    if (params.value === "Gamma & Neutron" || (params.value !== "None" && params.field === "status")) return "highlightGammaNeutron";
+                    return "";
                 }}
-                getRowClassName={(params) =>
-                    selectionModel.includes(params.row.id) ? 'selected-row' : ''
-                }
+                getRowClassName={params => params.row.id === selectedRowId ? "preview-row" : ""}
                 sx={{
-                    [`.${gridClasses.row}.selected-row`]: {
-                        backgroundColor: 'rgba(33, 150, 243, 0.5)',
-                    },
-                    [`.${gridClasses.cell}.highlightGamma`]: {
-                        backgroundColor: "error.main",
-                        color: "error.contrastText",
-                    },
-                    [`.${gridClasses.cell}.highlightNeutron`]: {
-                        backgroundColor: "info.main",
-                        color: "info.contrastText",
-                    },
-                    [`.${gridClasses.cell}.highlightGammaNeutron`]: {
-                        backgroundColor: "secondary.main",
-                        color: "secondary.contrastText",
-                    },
-                    [`.${gridClasses.cell}.highlightReal`]: {
-                        color: "error.dark",
-                    },
-                    [`.${gridClasses.cell}.highlightInnocent`]: {
-                        color: "primary.dark",
-                    },
-                    [`.${gridClasses.cell}.highlightFalse`]: {
-                        color: "success.dark",
-                    },
-                    [`.${gridClasses.cell}.highlightOther`]: {
-                        color: "text.primary",
-                    },
+                    [`.${gridClasses.row}.preview-row`]: {boxShadow: "inset 3px 0 0 #1976d2"},
+                    [`.${gridClasses.cell}.highlightGamma`]: {backgroundColor: "error.main", color: "error.contrastText"},
+                    [`.${gridClasses.cell}.highlightNeutron`]: {backgroundColor: "info.main", color: "info.contrastText"},
+                    [`.${gridClasses.cell}.highlightGammaNeutron`]: {backgroundColor: "secondary.main", color: "secondary.contrastText"},
                     border: "none",
                 }}
             />
+            <NestedEventFilterDialog
+                open={filterDialogOpen}
+                filter={filter}
+                nodeOptions={nodeOptions}
+                laneOptions={laneOptions}
+                t={t}
+                onClose={() => setFilterDialogOpen(false)}
+                onApply={applyFilter}
+            />
+            <BulkAdjudicationDialog
+                open={bulkDialogOpen}
+                count={selectedCount}
+                allFiltered={allFilteredSelected}
+                t={t}
+                onClose={() => setBulkDialogOpen(false)}
+                onSubmit={handleBulkSubmit}
+            />
+            <Snackbar open={bulkSelectionError} autoHideDuration={6000} onClose={() => setBulkSelectionError(false)}>
+                <Alert severity="error" onClose={() => setBulkSelectionError(false)}>{t("bulkSelectionLoadFailed")}</Alert>
+            </Snackbar>
         </Box>
     );
 }
