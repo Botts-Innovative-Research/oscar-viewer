@@ -6,6 +6,7 @@ import Box from "@mui/material/Box";
 import {Alert} from "@mui/material";
 import { selectAlarmAudioVolume } from "@/lib/state/OSCARClientSlice";
 import {useLanguage} from "@/app/contexts/LanguageContext";
+import {attemptMediaPlayback} from "@/lib/media/MediaPlayback";
 
 let alarmAudio: HTMLAudioElement | null = null;
 
@@ -26,36 +27,60 @@ export default function AlarmAudio() {
 
 
     useEffect(() => {
-        const unlockAudio = () => {
+        if (!soundLocked) {
+            return;
+        }
+
+        let unlockInFlight = false;
+
+        const unlockAudio = async () => {
+            if (unlockInFlight) {
+                return;
+            }
+
+            unlockInFlight = true;
             const audio = getAlarmAudio();
             audio.volume = savedVolume / 100;
 
-            // attempt to play/pause immediately to unlock browser autoplay
-            audio.play()
-                .then(() => {
-                    audio.pause();
-                    audio.currentTime = 0;
-                    setSoundLocked(false);
+            const result = await attemptMediaPlayback(audio);
+            if (result.status === "started") {
+                audio.pause();
+                audio.currentTime = 0;
+                setSoundLocked(false);
+                document.removeEventListener("click", unlockAudio);
+            } else if (result.status === "failed") {
+                console.error("Unable to initialize alarm audio", result.error);
+            }
 
-                })
-                .finally(() => {
-                    document.removeEventListener("click", unlockAudio);
-                });
+            unlockInFlight = false;
         };
 
         document.addEventListener("click", unlockAudio);
         return () => document.removeEventListener("click", unlockAudio);
-    }, [savedVolume]);
+    }, [savedVolume, soundLocked]);
 
 
 
     useEffect(() => {
-        if (triggerAlarm) {
-            const audio = getAlarmAudio();
-            audio.volume = savedVolume / 100;
-            audio.play();
-            dispatch(setAlarmTrigger(false));
+        if (!triggerAlarm) {
+            return;
         }
+
+        if (soundLocked) {
+            dispatch(setAlarmTrigger(false));
+            return;
+        }
+
+        const audio = getAlarmAudio();
+        audio.volume = savedVolume / 100;
+
+        void attemptMediaPlayback(audio).then(result => {
+            if (result.status === "blocked") {
+                setSoundLocked(true);
+            } else if (result.status === "failed") {
+                console.error("Unable to play alarm audio", result.error);
+            }
+        }).finally(() => dispatch(setAlarmTrigger(false)));
     }, [triggerAlarm, savedVolume, soundLocked]);
 
     return (

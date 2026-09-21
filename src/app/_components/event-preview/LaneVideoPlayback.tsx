@@ -9,6 +9,7 @@ import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import '../../../Styles.css';
 import {useLanguage} from '@/app/contexts/LanguageContext';
+import {attemptMediaPlayback} from "@/lib/media/MediaPlayback";
 
 
 export class LaneVideoPlaybackProps {
@@ -45,7 +46,11 @@ export default function LaneVideoPlayback({selectedNode, videos, modeType, start
         videoRefs.current.forEach(video => {
             if ( video ) {
                 if ( isPlaying ) {
-                    video.play();
+                    void attemptMediaPlayback(video).then(result => {
+                        if (result.status === "failed") {
+                            console.error("Unable to play event video", result.error);
+                        }
+                    });
                 } else {
                     video.pause();
                 }
