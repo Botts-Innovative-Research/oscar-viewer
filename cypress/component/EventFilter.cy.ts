@@ -1,11 +1,44 @@
 import {
     compileEventFilterForLane,
+    createEventFilterRule,
     EventFilterGroup,
     eventMatchesFilter,
+    operatorsForEventFilterField,
 } from "../../src/lib/data/oscar/EventFilter";
 import {runWithConcurrency} from "../../src/lib/data/oscar/BulkAdjudication";
 
 describe("nested event filters", () => {
+    it("uses inclusive comparisons as the primary controls for numeric event fields", () => {
+        (["occupancyCount", "maxGamma", "maxNeutron"] as const).forEach(field => {
+            expect(operatorsForEventFilterField(field).slice(0, 2)).to.deep.equal([
+                "greaterThanOrEqual",
+                "lessThanOrEqual",
+            ]);
+            expect(createEventFilterRule(field).operator).to.equal("greaterThanOrEqual");
+        });
+    });
+
+    it("compiles inclusive numeric boundaries for occupancy, gamma, and neutron values", () => {
+        const filter: EventFilterGroup = {
+            kind: "group",
+            id: "root",
+            logic: "and",
+            children: [
+                {kind: "rule", id: "occupancy", field: "occupancyCount", operator: "greaterThanOrEqual", value: "3400"},
+                {kind: "rule", id: "gamma", field: "maxGamma", operator: "lessThanOrEqual", value: "1800"},
+                {kind: "rule", id: "neutron", field: "maxNeutron", operator: "greaterThanOrEqual", value: "12"},
+            ],
+        };
+
+        const compiled = compileEventFilterForLane(filter, {nodeId: "node-1", nodeName: "Local", laneId: "lane1"});
+        expect(compiled).to.contain("occupancyCount>=3400");
+        expect(compiled).to.contain("maxGamma<=1800");
+        expect(compiled).to.contain("maxNeutron>=12");
+
+        const event = {occupancyCount: "3400", maxGamma: 1800, maxNeutron: 12} as any;
+        expect(eventMatchesFilter(filter, event, {nodeId: "node-1", nodeName: "Local", laneId: "lane1"})).to.equal(true);
+    });
+
     it("preserves nested AND/OR rules while collapsing lane metadata", () => {
         const filter: EventFilterGroup = {
             kind: "group",

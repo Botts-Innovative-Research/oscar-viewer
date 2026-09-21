@@ -329,6 +329,8 @@
   "filterField.node": "Κόμβος",
   "filterOperator": "Τελεστής",
   "filterValue": "Τιμή",
+  "filterMinimumInclusive": "Ελάχιστο (≥)",
+  "filterMaximumInclusive": "Μέγιστο (≤)",
   "filterFrom": "Από",
   "filterTo": "Έως",
   "filterMatch": "Αντιστοίχιση",

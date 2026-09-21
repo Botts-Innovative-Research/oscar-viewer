@@ -67,7 +67,11 @@ export const createEventFilterRule = (field: EventFilterField = "status"): Event
     kind: "rule",
     id: createEventFilterId(),
     field,
-    operator: field === "status" || field === "adjudicatedIds" ? "isAnyOf" : "equals",
+    operator: field === "status" || field === "adjudicatedIds"
+        ? "isAnyOf"
+        : eventFilterFieldType(field) === "number"
+            ? "greaterThanOrEqual"
+            : "equals",
     value: field === "status" || field === "adjudicatedIds" ? [] : "",
 });
 
@@ -108,7 +112,7 @@ export const eventFilterFieldType = (field: EventFilterField): "metadata" | "str
 export const operatorsForEventFilterField = (field: EventFilterField): EventFilterOperator[] => {
     const type = eventFilterFieldType(field);
     if (type === "metadata") return ["equals", "notEquals", "contains", "startsWith", "isAnyOf"];
-    if (type === "number") return ["equals", "notEquals", "greaterThan", "greaterThanOrEqual", "lessThan", "lessThanOrEqual", "between"];
+    if (type === "number") return ["greaterThanOrEqual", "lessThanOrEqual", "between", "equals"];
     if (type === "date") return ["greaterThan", "lessThan", "between"];
     if (type === "enum") return ["equals", "notEquals", "isAnyOf"];
     return ["equals", "notEquals", "contains", "startsWith", "isEmpty", "isNotEmpty"];

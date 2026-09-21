@@ -329,6 +329,8 @@
   "filterField.node": "Node",
   "filterOperator": "Operator",
   "filterValue": "Value",
+  "filterMinimumInclusive": "Minimum (≥)",
+  "filterMaximumInclusive": "Maximum (≤)",
   "filterFrom": "From",
   "filterTo": "To",
   "filterMatch": "Match",

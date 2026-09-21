@@ -155,12 +155,19 @@ export default function NestedEventFilterDialog({open, filter, nodeOptions, lane
         }
 
         const inputType = type === "number" ? "number" : type === "date" ? "datetime-local" : "text";
+        const valueLabel = rule.operator === "between"
+            ? t("filterFrom")
+            : rule.operator === "greaterThanOrEqual"
+                ? t("filterMinimumInclusive")
+                : rule.operator === "lessThanOrEqual"
+                    ? t("filterMaximumInclusive")
+                    : t("filterValue");
         return (
             <>
                 <TextField
                     size="small"
                     type={inputType}
-                    label={rule.operator === "between" ? t("filterFrom") : t("filterValue")}
+                    label={valueLabel}
                     value={Array.isArray(rule.value) ? rule.value[0] ?? "" : rule.value}
                     onChange={event => updateRule(rule, {value: event.target.value})}
                     InputLabelProps={type === "date" ? {shrink: true} : undefined}

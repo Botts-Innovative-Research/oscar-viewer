@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Event counts, pages, live updates, and bulk selection now use the same filter definition.
+- Occupancy ID, Max Gamma, and Max Neutron filters now default to inclusive minimum/maximum comparisons.
 - Server requests and adjudication commands use bounded concurrency to protect multi-lane deployments.
 
 

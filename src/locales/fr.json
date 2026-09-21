@@ -329,6 +329,8 @@
   "filterField.node": "Nœud",
   "filterOperator": "Opérateur",
   "filterValue": "Valeur",
+  "filterMinimumInclusive": "Minimum (≥)",
+  "filterMaximumInclusive": "Maximum (≤)",
   "filterFrom": "De",
   "filterTo": "À",
   "filterMatch": "Correspondance",
