@@ -1,5 +1,5 @@
 diff --git a/node_modules/osh-js/source/core/connector/MqttConnector.js b/node_modules/osh-js/source/core/connector/MqttConnector.js
-index f49ff58..9665a61 100644
+index f49ff58..034e6e1 100644
 --- a/node_modules/osh-js/source/core/connector/MqttConnector.js
 +++ b/node_modules/osh-js/source/core/connector/MqttConnector.js
 @@ -56,23 +56,99 @@ class MqttConnector extends DataConnector {
@@ -112,7 +112,20 @@ index f49ff58..9665a61 100644
      }
  
      getMqttProvider() {
-@@ -119,7 +195,7 @@ class MqttConnector extends DataConnector {
+@@ -98,12 +174,9 @@ class MqttConnector extends DataConnector {
+                 options: options,
+                 mqttPrefix: this.properties.mqttPrefix
+             });
+-            console.warn(`Stored MQTT provider into cache: ${fullUrl}`);
+             this.mqttProvider.connect();
+             this.mqttProvider.checkStatus = this.checkStatus;
+             this.checkStatus(Status.CONNECTED);
+-        } else {
+-            console.warn(`Getting MQTT provider from cache: ${fullUrl}`);
+         }
+         return this.mqttProvider;
+     }
+@@ -119,7 +192,7 @@ class MqttConnector extends DataConnector {
      doRequest(topic = '',queryString= undefined) {
          const mqttProvider = this.getMqttProvider();
  
@@ -278,23 +291,23 @@ index 40240c1..4797403 100644
              const datasourceBroadcastChannel = new BroadcastChannel(this.getTopicId());
              datasourceBroadcastChannel.onmessage = (message) => {
 diff --git a/node_modules/osh-js/source/core/datasource/TimeSeries.realtime.datasource.js b/node_modules/osh-js/source/core/datasource/TimeSeries.realtime.datasource.js
-index e0cc528..514a2d5 100644
+index e0cc528..23301c1 100644
 --- a/node_modules/osh-js/source/core/datasource/TimeSeries.realtime.datasource.js
 +++ b/node_modules/osh-js/source/core/datasource/TimeSeries.realtime.datasource.js
-@@ -38,10 +38,11 @@ function createSharedMqttConnector(properties, topic) {
+@@ -38,10 +38,9 @@ function createSharedMqttConnector(properties, topic) {
      if(!(url in mqttConnectors)) {
          mqttConnectors[url] = new MqttConnector(url, properties);
          mqttConnectors[url].initBc();
+-    } else {
+-        console.log(`Reuse shared MqttConnector instance for ${url}`);
 +        mqttConnectors[url].ensureConnected();
-     } else {
-         console.log(`Reuse shared MqttConnector instance for ${url}`);
      }
 -    return mqttConnectors[url].id;
 +    return mqttConnectors[url];
  }
  
  class TimeSeriesRealtimeDatasource extends DataSource {
-@@ -51,8 +52,9 @@ class TimeSeriesRealtimeDatasource extends DataSource {
+@@ -51,8 +50,9 @@ class TimeSeriesRealtimeDatasource extends DataSource {
          this.dataSynchronizer = undefined;
          this.properties.version = 0;
  
@@ -306,7 +319,7 @@ index e0cc528..514a2d5 100644
          }
      }
  
-@@ -256,8 +258,22 @@ class TimeSeriesRealtimeDatasource extends DataSource {
+@@ -256,8 +256,22 @@ class TimeSeriesRealtimeDatasource extends DataSource {
       * @protected
       * @param properties
       */
@@ -332,7 +345,7 @@ index e0cc528..514a2d5 100644
              data: this.getTopicId(),
              time: this.getTimeTopicId()
 diff --git a/node_modules/osh-js/source/core/mqtt/MqttProvider.js b/node_modules/osh-js/source/core/mqtt/MqttProvider.js
-index f9a21db..1eff729 100644
+index f9a21db..b3599ed 100644
 --- a/node_modules/osh-js/source/core/mqtt/MqttProvider.js
 +++ b/node_modules/osh-js/source/core/mqtt/MqttProvider.js
 @@ -17,8 +17,6 @@
@@ -352,7 +365,7 @@ index f9a21db..1eff729 100644
  
          let options = {
              reconnectPeriod: 30,
-@@ -93,22 +92,28 @@ class MqttProvider {
+@@ -93,22 +92,27 @@ class MqttProvider {
                      try {
                          // subscribe
                          // store callback for this topic
@@ -382,13 +395,12 @@ index f9a21db..1eff729 100644
 +                                    const subscriptionError = new Error(`Broker rejected MQTT subscription to ${topicQuery}`);
 +                                    error(subscriptionError);
 +                                } else {
-+                                    console.info(`MQTT subscription active: ${topicQuery}`);
 +                                    resolve(granted);
 +                                }
                              }
                          });
                      } catch (exception) {
-@@ -135,15 +140,19 @@ class MqttProvider {
+@@ -135,15 +139,18 @@ class MqttProvider {
       */
      async unsubscribe(topic) {
          const topicQuery = `${this.mqttPrefix}${topic}`;
@@ -410,32 +422,13 @@ index f9a21db..1eff729 100644
 +                    console.error(messageErr);
 +                    reject(new Error(messageErr));
 +                } else {
-+                    console.warn(`Unsubscribed topic: ${topicQuery}`);
 +                    resolve();
 +                }
 +            });
          });
      }
  
-@@ -164,6 +173,17 @@ class MqttProvider {
-                 console.info(`Mqtt client is connected to ${that.endpoint}`);
-             });
-             this.client.on('message', this.onMessage.bind(this));
-+            this.client.on('packetsend', packet => {
-+                if (packet.cmd === 'subscribe') {
-+                    const topics = packet.subscriptions.map(subscription => subscription.topic).join(', ');
-+                    console.info(`MQTT SUBSCRIBE sent: ${topics}`);
-+                }
-+            });
-+            this.client.on('packetreceive', packet => {
-+                if (packet.cmd === 'suback') {
-+                    console.info(`MQTT SUBACK received (messageId=${packet.messageId}, granted=${packet.granted.join(',')})`);
-+                }
-+            });
- 
-             this.client.on('reconnect', () => {
-                 console.warn(`Mqtt client is attempting to reconnect to ${that.endpoint}`);
-@@ -183,9 +203,9 @@ class MqttProvider {
+@@ -183,9 +190,9 @@ class MqttProvider {
      }
  
      async onMessage(topic, message) {
@@ -447,7 +440,7 @@ index f9a21db..1eff729 100644
                  // callback to all subscription registered
                  callback.callbackFn(new Uint8Array(message).subarray(message.byteOffset).buffer, callback.topic);
              }
-@@ -198,7 +218,7 @@ class MqttProvider {
+@@ -198,7 +205,7 @@ class MqttProvider {
          }
          // close the client
          this.client.end();

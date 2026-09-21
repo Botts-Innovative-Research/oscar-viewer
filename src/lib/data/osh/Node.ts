@@ -427,8 +427,6 @@ export class Node implements INode {
             allDataStreams.push(...dataStreams);
         }
 
-        console.log(allDataStreams)
-
         for (const dataStream of allDataStreams) {
             for (const [, laneEntry] of laneMap) {
                 if (laneEntry.parentNode.id != this.id)
