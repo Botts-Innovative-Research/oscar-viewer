@@ -50,6 +50,7 @@ import { useBreakpoint } from "@/app/providers";
 import BackButton from "../BackButton";
 import SuspenseLoad from "@/app/_components/SuspenseLoad";
 import {useLanguage} from '@/app/contexts/LanguageContext';
+import AlarmQrExportButton from "@/app/_components/alarm-transfer/AlarmQrExportButton";
 
 export function EventPreview() {
     const { isDesktop } = useBreakpoint();
@@ -360,6 +361,9 @@ export function EventPreview() {
                                 fontSize="small"
                             />
                         </IconButton>
+                    </Grid>
+                    <Grid item>
+                        <AlarmQrExportButton event={eventPreview.eventData} lane={laneEntry} iconOnly/>
                     </Grid>
                 </Grid>
                 {isDesktop && (
