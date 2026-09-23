@@ -3,7 +3,6 @@ import {AdjudicationCode} from "@/lib/data/oscar/adjudication/models/Adjudicatio
 
 
 export async function sendCommand(node: INode, controlStreamId: string, command: any) {
-    console.log("[Command Generation] Body:", command);
     let ep = node.getConnectedSystemsEndpoint(false) + `/controlstreams/${controlStreamId}/commands`
 
     return await fetch(ep, {

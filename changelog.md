@@ -1,6 +1,19 @@
 # OSCAR Viewer Change Log
 All notable changes to this project will be documented in this file. 
 
+## 3.8.4
+
+### Added
+
+- Added nested AND/OR filtering across all event columns on the dashboard and Events page.
+- Added cross-page alarm selection, selection of all filtered alarms, and bulk adjudication with progress and per-event failure isolation.
+
+### Changed
+
+- Event counts, pages, live updates, and bulk selection now use the same filter definition.
+- Occupancy ID, Max Gamma, and Max Neutron filters now default to inclusive minimum/maximum comparisons.
+- Server requests and adjudication commands use bounded concurrency to protect multi-lane deployments.
+
 
 ## 3.0.0 - 2025-11-11
 ### Added

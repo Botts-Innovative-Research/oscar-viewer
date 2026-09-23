@@ -3,10 +3,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "prebuild": "npm run validate:locales && node scripts/clean-build-output.js",
+    "prebuild": "npm run validate:locales && node scripts/clean-build-output.js && npm run verify:sentry",
     "build": "next build",
-    "postbuild": "node scripts/verify-mqtt-bundle.js",
+    "postbuild": "node scripts/verify-mqtt-bundle.js && npm run verify:sentry",
     "validate:locales": "node scripts/validate-locales.js",
+    "verify:sentry": "node scripts/verify-sentry-disabled.js",
     "start": "next start",
     "postinstall": "patch-package",
     "dev": "next dev",
