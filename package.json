@@ -17,6 +17,7 @@
     "test:map": "cypress run --component --spec 'cypress/component/MapUtils.cy.ts'",
     "test:discovery": "cypress run --component --spec 'cypress/component/LaneDiscovery.cy.ts'",
     "test:video": "cypress run --component --spec 'cypress/component/VideoStreamUtils.cy.ts'",
+    "test:adjudication": "cypress run --component --spec 'cypress/component/AdjudicationCommand.cy.ts'",
     "test:scheduled": "cypress run --e2e --spec 'cypress/e2e/DashboardPage.cy.tsx,cypress/e2e/EventDetailsPage.cy.tsx,cypress/e2e/EventDetailsLaneGuard.cy.tsx,cypress/e2e/EventLogPage.cy.tsx,cypress/e2e/LaneViewPage.cy.tsx,cypress/e2e/MapPage.cy.tsx,cypress/e2e/NationalViewPage.cy.tsx,cypress/e2e/ReportPage.cy.tsx'"
   },
   "keywords": [

@@ -1,9 +1,12 @@
 "use client";
 
-import React, {MutableRefObject, useEffect, useRef} from 'react';
+import React, {MutableRefObject, useCallback, useEffect, useRef, useState} from 'react';
 import {INode} from "@/lib/data/osh/Node";
 import Hls, {ErrorTypes} from "hls.js";
 import {LiveVideoError} from "@/lib/data/Errors";
+import {Box, Button} from "@mui/material";
+import {useLanguage} from "@/app/contexts/LanguageContext";
+import {attemptMediaPlayback} from "@/lib/media/MediaPlayback";
 
 export default function HLSVideoComponent({
     videoSource,
@@ -14,11 +17,28 @@ export default function HLSVideoComponent({
     selectedNode: INode,
     onManifestNotFound?: () => void,
 }) {
+    const {t} = useLanguage();
+    const [autoplayBlocked, setAutoplayBlocked] = useState(false);
 
-    const videoRef = useRef(null);
-    const hlsRef: MutableRefObject<Hls> = useRef(null);
+    const videoRef = useRef<HTMLVideoElement | null>(null);
+    const hlsRef: MutableRefObject<Hls | null> = useRef(null);
     const MAX_RETRIES = 50;
     let currentRetry = 0;
+
+    const startPlayback = useCallback(async () => {
+        if (!videoRef.current) {
+            return;
+        }
+
+        const result = await attemptMediaPlayback(videoRef.current);
+        if (result.status === "started") {
+            setAutoplayBlocked(false);
+        } else if (result.status === "blocked") {
+            setAutoplayBlocked(true);
+        } else if (result.status === "failed") {
+            console.error("Unable to play HLS video", result.error);
+        }
+    }, []);
 
     useEffect(() => {
         if (!videoSource || !selectedNode || !videoRef.current)
@@ -26,6 +46,8 @@ export default function HLSVideoComponent({
 
         const tls = selectedNode.isSecure ? "s" : "";
         const src = `http${tls}://${selectedNode.address}:${selectedNode.port}${selectedNode.oshPathRoot}/buckets/${videoSource}`
+
+        setAutoplayBlocked(false);
 
         const loadHls = async () => {
             if (typeof window === 'undefined') return;
@@ -69,11 +91,11 @@ export default function HLSVideoComponent({
                 hls.attachMedia(videoRef.current);
 
                 hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    videoRef.current?.play();
+                    void startPlayback();
                 });
             } else if (videoRef.current.canPlayType('application/vnd.apple.mpegURL')) {
                 videoRef.current.src = src;
-                videoRef.current.play();
+                void startPlayback();
             }
         };
 
@@ -86,14 +108,25 @@ export default function HLSVideoComponent({
             }
         }
 
-    }, [videoSource, selectedNode, onManifestNotFound]);
+    }, [videoSource, selectedNode, onManifestNotFound, startPlayback]);
 
     return (
-        <video
-            id="video"
-            ref={videoRef}
-            width="100%"
-            height="500px"
-        />
+        <Box>
+            <video
+                id="video"
+                ref={videoRef}
+                width="100%"
+                height="500px"
+                autoPlay
+                controls
+                muted
+                playsInline
+            />
+            {autoplayBlocked && (
+                <Button onClick={() => void startPlayback()} variant="contained" fullWidth>
+                    {t('play')}
+                </Button>
+            )}
+        </Box>
     )
 }

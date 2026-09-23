@@ -78,6 +78,7 @@ export function EventPreview() {
     // Adjudication Specifics
     const [adjFormData, setAdjFormData] = useState<IAdjudicationData | null>();
     const [notes, setNotes] = useState<string>("");
+    const [vehicleId, setVehicleId] = useState<string>("");
     const [adjudicationCode, setAdjudicationCode] = useState<AdjudicationCode>(AdjudicationCodes.codes[0]);
     const [adjudication, setAdjudication] = useState<AdjudicationData | null>();
     const [secondaryInspection, setSecondaryInspection] = useState<"NONE" | "COMPLETED"| "REQUESTED" | "">("");
@@ -100,6 +101,7 @@ export function EventPreview() {
             secondaryInspectionStatus: secondaryInspection,
             filePaths: [],
             occupancyObsId: eventPreview.eventData.occupancyObsId,
+            vehicleId,
         }
 
         let adjudicationData = new AdjudicationData(
@@ -110,6 +112,7 @@ export function EventPreview() {
 
         adjudicationData.setFeedback(notes);
         adjudicationData.setAdjudicationCode(value);
+        adjudicationData.setVehicleId(vehicleId);
 
         setAdjudicationCode(value);
         setAdjFormData(newAdjData);
@@ -119,6 +122,10 @@ export function EventPreview() {
     const handleNotes = (event: React.ChangeEvent<HTMLInputElement>) => {
         let notesValues = event.target.value;
         setNotes(notesValues);
+    }
+
+    const handleVehicleId = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setVehicleId(event.target.value);
     }
 
     const sendAdjudicationData = async () => {
@@ -135,6 +142,7 @@ export function EventPreview() {
         comboData.setFeedback(notes);
         comboData.setTime(phenomenonTime);
         comboData.setSecondaryInspectionStatus(secondaryInspection);
+        comboData.setVehicleId(vehicleId);
 
         // send to server
         if (!laneEntry) {
@@ -228,6 +236,7 @@ export function EventPreview() {
         setAdjFormData(null);
         setAdjudication(null);
         setNotes("");
+        setVehicleId("");
         setAdjudicationCode(AdjudicationCodes.codes[0]);
     }
 
@@ -385,6 +394,17 @@ export function EventPreview() {
                     ) :
                     <SuspenseLoad />
                 }
+            </Grid>
+
+            {/* VEHICLE ID */}
+            <Grid item xs={12}>
+                <TextField
+                    label={t('vehicleId')}
+                    name="vehicleId"
+                    value={vehicleId}
+                    onChange={handleVehicleId}
+                    fullWidth
+                />
             </Grid>
 
             {/* ADJUDICATION SELECT */}

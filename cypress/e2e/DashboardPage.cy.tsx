@@ -104,6 +104,11 @@ describe('Dashboard', () => {
                 .should('exist')
                 .then(() => {
 
+                    cy.get('input[name="vehicleId"]')
+                        .should('be.visible')
+                        .clear()
+                        .type('TEST-VEHICLE-001');
+
                     // adjudicate
                     cy.contains('label', 'Adjudicate')
                         .parent()
@@ -370,7 +375,6 @@ describe('Dashboard', () => {
     //     });
     // });
 });
-
 
 
 
