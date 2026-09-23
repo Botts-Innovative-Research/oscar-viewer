@@ -27,6 +27,16 @@ const mainBundle = mainChunks.join('\n');
 const workerBundle = workerChunks.join('\n');
 const requiredMainMarkers = ['registerMessagePort', 'sharedMqttConnector', 'new MessageChannel'];
 const missingMainMarkers = requiredMainMarkers.filter(marker => !mainBundle.includes(marker));
+const forbiddenVerboseMarkers = [
+    'Stored MQTT provider into cache:',
+    'Getting MQTT provider from cache:',
+    'Reuse shared MqttConnector instance for',
+    'MQTT SUBSCRIBE sent:',
+    'MQTT SUBACK received',
+    'MQTT subscription active:',
+    'Unsubscribed topic:'
+];
+const presentVerboseMarkers = forbiddenVerboseMarkers.filter(marker => mainBundle.includes(marker));
 
 if (missingMainMarkers.length > 0 || !workerBundle.includes('messagePort')) {
     const details = missingMainMarkers.length > 0
@@ -35,4 +45,10 @@ if (missingMainMarkers.length > 0 || !workerBundle.includes('messagePort')) {
     throw new Error(`MQTT bundle verification failed: ${details}`);
 }
 
-console.log('Verified one-socket MQTT MessagePort multiplexing in the production bundle.');
+if (presentVerboseMarkers.length > 0) {
+    throw new Error(
+        `MQTT bundle verification failed: verbose production logging remains: ${presentVerboseMarkers.join(', ')}`
+    );
+}
+
+console.log('Verified one-socket MQTT MessagePort multiplexing and production logging in the production bundle.');
