@@ -423,7 +423,14 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
             let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == props.event.dataStreamId);
 
-            let streams = currLaneEntry.controlStreams.length > 0 ? currLaneEntry.controlStreams : await currLaneEntry.parentNode.fetchNodeControlStreams();
+            let streams = currLaneEntry.controlStreams;
+            if (streams.length === 0) {
+                const laneSystemIds = new Set(currLaneEntry.systems.map(
+                    (system: any) => system.properties.id));
+                const nodeControlStreams = await currLaneEntry.parentNode.fetchNodeControlStreams() ?? [];
+                streams = nodeControlStreams.filter((stream: typeof ControlStream) =>
+                    laneSystemIds.has(stream.properties["system@id"]));
+            }
             let adjControlStream = streams.find((stream: typeof ControlStream) => isAdjudicationControlStream(stream));
 
             if (!adjControlStream) {

@@ -132,7 +132,10 @@ export function isNationalControlStream(controlStream: typeof ControlStream): bo
     const definitions = getControlledDefinitions(controlStream);
     return includesDefinition(definitions, START_DEF)
         && includesDefinition(definitions, END_DEF)
-        && definitions.length === 2;
+        // Report generation also has start/end fields. Excluding its explicit
+        // discriminator keeps statistics discovery stable as optional
+        // statistics parameters are added over time.
+        && !includesDefinition(definitions, REPORT_DEF);
 }
 
 export function isAdjudicationControlStream(controlStream: typeof ControlStream): boolean {

@@ -206,6 +206,16 @@
   "stateOfHealth": "Estado de funcionamiento",
   "laneSelector": "Selector de carril",
   "nodeSelector": "Selector de nodo",
+  "reportScope": "Alcance del informe",
+  "reportScopeNode": "Nodo completo",
+  "reportScopeOperationalView": "Vista operativa",
+  "reportScopeLanes": "Carriles específicos",
+  "operationalViewSelector": "Vista operativa",
+  "operationalViewLaneCount": "{count} carriles",
+  "loadingOperationalViews": "Cargando vistas operativas...",
+  "operationalViewLoadFailed": "No se pudieron cargar las vistas operativas de este nodo.",
+  "selectOperationalViewForReport": "Seleccione una vista operativa para el informe.",
+  "reportScopeUnavailable": "El alcance seleccionado no tiene carriles disponibles.",
   "reportType": "Tipo de informe",
   "rdsSiteReport": "Informe del sitio RDS",
   "laneReport": "Informe del carril",
@@ -425,5 +435,8 @@
   "occupancyInProgress": "Ocupación en curso",
   "waitingForTelemetry": "Esperando telemetría",
   "waiting": "Esperando",
-  "clear": "Normal"
+  "clear": "Normal",
+  "operationalViewValue": "Vista: {view}",
+  "operationalViewInvalid": "La URL de la vista operativa no es válida. No se cargó ningún carril.",
+  "operationalViewEmpty": "No hay carriles asignados a la vista operativa \"{view}\"."
 }

@@ -206,6 +206,16 @@
   "stateOfHealth": "État de fonctionnement",
   "laneSelector": "Sélecteur de voie",
   "nodeSelector": "Sélecteur de nœud",
+  "reportScope": "Portée du rapport",
+  "reportScopeNode": "Nœud entier",
+  "reportScopeOperationalView": "Vue opérationnelle",
+  "reportScopeLanes": "Voies spécifiques",
+  "operationalViewSelector": "Vue opérationnelle",
+  "operationalViewLaneCount": "{count} voies",
+  "loadingOperationalViews": "Chargement des vues opérationnelles...",
+  "operationalViewLoadFailed": "Impossible de charger les vues opérationnelles de ce nœud.",
+  "selectOperationalViewForReport": "Veuillez sélectionner une vue opérationnelle pour le rapport.",
+  "reportScopeUnavailable": "La portée sélectionnée ne contient aucune voie disponible.",
   "reportType": "Type de rapport",
   "rdsSiteReport": "Rapport du site RDS",
   "laneReport": "Rapport de la voie",
@@ -425,5 +435,8 @@
   "occupancyInProgress": "Occupation en cours",
   "waitingForTelemetry": "En attente de télémétrie",
   "waiting": "En attente",
-  "clear": "Normal"
+  "clear": "Normal",
+  "operationalViewValue": "Vue : {view}",
+  "operationalViewInvalid": "L’URL de la vue opérationnelle n’est pas valide. Aucune voie n’a été chargée.",
+  "operationalViewEmpty": "Aucune voie n’est affectée à la vue opérationnelle \"{view}\"."
 }

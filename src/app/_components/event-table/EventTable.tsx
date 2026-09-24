@@ -1,6 +1,6 @@
 "use client";
 
-import {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
 import {Alert, Box, Snackbar} from "@mui/material";
 import {useSelector} from "react-redux";
 import {
@@ -39,6 +39,7 @@ import {
 import {useLanguage} from "@/app/contexts/LanguageContext";
 import {NotificationService, NotificationTemplates} from "../notifications/NotificationService";
 import {getDataGridLocaleText, getIntlLocale} from "@/app/utils/LocaleUtils";
+import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import CustomToolbar from "@/app/_components/CustomToolbar";
 import NestedEventFilterDialog from "@/app/_components/event-table/NestedEventFilterDialog";
 import BulkAdjudicationDialog, {BulkAdjudicationSummary} from "@/app/_components/event-table/BulkAdjudicationDialog";
@@ -99,6 +100,7 @@ export default function EventTable({
     const adjudicatedEventId = useSelector(selectAdjudicatedEventId);
     const dispatch = useAppDispatch();
     const router = useRouter();
+    const {activeViewKey, scopedHref} = useContext(DataSourceContext);
     const {language, t} = useLanguage();
     const locale = getIntlLocale(language);
 
@@ -183,8 +185,8 @@ export default function EventTable({
             body: t("newAlarmBody", {lane: event.laneId, occupancyId: event.occupancyCount ?? ""}),
             viewAlarm: t("viewAlarm"),
             dismiss: t("dismiss"),
-        }));
-    }, [t]);
+        }, activeViewKey));
+    }, [t, activeViewKey]);
 
     const eventFromObservation = useCallback((observation: any, lane: LaneMapEntry, live: boolean): EventTableData => {
         const result = observation.properties?.result || observation.result || observation;
@@ -415,7 +417,7 @@ export default function EventTable({
         dispatch(setSelectedRowId(event.id));
         dispatch(setSelectedEvent(event));
         getLatestGB(event);
-        if (navigate) router.push("/event-details");
+        if (navigate) router.push(scopedHref("/event-details"));
     };
 
     const enumerateAllFiltered = useCallback(async (): Promise<EventTableData[]> => {
