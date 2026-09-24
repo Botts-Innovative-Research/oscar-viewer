@@ -18,7 +18,11 @@ import {LatLngExpression} from "leaflet";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
-import {systemMatchesOperationalView} from "@/lib/data/oscar/OperationalView";
+import {
+    buildOperationalViewCatalog,
+    OperationalViewCatalog,
+    systemMatchesOperationalView,
+} from "@/lib/data/oscar/OperationalView";
 
 const LANE_SYSTEM_UID_PREFIX = "urn:osh:system:lane:";
 
@@ -63,6 +67,8 @@ export interface INode {
     fetchDataStreams(laneMap: Map<string, LaneMapEntry>): void,
 
     fetchLaneSystemsAndSubsystems(viewKey?: string | null): Promise<Map<string, LaneMapEntry>>,
+
+    fetchOperationalViewCatalog(): Promise<OperationalViewCatalog>,
 
     fetchLaneControlStreams(laneMap: Map<string, LaneMapEntry>): Promise<any>,
 
@@ -135,6 +141,7 @@ export class Node implements INode {
     observationsApi: typeof Observations;
     oscarServiceSystem: typeof System;
     controlStreamApi: typeof ControlStreams;
+    operationalViewCatalogPromise: Promise<OperationalViewCatalog> | null = null;
 
     constructor(options: NodeOptions) {
         this.id = "node-" + hashString(options.address + "-" + options.port); // TODO: maybe do something else here
@@ -357,6 +364,31 @@ export class Node implements INode {
         }
 
         return laneMap;
+    }
+
+    async fetchOperationalViewCatalog(): Promise<OperationalViewCatalog> {
+        if (this.operationalViewCatalogPromise)
+            return this.operationalViewCatalogPromise;
+
+        this.operationalViewCatalogPromise = (async () => {
+            const systems = await this.fetchSystems();
+            if (!systems)
+                return buildOperationalViewCatalog([]);
+
+            const laneSystems = systems.filter((system) =>
+                system?.properties?.properties?.uid?.startsWith(LANE_SYSTEM_UID_PREFIX));
+            await Promise.all(laneSystems.map((system) =>
+                this.loadOperationalViewKeywords(system)));
+            return buildOperationalViewCatalog(laneSystems);
+        })();
+
+        try {
+            return await this.operationalViewCatalogPromise;
+        } catch (error) {
+            // Permit a later retry after a transient discovery failure.
+            this.operationalViewCatalogPromise = null;
+            throw error;
+        }
     }
 
     private async loadOperationalViewKeywords(system: any): Promise<void> {

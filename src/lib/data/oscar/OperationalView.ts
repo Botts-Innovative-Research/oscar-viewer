@@ -6,6 +6,20 @@ export interface OperationalViewSelection {
     error: "invalid" | null;
 }
 
+export interface OperationalViewLane {
+    uid: string;
+    name: string;
+}
+
+export interface OperationalViewCatalog {
+    lanes: OperationalViewLane[];
+    views: Map<string, OperationalViewLane[]>;
+}
+
+export function emptyOperationalViewCatalog(): OperationalViewCatalog {
+    return {lanes: [], views: new Map()};
+}
+
 export function parseOperationalView(search: string): OperationalViewSelection {
     const params = new URLSearchParams(search);
     if (!params.has("view"))
@@ -30,6 +44,43 @@ export function getOperationalViewKeys(system: any): string[] {
         .filter((keyword): keyword is string => typeof keyword === "string")
         .filter((keyword) => keyword.startsWith(OPERATIONAL_VIEW_KEYWORD_PREFIX))
         .map((keyword) => keyword.substring(OPERATIONAL_VIEW_KEYWORD_PREFIX.length));
+}
+
+export function buildOperationalViewCatalog(systems: any[]): OperationalViewCatalog {
+    const lanes: OperationalViewLane[] = [];
+    const views = new Map<string, OperationalViewLane[]>();
+
+    systems.forEach((system) => {
+        const uid = system?.properties?.properties?.uid;
+        if (typeof uid !== "string" || !uid.startsWith("urn:osh:system:lane:"))
+            return;
+
+        const lane = {
+            uid,
+            name: system?.properties?.properties?.name || uid,
+        };
+        lanes.push(lane);
+
+        getOperationalViewKeys(system).forEach((key) => {
+            if (!OPERATIONAL_VIEW_KEY_PATTERN.test(key))
+                return;
+            const assignedLanes = views.get(key) ?? [];
+            if (!assignedLanes.some((assignedLane) => assignedLane.uid === uid))
+                assignedLanes.push(lane);
+            views.set(key, assignedLanes);
+        });
+    });
+
+    const compareLanes = (a: OperationalViewLane, b: OperationalViewLane) =>
+        a.name.localeCompare(b.name) || a.uid.localeCompare(b.uid);
+    lanes.sort(compareLanes);
+
+    return {
+        lanes,
+        views: new Map([...views.entries()]
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([key, assignedLanes]) => [key, assignedLanes.sort(compareLanes)])),
+    };
 }
 
 export function systemMatchesOperationalView(system: any, viewKey: string | null): boolean {

@@ -1,4 +1,5 @@
 import {
+    buildOperationalViewCatalog,
     getOperationalViewKeys,
     parseOperationalView,
     systemMatchesOperationalView,
@@ -6,6 +7,9 @@ import {
 } from "../../src/lib/data/oscar/OperationalView";
 import {Node} from "../../src/lib/data/osh/Node";
 import {shouldClearUnavailablePreview} from "../../src/app/_components/dashboard/QuickView";
+import {resolveReportScope} from "../../src/lib/data/oscar/ReportScope";
+import {isNationalControlStream} from "../../src/lib/data/oscar/Utilities";
+import {END_DEF, REPORT_DEF, START_DEF} from "../../src/lib/data/Constants";
 
 function geoJsonSystem(id: string, uid: string, name: string) {
     return {
@@ -89,6 +93,83 @@ describe("operational view scoping", () => {
         expect(lanes.has("lane1")).to.equal(true);
         expect(lanes.has("lane2")).to.equal(false);
         expect(northLane.properties.properties.keywords).to.deep.equal(["oscar:view:north-gate"]);
+    });
+
+    it("builds and caches the report catalog for every operational view", async () => {
+        const northLane = geoJsonSystem("north-id", "urn:osh:system:lane:lane1", "Lane 1");
+        const sharedLane = geoJsonSystem("shared-id", "urn:osh:system:lane:lane2", "Lane 2");
+        const node: any = Object.create(Node.prototype);
+
+        node.fetchSystems = cy.stub().resolves([northLane, sharedLane]);
+        node.systemsApi = {
+            getSystemById: cy.stub().callsFake((id: string) => Promise.resolve({
+                properties: {
+                    keywords: id === "north-id"
+                        ? ["oscar:view:north-gate"]
+                        : ["oscar:view:north-gate", "oscar:view:secondary"],
+                },
+            })),
+        };
+
+        const catalog = await node.fetchOperationalViewCatalog();
+        const cachedCatalog = await node.fetchOperationalViewCatalog();
+
+        expect(node.fetchSystems).to.have.been.calledOnce;
+        expect(cachedCatalog).to.equal(catalog);
+        expect(catalog.lanes.map((lane: any) => lane.uid)).to.deep.equal([
+            "urn:osh:system:lane:lane1",
+            "urn:osh:system:lane:lane2",
+        ]);
+        expect(catalog.views.get("north-gate").map((lane: any) => lane.uid)).to.deep.equal([
+            "urn:osh:system:lane:lane1",
+            "urn:osh:system:lane:lane2",
+        ]);
+        expect(catalog.views.get("secondary").map((lane: any) => lane.uid)).to.deep.equal([
+            "urn:osh:system:lane:lane2",
+        ]);
+    });
+
+    it("resolves operational-view and explicit-lane report scopes", () => {
+        const lane1 = geoJsonSystem("lane-1", "urn:osh:system:lane:lane1", "Lane 1");
+        const lane2 = geoJsonSystem("lane-2", "urn:osh:system:lane:lane2", "Lane 2");
+        lane1.properties.properties.keywords = ["oscar:view:north-gate"];
+        lane2.properties.properties.keywords = ["oscar:view:south-gate"];
+        const catalog = buildOperationalViewCatalog([lane1, lane2]);
+
+        expect(resolveReportScope("OPERATIONAL_VIEW", "RDS_SITE", "north-gate", [], catalog))
+            .to.deep.equal({laneUIDs: ["urn:osh:system:lane:lane1"], error: null});
+        expect(resolveReportScope("LANES", "EVENT", "", ["urn:osh:system:lane:lane2"], catalog))
+            .to.deep.equal({laneUIDs: ["urn:osh:system:lane:lane2"], error: null});
+        expect(resolveReportScope("NODE", "LANE", "", [], catalog))
+            .to.deep.equal({
+                laneUIDs: ["urn:osh:system:lane:lane1", "urn:osh:system:lane:lane2"],
+                error: null,
+            });
+    });
+
+    it("recognizes statistics controls with the optional lane scope field", () => {
+        const controlStream = {
+            properties: {
+                controlledProperties: [
+                    {definition: START_DEF},
+                    {definition: END_DEF},
+                    {definition: "http://www.opengis.net/def/property/OGC/0/LaneUID"},
+                ],
+            },
+        } as any;
+
+        expect(isNationalControlStream(controlStream)).to.equal(true);
+
+        const reportControl = {
+            properties: {
+                controlledProperties: [
+                    {definition: START_DEF},
+                    {definition: END_DEF},
+                    {definition: REPORT_DEF},
+                ],
+            },
+        } as any;
+        expect(isNationalControlStream(reportControl)).to.equal(false);
     });
 
     it("does not request SensorML descriptions for the default unscoped view", async () => {
