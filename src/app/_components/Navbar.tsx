@@ -26,6 +26,7 @@ import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
 import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
 import SettingsIcon from '@mui/icons-material/Settings';
 import MediationIcon from '@mui/icons-material/Mediation';
+import MonitorHeartRoundedIcon from '@mui/icons-material/MonitorHeartRounded';
 import {Button, FormControlLabel, Menu, MenuItem, Slider, Stack, Switch, Tooltip} from '@mui/material';
 import Link from 'next/link';
 import {Download, InsertChart, VolumeDown, VolumeUp} from "@mui/icons-material";
@@ -257,6 +258,11 @@ export default function Navbar({children}: { children: React.ReactNode }) {
             title: t('events'),
             icon: <WarningRoundedIcon/>,
             href: "/event-log",
+        },
+        {
+            title: t('stateOfHealth'),
+            icon: <MonitorHeartRoundedIcon/>,
+            href: "/health",
         },
         {
             title: t('map'),
