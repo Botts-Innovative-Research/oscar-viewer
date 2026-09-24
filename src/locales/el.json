@@ -174,6 +174,16 @@
   "stateOfHealth": "Κατάσταση λειτουργίας",
   "laneSelector": "Επιλογή λωρίδας",
   "nodeSelector": "Επιλογή κόμβου",
+  "reportScope": "Εύρος αναφοράς",
+  "reportScopeNode": "Ολόκληρος κόμβος",
+  "reportScopeOperationalView": "Λειτουργική προβολή",
+  "reportScopeLanes": "Συγκεκριμένες λωρίδες",
+  "operationalViewSelector": "Λειτουργική προβολή",
+  "operationalViewLaneCount": "{count} λωρίδες",
+  "loadingOperationalViews": "Φόρτωση λειτουργικών προβολών...",
+  "operationalViewLoadFailed": "Δεν ήταν δυνατή η φόρτωση των λειτουργικών προβολών για αυτόν τον κόμβο.",
+  "selectOperationalViewForReport": "Επιλέξτε μια λειτουργική προβολή για την αναφορά.",
+  "reportScopeUnavailable": "Το επιλεγμένο εύρος αναφοράς δεν έχει διαθέσιμες λωρίδες.",
   "reportType": "Τύπος αναφοράς",
   "rdsSiteReport": "Αναφορά εγκατάστασης RDS",
   "laneReport": "Αναφορά λωρίδας",
@@ -367,5 +377,8 @@
   "retryFailed": "Επανάληψη αποτυχημένων",
   "adjudicateCount": "Κατάταξη {count}",
   "bulkAdjudicationFailed": "Η μαζική κατάταξη δεν ολοκληρώθηκε. Κανένα αποτυχημένο στοιχείο δεν αποκρύφθηκε· ελέγξτε τη σύνδεση και δοκιμάστε ξανά.",
-  "bulkSelectionLoadFailed": "Δεν ήταν δυνατή η φόρτωση ολόκληρης της φιλτραρισμένης λίστας συναγερμών. Δεν επιλέχθηκε τίποτα."
+  "bulkSelectionLoadFailed": "Δεν ήταν δυνατή η φόρτωση ολόκληρης της φιλτραρισμένης λίστας συναγερμών. Δεν επιλέχθηκε τίποτα.",
+  "operationalViewValue": "Προβολή: {view}",
+  "operationalViewInvalid": "Η διεύθυνση URL της λειτουργικής προβολής δεν είναι έγκυρη. Δεν φορτώθηκαν λωρίδες.",
+  "operationalViewEmpty": "Δεν έχουν ανατεθεί λωρίδες στη λειτουργική προβολή \"{view}\"."
 }

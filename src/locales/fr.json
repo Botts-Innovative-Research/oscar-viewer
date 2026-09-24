@@ -174,6 +174,16 @@
   "stateOfHealth": "État de fonctionnement",
   "laneSelector": "Sélecteur de voie",
   "nodeSelector": "Sélecteur de nœud",
+  "reportScope": "Portée du rapport",
+  "reportScopeNode": "Nœud entier",
+  "reportScopeOperationalView": "Vue opérationnelle",
+  "reportScopeLanes": "Voies spécifiques",
+  "operationalViewSelector": "Vue opérationnelle",
+  "operationalViewLaneCount": "{count} voies",
+  "loadingOperationalViews": "Chargement des vues opérationnelles...",
+  "operationalViewLoadFailed": "Impossible de charger les vues opérationnelles de ce nœud.",
+  "selectOperationalViewForReport": "Veuillez sélectionner une vue opérationnelle pour le rapport.",
+  "reportScopeUnavailable": "La portée sélectionnée ne contient aucune voie disponible.",
   "reportType": "Type de rapport",
   "rdsSiteReport": "Rapport du site RDS",
   "laneReport": "Rapport de la voie",
@@ -367,5 +377,8 @@
   "retryFailed": "Réessayer les échecs",
   "adjudicateCount": "Adjuger {count}",
   "bulkAdjudicationFailed": "L’adjudication groupée n’a pas pu être terminée. Aucun élément en échec n’a été masqué ; vérifiez la connexion et réessayez.",
-  "bulkSelectionLoadFailed": "La liste complète des alarmes filtrées n’a pas pu être chargée. Aucun élément n’a été sélectionné."
+  "bulkSelectionLoadFailed": "La liste complète des alarmes filtrées n’a pas pu être chargée. Aucun élément n’a été sélectionné.",
+  "operationalViewValue": "Vue : {view}",
+  "operationalViewInvalid": "L’URL de la vue opérationnelle n’est pas valide. Aucune voie n’a été chargée.",
+  "operationalViewEmpty": "Aucune voie n’est affectée à la vue opérationnelle \"{view}\"."
 }
