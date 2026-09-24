@@ -1,6 +1,6 @@
 "use client";
 
-import {Alert, Button, Grid, Paper, Typography} from "@mui/material";
+import {Alert, Button, Grid, Paper, Stack, Typography} from "@mui/material";
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import BackButton from "../_components/BackButton";
 import DataRow from "../_components/event-details/DataRow";
@@ -15,6 +15,7 @@ import EventMedia from "../_components/event-preview/EventMedia";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 import AdjudicationDetail from "../_components/adjudication/AdjudicationDetail";
 import SuspenseLoad from "@/app/_components/SuspenseLoad";
+import AlarmQrExportButton from "@/app/_components/alarm-transfer/AlarmQrExportButton";
 
 
 export default function EventDetailsPage() {
@@ -108,15 +109,18 @@ export default function EventDetailsPage() {
                         </Grid>
                     </Grid>
                     {eventData && <Grid item xs={12} sm={"auto"}>
-                        <Button
-                            variant="outlined"
-                            startIcon={<PictureAsPdfRounded/>}
-                            onClick={() => {
-                                reactToPrintFn()
-                            }}
-                        >
-                            {t('exportAsPdf')}
-                        </Button>
+                        <Stack direction={{xs: "column", sm: "row"}} spacing={1}>
+                            {laneEntry && <AlarmQrExportButton event={eventData} lane={laneEntry}/>}
+                            <Button
+                                variant="outlined"
+                                startIcon={<PictureAsPdfRounded/>}
+                                onClick={() => {
+                                    reactToPrintFn()
+                                }}
+                            >
+                                {t('exportAsPdf')}
+                            </Button>
+                        </Stack>
                     </Grid>}
                 </Grid>
 
