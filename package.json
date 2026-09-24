@@ -20,6 +20,7 @@
     "test:adjudication": "cypress run --component --spec 'cypress/component/AdjudicationCommand.cy.ts'",
     "test:event-filter": "cypress run --component --spec 'cypress/component/EventFilter.cy.ts'",
     "test:alarm-transfer": "cypress run --component --spec 'cypress/component/AlarmQrTransfer.cy.ts'",
+    "test:health": "cypress run --component --spec 'cypress/component/HealthPage.cy.tsx'",
     "test:scheduled": "cypress run --e2e --spec 'cypress/e2e/DashboardPage.cy.tsx,cypress/e2e/EventDetailsPage.cy.tsx,cypress/e2e/EventDetailsLaneGuard.cy.tsx,cypress/e2e/EventLogPage.cy.tsx,cypress/e2e/LaneViewPage.cy.tsx,cypress/e2e/MapPage.cy.tsx,cypress/e2e/NationalViewPage.cy.tsx,cypress/e2e/ReportPage.cy.tsx'"
   },
   "keywords": [

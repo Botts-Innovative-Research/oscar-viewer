@@ -203,7 +203,7 @@
   "eventType": "Event Type",
   "alarmsAndOccupancies": "Alarms and Occupancies",
   "alarms": "Alarms",
-  "stateOfHealth": "State of Health",
+  "stateOfHealth": "Status of Health",
   "laneSelector": "Lane Selector",
   "nodeSelector": "Node Selector",
   "reportScope": "Report Scope",
