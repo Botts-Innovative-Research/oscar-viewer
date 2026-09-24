@@ -40,6 +40,7 @@ import { useRouter } from 'next/navigation';
 import {setEventPreview, setSelectedRowId} from "@/lib/state/EventPreviewSlice";
 import {setSelectedEvent} from "@/lib/state/EventDataSlice";
 import {setEventData} from "@/lib/state/EventDetailsSlice";
+import QrCodeScannerRoundedIcon from '@mui/icons-material/QrCodeScannerRounded';
 
 const drawerWidth = 240;
 const drawerWidthMobile = 200;
@@ -278,6 +279,11 @@ export default function Navbar({children}: { children: React.ReactNode }) {
             title: t('reportGenerator'),
             icon: <InsertChart/>,
             href: "/report",
+        },
+        {
+            title: t('alarmTransfer'),
+            icon: <QrCodeScannerRoundedIcon/>,
+            href: "/alarm-transfer",
         },
     ]
 
