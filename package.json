@@ -18,6 +18,9 @@
     "test:discovery": "cypress run --component --spec 'cypress/component/LaneDiscovery.cy.ts'",
     "test:video": "cypress run --component --spec 'cypress/component/VideoStreamUtils.cy.ts'",
     "test:adjudication": "cypress run --component --spec 'cypress/component/AdjudicationCommand.cy.ts'",
+    "test:event-filter": "cypress run --component --spec 'cypress/component/EventFilter.cy.ts'",
+    "test:alarm-transfer": "cypress run --component --spec 'cypress/component/AlarmQrTransfer.cy.ts'",
+    "test:health": "cypress run --component --spec 'cypress/component/HealthPage.cy.tsx'",
     "test:scheduled": "cypress run --e2e --spec 'cypress/e2e/DashboardPage.cy.tsx,cypress/e2e/EventDetailsPage.cy.tsx,cypress/e2e/EventDetailsLaneGuard.cy.tsx,cypress/e2e/EventLogPage.cy.tsx,cypress/e2e/LaneViewPage.cy.tsx,cypress/e2e/MapPage.cy.tsx,cypress/e2e/NationalViewPage.cy.tsx,cypress/e2e/ReportPage.cy.tsx'"
   },
   "keywords": [
@@ -35,6 +38,7 @@
     "@babel/preset-typescript": "^7.23.3",
     "@cypress/webpack-preprocessor": "^7.0.1",
     "@types/leaflet": "^1.9.12",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^18.2.67",
     "babel-loader": "^9.1.3",
     "copy-webpack-plugin": "^12.0.2",
@@ -75,6 +79,7 @@
     "chartjs-adapter-moment": "^1.0.1",
     "chartjs-plugin-annotation": "^3.0.1",
     "dayjs": "^1.11.13",
+    "fflate": "^0.8.3",
     "file-loader": "^6.2.0",
     "flatted": "^3.3.3",
     "hls.js": "^1.6.13",
@@ -93,6 +98,7 @@
     "patch-package": "^6.5.0",
     "path-browserify": "^1.0.1",
     "qr-scanner": "^1.4.2",
+    "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-draggable": "^4.4.5",

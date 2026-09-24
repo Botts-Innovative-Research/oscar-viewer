@@ -110,6 +110,8 @@ export const eventFilterFieldType = (field: EventFilterField): "metadata" | "str
 };
 
 export const operatorsForEventFilterField = (field: EventFilterField): EventFilterOperator[] => {
+    if (field === "adjudicatedIds")
+        return ["equals", "notEquals", "contains", "isAnyOf", "isEmpty", "isNotEmpty"];
     const type = eventFilterFieldType(field);
     if (type === "metadata") return ["equals", "notEquals", "contains", "startsWith", "isAnyOf"];
     if (type === "number") return ["greaterThanOrEqual", "lessThanOrEqual", "between", "equals"];
@@ -193,12 +195,19 @@ const compileRule = (rule: EventFilterRule, metadata: EventFilterMetadata): Comp
     }
 
     if (rule.field === "adjudicatedIds") {
-        const values = Array.isArray(rule.value) ? rule.value : [rule.value];
-        const parts = values.map(value => value === "Yes" ? "adjudicatedIdsCount>0" : "adjudicatedIdsCount=0");
-        const expression = parts.map(value => `(${value})`).join(" OR ");
-        if (rule.operator === "notEquals")
-            return {kind: "expression", value: values[0] === "Yes" ? "adjudicatedIdsCount=0" : "adjudicatedIdsCount>0"};
-        return {kind: "expression", value: expression};
+        if (rule.operator === "isEmpty")
+            return {kind: "expression", value: "adjudicatedIdsCount=0"};
+        if (rule.operator === "isNotEmpty")
+            return {kind: "expression", value: "adjudicatedIdsCount>0"};
+
+        const matchingLabels = ["Yes", "No"]
+            .filter(label => compareString(label, rule.operator, rule.value));
+        if (matchingLabels.length === 0) return FALSE;
+        if (matchingLabels.length === 2) return TRUE;
+        return {
+            kind: "expression",
+            value: matchingLabels[0] === "Yes" ? "adjudicatedIdsCount>0" : "adjudicatedIdsCount=0",
+        };
     }
 
     const property = rule.field;
@@ -277,6 +286,9 @@ const evaluateRule = (rule: EventFilterRule, event: EventTableData, metadata: Ev
 
     if (rule.field === "status") return compareString(event.status ?? "", rule.operator, rule.value);
     if (rule.field === "adjudicatedIds") {
+        const hasAdjudication = (event.adjudicatedIds?.length ?? 0) > 0;
+        if (rule.operator === "isEmpty") return !hasAdjudication;
+        if (rule.operator === "isNotEmpty") return hasAdjudication;
         const label = event.adjudicatedIds?.length > 0 ? "Yes" : "No";
         return compareString(label, rule.operator, rule.value);
     }

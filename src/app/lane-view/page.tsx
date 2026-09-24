@@ -1,6 +1,6 @@
 "use client";
 
-import {Grid, Paper, Stack, ToggleButton, ToggleButtonGroup, Typography} from "@mui/material";
+import {Alert, Grid, Paper, Stack, ToggleButton, ToggleButtonGroup, Typography} from "@mui/material";
 import BackButton from "../_components/BackButton";
 import LaneStatus from "../_components/lane-view/LaneStatus";
 import Media from "../_components/lane-view/Media";
@@ -31,7 +31,7 @@ export default function LaneViewPage() {
 
     const savedToggleState = useSelector(selectLastToggleState)
     const laneMap = useSelector((state: RootState) => selectLaneMap(state))
-    const {laneMapRef, readyLaneNames} = useContext(DataSourceContext);
+    const {laneMapRef, laneMapReady, readyLaneNames} = useContext(DataSourceContext);
 
     const currentLane = useSelector((state: RootState) => state.laneView.currentLane);
     const laneReady = Boolean(currentLane && readyLaneNames.has(currentLane));
@@ -129,7 +129,11 @@ export default function LaneViewPage() {
                 </Grid>
             </Grid>
 
-            {entry?.isRS350Backpack ? (
+            {laneMapReady && currentLane && !entry ? (
+                <Grid item xs={12}>
+                    <Alert severity="error">{t('eventLaneUnavailable', {lane: currentLane})}</Alert>
+                </Grid>
+            ) : entry?.isRS350Backpack ? (
                 <RS350BackpackView entry={entry} currentLane={currentLane} laneMap={laneMap}/>
             ) : (
                 <>

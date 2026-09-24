@@ -85,6 +85,7 @@ export const NotificationTemplates = {
     newAlarm: (
         eventData: any,
         labels: {title: string; body: string; viewAlarm: string; dismiss: string},
+        viewKey?: string | null,
     ): NotificationPayload => ({
         title: labels.title,
         body: labels.body,
@@ -95,6 +96,10 @@ export const NotificationTemplates = {
         ],
         badge: '/icons/icon-128x128.png',
         tag: 'alarm-notification',
-        data: eventData ? { eventId: eventData.id, eventData: JSON.parse(JSON.stringify(eventData)) } : undefined,
+        data: eventData ? {
+            eventId: eventData.id,
+            eventData: JSON.parse(JSON.stringify(eventData)),
+            ...(viewKey ? {viewKey} : {}),
+        } : undefined,
     }),
 }

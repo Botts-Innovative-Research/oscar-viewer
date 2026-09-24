@@ -12,7 +12,7 @@ import {
     CONNECTION_DEF, DOSE_DEF, DURATION_DEF, END_DEF, GAMMA_COUNT_DEF, HLS_VIDEO_DEF,
     LINEARSPEC_DEF, LOCATION_VECTOR_DEF, NATIONAL_DEF,
     NEUTRON_COUNT_DEF,
-    OCCUPANCY_PILLAR_DEF, RASTER_IMAGE_DEF, N42_DEF, REPORT_DEF, SENSOR_LOCATION_DEF,
+    OCCUPANCY_PILLAR_DEF, OCCUPANCY_STATUS_DEF, OGC_CONNECTION_DEF, RASTER_IMAGE_DEF, N42_DEF, REPORT_DEF, SENSOR_LOCATION_DEF,
     SITE_DIAGRAM_DEF, SPEED_DEF, START_DEF,
     TAMPER_STATUS_DEF,
     THRESHOLD_DEF, VIDEO_FRAME_DEF, WEB_ID_DEF
@@ -88,8 +88,17 @@ export function isOccupancyDataStream(datastream: typeof DataStream): boolean {
     return includesDefinition(getObservedDefinitions(datastream), OCCUPANCY_PILLAR_DEF);
 }
 
+export function isOccupancyStatusDataStream(datastream: typeof DataStream): boolean {
+    const definitions = getObservedDefinitions(datastream);
+    const outputName = datastream?.properties?.outputName;
+    return hasDefinition(definitions, OCCUPANCY_STATUS_DEF)
+        || (typeof outputName === "string" && outputName.toLowerCase() === "occupancystatus");
+}
+
 export function isConnectionDataStream(datastream: typeof DataStream): boolean {
-    return includesDefinition(getObservedDefinitions(datastream), CONNECTION_DEF);
+    const definitions = getObservedDefinitions(datastream);
+    return hasDefinition(definitions, CONNECTION_DEF)
+        || hasDefinition(definitions, OGC_CONNECTION_DEF);
 }
 
 export function isSpeedDataStream(datastream: typeof DataStream): boolean {
@@ -132,7 +141,10 @@ export function isNationalControlStream(controlStream: typeof ControlStream): bo
     const definitions = getControlledDefinitions(controlStream);
     return includesDefinition(definitions, START_DEF)
         && includesDefinition(definitions, END_DEF)
-        && definitions.length === 2;
+        // Report generation also has start/end fields. Excluding its explicit
+        // discriminator keeps statistics discovery stable as optional
+        // statistics parameters are added over time.
+        && !includesDefinition(definitions, REPORT_DEF);
 }
 
 export function isAdjudicationControlStream(controlStream: typeof ControlStream): boolean {

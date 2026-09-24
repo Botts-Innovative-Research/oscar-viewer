@@ -38,11 +38,12 @@ export class NationalGenerationCommand {
 }
 
 
-export function generateNationalCommandJSON(startDateTime: string, endDateTime: string,) {
+export function generateNationalCommandJSON(startDateTime: string, endDateTime: string, laneUIDs?: string[]) {
     return JSON.stringify({
         "parameters": {
             "startDateTime": startDateTime != null ? startDateTime : null,
             "endDateTime": endDateTime != null ? endDateTime : null,
+            "laneUID": laneUIDs?.length ? laneUIDs.join(";") : null,
         }
     })
 }

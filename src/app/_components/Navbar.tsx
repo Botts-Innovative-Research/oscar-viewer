@@ -26,7 +26,8 @@ import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
 import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
 import SettingsIcon from '@mui/icons-material/Settings';
 import MediationIcon from '@mui/icons-material/Mediation';
-import {Button, FormControlLabel, Menu, MenuItem, Slider, Stack, Switch, Tooltip} from '@mui/material';
+import MonitorHeartRoundedIcon from '@mui/icons-material/MonitorHeartRounded';
+import {Alert, Button, Chip, FormControlLabel, Menu, MenuItem, Slider, Stack, Switch, Tooltip} from '@mui/material';
 import Link from 'next/link';
 import {Download, InsertChart, VolumeDown, VolumeUp} from "@mui/icons-material";
 import AlarmAudio from "@/app/_components/AlarmAudio";
@@ -39,6 +40,8 @@ import { useRouter } from 'next/navigation';
 import {setEventPreview, setSelectedRowId} from "@/lib/state/EventPreviewSlice";
 import {setSelectedEvent} from "@/lib/state/EventDataSlice";
 import {setEventData} from "@/lib/state/EventDetailsSlice";
+import QrCodeScannerRoundedIcon from '@mui/icons-material/QrCodeScannerRounded';
+import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 
 const drawerWidth = 240;
 const drawerWidthMobile = 200;
@@ -135,6 +138,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
 
     const dispatch = useDispatch();
     const router = useRouter();
+    const {activeViewKey, viewError, scopedHref} = React.useContext(DataSourceContext);
     const savedVolume = useSelector(selectAlarmAudioVolume);
     const [authenticatedUsername, setAuthenticatedUsername] = useState<string | null>(null);
 
@@ -194,7 +198,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                     dispatch(setSelectedRowId(eventData.id));
                     dispatch(setSelectedEvent(eventData));
                     dispatch(setEventData(eventData));
-                    router.push('/event-details');
+                    router.push(scopedHref('/event-details'));
                 }
             };
 
@@ -205,7 +209,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
         } else {
             console.warn('[PWA] Service Worker not supported');
         }
-    }, [dispatch, router]);
+    }, [dispatch, router, scopedHref]);
 
     // fix where u can actually turn notifications off
     const handleNotifications = async () => {
@@ -259,6 +263,11 @@ export default function Navbar({children}: { children: React.ReactNode }) {
             href: "/event-log",
         },
         {
+            title: t('stateOfHealth'),
+            icon: <MonitorHeartRoundedIcon/>,
+            href: "/health",
+        },
+        {
             title: t('map'),
             icon: <LocationOnRoundedIcon/>,
             href: "/map",
@@ -272,6 +281,11 @@ export default function Navbar({children}: { children: React.ReactNode }) {
             title: t('reportGenerator'),
             icon: <InsertChart/>,
             href: "/report",
+        },
+        {
+            title: t('alarmTransfer'),
+            icon: <QrCodeScannerRoundedIcon/>,
+            href: "/alarm-transfer",
         },
     ]
 
@@ -295,7 +309,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
             <Divider/>
             <List>
                 {menuItems.map((item) => (
-                    <Link href={item.href} passHref key={item.title} onClick={!isDesktop ? handleDrawerClose : null}>
+                    <Link href={scopedHref(item.href)} passHref key={item.title} onClick={!isDesktop ? handleDrawerClose : null}>
                         <ListItem disablePadding sx={{display: 'block'}}>
                             <ListItemButton
                                 sx={{
@@ -322,7 +336,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
             <Divider/>
             <List>
                 {settingsItems.map((item) => (
-                    <Link href={item.href} passHref key={item.title} onClick={!isDesktop ? handleDrawerClose : null}>
+                    <Link href={scopedHref(item.href)} passHref key={item.title} onClick={!isDesktop ? handleDrawerClose : null}>
                         <ListItem disablePadding sx={{display: 'block'}}>
                             <ListItemButton
                                 sx={{
@@ -382,6 +396,14 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                         <Typography variant="h6" noWrap component="div">
                             {t('appTitle')}
                         </Typography>
+                        {activeViewKey && (
+                            <Chip
+                                label={t('operationalViewValue', {view: activeViewKey})}
+                                color="primary"
+                                variant="outlined"
+                                size="small"
+                            />
+                        )}
                         <Stack direction="row" alignItems="center" spacing={1}>
                             {authenticatedUsername && (
                                 <Typography variant="body2" noWrap sx={{maxWidth: {xs: 110, sm: 240}, overflow: 'hidden', textOverflow: 'ellipsis'}}>
@@ -517,6 +539,13 @@ export default function Navbar({children}: { children: React.ReactNode }) {
             >
                 <DrawerHeader/>
                 <Box sx={{ m: 2, mr: 0 }}>
+                    {viewError && (
+                        <Alert severity="error" sx={{mb: 2}}>
+                            {viewError === "invalid"
+                                ? t('operationalViewInvalid')
+                                : t('operationalViewEmpty', {view: activeViewKey ?? ''})}
+                        </Alert>
+                    )}
                     {children}
                 </Box>
             </Box>

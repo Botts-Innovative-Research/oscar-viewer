@@ -1,6 +1,6 @@
 "use client";
 
-import {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
 import {Alert, Box, Snackbar} from "@mui/material";
 import {useSelector} from "react-redux";
 import {
@@ -15,8 +15,6 @@ import {
 } from "@mui/x-data-grid";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
-import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
-import Observations from "osh-js/source/core/consysapi/observation/Observations";
 import {EventType} from "osh-js/source/core/event/EventType";
 import {useRouter} from "next/dist/client/components/navigation";
 
@@ -41,6 +39,7 @@ import {
 import {useLanguage} from "@/app/contexts/LanguageContext";
 import {NotificationService, NotificationTemplates} from "../notifications/NotificationService";
 import {getDataGridLocaleText, getIntlLocale} from "@/app/utils/LocaleUtils";
+import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import CustomToolbar from "@/app/_components/CustomToolbar";
 import NestedEventFilterDialog from "@/app/_components/event-table/NestedEventFilterDialog";
 import BulkAdjudicationDialog, {BulkAdjudicationSummary} from "@/app/_components/event-table/BulkAdjudicationDialog";
@@ -59,6 +58,10 @@ import {
     BulkAdjudicationValues,
     runWithConcurrency,
 } from "@/lib/data/oscar/BulkAdjudication";
+import {
+    buildObservationCountParams,
+    buildObservationPageParams,
+} from "@/lib/data/oscar/EventQuery";
 
 interface TableProps {
     tableMode: "eventlog" | "alarmtable" | "lanelog";
@@ -97,6 +100,7 @@ export default function EventTable({
     const adjudicatedEventId = useSelector(selectAdjudicatedEventId);
     const dispatch = useAppDispatch();
     const router = useRouter();
+    const {activeViewKey, scopedHref} = useContext(DataSourceContext);
     const {language, t} = useLanguage();
     const locale = getIntlLocale(language);
 
@@ -181,8 +185,8 @@ export default function EventTable({
             body: t("newAlarmBody", {lane: event.laneId, occupancyId: event.occupancyCount ?? ""}),
             viewAlarm: t("viewAlarm"),
             dismiss: t("dismiss"),
-        }));
-    }, [t]);
+        }, activeViewKey));
+    }, [t, activeViewKey]);
 
     const eventFromObservation = useCallback((observation: any, lane: LaneMapEntry, live: boolean): EventTableData => {
         const result = observation.properties?.result || observation.result || observation;
@@ -209,28 +213,23 @@ export default function EventTable({
     }, [sendNotification]);
 
     const fetchPlanRows = useCallback(async (plan: QueryPlan, limit: number, offset: number, cutoff = pageLoadedTime) => {
-        const observationFilter = new ObservationFilter({
-            dataStream: plan.datastreamIds,
-            resultTime: `../${cutoff}`,
-            filter: plan.filter,
-            order: "desc",
+        const params = buildObservationPageParams(plan, cutoff, limit, offset);
+        const response = await fetch(`${plan.node.getConnectedSystemsEndpoint(false)}/observations?${params}`, {
+            headers: {...plan.node.getBasicAuthHeader(), Accept: "application/om+json"},
+            credentials: "include",
         });
-        const api: typeof Observations = await plan.node.getObservationsApi();
-        const collection = await api.searchObservations(observationFilter, limit, offset);
-        const observations = await collection.fetchData();
-        return observations.flatMap((observation: any) => {
-            const lane = findLaneByDataStreamId(observation.properties["datastream@id"]);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        const observations = Array.isArray(payload?.items) ? payload.items : [];
+        return observations.flatMap((properties: any) => {
+            const lane = findLaneByDataStreamId(properties["datastream@id"]);
+            const observation = {id: properties.id, properties};
             return lane ? [eventFromObservation(observation, lane, false)] : [];
         });
     }, [eventFromObservation, findLaneByDataStreamId, pageLoadedTime]);
 
     const fetchPlanCount = useCallback(async (plan: QueryPlan, cutoff = pageLoadedTime, strict = false): Promise<number> => {
-        const params = new URLSearchParams({
-            resultTime: `../${cutoff}`,
-            format: "application/om+json",
-            dataStream: plan.datastreamIds.join(","),
-        });
-        if (plan.filter) params.set("filter", plan.filter);
+        const params = buildObservationCountParams(plan, cutoff);
         try {
             const response = await fetch(`${plan.node.getConnectedSystemsEndpoint(false)}/observations/count?${params}`, {
                 headers: {...plan.node.getBasicAuthHeader(), "Content-Type": "sml+json"},
@@ -418,7 +417,7 @@ export default function EventTable({
         dispatch(setSelectedRowId(event.id));
         dispatch(setSelectedEvent(event));
         getLatestGB(event);
-        if (navigate) router.push("/event-details");
+        if (navigate) router.push(scopedHref("/event-details"));
     };
 
     const enumerateAllFiltered = useCallback(async (): Promise<EventTableData[]> => {
@@ -540,6 +539,7 @@ export default function EventTable({
                 columns={columns}
                 loading={loading}
                 paginationMode="server"
+                filterMode="server"
                 paginationModel={paginationModel}
                 onPaginationModelChange={model => setPaginationModel(model)}
                 rowCount={rowCount}

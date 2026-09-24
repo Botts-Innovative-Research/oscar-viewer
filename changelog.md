@@ -1,6 +1,28 @@
 # OSCAR Viewer Change Log
 All notable changes to this project will be documented in this file. 
 
+## 4.0.0
+
+### Upgrade notes
+
+- This major release adds operator-facing navigation and URL-scoped operational views. Validate workstation URLs and train operators before production rollout.
+
+### Added
+
+- Added a localized Status of Health page for lane RPM and camera connectivity, radiation and tamper faults, and configurable extended-occupancy alerts.
+- Added URL-scoped operational views that consistently limit lane discovery, dashboards, maps, reports, notifications, and health monitoring to assigned lanes.
+- Added compact alarm QR export from the dashboard and Event Details, including adaptively downsampled gamma, neutron, and threshold series.
+- Added an offline Alarm Transfer page that scans a camera or saved QR image, imports portable alarm files, verifies transfer integrity, redraws charts, and downloads or shares the alarm package.
+- Added complete English, Spanish, French, and Greek interface translations for the transfer workflow.
+
+### Changed
+
+- Event filtering, counts, pagination, and bulk selection now query the complete matching server-side result set rather than only the currently loaded page.
+
+### Security
+
+- Alarm QR payloads are compressed Base45 documents with a SHA-256 corruption check and strict import limits. They are not encrypted or digitally signed, so the interface warns operators to confirm the source independently.
+
 ## 3.8.4
 
 ### Added
