@@ -62,20 +62,36 @@ describe("incremental lane discovery", () => {
         const controlRequest = new Promise<void>((resolve) => { resolveControls = resolve; });
         const node: any = {
             name: "Local Node",
-            fetchLaneSystemsAndSubsystems: async () =>
-                new Map([["lane1", laneEntry(node)]]),
+            fetchLaneSystemsAndSubsystems: cy.stub().resolves(
+                new Map([["lane1", laneEntry(node)]])),
             fetchDataStreams: cy.stub().returns(dataRequest),
             fetchLaneControlStreams: cy.stub().returns(controlRequest),
         };
 
-        const discovery = discoverLanesIncrementally([node], () => {});
+        const discovery = discoverLanesIncrementally([node], () => {}, "north-gate");
         await new Promise((resolve) => setTimeout(resolve, 0));
 
+        expect(node.fetchLaneSystemsAndSubsystems).to.have.been.calledWith("north-gate");
         expect(node.fetchDataStreams).to.have.been.calledOnce;
         expect(node.fetchLaneControlStreams).to.have.been.calledOnce;
 
         resolveData();
         resolveControls();
         await discovery;
+    });
+
+    it("does not issue unfiltered stream queries when a view has no lanes", async () => {
+        const node: any = {
+            name: "Local Node",
+            fetchLaneSystemsAndSubsystems: cy.stub().resolves(new Map()),
+            fetchDataStreams: cy.stub().resolves(),
+            fetchLaneControlStreams: cy.stub().resolves(),
+        };
+
+        const result = await discoverLanesIncrementally([node], () => {}, "unknown-view");
+
+        expect(result.laneMap.size).to.equal(0);
+        expect(node.fetchDataStreams).not.to.have.been.called;
+        expect(node.fetchLaneControlStreams).not.to.have.been.called;
     });
 });

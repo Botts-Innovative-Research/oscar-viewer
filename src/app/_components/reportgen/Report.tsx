@@ -8,7 +8,7 @@ import {
 } from "@mui/material";
 import ReportTypeSelect from "@/app/_components/reportgen/ReportTypeSelector";
 import {Download} from "@mui/icons-material";
-import React, {useState} from "react";
+import React, {useContext, useState} from "react";
 import TimeRangeSelect from "@/app/_components/reportgen/TimeRangeSelector";
 import NationalDatePicker from "@/app/_components/national/NationalDatePicker";
 import {INode} from "@/lib/data/osh/Node";
@@ -25,6 +25,8 @@ import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/Cont
 import Command from "osh-js/source/core/consysapi/command/Command";
 import CommandFilter from "osh-js/source/core/consysapi/command/CommandFilter";
 import {useLanguage} from '@/app/contexts/LanguageContext';
+import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 
 
 export default function ReportGeneratorView(){
@@ -39,6 +41,8 @@ export default function ReportGeneratorView(){
     const [selectedLaneUID, setSelectedLaneUID] = useState<string[]>([]);
     const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
     const nodes = useSelector((state: RootState) => selectNodes(state));
+    const laneMap = useSelector((state: RootState) => selectLaneMap(state));
+    const {activeViewKey, laneMapReady, viewError} = useContext(DataSourceContext);
 
     const [openSnack, setOpenSnack] = useState(false);
     const [snackMessage, setSnackMessage] = useState<string>();
@@ -47,16 +51,21 @@ export default function ReportGeneratorView(){
     const [commandStatus, setCommandStatus] = useState<string | null>(null);
 
     const handleGenerateReport = async() => {
+        if (viewError)
+            return;
+
         if (selectedTimeRange === "custom" && (!customStartTime || !customEndTime)){
             setSnackMessage(t('selectCustomDates'));
             setSeverity("error");
-            setOpenSnack(true)
+            setOpenSnack(true);
+            return;
         }
 
-        if (selectedReportType === "LANE" && !selectedLaneUID){
+        if (!activeViewKey && ["LANE", "ADJUDICATION"].includes(selectedReportType) && selectedLaneUID.length === 0){
             setSnackMessage(t('selectLaneForReport'));
             setSeverity("error");
-            setOpenSnack(true)
+            setOpenSnack(true);
+            return;
         }
 
         let startTime = getTimeRange(selectedTimeRange).startTime;
@@ -67,6 +76,24 @@ export default function ReportGeneratorView(){
 
         try {
             if(!selectedNode) return;
+
+            const visibleLaneUIDs = Array.from(laneMap.values())
+                .filter((lane) => lane.parentNode.id === selectedNode.id)
+                .map((lane) => lane.laneSystem?.properties?.properties?.uid)
+                .filter((uid): uid is string => typeof uid === "string");
+            let effectiveLaneUIDs = selectedLaneUID;
+
+            if (activeViewKey) {
+                effectiveLaneUIDs = ["LANE", "ADJUDICATION"].includes(selectedReportType) && selectedLaneUID.length > 0
+                    ? selectedLaneUID.filter((uid) => visibleLaneUIDs.includes(uid))
+                    : visibleLaneUIDs;
+                if (effectiveLaneUIDs.length === 0) {
+                    setSnackMessage(t('operationalViewEmpty', {view: activeViewKey}));
+                    setSeverity("error");
+                    setOpenSnack(true);
+                    return;
+                }
+            }
 
             setIsGenerating(true);
 
@@ -91,7 +118,13 @@ export default function ReportGeneratorView(){
             const response = await sendCommand(
                 selectedNode,
                 controlStream.properties.id,
-                generateReportCommandJSON(startTime, endTime, selectedReportType, selectedLaneUID.toString(), selectedEvent)
+                generateReportCommandJSON(
+                    startTime,
+                    endTime,
+                    selectedReportType,
+                    effectiveLaneUIDs.length > 0 ? effectiveLaneUIDs.join(",") : null,
+                    selectedEvent,
+                )
             );
 
             if (response.status == 200) {
@@ -300,7 +333,7 @@ export default function ReportGeneratorView(){
                             fullWidth
                             startIcon={<Download/>}
                             onClick={handleGenerateReport}
-                            disabled={isGenerating || !selectedReportType || !selectedTimeRange || !selectedNode}
+                            disabled={isGenerating || !selectedReportType || !selectedTimeRange || !selectedNode || Boolean(viewError) || (Boolean(activeViewKey) && !laneMapReady)}
                         >
                             {isGenerating ? t('generatingReport') : t('generateReport')}
                         </Button>

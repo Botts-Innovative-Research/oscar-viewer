@@ -367,5 +367,8 @@
   "retryFailed": "Reintentar fallidos",
   "adjudicateCount": "Adjudicar {count}",
   "bulkAdjudicationFailed": "No se pudo completar la adjudicación masiva. No se ocultaron los elementos fallidos; compruebe la conectividad y vuelva a intentarlo.",
-  "bulkSelectionLoadFailed": "No se pudo cargar la lista completa de alarmas filtradas. No se seleccionó nada."
+  "bulkSelectionLoadFailed": "No se pudo cargar la lista completa de alarmas filtradas. No se seleccionó nada.",
+  "operationalViewValue": "Vista: {view}",
+  "operationalViewInvalid": "La URL de la vista operativa no es válida. No se cargó ningún carril.",
+  "operationalViewEmpty": "No hay carriles asignados a la vista operativa \"{view}\"."
 }

@@ -367,5 +367,8 @@
   "retryFailed": "Retry failed",
   "adjudicateCount": "Adjudicate {count}",
   "bulkAdjudicationFailed": "Bulk adjudication could not be completed. No failed items were hidden; review connectivity and try again.",
-  "bulkSelectionLoadFailed": "The complete filtered alarm list could not be loaded. Nothing was selected."
+  "bulkSelectionLoadFailed": "The complete filtered alarm list could not be loaded. Nothing was selected.",
+  "operationalViewValue": "View: {view}",
+  "operationalViewInvalid": "This operational-view URL is invalid. No lanes have been loaded.",
+  "operationalViewEmpty": "No lanes are assigned to operational view \"{view}\"."
 }
