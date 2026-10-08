@@ -81,6 +81,13 @@ interface QueryPlan {
 const PAGE_SIZE = 15;
 const BULK_FETCH_SIZE = 250;
 
+const EVENT_PRIORITY_FILTERS = [
+    "gammaAlarm=true AND neutronAlarm=true",
+    "gammaAlarm=false AND neutronAlarm=true",
+    "gammaAlarm=true AND neutronAlarm=false",
+    "gammaAlarm=false AND neutronAlarm=false",
+];
+
 const deduplicateEvents = (events: EventTableData[]): EventTableData[] => {
     const result = new Map<string, EventTableData>();
     events.forEach(event => result.set(eventSelectionKey(event), event));
@@ -141,16 +148,18 @@ export default function EventTable({
                 laneId: lane.laneName,
             });
             if (compiled === false) continue;
-            const serverFilter = combineServerFilters(baseServerFilter, compiled || "");
-            const groupKey = `${lane.parentNode.id}\u001f${serverFilter}`;
-            let plan = grouped.get(groupKey);
-            if (!plan) {
-                plan = {key: groupKey, node: lane.parentNode, datastreamIds: [], filter: serverFilter};
-                grouped.set(groupKey, plan);
+            for (const priorityFilter of EVENT_PRIORITY_FILTERS) {
+                const serverFilter = combineServerFilters(baseServerFilter, compiled || "", priorityFilter);
+                const groupKey = `${lane.parentNode.id}\u001f${serverFilter}`;
+                let plan = grouped.get(groupKey);
+                if (!plan) {
+                    plan = {key: groupKey, node: lane.parentNode, datastreamIds: [], filter: serverFilter};
+                    grouped.set(groupKey, plan);
+                }
+                lane.datastreams
+                    .filter((stream: typeof DataStream) => isOccupancyDataStream(stream))
+                    .forEach((stream: typeof DataStream) => plan!.datastreamIds.push(stream.properties.id));
             }
-            lane.datastreams
-                .filter((stream: typeof DataStream) => isOccupancyDataStream(stream))
-                .forEach((stream: typeof DataStream) => plan!.datastreamIds.push(stream.properties.id));
         }
         return Array.from(grouped.values())
             .map(plan => ({...plan, datastreamIds: Array.from(new Set(plan.datastreamIds))}))
