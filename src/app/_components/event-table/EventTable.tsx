@@ -21,7 +21,7 @@ import {EventType} from "osh-js/source/core/event/EventType";
 import {useRouter} from "next/dist/client/components/navigation";
 
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {EventTableData} from "@/lib/data/oscar/TableHelpers";
+import {EventTableData, sortEventsByAlarmPriority} from "@/lib/data/oscar/TableHelpers";
 import {isOccupancyDataStream, isThresholdDataStream} from "@/lib/data/oscar/Utilities";
 import {convertToMap, hashString} from "@/app/utils/Utils";
 import {OCCUPANCY_PILLAR_DEF} from "@/lib/data/Constants";
@@ -276,7 +276,7 @@ export default function EventTable({
             const results = await runWithConcurrency(queryPlans, 6, plan => fetchPlanRows(plan, required, 0));
             if (requestId !== pageRequestRef.current) return;
             const merged = deduplicateEvents(results.flat())
-                .sort((left, right) => new Date(right.startTime).getTime() - new Date(left.startTime).getTime());
+                .sort(sortEventsByAlarmPriority);
             setRows(merged.slice(page * PAGE_SIZE, required));
             currentPageRef.current = page;
         } catch (error) {
@@ -326,7 +326,9 @@ export default function EventTable({
                         setPostSelectionKeys(previous => new Set(previous).add(eventSelectionKey(event)));
                     }
                     setRowCount(previous => previous + 1);
-                    setRows(previous => deduplicateEvents([event, ...previous]).slice(0, PAGE_SIZE));
+                    setRows(previous => deduplicateEvents([event, ...previous])
+                        .sort(sortEventsByAlarmPriority)
+                        .slice(0, PAGE_SIZE));
                 } catch (error) {
                     console.error("Error processing live occupancy event", error);
                 }
@@ -516,7 +518,14 @@ export default function EventTable({
         },
         {field: "maxGamma", headerName: t("maxGamma"), minWidth: 150, flex: 1.2},
         {field: "maxNeutron", headerName: t("maxNeutron"), minWidth: 150, flex: 1.2},
-        {field: "status", headerName: t("status"), minWidth: 135, flex: 1.2},
+        {
+            field: "status", headerName: t("status"), minWidth: 135, flex: 1.2,
+            sortComparator: (_left, _right, leftCellParams, rightCellParams) =>
+                sortEventsByAlarmPriority(
+                    leftCellParams.api.getRow(leftCellParams.id),
+                    rightCellParams.api.getRow(rightCellParams.id),
+                ),
+        },
         {
             field: "adjudicatedIds", headerName: t("adjudicated"), minWidth: 110, flex: 1,
             valueFormatter: (value: any) => value?.length > 0 ? t("yes") : t("no"),
@@ -575,7 +584,7 @@ export default function EventTable({
                     columnsManagement: {getTogglableColumns: getColumnList},
                 }}
                 initialState={{
-                    sorting: {sortModel: [{field: "startTime", sort: "desc"}]},
+                    sorting: {sortModel: [{field: "status", sort: "asc"}]},
                     columns: {columnVisibilityModel: {adjudicatedIds: viewAdjudicated}},
                 }}
                 getCellClassName={(params: GridCellParams<any, any, string>) => {

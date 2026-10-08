@@ -6,6 +6,14 @@
 import {IAlarmTableData, IEventTableData, INationalTableData} from "../../../../types/new-types";
 import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
 
+const priorityOrder = ["Gamma & Neutron", "Neutron", "Gamma"];
+
+export const sortEventsByAlarmPriority = (left: Pick<EventTableData, "status" | "startTime">, right: Pick<EventTableData, "status" | "startTime">): number => {
+     const prioritySort = priorityOrder.indexOf(left.status) - priorityOrder.indexOf(right.status);
+
+     if (prioritySort !== 0) return prioritySort;
+     return new Date(right.startTime).getTime() - new Date(left.startTime).getTime(); // same status sort by time
+};
 
 export class EventTableData implements IEventTableData {
     id: number;
