@@ -67,10 +67,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
     const [toggleView, setToggleView] = useState("cps");
 
-    const gammaToggleButtons = [
-        <ToggleButton color='error' value={"cps"} key={"cps"} disabled={toggleView === 'cps'}>CPS</ToggleButton>,
-        <ToggleButton color='secondary' value={"sigma"} key={"sigma"} disabled={toggleView === 'sigma'}>NSigma</ToggleButton>
-    ];
 
     useEffect(() => {
         if (chartViews.gamma)
@@ -268,6 +264,30 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         };
     };
 
+    const createOptions = (yLabel: string) => ({
+        responsive: true,
+        scales: {
+            x: {
+                title: {
+                    display: true,
+                    text: t('time'),
+                    padding: 5
+                },
+                type: 'time'
+            },
+            y: {
+                title: {
+                    display: true,
+                    text: yLabel
+                },
+                display: true,
+                position: 'left' as const,
+                grid: {
+                    beginAtZero: false
+                },
+            },
+        },
+    });
     const renderCharts = (layers: CurveLayers, elementIds: string[]) => {
 
         if (layers?.gamma && gammaChartViewRef?.current) {
@@ -286,12 +306,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 layers: gammaLayers,
                 css: "chart-view-event-detail",
                 type: 'line',
-                options: {
-                    scales: {
-                        x: {title: {display: true, text: t('time'), padding: 5}, type: 'time'},
-                        y: {title: {display: true, text: 'CPS', padding: 15}, beginAtZero: false}
-                    }
-                }
+                options: createOptions("CPS")
             });
 
             patchChartSorting(gammaChart);
@@ -312,13 +327,25 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 type: 'line',
                 options: {
                     scales: {
-                        x: {title: {display: true, text: t('time'), padding: 5}, type: 'time'},
+                        x: {
+                            title: {
+                                display: true,
+                                text: t('time'),
+                                padding: 5},
+                            type: 'time'
+                        },
                         y: {
                             type: 'linear',
                             position: 'left',
-                            title: {display: true, text: 'CPS', padding: 15},
+                            title: {
+                                display: true,
+                                text: 'CPS',
+                                padding: 15
+                            },
                             beginAtZero: false,
-                            ticks: {stepSize: 1}
+                            ticks: {
+                                stepSize: 1
+                            }
                         }
                     }
                 }
@@ -341,17 +368,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                 layers: [layers.nsigma, layers.threshNsigma],
                 css: "chart-view-event-detail",
                 type: 'line',
-                options: {
-                    scales: {
-                        x: {title: {display: true, text: t('time'), padding: 5}, type: 'time'},
-                        y: {
-                            type: 'linear',
-                            position: 'left',
-                            title: {display: true, text: 'Nσ', padding: 15},
-                            beginAtZero: false
-                        }
-                    }
-                }
+                options: createOptions("Nσ")
             });
             patchChartSorting(nsigmaChart);
             setChartViews(prev => ({...prev, nsigma: nsigmaChart}));
@@ -374,7 +391,23 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
                     exclusive
                     value={toggleView}
                 >
-                    {gammaToggleButtons}
+                    <ToggleButton
+                        color='error'
+                        value={"cps"}
+                        key={"cps"}
+                        disabled={toggleView === 'cps'}
+                    >
+                        CPS
+                    </ToggleButton>,
+                    <ToggleButton
+                        color='secondary'
+                        value={"sigma"}
+                        key={"sigma"}
+                        disabled={toggleView === 'sigma'}
+                    >
+                        NSigma
+                    </ToggleButton>
+
                 </ToggleButtonGroup>
             </Grid>
         );
