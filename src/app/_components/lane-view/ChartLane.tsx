@@ -1,9 +1,8 @@
-"use client"
+"use client";
 
-
-import {Box, Grid} from "@mui/material";
+import {Box, Grid, ToggleButton, ToggleButtonGroup} from "@mui/material";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
-import React, {useEffect, useRef} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView";
 import {
     createGammaViewCurve,
@@ -30,6 +29,43 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
 
     const gammaChartViewRef = useRef<typeof ChartJsView | null>(null);
     const neutronChartViewRef = useRef<typeof ChartJsView | null>(null);
+    const [gammaMode, setGammaMode] = useState<ChartMode>('sum');
+    const [neutronMode, setNeutronMode] = useState<ChartMode>('sum');
+
+    const createOptions = (title: string) => ({
+        plugins: {
+            title: {
+                display: true,
+                text: title,
+                font: {size: 14, weight: 'bold' as const},
+                align: 'center' as const,
+                position: 'top' as const,
+            },
+            legend: {display: true, align: 'center' as const, position: 'bottom' as const}
+        },
+        responsive: true,
+        scales: {
+            x: {
+                title: {
+                    display: true,
+                    text: t('time'),
+                    padding: 5
+                },
+                type: 'time'
+            },
+            y: {
+                title: {
+                    display: true,
+                    text: 'CPS'
+                },
+                display: true,
+                position: 'left' as const,
+                grid: {
+                    beginAtZero: false
+                },
+            },
+        },
+    });
 
     useEffect(() => {
         setChartReady(false);
@@ -166,17 +202,73 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
         };
     }, [laneName, datasources.gamma, datasources.neutron, datasources.threshold, setChartReady, t]);
 
+    const renderModeToggle = (value: ChartMode, onChange: (mode: ChartMode) => void, label: string) => (
+        <ToggleButtonGroup
+            aria-label={`${label} chart mode`}
+            exclusive
+            onChange={(_, mode: ChartMode | null) => mode && onChange(mode)}
+            size="small"
+            value={value}
+        >
+            <ToggleButton
+                value="sum"
+                color='error'
+                disabled={value === 'sum'}
+            >
+                Sum
+            </ToggleButton>
+            <ToggleButton
+                value="individual"
+                color='secondary'
+                disabled={value === 'individual'}
+            >
+                Individual detectors
+            </ToggleButton>
+        </ToggleButtonGroup>
+    );
 
     return (
-        <Box display='flex' alignItems="center">
-            <Grid container direction="row" marginTop={2} marginLeft={1} spacing={4}>
+        <Box
+            display="flex"
+            alignItems="center"
+        >
+            <Grid
+                container
+                direction="row"
+                marginTop={2}
+                marginLeft={1}
+                spacing={4}
+            >
                 <Grid item xs>
-                    <div id={gammaChartID} style={{marginBottom: 50, height: '85%',}}></div>
+                    <Box
+                        display="flex"
+                        justifyContent="center"
+                        marginBottom={1}
+                    >
+                        {renderModeToggle(gammaMode, setGammaMode, t('gamma'))}
+                    </Box>
+                    <div
+                        id={gammaChartID}
+                        style={{marginBottom: 50, height: '85%'}}
+                    />
                 </Grid>
                 <Grid item xs>
-                    <div id={neutronChartID} style={{marginBottom: 50, height: '85%',}}></div>
+                    <Box
+                        display="flex"
+                        justifyContent="center"
+                        marginBottom={1}
+                    >
+                        {renderModeToggle(neutronMode, setNeutronMode, t('neutron'))}
+                    </Box>
+                    <div
+                        id={neutronChartID}
+                        style={{
+                            marginBottom: 50,
+                            height: '85%'
+                        }}
+                    />
                 </Grid>
             </Grid>
         </Box>
     );
-};
+}
