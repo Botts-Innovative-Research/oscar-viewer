@@ -107,6 +107,7 @@ export default function HLSVideoComponent({
         let cancelled = false;
         let terminal = false;
         let hls: HlsInstance | null = null;
+        let usingNativePlayback = false;
         let nativeLoadedMetadata: (() => void) | null = null;
         let nativeError: (() => void) | null = null;
         let networkRetryTimer: ReturnType<typeof setTimeout> | null = null;
@@ -141,6 +142,10 @@ export default function HLSVideoComponent({
             setAutoplayBlocked(false);
             hls?.stopLoad();
             video.pause();
+            if (usingNativePlayback) {
+                video.removeAttribute("src");
+                video.load();
+            }
             console.error(message, error ?? "");
             setPlaybackState("error");
         };
@@ -170,6 +175,8 @@ export default function HLSVideoComponent({
         };
 
         const scheduleNetworkRetry = (retry: () => void, errorMessage: string) => {
+            if (cancelled || terminal)
+                return;
             markPreparing();
             if (networkRetryTimer)
                 return;
@@ -222,7 +229,7 @@ export default function HLSVideoComponent({
             if (typeof window === 'undefined') return;
 
             const HlsConstructor = (await hlsLoader()).default;
-            if (cancelled)
+            if (cancelled || terminal)
                 return;
 
             const playlistUrl = new URL(src, window.location.href);
@@ -301,11 +308,16 @@ export default function HLSVideoComponent({
                     void startPlayback();
                 });
             } else if (video.canPlayType('application/vnd.apple.mpegURL')) {
+                usingNativePlayback = true;
                 const loadNativeSource = () => {
+                    if (cancelled || terminal)
+                        return;
                     video.src = src;
                     video.load();
                 };
                 nativeLoadedMetadata = () => {
+                    if (cancelled || terminal)
+                        return;
                     resetNetworkRecovery();
                     void startPlayback();
                 };

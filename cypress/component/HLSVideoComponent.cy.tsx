@@ -57,13 +57,14 @@ function mountPlayer(
     videoSource = "live\\lane-01\\index.m3u8",
     onRetry?: () => void,
     selectedNode = node,
+    loader = hlsLoader,
 ) {
     return cy.mount(
         <LanguageProvider>
             <HLSVideoComponent
                 videoSource={videoSource}
                 selectedNode={selectedNode}
-                hlsLoader={hlsLoader}
+                hlsLoader={loader}
                 onRetry={onRetry}
             />
         </LanguageProvider>,
@@ -260,6 +261,45 @@ describe("live HLS video", () => {
         cy.contains("button", "Play").click();
         cy.tick(45_000);
         cy.get('[data-testid="live-video-error"]').should("exist");
+    });
+
+    it("does not revive HLS after a delayed loader resolves past the preparation timeout", () => {
+        cy.clock();
+        let resolveLoader!: (library: {default: any}) => void;
+        const delayedLoader = () => new Promise<{default: any}>((resolve) => {
+            resolveLoader = resolve;
+        });
+        mountPlayer("live/lane-01/index.m3u8", undefined, node, delayedLoader);
+
+        cy.tick(45_000);
+        cy.get('[data-testid="live-video-error"]').should("exist");
+        cy.then(() => resolveLoader({default: FakeHls as any}));
+        cy.wrap(null).should(() => expect(FakeHls.instances).to.have.length(0));
+    });
+
+    it("ignores late native events and aborts the source after terminal failure", () => {
+        cy.clock();
+        FakeHls.supported = false;
+        cy.stub(HTMLMediaElement.prototype, "canPlayType").returns("probably");
+        const load = cy.stub(HTMLMediaElement.prototype, "load");
+        const play = HTMLMediaElement.prototype.play as any;
+        mountPlayer("live/native/index.m3u8");
+
+        cy.tick(45_000);
+        cy.get('[data-testid="live-video-error"]').should("exist");
+        cy.get("video").should("not.have.attr", "src");
+        cy.then(() => {
+            expect(load).to.have.been.calledTwice;
+            expect(play).not.to.have.been.called;
+        });
+
+        dispatchMediaEvent("loadedmetadata");
+        dispatchMediaEvent("error");
+        cy.tick(1_000);
+        cy.then(() => {
+            expect(load).to.have.been.calledTwice;
+            expect(play).not.to.have.been.called;
+        });
     });
 
     it("withholds node credentials from cross-origin HLS subresources", () => {
