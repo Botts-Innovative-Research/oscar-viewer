@@ -5,6 +5,7 @@ import HealthPage from "../../src/app/health/page";
 import {DataSourceContext} from "../../src/app/contexts/DataSourceContext";
 import {LanguageProvider} from "../../src/app/contexts/LanguageContext";
 import laneReducer, {setLaneMap} from "../../src/lib/state/OSCARLaneSlice";
+import {manageSharedConnection} from "../../src/lib/data/oscar/LaneCollection";
 import {
     ALARM_DEF,
     CONNECTION_DEF,
@@ -20,8 +21,16 @@ interface FakeSource {
     eventSubscriptionMap: Record<string, Array<(message: any) => void>>;
     subscribe: any;
     connect: any;
+    disconnect: any;
     emit: (result: any) => void;
     listenerCount: () => number;
+}
+
+interface FakeNode {
+    id: string;
+    name: string;
+    searchObservations: any;
+    getObservationsApi: () => {searchObservations: any};
 }
 
 function dataSource(streamId: string, connectGate: Promise<void> = Promise.resolve()): FakeSource {
@@ -39,6 +48,10 @@ function dataSource(streamId: string, connectGate: Promise<void> = Promise.resol
         connect: cy.stub().callsFake(() => connectGate.then(() => {
             connected = true;
         })),
+        disconnect: cy.stub().callsFake(() => {
+            connected = false;
+            return Promise.resolve();
+        }),
         emit: (result: any) => {
             if (!connected) return;
             Object.entries(eventSubscriptionMap).forEach(([type, handlers]) =>
@@ -72,6 +85,7 @@ function stream(
         searchObservations: cy.stub().resolves({
             nextPage: () => Promise.resolve(typeof latest === "function" ? latest() : latest),
         }),
+        latestObservations: latest,
     };
 }
 
@@ -79,10 +93,47 @@ function observation(result: any, resultTime = "2026-09-24T16:00:00.000Z") {
     return {result, resultTime};
 }
 
-function lane(name: string, systems: any[], streams: any[], sources: FakeSource[]) {
+function batchNode(name: string, streams: any[], failure?: Error): FakeNode {
+    const searchObservations = cy.stub().callsFake(() => {
+        if (failure)
+            return Promise.reject(failure);
+
+        return Promise.resolve({
+            nextPage: async () => {
+                const observations = await Promise.all(streams.map(async (item) => {
+                    const latest = typeof item.latestObservations === "function"
+                        ? item.latestObservations()
+                        : item.latestObservations;
+                    return (await Promise.resolve(latest)).map((entry: any) => ({
+                        properties: {
+                            "datastream@id": item.properties.id,
+                            result: entry.result,
+                            resultTime: entry.resultTime,
+                        },
+                    }));
+                }));
+                return observations.flat();
+            },
+        });
+    });
+    return {
+        id: `node-${name}`,
+        name,
+        searchObservations,
+        getObservationsApi: () => ({searchObservations}),
+    };
+}
+
+function lane(
+    name: string,
+    systems: any[],
+    streams: any[],
+    sources: FakeSource[],
+    parentNode: FakeNode = batchNode("Local Node", streams),
+) {
     return {
         laneName: name,
-        parentNode: {name: "Local Node"},
+        parentNode,
         systems,
         datastreams: streams,
         datasourcesRealtime: sources,
@@ -142,12 +193,13 @@ describe("Status of Health page", () => {
         const westConnection = stream("west-connection", "camera-west", [canonicalConnectionDefinition], [observation({isConnected: false})]);
         const healthStreams = [rpmConnection, gamma, neutron, tamper, occupancy, eastConnection, westConnection];
         const sources = healthStreams.map((item) => dataSource(item.properties.id));
+        const localNode = batchNode("Local Node", healthStreams);
         const scopedLane1 = lane("Lane 1", [
             system("rpm-1", "RPM 1", "urn:osh:system:rapiscan:1"),
             system("camera-east", "Camera East", "urn:osh:sensor:ffmpeg:east"),
             system("camera-west", "Camera West", "urn:osh:sensor:ffmpeg:west"),
-        ], [rpmConnection, gamma, neutron, tamper, occupancy, eastVideo, westVideo, eastConnection, westConnection], sources);
-        const scopedLane2 = lane("Lane 2", [], [], []);
+        ], [rpmConnection, gamma, neutron, tamper, occupancy, eastVideo, westVideo, eastConnection, westConnection], sources, localNode);
+        const scopedLane2 = lane("Lane 2", [], [], [], localNode);
         const excludedLane = lane("Lane 99", [], [], []);
         const scoped = new Map([["Lane 1", scopedLane1], ["Lane 2", scopedLane2]]);
         const unscopedSignal = new Map([...scoped, ["Lane 99", excludedLane]]);
@@ -206,9 +258,10 @@ describe("Status of Health page", () => {
                 : "2026-09-24T16:01:00.000Z"),
         ]);
         const gammaSource = dataSource("gamma", connectGate);
+        const localNode = batchNode("Local Node", [gamma]);
         const laneMap = new Map([["Lane 1", lane("Lane 1", [
             system("rpm-1", "RPM 1", "urn:osh:system:rapiscan:1"),
-        ], [gamma], [gammaSource])]]);
+        ], [gamma], [gammaSource], localNode)]]);
 
         cy.mount(healthView(laneMap));
         cy.contains("Gamma high: Clear");
@@ -220,7 +273,8 @@ describe("Status of Health page", () => {
         });
 
         cy.contains("Gamma high: Fault");
-        cy.wrap(gamma.searchObservations).should("have.been.calledTwice");
+        cy.wrap(localNode.searchObservations).should("have.been.calledTwice");
+        cy.wrap(gamma.searchObservations).should("not.have.been.called");
     });
 
     it("periodically reconciles current state when no live event arrives", () => {
@@ -233,9 +287,10 @@ describe("Status of Health page", () => {
                 : "2026-09-24T16:01:00.000Z"),
         ]);
         const gammaSource = dataSource("gamma");
+        const localNode = batchNode("Local Node", [gamma]);
         const laneMap = new Map([["Lane 1", lane("Lane 1", [
             system("rpm-1", "RPM 1", "urn:osh:system:rapiscan:1"),
-        ], [gamma], [gammaSource])]]);
+        ], [gamma], [gammaSource], localNode)]]);
 
         cy.mount(healthView(laneMap));
         cy.contains("Gamma high: Clear");
@@ -245,7 +300,66 @@ describe("Status of Health page", () => {
         cy.tick(30_000);
 
         cy.contains("Gamma high: Fault");
-        cy.wrap(gamma.searchObservations).should("have.callCount", 3);
+        cy.wrap(localNode.searchObservations).should("have.callCount", 3);
+        cy.wrap(gamma.searchObservations).should("not.have.been.called");
+    });
+
+    it("loads and reconciles 50 lanes with one latest-observation query per node per pass", () => {
+        cy.clock(Date.parse("2026-09-24T16:00:00.000Z"));
+        const gammaStreams = Array.from({length: 50}, (_, index) => stream(
+            `gamma-${index + 1}`,
+            `rpm-${index + 1}`,
+            [ALARM_DEF, GAMMA_COUNT_DEF],
+            [observation({alarmState: "Background"})],
+        ));
+        const localNode = batchNode("Local Node", gammaStreams);
+        const laneMap = new Map(gammaStreams.map((gamma, index) => [
+            `Lane ${index + 1}`,
+            lane(`Lane ${index + 1}`, [
+                system(`rpm-${index + 1}`, `RPM ${index + 1}`, `urn:osh:system:rapiscan:${index + 1}`),
+            ], [gamma], [dataSource(gamma.properties.id)], localNode),
+        ]));
+
+        cy.mount(healthView(laneMap));
+
+        cy.contains("Total lanes: 50");
+        cy.wrap(localNode.searchObservations).should("have.been.calledTwice");
+        cy.then(() => {
+            const [filter, pageSize] = localNode.searchObservations.firstCall.args;
+            expect(filter.props.resultTime).to.equal("latest");
+            expect(filter.props.dataStream.split(",")).to.have.length(50);
+            expect(pageSize).to.equal(50);
+            gammaStreams.forEach((gamma) => expect(gamma.searchObservations).not.to.have.been.called);
+        });
+
+        cy.tick(30_000);
+        cy.wrap(localNode.searchObservations).should("have.callCount", 3);
+    });
+
+    it("isolates a failed node while applying batched observations from another node", () => {
+        const goodGamma = stream("good-gamma", "good-rpm", [ALARM_DEF, GAMMA_COUNT_DEF], [
+            observation({alarmState: "Fault - Gamma High"}),
+        ]);
+        const failedGamma = stream("failed-gamma", "failed-rpm", [ALARM_DEF, GAMMA_COUNT_DEF], [
+            observation({alarmState: "Background"}),
+        ]);
+        const goodNode = batchNode("Good Node", [goodGamma]);
+        const failedNode = batchNode("Failed Node", [failedGamma], new Error("node unavailable"));
+        const laneMap = new Map([
+            ["Lane 1", lane("Lane 1", [
+                system("good-rpm", "Good RPM", "urn:osh:system:rapiscan:good"),
+            ], [goodGamma], [dataSource("good-gamma")], goodNode)],
+            ["Lane 2", lane("Lane 2", [
+                system("failed-rpm", "Failed RPM", "urn:osh:system:rapiscan:failed"),
+            ], [failedGamma], [dataSource("failed-gamma")], failedNode)],
+        ]);
+
+        cy.mount(healthView(laneMap));
+
+        cy.get('[data-testid="health-lane-Lane 1"]').within(() => cy.contains("Gamma high: Fault"));
+        cy.get('[data-testid="health-lane-Lane 2"]').within(() => cy.contains("Gamma high: Unknown"));
+        cy.wrap(goodNode.searchObservations).should("have.been.calledTwice");
+        cy.wrap(failedNode.searchObservations).should("have.been.calledTwice");
     });
 
     it("keeps the loading state while lane discovery is incomplete", () => {
@@ -299,21 +413,120 @@ describe("Status of Health page", () => {
         cy.clock(Date.parse("2026-09-24T16:00:00.000Z"));
         const connection = stream("rpm-connection", "rpm-1", [CONNECTION_DEF], [observation({isConnected: true})]);
         const source = dataSource("rpm-connection");
+        const localNode = batchNode("Local Node", [connection]);
         const laneMap = new Map([["Lane 1", lane("Lane 1", [
             system("rpm-1", "RPM 1", "urn:osh:system:rapiscan:1"),
-        ], [connection], [source])]]);
+        ], [connection], [source], localNode)]]);
 
         cy.mount(healthView(laneMap));
         cy.wrap(null).should(() => expect(source.listenerCount()).to.equal(1));
-        cy.wrap(connection.searchObservations).should("have.been.calledTwice");
+        cy.wrap(localNode.searchObservations).should("have.been.calledTwice");
         cy.mount(<div data-testid="unmounted-health"/>);
-        cy.wrap(null).should(() => expect(source.listenerCount()).to.equal(0));
+        cy.wrap(null).should(() => {
+            expect(source.listenerCount()).to.equal(0);
+            expect(source.disconnect).to.have.been.calledOnce;
+        });
         cy.tick(30_000);
-        cy.wrap(connection.searchObservations).should("have.been.calledTwice");
+        cy.wrap(localNode.searchObservations).should("have.been.calledTwice");
         cy.mount(healthView(laneMap));
         cy.wrap(null).should(() => {
             expect(source.listenerCount()).to.equal(1);
             expect(source.connect).to.have.been.calledTwice;
+        });
+    });
+
+    it("leaves a shared datasource connected when another callback remains", () => {
+        const connection = stream("rpm-connection", "rpm-1", [CONNECTION_DEF], [observation({isConnected: true})]);
+        const source = dataSource("rpm-connection");
+        const otherHandler = () => {};
+        source.subscribe(otherHandler, ["data"]);
+        const localNode = batchNode("Local Node", [connection]);
+        const laneMap = new Map([["Lane 1", lane("Lane 1", [
+            system("rpm-1", "RPM 1", "urn:osh:system:rapiscan:1"),
+        ], [connection], [source], localNode)]]);
+
+        cy.mount(healthView(laneMap));
+        cy.wrap(null).should(() => expect(source.listenerCount()).to.equal(2));
+        cy.mount(<div data-testid="unmounted-health"/>);
+        cy.wrap(null).should(() => {
+            expect(source.listenerCount()).to.equal(1);
+            expect(source.disconnect).not.to.have.been.called;
+        });
+    });
+
+    it("keeps a newer reconnect request after an earlier connect fails", () => {
+        let rejectFirstConnect: (error: Error) => void = () => {};
+        let markFirstConnectStarted: () => void = () => {};
+        const firstConnectStarted = new Promise<void>((resolve) => {
+            markFirstConnectStarted = resolve;
+        });
+        let connectAttempt = 0;
+        const originalConnect = cy.stub().callsFake(() => {
+            connectAttempt++;
+            if (connectAttempt === 1) {
+                markFirstConnectStarted();
+                return new Promise<void>((_resolve, reject) => {
+                    rejectFirstConnect = reject;
+                });
+            }
+            return Promise.resolve();
+        });
+        const originalDisconnect = cy.stub().resolves();
+        const original = {
+            connect: originalConnect,
+            disconnect: originalDisconnect,
+        };
+        const managed = manageSharedConnection(original);
+
+        cy.then(async () => {
+            const failedConnect = managed.connect().catch((error: Error) => error);
+            await firstConnectStarted;
+            const disconnect = managed.disconnect();
+            const reconnect = managed.connect();
+            rejectFirstConnect(new Error("initial connect failed"));
+
+            await Promise.all([failedConnect, disconnect, reconnect]);
+            expect(originalConnect).to.have.been.calledTwice;
+
+            await managed.disconnect();
+            expect(originalDisconnect).to.have.been.calledOnce;
+        });
+    });
+
+    it("waits for disconnect to finish before reconnecting a shared source", () => {
+        let finishDisconnect: () => void = () => {};
+        let markDisconnectStarted: () => void = () => {};
+        const disconnectStarted = new Promise<void>((resolve) => {
+            markDisconnectStarted = resolve;
+        });
+        const calls: string[] = [];
+        const original = {
+            connect: cy.stub().callsFake(() => {
+                calls.push("connect");
+                return Promise.resolve();
+            }),
+            disconnect: cy.stub().callsFake(() => {
+                calls.push("disconnect-start");
+                markDisconnectStarted();
+                return new Promise<void>((resolve) => {
+                    finishDisconnect = () => {
+                        calls.push("disconnect-finish");
+                        resolve();
+                    };
+                });
+            }),
+        };
+        const managed = manageSharedConnection(original);
+
+        cy.then(async () => {
+            await managed.connect();
+            const disconnect = managed.disconnect();
+            const reconnect = managed.connect();
+            await disconnectStarted;
+            expect(calls).to.deep.equal(["connect", "disconnect-start"]);
+            finishDisconnect();
+            await Promise.all([disconnect, reconnect]);
+            expect(calls).to.deep.equal(["connect", "disconnect-start", "disconnect-finish", "connect"]);
         });
     });
 });

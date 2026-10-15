@@ -79,6 +79,7 @@ interface StreamBinding {
     laneName: string;
     stream: any;
     datasource: any;
+    parentNode: any;
     systemId: string;
     cameraSystemIds: Set<string>;
     liveGeneration: number;
@@ -201,6 +202,13 @@ function subscribeWithCleanup(datasource: any, handler: (message: any) => void):
             index = listeners.indexOf(handler);
         }
     };
+}
+
+function hasDatasourceListeners(datasource: any): boolean {
+    const subscriptionMap = datasource?.eventSubscriptionMap;
+    if (!subscriptionMap || typeof subscriptionMap !== "object") return false;
+    return Object.values(subscriptionMap)
+        .some((listeners) => Array.isArray(listeners) && listeners.length > 0);
 }
 
 function StatusIndicator({component, labels}: {
@@ -483,6 +491,7 @@ export default function HealthPage() {
                     laneName,
                     stream,
                     datasource,
+                    parentNode: lane.parentNode,
                     systemId: streamSystemId(stream),
                     cameraSystemIds,
                     liveGeneration: 0,
@@ -493,24 +502,56 @@ export default function HealthPage() {
             });
         });
 
-        const fetchLatest = async (binding: StreamBinding) => {
-            const expectedLiveGeneration = binding.liveGeneration;
+        const bindingsByNode = new Map<any, Map<string, StreamBinding[]>>();
+        bindings.forEach((binding) => {
+            const streamId = binding.stream?.properties?.id;
+            if (!streamId) return;
+            let bindingsByStream = bindingsByNode.get(binding.parentNode);
+            if (!bindingsByStream) {
+                bindingsByStream = new Map();
+                bindingsByNode.set(binding.parentNode, bindingsByStream);
+            }
+            const streamBindings = bindingsByStream.get(streamId) ?? [];
+            streamBindings.push(binding);
+            bindingsByStream.set(streamId, streamBindings);
+        });
+
+        const fetchLatestForNode = async (
+            parentNode: any,
+            bindingsByStream: Map<string, StreamBinding[]>,
+        ) => {
+            const streamIds = Array.from(bindingsByStream.keys());
+            const expectedLiveGenerations = new Map(
+                Array.from(bindingsByStream.values()).flat()
+                    .map((binding) => [binding, binding.liveGeneration] as const)
+            );
             try {
-                const query = await binding.stream.searchObservations(
-                    new ObservationFilter({resultTime: "latest"}), 1
+                const query = await parentNode.getObservationsApi().searchObservations(
+                    new ObservationFilter({
+                        resultTime: "latest",
+                        dataStream: streamIds.join(","),
+                    }),
+                    streamIds.length,
                 );
                 const observations = await query.nextPage();
-                if (!active || binding.liveGeneration !== expectedLiveGeneration) return;
-                const observation = observations?.[0];
-                applyFreshBindingResult(
-                    binding,
-                    observation?.result,
-                    observationTimestamp(observation) ?? Date.now(),
-                    "snapshot",
-                    expectedLiveGeneration,
-                );
+                if (!active) return;
+                observations?.forEach((observation: any) => {
+                    const streamId = observation?.properties?.["datastream@id"];
+                    if (typeof streamId !== "string") return;
+                    bindingsByStream.get(streamId)?.forEach((binding) => {
+                        const expectedLiveGeneration = expectedLiveGenerations.get(binding);
+                        if (expectedLiveGeneration == null) return;
+                        applyFreshBindingResult(
+                            binding,
+                            observation?.properties?.result,
+                            observationTimestamp(observation) ?? Date.now(),
+                            "snapshot",
+                            expectedLiveGeneration,
+                        );
+                    });
+                });
             } catch (error) {
-                console.warn(`Unable to fetch latest health status for ${binding.laneName}`, error);
+                console.warn(`Unable to fetch latest health status for ${parentNode?.name ?? "node"}`, error);
             }
         };
 
@@ -518,7 +559,10 @@ export default function HealthPage() {
             if (reconciliationPromise)
                 return reconciliationPromise;
 
-            const run = Promise.allSettled(bindings.map(fetchLatest)).then((): void => {});
+            const run = Promise.allSettled(
+                Array.from(bindingsByNode.entries())
+                    .map(([parentNode, bindingsByStream]) => fetchLatestForNode(parentNode, bindingsByStream))
+            ).then((): void => {});
             reconciliationPromise = run;
             void run.finally(() => {
                 if (reconciliationPromise === run)
@@ -573,6 +617,13 @@ export default function HealthPage() {
             if (reconciliationTimer != null)
                 window.clearInterval(reconciliationTimer);
             bindings.forEach((binding) => binding.cleanup?.());
+            new Set(bindings.map((binding) => binding.datasource)).forEach((datasource) => {
+                if (hasDatasourceListeners(datasource) || typeof datasource?.disconnect !== "function")
+                    return;
+                void Promise.resolve(datasource.disconnect()).catch((error) => {
+                    console.warn("Unable to disconnect health status source", error);
+                });
+            });
         };
     }, [laneMap, laneMapReady, laneMapRef]);
 

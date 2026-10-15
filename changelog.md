@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Status of Health now reconciles current values in bounded batches per configured node while keeping live subscriptions active, preventing repeated per-stream query bursts and excessive CPU use at large sites.
 - Event filtering, counts, pagination, and bulk selection now query the complete matching server-side result set rather than only the currently loaded page.
 
 ### Security
