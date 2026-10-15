@@ -361,6 +361,32 @@ describe("Status of Health page", () => {
         cy.contains("Lanes awaiting telemetry: 1");
     });
 
+    it("keeps tamper unknown until the RPM explicitly reports a fault or clear transition", () => {
+        cy.clock(Date.parse("2026-09-24T16:00:00.000Z"));
+        let latestTamper: any[] = [];
+        const tamper = stream("tamper", "rpm-1", [TAMPER_STATUS_DEF], () => latestTamper);
+        const localNode = batchNode("Local Node", [tamper]);
+        const laneMap = new Map([["Lane 1", lane("Lane 1", [
+            system("rpm-1", "RPM 1", "urn:osh:system:rapiscan:1"),
+        ], [tamper], [dataSource("tamper")], localNode)]]);
+
+        cy.mount(healthView(laneMap));
+        cy.get('[data-testid="health-lane-Lane 1"]').within(() => cy.contains("Tamper: Unknown"));
+
+        cy.then(() => {
+            latestTamper = [observation({tamperStatus: true}, "2026-09-24T16:00:30.000Z")];
+        });
+        cy.tick(30_000);
+        cy.get('[data-testid="health-lane-Lane 1"]').within(() => cy.contains("Tamper: Fault"));
+
+        cy.then(() => {
+            latestTamper = [observation({tamperStatus: false}, "2026-09-24T16:01:00.000Z")];
+        });
+        cy.tick(30_000);
+        cy.get('[data-testid="health-lane-Lane 1"]').within(() => cy.contains("Tamper: Clear"));
+        cy.wrap(localNode.searchObservations).should("have.callCount", 3);
+    });
+
     it("uses the canonical occupancy start time and persists a user threshold", () => {
         const now = Date.parse("2026-09-24T16:00:00.000Z");
         cy.clock(now);
