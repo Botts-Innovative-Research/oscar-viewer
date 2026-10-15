@@ -223,58 +223,26 @@ describe("Status of Health page", () => {
         cy.contains("Lanes awaiting telemetry: 1");
     });
 
-    it("never lets a delayed current snapshot overwrite a valid live update", () => {
-        let resolveSnapshot: (observations: any[]) => void = () => {};
-        const snapshot = new Promise<any[]>((resolve) => {
-            resolveSnapshot = resolve;
-        });
-        const gamma = stream("gamma", "rpm-1", [ALARM_DEF, GAMMA_COUNT_DEF], snapshot);
-        const gammaSource = dataSource("gamma");
-        const laneMap = new Map([["Lane 1", lane("Lane 1", [
-            system("rpm-1", "RPM 1", "urn:osh:system:rapiscan:1"),
-        ], [gamma], [gammaSource])]]);
-
-        cy.mount(healthView(laneMap));
-        cy.wrap(null).should(() => expect(gammaSource.listenerCount()).to.equal(1));
-        cy.then(() => gammaSource.emit({
-            samplingTime: Date.parse("2026-09-24T16:01:00.000Z") / 1000,
-            alarmState: "Fault - Gamma High",
-        }));
-        cy.contains("Gamma high: Fault");
-        cy.then(() => resolveSnapshot([observation({alarmState: "Background"})]));
-        cy.contains("Gamma high: Fault");
-        cy.contains("Gamma low: Clear");
-    });
-
-    it("recovers a transition missed while the realtime connection is starting", () => {
-        let resolveConnect: () => void = () => {};
-        const connectGate = new Promise<void>((resolve) => {
-            resolveConnect = resolve;
-        });
-        let latestState = "Background";
-        const gamma = stream("gamma", "rpm-1", [ALARM_DEF, GAMMA_COUNT_DEF], () => [
-            observation({alarmState: latestState}, latestState === "Background"
-                ? "2026-09-24T16:00:00.000Z"
-                : "2026-09-24T16:01:00.000Z"),
+    it("reads current state without subscribing to or connecting a per-stream source", () => {
+        const gamma = stream("gamma", "rpm-1", [ALARM_DEF, GAMMA_COUNT_DEF], [
+            observation({alarmState: "Fault - Gamma High"}),
         ]);
-        const gammaSource = dataSource("gamma", connectGate);
+        const gammaSource = dataSource("gamma");
         const localNode = batchNode("Local Node", [gamma]);
         const laneMap = new Map([["Lane 1", lane("Lane 1", [
             system("rpm-1", "RPM 1", "urn:osh:system:rapiscan:1"),
         ], [gamma], [gammaSource], localNode)]]);
 
         cy.mount(healthView(laneMap));
-        cy.contains("Gamma high: Clear");
-        cy.then(() => {
-            latestState = "Fault - Gamma High";
-            // The fake source drops this event because its connection is not ready.
-            gammaSource.emit({alarmState: latestState});
-            resolveConnect();
-        });
 
         cy.contains("Gamma high: Fault");
-        cy.wrap(localNode.searchObservations).should("have.been.calledTwice");
-        cy.wrap(gamma.searchObservations).should("not.have.been.called");
+        cy.wrap(localNode.searchObservations).should("have.been.calledOnce");
+        cy.then(() => {
+            expect(gammaSource.subscribe).not.to.have.been.called;
+            expect(gammaSource.connect).not.to.have.been.called;
+            expect(gammaSource.disconnect).not.to.have.been.called;
+            expect(gammaSource.listenerCount()).to.equal(0);
+        });
     });
 
     it("periodically reconciles current state when no live event arrives", () => {
@@ -300,7 +268,7 @@ describe("Status of Health page", () => {
         cy.tick(30_000);
 
         cy.contains("Gamma high: Fault");
-        cy.wrap(localNode.searchObservations).should("have.callCount", 3);
+        cy.wrap(localNode.searchObservations).should("have.callCount", 2);
         cy.wrap(gamma.searchObservations).should("not.have.been.called");
     });
 
@@ -313,27 +281,33 @@ describe("Status of Health page", () => {
             [observation({alarmState: "Background"})],
         ));
         const localNode = batchNode("Local Node", gammaStreams);
+        const sources = gammaStreams.map((gamma) => dataSource(gamma.properties.id));
         const laneMap = new Map(gammaStreams.map((gamma, index) => [
             `Lane ${index + 1}`,
             lane(`Lane ${index + 1}`, [
                 system(`rpm-${index + 1}`, `RPM ${index + 1}`, `urn:osh:system:rapiscan:${index + 1}`),
-            ], [gamma], [dataSource(gamma.properties.id)], localNode),
+            ], [gamma], [sources[index]], localNode),
         ]));
 
         cy.mount(healthView(laneMap));
 
         cy.contains("Total lanes: 50");
-        cy.wrap(localNode.searchObservations).should("have.been.calledTwice");
+        cy.wrap(localNode.searchObservations).should("have.been.calledOnce");
         cy.then(() => {
             const [filter, pageSize] = localNode.searchObservations.firstCall.args;
             expect(filter.props.resultTime).to.equal("latest");
             expect(filter.props.dataStream.split(",")).to.have.length(50);
             expect(pageSize).to.equal(50);
             gammaStreams.forEach((gamma) => expect(gamma.searchObservations).not.to.have.been.called);
+            sources.forEach((source) => {
+                expect(source.subscribe).not.to.have.been.called;
+                expect(source.connect).not.to.have.been.called;
+                expect(source.disconnect).not.to.have.been.called;
+            });
         });
 
         cy.tick(30_000);
-        cy.wrap(localNode.searchObservations).should("have.callCount", 3);
+        cy.wrap(localNode.searchObservations).should("have.callCount", 2);
     });
 
     it("isolates a failed node while applying batched observations from another node", () => {
@@ -358,8 +332,8 @@ describe("Status of Health page", () => {
 
         cy.get('[data-testid="health-lane-Lane 1"]').within(() => cy.contains("Gamma high: Fault"));
         cy.get('[data-testid="health-lane-Lane 2"]').within(() => cy.contains("Gamma high: Unknown"));
-        cy.wrap(goodNode.searchObservations).should("have.been.calledTwice");
-        cy.wrap(failedNode.searchObservations).should("have.been.calledTwice");
+        cy.wrap(goodNode.searchObservations).should("have.been.calledOnce");
+        cy.wrap(failedNode.searchObservations).should("have.been.calledOnce");
     });
 
     it("keeps the loading state while lane discovery is incomplete", () => {
@@ -409,7 +383,7 @@ describe("Status of Health page", () => {
         cy.then(() => expect(localStorage.getItem("oscar.health.extendedOccupancyMinutes")).to.equal("1"));
     });
 
-    it("removes shared datasource callbacks on unmount and does not accumulate them on remount", () => {
+    it("stops batched refreshes on unmount without touching realtime sources", () => {
         cy.clock(Date.parse("2026-09-24T16:00:00.000Z"));
         const connection = stream("rpm-connection", "rpm-1", [CONNECTION_DEF], [observation({isConnected: true})]);
         const source = dataSource("rpm-connection");
@@ -419,37 +393,14 @@ describe("Status of Health page", () => {
         ], [connection], [source], localNode)]]);
 
         cy.mount(healthView(laneMap));
-        cy.wrap(null).should(() => expect(source.listenerCount()).to.equal(1));
-        cy.wrap(localNode.searchObservations).should("have.been.calledTwice");
+        cy.wrap(localNode.searchObservations).should("have.been.calledOnce");
         cy.mount(<div data-testid="unmounted-health"/>);
+        cy.tick(30_000);
+        cy.wrap(localNode.searchObservations).should("have.been.calledOnce");
         cy.wrap(null).should(() => {
             expect(source.listenerCount()).to.equal(0);
-            expect(source.disconnect).to.have.been.calledOnce;
-        });
-        cy.tick(30_000);
-        cy.wrap(localNode.searchObservations).should("have.been.calledTwice");
-        cy.mount(healthView(laneMap));
-        cy.wrap(null).should(() => {
-            expect(source.listenerCount()).to.equal(1);
-            expect(source.connect).to.have.been.calledTwice;
-        });
-    });
-
-    it("leaves a shared datasource connected when another callback remains", () => {
-        const connection = stream("rpm-connection", "rpm-1", [CONNECTION_DEF], [observation({isConnected: true})]);
-        const source = dataSource("rpm-connection");
-        const otherHandler = () => {};
-        source.subscribe(otherHandler, ["data"]);
-        const localNode = batchNode("Local Node", [connection]);
-        const laneMap = new Map([["Lane 1", lane("Lane 1", [
-            system("rpm-1", "RPM 1", "urn:osh:system:rapiscan:1"),
-        ], [connection], [source], localNode)]]);
-
-        cy.mount(healthView(laneMap));
-        cy.wrap(null).should(() => expect(source.listenerCount()).to.equal(2));
-        cy.mount(<div data-testid="unmounted-health"/>);
-        cy.wrap(null).should(() => {
-            expect(source.listenerCount()).to.equal(1);
+            expect(source.subscribe).not.to.have.been.called;
+            expect(source.connect).not.to.have.been.called;
             expect(source.disconnect).not.to.have.been.called;
         });
     });

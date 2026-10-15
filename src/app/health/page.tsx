@@ -41,7 +41,6 @@ import {
     isVideoDataStream,
 } from "@/lib/data/oscar/Utilities";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter.js";
-import {EventType} from "osh-js/source/core/event/EventType";
 
 type ConnectionState = "online" | "offline" | "unknown";
 type TelemetryState = "active" | "clear" | "unknown";
@@ -78,13 +77,10 @@ interface StreamBinding {
     kind: StreamKind;
     laneName: string;
     stream: any;
-    datasource: any;
     parentNode: any;
     systemId: string;
     cameraSystemIds: Set<string>;
-    liveGeneration: number;
     lastAppliedTimestamp: number | null;
-    cleanup?: () => void;
 }
 
 const OCCUPANCY_THRESHOLD_KEY = "oscar.health.extendedOccupancyMinutes";
@@ -138,10 +134,6 @@ function getConnectionState(result: any): ConnectionState {
     return typeof state === "boolean" ? (state ? "online" : "offline") : "unknown";
 }
 
-function getMessageResult(message: any): any {
-    return message?.values?.[0]?.data ?? message?.data ?? message?.result;
-}
-
 function timestampToMilliseconds(value: unknown): number | null {
     if (typeof value === "number") {
         const timestamp = value * (value < 1_000_000_000_000 ? 1000 : 1);
@@ -182,33 +174,6 @@ function streamKind(stream: any): StreamKind | null {
     if (isGammaDataStream(stream)) return "gamma";
     if (isNeutronDataStream(stream)) return "neutron";
     return null;
-}
-
-function findRealtimeDatasource(lane: LaneMapEntry, stream: any): any {
-    const streamId = stream?.properties?.id;
-    return lane.datasourcesRealtime?.find((datasource: any) =>
-        datasource?.properties?.resource?.split("/")?.[2] === streamId
-    );
-}
-
-function subscribeWithCleanup(datasource: any, handler: (message: any) => void): () => void {
-    datasource.subscribe(handler, [EventType.DATA]);
-    return () => {
-        const listeners = datasource.eventSubscriptionMap?.[EventType.DATA];
-        if (!Array.isArray(listeners)) return;
-        let index = listeners.indexOf(handler);
-        while (index >= 0) {
-            listeners.splice(index, 1);
-            index = listeners.indexOf(handler);
-        }
-    };
-}
-
-function hasDatasourceListeners(datasource: any): boolean {
-    const subscriptionMap = datasource?.eventSubscriptionMap;
-    if (!subscriptionMap || typeof subscriptionMap !== "object") return false;
-    return Object.values(subscriptionMap)
-        .some((listeners) => Array.isArray(listeners) && listeners.length > 0);
 }
 
 function StatusIndicator({component, labels}: {
@@ -454,16 +419,8 @@ export default function HealthPage() {
             }
         };
 
-        const applyFreshBindingResult = (
-            binding: StreamBinding,
-            result: any,
-            updatedAt: number,
-            source: "live" | "snapshot",
-            expectedLiveGeneration?: number,
-        ): boolean => {
+        const applyFreshBindingResult = (binding: StreamBinding, result: any, updatedAt: number): boolean => {
             if (!active) return false;
-            if (expectedLiveGeneration != null && binding.liveGeneration !== expectedLiveGeneration)
-                return false;
             if (binding.lastAppliedTimestamp != null && updatedAt < binding.lastAppliedTimestamp)
                 return false;
 
@@ -473,8 +430,6 @@ export default function HealthPage() {
             binding.lastAppliedTimestamp = binding.lastAppliedTimestamp == null
                 ? updatedAt
                 : Math.max(binding.lastAppliedTimestamp, updatedAt);
-            if (source === "live")
-                binding.liveGeneration++;
             return true;
         };
 
@@ -483,18 +438,14 @@ export default function HealthPage() {
             lane.datastreams.forEach((stream: any, index: number) => {
                 const kind = streamKind(stream);
                 if (!kind) return;
-                const datasource = findRealtimeDatasource(lane, stream);
-                if (!datasource) return;
                 const binding: StreamBinding = {
                     key: stream?.properties?.id ?? `${laneName}-${index}`,
                     kind,
                     laneName,
                     stream,
-                    datasource,
                     parentNode: lane.parentNode,
                     systemId: streamSystemId(stream),
                     cameraSystemIds,
-                    liveGeneration: 0,
                     lastAppliedTimestamp: null,
                 };
                 bindings.push(binding);
@@ -521,10 +472,6 @@ export default function HealthPage() {
             bindingsByStream: Map<string, StreamBinding[]>,
         ) => {
             const streamIds = Array.from(bindingsByStream.keys());
-            const expectedLiveGenerations = new Map(
-                Array.from(bindingsByStream.values()).flat()
-                    .map((binding) => [binding, binding.liveGeneration] as const)
-            );
             try {
                 const query = await parentNode.getObservationsApi().searchObservations(
                     new ObservationFilter({
@@ -539,14 +486,10 @@ export default function HealthPage() {
                     const streamId = observation?.properties?.["datastream@id"];
                     if (typeof streamId !== "string") return;
                     bindingsByStream.get(streamId)?.forEach((binding) => {
-                        const expectedLiveGeneration = expectedLiveGenerations.get(binding);
-                        if (expectedLiveGeneration == null) return;
                         applyFreshBindingResult(
                             binding,
                             observation?.properties?.result,
                             observationTimestamp(observation) ?? Date.now(),
-                            "snapshot",
-                            expectedLiveGeneration,
                         );
                     });
                 });
@@ -571,59 +514,22 @@ export default function HealthPage() {
             return run;
         };
 
-        const initializeAndSubscribe = async () => {
-            const connectionPromises: Promise<void>[] = [];
-            bindings.forEach((binding) => {
-                const handleMessage = (message: any) => {
-                    if (!active) return;
-                    applyFreshBindingResult(
-                        binding,
-                        getMessageResult(message),
-                        observationTimestamp(message) ?? Date.now(),
-                        "live",
-                    );
-                };
-                try {
-                    binding.cleanup = subscribeWithCleanup(binding.datasource, handleMessage);
-                    connectionPromises.push(
-                        Promise.resolve(binding.datasource.connect())
-                            .then((): void => {})
-                            .catch((error) => {
-                                console.warn(`Unable to subscribe to health status for ${binding.laneName}`, error);
-                            })
-                    );
-                } catch (error) {
-                    console.warn(`Unable to subscribe to health status for ${binding.laneName}`, error);
-                }
-            });
-
+        const initialize = async () => {
             if (bindings.length > 0) {
                 reconciliationTimer = window.setInterval(() => {
                     void reconcileLatest();
                 }, HEALTH_RECONCILIATION_INTERVAL_MS);
             }
 
-            // Populate immediately, then read once more after connect() settles to
-            // catch transitions that occurred while the realtime source started.
             await reconcileLatest();
             if (active && laneMapReady) setIsLoading(false);
-            await Promise.allSettled(connectionPromises);
-            if (active) await reconcileLatest();
         };
 
-        void initializeAndSubscribe();
+        void initialize();
         return () => {
             active = false;
             if (reconciliationTimer != null)
                 window.clearInterval(reconciliationTimer);
-            bindings.forEach((binding) => binding.cleanup?.());
-            new Set(bindings.map((binding) => binding.datasource)).forEach((datasource) => {
-                if (hasDatasourceListeners(datasource) || typeof datasource?.disconnect !== "function")
-                    return;
-                void Promise.resolve(datasource.disconnect()).catch((error) => {
-                    console.warn("Unable to disconnect health status source", error);
-                });
-            });
         };
     }, [laneMap, laneMapReady, laneMapRef]);
 
