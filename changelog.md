@@ -1,6 +1,31 @@
 # OSCAR Viewer Change Log
 All notable changes to this project will be documented in this file. 
 
+## 4.0.0
+
+### Upgrade notes
+
+- This major release adds operator-facing navigation and URL-scoped operational views. Validate workstation URLs and train operators before production rollout.
+
+### Added
+
+- Added a localized Status of Health page for lane RPM and camera connectivity, radiation and tamper faults, and configurable extended-occupancy alerts.
+- Added URL-scoped operational views that consistently limit lane discovery, dashboards, maps, reports, notifications, and health monitoring to assigned lanes.
+- Added compact alarm QR export from the dashboard and Event Details, including adaptively downsampled gamma, neutron, and threshold series.
+- Added an offline Alarm Transfer page that scans a camera or saved QR image, imports portable alarm files, verifies transfer integrity, redraws charts, and downloads or shares the alarm package.
+- Added complete English, Spanish, French, and Greek interface translations for the transfer workflow.
+
+### Changed
+
+- Status of Health now uses one batched latest-observation request per configured node on entry and every 30 seconds instead of per-stream real-time MQTT feeds, bounding CPU and server load at large sites.
+- Event filtering, counts, pagination, and bulk selection now query the complete matching server-side result set rather than only the currently loaded page.
+- Lane Details now shows localized live-video preparation and terminal error states, retries transient playlist and media failures within fixed bounds, and offers a Retry action that safely starts one fresh server stream.
+- Live-video URLs now honor each node's configured bucket endpoint, normalize platform-specific path separators, and remain same-origin for the default node.
+
+### Security
+
+- Alarm QR payloads are compressed Base45 documents with a SHA-256 corruption check and strict import limits. They are not encrypted or digitally signed, so the interface warns operators to confirm the source independently.
+
 ## 3.8.4
 
 ### Added

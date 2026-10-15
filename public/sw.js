@@ -49,8 +49,11 @@ self.addEventListener('notificationclick', (event) => {
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+            const expectedView = notificationData?.viewKey ?? null;
             for (const client of clientList) {
-                if (client.url.includes(self.location.origin) && 'focus' in client) {
+                const clientUrl = new URL(client.url);
+                const clientView = clientUrl.searchParams.get('view');
+                if (clientUrl.origin === self.location.origin && clientView === expectedView && 'focus' in client) {
                     client.focus();
                     if (event.action === 'view-alarm' && notificationData) {
                         client.postMessage({
@@ -63,10 +66,13 @@ self.addEventListener('notificationclick', (event) => {
                 }
             }
             if (clients.openWindow) {
-                const url = (event.action === 'view-alarm' && notificationData?.eventId)
-                    ? `/event-details?eventId=${notificationData.eventId}`
+                const destination = (event.action === 'view-alarm' && notificationData?.eventId)
+                    ? `/event-details?eventId=${encodeURIComponent(notificationData.eventId)}`
                     : '/';
-                return clients.openWindow(url);
+                const url = new URL(destination, self.location.origin);
+                if (notificationData?.viewKey)
+                    url.searchParams.set('view', notificationData.viewKey);
+                return clients.openWindow(url.toString());
             }
         })
     );

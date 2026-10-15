@@ -3,33 +3,40 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {generateHLSVideoCommandJSON, sendCommand} from "@/lib/data/oscar/OSCARCommands";
-import {Box, Stack} from "@mui/material";
+import {Box, Button, CircularProgress, Stack, Typography} from "@mui/material";
 import IconButton from "@mui/material/IconButton";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import HLSVideoComponent from "@/app/_components/lane-view/HLSVideoComponent";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-import {getUniqueVideoControlStreams} from "@/app/_components/lane-view/VideoStreamUtils";
+import {
+    getUniqueVideoControlStreams,
+    runAbortableWithTimeout,
+    stopStreamAfterStartSettles,
+} from "@/app/_components/lane-view/VideoStreamUtils";
+import {useLanguage} from "@/app/contexts/LanguageContext";
+
+const VIDEO_COMMAND_TIMEOUT_MS = 10_000;
 
 
 export default function VideoMedia({ currentLane}: { currentLane: string}) {
     const {laneMapRef, readyLaneNames} = useContext(DataSourceContext);
+    const {t} = useLanguage();
     const laneReady = Boolean(currentLane && readyLaneNames.has(currentLane));
 
-    const [videoSource, setVideoSource] = useState(null);
+    const [videoSource, setVideoSource] = useState<string | null>(null);
     const [videoStreams, setVideoStreams] = useState<typeof ControlStream[]>([]);
     const [currentPage, setCurrentPage] = useState(0);
     const [laneEntry, setLaneEntry] = useState<LaneMapEntry | null>(null);
-    const restartStreamRef = useRef<(() => void) | null>(null);
-
-    const handleManifestNotFound = useCallback(() => {
-        restartStreamRef.current?.();
-    }, []);
+    const [streamStartState, setStreamStartState] = useState<"idle" | "preparing" | "error">("idle");
+    const [startGeneration, setStartGeneration] = useState(0);
+    const previousStopRef = useRef<Promise<void>>(Promise.resolve());
 
     useEffect(() => {
         if (!laneReady || !currentLane) {
             setLaneEntry(null);
             setVideoStreams([]);
             setVideoSource(null);
+            setStreamStartState("idle");
             return;
         }
 
@@ -39,6 +46,7 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
         setCurrentPage(0);
         setVideoSource(null);
         setVideoStreams(resolvedStreams);
+        setStreamStartState(resolvedStreams.length > 0 ? "preparing" : "idle");
 
         if (resolvedStreams.length === 0)
             console.error(`No video control stream is available for lane ${currentLane}`);
@@ -55,6 +63,8 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
 
         let cancelled = false;
         let startInFlight = false;
+        let startLaunched = false;
+        let startTask: Promise<void> = Promise.resolve();
         let retryTimer: ReturnType<typeof setTimeout> | null = null;
         let startAttempts = 0;
         const maxStartAttempts = 30;
@@ -62,33 +72,60 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
         const node = laneEntry.parentNode;
 
         const stopStream = async () => {
+            const controller = new AbortController();
             try {
-                await sendCommand(node, streamId, generateHLSVideoCommandJSON(false));
+                await runAbortableWithTimeout(
+                    controller,
+                    VIDEO_COMMAND_TIMEOUT_MS,
+                    (signal) => sendCommand(
+                        node,
+                        streamId,
+                        generateHLSVideoCommandJSON(false),
+                        {signal},
+                    ),
+                );
             } catch (error) {
                 console.error(`Failed to stop video stream ${streamId}`, error);
             }
         };
 
-        const scheduleStart = (delayMs: number) => {
-            if (cancelled || retryTimer || startAttempts >= maxStartAttempts)
+        function scheduleStart(delayMs: number) {
+            if (cancelled || retryTimer)
                 return;
+            if (startAttempts >= maxStartAttempts) {
+                setStreamStartState("error");
+                return;
+            }
             retryTimer = setTimeout(() => {
                 retryTimer = null;
-                void startStream();
+                void launchStart();
             }, delayMs);
-        };
+        }
 
-        const startStream = async () => {
+        async function startStream() {
             if (cancelled || startInFlight)
                 return;
 
             startInFlight = true;
+            startLaunched = true;
             startAttempts++;
+            const controller = new AbortController();
             try {
-                const response = await sendCommand(
-                    node,
-                    streamId,
-                    generateHLSVideoCommandJSON(true),
+                const {response, responseJson} = await runAbortableWithTimeout(
+                    controller,
+                    VIDEO_COMMAND_TIMEOUT_MS,
+                    async (signal) => {
+                        const response = await sendCommand(
+                            node,
+                            streamId,
+                            generateHLSVideoCommandJSON(true),
+                            {signal},
+                        );
+                        return {
+                            response,
+                            responseJson: response.ok ? await response.json() : null,
+                        };
+                    },
                 );
 
                 if (!response.ok) {
@@ -97,15 +134,12 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
                     return;
                 }
 
-                const responseJson = await response.json();
                 const streamPath = responseJson?.results?.[0]?.data?.streamPath;
 
-                // A lane/page change may finish while the command is in flight.
-                // Stop the now-stale server stream instead of attaching it.
-                if (cancelled) {
-                    await stopStream();
+                // Cleanup owns the single stop for a cancelled generation and
+                // waits for this task before sending it.
+                if (cancelled)
                     return;
-                }
 
                 if (streamPath) {
                     startAttempts = 0;
@@ -121,23 +155,44 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
             } finally {
                 startInFlight = false;
             }
-        };
+        }
 
-        const restartStream = () => scheduleStart(0);
-        restartStreamRef.current = restartStream;
+        function launchStart(): Promise<void> {
+            if (cancelled || startInFlight)
+                return startTask;
+            startTask = startStream();
+            return startTask;
+        }
 
+        const previousStop = previousStopRef.current;
         setVideoSource(null);
-        void startStream();
+        setStreamStartState("preparing");
+        startTask = previousStop.then(() => {
+            if (!cancelled)
+                return launchStart();
+        });
 
         return () => {
             cancelled = true;
             if (retryTimer)
                 clearTimeout(retryTimer);
-            if (restartStreamRef.current === restartStream)
-                restartStreamRef.current = null;
-            void stopStream();
+            // Do not abort a dispatched start here: the client promise could settle
+            // before an already-accepted server command does. Its own deadline keeps
+            // this wait bounded, then the stop is likewise bounded before replacement.
+            const taskAtCleanup = startTask;
+            previousStopRef.current = stopStreamAfterStartSettles(
+                taskAtCleanup,
+                () => startLaunched,
+                stopStream,
+            );
         };
-    }, [currentPage, laneEntry, videoStreams]);
+    }, [currentPage, laneEntry, videoStreams, startGeneration]);
+
+    const retryStreamStart = useCallback(() => {
+        setVideoSource(null);
+        setStreamStartState("preparing");
+        setStartGeneration((generation) => generation + 1);
+    }, []);
 
     const handleNextPage = () =>{
         if (currentPage < videoStreams.length - 1) {
@@ -182,11 +237,40 @@ export default function VideoMedia({ currentLane}: { currentLane: string}) {
                     overflow: "hidden",
                 }}
             >
+                {!videoSource && streamStartState === "preparing" && (
+                    <Stack
+                        data-testid="live-video-command-preparing"
+                        role="status"
+                        alignItems="center"
+                        spacing={1.5}
+                        sx={{minHeight: "500px", justifyContent: "center"}}
+                    >
+                        <CircularProgress size={28}/>
+                        <Typography align="center">{t("liveVideoPreparing")}</Typography>
+                    </Stack>
+                )}
+                {!videoSource && streamStartState === "error" && (
+                    <Stack
+                        data-testid="live-video-command-error"
+                        role="alert"
+                        alignItems="center"
+                        spacing={2}
+                        sx={{minHeight: "500px", justifyContent: "center"}}
+                    >
+                        <Typography align="center">{t("liveVideoPlaybackError")}</Typography>
+                        <Button variant="contained" onClick={retryStreamStart}>
+                            {t("retry")}
+                        </Button>
+                    </Stack>
+                )}
+                {!videoSource && videoStreams.length === 0 && laneEntry && (
+                    <Typography>{t("noVideoAvailable")}</Typography>
+                )}
                 {videoSource && laneEntry?.parentNode && (
                     <HLSVideoComponent
                         videoSource={videoSource}
                         selectedNode={laneEntry.parentNode}
-                        onManifestNotFound={handleManifestNotFound}
+                        onRetry={retryStreamStart}
                     />
                 )}
             </Stack>
