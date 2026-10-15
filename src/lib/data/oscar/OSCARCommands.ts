@@ -2,7 +2,16 @@ import {INode} from "@/lib/data/osh/Node";
 import {AdjudicationCode} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 
 
-export async function sendCommand(node: INode, controlStreamId: string, command: any) {
+export interface SendCommandOptions {
+    signal?: AbortSignal;
+}
+
+export async function sendCommand(
+    node: INode,
+    controlStreamId: string,
+    command: any,
+    options: SendCommandOptions = {},
+) {
     let ep = node.getConnectedSystemsEndpoint(false) + `/controlstreams/${controlStreamId}/commands`
 
     return await fetch(ep, {
@@ -13,7 +22,8 @@ export async function sendCommand(node: INode, controlStreamId: string, command:
         },
         mode: 'cors',
         credentials: 'include',
-        body: command
+        body: command,
+        signal: options.signal,
     });
 }
 

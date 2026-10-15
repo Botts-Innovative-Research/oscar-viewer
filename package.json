@@ -16,7 +16,7 @@
     "test:all": "cypress run --e2e --headed --spec 'cypress/e2e/all-specs.cy.tsx'",
     "test:map": "cypress run --component --spec 'cypress/component/MapUtils.cy.ts'",
     "test:discovery": "cypress run --component --spec 'cypress/component/LaneDiscovery.cy.ts'",
-    "test:video": "cypress run --component --spec 'cypress/component/VideoStreamUtils.cy.ts'",
+    "test:video": "cypress run --component --spec 'cypress/component/VideoStreamUtils.cy.ts,cypress/component/HLSVideoComponent.cy.tsx'",
     "test:adjudication": "cypress run --component --spec 'cypress/component/AdjudicationCommand.cy.ts'",
     "test:event-filter": "cypress run --component --spec 'cypress/component/EventFilter.cy.ts'",
     "test:alarm-transfer": "cypress run --component --spec 'cypress/component/AlarmQrTransfer.cy.ts'",
