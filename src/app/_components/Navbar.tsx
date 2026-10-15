@@ -265,7 +265,7 @@ export default function Navbar({children}: { children: React.ReactNode }) {
         {
             title: t('stateOfHealth'),
             icon: <MonitorHeartRoundedIcon/>,
-            href: "/health",
+            href: "/health/",
         },
         {
             title: t('map'),
