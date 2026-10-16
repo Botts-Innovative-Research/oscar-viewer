@@ -179,6 +179,12 @@ export default function AlarmTransferImport() {
                             <Grid item xs={6} md={3}><b>{t("laneId")}</b><br/>{payload.source.laneId}</Grid>
                             <Grid item xs={6} md={3}><b>{t("occupancyId")}</b><br/>{payload.event.occupancyId}</Grid>
                             <Grid item xs={6} md={3}><b>{t("status")}</b><br/>{payload.event.status}</Grid>
+                            <Grid item xs={12}>
+                                <b>{t("occupancyUuid")}</b><br/>
+                                <span data-testid="alarm-transfer-import-uuid" style={{overflowWrap: "anywhere"}}>
+                                    {payload.event.observationId ?? t("legacyOccupancyUuidUnavailable")}
+                                </span>
+                            </Grid>
                             <Grid item xs={6} md={3}><b>{t("startTime")}</b><br/>{new Date(payload.event.startTime).toLocaleString(getIntlLocale(language))}</Grid>
                             <Grid item xs={6} md={3}><b>{t("endTime")}</b><br/>{new Date(payload.event.endTime).toLocaleString(getIntlLocale(language))}</Grid>
                             <Grid item xs={6} md={3}><b>{t("maxGamma")}</b><br/>{payload.event.maxGamma ?? t("unknown")}</Grid>

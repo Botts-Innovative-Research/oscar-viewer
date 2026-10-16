@@ -21,7 +21,7 @@ import {useRouter} from "next/dist/client/components/navigation";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {isOccupancyDataStream, isThresholdDataStream} from "@/lib/data/oscar/Utilities";
-import {convertToMap, hashString} from "@/app/utils/Utils";
+import {convertToMap} from "@/app/utils/Utils";
 import {OCCUPANCY_PILLAR_DEF} from "@/lib/data/Constants";
 import {getObservations} from "@/app/utils/ChartUtils";
 import {useAppDispatch} from "@/lib/state/Hooks";
@@ -62,6 +62,12 @@ import {
     buildObservationCountParams,
     buildObservationPageParams,
 } from "@/lib/data/oscar/EventQuery";
+import {
+    buildEventDetailsHref,
+    createEventFromOccupancyObservation,
+    EventLookupError,
+    resolveEventObservationId,
+} from "@/lib/data/oscar/EventLookup";
 
 interface TableProps {
     tableMode: "eventlog" | "alarmtable" | "lanelog";
@@ -83,6 +89,76 @@ interface QueryPlan {
 
 const PAGE_SIZE = 15;
 const BULK_FETCH_SIZE = 250;
+const REALTIME_ID_RESOLUTION_TIMEOUT_MS = 12_000;
+const REALTIME_ID_LOOKUP_REQUEST_TIMEOUT_MS = 1_500;
+export const REALTIME_ID_RETRY_DELAYS_MS = [250, 500, 1_000, 2_000, 3_000] as const;
+
+type RealtimeEventIdResolver = typeof resolveEventObservationId;
+
+function cloneEventWithObservationId(event: EventTableData, occupancyObsId: string): EventTableData {
+    return Object.assign(
+        Object.create(Object.getPrototypeOf(event)),
+        event,
+        {occupancyObsId},
+    );
+}
+
+function waitForRetry(milliseconds: number, signal?: AbortSignal): Promise<void> {
+    if (milliseconds <= 0) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+        if (signal?.aborted) {
+            reject(signal.reason ?? new DOMException("Aborted", "AbortError"));
+            return;
+        }
+
+        const timeout = window.setTimeout(() => {
+            signal?.removeEventListener("abort", onAbort);
+            resolve();
+        }, milliseconds);
+        const onAbort = () => {
+            window.clearTimeout(timeout);
+            reject(signal?.reason ?? new DOMException("Aborted", "AbortError"));
+        };
+        signal?.addEventListener("abort", onAbort, {once: true});
+    });
+}
+
+/**
+ * Gives a freshly received event a short window to acquire its durable REST
+ * resource ID. The original event is returned after bounded failures so alarm
+ * notification delivery never depends on persistence timing.
+ */
+export async function resolveRealtimeEventForNotification(
+    event: EventTableData,
+    lane: LaneMapEntry,
+    signal?: AbortSignal,
+    resolver: RealtimeEventIdResolver = resolveEventObservationId,
+    retryDelays: readonly number[] = REALTIME_ID_RETRY_DELAYS_MS,
+): Promise<EventTableData> {
+    for (let attempt = 0; attempt <= retryDelays.length; attempt++) {
+        try {
+            const eventId = await resolver(
+                event,
+                lane,
+                fetch,
+                signal,
+                REALTIME_ID_LOOKUP_REQUEST_TIMEOUT_MS,
+            );
+            return cloneEventWithObservationId(event, eventId);
+        } catch (error) {
+            if (signal?.aborted) return event;
+            const retryable = error instanceof EventLookupError
+                && (error.code === "not-found" || error.code === "unavailable");
+            if (!retryable || attempt >= retryDelays.length) return event;
+            try {
+                await waitForRetry(retryDelays[attempt], signal);
+            } catch {
+                return event;
+            }
+        }
+    }
+    return event;
+}
 
 const deduplicateEvents = (events: EventTableData[]): EventTableData[] => {
     const result = new Map<string, EventTableData>();
@@ -122,6 +198,12 @@ export default function EventTable({
     const allFilteredCutoffRef = useRef<string | null>(null);
     const currentPageRef = useRef(0);
     const eventCacheRef = useRef<Map<string, EventTableData>>(new Map());
+    const selectedRowIdRef = useRef(selectedRowId);
+    const realtimeResolutionJobsRef = useRef<Set<{
+        controller: AbortController;
+        cancelledByCleanup: boolean;
+        timeout: number;
+    }>>(new Set());
     const failedBulkRef = useRef<EventTableData[]>([]);
     const countRequestRef = useRef(0);
     const pageRequestRef = useRef(0);
@@ -178,39 +260,103 @@ export default function EventTable({
         }
     }, []);
 
-    const sendNotification = useCallback((event: EventTableData) => {
+    useEffect(() => {
+        selectedRowIdRef.current = selectedRowId;
+    }, [selectedRowId]);
+
+    const cancelRealtimeResolutionJobs = useCallback(() => {
+        realtimeResolutionJobsRef.current.forEach(job => {
+            job.cancelledByCleanup = true;
+            window.clearTimeout(job.timeout);
+            job.controller.abort();
+        });
+        realtimeResolutionJobsRef.current.clear();
+    }, []);
+
+    useEffect(() => () => cancelRealtimeResolutionJobs(), [cancelRealtimeResolutionJobs]);
+
+    const sendNotification = useCallback(async (event: EventTableData, nodeId: string): Promise<void> => {
         if (event.status === "None" || !notificationServiceRef.current?.isReady()) return;
-        notificationServiceRef.current.showNotification(NotificationTemplates.newAlarm(event, {
-            title: t("newAlarmTitle", {status: t(event.status === "Gamma & Neutron" ? "gammaAndNeutron" : event.status.toLowerCase())}),
-            body: t("newAlarmBody", {lane: event.laneId, occupancyId: event.occupancyCount ?? ""}),
-            viewAlarm: t("viewAlarm"),
-            dismiss: t("dismiss"),
-        }, activeViewKey));
+        try {
+            await notificationServiceRef.current.showNotification(NotificationTemplates.newAlarm(event, {
+                title: t("newAlarmTitle", {status: t(event.status === "Gamma & Neutron" ? "gammaAndNeutron" : event.status.toLowerCase())}),
+                body: t("newAlarmBody", {lane: event.laneId, occupancyId: event.occupancyCount ?? ""}),
+                viewAlarm: t("viewAlarm"),
+                events: t("events"),
+                dismiss: t("dismiss"),
+            }, activeViewKey, nodeId));
+        } catch (error) {
+            console.error("Unable to show alarm notification", error);
+        }
     }, [t, activeViewKey]);
 
     const eventFromObservation = useCallback((observation: any, lane: LaneMapEntry, live: boolean): EventTableData => {
-        const result = observation.properties?.result || observation.result || observation;
-        const id = hashString(`${result.occupancyCount}${lane.laneName}${result.startTime}${result.endTime}`);
-        const event = new EventTableData(
-            id,
-            lane.laneName,
-            result,
-            live ? null : observation.properties.id,
-            observation.properties?.foiId || observation["foi@id"] || observation.foiId,
-            lane.parentNode.name,
-            lane.isRS350Backpack,
-        );
-        const datastreamId = live ? undefined : observation.properties["datastream@id"];
-        if (datastreamId) {
-            event.setDataStreamId(datastreamId);
-            event.setRPMSystemId(lane.lookupSystemIdFromDataStreamId(datastreamId));
-        }
-        event.setFoiId(observation.properties?.["foi@id"] || observation["foi@id"] || observation.foiId);
-        if (!live) event.setOccupancyObsId(observation.id);
-        if (live) sendNotification(event);
+        const event = createEventFromOccupancyObservation(observation, lane, !live);
         eventCacheRef.current.set(eventSelectionKey(event), event);
         return event;
-    }, [sendNotification]);
+    }, []);
+
+    const replaceRealtimeEventIdentity = useCallback((original: EventTableData, resolved: EventTableData) => {
+        if (!resolved.occupancyObsId || resolved === original) return;
+
+        const originalKey = eventSelectionKey(original);
+        const resolvedKey = eventSelectionKey(resolved);
+        if (eventCacheRef.current.get(originalKey) === original)
+            eventCacheRef.current.delete(originalKey);
+        eventCacheRef.current.set(resolvedKey, resolved);
+        setRows(previous => deduplicateEvents(previous.map(row => row === original ? resolved : row)));
+
+        const replaceKey = (previous: Set<string>) => {
+            if (!previous.has(originalKey)) return previous;
+            const next = new Set(previous);
+            next.delete(originalKey);
+            next.add(resolvedKey);
+            return next;
+        };
+        setSelectedKeys(replaceKey);
+        setExcludedKeys(replaceKey);
+        setPostSelectionKeys(replaceKey);
+
+        if (selectedRowIdRef.current === original.id) {
+            dispatch(setEventPreview({isOpen: true, eventData: resolved}));
+            dispatch(setSelectedEvent(resolved));
+        }
+    }, [dispatch]);
+
+    const resolveIdentityAndNotify = useCallback((event: EventTableData, lane: LaneMapEntry) => {
+        if (event.status === "None") return;
+
+        // Alarm delivery is immediate. Until the durable observation exists,
+        // the honest action opens Events; a successful resolution replaces
+        // this notification with the direct Event Details action.
+        const fallbackDelivery = sendNotification(event, lane.parentNode.id);
+
+        const controller = new AbortController();
+        const job = {
+            controller,
+            cancelledByCleanup: false,
+            timeout: window.setTimeout(() => controller.abort(), REALTIME_ID_RESOLUTION_TIMEOUT_MS),
+        };
+        realtimeResolutionJobsRef.current.add(job);
+
+        void resolveRealtimeEventForNotification(event, lane, controller.signal)
+            .then(async resolved => {
+                if (job.cancelledByCleanup) return;
+                if (!resolved.occupancyObsId || resolved === event) return;
+                replaceRealtimeEventIdentity(event, resolved);
+                await fallbackDelivery;
+                if (job.cancelledByCleanup) return;
+                await sendNotification(resolved, lane.parentNode.id);
+            })
+            .catch(error => {
+                if (job.cancelledByCleanup) return;
+                console.error("Unable to resolve realtime event identity before notification", error);
+            })
+            .finally(() => {
+                window.clearTimeout(job.timeout);
+                realtimeResolutionJobsRef.current.delete(job);
+            });
+    }, [replaceRealtimeEventIdentity, sendNotification]);
 
     const fetchPlanRows = useCallback(async (plan: QueryPlan, limit: number, offset: number, cutoff = pageLoadedTime) => {
         const params = buildObservationPageParams(plan, cutoff, limit, offset);
@@ -316,10 +462,12 @@ export default function EventTable({
             const source = lane.datasourcesRealtime?.find((item: any) => item.properties.resource?.split("/")[2] === occupancyStream.properties.id);
             if (!source) continue;
             const handleMessage = (message: any) => {
-                if (currentPageRef.current !== 0) return;
                 try {
                     const event = eventFromObservation(message.values?.[0]?.data || message, lane, true);
                     event.setDataStreamId(occupancyStream.properties.id);
+                    event.setRPMSystemId(occupancyStream.properties["system@id"]);
+                    resolveIdentityAndNotify(event, lane);
+                    if (currentPageRef.current !== 0) return;
                     if (!rowPassesLocalFilters(event, lane)) return;
                     if (allFilteredCutoffRef.current && event.status !== "None" && !event.adjudicatedIds?.length) {
                         setPostSelectionKeys(previous => new Set(previous).add(eventSelectionKey(event)));
@@ -338,13 +486,16 @@ export default function EventTable({
                 console.error("Error connecting occupancy source", error);
             }
         }
-        return () => subscriptions.forEach(({source, handler}) => {
-            const listeners = source.eventSubscriptionMap?.[EventType.DATA];
-            if (!Array.isArray(listeners)) return;
-            const index = listeners.indexOf(handler);
-            if (index >= 0) listeners.splice(index, 1);
-        });
-    }, [stableLaneMap, eventFromObservation, rowPassesLocalFilters]);
+        return () => {
+            cancelRealtimeResolutionJobs();
+            subscriptions.forEach(({source, handler}) => {
+                const listeners = source.eventSubscriptionMap?.[EventType.DATA];
+                if (!Array.isArray(listeners)) return;
+                const index = listeners.indexOf(handler);
+                if (index >= 0) listeners.splice(index, 1);
+            });
+        };
+    }, [stableLaneMap, eventFromObservation, rowPassesLocalFilters, resolveIdentityAndNotify, cancelRealtimeResolutionJobs]);
 
     useEffect(() => {
         if (!adjudicatedEventId || tableMode !== "alarmtable") return;
@@ -417,7 +568,13 @@ export default function EventTable({
         dispatch(setSelectedRowId(event.id));
         dispatch(setSelectedEvent(event));
         getLatestGB(event);
-        if (navigate) router.push(scopedHref("/event-details"));
+        if (navigate) {
+            const lane = stableLaneMap.get(event.laneId);
+            const href = event.occupancyObsId
+                ? buildEventDetailsHref(event.occupancyObsId, lane?.parentNode.id)
+                : "/event-details";
+            router.push(scopedHref(href));
+        }
     };
 
     const enumerateAllFiltered = useCallback(async (): Promise<EventTableData[]> => {

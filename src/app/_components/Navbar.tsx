@@ -42,6 +42,7 @@ import {setSelectedEvent} from "@/lib/state/EventDataSlice";
 import {setEventData} from "@/lib/state/EventDetailsSlice";
 import QrCodeScannerRoundedIcon from '@mui/icons-material/QrCodeScannerRounded';
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import {buildEventDetailsHref} from "@/lib/data/oscar/EventLookup";
 
 const drawerWidth = 240;
 const drawerWidthMobile = 200;
@@ -192,13 +193,23 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                 });
 
             const handleServiceWorkerMessage = (event: MessageEvent) => {
-                if (event.data?.type === 'VIEW_ALARM' && event.data.eventData) {
+                if (event.data?.type === 'VIEW_EVENTS') {
+                    router.push(scopedHref('/event-log'));
+                    return;
+                }
+                if (event.data?.type === 'VIEW_ALARM') {
                     const eventData = event.data.eventData;
-                    dispatch(setEventPreview({ isOpen: true, eventData }));
-                    dispatch(setSelectedRowId(eventData.id));
-                    dispatch(setSelectedEvent(eventData));
-                    dispatch(setEventData(eventData));
-                    router.push(scopedHref('/event-details'));
+                    if (eventData) {
+                        dispatch(setEventPreview({ isOpen: true, eventData }));
+                        dispatch(setSelectedRowId(eventData.id));
+                        dispatch(setSelectedEvent(eventData));
+                        dispatch(setEventData(eventData));
+                    }
+                    const eventId = event.data.eventId ?? eventData?.occupancyObsId;
+                    const href = eventId
+                        ? buildEventDetailsHref(eventId, event.data.nodeId)
+                        : '/event-log';
+                    router.push(scopedHref(href));
                 }
             };
 

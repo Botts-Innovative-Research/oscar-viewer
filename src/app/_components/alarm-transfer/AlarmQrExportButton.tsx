@@ -11,6 +11,7 @@ import {
     DialogContent,
     DialogTitle,
     Stack,
+    Tooltip,
     Typography,
 } from "@mui/material";
 import QrCode2RoundedIcon from "@mui/icons-material/QrCode2Rounded";
@@ -47,6 +48,9 @@ function saveBlob(blob: Blob, filename: string) {
 
 export default function AlarmQrExportButton({event, lane, iconOnly = false}: Props) {
     const {t} = useLanguage();
+    const rawEventUuid = typeof event.occupancyObsId === "string" ? event.occupancyObsId : "";
+    const eventUuid = rawEventUuid.trim();
+    const exportReady = eventUuid.length > 0 && rawEventUuid.length <= 128;
     const [open, setOpen] = useState(false);
     const [result, setResult] = useState<AlarmTransferBuildResult | null>(null);
     const [qrImage, setQrImage] = useState("");
@@ -126,15 +130,21 @@ export default function AlarmQrExportButton({event, lane, iconOnly = false}: Pro
 
     return (
         <>
-            <Button
-                variant="outlined"
-                startIcon={<QrCode2RoundedIcon/>}
-                onClick={() => setOpen(true)}
-                aria-label={t("exportAlarmQr")}
-                sx={iconOnly ? {minWidth: 0, px: 1} : undefined}
-            >
-                {iconOnly ? null : t("exportAlarmQr")}
-            </Button>
+            <Tooltip title={exportReady ? "" : t("occupancyUuidRequiredForExport")}>
+                <span style={{display: "inline-flex"}}>
+                    <Button
+                        data-testid="alarm-qr-export-button"
+                        variant="outlined"
+                        startIcon={<QrCode2RoundedIcon/>}
+                        onClick={() => setOpen(true)}
+                        aria-label={t("exportAlarmQr")}
+                        disabled={!exportReady}
+                        sx={iconOnly ? {minWidth: 0, px: 1} : undefined}
+                    >
+                        {iconOnly ? null : t("exportAlarmQr")}
+                    </Button>
+                </span>
+            </Tooltip>
             <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
                 <DialogTitle>{t("alarmQrExportTitle")}</DialogTitle>
                 <DialogContent>
@@ -166,6 +176,14 @@ export default function AlarmQrExportButton({event, lane, iconOnly = false}: Pro
                                 <Alert severity="info" sx={{width: "100%"}}>
                                     {t("alarmQrDownsampleNotice")}
                                 </Alert>
+                                <Stack spacing={0.5} sx={{width: "100%"}}>
+                                    <Typography variant="caption" color="text.secondary">
+                                        {t("occupancyUuid")}
+                                    </Typography>
+                                    <Typography data-testid="alarm-qr-export-uuid" variant="body2" sx={{overflowWrap: "anywhere"}}>
+                                        {result.payload.event.observationId}
+                                    </Typography>
+                                </Stack>
                                 <Typography variant="body2" textAlign="center">
                                     {t("alarmQrIncludedPoints", {
                                         gammaExported: result.payload.series.gamma.exportedCount,

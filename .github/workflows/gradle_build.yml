@@ -24,7 +24,10 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install oscar-viewer dependencies
-        run: npm i
+        run: npm ci
+
+      - name: Check TypeScript
+        run: npx tsc --noEmit
 
       - name: Build oscar-viewer
         run: npm run build
@@ -40,3 +43,12 @@ jobs:
 
       - name: Test status of health
         run: npm run test:health
+
+      - name: Test event UUID lookup and notification routing
+        run: npm run test:event-lookup
+
+      - name: Test alarm transfer identity and legacy compatibility
+        run: npm run test:alarm-transfer
+
+      - name: Test server-side event filtering
+        run: npm run test:event-filter

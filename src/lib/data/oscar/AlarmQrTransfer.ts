@@ -335,6 +335,11 @@ function assertPayload(payload: any): asserts payload is AlarmTransferPayload {
         throw new Error("Unsupported OSCAR alarm transfer format.");
     if (!payload.event || typeof payload.event.occupancyId !== "string")
         throw new Error("Alarm transfer is missing its event identity.");
+    if (payload.event.observationId !== undefined
+        && (typeof payload.event.observationId !== "string"
+            || payload.event.observationId.trim().length === 0
+            || payload.event.observationId.length > 128))
+        throw new Error("Alarm transfer contains an invalid event UUID.");
     if (!payload.series || typeof payload.series.timeOrigin !== "string")
         throw new Error("Alarm transfer is missing chart data.");
     if (!payload.source || typeof payload.source.nodeId !== "string" || typeof payload.source.laneId !== "string")
@@ -534,6 +539,11 @@ export async function buildAlarmTransfer(
     event: EventTableData,
     lane: LaneMapEntry,
 ): Promise<AlarmTransferBuildResult> {
+    if (typeof event.occupancyObsId !== "string"
+        || event.occupancyObsId.trim().length === 0
+        || event.occupancyObsId.length > 128)
+        throw new Error("The event UUID is unavailable or invalid. Refresh the event and try again.");
+
     const [gamma, neutron, threshold] = await Promise.all([
         fetchSeries(lane, event, isGammaDataStream, getGammaGrossCount),
         fetchSeries(lane, event, isNeutronDataStream, getNeutronGrossCount),

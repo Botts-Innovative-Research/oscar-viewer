@@ -51,6 +51,7 @@ import BackButton from "../BackButton";
 import SuspenseLoad from "@/app/_components/SuspenseLoad";
 import {useLanguage} from '@/app/contexts/LanguageContext';
 import AlarmQrExportButton from "@/app/_components/alarm-transfer/AlarmQrExportButton";
+import {buildEventDetailsHref} from "@/lib/data/oscar/EventLookup";
 
 export function EventPreview() {
     const { isDesktop } = useBreakpoint();
@@ -267,7 +268,10 @@ export function EventPreview() {
         dispatch(setSelectedRowId(eventPreview.eventData.id))
         dispatch(setSelectedEvent(eventPreview.eventData));
 
-        router.push(scopedHref("/event-details"));
+        const href = eventPreview.eventData.occupancyObsId
+            ? buildEventDetailsHref(eventPreview.eventData.occupancyObsId, laneEntry?.parentNode.id)
+            : "/event-details";
+        router.push(scopedHref(href));
     }
 
     useEffect(() => {

@@ -118,69 +118,23 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
         setShouldFetchLogs(false);
     }
 
+    // Event Details owns live-event identity resolution. Keep the editable
+    // adjudication model in sync when that page supplies a newly identified
+    // event, without a second background query or mutating props in place.
     useEffect(() => {
-        const loadOccupancyObservation = async () => {
-            if (!props.event.occupancyObsId) {
-                try {
-                    const currentLane = props.event.laneId;
-                    const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
+        const occupancyObsId = props.event.occupancyObsId;
+        if (!occupancyObsId) return;
 
-                    if (!currLaneEntry) {
-                        console.error("Lane entry not found:", currentLane);
-                        return;
-                    }
-
-                    const ds = currLaneEntry.datastreams.find(
-                        (ds: any) => ds.properties.id === props.event.dataStreamId
-                    );
-
-                    if (!ds) {
-                        console.error("Datastream not found:", props.event.dataStreamId);
-                        return;
-                    }
-
-                    const filter = new ObservationFilter({
-                        filter: `startTime='${props.event.startTime}' AND endTime='${props.event.endTime}'`
-                    });
-
-                    let query = await ds.searchObservations(filter, 10000);
-                    const occupancyObservation = await query.nextPage();
-
-                    if (!occupancyObservation || occupancyObservation.length === 0) {
-                        setAdjSnackMsg(t('observationNotFound'));
-                        setColorStatus('error');
-                        setOpenSnack(true);
-                        return;
-                    }
-
-                    props.event.occupancyObsId = occupancyObservation[0].id;
-                    props.event.rpmSystemId = ds.properties["system@id"];
-
-                    setAdjData(prevAdjData => {
-                        if (prevAdjData) {
-                            prevAdjData.occupancyObsId = occupancyObservation[0].id;
-                        }
-                        return prevAdjData;
-                    });
-
-                } catch (err) {
-                    console.error(err);
-                    setAdjSnackMsg(t('observationLoadError'));
-                    setColorStatus('error');
-                    setOpenSnack(true);
-                }
-            }
-        };
-
-        loadOccupancyObservation();
-    }, [
-        props.event.occupancyObsId,
-        props.event.laneId,
-        props.event.startTime,
-        props.event.endTime,
-        props.event.dataStreamId,
-        laneMapRef
-    ]);
+        setAdjData(previous => {
+            if (!previous || previous.occupancyObsId === occupancyObsId) return previous;
+            const updated = Object.assign(
+                Object.create(Object.getPrototypeOf(previous)),
+                previous,
+            ) as AdjudicationData;
+            updated.setOccupancyObsId(occupancyObsId);
+            return updated;
+        });
+    }, [props.event.occupancyObsId]);
 
     const handleWebIdAnalysis = (fileIndex: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
         setUploadedFiles(prevFiles =>
@@ -440,23 +394,21 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 return;
             }
 
-            if (tempAdjData.occupancyObsId === null) {
+            if (!tempAdjData.occupancyObsId) {
                 let query = await ds.searchObservations(new ObservationFilter({
                     filter: `startTime='${props.event.startTime}' AND endTime='${props.event.endTime}'`
                 }), 1);
 
                 const occupancyObservation = await query.nextPage();
 
-                if (!occupancyObservation) {
+                if (!occupancyObservation || occupancyObservation.length === 0) {
                     setAdjSnackMsg(t('observationNotFound'));
                     setColorStatus('error')
                     setOpenSnack(true);
                     return;
                 }
 
-                props.event.occupancyObsId = occupancyObservation[0].id;
-                props.event.rpmSystemId = ds.properties["system@id"];
-                tempAdjData.occupancyObsId = occupancyObservation[0].id;
+                tempAdjData.setOccupancyObsId(occupancyObservation[0].id);
             }
 
             const alreadyUploaded = files.filter(f => f.serverPath);

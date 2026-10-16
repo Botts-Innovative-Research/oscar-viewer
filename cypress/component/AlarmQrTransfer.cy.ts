@@ -4,12 +4,24 @@ import {
     AlarmTransferPayload,
     base45Decode,
     base45Encode,
+    buildAlarmTransfer,
     decodeAlarmTransfer,
     downsampleAlarmSeries,
     encodeAlarmTransfer,
     findThresholdCrossingIndices,
 } from "../../src/lib/data/oscar/AlarmQrTransfer";
 import QRCode from "qrcode";
+
+const OCCUPANCY_UUID = "123e4567-e89b-42d3-a456-426614174000";
+
+async function rejectionReason(promise: Promise<unknown>): Promise<string> {
+    try {
+        await promise;
+        return "";
+    } catch (error) {
+        return String(error);
+    }
+}
 
 function payload(): AlarmTransferPayload {
     return {
@@ -20,7 +32,7 @@ function payload(): AlarmTransferPayload {
         source: {nodeId: "default", nodeName: "Local Node", laneId: "lane1"},
         event: {
             occupancyId: "1234",
-            observationId: "obs-1234",
+            observationId: OCCUPANCY_UUID,
             startTime: "2026-09-22T11:59:50.000Z",
             endTime: "2026-09-22T12:00:00.000Z",
             status: "Gamma & Neutron",
@@ -91,8 +103,43 @@ describe("OSCAR alarm QR transfer", () => {
             expect(() => QRCode.create(encoded.transport, {errorCorrectionLevel: "M"})).not.to.throw();
             cy.wrap(decodeAlarmTransfer(encoded.transport)).then(decoded => {
                 expect(decoded.payload).to.deep.equal(payload());
+                expect(decoded.payload.event.observationId).to.equal(OCCUPANCY_UUID);
                 expect(decoded.integrity.digest).to.equal(encoded.integrity.digest);
             });
+        });
+    });
+
+    it("decodes a legacy version 1 transfer without an occupancy UUID", () => {
+        const legacyPayload = payload();
+        delete legacyPayload.event.observationId;
+
+        cy.wrap(encodeAlarmTransfer(legacyPayload)).then(encoded => {
+            expect(encoded.transport).to.match(/^OSCAR-ALARM:1:/);
+            cy.wrap(decodeAlarmTransfer(encoded.transport)).then(decoded => {
+                expect(decoded.payload.version).to.equal(1);
+                expect(decoded.payload.event.observationId).to.equal(undefined);
+            });
+        });
+    });
+
+    it("rejects invalid occupancy UUID fields", () => {
+        cy.then(async () => {
+            for (const invalid of ["", " ", "x".repeat(129), 42] as unknown[]) {
+                const invalidPayload = payload();
+                (invalidPayload.event as any).observationId = invalid;
+                expect(await rejectionReason(encodeAlarmTransfer(invalidPayload)))
+                    .to.match(/invalid event UUID/i);
+            }
+        });
+    });
+
+    it("refuses to build a new export while the occupancy UUID is unresolved", () => {
+        cy.then(async () => {
+            const reason = await rejectionReason(buildAlarmTransfer(
+                {occupancyObsId: ""} as any,
+                {} as any,
+            ));
+            expect(reason).to.match(/event UUID is unavailable/i);
         });
     });
 

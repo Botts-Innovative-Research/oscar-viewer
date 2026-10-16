@@ -46,33 +46,54 @@ self.addEventListener('notificationclick', (event) => {
     }
 
     const notificationData = event.notification.data;
+    const shouldViewAlarm = event.action !== 'view-events' && Boolean(notificationData?.eventId);
+    const destination = shouldViewAlarm
+        ? `/event-details?eventId=${encodeURIComponent(notificationData.eventId)}`
+        : '/event-log';
+    const destinationUrl = new URL(destination, self.location.origin);
+    if (shouldViewAlarm && notificationData?.nodeId)
+        destinationUrl.searchParams.set('nodeId', notificationData.nodeId);
+    if (notificationData?.viewKey)
+        destinationUrl.searchParams.set('view', notificationData.viewKey);
+    const viewerPaths = new Set([
+        '/', '/alarm-transfer', '/event-details', '/event-log', '/event-preview',
+        '/health', '/lane-view', '/map', '/national-view', '/quick-view',
+        '/report', '/servers'
+    ]);
 
     event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        clients.matchAll({type: 'window', includeUncontrolled: true}).then(async (clientList) => {
             const expectedView = notificationData?.viewKey ?? null;
             for (const client of clientList) {
                 const clientUrl = new URL(client.url);
                 const clientView = clientUrl.searchParams.get('view');
-                if (clientUrl.origin === self.location.origin && clientView === expectedView && 'focus' in client) {
-                    client.focus();
-                    if (event.action === 'view-alarm' && notificationData) {
-                        client.postMessage({
-                            type: 'VIEW_ALARM',
-                            eventData: notificationData.eventData,
-                            eventId: notificationData.eventId
-                        });
+                const normalizedPath = clientUrl.pathname.replace(/\/+$/, '') || '/';
+                if (clientUrl.origin === self.location.origin
+                    && clientView === expectedView
+                    && viewerPaths.has(normalizedPath)
+                    && 'focus' in client) {
+                    if ('navigate' in client) {
+                        try {
+                            const navigatedClient = await client.navigate(destinationUrl.toString());
+                            await (navigatedClient ?? client).focus();
+                            return;
+                        } catch (error) {
+                            // Fall through to the message path for browsers that
+                            // expose WindowClient.navigate but cannot complete it.
+                        }
                     }
+                    await client.focus();
+                    client.postMessage(shouldViewAlarm ? {
+                        type: 'VIEW_ALARM',
+                        eventData: notificationData.eventData,
+                        eventId: notificationData.eventId,
+                        nodeId: notificationData.nodeId
+                    } : {type: 'VIEW_EVENTS'});
                     return;
                 }
             }
             if (clients.openWindow) {
-                const destination = (event.action === 'view-alarm' && notificationData?.eventId)
-                    ? `/event-details?eventId=${encodeURIComponent(notificationData.eventId)}`
-                    : '/';
-                const url = new URL(destination, self.location.origin);
-                if (notificationData?.viewKey)
-                    url.searchParams.set('view', notificationData.viewKey);
-                return clients.openWindow(url.toString());
+                return clients.openWindow(destinationUrl.toString());
             }
         })
     );
