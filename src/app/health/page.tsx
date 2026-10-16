@@ -515,15 +515,33 @@ export default function HealthPage() {
             if (reconciliationPromise)
                 return reconciliationPromise;
 
-            const tasks = Array.from(bindingsByNode.entries()).flatMap(([parentNode, bindingsByStream]) =>
-                chunk(Array.from(bindingsByStream.keys()), HEALTH_QUERY_BATCH_SIZE)
-                    .map((streamIds, index) => ({
+            const queues = Array.from(bindingsByNode.entries()).map(([parentNode, bindingsByStream]) => ({
+                parentNode,
+                bindingsByStream,
+                batches: chunk(Array.from(bindingsByStream.keys()), HEALTH_QUERY_BATCH_SIZE),
+            }));
+            const tasks: Array<{
+                parentNode: any;
+                bindingsByStream: Map<string, StreamBinding[]>;
+                streamIds: string[];
+                batchNumber: number;
+            }> = [];
+            const batchCount = Math.max(0, ...queues.map((queue) => queue.batches.length));
+            for (let batchIndex = 0; batchIndex < batchCount; batchIndex++) {
+                queues.forEach(({parentNode, bindingsByStream, batches}) => {
+                    const streamIds = batches[batchIndex];
+                    if (!streamIds) return;
+                    tasks.push({
                         parentNode,
-                        bindingsByStream,
+                        bindingsByStream: new Map(streamIds.map((streamId) => [
+                            streamId,
+                            bindingsByStream.get(streamId) ?? [],
+                        ])),
                         streamIds,
-                        batchNumber: index + 1,
-                    }))
-            );
+                        batchNumber: batchIndex + 1,
+                    });
+                });
+            }
             let nextTask = 0;
             const workers = Array.from(
                 {length: Math.min(HEALTH_QUERY_CONCURRENCY, tasks.length)},

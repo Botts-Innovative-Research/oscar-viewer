@@ -284,7 +284,7 @@ describe("Status of Health page", () => {
         cy.wrap(gamma.searchObservations).should("not.have.been.called");
     });
 
-    it("loads and reconciles 50 lanes with one latest-observation query per node per pass", () => {
+    it("uses one latest-observation query for a node with exactly 50 health streams", () => {
         cy.clock(Date.parse("2026-09-24T16:00:00.000Z"));
         const gammaStreams = Array.from({length: 50}, (_, index) => stream(
             `gamma-${index + 1}`,
@@ -356,6 +356,90 @@ describe("Status of Health page", () => {
             cy.contains("Gamma high: Clear");
             cy.contains("Gamma low: Clear");
         });
+    });
+
+    it("limits health snapshot work to two in-flight observation batches", () => {
+        const gammaStreams = Array.from({length: 150}, (_, index) => stream(
+            `gamma-${index + 1}`,
+            "rpm-1",
+            [ALARM_DEF, GAMMA_COUNT_DEF],
+            [],
+        ));
+        const pending: Array<() => void> = [];
+        let inFlight = 0;
+        let maxInFlight = 0;
+        const searchObservations = cy.stub().resolves({
+            nextPage: () => new Promise<any[]>((resolve) => {
+                inFlight++;
+                maxInFlight = Math.max(maxInFlight, inFlight);
+                pending.push(() => {
+                    inFlight--;
+                    resolve([]);
+                });
+            }),
+        });
+        const localNode: FakeNode = {
+            id: "node-Local Node",
+            name: "Local Node",
+            searchObservations,
+            getObservationsApi: () => ({searchObservations}),
+        };
+        const laneMap = new Map([["Lane 1", lane("Lane 1", [
+            system("rpm-1", "RPM 1", "urn:osh:system:rapiscan:1"),
+        ], gammaStreams, gammaStreams.map((gamma) => dataSource(gamma.properties.id)), localNode)]]);
+
+        cy.mount(healthView(laneMap));
+
+        cy.wrap(searchObservations).should("have.callCount", 2);
+        cy.then(() => {
+            expect(inFlight).to.equal(2);
+            expect(maxInFlight).to.equal(2);
+            pending.shift()?.();
+        });
+        cy.wrap(searchObservations).should("have.callCount", 3);
+        cy.then(() => {
+            expect(maxInFlight).to.equal(2);
+            pending.splice(0).forEach((resolve) => resolve());
+        });
+    });
+
+    it("round-robins batches so a slow node does not block another node's first snapshot", () => {
+        const slowStreams = Array.from({length: 51}, (_, index) => stream(
+            `slow-gamma-${index + 1}`,
+            "slow-rpm",
+            [ALARM_DEF, GAMMA_COUNT_DEF],
+            [],
+        ));
+        const releaseSlowRequests: Array<() => void> = [];
+        const slowSearch = cy.stub().resolves({
+            nextPage: () => new Promise<any[]>((resolve) => {
+                releaseSlowRequests.push(() => resolve([]));
+            }),
+        });
+        const slowNode: FakeNode = {
+            id: "node-Slow Node",
+            name: "Slow Node",
+            searchObservations: slowSearch,
+            getObservationsApi: () => ({searchObservations: slowSearch}),
+        };
+        const goodGamma = stream("good-gamma", "good-rpm", [ALARM_DEF, GAMMA_COUNT_DEF], [
+            observation({alarmState: "Fault - Gamma High"}),
+        ]);
+        const goodNode = batchNode("Good Node", [goodGamma]);
+        const laneMap = new Map([
+            ["Lane 1", lane("Lane 1", [
+                system("slow-rpm", "Slow RPM", "urn:osh:system:rapiscan:slow"),
+            ], slowStreams, slowStreams.map((gamma) => dataSource(gamma.properties.id)), slowNode)],
+            ["Lane 2", lane("Lane 2", [
+                system("good-rpm", "Good RPM", "urn:osh:system:rapiscan:good"),
+            ], [goodGamma], [dataSource("good-gamma")], goodNode)],
+        ]);
+
+        cy.mount(healthView(laneMap));
+
+        cy.get('[data-testid="health-lane-Lane 2"]').within(() => cy.contains("Gamma high: Fault"));
+        cy.wrap(goodNode.searchObservations).should("have.been.calledOnce");
+        cy.then(() => releaseSlowRequests.splice(0).forEach((resolve) => resolve()));
     });
 
     it("isolates a failed node while applying batched observations from another node", () => {

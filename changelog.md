@@ -18,7 +18,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Status of Health now uses one batched latest-observation request per configured node on entry and every 30 seconds instead of per-stream real-time MQTT feeds, bounding CPU and server load at large sites.
+- Status of Health now refreshes latest observations in globally limited batches of at most 50 streams on entry and every 30 seconds instead of using per-stream real-time MQTT feeds, preventing oversized requests and bounding CPU and server load at large sites.
 - Event filtering, counts, pagination, and bulk selection now query the complete matching server-side result set rather than only the currently loaded page.
 - Lane Details now shows localized live-video preparation and terminal error states, retries transient playlist and media failures within fixed bounds, and offers a Retry action that safely starts one fresh server stream.
 - Live-video URLs now honor each node's configured bucket endpoint, normalize platform-specific path separators, and remain same-origin for the default node.
