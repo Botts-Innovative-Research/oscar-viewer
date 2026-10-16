@@ -228,6 +228,9 @@ describe("live HLS video", () => {
         const load = cy.stub(HTMLMediaElement.prototype, "load");
         mountPlayer("live/native/index.m3u8");
 
+        cy.get("video")
+            .should("have.attr", "src", "/sensorhub/video-files/live/native/index.m3u8");
+        cy.then(() => expect(load).to.have.been.calledOnce);
         dispatchMediaEvent("error");
         cy.tick(749).then(() => expect(load).to.have.been.calledOnce);
         cy.tick(1).then(() => expect(load).to.have.been.calledTwice);
