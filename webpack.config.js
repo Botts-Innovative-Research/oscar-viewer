@@ -1,6 +1,5 @@
 const path = require("path");
 const nodePolyfillWebpackPlugin = require('node-polyfill-webpack-plugin')
-const HtmlTagsPlugin = require("html-webpack-tags-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const {DefinePlugin} = require('webpack');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
@@ -42,10 +41,6 @@ module.exports = {
                 { from: path.join(PROCESS_BASE_PATH+'/'+cesiumSource, 'Widgets'), to: `${cesiumBaseUrl}/Widgets`, force:true }
             ],
         }),
-        // new HtmlTagsPlugin({
-        //     append: false,
-        //     tags: ["cesium/Build/Cesium/Widgets/widgets.css", "cesium/Build/Cesium/Cesium.js"],
-        // }),
         new nodePolyfillWebpackPlugin(),
     ],
     devServer: {
