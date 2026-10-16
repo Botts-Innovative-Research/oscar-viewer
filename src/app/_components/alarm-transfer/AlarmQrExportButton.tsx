@@ -18,7 +18,6 @@ import QrCode2RoundedIcon from "@mui/icons-material/QrCode2Rounded";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import ShareRoundedIcon from "@mui/icons-material/ShareRounded";
 import ImageRoundedIcon from "@mui/icons-material/ImageRounded";
-import QRCode from "qrcode";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {
@@ -27,6 +26,7 @@ import {
     buildAlarmTransfer,
     serializeAlarmTransferDocument,
 } from "@/lib/data/oscar/AlarmQrTransfer";
+import {AlarmQrRaster, renderAlarmQrRaster} from "@/lib/data/oscar/AlarmQrRaster";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 
 interface Props {
@@ -53,7 +53,7 @@ export default function AlarmQrExportButton({event, lane, iconOnly = false}: Pro
     const exportReady = eventUuid.length > 0 && rawEventUuid.length <= 128;
     const [open, setOpen] = useState(false);
     const [result, setResult] = useState<AlarmTransferBuildResult | null>(null);
-    const [qrImage, setQrImage] = useState("");
+    const [qrRaster, setQrRaster] = useState<AlarmQrRaster | null>(null);
     const [error, setError] = useState("");
     const [sharingFallback, setSharingFallback] = useState(false);
 
@@ -70,23 +70,18 @@ export default function AlarmQrExportButton({event, lane, iconOnly = false}: Pro
         let cancelled = false;
         if (!open) return;
         setResult(null);
-        setQrImage("");
+        setQrRaster(null);
         setError("");
         setSharingFallback(false);
 
         void buildAlarmTransfer(event, lane)
             .then(async transfer => {
-                const image = transfer.qrFits
-                    ? await QRCode.toDataURL(transfer.transport, {
-                        errorCorrectionLevel: "M",
-                        margin: 4,
-                        width: 640,
-                        color: {dark: "#000000", light: "#ffffff"},
-                    })
-                    : "";
+                const raster = transfer.qrFits
+                    ? await renderAlarmQrRaster(transfer.transport)
+                    : null;
                 if (!cancelled) {
                     setResult(transfer);
-                    setQrImage(image);
+                    setQrRaster(raster);
                 }
             })
             .catch(reason => {
@@ -101,8 +96,8 @@ export default function AlarmQrExportButton({event, lane, iconOnly = false}: Pro
     };
 
     const downloadQr = async () => {
-        if (!qrImage || !result) return;
-        const response = await fetch(qrImage);
+        if (!qrRaster || !result) return;
+        const response = await fetch(qrRaster.sourceDataUrl);
         saveBlob(await response.blob(), `${alarmTransferFileName(result.payload).replace(/\.json$/, "")}.png`);
     };
 
@@ -161,13 +156,28 @@ export default function AlarmQrExportButton({event, lane, iconOnly = false}: Pro
                         {error && <Alert severity="error" sx={{width: "100%"}}>{error}</Alert>}
                         {result && (
                             <>
-                                {qrImage ? (
-                                    <Box
-                                        component="img"
-                                        src={qrImage}
-                                        alt={t("alarmQrCodeAlt")}
-                                        sx={{width: "100%", maxWidth: 520, imageRendering: "pixelated"}}
-                                    />
+                                {qrRaster ? (
+                                    <Box sx={{width: "100%", overflow: "auto", display: "flex", justifyContent: "safe center"}}>
+                                        <Box
+                                            component="img"
+                                            src={qrRaster.displayDataUrl}
+                                            alt={t("alarmQrCodeAlt")}
+                                            data-testid="alarm-qr-image"
+                                            data-qr-version={qrRaster.version}
+                                            data-qr-symbol-modules={qrRaster.symbolModules}
+                                            data-qr-source-scale={qrRaster.sourceModuleScale}
+                                            data-qr-source-size={qrRaster.sourcePixelSize}
+                                            data-qr-display-scale={qrRaster.displayModuleScale}
+                                            sx={{
+                                                display: "block",
+                                                flex: "0 0 auto",
+                                                width: `${qrRaster.displayPixelSize}px`,
+                                                height: `${qrRaster.displayPixelSize}px`,
+                                                maxWidth: "none",
+                                                imageRendering: "pixelated",
+                                            }}
+                                        />
+                                    </Box>
                                 ) : (
                                     <Alert severity="warning" sx={{width: "100%"}}>
                                         {t("alarmQrTooLarge")}
@@ -208,7 +218,7 @@ export default function AlarmQrExportButton({event, lane, iconOnly = false}: Pro
                     <Button onClick={() => setOpen(false)}>{t("close")}</Button>
                     <Button
                         onClick={downloadQr}
-                        disabled={!qrImage}
+                        disabled={!qrRaster}
                         startIcon={<ImageRoundedIcon/>}
                     >
                         {t("downloadQrImage")}

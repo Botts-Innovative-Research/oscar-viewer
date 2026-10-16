@@ -2,6 +2,7 @@ import {
     ALARM_TRANSFER_SCHEMA,
     ALARM_TRANSFER_VERSION,
     AlarmTransferPayload,
+    MAX_ALARM_QR_CHARACTERS,
     base45Decode,
     base45Encode,
     buildAlarmTransfer,
@@ -10,7 +11,14 @@ import {
     encodeAlarmTransfer,
     findThresholdCrossingIndices,
 } from "../../src/lib/data/oscar/AlarmQrTransfer";
+import {
+    ALARM_QR_MAX_DISPLAY_PIXELS,
+    ALARM_QR_QUIET_ZONE_MODULES,
+    ALARM_QR_SOURCE_MODULE_SCALE,
+    renderAlarmQrRaster,
+} from "../../src/lib/data/oscar/AlarmQrRaster";
 import QRCode from "qrcode";
+import QrScanner from "qr-scanner";
 
 const OCCUPANCY_UUID = "123e4567-e89b-42d3-a456-426614174000";
 
@@ -68,6 +76,90 @@ function payload(): AlarmTransferPayload {
     };
 }
 
+function densePoints(count: number, baseline: number, seed: number): [number, number][] {
+    let state = seed >>> 0;
+    let offset = 0;
+    return Array.from({length: count}, () => {
+        state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
+        offset += 700 + state % 601;
+        return [offset, Math.round((baseline + state % 100_000 / 1000) * 1000) / 1000];
+    });
+}
+
+function densePayload(gammaCount: number, neutronCount: number, thresholdCount: number): AlarmTransferPayload {
+    const result = payload();
+    result.event.endTime = "2026-09-22T12:02:00.000Z";
+    result.series.gamma = {
+        originalCount: 300,
+        exportedCount: gammaCount,
+        points: densePoints(gammaCount, 1000, 1),
+        unit: "cps",
+        downsampled: true,
+    };
+    result.series.neutron = {
+        originalCount: 150,
+        exportedCount: neutronCount,
+        points: densePoints(neutronCount, 5, 2),
+        unit: "cps",
+        downsampled: true,
+    };
+    result.series.threshold = {
+        originalCount: 150,
+        exportedCount: thresholdCount,
+        points: densePoints(thresholdCount, 1250, 3),
+        unit: "cps",
+        downsampled: true,
+    };
+    return result;
+}
+
+async function imageDimensions(dataUrl: string): Promise<{width: number; height: number}> {
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve({width: image.naturalWidth, height: image.naturalHeight});
+        image.onerror = () => reject(new Error("Generated alarm QR PNG could not be loaded."));
+        image.src = dataUrl;
+    });
+}
+
+async function verifyRasterRoundTrip(
+    source: AlarmTransferPayload,
+    expectedVersion: number,
+): Promise<{characters: number; sourcePixels: number; displayPixels: number}> {
+    const encoded = await encodeAlarmTransfer(source);
+    const raster = await renderAlarmQrRaster(encoded.transport);
+    const sourceDimensions = await imageDimensions(raster.sourceDataUrl);
+    const displayDimensions = await imageDimensions(raster.displayDataUrl);
+
+    expect(raster.version).to.equal(expectedVersion);
+    expect(raster.symbolModules).to.equal(17 + 4 * expectedVersion);
+    expect(raster.totalModules).to.equal(raster.symbolModules + ALARM_QR_QUIET_ZONE_MODULES * 2);
+    expect(raster.sourceModuleScale).to.equal(ALARM_QR_SOURCE_MODULE_SCALE);
+    expect(raster.sourcePixelSize).to.equal(raster.totalModules * raster.sourceModuleScale);
+    expect(raster.sourcePixelSize % raster.totalModules).to.equal(0);
+    expect(sourceDimensions).to.deep.equal({width: raster.sourcePixelSize, height: raster.sourcePixelSize});
+    expect(raster.displayModuleScale).to.be.greaterThan(0);
+    expect(raster.displayPixelSize).to.equal(raster.totalModules * raster.displayModuleScale);
+    expect(raster.displayPixelSize).to.be.at.most(ALARM_QR_MAX_DISPLAY_PIXELS);
+    expect(displayDimensions).to.deep.equal({width: raster.displayPixelSize, height: raster.displayPixelSize});
+
+    const [sourceScan, displayScan] = await Promise.all([
+        QrScanner.scanImage(raster.sourceDataUrl, {returnDetailedScanResult: true}),
+        QrScanner.scanImage(raster.displayDataUrl, {returnDetailedScanResult: true}),
+    ]);
+    expect(sourceScan.data).to.equal(encoded.transport);
+    expect(displayScan.data).to.equal(encoded.transport);
+    const decoded = await decodeAlarmTransfer(sourceScan.data);
+    expect(decoded.payload).to.deep.equal(source);
+    expect(decoded.integrity.digest).to.equal(encoded.integrity.digest);
+
+    return {
+        characters: encoded.transport.length,
+        sourcePixels: raster.sourcePixelSize,
+        displayPixels: raster.displayPixelSize,
+    };
+}
+
 describe("OSCAR alarm QR transfer", () => {
     it("round-trips arbitrary bytes through Base45", () => {
         const source = Uint8Array.from([0, 1, 2, 15, 16, 127, 128, 254, 255]);
@@ -106,6 +198,25 @@ describe("OSCAR alarm QR transfer", () => {
                 expect(decoded.payload.event.observationId).to.equal(OCCUPANCY_UUID);
                 expect(decoded.integrity.digest).to.equal(encoded.integrity.digest);
             });
+        });
+    });
+
+    it("renders a module-aligned version 23 PNG that the production scanner decodes", () => {
+        cy.then(async () => {
+            const result = await verifyRasterRoundTrip(densePayload(20, 10, 10), 23);
+            expect(result.characters).to.be.lessThan(MAX_ALARM_QR_CHARACTERS);
+            expect(result.sourcePixels).to.equal(936);
+            expect(result.displayPixels).to.equal(468);
+        });
+    });
+
+    it("renders and decodes a practical module-aligned PNG at the one-code payload limit", () => {
+        cy.then(async () => {
+            const result = await verifyRasterRoundTrip(densePayload(60, 30, 30), 32);
+            expect(result.characters).to.equal(MAX_ALARM_QR_CHARACTERS);
+            expect(result.sourcePixels).to.equal(1224);
+            expect(result.displayPixels).to.equal(459);
+            expect(result.sourcePixels).to.be.at.most(1300);
         });
     });
 
