@@ -94,6 +94,32 @@ const REALTIME_ID_LOOKUP_REQUEST_TIMEOUT_MS = 1_500;
 export const REALTIME_ID_RETRY_DELAYS_MS = [250, 500, 1_000, 2_000, 3_000] as const;
 
 type RealtimeEventIdResolver = typeof resolveEventObservationId;
+type RealtimeEventHandler = (message: any) => void;
+
+/**
+ * OSH's public datasource wrapper exposes subscribe(), but not unsubscribe().
+ * The listener registry lives on the wrapped realtime datasource. Remove the
+ * exact callback there so a filter change cannot leave a stale event handler
+ * feeding rows into the table.
+ */
+export function removeRealtimeEventSubscription(
+    source: any,
+    handler: RealtimeEventHandler,
+    eventType: string = EventType.DATA,
+): void {
+    const maps = [
+        source?.eventSubscriptionMap,
+        source?.timeSeriesDataSource?.eventSubscriptionMap,
+    ].filter((value, index, values) => value && values.indexOf(value) === index);
+
+    maps.forEach(subscriptionMap => {
+        const listeners = subscriptionMap[eventType];
+        if (!Array.isArray(listeners)) return;
+        for (let index = listeners.length - 1; index >= 0; index--) {
+            if (listeners[index] === handler) listeners.splice(index, 1);
+        }
+    });
+}
 
 function cloneEventWithObservationId(event: EventTableData, occupancyObsId: string): EventTableData {
     return Object.assign(
@@ -455,13 +481,15 @@ export default function EventTable({
 
     useEffect(() => {
         if (stableLaneMap.size === 0) return;
-        const subscriptions: Array<{source: any; handler: (message: any) => void}> = [];
+        let active = true;
+        const subscriptions: Array<{source: any; handler: RealtimeEventHandler}> = [];
         for (const lane of stableLaneMap.values()) {
             const occupancyStream: typeof DataStream = lane.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
             if (!occupancyStream) continue;
             const source = lane.datasourcesRealtime?.find((item: any) => item.properties.resource?.split("/")[2] === occupancyStream.properties.id);
             if (!source) continue;
             const handleMessage = (message: any) => {
+                if (!active) return;
                 try {
                     const event = eventFromObservation(message.values?.[0]?.data || message, lane, true);
                     event.setDataStreamId(occupancyStream.properties.id);
@@ -487,13 +515,10 @@ export default function EventTable({
             }
         }
         return () => {
+            active = false;
             cancelRealtimeResolutionJobs();
-            subscriptions.forEach(({source, handler}) => {
-                const listeners = source.eventSubscriptionMap?.[EventType.DATA];
-                if (!Array.isArray(listeners)) return;
-                const index = listeners.indexOf(handler);
-                if (index >= 0) listeners.splice(index, 1);
-            });
+            subscriptions.forEach(({source, handler}) =>
+                removeRealtimeEventSubscription(source, handler));
         };
     }, [stableLaneMap, eventFromObservation, rowPassesLocalFilters, resolveIdentityAndNotify, cancelRealtimeResolutionJobs]);
 

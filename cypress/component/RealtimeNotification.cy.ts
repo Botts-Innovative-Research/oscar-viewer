@@ -1,4 +1,7 @@
-import {resolveRealtimeEventForNotification} from "../../src/app/_components/event-table/EventTable";
+import {
+    removeRealtimeEventSubscription,
+    resolveRealtimeEventForNotification,
+} from "../../src/app/_components/event-table/EventTable";
 import {NotificationTemplates} from "../../src/app/_components/notifications/NotificationService";
 import {EventLookupError} from "../../src/lib/data/oscar/EventLookup";
 
@@ -83,6 +86,21 @@ function serviceWorkerHarness(
 }
 
 describe("realtime alarm notification identity", () => {
+    it("removes stale handlers from the wrapped OSH realtime datasource", () => {
+        const active = cy.stub();
+        const stale = cy.stub();
+        const listeners = [active, stale, stale];
+        const source = {
+            timeSeriesDataSource: {
+                eventSubscriptionMap: {data: listeners},
+            },
+        };
+
+        removeRealtimeEventSubscription(source, stale, "data");
+
+        expect(listeners).to.deep.equal([active]);
+    });
+
     it("retries persistence lag and emits a canonical deep-link identity immutably", () => {
         const original = realtimeEvent();
         const immediate = NotificationTemplates.newAlarm(original, labels, "north", "node-1");
