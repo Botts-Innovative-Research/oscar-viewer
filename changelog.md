@@ -29,7 +29,7 @@ All notable changes to this project will be documented in this file.
 ### Security
 
 - Alarm QR payloads are compressed Base45 documents with a SHA-256 corruption check and strict import limits. They are not encrypted or digitally signed, so the interface warns operators to confirm the source independently.
-- Updated safely compatible dependency locks, including the browser-bundled Moment and query-string libraries, while leaving framework-major migrations for separate compatibility work.
+- Updated safely compatible dependency locks and scoped transitive overrides, including browser-bundled Moment and build/test query-string dependencies, while leaving framework-major migrations for separate compatibility work.
 
 ## 3.8.4
 
