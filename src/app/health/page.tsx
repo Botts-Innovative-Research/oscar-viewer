@@ -87,9 +87,18 @@ const OCCUPANCY_THRESHOLD_KEY = "oscar.health.extendedOccupancyMinutes";
 const DEFAULT_OCCUPANCY_THRESHOLD_MINUTES = 1;
 const MAX_OCCUPANCY_THRESHOLD_MINUTES = 1440;
 const HEALTH_RECONCILIATION_INTERVAL_MS = 30_000;
+const HEALTH_QUERY_BATCH_SIZE = 50;
+const HEALTH_QUERY_CONCURRENCY = 2;
 const FAULT_KEYS: FaultKey[] = ["gammaHigh", "gammaLow", "neutronHigh", "tamper"];
 const GAMMA_STATES = new Set(["Alarm", "Background", "Scan", "Fault - Gamma High", "Fault - Gamma Low"]);
 const NEUTRON_STATES = new Set(["Alarm", "Background", "Scan", "Fault - Neutron High", "Fault - Neutron Low"]);
+
+function chunk<T>(values: T[], size: number): T[][] {
+    const chunks: T[][] = [];
+    for (let index = 0; index < values.length; index += size)
+        chunks.push(values.slice(index, index + size));
+    return chunks;
+}
 
 const faultDefaults = (): FaultHealth => ({
     gammaHigh: "unknown",
@@ -467,11 +476,12 @@ export default function HealthPage() {
             bindingsByStream.set(streamId, streamBindings);
         });
 
-        const fetchLatestForNode = async (
+        const fetchLatestBatch = async (
             parentNode: any,
             bindingsByStream: Map<string, StreamBinding[]>,
+            streamIds: string[],
+            batchNumber: number,
         ) => {
-            const streamIds = Array.from(bindingsByStream.keys());
             try {
                 const query = await parentNode.getObservationsApi().searchObservations(
                     new ObservationFilter({
@@ -494,7 +504,10 @@ export default function HealthPage() {
                     });
                 });
             } catch (error) {
-                console.warn(`Unable to fetch latest health status for ${parentNode?.name ?? "node"}`, error);
+                console.warn(
+                    `Unable to fetch latest health status for ${parentNode?.name ?? "node"} (batch ${batchNumber})`,
+                    error,
+                );
             }
         };
 
@@ -502,10 +515,32 @@ export default function HealthPage() {
             if (reconciliationPromise)
                 return reconciliationPromise;
 
-            const run = Promise.allSettled(
-                Array.from(bindingsByNode.entries())
-                    .map(([parentNode, bindingsByStream]) => fetchLatestForNode(parentNode, bindingsByStream))
-            ).then((): void => {});
+            const tasks = Array.from(bindingsByNode.entries()).flatMap(([parentNode, bindingsByStream]) =>
+                chunk(Array.from(bindingsByStream.keys()), HEALTH_QUERY_BATCH_SIZE)
+                    .map((streamIds, index) => ({
+                        parentNode,
+                        bindingsByStream,
+                        streamIds,
+                        batchNumber: index + 1,
+                    }))
+            );
+            let nextTask = 0;
+            const workers = Array.from(
+                {length: Math.min(HEALTH_QUERY_CONCURRENCY, tasks.length)},
+                async () => {
+                    while (active) {
+                        const task = tasks[nextTask++];
+                        if (!task) return;
+                        await fetchLatestBatch(
+                            task.parentNode,
+                            task.bindingsByStream,
+                            task.streamIds,
+                            task.batchNumber,
+                        );
+                    }
+                },
+            );
+            const run = Promise.allSettled(workers).then((): void => {});
             reconciliationPromise = run;
             void run.finally(() => {
                 if (reconciliationPromise === run)

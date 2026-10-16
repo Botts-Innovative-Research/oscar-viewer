@@ -93,14 +93,26 @@ function observation(result: any, resultTime = "2026-09-24T16:00:00.000Z") {
     return {result, resultTime};
 }
 
-function batchNode(name: string, streams: any[], failure?: Error): FakeNode {
-    const searchObservations = cy.stub().callsFake(() => {
-        if (failure)
-            return Promise.reject(failure);
+function batchNode(
+    name: string,
+    streams: any[],
+    failure?: Error | ((requestedIds: Set<string>) => Error | undefined),
+): FakeNode {
+    const searchObservations = cy.stub().callsFake((filter: any) => {
+        const requestedIds = new Set(
+            String(filter?.props?.dataStream ?? "").split(",").filter(Boolean),
+        );
+        const requestFailure = typeof failure === "function" ? failure(requestedIds) : failure;
+        if (requestFailure)
+            return Promise.reject(requestFailure);
+
+        const selectedStreams = requestedIds.size === 0
+            ? streams
+            : streams.filter((item) => requestedIds.has(item.properties.id));
 
         return Promise.resolve({
             nextPage: async () => {
-                const observations = await Promise.all(streams.map(async (item) => {
+                const observations = await Promise.all(selectedStreams.map(async (item) => {
                     const latest = typeof item.latestObservations === "function"
                         ? item.latestObservations()
                         : item.latestObservations;
@@ -310,6 +322,42 @@ describe("Status of Health page", () => {
         cy.wrap(localNode.searchObservations).should("have.callCount", 2);
     });
 
+    it("splits large health snapshots into globally bounded observation batches", () => {
+        const gammaStreams = Array.from({length: 120}, (_, index) => stream(
+            `gamma-${index + 1}`,
+            "rpm-1",
+            [ALARM_DEF, GAMMA_COUNT_DEF],
+            [observation({alarmState: "Background"})],
+        ));
+        const localNode = batchNode("Local Node", gammaStreams);
+        const laneMap = new Map([["Lane 1", lane("Lane 1", [
+            system("rpm-1", "RPM 1", "urn:osh:system:rapiscan:1"),
+        ], gammaStreams, gammaStreams.map((gamma) => dataSource(gamma.properties.id)), localNode)]]);
+
+        cy.mount(healthView(laneMap));
+
+        cy.wrap(localNode.searchObservations).should("have.callCount", 3);
+        cy.then(() => {
+            const requestedIds = new Set<string>();
+            localNode.searchObservations.getCalls().forEach((call: any) => {
+                const [filter, pageSize] = call.args;
+                const batchIds = filter.props.dataStream.split(",");
+                expect(batchIds.length).to.be.at.most(50);
+                expect(pageSize).to.equal(batchIds.length);
+                batchIds.forEach((id: string) => {
+                    expect(requestedIds.has(id), `duplicate stream ${id}`).to.equal(false);
+                    requestedIds.add(id);
+                });
+            });
+            expect(requestedIds.size).to.equal(120);
+            gammaStreams.forEach((gamma) => expect(requestedIds.has(gamma.properties.id)).to.equal(true));
+        });
+        cy.get('[data-testid="health-lane-Lane 1"]').within(() => {
+            cy.contains("Gamma high: Clear");
+            cy.contains("Gamma low: Clear");
+        });
+    });
+
     it("isolates a failed node while applying batched observations from another node", () => {
         const goodGamma = stream("good-gamma", "good-rpm", [ALARM_DEF, GAMMA_COUNT_DEF], [
             observation({alarmState: "Fault - Gamma High"}),
@@ -334,6 +382,28 @@ describe("Status of Health page", () => {
         cy.get('[data-testid="health-lane-Lane 2"]').within(() => cy.contains("Gamma high: Unknown"));
         cy.wrap(goodNode.searchObservations).should("have.been.calledOnce");
         cy.wrap(failedNode.searchObservations).should("have.been.calledOnce");
+    });
+
+    it("isolates one failed batch while applying another batch from the same node", () => {
+        const gammaStreams = Array.from({length: 51}, (_, index) => stream(
+            `gamma-${index + 1}`,
+            "rpm-1",
+            [ALARM_DEF, GAMMA_COUNT_DEF],
+            [observation({alarmState: index === 50 ? "Fault - Gamma High" : "Background"})],
+        ));
+        const localNode = batchNode(
+            "Local Node",
+            gammaStreams,
+            (requestedIds) => requestedIds.has("gamma-1") ? new Error("batch unavailable") : undefined,
+        );
+        const laneMap = new Map([["Lane 1", lane("Lane 1", [
+            system("rpm-1", "RPM 1", "urn:osh:system:rapiscan:1"),
+        ], gammaStreams, gammaStreams.map((gamma) => dataSource(gamma.properties.id)), localNode)]]);
+
+        cy.mount(healthView(laneMap));
+
+        cy.wrap(localNode.searchObservations).should("have.callCount", 2);
+        cy.get('[data-testid="health-lane-Lane 1"]').within(() => cy.contains("Gamma high: Fault"));
     });
 
     it("keeps the loading state while lane discovery is incomplete", () => {
