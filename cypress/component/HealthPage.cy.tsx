@@ -7,6 +7,10 @@ import {LanguageProvider} from "../../src/app/contexts/LanguageContext";
 import laneReducer, {setLaneMap} from "../../src/lib/state/OSCARLaneSlice";
 import {manageSharedConnection} from "../../src/lib/data/oscar/LaneCollection";
 import {
+    HEALTH_QUERY_TIMEOUT_MS,
+    useLaneHealth,
+} from "../../src/lib/data/oscar/useLaneHealth";
+import {
     ALARM_DEF,
     CONNECTION_DEF,
     GAMMA_COUNT_DEF,
@@ -156,6 +160,7 @@ function healthView(
     scopedLaneMap: Map<string, any>,
     signalLaneMap = scopedLaneMap,
     laneMapReady = true,
+    content: React.ReactNode = <HealthPage/>,
 ) {
     const store = configureStore({reducer: {laneSlice: laneReducer}});
     // The production map contains class instances, which Immer does not freeze.
@@ -175,11 +180,16 @@ function healthView(
         <Provider store={store as any}>
             <LanguageProvider>
                 <DataSourceContext.Provider value={context as any}>
-                    <HealthPage/>
+                    {content}
                 </DataSourceContext.Provider>
             </LanguageProvider>
         </Provider>
     );
+}
+
+function HealthRefreshHarness() {
+    const {refreshLaneHealth} = useLaneHealth();
+    return <button onClick={() => void refreshLaneHealth()}>Refresh health</button>;
 }
 
 describe("Status of Health page", () => {
@@ -282,6 +292,190 @@ describe("Status of Health page", () => {
         cy.contains("Gamma high: Fault");
         cy.wrap(localNode.searchObservations).should("have.callCount", 2);
         cy.wrap(gamma.searchObservations).should("not.have.been.called");
+    });
+
+    it("returns a previously reported value to unknown when a successful snapshot no longer contains it", () => {
+        cy.clock(Date.parse("2026-09-24T16:00:00.000Z"));
+        let latestConnection = [observation({isConnected: true})];
+        const connection = stream("rpm-connection", "rpm-1", [CONNECTION_DEF], () => latestConnection);
+        const localNode = batchNode("Local Node", [connection]);
+        const laneMap = new Map([["Lane 1", lane("Lane 1", [
+            system("rpm-1", "RPM 1", "urn:osh:system:rapiscan:1"),
+        ], [connection], [dataSource("rpm-connection")], localNode)]]);
+
+        cy.mount(healthView(laneMap));
+        cy.contains("RPM (RPM 1) · Online");
+        cy.then(() => {
+            latestConnection = [];
+        });
+        cy.tick(30_000);
+
+        cy.contains("RPM (RPM 1) · Waiting");
+        cy.contains("Lanes awaiting telemetry: 1");
+        cy.wrap(localNode.searchObservations).should("have.callCount", 2);
+    });
+
+    it("returns a previously reported value to unknown when its refresh batch fails", () => {
+        cy.clock(Date.parse("2026-09-24T16:00:00.000Z"));
+        let unavailable = false;
+        const connection = stream("rpm-connection", "rpm-1", [CONNECTION_DEF], [
+            observation({isConnected: true}),
+        ]);
+        const localNode = batchNode(
+            "Local Node",
+            [connection],
+            () => unavailable ? new Error("node unavailable") : undefined,
+        );
+        const laneMap = new Map([["Lane 1", lane("Lane 1", [
+            system("rpm-1", "RPM 1", "urn:osh:system:rapiscan:1"),
+        ], [connection], [dataSource("rpm-connection")], localNode)]]);
+
+        cy.mount(healthView(laneMap));
+        cy.contains("RPM (RPM 1) · Online");
+        cy.then(() => {
+            unavailable = true;
+        });
+        cy.tick(30_000);
+
+        cy.contains("RPM (RPM 1) · Waiting");
+        cy.contains("Lanes awaiting telemetry: 1");
+        cy.wrap(localNode.searchObservations).should("have.callCount", 2);
+    });
+
+    it("does not let an older snapshot replace a newer applied health state", () => {
+        cy.clock(Date.parse("2026-09-24T16:01:00.000Z"));
+        let latestGamma = [observation(
+            {alarmState: "Fault - Gamma High"},
+            "2026-09-24T16:01:00.000Z",
+        )];
+        const gamma = stream("gamma", "rpm-1", [ALARM_DEF, GAMMA_COUNT_DEF], () => latestGamma);
+        const localNode = batchNode("Local Node", [gamma]);
+        const laneMap = new Map([["Lane 1", lane("Lane 1", [
+            system("rpm-1", "RPM 1", "urn:osh:system:rapiscan:1"),
+        ], [gamma], [dataSource("gamma")], localNode)]]);
+
+        cy.mount(healthView(laneMap));
+        cy.contains("Gamma high: Fault");
+        cy.then(() => {
+            latestGamma = [observation(
+                {alarmState: "Background"},
+                "2026-09-24T16:00:00.000Z",
+            )];
+        });
+        cy.tick(30_000);
+
+        cy.contains("Gamma high: Fault");
+        cy.contains("Gamma high: Unknown").should("not.exist");
+        cy.wrap(localNode.searchObservations).should("have.callCount", 2);
+    });
+
+    it("keeps an unknown state after a missing snapshot from accepting older telemetry", () => {
+        cy.clock(Date.parse("2026-09-24T16:01:00.000Z"));
+        let latestReads = 0;
+        let latestGamma = [observation(
+            {alarmState: "Fault - Gamma High"},
+            "2026-09-24T16:01:00.000Z",
+        )];
+        const gamma = stream("gamma", "rpm-1", [ALARM_DEF, GAMMA_COUNT_DEF], () => {
+            latestReads++;
+            return latestGamma;
+        });
+        const localNode = batchNode("Local Node", [gamma]);
+        const laneMap = new Map([["Lane 1", lane("Lane 1", [
+            system("rpm-1", "RPM 1", "urn:osh:system:rapiscan:1"),
+        ], [gamma], [dataSource("gamma")], localNode)]]);
+
+        cy.mount(healthView(laneMap));
+        cy.contains("Gamma high: Fault");
+
+        cy.then(() => {
+            latestGamma = [];
+        });
+        cy.tick(30_000);
+        cy.contains("Gamma high: Unknown");
+        cy.wrap(null).should(() => expect(latestReads).to.equal(2));
+
+        cy.then(() => {
+            latestGamma = [observation(
+                {alarmState: "Background"},
+                "2026-09-24T16:00:00.000Z",
+            )];
+        });
+        cy.tick(30_000);
+        cy.contains("Gamma high: Unknown");
+        cy.contains("Gamma high: Clear").should("not.exist");
+        cy.wrap(null).should(() => expect(latestReads).to.equal(3));
+
+        cy.then(() => {
+            latestGamma = [observation(
+                {alarmState: "Background"},
+                "2026-09-24T16:02:00.000Z",
+            )];
+        });
+        cy.tick(30_000);
+        cy.wrap(null).should(() => expect(latestReads).to.equal(4));
+        cy.contains("Gamma high: Clear");
+    });
+
+    it("queues one explicit refresh behind an in-flight reconciliation", () => {
+        const gamma = stream("gamma", "rpm-1", [ALARM_DEF, GAMMA_COUNT_DEF], []);
+        const pending: Array<(observations: any[]) => void> = [];
+        const searchObservations = cy.stub().resolves({
+            nextPage: () => new Promise<any[]>((resolve) => pending.push(resolve)),
+        });
+        const localNode: FakeNode = {
+            id: "node-Local Node",
+            name: "Local Node",
+            searchObservations,
+            getObservationsApi: () => ({searchObservations}),
+        };
+        const laneMap = new Map([["Lane 1", lane("Lane 1", [
+            system("rpm-1", "RPM 1", "urn:osh:system:rapiscan:1"),
+        ], [gamma], [dataSource("gamma")], localNode)]]);
+
+        cy.mount(healthView(laneMap, laneMap, true, <HealthRefreshHarness/>));
+        cy.wrap(searchObservations).should("have.been.calledOnce");
+        cy.contains("Refresh health").click().click();
+        cy.wrap(searchObservations).should("have.been.calledOnce");
+
+        cy.then(() => pending.shift()?.([]));
+        cy.wrap(searchObservations).should("have.callCount", 2);
+        cy.then(() => pending.shift()?.([]));
+        cy.wrap(searchObservations).should("have.callCount", 2);
+    });
+
+    it("times out hung batches and lets bounded workers continue", () => {
+        cy.clock(Date.parse("2026-09-24T16:00:00.000Z"));
+        const gammaStreams = Array.from({length: 101}, (_, index) => stream(
+            `gamma-${index + 1}`,
+            "rpm-1",
+            [ALARM_DEF, GAMMA_COUNT_DEF],
+            [],
+        ));
+        let requestCount = 0;
+        const searchObservations = cy.stub().callsFake(() => {
+            requestCount++;
+            const hangs = requestCount <= 2;
+            return Promise.resolve({
+                nextPage: () => hangs ? new Promise<any[]>(() => {}) : Promise.resolve([]),
+            });
+        });
+        const localNode: FakeNode = {
+            id: "node-Local Node",
+            name: "Local Node",
+            searchObservations,
+            getObservationsApi: () => ({searchObservations}),
+        };
+        const laneMap = new Map([["Lane 1", lane("Lane 1", [
+            system("rpm-1", "RPM 1", "urn:osh:system:rapiscan:1"),
+        ], gammaStreams, gammaStreams.map((gamma) => dataSource(gamma.properties.id)), localNode)]]);
+
+        cy.mount(healthView(laneMap));
+        cy.wrap(searchObservations).should("have.callCount", 2);
+        cy.tick(HEALTH_QUERY_TIMEOUT_MS);
+
+        cy.wrap(searchObservations).should("have.callCount", 3);
+        cy.contains("Gamma high: Unknown");
     });
 
     it("uses one latest-observation query for a node with exactly 50 health streams", () => {
@@ -495,6 +689,21 @@ describe("Status of Health page", () => {
 
         cy.contains("Loading lane health...");
         cy.contains("No lanes are currently available.").should("not.exist");
+    });
+
+    it("waits for lane discovery to finish before starting the health snapshot", () => {
+        const connection = stream("rpm-connection", "rpm-1", [CONNECTION_DEF], [
+            observation({isConnected: true}),
+        ]);
+        const localNode = batchNode("Local Node", [connection]);
+        const incompleteMap = new Map([["Lane 1", lane("Lane 1", [
+            system("rpm-1", "RPM 1", "urn:osh:system:rapiscan:1"),
+        ], [connection], [dataSource("rpm-connection")], localNode)]]);
+
+        cy.mount(healthView(incompleteMap, incompleteMap, false));
+
+        cy.contains("Loading lane health...");
+        cy.wrap(localNode.searchObservations).should("not.have.been.called");
     });
 
     it("keeps missing or failed fault telemetry unknown and out of the healthy count", () => {

@@ -1,245 +1,91 @@
 "use client";
 
-import {Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Grid, Stack, Typography} from '@mui/material';
-import LaneStatusItem from './LaneStatusItem';
-import React, {useCallback, useContext, useEffect, useRef, useState} from 'react';
-import {setCurrentLane} from '@/lib/state/LaneViewSlice';
-import {useAppDispatch} from "@/lib/state/Hooks";
+import {
+    Alert,
+    Box,
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    Stack,
+    Typography,
+} from "@mui/material";
+import React, {useContext, useEffect, useMemo, useState} from "react";
 import {useRouter} from "next/navigation";
-import {setAlarmTrigger} from "@/lib/state/EventDataSlice";
-import {useLanguage} from "@/app/contexts/LanguageContext";
-import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js";
-import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter.js";
-import {DataSourceContext} from "@/app/contexts/DataSourceContext";
-import {generateManualTamperCommandJSON, sendCommand} from "@/lib/data/oscar/OSCARCommands";
-import {isTamperControlStream} from "@/lib/data/oscar/Utilities";
+import {EventType} from "osh-js/source/core/event/EventType";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
+
+import LaneStatusItem from "./LaneStatusItem";
+import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import {useLanguage} from "@/app/contexts/LanguageContext";
+import {generateManualTamperCommandJSON, sendCommand} from "@/lib/data/oscar/OSCARCommands";
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
+import {removeRealtimeEventSubscription} from "@/lib/data/oscar/RealtimeEventNotification";
+import {isTamperControlStream} from "@/lib/data/oscar/Utilities";
+import {deriveLaneHealthRows, useLaneHealth, useLaneHealthClock} from "@/lib/data/oscar/useLaneHealth";
+import {setAlarmTrigger} from "@/lib/state/EventDataSlice";
+import {useAppDispatch} from "@/lib/state/Hooks";
+import {setCurrentLane} from "@/lib/state/LaneViewSlice";
 
-
-export interface LaneStatusProps {
-    id: number;
-    parentNode: string;
-    name: string;
-    isOnline: boolean;
-    isTamper: boolean;
-    isFault: boolean;
-}
-
-export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes: any[] }) {
-    const idVal = useRef(1);
-    const [statusList, setStatusList] = useState<LaneStatusProps[]>([]);
+export default function LaneStatus({dataSourcesByLane}: {dataSourcesByLane: Map<string, LaneDSColl>}) {
     const [tamperLaneToClear, setTamperLaneToClear] = useState<string | null>(null);
     const [isClearingTamper, setIsClearingTamper] = useState(false);
     const [clearTamperError, setClearTamperError] = useState<string | null>(null);
-
-    let timersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
-    const liveTamperLanesRef = useRef<Set<string>>(new Set());
-    const subscribedCollectionsRef = useRef<WeakSet<LaneDSColl>>(new WeakSet());
-    let alarmStates = ['Alarm', 'Scan', 'Background']
+    const {lanes, isLoading, thresholdMinutes, refreshLaneHealth} = useLaneHealth();
+    const healthClock = useLaneHealthClock(lanes, thresholdMinutes);
 
     const dispatch = useAppDispatch();
     const router = useRouter();
-    const { t } = useLanguage();
+    const {t} = useLanguage();
     const {laneMapRef, scopedHref} = useContext(DataSourceContext);
 
+    const laneRows = useMemo(
+        () => deriveLaneHealthRows(lanes, healthClock, thresholdMinutes),
+        [healthClock, lanes, thresholdMinutes],
+    );
+
+    // The batched health snapshot supplies all visual state. Keep only the
+    // gamma/neutron realtime listeners required for the existing alarm sound.
     useEffect(() => {
-        let sortedLanes = [...props.initialLanes].sort((a,b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
-        setStatusList((current) => sortedLanes.map((lane) => {
-            const existing = current.find((item) => item.name === lane.name);
-            return existing ? {
-                ...lane,
-                isOnline: existing.isOnline,
-                isTamper: existing.isTamper,
-                isFault: existing.isFault,
-            } : lane;
-        }));
+        let active = true;
+        const subscriptions: Array<{source: any; handler: (message: any) => void}> = [];
+        const uniqueSources = new Set<any>();
+
+        dataSourcesByLane.forEach((collection) => {
+            [...collection.gammaRT, ...collection.neutronRT].forEach((source) => {
+                if (!source || uniqueSources.has(source))
+                    return;
+                uniqueSources.add(source);
+                const handler = (message: any) => {
+                    if (active && message?.values?.[0]?.data?.alarmState === "Alarm")
+                        dispatch(setAlarmTrigger(true));
+                };
+                subscriptions.push({source, handler});
+                source.subscribe(handler, [EventType.DATA]);
+                void Promise.resolve().then(() => source.connect()).catch((error) => {
+                    if (active)
+                        console.warn("Unable to connect dashboard alarm notification stream", error);
+                });
+            });
+        });
 
         return () => {
-            if (timersRef.current) {
-                // clean up timers
-                for (const timeout of timersRef.current.values()) {
-                    clearTimeout(timeout);
-                }
-                timersRef.current.clear();
-            }
+            active = false;
+            subscriptions.forEach(({source, handler}) => {
+                removeRealtimeEventSubscription(source, handler);
+                void Promise.resolve().then(() => source.disconnect()).catch((error) => {
+                    console.warn("Unable to disconnect dashboard alarm notification stream", error);
+                });
+            });
         };
-    }, [props.initialLanes]);
-
-    const addSubscriptionCallbacks = useCallback((): Set<string> => {
-        const newlySubscribedLanes = new Set<string>();
-        for (let [laneName, laneDSColl] of props.dataSourcesByLane.entries()) {
-            if (subscribedCollectionsRef.current.has(laneDSColl))
-                continue;
-
-            subscribedCollectionsRef.current.add(laneDSColl);
-            newlySubscribedLanes.add(laneName);
-            liveTamperLanesRef.current.delete(laneName);
-
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('connectionRT', (message: any) => {
-                const state = message.values[0].data.isConnected;
-
-
-                if (state == undefined)
-                    return;
-                updateStatus(laneName, (state ? 'Online' : 'Offline'));
-            });
-
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
-                const state = message.values[0].data.alarmState;
-
-                if (state == undefined)
-                    return;
-
-                if (state === 'Alarm')
-                    // trigger alarm  for new event
-                    dispatch(setAlarmTrigger(true));
-                updateStatus(laneName, state);
-            });
-
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
-                const state = message.values[0].data.alarmState;
-
-                if (state == undefined)
-                    return;
-
-                if (state === 'Alarm')
-                    // trigger alarm  for new event
-                    dispatch(setAlarmTrigger(true));
-                updateStatus(laneName, state);
-            });
-
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
-                const state = message.values[0].data.tamperStatus;
-
-                if (state == undefined)
-                    return;
-                liveTamperLanesRef.current.add(laneName);
-                updateStatus(laneName, (state ? 'Tamper' : 'TamperOff'));
-            });
-
-            // connect to only necessary datasources
-            laneDSColl.addConnectToALLDSMatchingName('connectionRT');
-            laneDSColl.addConnectToALLDSMatchingName('tamperRT');
-            laneDSColl.addConnectToALLDSMatchingName('neutronRT');
-            laneDSColl.addConnectToALLDSMatchingName('gammaRT');
-        }
-
-        return newlySubscribedLanes;
-
-    }, [props.dataSourcesByLane]);
-
-    async function fetchLatestTamperStatuses(laneNames: ReadonlySet<string>) {
-        const entries = Array.from(props.dataSourcesByLane.entries()) as [string, any][];
-        const requests = entries.map(async ([laneName, laneDSColl]) => {
-            if (!laneNames.has(laneName))
-                return;
-
-            const tamperDatasource = laneDSColl.tamperRT[0];
-            if (!tamperDatasource)
-                return;
-
-            try {
-                const dataStreamId = tamperDatasource.properties.resource.split('/')[2];
-                const dataStreams = new DataStreams({
-                    endpointUrl: tamperDatasource.properties.endpointUrl,
-                    tls: tamperDatasource.properties.tls,
-                    connectorOpts: tamperDatasource.properties.connectorOpts,
-                    mqttOpts: tamperDatasource.properties.mqttOpts,
-                    streamProtocol: 'mqtt'
-                });
-                const dataStream = await dataStreams.getDataStreamById(dataStreamId);
-                const query = await dataStream.searchObservations(
-                    new ObservationFilter({resultTime: 'latest'}), 1);
-                const observations = await query.nextPage();
-                const state = observations[0]?.result?.tamperStatus;
-
-                // A live message received while the fetch was running is newer.
-                if (typeof state === 'boolean' && !liveTamperLanesRef.current.has(laneName))
-                    updateStatus(laneName, state ? 'Tamper' : 'TamperOff');
-            } catch (error) {
-                console.warn(`Unable to fetch latest tamper status for lane ${laneName}`, error);
-            }
-        });
-        await Promise.allSettled(requests);
-    }
-
-    useEffect(() => {
-        if (props.dataSourcesByLane.size === 0) {
-            liveTamperLanesRef.current.clear();
-            return;
-        }
-
-        const newlySubscribedLanes = addSubscriptionCallbacks();
-        void fetchLatestTamperStatuses(newlySubscribedLanes);
-    }, [addSubscriptionCallbacks]);
-
-
-    function updateStatus(laneName: string, newState: string) {
-        // clear the existing timer for this lane
-        if (timersRef.current.has(laneName)) {
-            clearTimeout(timersRef.current.get(laneName));
-            timersRef.current.delete(laneName)
-        }
-
-        setStatusList((prevList) => {
-            let existingLane = prevList.find((lane) => lane.name === laneName)
-
-            if (existingLane) {
-                const updatedList = prevList.map((laneData) => {
-                    if (laneData.name !== laneName) return laneData;
-
-                    if (newState === 'Tamper') {
-                        return {...laneData, isTamper: true, isOnline: true}
-                    } else if (newState === 'TamperOff') {
-                        return {...laneData, isTamper: false, isOnline: true}
-                    } else if (newState === 'Fault - Neutron High' ||
-                        newState === 'Fault - Gamma High' ||
-                        newState === 'Fault - Gamma Low'
-                    ) {
-                        return {...laneData, isFault: true, isOnline: true}
-                    } else if (newState === 'Clear') {
-                        return {...laneData, isFault: false}
-                    } else if (newState === 'Online' ||
-                        alarmStates.includes(newState)
-                    ) {
-                        return {...laneData, isFault: false, isOnline: true}
-                    } else if (newState === 'Offline' || newState === undefined) {
-                        return {...laneData, isOnline: false, isFault: false, isTamper: false}
-                    }
-
-                    return laneData;
-                });
-
-                // set timer when in fault-alarm states
-                if (newState.includes('Fault') || alarmStates.includes(newState)) {
-                    const timer = setTimeout(() => {
-                        updateStatus(laneName, 'Clear')
-                    }, 10000);
-                    timersRef.current.set(laneName, timer);
-                }
-
-
-                return [...updatedList];
-
-            } else {
-                const newLane: LaneStatusProps = {
-                    id: idVal.current++,
-                    name: laneName,
-                    parentNode: '',
-                    isOnline: newState === 'Online',
-                    isTamper: newState === 'Tamper',
-                    isFault: newState.includes('Fault'),
-                }
-                return [newLane, ...prevList]
-            }
-        });
-    }
+    }, [dataSourcesByLane, dispatch]);
 
     const handleLaneView = (laneName: string) => {
         dispatch(setCurrentLane(laneName));
         router.push(scopedHref("/lane-view"));
-    }
+    };
 
     const handleOpenClearTamper = (event: React.MouseEvent<HTMLButtonElement>, laneName: string) => {
         event.stopPropagation();
@@ -264,7 +110,7 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
         try {
             const laneEntry = laneMapRef.current.get(tamperLaneToClear);
             if (!laneEntry)
-                throw new Error(t('unableToFindLane', {lane: tamperLaneToClear}));
+                throw new Error(t("unableToFindLane", {lane: tamperLaneToClear}));
 
             let tamperControl = laneEntry.controlStreams.find(
                 (stream: typeof ControlStream) => isTamperControlStream(stream));
@@ -278,76 +124,72 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
             }
 
             if (!tamperControl)
-                throw new Error(t('noManualTamperControl', {lane: tamperLaneToClear}));
+                throw new Error(t("noManualTamperControl", {lane: tamperLaneToClear}));
 
             const response = await sendCommand(
                 laneEntry.parentNode,
                 tamperControl.properties.id,
-                generateManualTamperCommandJSON(false)
+                generateManualTamperCommandJSON(false),
             );
 
             if (!response.ok)
-                throw new Error(t('clearTamperCommandFailed', {status: response.status}));
+                throw new Error(t("clearTamperCommandFailed", {status: response.status}));
 
-            updateStatus(tamperLaneToClear, 'TamperOff');
             setTamperLaneToClear(null);
+            void refreshLaneHealth();
         } catch (error) {
             console.error("Failed to clear tamper", error);
-            setClearTamperError(error instanceof Error ? error.message : t('failedToClearTamper'));
+            setClearTamperError(error instanceof Error ? error.message : t("failedToClearTamper"));
         } finally {
             setIsClearingTamper(false);
         }
     };
 
     return (
-
-        <Stack justifyContent={"start"} spacing={1}>
-            <Typography variant="h6">{t('laneStatus')}</Typography>
-            <>
-                <Box sx={{overflowY: "auto", maxHeight: 275, flexGrow: 1}}>
-                    {(
-                        <Grid container columns={{sm: 12, md: 24, lg: 36, xl: 48}} spacing={1}>
-                            {statusList.map((item) => (
-                                <Grid key={item.id} item sm={8} md={8} lg={8} xl={6}>
-                                    <div onClick={() => handleLaneView(item.name)}>
-                                        <LaneStatusItem
-                                            key={item.id}
-                                            id={item.id}
-                                            name={item.name}
-                                            parentNode={item.parentNode}
-                                            isOnline={item.isOnline}
-                                            isFault={item.isFault}
-                                            isTamper={item.isTamper}
-                                            onClearTamper={(event) => handleOpenClearTamper(event, item.name)}
-                                        />
-                                    </div>
-                                </Grid>
-                            ))}
-                        </Grid>
-                    )}
-                </Box>
-            </>
+        <Stack justifyContent="start" spacing={1} sx={{p: 1}}>
+            <Typography variant="h6">{t("laneStatus")}</Typography>
+            <Box
+                sx={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                    gap: 1,
+                    overflowY: "auto",
+                    maxHeight: 275,
+                    flexGrow: 1,
+                }}
+            >
+                {isLoading && laneRows.length === 0 ? (
+                    <Typography color="text.secondary">{t("loading")}</Typography>
+                ) : laneRows.map((lane) => (
+                    <LaneStatusItem
+                        key={lane.laneName}
+                        health={lane}
+                        onSelect={() => handleLaneView(lane.laneName)}
+                        onClearTamper={(event) => handleOpenClearTamper(event, lane.laneName)}
+                    />
+                ))}
+            </Box>
             <Dialog
                 open={tamperLaneToClear !== null}
                 onClose={handleCloseClearTamper}
                 aria-labelledby="clear-tamper-dialog-title"
             >
-                <DialogTitle id="clear-tamper-dialog-title">{t('clearTamperQuestion')}</DialogTitle>
+                <DialogTitle id="clear-tamper-dialog-title">{t("clearTamperQuestion")}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        {t('confirmClearTamper', {lane: tamperLaneToClear ?? ''})}
+                        {t("confirmClearTamper", {lane: tamperLaneToClear ?? ""})}
                     </DialogContentText>
                     {clearTamperError && <Alert severity="error" sx={{mt: 2}}>{clearTamperError}</Alert>}
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleCloseClearTamper} disabled={isClearingTamper}>{t('cancel')}</Button>
+                    <Button onClick={handleCloseClearTamper} disabled={isClearingTamper}>{t("cancel")}</Button>
                     <Button
                         onClick={handleConfirmClearTamper}
                         disabled={isClearingTamper}
                         color="error"
                         variant="contained"
                     >
-                        {isClearingTamper ? t('clearing') : t('clearTamper')}
+                        {isClearingTamper ? t("clearing") : t("clearTamper")}
                     </Button>
                 </DialogActions>
             </Dialog>
