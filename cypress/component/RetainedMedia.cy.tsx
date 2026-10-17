@@ -3,6 +3,8 @@ import {LanguageProvider} from "../../src/app/contexts/LanguageContext";
 import RetainedEventMedia from "../../src/app/_components/event-preview/RetainedEventMedia";
 import {
     fetchRetainedEventMedia,
+    fetchRetainedMediaAsset,
+    MAX_RETAINED_CATALOG_BYTES,
     RetainedEventMediaResponse,
     RetainedMediaError,
     RetainedMediaFetch,
@@ -143,6 +145,54 @@ describe("retained event media", () => {
             error => {
                 expect(error).to.be.instanceOf(RetainedMediaError);
                 expect((error as RetainedMediaError).code).to.equal("invalid-response");
+            },
+        );
+    });
+
+    it("stops an oversized catalog body at the transport boundary", () => {
+        let cancelled = false;
+        const stream = new ReadableStream<Uint8Array>({
+            start(controller) {
+                controller.enqueue(new Uint8Array(MAX_RETAINED_CATALOG_BYTES));
+                controller.enqueue(new Uint8Array([0x7b]));
+            },
+            cancel() { cancelled = true; },
+        });
+        const fetchImpl = (() => Promise.resolve(new Response(stream, {
+            status: 200,
+            headers: {"Content-Type": "application/json"},
+        }))) as RetainedMediaFetch;
+
+        return fetchRetainedEventMedia(EVENT_ID, node, fetchImpl).then(
+            () => { throw new Error("Expected the oversized catalog response to be rejected"); },
+            error => {
+                expect(error).to.be.instanceOf(RetainedMediaError);
+                expect((error as RetainedMediaError).code).to.equal("invalid-response");
+                expect(cancelled).to.equal(true);
+            },
+        );
+    });
+
+    it("stops a retained frame as soon as it exceeds the manifest byte count", () => {
+        const asset = responseFixture().mediaSets[0].assets[0];
+        let cancelled = false;
+        const stream = new ReadableStream<Uint8Array>({
+            start(controller) {
+                controller.enqueue(new Uint8Array(asset.asset.bytes + 1));
+            },
+            cancel() { cancelled = true; },
+        });
+        const fetchImpl = (() => Promise.resolve(new Response(stream, {
+            status: 200,
+            headers: {"Content-Type": "image/jpeg"},
+        }))) as RetainedMediaFetch;
+
+        return fetchRetainedMediaAsset(asset, EVENT_ID, node, fetchImpl).then(
+            () => { throw new Error("Expected the oversized retained frame to be rejected"); },
+            error => {
+                expect(error).to.be.instanceOf(RetainedMediaError);
+                expect((error as RetainedMediaError).code).to.equal("invalid-asset");
+                expect(cancelled).to.equal(true);
             },
         );
     });

@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 
 - Event Details now queries the authenticated event-scoped retained-media API by occupancy UUID and displays exactly five labeled JPEG evidence frames per camera with source ordinals and video timestamps.
 - Added keyboard-accessible per-camera galleries, isolated missing/corrupt-frame handling, localized loading and error feedback, and focused API/fallback/rendering regression tests.
-- Added strict per-frame and event-wide byte, dimension, and decoded-pixel budgets for retained-media catalogs.
+- Added strict catalog-transfer, per-frame, and event-wide byte, dimension, and decoded-pixel budgets. Response bodies are stopped at their streaming limits even when `Content-Length` is absent or incorrect.
 
 ### Changed
 

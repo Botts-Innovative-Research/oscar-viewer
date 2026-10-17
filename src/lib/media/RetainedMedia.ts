@@ -3,6 +3,7 @@ import {INode} from "@/lib/data/osh/Node";
 export const RETAINED_MEDIA_SCHEMA_VERSION = 1;
 export const RETAINED_FRAME_COUNT = 5;
 export const MAX_RETAINED_MEDIA_SETS = 8;
+export const MAX_RETAINED_CATALOG_BYTES = 1024 * 1024;
 export const MAX_RETAINED_FRAME_BYTES = 12 * 1024 * 1024;
 export const MAX_RETAINED_FRAME_DIMENSION = 6000;
 export const MAX_RETAINED_FRAME_PIXELS = 20_000_000;
@@ -153,6 +154,56 @@ function sha256(value: unknown, field: string): string {
 
 function invalid(message: string): RetainedMediaError {
     return new RetainedMediaError("invalid-response", `Invalid retained-media response: ${message}`);
+}
+
+function bodyError(code: RetainedMediaErrorCode, message: string): RetainedMediaError {
+    return code === "invalid-response" ? invalid(message) : new RetainedMediaError(code, message);
+}
+
+/** Reads a fetch body without ever buffering more than the caller's accepted contract. */
+async function readBoundedResponseBody(
+    response: Response,
+    maximumBytes: number,
+    code: RetainedMediaErrorCode,
+    label: string,
+): Promise<ArrayBuffer> {
+    const contentLength = response.headers.get("Content-Length");
+    if (contentLength !== null) {
+        const normalized = contentLength.trim();
+        if (!/^\d+$/.test(normalized) || !Number.isSafeInteger(Number(normalized)))
+            throw bodyError(code, `${label} has an invalid Content-Length header.`);
+        if (Number(normalized) > maximumBytes)
+            throw bodyError(code, `${label} exceeds its transfer-size limit.`);
+    }
+    if (!response.body)
+        throw bodyError(code, `${label} has no readable response body.`);
+
+    const reader = response.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    try {
+        while (true) {
+            const {done, value} = await reader.read();
+            if (done) break;
+            total += value.byteLength;
+            if (total > maximumBytes) {
+                await reader.cancel().catch((): void => undefined);
+                throw bodyError(code, `${label} exceeds its transfer-size limit.`);
+            }
+            chunks.push(value);
+        }
+    } finally {
+        reader.releaseLock();
+    }
+
+    const buffer = new ArrayBuffer(total);
+    const output = new Uint8Array(buffer);
+    let offset = 0;
+    for (const chunk of chunks) {
+        output.set(chunk, offset);
+        offset += chunk.byteLength;
+    }
+    return buffer;
 }
 
 function normalizeConfiguredPath(path: string | undefined, fallback: string): string {
@@ -406,9 +457,16 @@ export async function fetchRetainedEventMedia(
 
     let payload: unknown;
     try {
-        payload = await response.json();
-    } catch {
-        throw invalid("response body is not JSON");
+        const body = await readBoundedResponseBody(
+            response,
+            MAX_RETAINED_CATALOG_BYTES,
+            "invalid-response",
+            "retained-media catalog",
+        );
+        payload = JSON.parse(new TextDecoder("utf-8", {fatal: true}).decode(body));
+    } catch (error) {
+        if (error instanceof RetainedMediaError) throw error;
+        throw invalid("response body is not bounded UTF-8 JSON");
     }
     return parseRetainedEventMedia(payload, normalizedEventId);
 }
@@ -439,8 +497,13 @@ export async function fetchRetainedMediaAsset(
     const contentType = response.headers.get("Content-Type")?.split(";", 1)[0].trim().toLowerCase();
     if (contentType !== "image/jpeg")
         throw new RetainedMediaError("invalid-asset", "Retained frame is not a JPEG image.");
-    const blob = await response.blob();
-    if (blob.size !== asset.asset.bytes || blob.size > MAX_RETAINED_FRAME_BYTES)
+    const body = await readBoundedResponseBody(
+        response,
+        Math.min(asset.asset.bytes, MAX_RETAINED_FRAME_BYTES),
+        "invalid-asset",
+        "Retained frame",
+    );
+    if (body.byteLength !== asset.asset.bytes)
         throw new RetainedMediaError("invalid-asset", "Retained frame size does not match its manifest.");
-    return blob;
+    return new Blob([body], {type: "image/jpeg"});
 }
