@@ -16,6 +16,7 @@ import {useLanguage} from "@/app/contexts/LanguageContext";
 import {INode} from "@/lib/data/osh/Node";
 import {EventType} from "osh-js/source/core/event/EventType";
 import {getDataGridLocaleText, getIntlLocale} from '@/app/utils/LocaleUtils';
+import {removeRealtimeEventSubscription} from "@/lib/data/oscar/RealtimeEventNotification";
 
 
 export default function AdjudicationLog(props: {
@@ -267,12 +268,17 @@ export default function AdjudicationLog(props: {
             setAdjLog(prev => [...prev, ...newAdjData]);
         }
 
-        controlSource.subscribe(handleStatuses, [EventType.DATA])
-        try {
-            controlSource.connect();
-        }  catch (err) {
-            console.error("Error connecting webid source:", err);
-        }
+        controlSource.subscribe(handleStatuses, [EventType.DATA]);
+        void Promise.resolve().then(() => controlSource.connect()).catch((error) => {
+            console.error("Error connecting adjudication source:", error);
+        });
+
+        return () => {
+            removeRealtimeEventSubscription(controlSource, handleStatuses);
+            void Promise.resolve().then(() => controlSource.disconnect()).catch((error) => {
+                console.error("Error disconnecting adjudication source:", error);
+            });
+        };
     }, [props.event]);
 
     useEffect(() => {

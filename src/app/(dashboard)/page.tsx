@@ -8,7 +8,11 @@ import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import EventTable from "@/app/_components/event-table/EventTable";
-import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import {
+    findRealtimeDataSourceForStream,
+    LaneDSColl,
+    LaneMapEntry,
+} from "@/lib/data/oscar/LaneCollection";
 import {
     isGammaDataStream,
     isNeutronDataStream,
@@ -37,8 +41,7 @@ export default function DashboardPage() {
 
             if (!cached || cached.lane !== lane) {
                 lane.datastreams.forEach((ds) => {
-                    const rtDS = lane.datasourcesRealtime?.find((source: any) =>
-                        source.properties.resource?.split("/")[2] === ds.properties.id);
+                    const rtDS = findRealtimeDataSourceForStream(lane, ds);
 
                     if (!rtDS) {
                         console.warn(`Missing RT data for datastream ${ds.properties.id} in lane ${laneid}`);

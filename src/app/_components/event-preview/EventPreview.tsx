@@ -320,10 +320,28 @@ export function EventPreview() {
     }
 
     useEffect(() => {
-        gammaDatasources.forEach(ds => ds.connect());
-        neutronDatasources.forEach(ds => ds.connect());
-        thresholdDatasources.forEach(ds => ds.connect());
-    }, [datasourcesReady]);
+        if (!datasourcesReady)
+            return;
+
+        const sources = [
+            ...gammaDatasources,
+            ...neutronDatasources,
+            ...thresholdDatasources,
+        ];
+        sources.forEach((source) => {
+            void Promise.resolve().then(() => source.connect()).catch((error) => {
+                console.error("Unable to connect event preview datasource", error);
+            });
+        });
+
+        return () => {
+            sources.forEach((source) => {
+                void Promise.resolve().then(() => source.disconnect()).catch((error) => {
+                    console.error("Unable to disconnect event preview datasource", error);
+                });
+            });
+        };
+    }, [datasourcesReady, gammaDatasources, neutronDatasources, thresholdDatasources]);
 
     const handleCloseSnack = (event: React.SyntheticEvent | Event, reason?: SnackbarCloseReason) => {
         if (reason === 'clickaway') {

@@ -21,7 +21,11 @@ import LaneStatusItem from "./LaneStatusItem";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 import {generateManualTamperCommandJSON, sendCommand} from "@/lib/data/oscar/OSCARCommands";
-import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
+import {
+    acquireSharedConnection,
+    LaneDSColl,
+    type SharedConnectionLease,
+} from "@/lib/data/oscar/LaneCollection";
 import {removeRealtimeEventSubscription} from "@/lib/data/oscar/RealtimeEventNotification";
 import {isTamperControlStream} from "@/lib/data/oscar/Utilities";
 import {deriveLaneHealthRows, useLaneHealth, useLaneHealthClock} from "@/lib/data/oscar/useLaneHealth";
@@ -50,7 +54,11 @@ export default function LaneStatus({dataSourcesByLane}: {dataSourcesByLane: Map<
     // gamma/neutron realtime listeners required for the existing alarm sound.
     useEffect(() => {
         let active = true;
-        const subscriptions: Array<{source: any; handler: (message: any) => void}> = [];
+        const subscriptions: Array<{
+            source: any;
+            handler: (message: any) => void;
+            lease: SharedConnectionLease;
+        }> = [];
         const uniqueSources = new Set<any>();
 
         dataSourcesByLane.forEach((collection) => {
@@ -62,9 +70,10 @@ export default function LaneStatus({dataSourcesByLane}: {dataSourcesByLane: Map<
                     if (active && message?.values?.[0]?.data?.alarmState === "Alarm")
                         dispatch(setAlarmTrigger(true));
                 };
-                subscriptions.push({source, handler});
                 source.subscribe(handler, [EventType.DATA]);
-                void Promise.resolve().then(() => source.connect()).catch((error) => {
+                const lease = acquireSharedConnection(source);
+                subscriptions.push({source, handler, lease});
+                void lease.ready.catch((error) => {
                     if (active)
                         console.warn("Unable to connect dashboard alarm notification stream", error);
                 });
@@ -73,9 +82,9 @@ export default function LaneStatus({dataSourcesByLane}: {dataSourcesByLane: Map<
 
         return () => {
             active = false;
-            subscriptions.forEach(({source, handler}) => {
+            subscriptions.forEach(({source, handler, lease}) => {
                 removeRealtimeEventSubscription(source, handler);
-                void Promise.resolve().then(() => source.disconnect()).catch((error) => {
+                void lease.release().catch((error) => {
                     console.warn("Unable to disconnect dashboard alarm notification stream", error);
                 });
             });

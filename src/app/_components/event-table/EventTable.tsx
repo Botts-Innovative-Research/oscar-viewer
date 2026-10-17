@@ -18,7 +18,12 @@ import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import {EventType} from "osh-js/source/core/event/EventType";
 import {useRouter} from "next/navigation";
 
-import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import {
+    acquireSharedConnection,
+    findRealtimeDataSourceForStream,
+    LaneMapEntry,
+    type SharedConnectionLease,
+} from "@/lib/data/oscar/LaneCollection";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {isOccupancyDataStream, isThresholdDataStream} from "@/lib/data/oscar/Utilities";
 import {convertToMap} from "@/app/utils/Utils";
@@ -390,11 +395,15 @@ export default function EventTable({
     useEffect(() => {
         if (stableLaneMap.size === 0) return;
         let active = true;
-        const subscriptions: Array<{source: any; handler: RealtimeEventHandler}> = [];
+        const subscriptions: Array<{
+            source: any;
+            handler: RealtimeEventHandler;
+            lease: SharedConnectionLease;
+        }> = [];
         for (const lane of stableLaneMap.values()) {
             const occupancyStream: typeof DataStream = lane.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
             if (!occupancyStream) continue;
-            const source = lane.datasourcesRealtime?.find((item: any) => item.properties.resource?.split("/")[2] === occupancyStream.properties.id);
+            const source = findRealtimeDataSourceForStream(lane, occupancyStream);
             if (!source) continue;
             const handleMessage = (message: any) => {
                 if (!active) return;
@@ -415,18 +424,21 @@ export default function EventTable({
                 }
             };
             source.subscribe(handleMessage, [EventType.DATA]);
-            try {
-                source.connect();
-                subscriptions.push({source, handler: handleMessage});
-            } catch (error) {
+            const lease = acquireSharedConnection(source);
+            subscriptions.push({source, handler: handleMessage, lease});
+            void lease.ready.catch((error) => {
                 console.error("Error connecting occupancy source", error);
-            }
+            });
         }
         return () => {
             active = false;
             cancelRealtimeResolutionJobs();
-            subscriptions.forEach(({source, handler}) =>
-                removeRealtimeEventSubscription(source, handler));
+            subscriptions.forEach(({source, handler, lease}) => {
+                removeRealtimeEventSubscription(source, handler);
+                void lease.release().catch((error) => {
+                    console.error("Error disconnecting occupancy source", error);
+                });
+            });
         };
     }, [stableLaneMap, eventFromObservation, rowPassesLocalFilters, resolveIdentityAndNotify, cancelRealtimeResolutionJobs]);
 

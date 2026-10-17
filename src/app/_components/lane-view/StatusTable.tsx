@@ -1,7 +1,12 @@
 "use client"
 
 import {AlarmTableData, EventTableData} from "@/lib/data/oscar/TableHelpers";
-import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import {
+    acquireSharedConnection,
+    findRealtimeDataSourceForStream,
+    LaneMapEntry,
+    type SharedConnectionLease,
+} from "@/lib/data/oscar/LaneCollection";
 import {Box} from "@mui/material";
 import {DataGrid, GridCellParams, gridClasses, GridColDef} from "@mui/x-data-grid";
 import CustomToolbar from "@/app/_components/CustomToolbar";
@@ -25,6 +30,7 @@ import {EventType} from "osh-js/source/core/event/EventType";
 import {convertToMap} from "@/app/utils/Utils";
 import {useLanguage} from '@/app/contexts/LanguageContext';
 import {getDataGridLocaleText, getIntlLocale} from '@/app/utils/LocaleUtils';
+import {removeRealtimeEventSubscription} from "@/lib/data/oscar/RealtimeEventNotification";
 
 interface StatusTableProps {
     currentLane: string,
@@ -332,7 +338,7 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
             return;
         }
 
-        const connectedSources: typeof ConSysApi[] = [];
+        const subscriptions: Array<{source: any; lease: SharedConnectionLease}> = [];
 
         const handleMessage = (msg: any) => {
             try {
@@ -351,26 +357,26 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
             }
         };
 
+        const subscribe = (source: any, description: string) => {
+            source.subscribe(handleMessage, [EventType.DATA]);
+            const lease = acquireSharedConnection(source);
+            subscriptions.push({source, lease});
+            void lease.ready.catch((error) => {
+                console.error(`Error connecting ${description} source:`, error);
+            });
+        };
+
         const alarmStream: typeof DataStream = entry.findDataStreamByObsProperty(ALARM_DEF);
 
         if (!alarmStream) {
             console.info("No alarm datastream");
         } else {
-            const alarmSource = entry.datasourcesRealtime?.find((ds: any) => {
-                const parts = ds.properties.resource?.split("/");
-                return parts && parts[2] === alarmStream.properties.id;
-            });
+            const alarmSource = findRealtimeDataSourceForStream(entry, alarmStream);
 
             if (!alarmSource) {
                 console.info("No alarm datasource");
             } else {
-                try {
-                    alarmSource.subscribe(handleMessage, [EventType.DATA]);
-                    alarmSource.connect()
-                    connectedSources.push(alarmSource);
-                } catch (err) {
-                    console.error("Error connecting alarm source:", err);
-                }
+                subscribe(alarmSource, "alarm");
             }
         }
 
@@ -379,24 +385,23 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
         if (!tamperStream) {
             console.info("no tamper datastream");
         } else {
-            const tamperSource = entry.datasourcesRealtime?.find((ds: any) => {
-                const parts = ds.properties.resource?.split("/");
-                return parts && parts[2] === tamperStream.properties.id;
-            });
+            const tamperSource = findRealtimeDataSourceForStream(entry, tamperStream);
 
             if (!tamperSource) {
                 console.info("no tamper datasource");
             } else {
-                try {
-                    tamperSource.subscribe(handleMessage, [EventType.DATA]);
-                    tamperSource.connect();
-                    connectedSources.push(tamperSource);
-                } catch (err) {
-                    console.error("Error connecting tamper source:", err);
-                }
+                subscribe(tamperSource, "tamper");
             }
         }
 
+        return () => {
+            subscriptions.forEach(({source, lease}) => {
+                removeRealtimeEventSubscription(source, handleMessage);
+                void lease.release().catch((error) => {
+                    console.error("Error disconnecting lane status source:", error);
+                });
+            });
+        };
     }, [entry, currentPage, pageSize]);
     return(
         <Box sx={{height: 800, width: '100%'}}>

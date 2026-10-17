@@ -299,16 +299,28 @@ export default function EventDetailsPage() {
 
 
     useEffect(() => {
-        gammaDatasources.forEach(ds => ds.connect());
-        neutronDatasources.forEach(ds => ds.connect());
-        thresholdDatasources.forEach(ds => ds.connect());
+        if (!datasourcesReady)
+            return;
+
+        const sources = [
+            ...gammaDatasources,
+            ...neutronDatasources,
+            ...thresholdDatasources,
+        ];
+        sources.forEach((source) => {
+            void Promise.resolve().then(() => source.connect()).catch((error) => {
+                console.error("Unable to connect event detail datasource", error);
+            });
+        });
 
         return () => {
-            gammaDatasources.forEach(ds => ds.disconnect());
-            neutronDatasources.forEach(ds => ds.disconnect());
-            thresholdDatasources.forEach(ds => ds.disconnect());
-        }
-    }, [datasourcesReady]);
+            sources.forEach((source) => {
+                void Promise.resolve().then(() => source.disconnect()).catch((error) => {
+                    console.error("Unable to disconnect event detail datasource", error);
+                });
+            });
+        };
+    }, [datasourcesReady, gammaDatasources, neutronDatasources, thresholdDatasources]);
 
     const reactToPrintFn = useReactToPrint({
         contentRef: contentRef,

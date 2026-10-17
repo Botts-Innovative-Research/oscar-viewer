@@ -23,7 +23,7 @@
     "test:event-filter": "cypress run --component --browser chrome --spec 'cypress/component/EventFilter.cy.ts'",
     "test:event-lookup": "cypress run --component --browser chrome --spec 'cypress/component/EventLookup.cy.ts,cypress/component/RealtimeNotification.cy.ts'",
     "test:alarm-transfer": "cypress run --component --browser chrome --spec 'cypress/component/AlarmQrTransfer.cy.ts,cypress/component/AlarmExportIdentity.cy.tsx,cypress/component/AlarmTransferImport.cy.tsx'",
-    "test:health": "cypress run --component --browser chrome --spec 'cypress/component/HealthPage.cy.tsx,cypress/component/DashboardLaneHealth.cy.tsx'",
+    "test:health": "cypress run --component --browser chrome --spec 'cypress/component/HealthPage.cy.tsx,cypress/component/DashboardLaneHealth.cy.tsx,cypress/component/LaneRealtimeSources.cy.ts'",
     "test:scheduled": "cypress run --e2e --browser chrome --spec 'cypress/e2e/DashboardPage.cy.tsx,cypress/e2e/EventDetailsPage.cy.tsx,cypress/e2e/EventDetailsLaneGuard.cy.tsx,cypress/e2e/EventLogPage.cy.tsx,cypress/e2e/LaneViewPage.cy.tsx,cypress/e2e/MapPage.cy.tsx,cypress/e2e/NationalViewPage.cy.tsx,cypress/e2e/ReportPage.cy.tsx'"
   },
   "keywords": [

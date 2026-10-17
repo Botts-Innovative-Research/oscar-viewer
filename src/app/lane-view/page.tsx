@@ -4,7 +4,11 @@ import {Alert, Grid, Paper, Stack, ToggleButton, ToggleButtonGroup, Typography} 
 import BackButton from "../_components/BackButton";
 import LaneStatus from "../_components/lane-view/LaneStatus";
 import Media from "../_components/lane-view/Media";
-import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import {
+    findRealtimeDataSourceForStream,
+    LaneDSColl,
+    LaneMapEntry,
+} from "@/lib/data/oscar/LaneCollection";
 import EventTable from "@/app/_components/event-table/EventTable";
 import {useSelector} from "react-redux";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
@@ -68,7 +72,7 @@ export default function LaneViewPage() {
             return;
         }
 
-        let laneDsCollection = new LaneDSColl();
+        const laneDsCollection = new LaneDSColl();
 
         const lane = laneMapRef.current.get(currentLane);
 
@@ -79,33 +83,47 @@ export default function LaneViewPage() {
 
         setEntry(lane);
 
-        for(let i = 0; i < lane.datastreams.length; i++) {
-            const ds = lane.datastreams[i]
+        let nextGammaDS: typeof ConSysApi | undefined;
+        let nextNeutronDS: typeof ConSysApi | undefined;
+        let nextThresholdDS: typeof ConSysApi | undefined;
+        let nextTamperDS: typeof ConSysApi | undefined;
 
-            const rtDS = lane.datasourcesRealtime[i];
+        for (const ds of lane.datastreams) {
+            // Discovery does not guarantee that datastreams and datasource
+            // arrays arrive in the same order. Bind them by resource ID so a
+            // chart cannot silently subscribe to an unrelated stream.
+            const rtDS = findRealtimeDataSourceForStream(lane, ds);
+            if (!rtDS) {
+                console.warn(`Missing RT data for datastream ${ds.properties.id} in lane ${currentLane}`);
+                continue;
+            }
 
             if (isGammaDataStream(ds)) {
                 rtDS.properties.mqttOpts.shared = true
                 laneDsCollection.addDS('gammaRT', rtDS);
-                setGammaDS(rtDS)
+                nextGammaDS = rtDS;
             }
             if (isNeutronDataStream(ds)) {
                 rtDS.properties.mqttOpts.shared = true
                 laneDsCollection.addDS('neutronRT', rtDS);
-                setNeutronDS(rtDS);
+                nextNeutronDS = rtDS;
             }
             if (isTamperDataStream(ds)) {
                 rtDS.properties.mqttOpts.shared = true
                 laneDsCollection.addDS('tamperRT', rtDS);
-                setTamperDS(rtDS)
+                nextTamperDS = rtDS;
             }
             if (isThresholdDataStream(ds)) {
                 rtDS.properties.mqttOpts.shared = true
                 laneDsCollection?.addDS('gammaTrshldRT', rtDS);
-                setThresholdDS(rtDS);
+                nextThresholdDS = rtDS;
             }
         }
 
+        setGammaDS(nextGammaDS);
+        setNeutronDS(nextNeutronDS);
+        setThresholdDS(nextThresholdDS);
+        setTamperDS(nextTamperDS);
         setDataSourcesByLane(laneDsCollection);
 
     }, [currentLane, laneMapRef, laneReady]);
