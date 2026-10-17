@@ -1,11 +1,11 @@
 # OSCAR Viewer Change Log
 All notable changes to this project will be documented in this file. 
 
-## 4.0.0
+## 3.9.1
 
 ### Upgrade notes
 
-- This major release adds operator-facing navigation and URL-scoped operational views. Validate workstation URLs and train operators before production rollout.
+- This release adds operator-facing navigation and URL-scoped operational views. Validate workstation URLs and train operators before production rollout.
 
 ### Added
 
