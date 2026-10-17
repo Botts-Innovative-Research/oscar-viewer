@@ -6,7 +6,7 @@ import {
     withOperationalView,
 } from "../../src/lib/data/oscar/OperationalView";
 import {Node} from "../../src/lib/data/osh/Node";
-import {shouldClearUnavailablePreview} from "../../src/app/_components/dashboard/QuickView";
+import {shouldClearUnavailablePreview} from "../../src/lib/data/oscar/PreviewAvailability";
 import {resolveReportScope} from "../../src/lib/data/oscar/ReportScope";
 import {isNationalControlStream} from "../../src/lib/data/oscar/Utilities";
 import {END_DEF, REPORT_DEF, START_DEF} from "../../src/lib/data/Constants";

@@ -62,11 +62,12 @@ describe("incremental lane discovery", () => {
         const controlRequest = new Promise<void>((resolve) => { resolveControls = resolve; });
         const node: any = {
             name: "Local Node",
-            fetchLaneSystemsAndSubsystems: cy.stub().resolves(
-                new Map([["lane1", laneEntry(node)]])),
+            fetchLaneSystemsAndSubsystems: cy.stub(),
             fetchDataStreams: cy.stub().returns(dataRequest),
             fetchLaneControlStreams: cy.stub().returns(controlRequest),
         };
+        node.fetchLaneSystemsAndSubsystems.resolves(
+            new Map([["lane1", laneEntry(node)]]));
 
         const discovery = discoverLanesIncrementally([node], () => {}, "north-gate");
         await new Promise((resolve) => setTimeout(resolve, 0));

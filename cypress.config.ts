@@ -1,36 +1,23 @@
 import { defineConfig } from "cypress";
-// import webpack from "@cypress/webpack-dev-server";
-// @ts-ignore
 import path from 'path'
 
 export default defineConfig({
     component: {
         devServer: {
             framework: "react",
-            bundler: "webpack",
-            webpackConfig: {
+            bundler: "vite",
+            viteConfig: {
+                optimizeDeps: {
+                    rolldownOptions: {
+                        // osh-js 3.1.5 contains legacy named imports that are
+                        // supplied by its runtime modules instead of ESM exports.
+                        shimMissingExports: true,
+                    },
+                },
                 resolve: {
-                    extensions: [".ts", ".tsx", ".js", ".jsx"],
                     alias: {
                         '@': path.resolve(__dirname, './src'),
                     }
-                },
-                module: {
-                    rules: [
-                        {
-                            test: /\.(ts|tsx|js|jsx)$/,
-                            exclude: /node_modules/,
-                            use: [
-                                {
-                                    loader: "babel-loader",
-                                },
-                            ],
-                        },
-                        {
-                            test: /\.css$/,
-                            use: ["style-loader", "css-loader"],
-                        },
-                    ],
                 },
             },
         },

@@ -18,7 +18,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Viewer installs no longer pull the unused HTML tag injector or deprecated `glob`, `inflight`, `rimraf`, and UUID packages; the maintained patching tool and CommonJS-compatible UUID implementation are used instead, and builds now reject deprecated lockfile entries.
+- Viewer installs no longer pull the unused HTML tag injector, legacy browser-polyfill stack, or deprecated patch and test tooling.
 - Alarm Transfer camera scanning now keeps a visible framed preview, reports camera and validation state, supports selecting among available cameras, preserves native scan pixels for dense alarm codes, and closes the camera immediately after stopping or importing.
 - Alarm QR images now use integer module-aligned raster and display sizes so saved images and on-screen codes do not acquire decoder-breaking fractional pixel boundaries.
 - Status of Health now refreshes latest observations in globally limited batches of at most 50 streams on entry and every 30 seconds instead of using per-stream real-time MQTT feeds, preventing oversized requests and bounding CPU and server load at large sites.
@@ -29,7 +29,8 @@ All notable changes to this project will be documented in this file.
 ### Security
 
 - Alarm QR payloads are compressed Base45 documents with a SHA-256 corruption check and strict import limits. They are not encrypted or digitally signed, so the interface warns operators to confirm the source independently.
-- Updated safely compatible dependency locks and scoped transitive overrides, including browser-bundled Moment and build/test query-string dependencies, while leaving framework-major migrations for separate compatibility work.
+- Migrated the static Viewer to Next.js 16 and React 19, and migrated component tests to Cypress 16 with Vite 8. Removed the obsolete standalone Webpack toolchain, browser polyfills, and vulnerable patch tooling; the MQTT MessagePort fix is now pinned to its reviewed `osh-js` source commit.
+- Clean installs now contain no known npm audit advisories or deprecated locked packages, and CI rejects future advisories at every severity.
 
 ## 3.8.4
 

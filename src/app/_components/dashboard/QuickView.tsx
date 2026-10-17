@@ -14,23 +14,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import SuspenseLoad from "@/app/_components/SuspenseLoad";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {useAppDispatch} from "@/lib/state/Hooks";
-
-interface PreviewSelection {
-    isOpen: boolean;
-    eventData: {laneId?: string} | null;
-}
-
-export function shouldClearUnavailablePreview(
-    eventPreview: PreviewSelection,
-    laneMapReady: boolean,
-    readyLaneNames: ReadonlySet<string>,
-): boolean {
-    if (!laneMapReady || !eventPreview.isOpen || !eventPreview.eventData)
-        return false;
-
-    const laneId = eventPreview.eventData.laneId;
-    return !laneId || !readyLaneNames.has(laneId);
-}
+import {shouldClearUnavailablePreview} from "@/lib/data/oscar/PreviewAvailability";
 
 export default function QuickView() {
     const eventPreview = useSelector(selectEventPreview);

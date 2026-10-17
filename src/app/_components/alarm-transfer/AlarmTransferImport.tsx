@@ -137,7 +137,7 @@ export default function AlarmTransferImport({
 }: AlarmTransferImportProps = {}) {
     const {language, t} = useLanguage();
     const videoRef = useRef<HTMLVideoElement>(null);
-    const scannerRef = useRef<LiveQrScanner>();
+    const scannerRef = useRef<LiveQrScanner | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const scannerStateRef = useRef<ScannerState>("idle");
     const scannerSessionRef = useRef(0);

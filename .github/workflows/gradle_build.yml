@@ -26,8 +26,11 @@ jobs:
       - name: Install oscar-viewer dependencies
         run: npm ci
 
+      - name: Audit production and development dependencies
+        run: npm run audit:dependencies
+
       - name: Check TypeScript
-        run: npx tsc --noEmit
+        run: npm run lint
 
       - name: Build oscar-viewer
         run: npm run build
@@ -35,20 +38,5 @@ jobs:
       - name: Install Cypress
         run: npx cypress install
 
-      - name: Test map configuration
-        run: npm run test:map
-
-      - name: Test refreshed video discovery
-        run: npm run test:video
-
-      - name: Test status of health
-        run: npm run test:health
-
-      - name: Test event UUID lookup and notification routing
-        run: npm run test:event-lookup
-
-      - name: Test alarm transfer identity and legacy compatibility
-        run: npm run test:alarm-transfer
-
-      - name: Test server-side event filtering
-        run: npm run test:event-filter
+      - name: Run the complete component regression suite
+        run: npm run test:component

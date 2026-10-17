@@ -1,7 +1,7 @@
 import {
     removeRealtimeEventSubscription,
     resolveRealtimeEventForNotification,
-} from "../../src/app/_components/event-table/EventTable";
+} from "../../src/lib/data/oscar/RealtimeEventNotification";
 import {NotificationTemplates} from "../../src/app/_components/notifications/NotificationService";
 import {EventLookupError} from "../../src/lib/data/oscar/EventLookup";
 

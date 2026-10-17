@@ -5,7 +5,7 @@ import LaneStatusItem from './LaneStatusItem';
 import React, {useCallback, useContext, useEffect, useRef, useState} from 'react';
 import {setCurrentLane} from '@/lib/state/LaneViewSlice';
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {useRouter} from "next/dist/client/components/navigation";
+import {useRouter} from "next/navigation";
 import {setAlarmTrigger} from "@/lib/state/EventDataSlice";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js";

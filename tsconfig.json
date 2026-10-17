@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "lib": [
       "dom",
       "es2015"
@@ -18,7 +18,7 @@
     "noEmit": true,
     "incremental": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "declaration": true,
@@ -39,6 +39,7 @@
   "include": [
     "./src/**/*",
     ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
     "./types/new-types.d.ts",
     "./types/osh-js.d.tsx",
     "new-types.d.ts",

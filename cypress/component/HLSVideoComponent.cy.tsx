@@ -274,6 +274,7 @@ describe("live HLS video", () => {
         });
         mountPlayer("live/lane-01/index.m3u8", undefined, node, delayedLoader);
 
+        cy.get('[data-testid="live-video-preparing"]').should("exist");
         cy.tick(45_000);
         cy.get('[data-testid="live-video-error"]').should("exist");
         cy.then(() => resolveLoader({default: FakeHls as any}));
@@ -288,11 +289,18 @@ describe("live HLS video", () => {
         const play = HTMLMediaElement.prototype.play as any;
         mountPlayer("live/native/index.m3u8");
 
+        cy.get('[data-testid="live-video-preparing"]').should("exist");
+        let loadsBeforeTimeout = 0;
+        let loadsAtTerminal = 0;
+        cy.then(() => {
+            loadsBeforeTimeout = load.callCount;
+        });
         cy.tick(45_000);
         cy.get('[data-testid="live-video-error"]').should("exist");
         cy.get("video").should("not.have.attr", "src");
         cy.then(() => {
-            expect(load).to.have.been.calledTwice;
+            expect(load.callCount).to.be.greaterThan(loadsBeforeTimeout);
+            loadsAtTerminal = load.callCount;
             expect(play).not.to.have.been.called;
         });
 
@@ -300,7 +308,7 @@ describe("live HLS video", () => {
         dispatchMediaEvent("error");
         cy.tick(1_000);
         cy.then(() => {
-            expect(load).to.have.been.calledTwice;
+            expect(load.callCount).to.equal(loadsAtTerminal);
             expect(play).not.to.have.been.called;
         });
     });

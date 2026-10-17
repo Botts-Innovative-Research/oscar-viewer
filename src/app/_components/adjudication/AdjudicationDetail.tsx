@@ -47,7 +47,7 @@ import {useAppDispatch} from "@/lib/state/Hooks";
 import {INode} from "@/lib/data/osh/Node";
 import {QrCode} from "@mui/icons-material";
 import QrScanner from "qr-scanner";
-import {CloseIcon} from "next/dist/client/components/react-dev-overlay/internal/icons/CloseIcon";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import DetectorResponseFunction from "./DetectorResponseFunction";
 import SpectrumTypeSelector from "@/app/_components/adjudication/SpectrumTypeSelector";
 import WebIdAnalysis from "@/app/_components/adjudication/WebIdAnalysis";
@@ -99,7 +99,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
     const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
     const videoElement = useRef<HTMLVideoElement>(null);
     const [scannedData, setScannedData] = useState<ScannedDataWithWebId[]>([]);
-    const scanner = useRef<QrScanner>();
+    const scanner = useRef<QrScanner | null>(null);
 
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
 
@@ -915,7 +915,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                 top: 8,
                             }}
                         >
-                            <CloseIcon/>
+                            <CloseRoundedIcon/>
                         </IconButton>
                         <DialogTitle sx={{textAlign: 'center', pb: 1}}>
                             {t('spectroscopicQrScanner')}

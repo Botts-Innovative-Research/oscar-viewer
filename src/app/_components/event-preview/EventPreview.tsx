@@ -29,7 +29,7 @@ import {
 } from "@/lib/state/EventPreviewSlice";
 import {selectCurrentUser} from "@/lib/state/OSCARClientSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
-import {useRouter} from "next/dist/client/components/navigation";
+import {useRouter} from "next/navigation";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import AdjudicationData, {
     IAdjudicationData,
