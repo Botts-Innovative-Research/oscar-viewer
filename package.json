@@ -85,7 +85,7 @@
     "nouislider": "^15.6.1",
     "ol": "^10.1.0",
     "ol-layerswitcher": "^4.1.2",
-    "osh-js": "https://codeload.github.com/tyronechrisharris/osh-js/tar.gz/8a590ab2a4e04c505504f827a5543dc7c0c2aae3",
+    "osh-js": "https://codeload.github.com/tyronechrisharris/osh-js/tar.gz/f48fa3e8de79a29fc64834b7166cd97ebf7d02eb",
     "qr-scanner": "^1.4.2",
     "qrcode": "^1.5.4",
     "react": "^19.3.1",
