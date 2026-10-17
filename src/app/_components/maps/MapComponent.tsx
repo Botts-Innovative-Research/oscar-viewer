@@ -53,7 +53,7 @@ export default function MapComponent() {
     const siteDiagramLayersRef = useRef<Map<string, L.ImageOverlay>>(new Map());
     const laneMarkerLayersRef = useRef<Map<string, L.Marker>>(new Map());
     const previousLanguageRef = useRef(language);
-    const {laneMapReady} = useContext(DataSourceContext);
+    const {laneMapReady, scopedHref} = useContext(DataSourceContext);
     const dispatch = useAppDispatch();
 
     const nodes = useSelector((state: RootState) => selectNodes(state));
@@ -450,7 +450,7 @@ export default function MapComponent() {
         return (
             `<div id='popup-data-layer' class='point-popup'><hr/>
                 <h3 class='popup-text-status'>${t('statusValue', {status: t(`status.${statusKey}`)})}</h3>
-                <button onClick='location.href="/lane-view"' class="popup-button" type="button">${t('viewLane')}</button>
+                <button onClick='location.href="${scopedHref('/lane-view')}"' class="popup-button" type="button">${t('viewLane')}</button>
             </div>`
         );
     }

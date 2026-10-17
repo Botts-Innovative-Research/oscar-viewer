@@ -1,10 +1,12 @@
 "use client";
 
-import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from "@mui/material";
+import {Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from "@mui/material";
 import {styled} from "@mui/material/styles";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {useLanguage} from '@/app/contexts/LanguageContext';
 import {getIntlLocale} from '@/app/utils/LocaleUtils';
+import EventIdentity from "@/app/_components/event-details/EventIdentity";
+import type {EventIdentityResolutionState} from "@/app/_components/event-details/EventIdentity";
 
 
 const StatusTableCell = styled(TableCell, {
@@ -14,7 +16,19 @@ const StatusTableCell = styled(TableCell, {
     backgroundColor: status === 'Gamma' ? theme.palette.error.main : status === 'Neutron' ? theme.palette.info.main : status === 'Gamma & Neutron' ? theme.palette.secondary.main : 'transparent',
 }));
 
-export default function DataRow({eventData}: {eventData: EventTableData}) {
+interface DataRowProps {
+    eventData: EventTableData;
+    nodeId?: string | null;
+    identityResolutionState?: EventIdentityResolutionState;
+    onRetryIdentity?: () => void;
+}
+
+export default function DataRow({
+    eventData,
+    nodeId,
+    identityResolutionState,
+    onRetryIdentity,
+}: DataRowProps) {
     const {language, t} = useLanguage();
     const formatDate = (value?: string) => value ? new Date(value).toLocaleString(getIntlLocale(language)) : '';
     const formatStatus = (value?: string) => {
@@ -26,8 +40,15 @@ export default function DataRow({eventData}: {eventData: EventTableData}) {
     };
     const formatInspection = (value?: string) => value ? t(`secondaryInspection.${value.toLowerCase()}`) : '';
     return (
-        <TableContainer>
-            <Table sx={{minWidth: 650}} aria-label={t('eventDetails')}>
+        <Stack>
+            <EventIdentity
+                occupancyUuid={eventData?.occupancyObsId}
+                nodeId={nodeId}
+                resolutionState={identityResolutionState}
+                onRetry={onRetryIdentity}
+            />
+            <TableContainer>
+                <Table sx={{minWidth: 650}} aria-label={t('eventDetails')}>
                 <TableHead>
                     <TableRow
                         sx={{'&:last-child td, &:last-child th': {border: 0, textAlign: "center"}}}>
@@ -64,7 +85,8 @@ export default function DataRow({eventData}: {eventData: EventTableData}) {
                         </TableRow>
                     )}
                 </TableBody>
-            </Table>
-        </TableContainer>
+                </Table>
+            </TableContainer>
+        </Stack>
     );
 }

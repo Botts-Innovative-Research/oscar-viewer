@@ -1,6 +1,6 @@
 "use client";
 
-import {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
 import {Alert, Box, Snackbar} from "@mui/material";
 import {useSelector} from "react-redux";
 import {
@@ -15,15 +15,13 @@ import {
 } from "@mui/x-data-grid";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
-import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
-import Observations from "osh-js/source/core/consysapi/observation/Observations";
 import {EventType} from "osh-js/source/core/event/EventType";
-import {useRouter} from "next/dist/client/components/navigation";
+import {useRouter} from "next/navigation";
 
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {isOccupancyDataStream, isThresholdDataStream} from "@/lib/data/oscar/Utilities";
-import {convertToMap, hashString} from "@/app/utils/Utils";
+import {convertToMap} from "@/app/utils/Utils";
 import {OCCUPANCY_PILLAR_DEF} from "@/lib/data/Constants";
 import {getObservations} from "@/app/utils/ChartUtils";
 import {useAppDispatch} from "@/lib/state/Hooks";
@@ -41,6 +39,7 @@ import {
 import {useLanguage} from "@/app/contexts/LanguageContext";
 import {NotificationService, NotificationTemplates} from "../notifications/NotificationService";
 import {getDataGridLocaleText, getIntlLocale} from "@/app/utils/LocaleUtils";
+import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import CustomToolbar from "@/app/_components/CustomToolbar";
 import NestedEventFilterDialog from "@/app/_components/event-table/NestedEventFilterDialog";
 import BulkAdjudicationDialog, {BulkAdjudicationSummary} from "@/app/_components/event-table/BulkAdjudicationDialog";
@@ -59,6 +58,19 @@ import {
     BulkAdjudicationValues,
     runWithConcurrency,
 } from "@/lib/data/oscar/BulkAdjudication";
+import {
+    buildObservationCountParams,
+    buildObservationPageParams,
+} from "@/lib/data/oscar/EventQuery";
+import {
+    buildEventDetailsHref,
+    createEventFromOccupancyObservation,
+} from "@/lib/data/oscar/EventLookup";
+import {
+    removeRealtimeEventSubscription,
+    resolveRealtimeEventForNotification,
+    type RealtimeEventHandler,
+} from "@/lib/data/oscar/RealtimeEventNotification";
 
 interface TableProps {
     tableMode: "eventlog" | "alarmtable" | "lanelog";
@@ -80,6 +92,7 @@ interface QueryPlan {
 
 const PAGE_SIZE = 15;
 const BULK_FETCH_SIZE = 250;
+const REALTIME_ID_RESOLUTION_TIMEOUT_MS = 12_000;
 
 const deduplicateEvents = (events: EventTableData[]): EventTableData[] => {
     const result = new Map<string, EventTableData>();
@@ -97,6 +110,7 @@ export default function EventTable({
     const adjudicatedEventId = useSelector(selectAdjudicatedEventId);
     const dispatch = useAppDispatch();
     const router = useRouter();
+    const {activeViewKey, scopedHref} = useContext(DataSourceContext);
     const {language, t} = useLanguage();
     const locale = getIntlLocale(language);
 
@@ -118,6 +132,12 @@ export default function EventTable({
     const allFilteredCutoffRef = useRef<string | null>(null);
     const currentPageRef = useRef(0);
     const eventCacheRef = useRef<Map<string, EventTableData>>(new Map());
+    const selectedRowIdRef = useRef(selectedRowId);
+    const realtimeResolutionJobsRef = useRef<Set<{
+        controller: AbortController;
+        cancelledByCleanup: boolean;
+        timeout: number;
+    }>>(new Set());
     const failedBulkRef = useRef<EventTableData[]>([]);
     const countRequestRef = useRef(0);
     const pageRequestRef = useRef(0);
@@ -174,63 +194,122 @@ export default function EventTable({
         }
     }, []);
 
-    const sendNotification = useCallback((event: EventTableData) => {
+    useEffect(() => {
+        selectedRowIdRef.current = selectedRowId;
+    }, [selectedRowId]);
+
+    const cancelRealtimeResolutionJobs = useCallback(() => {
+        realtimeResolutionJobsRef.current.forEach(job => {
+            job.cancelledByCleanup = true;
+            window.clearTimeout(job.timeout);
+            job.controller.abort();
+        });
+        realtimeResolutionJobsRef.current.clear();
+    }, []);
+
+    useEffect(() => () => cancelRealtimeResolutionJobs(), [cancelRealtimeResolutionJobs]);
+
+    const sendNotification = useCallback(async (event: EventTableData, nodeId: string): Promise<void> => {
         if (event.status === "None" || !notificationServiceRef.current?.isReady()) return;
-        notificationServiceRef.current.showNotification(NotificationTemplates.newAlarm(event, {
-            title: t("newAlarmTitle", {status: t(event.status === "Gamma & Neutron" ? "gammaAndNeutron" : event.status.toLowerCase())}),
-            body: t("newAlarmBody", {lane: event.laneId, occupancyId: event.occupancyCount ?? ""}),
-            viewAlarm: t("viewAlarm"),
-            dismiss: t("dismiss"),
-        }));
-    }, [t]);
+        try {
+            await notificationServiceRef.current.showNotification(NotificationTemplates.newAlarm(event, {
+                title: t("newAlarmTitle", {status: t(event.status === "Gamma & Neutron" ? "gammaAndNeutron" : event.status.toLowerCase())}),
+                body: t("newAlarmBody", {lane: event.laneId, occupancyId: event.occupancyCount ?? ""}),
+                viewAlarm: t("viewAlarm"),
+                events: t("events"),
+                dismiss: t("dismiss"),
+            }, activeViewKey, nodeId));
+        } catch (error) {
+            console.error("Unable to show alarm notification", error);
+        }
+    }, [t, activeViewKey]);
 
     const eventFromObservation = useCallback((observation: any, lane: LaneMapEntry, live: boolean): EventTableData => {
-        const result = observation.properties?.result || observation.result || observation;
-        const id = hashString(`${result.occupancyCount}${lane.laneName}${result.startTime}${result.endTime}`);
-        const event = new EventTableData(
-            id,
-            lane.laneName,
-            result,
-            live ? null : observation.properties.id,
-            observation.properties?.foiId || observation["foi@id"] || observation.foiId,
-            lane.parentNode.name,
-            lane.isRS350Backpack,
-        );
-        const datastreamId = live ? undefined : observation.properties["datastream@id"];
-        if (datastreamId) {
-            event.setDataStreamId(datastreamId);
-            event.setRPMSystemId(lane.lookupSystemIdFromDataStreamId(datastreamId));
-        }
-        event.setFoiId(observation.properties?.["foi@id"] || observation["foi@id"] || observation.foiId);
-        if (!live) event.setOccupancyObsId(observation.id);
-        if (live) sendNotification(event);
+        const event = createEventFromOccupancyObservation(observation, lane, !live);
         eventCacheRef.current.set(eventSelectionKey(event), event);
         return event;
-    }, [sendNotification]);
+    }, []);
+
+    const replaceRealtimeEventIdentity = useCallback((original: EventTableData, resolved: EventTableData) => {
+        if (!resolved.occupancyObsId || resolved === original) return;
+
+        const originalKey = eventSelectionKey(original);
+        const resolvedKey = eventSelectionKey(resolved);
+        if (eventCacheRef.current.get(originalKey) === original)
+            eventCacheRef.current.delete(originalKey);
+        eventCacheRef.current.set(resolvedKey, resolved);
+        setRows(previous => deduplicateEvents(previous.map(row => row === original ? resolved : row)));
+
+        const replaceKey = (previous: Set<string>) => {
+            if (!previous.has(originalKey)) return previous;
+            const next = new Set(previous);
+            next.delete(originalKey);
+            next.add(resolvedKey);
+            return next;
+        };
+        setSelectedKeys(replaceKey);
+        setExcludedKeys(replaceKey);
+        setPostSelectionKeys(replaceKey);
+
+        if (selectedRowIdRef.current === original.id) {
+            dispatch(setEventPreview({isOpen: true, eventData: resolved}));
+            dispatch(setSelectedEvent(resolved));
+        }
+    }, [dispatch]);
+
+    const resolveIdentityAndNotify = useCallback((event: EventTableData, lane: LaneMapEntry) => {
+        if (event.status === "None") return;
+
+        // Alarm delivery is immediate. Until the durable observation exists,
+        // the honest action opens Events; a successful resolution replaces
+        // this notification with the direct Event Details action.
+        const fallbackDelivery = sendNotification(event, lane.parentNode.id);
+
+        const controller = new AbortController();
+        const job = {
+            controller,
+            cancelledByCleanup: false,
+            timeout: window.setTimeout(() => controller.abort(), REALTIME_ID_RESOLUTION_TIMEOUT_MS),
+        };
+        realtimeResolutionJobsRef.current.add(job);
+
+        void resolveRealtimeEventForNotification(event, lane, controller.signal)
+            .then(async resolved => {
+                if (job.cancelledByCleanup) return;
+                if (!resolved.occupancyObsId || resolved === event) return;
+                replaceRealtimeEventIdentity(event, resolved);
+                await fallbackDelivery;
+                if (job.cancelledByCleanup) return;
+                await sendNotification(resolved, lane.parentNode.id);
+            })
+            .catch(error => {
+                if (job.cancelledByCleanup) return;
+                console.error("Unable to resolve realtime event identity before notification", error);
+            })
+            .finally(() => {
+                window.clearTimeout(job.timeout);
+                realtimeResolutionJobsRef.current.delete(job);
+            });
+    }, [replaceRealtimeEventIdentity, sendNotification]);
 
     const fetchPlanRows = useCallback(async (plan: QueryPlan, limit: number, offset: number, cutoff = pageLoadedTime) => {
-        const observationFilter = new ObservationFilter({
-            dataStream: plan.datastreamIds,
-            resultTime: `../${cutoff}`,
-            filter: plan.filter,
-            order: "desc",
+        const params = buildObservationPageParams(plan, cutoff, limit, offset);
+        const response = await fetch(`${plan.node.getConnectedSystemsEndpoint(false)}/observations?${params}`, {
+            headers: {...plan.node.getBasicAuthHeader(), Accept: "application/om+json"},
+            credentials: "include",
         });
-        const api: typeof Observations = await plan.node.getObservationsApi();
-        const collection = await api.searchObservations(observationFilter, limit, offset);
-        const observations = await collection.fetchData();
-        return observations.flatMap((observation: any) => {
-            const lane = findLaneByDataStreamId(observation.properties["datastream@id"]);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        const observations = Array.isArray(payload?.items) ? payload.items : [];
+        return observations.flatMap((properties: any) => {
+            const lane = findLaneByDataStreamId(properties["datastream@id"]);
+            const observation = {id: properties.id, properties};
             return lane ? [eventFromObservation(observation, lane, false)] : [];
         });
     }, [eventFromObservation, findLaneByDataStreamId, pageLoadedTime]);
 
     const fetchPlanCount = useCallback(async (plan: QueryPlan, cutoff = pageLoadedTime, strict = false): Promise<number> => {
-        const params = new URLSearchParams({
-            resultTime: `../${cutoff}`,
-            format: "application/om+json",
-            dataStream: plan.datastreamIds.join(","),
-        });
-        if (plan.filter) params.set("filter", plan.filter);
+        const params = buildObservationCountParams(plan, cutoff);
         try {
             const response = await fetch(`${plan.node.getConnectedSystemsEndpoint(false)}/observations/count?${params}`, {
                 headers: {...plan.node.getBasicAuthHeader(), "Content-Type": "sml+json"},
@@ -310,17 +389,21 @@ export default function EventTable({
 
     useEffect(() => {
         if (stableLaneMap.size === 0) return;
-        const subscriptions: Array<{source: any; handler: (message: any) => void}> = [];
+        let active = true;
+        const subscriptions: Array<{source: any; handler: RealtimeEventHandler}> = [];
         for (const lane of stableLaneMap.values()) {
             const occupancyStream: typeof DataStream = lane.findDataStreamByObsProperty(OCCUPANCY_PILLAR_DEF);
             if (!occupancyStream) continue;
             const source = lane.datasourcesRealtime?.find((item: any) => item.properties.resource?.split("/")[2] === occupancyStream.properties.id);
             if (!source) continue;
             const handleMessage = (message: any) => {
-                if (currentPageRef.current !== 0) return;
+                if (!active) return;
                 try {
                     const event = eventFromObservation(message.values?.[0]?.data || message, lane, true);
                     event.setDataStreamId(occupancyStream.properties.id);
+                    event.setRPMSystemId(occupancyStream.properties["system@id"]);
+                    resolveIdentityAndNotify(event, lane);
+                    if (currentPageRef.current !== 0) return;
                     if (!rowPassesLocalFilters(event, lane)) return;
                     if (allFilteredCutoffRef.current && event.status !== "None" && !event.adjudicatedIds?.length) {
                         setPostSelectionKeys(previous => new Set(previous).add(eventSelectionKey(event)));
@@ -339,13 +422,13 @@ export default function EventTable({
                 console.error("Error connecting occupancy source", error);
             }
         }
-        return () => subscriptions.forEach(({source, handler}) => {
-            const listeners = source.eventSubscriptionMap?.[EventType.DATA];
-            if (!Array.isArray(listeners)) return;
-            const index = listeners.indexOf(handler);
-            if (index >= 0) listeners.splice(index, 1);
-        });
-    }, [stableLaneMap, eventFromObservation, rowPassesLocalFilters]);
+        return () => {
+            active = false;
+            cancelRealtimeResolutionJobs();
+            subscriptions.forEach(({source, handler}) =>
+                removeRealtimeEventSubscription(source, handler));
+        };
+    }, [stableLaneMap, eventFromObservation, rowPassesLocalFilters, resolveIdentityAndNotify, cancelRealtimeResolutionJobs]);
 
     useEffect(() => {
         if (!adjudicatedEventId || tableMode !== "alarmtable") return;
@@ -418,7 +501,13 @@ export default function EventTable({
         dispatch(setSelectedRowId(event.id));
         dispatch(setSelectedEvent(event));
         getLatestGB(event);
-        if (navigate) router.push("/event-details");
+        if (navigate) {
+            const lane = stableLaneMap.get(event.laneId);
+            const href = event.occupancyObsId
+                ? buildEventDetailsHref(event.occupancyObsId, lane?.parentNode.id)
+                : "/event-details";
+            router.push(scopedHref(href));
+        }
     };
 
     const enumerateAllFiltered = useCallback(async (): Promise<EventTableData[]> => {
@@ -540,6 +629,7 @@ export default function EventTable({
                 columns={columns}
                 loading={loading}
                 paginationMode="server"
+                filterMode="server"
                 paginationModel={paginationModel}
                 onPaginationModelChange={model => setPaginationModel(model)}
                 rowCount={rowCount}

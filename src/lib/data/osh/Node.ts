@@ -18,6 +18,11 @@ import {LatLngExpression} from "leaflet";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
+import {
+    buildOperationalViewCatalog,
+    OperationalViewCatalog,
+    systemMatchesOperationalView,
+} from "@/lib/data/oscar/OperationalView";
 
 const LANE_SYSTEM_UID_PREFIX = "urn:osh:system:lane:";
 
@@ -61,7 +66,9 @@ export interface INode {
 
     fetchDataStreams(laneMap: Map<string, LaneMapEntry>): void,
 
-    fetchLaneSystemsAndSubsystems(): Promise<Map<string, LaneMapEntry>>,
+    fetchLaneSystemsAndSubsystems(viewKey?: string | null): Promise<Map<string, LaneMapEntry>>,
+
+    fetchOperationalViewCatalog(): Promise<OperationalViewCatalog>,
 
     fetchLaneControlStreams(laneMap: Map<string, LaneMapEntry>): Promise<any>,
 
@@ -134,6 +141,7 @@ export class Node implements INode {
     observationsApi: typeof Observations;
     oscarServiceSystem: typeof System;
     controlStreamApi: typeof ControlStreams;
+    operationalViewCatalogPromise: Promise<OperationalViewCatalog> | null = null;
 
     constructor(options: NodeOptions) {
         this.id = "node-" + hashString(options.address + "-" + options.port); // TODO: maybe do something else here
@@ -259,7 +267,7 @@ export class Node implements INode {
         }
     }
 
-    async fetchLaneSystemsAndSubsystems(): Promise<Map<string, LaneMapEntry>> {
+    async fetchLaneSystemsAndSubsystems(viewKey: string | null = null): Promise<Map<string, LaneMapEntry>> {
 
         // check if node is reachable first
         const isReachable = await this.checkForEndpoint();
@@ -272,6 +280,17 @@ export class Node implements INode {
         let systems = await this.fetchSystems();
         if (!systems || systems.length == 0) return;
 
+        // The systems collection is GeoJSON and does not include SensorML
+        // keywords. Load the full lane descriptions only when a scoped view
+        // needs those keywords, then attach them to the existing system shape
+        // used by the rest of lane discovery.
+        if (viewKey !== null) {
+            const laneSystems = systems.filter((system) =>
+                system?.properties?.properties?.uid?.startsWith(LANE_SYSTEM_UID_PREFIX));
+            await Promise.all(laneSystems.map((system) =>
+                this.loadOperationalViewKeywords(system)));
+        }
+
         systems.sort((a, b) => {
             const aIsLane = a.properties.properties?.uid.startsWith(LANE_SYSTEM_UID_PREFIX) ? 0 : 1;
             const bIsLane = b.properties.properties?.uid.startsWith(LANE_SYSTEM_UID_PREFIX) ? 0 : 1;
@@ -283,6 +302,9 @@ export class Node implements INode {
         // filter into lanes
         for (let system of systems) {
             if (system.properties.properties?.uid.startsWith(LANE_SYSTEM_UID_PREFIX)) {
+                if (!systemMatchesOperationalView(system, viewKey))
+                    continue;
+
                 let laneName = system.properties.properties.name;
 
                 if (laneMap.has(laneName)) {
@@ -342,6 +364,64 @@ export class Node implements INode {
         }
 
         return laneMap;
+    }
+
+    async fetchOperationalViewCatalog(): Promise<OperationalViewCatalog> {
+        if (this.operationalViewCatalogPromise)
+            return this.operationalViewCatalogPromise;
+
+        this.operationalViewCatalogPromise = (async () => {
+            const systems = await this.fetchSystems();
+            if (!systems)
+                return buildOperationalViewCatalog([]);
+
+            const laneSystems = systems.filter((system) =>
+                system?.properties?.properties?.uid?.startsWith(LANE_SYSTEM_UID_PREFIX));
+            await Promise.all(laneSystems.map((system) =>
+                this.loadOperationalViewKeywords(system)));
+            return buildOperationalViewCatalog(laneSystems);
+        })();
+
+        try {
+            return await this.operationalViewCatalogPromise;
+        } catch (error) {
+            // Permit a later retry after a transient discovery failure.
+            this.operationalViewCatalogPromise = null;
+            throw error;
+        }
+    }
+
+    private async loadOperationalViewKeywords(system: any): Promise<void> {
+        const systemProperties = system?.properties?.properties;
+        if (!systemProperties) {
+            console.warn("Cannot load operational-view metadata for a malformed lane system");
+            return;
+        }
+
+        // Clear any collection-level value before the authoritative SensorML
+        // request so a failed lookup cannot accidentally retain a stale scope.
+        systemProperties.keywords = [];
+
+        const systemId = system?.properties?.id;
+        if (!systemId) {
+            console.warn("Cannot load operational-view metadata for a lane without a system ID");
+            return;
+        }
+
+        try {
+            const description = await this.systemsApi.getSystemById(
+                systemId,
+                new SystemFilter({format: "application/sml+json"}),
+            );
+            const keywords = description?.properties?.keywords;
+
+            if (Array.isArray(keywords))
+                systemProperties.keywords = keywords;
+        } catch (error) {
+            // Fail closed: a lane whose assignment cannot be verified must not
+            // leak into a scoped operational view.
+            console.warn(`Unable to load operational-view metadata for system ${systemId}`, error);
+        }
     }
 
     async fetchSystems(): Promise<any[]> {
