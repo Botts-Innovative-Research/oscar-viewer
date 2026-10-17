@@ -16,3 +16,23 @@ npm run build
 ```
 
 The production static export continues to use Next.js Webpack mode because the pinned `osh-js` source package still loads web workers through `worker-loader`. Cypress component tests use Vite and Chrome. The `osh-js` dependency is pinned by commit and integrity hash so clean installs reproduce the MQTT MessagePort implementation tracked in [osh-js PR #6](https://github.com/earocorn/osh-js/pull/6).
+
+## Retained alarm media
+
+Event Details uses the occupancy observation UUID as the public media identity. Before requesting a legacy MP4, the Viewer makes an authenticated request to:
+
+```text
+{sensorhub bucket endpoint}/videos/media/{event UUID}
+```
+
+A `200` response must use retained-media schema version 1 and contain exactly five independently decodable JPEGs per camera: first, 25%, middle, 75%, and last. The Viewer validates the event identity, schema, frame positions, distinct source-frame ordinals, sizes, dimensions, content types, and event-scoped asset paths before displaying anything. It accepts at most eight camera sets, 12 MiB and 20 megapixels per frame, and 64 MiB and 120 megapixels of declared media per event; either frame dimension is limited to 6,000 pixels. These limits reject a malformed or unexpectedly large catalog before the browser decodes its images.
+
+Camera UIDs, source-frame ordinals, and source video timestamps remain visible in the gallery. The Viewer initially downloads only the selected frame for each camera, schedules at most three frame requests across the event, and downloads another frame when the operator selects it. Successfully loaded frame object URLs are reused until the event or page changes. Individual missing or undecodable images fail independently, so the other evidence stays usable.
+
+A `404` means that the event predates retained media, so the existing `videoPaths` MP4 player is used. Authentication, server, timeout, and malformed-response failures display a warning before offering that same fallback; they are not silently treated as legacy data. Catalog and image requests have a 10-second deadline. During the backend rollback-grace period, the retained gallery is shown first and the still-available source MP4 remains available beneath it. The catalog request bypasses browser caching, while private JPEG responses may use the backend's short cache lifetime. Authenticated JPEGs are held only in memory and their object URLs are revoked when the event or page changes.
+
+Run the focused contract and rendering tests with:
+
+```sh
+npm run test:retained-media
+```

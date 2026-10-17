@@ -1,6 +1,19 @@
 # OSCAR Viewer Change Log
 All notable changes to this project will be documented in this file. 
 
+## 3.9.2
+
+### Added
+
+- Event Details now queries the authenticated event-scoped retained-media API by occupancy UUID and displays exactly five labeled JPEG evidence frames per camera with source ordinals and video timestamps.
+- Added keyboard-accessible per-camera galleries, isolated missing/corrupt-frame handling, localized loading and error feedback, and focused API/fallback/rendering regression tests.
+- Added strict per-frame and event-wide byte, dimension, and decoded-pixel budgets for retained-media catalogs.
+
+### Changed
+
+- Events without a retained-media manifest continue to use their legacy MP4 paths after the API returns `404`. Unexpected API or schema failures are visible to the operator and still offer the MP4 when available.
+- During the retained-media rollback grace period, the original hot MP4 remains playable beneath the five-frame evidence gallery. Only each camera's selected JPEG is fetched initially, at most three frame requests run concurrently, loaded frames are reused in memory, and object URLs are revoked on navigation.
+
 ## 3.9.1
 
 ### Upgrade notes
