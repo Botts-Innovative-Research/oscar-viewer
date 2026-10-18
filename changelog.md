@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - Events without a retained-media manifest continue to use their legacy MP4 paths after the API returns `404`. Unexpected API or schema failures are visible to the operator and still offer the MP4 when available.
 - During the retained-media rollback grace period, the original hot MP4 remains playable beneath the five-frame evidence gallery. Only each camera's selected JPEG is fetched initially, at most three frame requests run concurrently, loaded frames are reused in memory, and object URLs are revoked on navigation.
 - The reviewed MQTT MessagePort source is pinned directly to the immutable upstream `earocorn/osh-js` pull-request commit and lockfile integrity hash, removing the personal packaging-fork dependency from clean builds.
+- Status of Health and Dashboard snapshots now request at most 10 streams per batch, retain two global workers and a 10-second deadline, and recover independently when one batch stalls. This keeps browser and server work bounded against large accumulated observation histories.
 
 ## 3.9.1
 

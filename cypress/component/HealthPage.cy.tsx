@@ -474,11 +474,11 @@ describe("Status of Health page", () => {
         cy.wrap(searchObservations).should("have.callCount", 2);
         cy.tick(HEALTH_QUERY_TIMEOUT_MS);
 
-        cy.wrap(searchObservations).should("have.callCount", 3);
+        cy.wrap(searchObservations).should("have.callCount", 11);
         cy.contains("Gamma high: Unknown");
     });
 
-    it("uses one latest-observation query for a node with exactly 50 health streams", () => {
+    it("uses bounded ten-stream latest-observation batches for 50 health streams", () => {
         cy.clock(Date.parse("2026-09-24T16:00:00.000Z"));
         const gammaStreams = Array.from({length: 50}, (_, index) => stream(
             `gamma-${index + 1}`,
@@ -498,12 +498,18 @@ describe("Status of Health page", () => {
         cy.mount(healthView(laneMap));
 
         cy.contains("Total lanes: 50");
-        cy.wrap(localNode.searchObservations).should("have.been.calledOnce");
+        cy.wrap(localNode.searchObservations).should("have.callCount", 5);
         cy.then(() => {
-            const [filter, pageSize] = localNode.searchObservations.firstCall.args;
-            expect(filter.props.resultTime).to.equal("latest");
-            expect(filter.props.dataStream.split(",")).to.have.length(50);
-            expect(pageSize).to.equal(50);
+            const requestedIds = new Set<string>();
+            localNode.searchObservations.getCalls().forEach((call: any) => {
+                const [filter, pageSize] = call.args;
+                const batchIds = filter.props.dataStream.split(",");
+                expect(filter.props.resultTime).to.equal("latest");
+                expect(batchIds).to.have.length(10);
+                expect(pageSize).to.equal(10);
+                batchIds.forEach((id: string) => requestedIds.add(id));
+            });
+            expect(requestedIds.size).to.equal(50);
             gammaStreams.forEach((gamma) => expect(gamma.searchObservations).not.to.have.been.called);
             sources.forEach((source) => {
                 expect(source.subscribe).not.to.have.been.called;
@@ -513,7 +519,7 @@ describe("Status of Health page", () => {
         });
 
         cy.tick(30_000);
-        cy.wrap(localNode.searchObservations).should("have.callCount", 2);
+        cy.wrap(localNode.searchObservations).should("have.callCount", 10);
     });
 
     it("splits large health snapshots into globally bounded observation batches", () => {
@@ -530,13 +536,13 @@ describe("Status of Health page", () => {
 
         cy.mount(healthView(laneMap));
 
-        cy.wrap(localNode.searchObservations).should("have.callCount", 3);
+        cy.wrap(localNode.searchObservations).should("have.callCount", 12);
         cy.then(() => {
             const requestedIds = new Set<string>();
             localNode.searchObservations.getCalls().forEach((call: any) => {
                 const [filter, pageSize] = call.args;
                 const batchIds = filter.props.dataStream.split(",");
-                expect(batchIds.length).to.be.at.most(50);
+                expect(batchIds.length).to.be.at.most(10);
                 expect(pageSize).to.equal(batchIds.length);
                 batchIds.forEach((id: string) => {
                     expect(requestedIds.has(id), `duplicate stream ${id}`).to.equal(false);
@@ -680,7 +686,7 @@ describe("Status of Health page", () => {
 
         cy.mount(healthView(laneMap));
 
-        cy.wrap(localNode.searchObservations).should("have.callCount", 2);
+        cy.wrap(localNode.searchObservations).should("have.callCount", 6);
         cy.get('[data-testid="health-lane-Lane 1"]').within(() => cy.contains("Gamma high: Fault"));
     });
 

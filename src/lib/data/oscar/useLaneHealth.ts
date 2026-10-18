@@ -76,7 +76,12 @@ export const OCCUPANCY_THRESHOLD_KEY = "oscar.health.extendedOccupancyMinutes";
 export const DEFAULT_OCCUPANCY_THRESHOLD_MINUTES = 1;
 export const MAX_OCCUPANCY_THRESHOLD_MINUTES = 1440;
 export const HEALTH_RECONCILIATION_INTERVAL_MS = 30_000;
-export const HEALTH_QUERY_BATCH_SIZE = 50;
+// Keep latest-result probes small. PostgreSQL can answer a ten-stream indexed
+// lookup comfortably even when the hot observation table contains millions of
+// rows, while a fifty-stream request can exceed the browser deadline and leave
+// every health chip in the indeterminate state. Global concurrency below still
+// bounds database load while the batches are drained.
+export const HEALTH_QUERY_BATCH_SIZE = 10;
 export const HEALTH_QUERY_CONCURRENCY = 2;
 export const HEALTH_QUERY_TIMEOUT_MS = 10_000;
 
