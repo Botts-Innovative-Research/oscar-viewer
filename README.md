@@ -15,7 +15,7 @@ npm run test:component
 npm run build
 ```
 
-The production static export continues to use Next.js Webpack mode because the pinned `osh-js` source package still loads web workers through `worker-loader`. Cypress component tests use Vite and Chrome. The `osh-js` dependency is pinned by commit and integrity hash so clean installs reproduce the MQTT MessagePort implementation tracked in [osh-js PR #6](https://github.com/earocorn/osh-js/pull/6).
+The production static export continues to use Next.js Webpack mode because the pinned `osh-js` source package still loads web workers through `worker-loader`. Cypress component tests use Vite and Chrome. The `osh-js` dependency is pinned directly to the immutable upstream commit and lockfile integrity hash from [osh-js PR #6](https://github.com/earocorn/osh-js/pull/6), so clean installs reproduce the reviewed MQTT MessagePort implementation without depending on a personal packaging fork. OSCAR imports only `osh-js/source/core/...`; the larger upstream source archive affects install size, not the static production output.
 
 ## Retained alarm media
 
