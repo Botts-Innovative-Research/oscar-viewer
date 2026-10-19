@@ -20,7 +20,7 @@
     "test:discovery": "cypress run --component --browser chrome --spec 'cypress/component/LaneDiscovery.cy.ts'",
     "test:video": "cypress run --component --browser chrome --spec 'cypress/component/VideoStreamUtils.cy.ts,cypress/component/HLSVideoComponent.cy.tsx'",
     "test:retained-media": "cypress run --component --browser chrome --spec 'cypress/component/RetainedMedia.cy.tsx'",
-    "test:adjudication": "cypress run --component --browser chrome --spec 'cypress/component/AdjudicationCommand.cy.ts'",
+    "test:adjudication": "cypress run --component --browser chrome --spec 'cypress/component/AdjudicationCommand.cy.ts,cypress/component/AdjudicationLogSource.cy.ts'",
     "test:event-filter": "cypress run --component --browser chrome --spec 'cypress/component/EventFilter.cy.ts'",
     "test:event-lookup": "cypress run --component --browser chrome --spec 'cypress/component/EventLookup.cy.ts,cypress/component/RealtimeNotification.cy.ts'",
     "test:alarm-transfer": "cypress run --component --browser chrome --spec 'cypress/component/AlarmQrTransfer.cy.ts,cypress/component/AlarmExportIdentity.cy.tsx,cypress/component/AlarmTransferImport.cy.tsx'",
