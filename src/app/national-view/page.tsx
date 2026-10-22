@@ -15,12 +15,9 @@ import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStr
 import {isNationalControlStream} from "@/lib/data/oscar/Utilities";
 import {generateNationalCommandJSON, sendCommand} from "@/lib/data/oscar/OSCARCommands";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
+import {INode} from "@/lib/data/osh/Node";
 import { useBreakpoint } from "../providers";
 import {useLanguage} from "@/app/contexts/LanguageContext";
-import {INode} from "@/lib/data/osh/Node";
-
-type NationalCounts = Omit<INationalTableData, "id" | "site">;
-type NationalTimeRanges = Record<"allTime" | "daily" | "monthly" | "weekly" | "custom", NationalCounts>;
 
 
 export default function NationalViewPage() {
@@ -70,80 +67,80 @@ export default function NationalViewPage() {
 
             for (const node of nodes) {
                 try {
-                let streams: typeof ControlStream[] = [];
-                if (node.oscarServiceSystem != null) {
-                    const query = await node.oscarServiceSystem.searchControlStreams(new ControlStreamFilter({ validTime: "latest" }), 100);
+                    let streams: typeof ControlStream[] = [];
+                    if (node.oscarServiceSystem != null) {
+                        const query = await node.oscarServiceSystem.searchControlStreams(new ControlStreamFilter({ validTime: "latest" }), 100);
 
-                    const results = await query.nextPage();
-                    if (Array.isArray(results) && results.length > 0) {
-                        streams = results;
+                        const results = await query.nextPage();
+                        if (Array.isArray(results) && results.length > 0) {
+                            streams = results;
+                        }
+                    } else {
+                        streams = await node.fetchNodeControlStreams();
                     }
-                } else {
-                    streams = await node.fetchNodeControlStreams();
-                }
-                let controlStream = streams.find((stream: typeof ControlStream) => isNationalControlStream(stream));
+                    let controlStream = streams.find((stream: typeof ControlStream) => isNationalControlStream(stream));
 
-                if (!controlStream){
-                    setSnackMessage(t('noControlStream'));
-                    setSeverity("error");
-                    setOpenSnack(true)
-                    continue;
-                }
+                    if (!controlStream){
+                        setSnackMessage(t('noControlStream'));
+                        setSeverity("error");
+                        setOpenSnack(true)
+                        continue;
+                    }
 
-                let response = await sendCommand(node, controlStream.properties.id, generateNationalCommandJSON(customStartTime, customEndTime));
+                    let response = await sendCommand(node, controlStream.properties.id, generateNationalCommandJSON(customStartTime, customEndTime));
 
-                if (!response.ok) {
-                    setSnackMessage(t('statisticsRefreshFailed'));
-                    setSeverity("error");
-                    continue;
-                }
+                    if (!response.ok) {
+                        setSnackMessage(t('statisticsRefreshFailed'));
+                        setSeverity("error");
+                        continue;
+                    }
 
-                let respJson = await response.json();
+                    let respJson = await response.json();
 
-                if (selectedTimeRange == "custom") {
-                    setSnackMessage(t('refreshingCustomStats'));
-                    setSeverity("success");
-                    setOpenSnack(true);
+                    if (selectedTimeRange == "custom") {
+                        setSnackMessage(t('refreshingCustomStats'));
+                        setSeverity("success");
+                        setOpenSnack(true);
 
-                    let results = respJson.results[0].data;
+                        let results = respJson.results[0].data;
 
-                    const list = tempRangeData.get("custom");
-                    list.push({
-                        id: idVal.current++,
-                        site: node.name,
-                        numGammaAlarms: results.numGammaAlarms,
-                        numNeutronAlarms: results.numNeutronAlarms,
-                        numGammaNeutronAlarms: results.numGammaNeutronAlarms,
-                        numOccupancies: results.numOccupancies,
-                        numTampers: results.numTampers,
-                        numGammaFaults: results.numGammaFaults,
-                        numNeutronFaults: results.numNeutronFaults,
-                        numFaults: results.numFaults,
-                    });
-
-                } else {
-
-                    const allRangeCounts = await fetchAllTimeRangesForNode(node);
-
-                    ranges.forEach(range => {
-                        const list = tempRangeData.get(range);
-                        list.push ({
+                        const list = tempRangeData.get("custom");
+                        list.push({
                             id: idVal.current++,
                             site: node.name,
-                            numGammaAlarms: allRangeCounts[range].numGammaAlarms,
-                            numNeutronAlarms: allRangeCounts[range].numNeutronAlarms,
-                            numGammaNeutronAlarms: allRangeCounts[range].numGammaNeutronAlarms,
-                            numOccupancies: allRangeCounts[range].numOccupancies,
-                            numTampers: allRangeCounts[range].numTampers,
-                            numGammaFaults: allRangeCounts[range].numGammaFaults,
-                            numNeutronFaults: allRangeCounts[range].numNeutronFaults,
-                            numFaults: allRangeCounts[range].numFaults,
+                            numGammaAlarms: results.numGammaAlarms,
+                            numNeutronAlarms: results.numNeutronAlarms,
+                            numGammaNeutronAlarms: results.numGammaNeutronAlarms,
+                            numOccupancies: results.numOccupancies,
+                            numTampers: results.numTampers,
+                            numGammaFaults: results.numGammaFaults,
+                            numNeutronFaults: results.numNeutronFaults,
+                            numFaults: results.numFaults,
                         });
-                    })
-                }
 
-                setSnackMessage(t('refreshingStats'));
-                setSeverity("success");
+                    } else {
+
+                        const allRangeCounts = await fetchAllTimeRangesForNode(node);
+
+                        ranges.forEach(range => {
+                            const list = tempRangeData.get(range);
+                            list.push ({
+                                id: idVal.current++,
+                                site: node.name,
+                                numGammaAlarms: allRangeCounts[range].numGammaAlarms,
+                                numNeutronAlarms: allRangeCounts[range].numNeutronAlarms,
+                                numGammaNeutronAlarms: allRangeCounts[range].numGammaNeutronAlarms,
+                                numOccupancies: allRangeCounts[range].numOccupancies,
+                                numTampers: allRangeCounts[range].numTampers,
+                                numGammaFaults: allRangeCounts[range].numGammaFaults,
+                                numNeutronFaults: allRangeCounts[range].numNeutronFaults,
+                                numFaults: allRangeCounts[range].numFaults,
+                            });
+                        })
+                    }
+
+                    setSnackMessage(t('refreshingStats'));
+                    setSeverity("success");
                 } catch (error) {
                     console.error(`Failed to refresh national statistics for ${node.name}`, error);
                     setSnackMessage(t('statisticsRefreshFailed'));
@@ -179,7 +176,7 @@ export default function NationalViewPage() {
     }
 
     const handleCustomStartTime = (value: string) => {
-         setCustomStartTime(value)
+        setCustomStartTime(value)
     }
 
     const handleCustomEndTime = (value: string) => {
@@ -192,7 +189,7 @@ export default function NationalViewPage() {
         const loadInitialStats = async () => {
             const tempRangeData: Map<string, INationalTableData[]> = new Map();
 
-            const ranges = ["allTime", "daily", "monthly", "weekly", "custom"] as const;
+            const ranges = ["allTime", "daily", "monthly", "weekly", "custom"];
 
             ranges.forEach(range => {
                 tempRangeData.set(range, []);
@@ -202,24 +199,31 @@ export default function NationalViewPage() {
                 node,
                 counts: await fetchAllTimeRangesForNode(node),
             }));
+            const results = await Promise.allSettled(initialRequests);
 
-            const {node, counts: allRangeCounts} = result.value;
-            ranges.forEach((range: string) => {
-                const list = tempRangeData.get(range);
-                list.push ({
-                    id: idVal.current++,
-                    site: node.name,
-                    numGammaAlarms: allRangeCounts[range].numGammaAlarms,
-                    numNeutronAlarms: allRangeCounts[range].numNeutronAlarms,
-                    numGammaNeutronAlarms: allRangeCounts[range].numGammaNeutronAlarms,
-                    numOccupancies: allRangeCounts[range].numOccupancies,
-                    numTampers: allRangeCounts[range].numTampers,
-                    numGammaFaults: allRangeCounts[range].numGammaFaults,
-                    numNeutronFaults: allRangeCounts[range].numNeutronFaults,
-                    numFaults: allRangeCounts[range].numFaults,
+            results.forEach((result) => {
+                if (result.status === "rejected") {
+                    console.error("Failed to load initial national statistics", result.reason);
+                    return;
+                }
+
+                const {node, counts: allRangeCounts} = result.value;
+                ranges.forEach((range: string) => {
+                    const list = tempRangeData.get(range);
+                    list.push ({
+                        id: idVal.current++,
+                        site: node.name,
+                        numGammaAlarms: allRangeCounts[range].numGammaAlarms,
+                        numNeutronAlarms: allRangeCounts[range].numNeutronAlarms,
+                        numGammaNeutronAlarms: allRangeCounts[range].numGammaNeutronAlarms,
+                        numOccupancies: allRangeCounts[range].numOccupancies,
+                        numTampers: allRangeCounts[range].numTampers,
+                        numGammaFaults: allRangeCounts[range].numGammaFaults,
+                        numNeutronFaults: allRangeCounts[range].numNeutronFaults,
+                        numFaults: allRangeCounts[range].numFaults,
+                    });
                 });
             });
-
 
             for (const [range, counts] of tempRangeData.entries()) {
                 timeRangeCache.current.set(range, counts);
@@ -245,7 +249,7 @@ export default function NationalViewPage() {
         }
     }, [selectedTimeRange]);
 
-    const fetchAllTimeRangesForNode = async(node: INode): Promise<NationalTimeRanges> => {
+    const fetchAllTimeRangesForNode = async(node: INode): Promise<any> => {
         setSnackMessage(t('fetchingStatistics'))
         setSeverity('success');
         setOpenSnack(true);
@@ -261,7 +265,8 @@ export default function NationalViewPage() {
 
         var result = observation[0].properties.result;
 
-        const parse = (result: Partial<NationalCounts> = {}): NationalCounts => ({
+        console.log('result', result)
+        const parse = (result: any) => ({
             numOccupancies: result.numOccupancies ?? 0,
             numGammaAlarms: result.numGammaAlarms?? 0,
             numNeutronAlarms: result.numNeutronAlarms ?? 0,
