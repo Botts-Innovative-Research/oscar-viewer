@@ -312,30 +312,30 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
 
         <Stack justifyContent={"start"} spacing={1}>
             <Typography variant="h6">{t('laneStatus')}</Typography>
-            <>
-                <Box sx={{overflowY: "auto", maxHeight: 275, flexGrow: 1}}>
-                    {(
-                        <Grid container columns={{sm: 12, md: 24, lg: 36, xl: 48}} spacing={1}>
-                            {statusList.map((item) => (
-                                <Grid key={item.id} item sm={8} md={8} lg={8} xl={6}>
-                                    <div onClick={() => handleLaneView(item.name)}>
-                                        <LaneStatusItem
-                                            key={item.id}
-                                            id={item.id}
-                                            name={item.name}
-                                            parentNode={item.parentNode}
-                                            isOnline={item.isOnline}
-                                            isFault={item.isFault}
-                                            isTamper={item.isTamper}
-                                            onClearTamper={(event) => handleOpenClearTamper(event, item.name)}
-                                        />
-                                    </div>
-                                </Grid>
-                            ))}
-                        </Grid>
-                    )}
-                </Box>
-            </>
+
+            <Box sx={{overflowY: "auto", maxHeight: 275, flexGrow: 1}}>
+                {(
+                    <Grid container columns={{sm: 12, md: 24, lg: 36, xl: 48}} spacing={1}>
+                        {statusList.map((item) => (
+                            <Grid key={item.id} item sm={3} md={4} lg={6} xl={12}>
+                                <div onClick={() => handleLaneView(item.name)}>
+                                    <LaneStatusItem
+                                        key={item.id}
+                                        id={item.id}
+                                        name={item.name}
+                                        parentNode={item.parentNode}
+                                        isOnline={item.isOnline}
+                                        isFault={item.isFault}
+                                        isTamper={item.isTamper}
+                                        onClearTamper={(event) => handleOpenClearTamper(event, item.name)}
+                                    />
+                                </div>
+                            </Grid>
+                        ))}
+                    </Grid>
+                )}
+            </Box>
+
             <Dialog
                 open={tamperLaneToClear !== null}
                 onClose={handleCloseClearTamper}
