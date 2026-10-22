@@ -23,60 +23,85 @@ export default function LaneStatusItem(props: {
 
 }) {
     const {t} = useLanguage();
+    const status = props.isTamper
+        ? "tamper"
+        : props.isFault
+            ? "fault"
+            : props.isOnline
+                ? "online"
+                : "offline";
+    const hasStatusContainer = status === "tamper" || status === "fault";
 
     return (
         <Paper key={props.id} variant='outlined'
-               sx={{ cursor: 'pointer',
-                   padding: 1,
-                   height: 25,
-                   display: 'flex',
-                   alignItems: 'center',
-                   backgroundColor: (props.isTamper ? "secondaryHighlight" : props.isFault ? "info" : "inherit")
+               sx={(theme) => {
+                   const statusColor = theme.palette.status[status];
+
+                   return {
+                       cursor: 'pointer',
+                       display: 'flex',
+                       alignItems: 'center',
+                       height: 25,
+                       p: 1,
+                       borderColor: hasStatusContainer ? statusColor.main : theme.palette.border.subtle,
+                       backgroundColor: hasStatusContainer ? statusColor.container : theme.palette.background.paper,
+                       color: hasStatusContainer ? statusColor.onContainer : theme.palette.text.primary,
+                   };
                }}
         >
             <Tooltip title={`${props.parentNode}- ${props.name}`} arrow placement="bottom">
-                <Stack direction={"row"} spacing={1} sx={{ alignItems: 'center', justifyContent: 'flex-start', width: '100%'}}>
-
-                    <Typography variant="body1" style={{fontSize: 12, textWrap: 'nowrap',  }}>{props.name.length <= 15 ? props.name : (props.name.substr(0, 15)) }</Typography>
+                <Stack
+                    direction={"row"}
+                    spacing={1}
+                    sx={{
+                        alignItems: 'center',
+                        justifyContent: 'flex-start',
+                        width: '100%'
+                    }}
+                >
+                    <Typography variant="body2" noWrap sx={{minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis'}}>
+                        {props.name.length <= 15 ? props.name : (props.name.substr(0, 15))}
+                    </Typography>
 
                     {props.isFault &&
                         <Tooltip title={t('fault')} arrow placement="top">
-                            <FaultIcon fontSize="small" color="info" />
+                            <FaultIcon fontSize="small" sx={(theme) => ({color: theme.palette.status.fault.main})} />
                         </Tooltip>
                     }
 
                     {props.isTamper &&
                         <>
                             <Tooltip title={t('tamper')} arrow placement="top">
-                                <TamperIcon fontSize="small" sx={{color: "#FFFFFF" }}/>
+                                <TamperIcon fontSize="small" sx={(theme) => ({color: theme.palette.status.tamper.main})}/>
                             </Tooltip>
                             <Tooltip title={t('clearTamper')} arrow placement="top">
                                 <IconButton
                                     aria-label={t('clearTamperForLane', {lane: props.name})}
                                     size="small"
                                     onClick={props.onClearTamper}
-                                    sx={{color: "#FFFFFF", marginLeft: 'auto !important', padding: 0.25}}
+                                    sx={(theme) => ({
+                                        color: theme.palette.status.tamper.main,
+                                        ml: 'auto',
+                                        width: 32,
+                                        height: 32,
+                                    })}
                                 >
                                     <ClearIcon fontSize="small"/>
                                 </IconButton>
                             </Tooltip>
                         </>
                     }
-                    {/*{!props.isTamper && !props.isFault && props.isOnline && (*/}
                     {props.isOnline ? (
                         <Tooltip title={t('online')} arrow placement="top">
-                            <CheckCircleIcon fontSize="small" color="success"/>
+                            <CheckCircleIcon fontSize="small" sx={(theme) => ({color: theme.palette.status.online.main})}/>
                         </Tooltip>
                     ) : (
                         <Tooltip title={t('offline')} arrow placement="top">
-                            <OfflineIcon fontSize="small" color="error"/>
+                            <OfflineIcon fontSize="small" sx={(theme) => ({color: theme.palette.status.offline.main})}/>
                         </Tooltip>
                     )}
-
                 </Stack>
             </Tooltip>
-
         </Paper>
-
     );
 }
