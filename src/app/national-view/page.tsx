@@ -15,6 +15,7 @@ import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStr
 import {isNationalControlStream} from "@/lib/data/oscar/Utilities";
 import {generateNationalCommandJSON, sendCommand} from "@/lib/data/oscar/OSCARCommands";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
+import {INode} from "@/lib/data/osh/Node";
 import { useBreakpoint } from "../providers";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 
@@ -58,18 +59,20 @@ export default function NationalViewPage() {
             setSnackMessage(t('selectCustomDates'));
             setSeverity("error");
             setOpenSnack(true)
+            return;
         }
 
         try {
             setIsRefreshing(true);
 
             for (const node of nodes) {
-                let streams: typeof ControlStream[];
+                try {
+                let streams: typeof ControlStream[] = [];
                 if (node.oscarServiceSystem != null) {
                     const query = await node.oscarServiceSystem.searchControlStreams(new ControlStreamFilter({ validTime: "latest" }), 100);
 
                     const results = await query.nextPage();
-                    if (results || results.length > 0) {
+                    if (Array.isArray(results) && results.length > 0) {
                         streams = results;
                     }
                 } else {
@@ -81,6 +84,7 @@ export default function NationalViewPage() {
                     setSnackMessage(t('noControlStream'));
                     setSeverity("error");
                     setOpenSnack(true)
+                    continue;
                 }
 
                 let response = await sendCommand(node, controlStream.properties.id, generateNationalCommandJSON(customStartTime, customEndTime));
@@ -88,6 +92,7 @@ export default function NationalViewPage() {
                 if (!response.ok) {
                     setSnackMessage(t('statisticsRefreshFailed'));
                     setSeverity("error");
+                    continue;
                 }
 
                 let respJson = await response.json();
@@ -136,6 +141,12 @@ export default function NationalViewPage() {
 
                 setSnackMessage(t('refreshingStats'));
                 setSeverity("success");
+                } catch (error) {
+                    console.error(`Failed to refresh national statistics for ${node.name}`, error);
+                    setSnackMessage(t('statisticsRefreshFailed'));
+                    setSeverity("error");
+                    setOpenSnack(true);
+                }
             }
 
             for (const [range, counts] of tempRangeData.entries()) {
@@ -184,9 +195,19 @@ export default function NationalViewPage() {
                 tempRangeData.set(range, []);
             });
 
-            for (const node of nodes) {
-                const allRangeCounts = await fetchAllTimeRangesForNode(node);
+            const initialRequests: Promise<{node: INode; counts: any}>[] = nodes.map(async (node: INode) => ({
+                node,
+                counts: await fetchAllTimeRangesForNode(node),
+            }));
+            const results = await Promise.allSettled(initialRequests);
 
+            results.forEach((result) => {
+                if (result.status === "rejected") {
+                    console.error("Failed to load initial national statistics", result.reason);
+                    return;
+                }
+
+                const {node, counts: allRangeCounts} = result.value;
                 ranges.forEach((range: string) => {
                     const list = tempRangeData.get(range);
                     list.push ({
@@ -201,8 +222,8 @@ export default function NationalViewPage() {
                         numNeutronFaults: allRangeCounts[range].numNeutronFaults,
                         numFaults: allRangeCounts[range].numFaults,
                     });
-                })
-            }
+                });
+            });
 
             for (const [range, counts] of tempRangeData.entries()) {
                 timeRangeCache.current.set(range, counts);
@@ -212,7 +233,12 @@ export default function NationalViewPage() {
 
         }
 
-        loadInitialStats();
+        void loadInitialStats().catch((error) => {
+            console.error("Failed to load initial national statistics", error);
+            setSnackMessage(t('statisticsRefreshFailed'));
+            setSeverity('error');
+            setOpenSnack(true);
+        });
     }, [nodes]);
 
 
@@ -223,7 +249,7 @@ export default function NationalViewPage() {
         }
     }, [selectedTimeRange]);
 
-    const fetchAllTimeRangesForNode = async(node: any): Promise<any> => {
+    const fetchAllTimeRangesForNode = async(node: INode): Promise<any> => {
         setSnackMessage(t('fetchingStatistics'))
         setSeverity('success');
         setOpenSnack(true);
@@ -315,18 +341,9 @@ export default function NationalViewPage() {
                     onClose={handleCloseSnack}
                     anchorOrigin={{vertical: 'top', horizontal: 'center'}}
                 >
-                    <Snackbar
-                        anchorOrigin={{ vertical:'top', horizontal:'center' }}
-                        open={openSnack}
-                        autoHideDuration={1500}
-                        onClose={handleCloseSnack}
-                        message={snackMessage}
-                        sx={{
-                            '& .MuiSnackbarContent-root': {
-                                backgroundColor: severity === 'success' ? 'green' : 'red',
-                            },
-                        }}
-                    />
+                    <Alert onClose={handleCloseSnack} severity={severity} variant="filled">
+                        {snackMessage}
+                    </Alert>
                 </Snackbar>
             </Grid>
 
