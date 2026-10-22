@@ -235,97 +235,6 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
     }, [paginationModel.page, paginationModel.pageSize, nodes, totalPages]);
 
 
-    // useEffect(() => {
-    //     const connectedSources: typeof ConSysApi[] = [];
-    //
-    //     const handleMessage = (msg: any) => {
-    //         try {
-    //             const obsData = msg.values?.[0]?.data || msg;
-    //             const event = eventFromObservation(obsData, true);
-    //
-    //             if (currentPage === 0) {
-    //                 setData(prev => {
-    //                     return [event, ...prev].slice(0, pageSize);
-    //                 });
-    //                 setRowCount(prev => prev + 1);
-    //             }
-    //         } catch (err) {
-    //             console.error("Error creating event from observation:", err);
-    //         }
-    //     };
-    //
-    //     const alarmStream: typeof DataStream = entry.findDataStreamByObsProperty(ALARM_DEF);
-    //
-    //     if (!alarmStream) {
-    //         console.info("No alarm datastream");
-    //     }
-    //
-    //
-    //     const alarmSource = entry.datasourcesRealtime?.find((ds: any) => {
-    //         const parts = ds.properties.resource?.split("/");
-    //         return parts && parts[2] === alarmStream.properties.id;
-    //     });
-    //
-    //     if (!alarmSource) {
-    //         console.info("No alarm datasource");
-    //     }
-    //
-    //     alarmSource.subscribe(handleMessage, [EventType.DATA]);
-    //     try {
-    //         alarmSource.connect()
-    //         connectedSources.push(alarmSource);
-    //     } catch (err) {
-    //         console.error("Error connecting alarm source:", err);
-    //     }
-    // }, [entry]);
-    //
-    // useEffect(() => {
-    //
-    //     const connectedSources: typeof ConSysApi[] = [];
-    //
-    //     const handleMessage = (msg: any) => {
-    //         try {
-    //             const obsData = msg.values?.[0]?.data || msg;
-    //             const event = eventFromObservation(obsData, true);
-    //
-    //             if (currentPage === 0) {
-    //                 setData(prev => {
-    //                     return [event, ...prev].slice(0, pageSize);
-    //                 });
-    //                 setRowCount(prev => prev + 1);
-    //             }
-    //         } catch (err) {
-    //             console.error("Error creating event from observation:", err);
-    //         }
-    //     };
-    //
-    //
-    //     const tamperStream: typeof DataStream = entry.findDataStreamByObsProperty(TAMPER_STATUS_DEF);
-    //
-    //     if (!tamperStream) {
-    //         console.info("no tamper datastream");
-    //     }
-    //     const tamperSource = entry.datasourcesRealtime?.find((ds: any) => {
-    //         const parts = ds.properties.resource?.split("/");
-    //         return parts && parts[2] === tamperStream.properties.id;
-    //     });
-    //
-    //     if (!tamperSource) {
-    //         console.info("no tamper datasource");
-    //     }
-    //
-    //     tamperSource.subscribe(handleMessage, [EventType.DATA]);
-    //
-    //     try {
-    //         tamperSource.connect();
-    //         connectedSources.push(tamperSource);
-    //     } catch (err) {
-    //         console.error("Error connecting tamper source:", err);
-    //     }
-    //
-    // }, [entry]);
-
-
     useEffect(() => {
         if (!entry) {
             console.warn("No entry provided for realtime data");
@@ -396,6 +305,12 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
                 }
             }
         }
+
+        return () => {
+           connectedSources.forEach(source => {
+               source.disconnect();
+           })
+        };
 
     }, [entry, currentPage, pageSize]);
     return(

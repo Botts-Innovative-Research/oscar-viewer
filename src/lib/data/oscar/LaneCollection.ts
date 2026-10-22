@@ -106,11 +106,11 @@ export class LaneMapEntry {
         this.laneSystem = system;
     }
 
-    addSystem(system: any) {
+    addSystem(system: typeof System) {
         this.systems.push(system);
     }
 
-    addSystems(systems: any[]) {
+    addSystems(systems: typeof System[]) {
         this.systems.push(...systems);
     }
 
@@ -158,8 +158,8 @@ export class LaneMapEntry {
     addDefaultConSysApis() {
         this.resetDatasources();
 
-        let rtArray: any[] = [];
-        let batchArray: any[] = [];
+        let rtArray: typeof ConSysApi[] = [];
+        let batchArray: typeof ConSysApi[] = [];
 
 
         for (const dsObj of this.datastreams) {

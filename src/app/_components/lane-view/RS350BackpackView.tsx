@@ -30,11 +30,9 @@ export default function RS350BackpackView({ entry, currentLane, laneMap }: RS350
 
 
     const collectDataSources = useCallback(async() => {
-
         let laneDsCollection = new LaneDSColl();
 
         const lane = laneMapRef.current.get(currentLane);
-
         if (!lane) {
             console.warn("Lane not found for currentLane:", currentLane);
             return;
@@ -42,7 +40,6 @@ export default function RS350BackpackView({ entry, currentLane, laneMap }: RS350
 
         for (let i = 0; i < lane.datastreams.length; i++) {
             const ds = lane.datastreams[i]
-
             const rtDS = lane.datasourcesRealtime[i];
 
             if (isForegroundDataStream(ds)) {
@@ -50,7 +47,6 @@ export default function RS350BackpackView({ entry, currentLane, laneMap }: RS350
                 laneDsCollection.addDS('foregroundRT', rtDS);
                 setForegroundDatasources(rtDS)
             }
-
             if (isBackgroundDataStream(ds)) {
                 rtDS.properties.mqttOpts.shared = true
                 laneDsCollection.addDS('backgroundRT', rtDS);
@@ -64,16 +60,23 @@ export default function RS350BackpackView({ entry, currentLane, laneMap }: RS350
         if (!foregroundDatasources)
             return;
         foregroundDatasources.connect();
+
+        return () => {
+            foregroundDatasources.disconnect();
+        };
     }, [foregroundDatasources, currentLane]);
 
     useEffect(() => {
         if (!backgroundDatasources)
             return;
         backgroundDatasources.connect();
+
+        return () => {
+            backgroundDatasources.disconnect();
+        };
     }, [backgroundDatasources, currentLane]);
 
     useEffect(() => {
-
         if(laneMapRef.current) {
             collectDataSources()
         }
