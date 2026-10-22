@@ -38,6 +38,27 @@ export interface IWebIdIsotope {
     countRate: number,
 }
 
+interface WebIdIsotopePayload {
+    name?: string;
+    type?: string;
+    confidence?: number;
+    confidenceString?: string;
+    countRate?: number;
+}
+
+interface WebIdObservation {
+    occupancyObsId?: string;
+    analysisWarnings?: string[];
+    chiSquare?: number;
+    detectorResponseFunction?: string;
+    errorMessage?: string;
+    estimatedDose?: number;
+    isotopeString?: string;
+    isotopes?: WebIdIsotopePayload[];
+    numAnalysisWarnings?: number;
+    numIsotopes?: number;
+}
+
 export default class WebIdAnalysisResult implements IWebIdAnalysis {
     time: string;
     id: string;
@@ -53,7 +74,7 @@ export default class WebIdAnalysisResult implements IWebIdAnalysis {
     numIsotopes: number;
     constructor(
         time: string,
-        observation: any
+        observation: WebIdObservation
         // occupancyObsId: string,
         // analysisWarnings: string[],
         // chiSquare: number,
@@ -77,7 +98,7 @@ export default class WebIdAnalysisResult implements IWebIdAnalysis {
         this.numIsotopes = observation?.numIsotopes;
         this.numAnalysisWarnings = observation?.numAnalysisWarnings;
 
-        this.isotopes = observation?.isotopes?.map((iso: any) => ({
+        this.isotopes = observation?.isotopes?.map((iso) => ({
             name: iso?.name,
             type: iso?.type,
             confidence: iso?.confidence,

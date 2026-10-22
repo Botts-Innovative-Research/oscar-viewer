@@ -15,9 +15,12 @@ import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStr
 import {isNationalControlStream} from "@/lib/data/oscar/Utilities";
 import {generateNationalCommandJSON, sendCommand} from "@/lib/data/oscar/OSCARCommands";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
-import {INode} from "@/lib/data/osh/Node";
 import { useBreakpoint } from "../providers";
 import {useLanguage} from "@/app/contexts/LanguageContext";
+import {INode} from "@/lib/data/osh/Node";
+
+type NationalCounts = Omit<INationalTableData, "id" | "site">;
+type NationalTimeRanges = Record<"allTime" | "daily" | "monthly" | "weekly" | "custom", NationalCounts>;
 
 
 export default function NationalViewPage() {
@@ -189,7 +192,7 @@ export default function NationalViewPage() {
         const loadInitialStats = async () => {
             const tempRangeData: Map<string, INationalTableData[]> = new Map();
 
-            const ranges = ["allTime", "daily", "monthly", "weekly", "custom"];
+            const ranges = ["allTime", "daily", "monthly", "weekly", "custom"] as const;
 
             ranges.forEach(range => {
                 tempRangeData.set(range, []);
@@ -199,31 +202,24 @@ export default function NationalViewPage() {
                 node,
                 counts: await fetchAllTimeRangesForNode(node),
             }));
-            const results = await Promise.allSettled(initialRequests);
 
-            results.forEach((result) => {
-                if (result.status === "rejected") {
-                    console.error("Failed to load initial national statistics", result.reason);
-                    return;
-                }
-
-                const {node, counts: allRangeCounts} = result.value;
-                ranges.forEach((range: string) => {
-                    const list = tempRangeData.get(range);
-                    list.push ({
-                        id: idVal.current++,
-                        site: node.name,
-                        numGammaAlarms: allRangeCounts[range].numGammaAlarms,
-                        numNeutronAlarms: allRangeCounts[range].numNeutronAlarms,
-                        numGammaNeutronAlarms: allRangeCounts[range].numGammaNeutronAlarms,
-                        numOccupancies: allRangeCounts[range].numOccupancies,
-                        numTampers: allRangeCounts[range].numTampers,
-                        numGammaFaults: allRangeCounts[range].numGammaFaults,
-                        numNeutronFaults: allRangeCounts[range].numNeutronFaults,
-                        numFaults: allRangeCounts[range].numFaults,
-                    });
+            const {node, counts: allRangeCounts} = result.value;
+            ranges.forEach((range: string) => {
+                const list = tempRangeData.get(range);
+                list.push ({
+                    id: idVal.current++,
+                    site: node.name,
+                    numGammaAlarms: allRangeCounts[range].numGammaAlarms,
+                    numNeutronAlarms: allRangeCounts[range].numNeutronAlarms,
+                    numGammaNeutronAlarms: allRangeCounts[range].numGammaNeutronAlarms,
+                    numOccupancies: allRangeCounts[range].numOccupancies,
+                    numTampers: allRangeCounts[range].numTampers,
+                    numGammaFaults: allRangeCounts[range].numGammaFaults,
+                    numNeutronFaults: allRangeCounts[range].numNeutronFaults,
+                    numFaults: allRangeCounts[range].numFaults,
                 });
             });
+
 
             for (const [range, counts] of tempRangeData.entries()) {
                 timeRangeCache.current.set(range, counts);
@@ -249,7 +245,7 @@ export default function NationalViewPage() {
         }
     }, [selectedTimeRange]);
 
-    const fetchAllTimeRangesForNode = async(node: INode): Promise<any> => {
+    const fetchAllTimeRangesForNode = async(node: INode): Promise<NationalTimeRanges> => {
         setSnackMessage(t('fetchingStatistics'))
         setSeverity('success');
         setOpenSnack(true);
@@ -265,7 +261,7 @@ export default function NationalViewPage() {
 
         var result = observation[0].properties.result;
 
-        const parse = (result: any) => ({
+        const parse = (result: Partial<NationalCounts> = {}): NationalCounts => ({
             numOccupancies: result.numOccupancies ?? 0,
             numGammaAlarms: result.numGammaAlarms?? 0,
             numNeutronAlarms: result.numNeutronAlarms ?? 0,

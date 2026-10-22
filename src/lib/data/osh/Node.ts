@@ -53,7 +53,7 @@ export interface INode {
     lowerLeftBound: LatLngExpression;
     upperRightBound: LatLngExpression;
 
-    getConnectedSystemsEndpoint(noProtocolPrefix: boolean): string,
+    getConnectedSystemsEndpoint(noProtocolPrefix?: boolean): string,
 
     getBasicAuthHeader(): any,
 
