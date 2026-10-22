@@ -5,7 +5,7 @@ import '@mui/material/Paper';
 // When using TypeScript 4.x and above
 import type {} from "@mui/x-data-grid/themeAugmentation";
 
-type StatusName = "alarm" | "fault" | "tamper" | "online" | "offline";
+type StatusName = "alarm" | "fault" | "tamper" | "online" | "offline" | "scan" | "background";
 
 type StatusToken = {
     main: string;
@@ -104,16 +104,16 @@ export const getTheme = (mode: PaletteMode) => {
             },
             status: {
                 alarm: {
-                    main: "#B42318",
+                    main: "#d32f2f",
                     contrastText: "#FFFFFF",
-                    container: isDark ? "#5B1B19" : "#FDECEA",
+                    container: isDark ? "#c62828" : "#ef5350",
                     onContainer: isDark ? "#FFB4AB" : "#7A1B15",
                 },
                 fault: {
-                    main: "#B54708",
+                    main: "#0288d1",
                     contrastText: "#FFFFFF",
-                    container: isDark ? "#5D300E" : "#FFF1E8",
-                    onContainer: isDark ? "#FFD0AD" : "#7A2E00",
+                    container: isDark ? "#01579b" : "#03a9f4",
+                    onContainer: isDark ? "#98e2ff" : "#1d4fa5",
                 },
                 tamper: {
                     main: "#7A2E8E",
@@ -122,9 +122,9 @@ export const getTheme = (mode: PaletteMode) => {
                     onContainer: isDark ? "#F3C4FC" : "#592067",
                 },
                 online: {
-                    main: "#16794A",
+                    main: "#2e7d32",
                     contrastText: "#FFFFFF",
-                    container: isDark ? "#163D2B" : "#E7F6EC",
+                    container: isDark ? "#1b5e20" : "#4caf50",
                     onContainer: isDark ? "#9BE8BA" : "#0B5732",
                 },
                 offline: {
@@ -133,6 +133,18 @@ export const getTheme = (mode: PaletteMode) => {
                     container: isDark ? "#343B45" : "#EEF1F4",
                     onContainer: isDark ? "#D0D5DD" : "#344054",
                 },
+                scan: {
+                    main: "#667085",
+                    contrastText: "#FFFFFF",
+                    container: isDark ? "#343B45" : "#EEF1F4",
+                    onContainer: isDark ? "#D0D5DD" : "#344054",
+                },
+                background: {
+                    main: "#667085",
+                    contrastText: "#FFFFFF",
+                    container: isDark ? "#343B45" : "#EEF1F4",
+                    onContainer: isDark ? "#D0D5DD" : "#344054",
+                }
             },
         },
         tokens: {
@@ -144,9 +156,21 @@ export const getTheme = (mode: PaletteMode) => {
         },
         typography: {
             fontFamily: "Roboto, Arial, sans-serif",
-            h4: {fontWeight: 400, letterSpacing: "-0.02em"},
-            h6: {fontWeight: 400},
-            button: {fontWeight: 400, textTransform: "none"},
+            h1: {
+                fontWeight: 700,
+                fontSize: '2.5rem',
+                letterSpacing: '-0.015em'
+            },
+            h4: {
+                fontWeight: 400,
+                letterSpacing: "-0.02em"
+            },
+            h6: {
+                fontWeight: 400
+            },
+            button: {
+                textTransform: "none"
+            },
         },
         components: {
             MuiPaper: {
