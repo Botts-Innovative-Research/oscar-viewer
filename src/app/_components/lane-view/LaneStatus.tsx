@@ -47,12 +47,6 @@ export default function LaneStatus(props: LaneStatusProps) {
         props.dataSourcesByLane.addConnectToALLDSMatchingName("gammaRT");
         props.dataSourcesByLane.addConnectToALLDSMatchingName("neutronRT");
         props.dataSourcesByLane.addConnectToALLDSMatchingName("tamperRT");
-
-        return () => {
-            props.dataSourcesByLane.addDisconnectToALLDSMatchingName("gammaRT");
-            props.dataSourcesByLane.addDisconnectToALLDSMatchingName("neutronRT");
-            props.dataSourcesByLane.addDisconnectToALLDSMatchingName("tamperRT");
-        }
     }, [props.dataSourcesByLane]);
 
 
@@ -92,6 +86,12 @@ export default function LaneStatus(props: LaneStatusProps) {
             fetchLatestStatus();
 
         addSubscriptionCallbacks();
+
+        return () => {
+            props.dataSourcesByLane.addDisconnectToALLDSMatchingName("gammaRT");
+            props.dataSourcesByLane.addDisconnectToALLDSMatchingName("neutronRT");
+            props.dataSourcesByLane.addDisconnectToALLDSMatchingName("tamperRT");
+        }
     }, [props.dataSourcesByLane]);
 
     function updateStatus(laneName: string, newState: string) {

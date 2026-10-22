@@ -186,7 +186,6 @@ export default function MapComponent() {
                 laneDSColl.addDisconnectToALLDSMatchingName("neutronRT");
                 laneDSColl.addDisconnectToALLDSMatchingName("tamperRT");
                 laneDSColl.addDisconnectToALLDSMatchingName("connectionRT");
-
             }
         }
     }, [dataSourcesByLane]);

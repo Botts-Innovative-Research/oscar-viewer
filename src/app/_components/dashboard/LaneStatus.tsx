@@ -172,6 +172,15 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
 
         const newlySubscribedLanes = addSubscriptionCallbacks();
         void fetchLatestTamperStatuses(newlySubscribedLanes);
+
+        return () => {
+            for (let [laneName, laneDSColl] of props.dataSourcesByLane.entries()) {
+                laneDSColl.addDisconnectToALLDSMatchingName('connectionRT');
+                laneDSColl.addDisconnectToALLDSMatchingName('tamperRT');
+                laneDSColl.addDisconnectToALLDSMatchingName('neutronRT');
+                laneDSColl.addDisconnectToALLDSMatchingName('gammaRT');
+            }
+        };
     }, [addSubscriptionCallbacks]);
 
 
