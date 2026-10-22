@@ -280,6 +280,13 @@ export default function AdjudicationLog(props: {
         }  catch (err) {
             console.error("Error connecting webid source:", err);
         }
+
+        return () => {
+            if (controlSource.isConnected()) {
+                controlSource.disconnect();
+                controlSource = null;
+            }
+        };
     }, [props.event]);
 
     useEffect(() => {

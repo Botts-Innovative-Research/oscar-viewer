@@ -179,6 +179,11 @@ export default function N42Detail(props: { event: EventTableData }) {
             console.error("Error connecting n42 source:", err);
         }
 
+        return () => {
+            if (n42Source.isConnected())
+                n42Source.disconnect();
+        };
+
     }, [targetOccupancyObsId, currentLaneId, laneMapRef]);
 
     const fileEntries = Array.from(fileDataMap.values());

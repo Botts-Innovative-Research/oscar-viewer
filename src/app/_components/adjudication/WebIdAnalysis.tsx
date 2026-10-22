@@ -13,6 +13,7 @@ import {WEB_ID_DEF} from "@/lib/data/Constants";
 import {EventType} from "osh-js/source/core/event/EventType";
 import {useLanguage} from '@/app/contexts/LanguageContext';
 import {getDataGridLocaleText, getIntlLocale} from '@/app/utils/LocaleUtils';
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 
 
 export default function WebIdAnalysis(props: { event: EventTableData; onWebIdResults?: (results: WebIdAnalysisResult[]) => void; }) {
@@ -211,7 +212,7 @@ export default function WebIdAnalysis(props: { event: EventTableData; onWebIdRes
             return;
         }
 
-        const webIdSource = currLaneEntry.datasourcesRealtime?.find((ds: any) => {
+        const webIdSource: typeof ConSysApi = currLaneEntry.datasourcesRealtime?.find((ds: any) => {
             const parts = ds.properties.resource?.split("/");
             return parts && parts[2] === webIdStream.properties.id;
         });
@@ -241,6 +242,12 @@ export default function WebIdAnalysis(props: { event: EventTableData; onWebIdRes
         } catch (err) {
             console.error("Error connecting webid source:", err);
         }
+
+        return () => {
+            if (webIdSource.isConnected()) {
+                webIdSource.disconnect();
+            }
+        };
     }, [props.event]);
 
 

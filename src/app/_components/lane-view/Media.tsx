@@ -21,6 +21,10 @@ export default function Media({datasources, currentLane}: {datasources: any, cur
         // Each feed is independent. Start them together so a slow or failed
         // RPM cannot delay the other live charts.
         void Promise.allSettled(sources.map((source) => source.connect()));
+
+        return () => {
+            sources.map((source) => source.disconnect());
+        };
     }, [currentLane, gammaDataSource, neutronDataSource, thresholdDataSource]);
 
     return (
