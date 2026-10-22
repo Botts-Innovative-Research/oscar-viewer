@@ -26,13 +26,13 @@ import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
 import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
 import SettingsIcon from '@mui/icons-material/Settings';
 import MediationIcon from '@mui/icons-material/Mediation';
-import {Button, FormControlLabel, Menu, MenuItem, Slider, Stack, Switch, Tooltip} from '@mui/material';
+import {Button, FormControlLabel, Menu, MenuItem, Slider, Stack, Switch, ToggleButton, ToggleButtonGroup, Tooltip} from '@mui/material';
 import Link from 'next/link';
 import {Download, InsertChart, VolumeDown, VolumeUp} from "@mui/icons-material";
 import AlarmAudio from "@/app/_components/AlarmAudio";
 import {selectAlarmAudioVolume, setAlarmAudioVolume} from "@/lib/state/OSCARClientSlice";
 import {useDispatch, useSelector} from "react-redux";
-import { useBreakpoint } from '../providers';
+import {useBreakpoint, useThemePreference, ThemePreference} from '../providers';
 import LanguageSelector from './LanguageSelector';
 import { useLanguage } from '@/app/contexts/LanguageContext';
 import { useRouter } from 'next/navigation';
@@ -126,6 +126,7 @@ const Drawer = styled(MuiDrawer, {shouldForwardProp: (prop) => prop !== 'open'})
 
 export default function Navbar({children}: { children: React.ReactNode }) {
     const { isDesktop } = useBreakpoint();
+    const {themePreference, setThemePreference} = useThemePreference();
 
     const [settingsAnchorEl, setSettingsAnchorEl] = useState<null | HTMLElement>(null); // Anchor element for settings menu
     const settingsMenuOpen = Boolean(settingsAnchorEl); // Open state for settings menu
@@ -428,6 +429,27 @@ export default function Navbar({children}: { children: React.ReactNode }) {
                 <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
                     <Typography variant="h6">{ t('settings') }</Typography>
                 </Box>
+                <Box sx={{ p: 2 }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                        {t('theme')}
+                    </Typography>
+                    <ToggleButtonGroup
+                        aria-label={t('theme')}
+                        color="primary"
+                        exclusive
+                        fullWidth
+                        size="small"
+                        value={themePreference}
+                        onChange={(_, preference: ThemePreference | null) => {
+                            if (preference) setThemePreference(preference);
+                        }}
+                    >
+                        <ToggleButton value="system">{t('system')}</ToggleButton>
+                        <ToggleButton value="light">{t('light')}</ToggleButton>
+                        <ToggleButton value="dark">{t('dark')}</ToggleButton>
+                    </ToggleButtonGroup>
+                </Box>
+                <Divider />
                 <Box sx={{ p: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>
                         { t('notificationPreferences') }
