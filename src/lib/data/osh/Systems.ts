@@ -42,7 +42,7 @@ export class System implements ISystem {
 
         if (response.ok) {
             const data = await response.json();
-            return data.items;
+            return Array.isArray(data.items) ? data.items : [];
         } else {
             throw new Error(`Failed to fetch systems from node @: ${this.parentNode.getConnectedSystemsEndpoint()}`);
         }
