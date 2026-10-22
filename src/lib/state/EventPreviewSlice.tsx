@@ -8,7 +8,7 @@ export interface IEventPreviewState {
         eventData: EventTableData | null;
     };
     shouldForceAlarmTableDeselect: boolean;
-    selectedRowId: any | null;
+    selectedRowId: number | null;
     latestGB: number;
 }
 
@@ -53,7 +53,7 @@ export const Slice = createSlice({
         toggleShouldForceAlarmTableDeselect: (state) => {
             state.shouldForceAlarmTableDeselect = !state.shouldForceAlarmTableDeselect;
         },
-        setSelectedRowId: (state, action: PayloadAction<any | null>) =>{
+        setSelectedRowId: (state, action: PayloadAction<number | null>) =>{
             state.selectedRowId = action.payload;
         },
         setLatestGB: (state, action: PayloadAction<number>) =>{

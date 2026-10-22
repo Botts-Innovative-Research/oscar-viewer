@@ -18,14 +18,15 @@ import {
     createThresholdViewCurve, createThreshSigmaViewCurve
 } from "@/app/utils/ChartUtils";
 import {useLanguage} from '@/app/contexts/LanguageContext';
+import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
 
 
 type CurveLayers = {
-    neutron: any;
-    gamma: any;
-    threshold: any;
-    threshNsigma: any;
-    nsigma: any;
+    neutron: typeof CurveLayer;
+    gamma: typeof CurveLayer;
+    threshold: typeof CurveLayer;
+    threshNsigma: typeof CurveLayer;
+    nsigma: typeof CurveLayer;
 };
 
 type ChartTypes ={

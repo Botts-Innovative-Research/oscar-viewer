@@ -6,6 +6,20 @@
 import {IAlarmTableData, IEventTableData, INationalTableData} from "../../../../types/new-types";
 import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
 
+export interface OccupancyResult {
+    occupancyCount: string;
+    startTime: string;
+    endTime: string;
+    maxGamma?: number;
+    maxNeutron?: number;
+    neutronBackground?: number;
+    alarmCategoryCode?: string;
+    gammaAlarm?: boolean;
+    neutronAlarm?: boolean;
+    videoPaths?: string[];
+    adjudicatedIds?: string[];
+}
+
 
 export class EventTableData implements IEventTableData {
     id: number;
@@ -30,7 +44,7 @@ export class EventTableData implements IEventTableData {
     parentNode: string;
     isRS350: boolean;
 
-    constructor(id: number, laneId: string, msgValue: any, occupancyObsId: string, foiId: string, parentNode: string, isRS350: boolean, adjudicatedData: AdjudicationData | null = null) {
+    constructor(id: number, laneId: string, msgValue: OccupancyResult, occupancyObsId: string, foiId: string, parentNode: string, isRS350: boolean, adjudicatedData: AdjudicationData | null = null) {
         this.id = id
         this.laneId = laneId
         this.occupancyCount = msgValue.occupancyCount;
@@ -39,7 +53,10 @@ export class EventTableData implements IEventTableData {
         this.maxGamma = msgValue.maxGamma > -1 ? msgValue.maxGamma : null;
         this.maxNeutron = msgValue.maxNeutron > -1 ? msgValue.maxNeutron : null;
         this.neutronBackground = msgValue.neutronBackground > -1 ? msgValue.neutronBackground : null;
-        this.pillarOccupancy = msgValue.occupancyCount > -1 ? msgValue.occupancyCount : null;
+        const occupancyNumber = Number(msgValue.occupancyCount);
+        this.pillarOccupancy = Number.isFinite(occupancyNumber) && occupancyNumber > -1
+            ? occupancyNumber
+            : null;
         // TODO Later convert all drivers to use a category code string
         const rawAlarmCategory: string | undefined = msgValue.alarmCategoryCode;
         if (rawAlarmCategory && rawAlarmCategory.trim().length > 0) {
@@ -56,8 +73,8 @@ export class EventTableData implements IEventTableData {
         this.adjudicatedData = adjudicatedData ? adjudicatedData : null;
         this.occupancyObsId = occupancyObsId;
         this.foiId = foiId;
-        this.videoPaths = msgValue.videoPaths;
-        this.adjudicatedIds = msgValue.adjudicatedIds;
+        this.videoPaths = msgValue.videoPaths ?? [];
+        this.adjudicatedIds = msgValue.adjudicatedIds ?? [];
         this.secondaryInspection = this.setSecondaryStatus(msgValue.adjudicatedIds); //TODO: reference adjudicatedIds to get secondary status
         this.parentNode = parentNode;
         this.isRS350 = isRS350;
