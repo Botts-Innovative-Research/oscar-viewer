@@ -314,7 +314,16 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
 
     }, [entry, currentPage, pageSize]);
     return(
-        <Box sx={{height: 800, width: '100%'}}>
+        <Box
+            sx={(theme) => ({
+                height: {
+                    xs: theme.tokens.tableHeight.xs,
+                    sm: theme.tokens.tableHeight.sm,
+                     lg: theme.tokens.tableHeight.lg
+                 },
+                width: '100%'
+            })}
+        >
             <DataGrid
                 localeText={getDataGridLocaleText(language)}
                 rows={data}
@@ -341,8 +350,7 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
                         return '';
                 }}
 
-                sx={{
-                    // Assign styling to 'Status' column based on className
+                sx={(theme) => ({
                     [`.${gridClasses.cell}.highlightGamma`]: {
                         backgroundColor: "error.main",
                         color: "error.contrastText",
@@ -356,7 +364,7 @@ export default function StatusTable({currentLane, entry}: StatusTableProps){
                         color: "secondary.contrastText",
                     },
                     border: "none",
-                }}
+                })}
             />
         </Box>
     )

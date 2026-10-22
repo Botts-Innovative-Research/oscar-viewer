@@ -171,10 +171,32 @@ export default function LaneViewPage() {
                                         {toggleButtons}
                                     </ToggleButtonGroup>
                                 </Grid>
-                                <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'occupancy' ? 'block' : 'none' }}>
+                                <Grid
+                                    item
+                                    sx={(theme) => ({
+                                        width: "100%",
+                                        height: {
+                                            xs: theme.tokens.tableHeight.xs,
+                                            sm: theme.tokens.tableHeight.sm,
+                                            lg: theme.tokens.tableHeight.lg
+                                        },
+                                        display: toggleView === 'occupancy' ? 'block' : 'none'
+                                    })}
+                                >
                                     <EventTable tableMode={'lanelog'} laneMap={laneMap} viewLane viewAdjudicated currentLane={currentLane}/>
                                 </Grid>
-                                <Grid item sx={{ width: "100%", height: 800, display: toggleView === 'fault' ? 'block' : 'none' }}>
+                                <Grid
+                                    item
+                                    sx={(theme) => ({
+                                        width: "100%",
+                                        height: {
+                                            xs: theme.tokens.tableHeight.xs,
+                                            sm: theme.tokens.tableHeight.sm,
+                                            lg: theme.tokens.tableHeight.lg
+                                        },
+                                        display: toggleView === 'fault' ? 'block' : 'none'
+                                    })}
+                                >
                                     {entry && (
                                         <StatusTable currentLane={currentLane} entry={entry} />
                                     )}
