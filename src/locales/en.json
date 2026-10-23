@@ -84,6 +84,8 @@
   "gammaNSigma": "Gamma Nσ",
   "gammaChart": "Gamma Chart",
   "neutronChart": "Neutron Chart",
+  "chartModeSum": "Sum",
+  "chartModeIndividual": "Individual detectors",
   "channel": "Channel",
   "counts": "Counts",
   "frameProgress": "{title} — Frame {frame}/{total}",

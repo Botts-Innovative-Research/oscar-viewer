@@ -1,5 +1,6 @@
 import CurveLayer from "osh-js/source/core/ui/layer/CurveLayer";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 
 interface CurveLabels {
     time?: string;
@@ -8,6 +9,9 @@ interface CurveLabels {
     threshold?: string;
     gammaNSigma?: string;
 }
+
+const DETECTOR_COUNT = 4;
+const DETECTOR_COLORS = ['#f44336', '#ff9800', '#4caf50', '#2196f3'];
 
 function asFiniteNumber(value: unknown): number | undefined {
     if (value === null || value === undefined || value === '')
@@ -24,6 +28,38 @@ function sumCountFields(record: any, fieldNames: string[]): number | undefined {
 
     return values.length > 0 ? values.reduce((sum, value) => sum + value, 0) : undefined;
 }
+function createDetectorViewCurves(
+    datasource: { id: string },
+    fieldPrefix: string,
+    label: string,
+    labels: CurveLabels,
+) {
+    if (!datasource) return [];
+
+    return Array.from({length: DETECTOR_COUNT}, (_, index) => {
+        const detector = index + 1;
+        const color = DETECTOR_COLORS[index];
+
+        return new CurveLayer({
+            dataSourceIds: [datasource.id],
+            getValues: (rec: any) => {
+                return {
+                    x: rec.timestamp,
+                    y: rec?.[`${fieldPrefix}${detector}`]
+                }
+            },
+            name: `${label} ${detector}`,
+            xLabel: labels.time ?? 'Time',
+            yLabel: 'CPS',
+            borderWidth: 1.5,
+            backgroundColor: color,
+            lineColor: color,
+            visible: true,
+            hidden: false,
+            maxValues: 500,
+        });
+    });
+}
 
 export function getGammaGrossCount(record: any): number | undefined {
     return asFiniteNumber(record?.gammaGrossCount)
@@ -34,6 +70,14 @@ export function getGammaGrossCount(record: any): number | undefined {
             'gammaGrossCount3',
             'gammaGrossCount4'
         ]);
+}
+export function createGammaDetectorViewCurves(gammaDatasource: { id: string; }, labels: CurveLabels = {}) {
+    return createDetectorViewCurves(
+        gammaDatasource,
+        'gammaCount',
+        labels.gamma ?? 'Gamma',
+        labels,
+    );
 }
 
 export function getNeutronGrossCount(record: any): number | undefined {
@@ -46,8 +90,16 @@ export function getNeutronGrossCount(record: any): number | undefined {
             'neutronGrossCount4'
         ]);
 }
+export function createNeutronDetectorViewCurves(neutronDatasource: { id: string; }, labels: CurveLabels = {}) {
+    return createDetectorViewCurves(
+        neutronDatasource,
+        'neutronCount',
+        labels.neutron ?? 'Neutron',
+        labels,
+    );
+}
 
-export  function createNeutronViewCurve(neutronDatasource: { id: any; }, labels: CurveLabels = {}) {
+export  function createNeutronViewCurve(neutronDatasource: { id: string; }, labels: CurveLabels = {}) {
     if (!neutronDatasource) return null;
 
     let nCurve = new CurveLayer({
@@ -69,7 +121,7 @@ export  function createNeutronViewCurve(neutronDatasource: { id: any; }, labels:
     return nCurve;
 }
 
-export function createThresholdViewCurve(thresholdDatasource: { id: any; }, labels: CurveLabels = {}) {
+export function createThresholdViewCurve(thresholdDatasource: { id: string; }, labels: CurveLabels = {}) {
     if (!thresholdDatasource) return null;
 
     let thresholdCurve = new CurveLayer({
@@ -92,7 +144,7 @@ export function createThresholdViewCurve(thresholdDatasource: { id: any; }, labe
 
     return thresholdCurve;
 }
-export  function createGammaViewCurve(gammaDatasource: { id: any; }, labels: CurveLabels = {}) {
+export  function createGammaViewCurve(gammaDatasource: { id: string; }, labels: CurveLabels = {}) {
     if (!gammaDatasource) return null;
 
     let gCurve = new CurveLayer({
@@ -116,7 +168,7 @@ export  function createGammaViewCurve(gammaDatasource: { id: any; }, labels: Cur
 }
 
 // get latest gamma background from threshold datasource to calc nsigma for chart
-export function createNSigmaCalcViewCurve(gammaDatasource: any, latestGB: number, labels: CurveLabels = {}) {
+export function createNSigmaCalcViewCurve(gammaDatasource:  typeof ConSysApi, latestGB: number, labels: CurveLabels = {}) {
     if (!gammaDatasource) {
         return null;
     }
@@ -149,7 +201,7 @@ export function createNSigmaCalcViewCurve(gammaDatasource: any, latestGB: number
     return nCurve;
 }
 
-export async function getObservations(startTime: any, endTime: any, datastream: any){
+export async function getObservations(startTime: string, endTime: string, datastream: any){
 
     let lastestGammaBackground: number;
 
@@ -166,7 +218,7 @@ export async function getObservations(startTime: any, endTime: any, datastream: 
     return lastestGammaBackground;
 }
 
-export  function createThreshSigmaViewCurve(thresholdDatasource: { id: any; }, labels: CurveLabels = {}) {
+export  function createThreshSigmaViewCurve(thresholdDatasource: { id: string; }, labels: CurveLabels = {}) {
     if (!thresholdDatasource) return null;
 
     let gCurve = new CurveLayer({
