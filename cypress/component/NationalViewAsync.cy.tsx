@@ -202,11 +202,11 @@ describe("National View asynchronous statistics", () => {
         }]]);
         const node = testNode();
         let commandCount = 0;
+        const firstCommandReply = deferred<void>();
         cy.intercept("POST", "**/sensorhub/api/controlstreams/statistics-stream/commands", (request) => {
             commandCount++;
             expect(commandParameters(request.body).laneUID).to.equal("lane-east");
-            request.reply({
-                delay: commandCount === 1 ? 400 : 0,
+            const reply = () => request.reply({
                 statusCode: 200,
                 body: {
                     "command@id": `scoped-${commandCount}`,
@@ -214,12 +214,15 @@ describe("National View asynchronous statistics", () => {
                     results: [{data: counts(commandCount)}],
                 },
             });
+            return commandCount === 1 ? firstCommandReply.promise.then(reply) : reply();
         });
 
         cy.mount(pageView(node, "east-gate", laneMap).view);
-        cy.wait(100).then(() => expect(commandCount).to.equal(1));
+        cy.wrap(null).should(() => expect(commandCount).to.equal(1));
         cy.contains("button", "Refreshing statistics...").should("be.disabled");
         cy.get('[role="combobox"]').should("have.attr", "aria-disabled", "true");
+        cy.then(() => expect(commandCount).to.equal(1));
+        cy.then(() => firstCommandReply.resolve());
         cy.contains("button", "Refresh Statistics", {timeout: 5000}).should("be.enabled");
         cy.then(() => expect(commandCount).to.equal(4));
     });
