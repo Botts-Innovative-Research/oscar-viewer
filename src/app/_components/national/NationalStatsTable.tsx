@@ -1,7 +1,5 @@
 
-import {useEffect, useRef, useState} from "react";
 import {INationalTableData} from "../../../../types/new-types";
-import { NationalTableDataCollection} from "@/lib/data/oscar/TableHelpers";
 import {DataGrid, GridColDef} from "@mui/x-data-grid";
 import {Box} from "@mui/material";
 import CustomToolbar from "@/app/_components/CustomToolbar";
@@ -11,15 +9,6 @@ import {getDataGridLocaleText} from '@/app/utils/LocaleUtils';
 
 export default function StatTable(selectedTimeRangeCounts: {selectedTimeRangeCounts: INationalTableData[]}){
     const {language, t} = useLanguage();
-    const natlTableRef = useRef<NationalTableDataCollection>(new NationalTableDataCollection());
-
-    useEffect(() => {
-        if (selectedTimeRangeCounts) {
-            let tableData = new NationalTableDataCollection();
-            tableData.setData(selectedTimeRangeCounts.selectedTimeRangeCounts);
-            natlTableRef.current = tableData;
-        }
-    }, [selectedTimeRangeCounts]);
 
     const columns: GridColDef<INationalTableData>[] = [
         {
@@ -107,7 +96,7 @@ export default function StatTable(selectedTimeRangeCounts: {selectedTimeRangeCou
         <Box sx={{height: 800, width: '100%', overflowX: 'auto'}}>
             <DataGrid
                 localeText={getDataGridLocaleText(language)}
-                rows={natlTableRef.current.data}
+                rows={selectedTimeRangeCounts.selectedTimeRangeCounts ?? []}
                 columns={columns}
                 initialState={{
                     pagination: {

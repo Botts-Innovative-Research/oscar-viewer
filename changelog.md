@@ -11,6 +11,11 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- National Statistics refresh now follows its durable command status through `PENDING` to terminal
+  completion, keeps the controls busy for the complete operation, and fetches the exact observation
+  ID returned by that command instead of accepting a stale latest row. Terminal failures remain
+  visible, node or operational-view changes cancel stale UI work, and scoped range scans run
+  sequentially to avoid multiplying database load.
 - Events without a retained-media manifest continue to use their legacy MP4 paths after the API returns `404`. Unexpected API or schema failures are visible to the operator and still offer the MP4 when available.
 - During the retained-media rollback grace period, the original hot MP4 remains playable beneath the five-frame evidence gallery. Only each camera's selected JPEG is fetched initially, at most three frame requests run concurrently, loaded frames are reused in memory, and object URLs are revoked on navigation.
 - The reviewed MQTT MessagePort source is pinned directly to the immutable upstream `earocorn/osh-js` pull-request commit and lockfile integrity hash, removing the personal packaging-fork dependency from clean builds.
