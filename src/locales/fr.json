@@ -101,6 +101,8 @@
   "gammaNSigma": "Gamma Nσ",
   "gammaChart": "Graphique gamma",
   "neutronChart": "Graphique des neutrons",
+  "chartModeSum": "Somme",
+  "chartModeIndividual": "Détecteurs individuels",
   "channel": "Canal",
   "counts": "Comptages",
   "frameProgress": "{title} — Image {frame}/{total}",

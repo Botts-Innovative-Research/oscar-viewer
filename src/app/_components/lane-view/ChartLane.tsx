@@ -5,7 +5,9 @@ import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasou
 import React, {useEffect, useRef, useState} from "react";
 import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView";
 import {
+    createGammaDetectorViewCurves,
     createGammaViewCurve,
+    createNeutronDetectorViewCurves,
     createNeutronViewCurve,
     createThresholdViewCurve,
 } from "@/app/utils/ChartUtils";
@@ -18,8 +20,9 @@ export class ChartInterceptProps {
         neutron: typeof ConSysApi,
         threshold: typeof ConSysApi
     };
-    setChartReady: Function;
+    setChartReady: (ready: boolean) => void;
 }
+type ChartMode = 'sum' | 'individual';
 
 export default function ChartLane({laneName, datasources, setChartReady}: ChartInterceptProps){
     const {t} = useLanguage();
@@ -68,139 +71,64 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
     });
 
     useEffect(() => {
-        setChartReady(false);
+        const labels = { time: t('time'), gamma: t('gamma'), threshold: t('threshold') };
+        const gammaLayers = gammaMode === 'sum'
+            ? [createGammaViewCurve(datasources.gamma, labels)]
+            : createGammaDetectorViewCurves(datasources.gamma, labels);
+        const thresholdCurve = createThresholdViewCurve(
+            datasources.threshold,
+            labels,
+        );
 
-        const labels = {time: t('time'), gamma: t('gamma'), neutron: t('neutron'), threshold: t('threshold')};
-        const gammaCurve = createGammaViewCurve(datasources.gamma, labels);
-        const neutronCurve = createNeutronViewCurve(datasources.neutron, labels);
-        const thresholdCurve = createThresholdViewCurve(datasources.threshold, labels);
-
-        if (gammaCurve) {
-            const container = document.getElementById(gammaChartID);
-
-            if (container) {
-                gammaChartViewRef.current = new ChartJsView({
-                    type: 'line',
-                    container: gammaChartID,
-                    layers: thresholdCurve ? [gammaCurve, thresholdCurve] : [gammaCurve],
-                    css: "chart-view",
-                    options:{
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: t('gammaChart'),
-                                font: {
-                                    size: 14,
-                                    weight: 'bold'
-                                },
-                                align: 'center',
-                                position: 'top',
-
-                            },
-                            legend: {
-                                display: true,
-                                align: 'center',
-                                position: 'bottom',
-                            }
-                        },
-                        responsive: true,
-                        scales: {
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: t('time'),
-                                },
-                            },
-                            y:{
-                                title:{
-                                    display: true,
-                                    text: 'CPS',
-
-                                },
-                                display: true,
-                                position: 'left',
-                                align: 'center',
-                                grid: {beginAtZero: false},
-                                ticks: {
-                                },
-
-
-                            },
-                        },
-                    },
-                });
-            }
-        }
-
-        if (neutronCurve) {
-            const containerN = document.getElementById(neutronChartID);
-
-            if (containerN) {
-                neutronChartViewRef.current = new ChartJsView({
-                    container: neutronChartID,
-                    layers: [neutronCurve],
-                    css: "chart-view",
-                    options: {
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: t('neutronChart'),
-                                font: {
-                                    size: 14,
-                                    weight: 'bold'
-                                },
-                                align: 'center',
-                                position: 'top',
-                                padding: {
-                                    top: 10,
-                                    bottom: 10,
-                                }
-                            },
-                            legend: {
-                                display: true,
-                                align: 'right',
-                                position: 'bottom',
-                            }
-                        },
-                        responsive: true,
-                        scales: {
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: t('time'),
-                                },
-                            },
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: 'CPS',
-                                },
-                                display: true,
-                                position: 'left',
-                                align: 'center',
-                                ticks: {
-                                    stepSize: 1
-                                },
-
-                            },
-                        }
-                    },
-                });
-            }
-        }
-
-        if (gammaCurve || neutronCurve) {
-            setChartReady(true);
+        const validGammaLayers = gammaLayers.filter((layer) => layer !== null);
+        if (validGammaLayers.length > 0 && document.getElementById(gammaChartID)) {
+            gammaChartViewRef.current = new ChartJsView({
+                type: 'line',
+                container: gammaChartID,
+                layers: thresholdCurve ? [...validGammaLayers, thresholdCurve] : validGammaLayers,
+                css: "chart-view",
+                options: createOptions(t('gammaChart')),
+            });
         }
 
         return () => {
+            gammaChartViewRef.current?.chart?.destroy();
             gammaChartViewRef.current?.destroy();
-            neutronChartViewRef.current?.destroy();
             gammaChartViewRef.current = null;
-            neutronChartViewRef.current = null;
-            setChartReady(false);
         };
-    }, [laneName, datasources.gamma, datasources.neutron, datasources.threshold, setChartReady, t]);
+    }, [laneName, datasources.gamma, datasources.threshold, gammaMode, t]);
+
+    useEffect(() => {
+        const labels = {time: t('time'), neutron: t('neutron')};
+        const neutronLayers = neutronMode === 'sum'
+            ? [createNeutronViewCurve(datasources.neutron, labels)]
+            : createNeutronDetectorViewCurves(datasources.neutron, labels);
+
+        const validNeutronLayers = neutronLayers.filter((layer) => layer !== null);
+        if (validNeutronLayers.length > 0 && document.getElementById(neutronChartID)) {
+            neutronChartViewRef.current = new ChartJsView({
+                type: 'line',
+                container: neutronChartID,
+                layers: validNeutronLayers,
+                css: "chart-view",
+                options: createOptions( t('neutronChart')),
+            });
+        }
+
+        return () => {
+            neutronChartViewRef.current?.chart?.destroy();
+            neutronChartViewRef.current?.destroy();
+            neutronChartViewRef.current = null;
+        };
+    }, [laneName, datasources.neutron, neutronMode, t]);
+
+    useEffect(() => {
+        const ready = Boolean(datasources.gamma || datasources.neutron);
+        setChartReady(ready);
+
+        return () => setChartReady(false);
+    }, [datasources.gamma, datasources.neutron, setChartReady]);
+
 
     const renderModeToggle = (value: ChartMode, onChange: (mode: ChartMode) => void, label: string) => (
         <ToggleButtonGroup
@@ -212,17 +140,15 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
         >
             <ToggleButton
                 value="sum"
-                color='error'
                 disabled={value === 'sum'}
             >
-                Sum
+                {t('chartModeSum')}
             </ToggleButton>
             <ToggleButton
                 value="individual"
-                color='secondary'
                 disabled={value === 'individual'}
             >
-                Individual detectors
+                {t('chartModeIndividual')}
             </ToggleButton>
         </ToggleButtonGroup>
     );
@@ -235,8 +161,7 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
             <Grid
                 container
                 direction="row"
-                marginTop={2}
-                marginLeft={1}
+                margin={2}
                 spacing={4}
             >
                 <Grid item xs>
@@ -245,11 +170,14 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
                         justifyContent="center"
                         marginBottom={1}
                     >
-                        {renderModeToggle(gammaMode, setGammaMode, t('gamma'))}
+                        { renderModeToggle(gammaMode, setGammaMode, t('gamma')) }
                     </Box>
                     <div
                         id={gammaChartID}
-                        style={{marginBottom: 50, height: '85%'}}
+                        style={{
+                            marginBottom: 25,
+                            height: '360px'
+                    }}
                     />
                 </Grid>
                 <Grid item xs>
@@ -258,13 +186,13 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
                         justifyContent="center"
                         marginBottom={1}
                     >
-                        {renderModeToggle(neutronMode, setNeutronMode, t('neutron'))}
+                        { renderModeToggle(neutronMode, setNeutronMode, t('neutron')) }
                     </Box>
                     <div
                         id={neutronChartID}
                         style={{
-                            marginBottom: 50,
-                            height: '85%'
+                            marginBottom: 25,
+                            height: '360px'
                         }}
                     />
                 </Grid>

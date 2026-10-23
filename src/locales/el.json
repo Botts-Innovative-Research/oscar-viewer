@@ -101,6 +101,8 @@
   "gammaNSigma": "Γάμμα Nσ",
   "gammaChart": "Διάγραμμα γάμμα",
   "neutronChart": "Διάγραμμα νετρονίων",
+  "chartModeSum": "Άθροισμα",
+  "chartModeIndividual": "Μεμονωμένοι ανιχνευτές",
   "channel": "Κανάλι",
   "counts": "Μετρήσεις",
   "frameProgress": "{title} — Καρέ {frame}/{total}",
