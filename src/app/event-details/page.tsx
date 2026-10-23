@@ -15,6 +15,7 @@ import EventMedia from "../_components/event-preview/EventMedia";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 import AdjudicationDetail from "../_components/adjudication/AdjudicationDetail";
 import SuspenseLoad from "@/app/_components/SuspenseLoad";
+import DailyFileTable from "@/app/_components/event-preview/DailyFileTable";
 
 
 export default function EventDetailsPage() {
@@ -163,6 +164,10 @@ export default function EventDetailsPage() {
                             <Paper variant='outlined'>
                                 <MiscTable currentTime={eventData.startTime}/>
                             </Paper>
+                        </Grid>
+
+                        <Grid item xs={12}>
+                            <DailyFileTable event={eventData}/>
                         </Grid>
 
                         {/* ADJUDICATION */}

@@ -11,6 +11,7 @@ import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {RootState} from "@/lib/state/Store";
 import React, {useCallback, useContext, useEffect, useState} from "react";
 import {
+    isDailyFileDataStream,
     isGammaDataStream,
     isNeutronDataStream,
     isTamperDataStream,
@@ -23,6 +24,7 @@ import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasou
 import StatusTable from "../_components/lane-view/StatusTable";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 import RS350BackpackView from "../_components/lane-view/RS350BackpackView";
+import DailyFileMessage from "@/app/_components/lane-view/DailyFileMessage";
 
 
 export default function LaneViewPage() {
@@ -40,7 +42,6 @@ export default function LaneViewPage() {
     const [gammaDS, setGammaDS] =  useState<typeof ConSysApi>();
     const [neutronDS, setNeutronDS] =  useState<typeof ConSysApi>();
     const [thresholdDS, setThresholdDS] = useState<typeof ConSysApi>();
-    const [tamperDS, setTamperDS] =  useState<typeof ConSysApi>();
 
     const [dataSourcesByLane, setDataSourcesByLane] = useState<LaneDSColl>(null);
     const [toggleView, setToggleView] = useState(savedToggleState);
@@ -63,7 +64,6 @@ export default function LaneViewPage() {
             setGammaDS(undefined);
             setNeutronDS(undefined);
             setThresholdDS(undefined);
-            setTamperDS(undefined);
             setDataSourcesByLane(null);
             return;
         }
@@ -97,12 +97,15 @@ export default function LaneViewPage() {
             if (isTamperDataStream(ds)) {
                 rtDS.properties.mqttOpts.shared = true
                 laneDsCollection.addDS('tamperRT', rtDS);
-                setTamperDS(rtDS)
             }
             if (isThresholdDataStream(ds)) {
                 rtDS.properties.mqttOpts.shared = true
                 laneDsCollection?.addDS('gammaTrshldRT', rtDS);
                 setThresholdDS(rtDS);
+            }
+            if (isDailyFileDataStream(ds)) {
+                rtDS.properties.mqttOpts.shared = false
+                laneDsCollection?.addDS('dailyFileRT', rtDS);
             }
         }
 
@@ -136,6 +139,12 @@ export default function LaneViewPage() {
                     <Grid item xs={12}>
                         {dataSourcesByLane &&
                             <LaneStatus dataSourcesByLane={dataSourcesByLane}/>
+                        }
+                    </Grid>
+
+                    <Grid item xs={12}>
+                        {dataSourcesByLane &&
+                            <DailyFileMessage dataSourcesByLane={dataSourcesByLane}/>
                         }
                     </Grid>
 

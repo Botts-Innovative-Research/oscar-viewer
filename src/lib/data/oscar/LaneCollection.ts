@@ -405,6 +405,9 @@ export class LaneDSColl {
     foregroundRT: typeof ConSysApi[];
     foregroundBatch: typeof ConSysApi[];
 
+    dailyFileRT: typeof ConSysApi[];
+    dailyFileBatch: typeof ConSysApi[];
+
     constructor() {
         this.occRT = [];
         this.occBatch = [];
@@ -431,6 +434,7 @@ export class LaneDSColl {
         this.foregroundBatch = [];
         this.backgroundBatch = [];
         this.backgroundRT = [];
+        this.dailyFileRT = [];
     }
 
     getDSArray(propName: string): typeof ConSysApi[] {
@@ -465,6 +469,8 @@ export class LaneDSColl {
             'backgroundRT',
             'forgroundBatch',
             'backgroundBatch',
+            'dailyFileRT',
+            'dailyFileBatch',
         ]
     }
 
@@ -483,6 +489,7 @@ export class LaneDSColl {
             'backgroundBatch',
             'n42Batch',
             'webIdBatch',
+            'dailyFileBatch',
         ]
     }
 
@@ -501,6 +508,7 @@ export class LaneDSColl {
             'n42RT',
             'foregroundRT',
             'backgroundRT',
+            'dailyFileRT',
         ];
     }
 
