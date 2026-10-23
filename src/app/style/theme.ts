@@ -24,6 +24,11 @@ type AppTokens = {
         controlHeight: number;
         touchTarget: number;
         appBarHeight: number;
+    },
+    tableHeight: {
+        xs: number;
+        sm: number;
+        lg: number;
     }
 };
 
@@ -79,6 +84,22 @@ export const getTheme = (mode: PaletteMode) => {
         },
         palette: {
             mode,
+            primary: {
+                main: "#1976D2",
+                contrastText: "#FFFFFF",
+            },
+            info: {
+                main: "#0288D1",
+                contrastText: "#FFFFFF",
+            },
+            secondary: {
+                main: "#7A2E8E",
+                contrastText: "#FFFFFF",
+            },
+            error: {
+                main: "#D32F2F",
+                contrastText: "#FFFFFF",
+            },
             background: {
                 default: isDark ? "#101318" : "#FFFFFF",
                 paper: isDark ? "#191E26" : "#FFFFFF",
@@ -150,6 +171,7 @@ export const getTheme = (mode: PaletteMode) => {
         tokens: {
             radius: { sm: 6, md: 10, lg: 16 },
             size: { controlHeight: 40, touchTarget: 44, appBarHeight: 64 },
+            tableHeight: { xs: 480, sm: 600, lg: 720 }
         },
         shape: {
             borderRadius: 10,
