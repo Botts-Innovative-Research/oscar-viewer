@@ -44,6 +44,66 @@ describe("nested event filters", () => {
         expect(eventMatchesFilter(filter, event, {nodeId: "node-1", nodeName: "Local", laneId: "lane1"})).to.equal(true);
     });
 
+    it("compiles browser-local date boundaries as ISO CQL strings", () => {
+        const localDateTime = "2026-10-23T11:10";
+        const expectedIso = new Date(localDateTime).toISOString();
+        const metadata = {nodeId: "node-1", nodeName: "Local", laneId: "lane1"};
+        const before: EventFilterGroup = {
+            kind: "group",
+            id: "before-root",
+            logic: "and",
+            children: [
+                {kind: "rule", id: "before", field: "startTime", operator: "lessThan", value: localDateTime},
+            ],
+        };
+        const after: EventFilterGroup = {
+            kind: "group",
+            id: "after-root",
+            logic: "and",
+            children: [
+                {kind: "rule", id: "after", field: "endTime", operator: "greaterThan", value: localDateTime},
+            ],
+        };
+
+        expect(compileEventFilterForLane(before, metadata)).to.equal(`startTime<'${expectedIso}'`);
+        expect(compileEventFilterForLane(after, metadata)).to.equal(`endTime>'${expectedIso}'`);
+        expect(eventMatchesFilter(before, {
+            startTime: new Date(new Date(localDateTime).getTime() - 1).toISOString(),
+        } as any, metadata)).to.equal(true);
+        expect(eventMatchesFilter(after, {
+            endTime: new Date(new Date(localDateTime).getTime() + 1).toISOString(),
+        } as any, metadata)).to.equal(true);
+    });
+
+    it("preserves the dashboard alarm predicate alongside a date boundary", () => {
+        const cutoff = "2026-10-23T15:10:00.000Z";
+        const filter: EventFilterGroup = {
+            kind: "group",
+            id: "root",
+            logic: "and",
+            children: [
+                {kind: "rule", id: "before", field: "startTime", operator: "lessThan", value: cutoff},
+            ],
+        };
+        const compiled = compileEventFilterForLane(filter, {
+            nodeId: "node-1",
+            nodeName: "Local",
+            laneId: "lane1",
+        });
+        const plan = {
+            datastreamIds: ["occupancy-1"],
+            filter: combineServerFilters(
+                "(gammaAlarm=true OR neutronAlarm=true) AND adjudicatedIdsCount=0",
+                compiled || "",
+            ),
+        };
+        const params = buildObservationPageParams(plan, "2026-10-24T12:00:00.000Z", 15, 0);
+
+        expect(params.get("filter")).to.contain("gammaAlarm=true OR neutronAlarm=true");
+        expect(params.get("filter")).to.contain("adjudicatedIdsCount=0");
+        expect(params.get("filter")).to.contain("startTime<'2026-10-23T15:10:00.000Z'");
+    });
+
     it("preserves nested AND/OR rules while collapsing lane metadata", () => {
         const filter: EventFilterGroup = {
             kind: "group",

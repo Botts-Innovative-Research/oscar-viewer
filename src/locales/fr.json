@@ -459,6 +459,7 @@
   "adjudicateCount": "Adjuger {count}",
   "bulkAdjudicationFailed": "L’adjudication groupée n’a pas pu être terminée. Aucun élément en échec n’a été masqué ; vérifiez la connexion et réessayez.",
   "bulkSelectionLoadFailed": "La liste complète des alarmes filtrées n’a pas pu être chargée. Aucun élément n’a été sélectionné.",
+  "eventQueryLoadFailed": "Les événements n’ont pas pu être chargés. Le serveur a refusé ou n’a pas pu terminer la recherche actuelle.",
   "healthDescription": "État en direct des connexions et des défauts de chaque voie",
   "extendedOccupancyThreshold": "Seuil d'occupation prolongée",
   "savedForThisBrowser": "Enregistré pour ce navigateur",

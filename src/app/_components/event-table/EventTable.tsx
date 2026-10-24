@@ -1,7 +1,7 @@
 "use client";
 
 import {useCallback, useContext, useEffect, useMemo, useRef, useState} from "react";
-import {Alert, Box, Snackbar} from "@mui/material";
+import {Alert, Box, Button, Snackbar} from "@mui/material";
 import {useSelector} from "react-redux";
 import {
     DataGrid,
@@ -129,6 +129,8 @@ export default function EventTable({
     const [filterDialogOpen, setFilterDialogOpen] = useState(false);
     const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
     const [bulkSelectionError, setBulkSelectionError] = useState(false);
+    const [countQueryError, setCountQueryError] = useState(false);
+    const [pageQueryError, setPageQueryError] = useState(false);
     const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
     const [allFilteredSelected, setAllFilteredSelected] = useState(false);
     const [allFilteredTotal, setAllFilteredTotal] = useState(0);
@@ -333,18 +335,27 @@ export default function EventTable({
         const requestId = ++countRequestRef.current;
         if (queryPlans.length === 0) {
             setRowCount(0);
+            setCountQueryError(false);
             return;
         }
-        const counts = await runWithConcurrency(queryPlans, 6, plan => fetchPlanCount(plan));
-        if (requestId !== countRequestRef.current) return;
-        setRowCount(counts.reduce((sum, count) => sum + count, 0));
-    }, [queryPlans, fetchPlanCount]);
+        try {
+            const counts = await runWithConcurrency(queryPlans, 6, plan => fetchPlanCount(plan, pageLoadedTime, true));
+            if (requestId !== countRequestRef.current) return;
+            setRowCount(counts.reduce((sum, count) => sum + count, 0));
+            setCountQueryError(false);
+        } catch (error) {
+            if (requestId !== countRequestRef.current) return;
+            console.error("Error fetching filtered event counts", error);
+            setCountQueryError(true);
+        }
+    }, [queryPlans, fetchPlanCount, pageLoadedTime]);
 
     const fetchPage = useCallback(async (page: number) => {
         const requestId = ++pageRequestRef.current;
         if (queryPlans.length === 0) {
             setRows([]);
             setLoading(false);
+            setPageQueryError(false);
             return;
         }
         setLoading(true);
@@ -354,6 +365,7 @@ export default function EventTable({
                 if (requestId !== pageRequestRef.current) return;
                 setRows(deduplicateEvents(pageRows));
                 currentPageRef.current = page;
+                setPageQueryError(false);
                 return;
             }
             const required = (page + 1) * PAGE_SIZE;
@@ -363,10 +375,12 @@ export default function EventTable({
                 .sort((left, right) => new Date(right.startTime).getTime() - new Date(left.startTime).getTime());
             setRows(merged.slice(page * PAGE_SIZE, required));
             currentPageRef.current = page;
+            setPageQueryError(false);
         } catch (error) {
             if (requestId !== pageRequestRef.current) return;
             console.error("Error fetching filtered events", error);
             setRows([]);
+            setPageQueryError(true);
         } finally {
             if (requestId === pageRequestRef.current) setLoading(false);
         }
@@ -632,8 +646,23 @@ export default function EventTable({
         .filter(column => viewAdjudicated || column.field !== "adjudicatedIds")
         .map(column => column.field);
 
+    const retryEventQueries = () => {
+        void refreshCounts();
+        void fetchPage(paginationModel.page);
+    };
+
     return (
         <Box sx={{height: 800, width: "100%"}}>
+            {(countQueryError || pageQueryError) && (
+                <Alert
+                    severity="error"
+                    role="alert"
+                    action={<Button color="inherit" size="small" onClick={retryEventQueries}>{t("retry")}</Button>}
+                    sx={{mb: 1}}
+                >
+                    {t("eventQueryLoadFailed")}
+                </Alert>
+            )}
             <DataGrid
                 localeText={getDataGridLocaleText(language)}
                 rows={rows}

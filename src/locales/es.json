@@ -459,6 +459,7 @@
   "adjudicateCount": "Adjudicar {count}",
   "bulkAdjudicationFailed": "No se pudo completar la adjudicación masiva. No se ocultaron los elementos fallidos; compruebe la conectividad y vuelva a intentarlo.",
   "bulkSelectionLoadFailed": "No se pudo cargar la lista completa de alarmas filtradas. No se seleccionó nada.",
+  "eventQueryLoadFailed": "No se pudieron cargar los eventos. El servidor rechazó o no pudo completar la búsqueda actual.",
   "healthDescription": "Estado en vivo de conexiones y fallas para cada carril",
   "extendedOccupancyThreshold": "Umbral de ocupación prolongada",
   "savedForThisBrowser": "Guardado para este navegador",
