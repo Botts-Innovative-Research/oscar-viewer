@@ -3,7 +3,12 @@
 import {LaneStatusType} from '../../../../types/new-types';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 
-import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
+import {
+    acquireSharedConnection,
+    getRealtimeDataSourceStreamId,
+    LaneDSColl,
+    type SharedConnectionLease,
+} from "@/lib/data/oscar/LaneCollection";
 import LaneItem from './LaneItem';
 import {setLastLaneStatus} from "@/lib/state/LaneViewSlice";
 import {useAppDispatch} from "@/lib/state/Hooks";
@@ -12,6 +17,7 @@ import ObservationFilter from "osh-js/source/core/consysapi/observation/Observat
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {EventType} from "osh-js/source/core/event/EventType";
+import {removeRealtimeEventSubscription} from "@/lib/data/oscar/RealtimeEventNotification";
 
 interface LaneStatusProps {
     dataSourcesByLane: LaneDSColl;
@@ -24,39 +30,64 @@ export default function LaneStatus(props: LaneStatusProps) {
 
     const currentLane = useSelector((state: RootState) => state.laneView.currentLane);
 
+    const updateStatus = useCallback((laneName: string, newState: string) => {
+        const newStatus: LaneStatusType = {
+            id: idVal.current++,
+            name: laneName,
+            status: newState
+        }
+        setLaneStatus(newStatus);
+        dispatch(setLastLaneStatus(newStatus))
+    }, [dispatch]);
 
     const addSubscriptionCallbacks = useCallback(() => {
+        const gammaHandler = (message: any) => {
+            const state = message.values?.[0]?.data?.alarmState;
+            if (state !== undefined)
+                updateStatus(currentLane, state);
+        };
+        const neutronHandler = (message: any) => {
+            const state = message.values?.[0]?.data?.alarmState;
+            if (state !== undefined)
+                updateStatus(currentLane, state);
+        };
+        const tamperHandler = (message: any) => {
+            if (message.values?.[0]?.data?.tamperStatus)
+                updateStatus(currentLane, 'Tamper');
+        };
 
-        props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("gammaRT", (message: any) => {
-            const state = message.values[0].data.alarmState;
-            updateStatus(currentLane, state);
-        })
+        const subscriptions: Array<{
+            source: any;
+            handler: (message: any) => void;
+            lease: SharedConnectionLease;
+        }> = [];
+        const subscribe = (sources: any[], handler: (message: any) => void) => {
+            sources.forEach((source) => {
+                source.subscribe(handler, [EventType.DATA]);
+                const lease = acquireSharedConnection(source);
+                subscriptions.push({source, handler, lease});
+                void lease.ready.catch((error) => {
+                    console.warn("Unable to connect lane status stream", error);
+                });
+            });
+        };
 
-        props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("neutronRT", (message: any) => {
-            const state = message.values[0].data.alarmState;
-            updateStatus(currentLane, state);
-        })
-
-        props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("tamperRT", (message: any) => {
-            const state = message.values[0].data.tamperStatus;
-            if (state) {
-                updateStatus(currentLane, 'Tamper')
-            }
-        })
-
-        props.dataSourcesByLane.addConnectToALLDSMatchingName("gammaRT");
-        props.dataSourcesByLane.addConnectToALLDSMatchingName("neutronRT");
-        props.dataSourcesByLane.addConnectToALLDSMatchingName("tamperRT");
+        subscribe(props.dataSourcesByLane.gammaRT, gammaHandler);
+        subscribe(props.dataSourcesByLane.neutronRT, neutronHandler);
+        subscribe(props.dataSourcesByLane.tamperRT, tamperHandler);
 
         return () => {
-            props.dataSourcesByLane.addDisconnectToALLDSMatchingName("gammaRT");
-            props.dataSourcesByLane.addDisconnectToALLDSMatchingName("neutronRT");
-            props.dataSourcesByLane.addDisconnectToALLDSMatchingName("tamperRT");
+            subscriptions.forEach(({source, handler, lease}) => {
+                removeRealtimeEventSubscription(source, handler);
+                void lease.release().catch((error) => {
+                    console.warn("Unable to disconnect lane status stream", error);
+                });
+            });
         }
-    }, [props.dataSourcesByLane]);
+    }, [currentLane, props.dataSourcesByLane, updateStatus]);
 
 
-    async function fetchLatestStatus() {
+    async function fetchLatestStatus(isActive: () => boolean) {
 
         const currentLaneDatasources: LaneDSColl = props.dataSourcesByLane;
 
@@ -64,7 +95,8 @@ export default function LaneStatus(props: LaneStatusProps) {
         const gammaDatasource = currentLaneDatasources.gammaRT[0];
         if (!gammaDatasource) return;
 
-        const gammaDataStreamId = gammaDatasource.properties.resource.split('/')[2];
+        const gammaDataStreamId = getRealtimeDataSourceStreamId(gammaDatasource);
+        if (!gammaDataStreamId) return;
 
         const dsAPI = new DataStreams({
             endpointUrl: `${gammaDatasource.properties.endpointUrl}`,
@@ -84,28 +116,25 @@ export default function LaneStatus(props: LaneStatusProps) {
             name: currentLane,
             status: latestObservation.result.alarmState
         }
-        setLaneStatus(initialLaneStatus);
+        if (isActive())
+            setLaneStatus(initialLaneStatus);
     }
 
     useEffect(() => {
-        if (props.dataSourcesByLane)
-            fetchLatestStatus();
-
-        addSubscriptionCallbacks();
-    }, [props.dataSourcesByLane]);
-
-    function updateStatus(laneName: string, newState: string) {
-        const newStatus: LaneStatusType = {
-            id: idVal.current++,
-            name: laneName,
-            status: newState
+        let active = true;
+        if (props.dataSourcesByLane) {
+            void fetchLatestStatus(() => active).catch((error) => {
+                if (active)
+                    console.warn("Unable to fetch latest lane status", error);
+            });
         }
-        // set timer between each set status to just prevent flickering of status
-        // setTimeout(() => {
-        setLaneStatus(newStatus);
-        // }, 5000);
-        dispatch(setLastLaneStatus(newStatus))
-    }
+
+        const removeSubscriptions = addSubscriptionCallbacks();
+        return () => {
+            active = false;
+            removeSubscriptions();
+        };
+    }, [addSubscriptionCallbacks, props.dataSourcesByLane]);
 
     return (
         <>

@@ -16,6 +16,48 @@ import {useLanguage} from "@/app/contexts/LanguageContext";
 import {INode} from "@/lib/data/osh/Node";
 import {EventType} from "osh-js/source/core/event/EventType";
 import {getDataGridLocaleText, getIntlLocale} from '@/app/utils/LocaleUtils';
+import {removeRealtimeEventSubscription} from "@/lib/data/oscar/RealtimeEventNotification";
+
+type LaneMapReference = {current: Map<string, LaneMapEntry>};
+type AdjudicationLogSource = {
+    lane: LaneMapEntry;
+    controlStream: typeof ControlStream;
+};
+
+export async function waitForAdjudicationLogSource(
+    laneMapRef: LaneMapReference,
+    laneId: string,
+    options: {attempts?: number; delayMs?: number; cancelled?: () => boolean} = {},
+): Promise<AdjudicationLogSource | null> {
+    const attempts = options.attempts ?? 120;
+    const delayMs = options.delayMs ?? 250;
+    const cancelled = options.cancelled ?? (() => false);
+
+    for (let attempt = 0; attempt < attempts && !cancelled(); attempt++) {
+        const lane = laneMapRef.current.get(laneId);
+        if (lane) {
+            let controlStream: typeof ControlStream | undefined = lane.controlStreams
+                .find((stream) => isAdjudicationControlStream(stream));
+            if (!controlStream) {
+                try {
+                    const laneSystemIds = new Set(lane.systems.map(
+                        (system: any) => system.properties.id));
+                    const nodeControlStreams = await lane.parentNode.fetchNodeControlStreams() ?? [];
+                    controlStream = nodeControlStreams.find((stream: typeof ControlStream) =>
+                        laneSystemIds.has(stream.properties["system@id"]) &&
+                        isAdjudicationControlStream(stream));
+                } catch {
+                    // Discovery may still be hydrating immediately after a reload. Retry below.
+                }
+            }
+            if (controlStream) return {lane, controlStream};
+        }
+        if (attempt + 1 < attempts && !cancelled()) {
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+    }
+    return null;
+}
 
 
 export default function AdjudicationLog(props: {
@@ -170,26 +212,29 @@ export default function AdjudicationLog(props: {
     }, [props.node]);
 
 
-    const fetchStatuses = useCallback(async() => {
-        const currentLane = props.event.laneId;
-        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-        if (!currLaneEntry) {
-            console.warn("Cannot load adjudication statuses: lane entry is unavailable:", currentLane);
+    const fetchStatuses = useCallback(async(cancelled: () => boolean) => {
+        const source = await waitForAdjudicationLogSource(
+            laneMapRef,
+            props.event.laneId,
+            {cancelled},
+        );
+        if (!source || cancelled()) {
+            if (!cancelled()) console.warn(
+                "Cannot load adjudication statuses: lane/control stream is unavailable:",
+                props.event.laneId,
+            );
             return;
         }
-
-        let controlStream: typeof ControlStream = currLaneEntry.controlStreams.find((cs) => isAdjudicationControlStream(cs));
-        if(!controlStream) {
-            console.warn("No Adjudication control stream found for this lane");
-            return;
-        }
-        // TODO: Paginate this
-        let commandStatuses = await controlStream.searchStatus(new ControlStreamFilter({ statusCode: "COMPLETED" }), 100);
+        const commandStatuses = await source.controlStream.searchStatus(
+            new ControlStreamFilter({statusCode: "COMPLETED"}),
+            100,
+        );
+        const adjudications: AdjudicationData[] = [];
 
         while (commandStatuses.hasNext()) {
-            let cmdRes = await commandStatuses.nextPage();
+            const cmdRes = await commandStatuses.nextPage();
 
-            let adjDataArr = cmdRes.map((obs: any) => {
+            const pageAdjudications = cmdRes.map((obs: any) => {
                 if (!obs?.results)
                     return null;
 
@@ -206,37 +251,23 @@ export default function AdjudicationLog(props: {
                 data.setOccupancyObsId(results.occupancyObsId);
                 data.setUser(results.username ?? NaN)
                 return data
-            });
-            setAdjLog(adjDataArr);
+            }).filter((value: AdjudicationData | null): value is AdjudicationData => value !== null);
+            adjudications.push(...pageAdjudications);
         }
-    }, []);
+        if (!cancelled()) setAdjLog(adjudications);
+    }, [laneMapRef, props.event]);
 
     useEffect(() => {
-        if (props.event)
-            fetchStatuses();
-    }, [props.event]);
+        let cancelled = false;
+        if (props.event) void fetchStatuses(() => cancelled).catch((error) => {
+            if (!cancelled) console.error("Error loading adjudication statuses:", error);
+        });
+        return () => { cancelled = true; };
+    }, [props.event, fetchStatuses]);
 
     useEffect(() => {
-        const currentLane = props.event.laneId;
-        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-        if (!currLaneEntry) {
-            console.warn("Cannot subscribe to adjudication statuses: lane entry is unavailable:", currentLane);
-            return;
-        }
-
-
-        let controlStream: typeof ControlStream = currLaneEntry.controlStreams.find((cs) => isAdjudicationControlStream(cs));
-        if(!controlStream) {
-            console.warn("No Adjudication control stream found for this lane");
-            return;
-        }
-
-        let controlSource = currLaneEntry.createRealTimeConSysApi(controlStream);
-
-        if (!controlSource) {
-            console.warn("Cannot create rt datasource for this controlstream");
-            return;
-        }
+        let cancelled = false;
+        let controlSource: any = null;
 
         const handleStatuses = (data: any) => {
             const newAdjData: AdjudicationData[] = [];
@@ -267,18 +298,45 @@ export default function AdjudicationLog(props: {
             setAdjLog(prev => [...prev, ...newAdjData]);
         }
 
-        controlSource.subscribe(handleStatuses, [EventType.DATA])
-        try {
-            controlSource.connect();
-        }  catch (err) {
-            console.error("Error connecting webid source:", err);
-        }
-    }, [props.event]);
+        void (async () => {
+            const source = await waitForAdjudicationLogSource(
+                laneMapRef,
+                props.event.laneId,
+                {cancelled: () => cancelled},
+            );
+            if (!source || cancelled) {
+                if (!cancelled) console.warn(
+                    "Cannot subscribe to adjudication statuses: lane/control stream is unavailable:",
+                    props.event.laneId,
+                );
+                return;
+            }
+            controlSource = source.lane.createRealTimeConSysApi(source.controlStream);
+            if (!controlSource) {
+                console.warn("Cannot create rt datasource for adjudication control stream");
+                return;
+            }
+            controlSource.subscribe(handleStatuses, [EventType.DATA]);
+            await controlSource.connect();
+        })().catch((error) => {
+            if (!cancelled) console.error("Error connecting adjudication source:", error);
+        });
+
+        return () => {
+            cancelled = true;
+            if (controlSource) {
+                removeRealtimeEventSubscription(controlSource, handleStatuses);
+                void Promise.resolve().then(() => controlSource.disconnect()).catch((error) => {
+                    console.error("Error disconnecting adjudication source:", error);
+                });
+            }
+        };
+    }, [laneMapRef, props.event]);
 
     useEffect(() => {
         let filteredLog = adjLog.filter((adjData) => adjData?.occupancyObsId ==  props.event.occupancyObsId);
         setFilteredLog(filteredLog);
-    }, [adjLog]);
+    }, [adjLog, props.event.occupancyObsId]);
 
 
     return (

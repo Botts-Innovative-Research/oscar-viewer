@@ -2,7 +2,12 @@
 
 import React, {useCallback, useContext, useEffect, useState} from "react";
 import {Grid, Paper, Typography, Stack, Box} from "@mui/material";
-import {LaneDSColl, LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import {
+    acquireSharedConnection,
+    findRealtimeDataSourceForStream,
+    LaneDSColl,
+    LaneMapEntry,
+} from "@/lib/data/oscar/LaneCollection";
 import VideoMedia from "@/app/_components/lane-view/VideoMedia";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import N42Chart from "@/app/_components/n42/N42Chart";
@@ -40,44 +45,65 @@ export default function RS350BackpackView({ entry, currentLane, laneMap }: RS350
             return;
         }
 
-        for (let i = 0; i < lane.datastreams.length; i++) {
-            const ds = lane.datastreams[i]
+        let nextForegroundSource: typeof ConSysApi | undefined;
+        let nextBackgroundSource: typeof ConSysApi | undefined;
 
-            const rtDS = lane.datasourcesRealtime[i];
+        for (const ds of lane.datastreams) {
+            const rtDS = findRealtimeDataSourceForStream(lane, ds);
+            if (!rtDS)
+                continue;
 
             if (isForegroundDataStream(ds)) {
                 rtDS.properties.mqttOpts.shared = true
                 laneDsCollection.addDS('foregroundRT', rtDS);
-                setForegroundDatasources(rtDS)
+                nextForegroundSource = rtDS;
             }
 
             if (isBackgroundDataStream(ds)) {
                 rtDS.properties.mqttOpts.shared = true
                 laneDsCollection.addDS('backgroundRT', rtDS);
-                setBackgroundDatasources(rtDS)
+                nextBackgroundSource = rtDS;
             }
         }
-    }, []);
+
+        setForegroundDatasources(nextForegroundSource);
+        setBackgroundDatasources(nextBackgroundSource);
+    }, [currentLane, laneMapRef]);
 
 
     useEffect(() => {
         if (!foregroundDatasources)
             return;
-        foregroundDatasources.connect();
+        const lease = acquireSharedConnection(foregroundDatasources);
+        void lease.ready.catch((error) => {
+            console.warn("Unable to connect foreground spectrum stream", error);
+        });
+        return () => {
+            void lease.release().catch((error) => {
+                console.warn("Unable to disconnect foreground spectrum stream", error);
+            });
+        };
     }, [foregroundDatasources, currentLane]);
 
     useEffect(() => {
         if (!backgroundDatasources)
             return;
-        backgroundDatasources.connect();
+        const lease = acquireSharedConnection(backgroundDatasources);
+        void lease.ready.catch((error) => {
+            console.warn("Unable to connect background spectrum stream", error);
+        });
+        return () => {
+            void lease.release().catch((error) => {
+                console.warn("Unable to disconnect background spectrum stream", error);
+            });
+        };
     }, [backgroundDatasources, currentLane]);
 
     useEffect(() => {
 
-        if(laneMapRef.current) {
-            collectDataSources()
-        }
-    }, [laneMapRef.current]);
+        if(laneMapRef.current)
+            void collectDataSources();
+    }, [collectDataSources, laneMapRef]);
 
 
     return (

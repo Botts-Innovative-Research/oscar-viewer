@@ -1,13 +1,13 @@
 "use client";
 
-import {Alert, Button, Grid, Paper, Typography} from "@mui/material";
+import {Alert, Button, Grid, Paper, Stack, Typography} from "@mui/material";
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import BackButton from "../_components/BackButton";
 import DataRow from "../_components/event-details/DataRow";
 import MiscTable from "../_components/event-details/MiscTable";
 import {useSelector} from "react-redux";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
-import {selectEventPreview} from "@/lib/state/EventPreviewSlice";
+import {selectEventPreview, setEventPreview, setSelectedRowId} from "@/lib/state/EventPreviewSlice";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {PictureAsPdfRounded} from "@mui/icons-material";
 import {useReactToPrint} from "react-to-print";
@@ -15,13 +15,61 @@ import EventMedia from "../_components/event-preview/EventMedia";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 import AdjudicationDetail from "../_components/adjudication/AdjudicationDetail";
 import SuspenseLoad from "@/app/_components/SuspenseLoad";
+import AlarmQrExportButton from "@/app/_components/alarm-transfer/AlarmQrExportButton";
+import {useRouter, useSearchParams} from "next/navigation";
+import {useAppDispatch} from "@/lib/state/Hooks";
+import {setSelectedEvent} from "@/lib/state/EventDataSlice";
+import {setEventData} from "@/lib/state/EventDetailsSlice";
+import {EventTableData} from "@/lib/data/oscar/TableHelpers";
+import {
+    buildEventDetailsHref,
+    EventLookupError,
+    lookupEventByObservationId,
+    normalizeEventObservationId,
+    resolveEventObservationId,
+} from "@/lib/data/oscar/EventLookup";
+
+type LookupState = "idle" | "loading" | "ready" | "not-found" | "ambiguous" | "unavailable";
+type LiveIdentityState = "idle" | "resolving" | "failed";
+
+const LIVE_IDENTITY_LOOKUP_ATTEMPTS = 5;
+const LIVE_IDENTITY_RETRY_DELAY_MS = 1000;
+const LIVE_IDENTITY_REQUEST_TIMEOUT_MS = 2500;
+
+function waitForLiveIdentityRetry(signal: AbortSignal): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const timeoutId = window.setTimeout(() => {
+            signal.removeEventListener("abort", handleAbort);
+            resolve();
+        }, LIVE_IDENTITY_RETRY_DELAY_MS);
+        const handleAbort = () => {
+            window.clearTimeout(timeoutId);
+            reject(new DOMException("The event identity lookup was cancelled.", "AbortError"));
+        };
+        signal.addEventListener("abort", handleAbort, {once: true});
+    });
+}
 
 
 export default function EventDetailsPage() {
 
     const eventPreview = useSelector(selectEventPreview);
-    const eventData = eventPreview.eventData;
-    const {laneMapRef, laneMapReady, readyLaneNames} = useContext(DataSourceContext);
+    const dispatch = useAppDispatch();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const eventIdValues = searchParams.getAll("eventId");
+    const nodeIdValues = searchParams.getAll("nodeId");
+    const lookupRequested = eventIdValues.length > 0;
+    const lookupQueryMalformed = eventIdValues.length !== 1 || nodeIdValues.length > 1;
+    const requestedEventId = eventIdValues.length === 1 ? eventIdValues[0] : "";
+    const requestedNodeId = nodeIdValues.length === 1 ? nodeIdValues[0] : null;
+    const [resolvedEvent, setResolvedEvent] = useState<EventTableData | null>(null);
+    const [lookupState, setLookupState] = useState<LookupState>(lookupRequested ? "loading" : "idle");
+    const [liveIdentityState, setLiveIdentityState] = useState<LiveIdentityState>("idle");
+    const [liveIdentityRetryKey, setLiveIdentityRetryKey] = useState(0);
+    const resolvedIdentityRef = useRef<{eventId: string; nodeId: string} | null>(null);
+    const eventData = lookupRequested ? resolvedEvent : eventPreview.eventData;
+    const {laneMapRef, laneMapReady, readyLaneNames, scopedHref} = useContext(DataSourceContext);
     const laneReady = Boolean(eventData?.laneId && readyLaneNames.has(eventData.laneId));
     const laneEntry = eventData?.laneId ? laneMapRef.current?.get(eventData.laneId) : undefined;
     const [datasourcesReady, setDatasourcesReady] = useState<boolean>(false);
@@ -32,9 +80,186 @@ export default function EventDetailsPage() {
     const [thresholdDatasources, setThresholdDatasources] = useState<typeof ConSysApi[]>([]);
 
     const contentRef = useRef<HTMLDivElement>(null);
-    const docTitle = eventPreview.eventData ? `eventdetails-${eventPreview.eventData.laneId}-${eventPreview.eventData.occupancyObsId}-${eventPreview.eventData.startTime}-${eventPreview.eventData.endTime}` : 'eventdetails';
+    const docTitle = eventData ? `eventdetails-${eventData.laneId}-${eventData.occupancyObsId}-${eventData.startTime}-${eventData.endTime}` : 'eventdetails';
+    let exportIdentityReady = false;
+    try {
+        exportIdentityReady = Boolean(eventData?.occupancyObsId)
+            && normalizeEventObservationId(eventData?.occupancyObsId) === eventData?.occupancyObsId;
+    } catch (error) {
+        exportIdentityReady = false;
+    }
 
     const { t } = useLanguage();
+    const retryLiveIdentity = useCallback(() => {
+        setLiveIdentityState("resolving");
+        setLiveIdentityRetryKey(previous => previous + 1);
+    }, []);
+
+    useEffect(() => {
+        if (!lookupRequested) {
+            resolvedIdentityRef.current = null;
+            setResolvedEvent(null);
+            setLookupState("idle");
+            return;
+        }
+
+        if (lookupQueryMalformed) {
+            resolvedIdentityRef.current = null;
+            setResolvedEvent(null);
+            setLookupState("not-found");
+            return;
+        }
+
+        let normalizedEventId: string;
+        try {
+            normalizedEventId = normalizeEventObservationId(requestedEventId);
+        } catch (error) {
+            resolvedIdentityRef.current = null;
+            setResolvedEvent(null);
+            setLookupState("not-found");
+            return;
+        }
+
+        if (!laneMapReady) {
+            setLookupState("loading");
+            return;
+        }
+
+        const previouslyResolved = resolvedIdentityRef.current;
+        if (previouslyResolved?.eventId === normalizedEventId
+            && previouslyResolved.nodeId === requestedNodeId) {
+            setLookupState("ready");
+            return;
+        }
+
+        const controller = new AbortController();
+        setResolvedEvent(null);
+        setLookupState("loading");
+
+        lookupEventByObservationId(
+            laneMapRef.current,
+            normalizedEventId,
+            requestedNodeId,
+            fetch,
+            controller.signal,
+        ).then(result => {
+            if (controller.signal.aborted) return;
+
+            resolvedIdentityRef.current = {eventId: normalizedEventId, nodeId: result.nodeId};
+            setResolvedEvent(result.event);
+            setLookupState("ready");
+            dispatch(setEventPreview({isOpen: true, eventData: result.event}));
+            dispatch(setSelectedRowId(result.event.id));
+            dispatch(setSelectedEvent(result.event));
+            dispatch(setEventData(result.event));
+
+            if (requestedEventId !== normalizedEventId || requestedNodeId !== result.nodeId) {
+                router.replace(scopedHref(buildEventDetailsHref(normalizedEventId, result.nodeId)));
+            }
+        }).catch(error => {
+            if (controller.signal.aborted) return;
+            console.error("Unable to resolve event by occupancy observation ID", error);
+            setResolvedEvent(null);
+            resolvedIdentityRef.current = null;
+            setLookupState(error instanceof EventLookupError
+                ? error.code === "ambiguous"
+                    ? "ambiguous"
+                    : error.code === "invalid" || error.code === "not-found"
+                        ? "not-found"
+                        : "unavailable"
+                : "unavailable");
+        });
+
+        return () => controller.abort();
+    }, [
+        dispatch,
+        laneMapReady,
+        laneMapRef,
+        lookupQueryMalformed,
+        lookupRequested,
+        requestedEventId,
+        requestedNodeId,
+        router,
+        scopedHref,
+    ]);
+
+    useEffect(() => {
+        if (lookupRequested || !eventData || eventData.occupancyObsId) {
+            setLiveIdentityState("idle");
+            return;
+        }
+        if (!laneMapReady || !laneEntry) return;
+
+        const controller = new AbortController();
+        setLiveIdentityState("resolving");
+
+        const resolveLiveIdentity = async () => {
+            for (let attempt = 0; attempt < LIVE_IDENTITY_LOOKUP_ATTEMPTS; attempt += 1) {
+                try {
+                    const occupancyObsId = await resolveEventObservationId(
+                        eventData,
+                        laneEntry,
+                        fetch,
+                        controller.signal,
+                        LIVE_IDENTITY_REQUEST_TIMEOUT_MS,
+                    );
+                    if (controller.signal.aborted) return;
+
+                    // Redux state must receive a new reference. Mutating the realtime
+                    // row in place would not reliably rerender the export controls.
+                    const identifiedEvent = Object.assign(
+                        Object.create(Object.getPrototypeOf(eventData)),
+                        eventData,
+                        {occupancyObsId},
+                    ) as EventTableData;
+                    const nodeId = laneEntry.parentNode.id;
+
+                    dispatch(setEventPreview({isOpen: true, eventData: identifiedEvent}));
+                    dispatch(setSelectedRowId(identifiedEvent.id));
+                    dispatch(setSelectedEvent(identifiedEvent));
+                    dispatch(setEventData(identifiedEvent));
+
+                    // Seed the query-based state before replacing the URL so the
+                    // canonical route does not need to repeat the direct lookup.
+                    resolvedIdentityRef.current = {eventId: occupancyObsId, nodeId};
+                    setResolvedEvent(identifiedEvent);
+                    setLookupState("ready");
+                    setLiveIdentityState("idle");
+                    router.replace(scopedHref(buildEventDetailsHref(occupancyObsId, nodeId)));
+                    return;
+                } catch (error) {
+                    if (controller.signal.aborted) return;
+                    const canRetry = error instanceof EventLookupError
+                        && (error.code === "not-found" || error.code === "unavailable")
+                        && attempt + 1 < LIVE_IDENTITY_LOOKUP_ATTEMPTS;
+                    if (!canRetry) {
+                        console.error("Unable to resolve the live event observation ID", error);
+                        setLiveIdentityState("failed");
+                        return;
+                    }
+                    try {
+                        await waitForLiveIdentityRetry(controller.signal);
+                    } catch (waitError) {
+                        if (!controller.signal.aborted)
+                            console.error("Unable to retry the live event observation ID lookup", waitError);
+                        return;
+                    }
+                }
+            }
+        };
+
+        resolveLiveIdentity();
+        return () => controller.abort();
+    }, [
+        dispatch,
+        eventData,
+        laneEntry,
+        laneMapReady,
+        liveIdentityRetryKey,
+        lookupRequested,
+        router,
+        scopedHref,
+    ]);
 
     const collectDataSources = useCallback(async() => {
         if(!eventData || !laneEntry) return;
@@ -74,16 +299,28 @@ export default function EventDetailsPage() {
 
 
     useEffect(() => {
-        gammaDatasources.forEach(ds => ds.connect());
-        neutronDatasources.forEach(ds => ds.connect());
-        thresholdDatasources.forEach(ds => ds.connect());
+        if (!datasourcesReady)
+            return;
+
+        const sources = [
+            ...gammaDatasources,
+            ...neutronDatasources,
+            ...thresholdDatasources,
+        ];
+        sources.forEach((source) => {
+            void Promise.resolve().then(() => source.connect()).catch((error) => {
+                console.error("Unable to connect event detail datasource", error);
+            });
+        });
 
         return () => {
-            gammaDatasources.forEach(ds => ds.disconnect());
-            neutronDatasources.forEach(ds => ds.disconnect());
-            thresholdDatasources.forEach(ds => ds.disconnect());
-        }
-    }, [datasourcesReady]);
+            sources.forEach((source) => {
+                void Promise.resolve().then(() => source.disconnect()).catch((error) => {
+                    console.error("Unable to disconnect event detail datasource", error);
+                });
+            });
+        };
+    }, [datasourcesReady, gammaDatasources, neutronDatasources, thresholdDatasources]);
 
     const reactToPrintFn = useReactToPrint({
         contentRef: contentRef,
@@ -108,19 +345,56 @@ export default function EventDetailsPage() {
                         </Grid>
                     </Grid>
                     {eventData && <Grid item xs={12} sm={"auto"}>
-                        <Button
-                            variant="outlined"
-                            startIcon={<PictureAsPdfRounded/>}
-                            onClick={() => {
-                                reactToPrintFn()
-                            }}
-                        >
-                            {t('exportAsPdf')}
-                        </Button>
+                        <Stack direction={{xs: "column", sm: "row"}} spacing={1}>
+                            {laneEntry && <AlarmQrExportButton event={eventData} lane={laneEntry}/>}
+                            <Button
+                                variant="outlined"
+                                startIcon={<PictureAsPdfRounded/>}
+                                data-testid="event-pdf-export-button"
+                                disabled={!exportIdentityReady}
+                                onClick={() => {
+                                    reactToPrintFn()
+                                }}
+                            >
+                                {t('exportAsPdf')}
+                            </Button>
+                        </Stack>
                     </Grid>}
                 </Grid>
 
-                {!eventData ? (
+                {lookupRequested && (lookupState === "idle" || lookupState === "loading") ? (
+                    <Grid item xs={12}>
+                        <Alert severity="info" data-testid="event-lookup-loading">
+                            {t("eventLookupLoading", {
+                                uuid: requestedEventId.trim().slice(0, 128) || t("unknown"),
+                            })}
+                        </Alert>
+                    </Grid>
+                ) : lookupRequested && lookupState === "not-found" ? (
+                    <Grid item xs={12}>
+                        <Alert severity="warning" data-testid="event-lookup-not-found">
+                            {t("eventLookupNotFound", {
+                                uuid: requestedEventId.trim().slice(0, 128) || t("unknown"),
+                            })}
+                        </Alert>
+                    </Grid>
+                ) : lookupRequested && lookupState === "ambiguous" ? (
+                    <Grid item xs={12}>
+                        <Alert severity="warning" data-testid="event-lookup-ambiguous">
+                            {t("eventLookupAmbiguous", {
+                                uuid: requestedEventId.trim().slice(0, 128) || t("unknown"),
+                            })}
+                        </Alert>
+                    </Grid>
+                ) : lookupRequested && lookupState === "unavailable" ? (
+                    <Grid item xs={12}>
+                        <Alert severity="error" data-testid="event-lookup-unavailable">
+                            {t("eventLookupUnavailable", {
+                                uuid: requestedEventId.trim().slice(0, 128) || t("unknown"),
+                            })}
+                        </Alert>
+                    </Grid>
+                ) : !eventData ? (
                     <Grid item xs={12}>
                         <Alert severity="warning">{t('eventDetailsUnavailable')}</Alert>
                     </Grid>
@@ -135,7 +409,14 @@ export default function EventDetailsPage() {
                         {/* EVENT PREVIEW */}
                         <Grid item xs={12}>
                             <Paper variant='outlined'>
-                                <DataRow eventData={eventData}/>
+                                <DataRow
+                                    eventData={eventData}
+                                    nodeId={laneEntry.parentNode.id}
+                                    identityResolutionState={eventData.occupancyObsId
+                                        ? undefined
+                                        : liveIdentityState === "failed" ? "failed" : "resolving"}
+                                    onRetryIdentity={retryLiveIdentity}
+                                />
                             </Paper>
                         </Grid>
 
@@ -167,7 +448,10 @@ export default function EventDetailsPage() {
 
                         {/* ADJUDICATION */}
                         <Grid item xs={12}>
-                            <AdjudicationDetail event={eventData}/>
+                            <AdjudicationDetail
+                                key={eventData.occupancyObsId || eventData.id}
+                                event={eventData}
+                            />
                         </Grid>
                     </>
                 )}

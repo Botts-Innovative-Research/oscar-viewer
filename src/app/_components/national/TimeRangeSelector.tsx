@@ -29,7 +29,8 @@ const timeRanges = [
 
 export default function TimeRangeSelect(props: {
     onSelect: (value: string[] | string) => void,
-    timeRange: string
+    timeRange: string,
+    disabled?: boolean,
 }) {
     const {t} = useLanguage();
 
@@ -39,7 +40,7 @@ export default function TimeRangeSelect(props: {
     };
 
     return (
-        <FormControl size="small" fullWidth>
+        <FormControl size="small" fullWidth disabled={props.disabled}>
             <InputLabel id="label">{t('timeRange')}</InputLabel>
             <Select
                 variant="outlined"

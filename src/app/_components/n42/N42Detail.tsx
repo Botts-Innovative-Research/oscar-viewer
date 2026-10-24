@@ -2,7 +2,11 @@ import {Box, Grid, IconButton, Typography} from "@mui/material";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import React, {useCallback, useContext, useEffect, useState} from "react";
-import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import {
+    acquireSharedConnection,
+    findRealtimeDataSourceForStream,
+    LaneMapEntry,
+} from "@/lib/data/oscar/LaneCollection";
 import {N42_REPORT_DEF} from "@/lib/data/Constants";
 import {EventType} from "osh-js/source/core/event/EventType";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
@@ -10,6 +14,7 @@ import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import N42ChartPlayback from "@/app/_components/n42/N42ChartPlayback";
 import {randomUUID} from "osh-js/source/core/utils/Utils";
 import {useLanguage} from '@/app/contexts/LanguageContext';
+import {removeRealtimeEventSubscription} from "@/lib/data/oscar/RealtimeEventNotification";
 
 export interface N42Report {
     samplingTime: string;
@@ -135,10 +140,7 @@ export default function N42Detail(props: { event: EventTableData }) {
             return;
         }
 
-        const n42Source = currLaneEntry.datasourcesRealtime?.find((ds: any) => {
-            const parts = ds.properties.resource?.split("/");
-            return parts && parts[2] === n42Stream.properties.id;
-        });
+        const n42Source = findRealtimeDataSourceForStream(currLaneEntry, n42Stream);
         if (!n42Source) {
             console.warn("No N42 data source found for this lane");
             return;
@@ -172,13 +174,17 @@ export default function N42Detail(props: { event: EventTableData }) {
         };
 
         n42Source.subscribe(handleObservations, [EventType.DATA]);
-
-        try {
-            n42Source.connect();
-        } catch (err) {
+        const lease = acquireSharedConnection(n42Source);
+        void lease.ready.catch((err) => {
             console.error("Error connecting n42 source:", err);
-        }
+        });
 
+        return () => {
+            removeRealtimeEventSubscription(n42Source, handleObservations);
+            void lease.release().catch((error) => {
+                console.error("Error disconnecting n42 source:", error);
+            });
+        };
     }, [targetOccupancyObsId, currentLaneId, laneMapRef]);
 
     const fileEntries = Array.from(fileDataMap.values());

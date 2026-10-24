@@ -12,33 +12,179 @@ import {INode} from "@/lib/data/osh/Node";
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
 
-function manageSharedConnection(dataSource: any) {
-    const originalConnect = dataSource.connect.bind(dataSource);
-    const originalDisconnect = dataSource.disconnect.bind(dataSource);
-    let connection: Promise<any> | null = null;
+type SharedConnectionState = {
+    originalConnect: () => any;
+    originalDisconnect: () => any;
+    leases: Set<symbol>;
+    legacyRequested: boolean;
+    legacyRevision: number;
+    connected: boolean;
+    disposed: boolean;
+    lifecycle: Promise<any>;
+};
+
+export type SharedConnectionLease = {
+    ready: Promise<any>;
+    release: () => Promise<any>;
+};
+
+const sharedConnectionStates = new WeakMap<object, SharedConnectionState>();
+
+function wantsSharedConnection(state: SharedConnectionState): boolean {
+    return !state.disposed && (state.legacyRequested || state.leases.size > 0);
+}
+
+/**
+ * Serializes transport changes while reading the desired state at execution
+ * time. Reading it late is important during React route hand-offs: a new view
+ * can acquire the stream while the old view's release is waiting in the queue.
+ */
+function queueSharedConnection(
+    state: SharedConnectionState,
+    requestedState: () => boolean,
+): Promise<any> {
+    const transition = state.lifecycle.catch((): void => undefined).then(async () => {
+        const shouldBeConnected = !state.disposed && requestedState();
+        if (shouldBeConnected === state.connected)
+            return;
+
+        if (shouldBeConnected) {
+            const result = await state.originalConnect();
+            state.connected = true;
+            return result;
+        }
+
+        const result = await state.originalDisconnect();
+        state.connected = false;
+        return result;
+    });
+    state.lifecycle = transition;
+    return transition;
+}
+
+/**
+ * Makes the datasource's legacy connect/disconnect pair idempotent and adds
+ * support for explicit independent leases through acquireSharedConnection().
+ * Cached lane datasources must use leases whenever more than one component can
+ * display the same stream.
+ */
+export function manageSharedConnection(dataSource: any) {
+    if (sharedConnectionStates.has(dataSource))
+        return dataSource;
+
+    const state: SharedConnectionState = {
+        originalConnect: dataSource.connect.bind(dataSource),
+        originalDisconnect: dataSource.disconnect.bind(dataSource),
+        leases: new Set<symbol>(),
+        legacyRequested: false,
+        legacyRevision: 0,
+        connected: false,
+        disposed: false,
+        lifecycle: Promise.resolve(),
+    };
+    sharedConnectionStates.set(dataSource, state);
 
     dataSource.connect = () => {
-        if (!connection) {
-            connection = Promise.resolve(originalConnect()).catch((error) => {
-                connection = null;
-                throw error;
-            });
-        }
-        return connection;
+        if (state.disposed)
+            return Promise.reject(new Error("Cannot connect a disposed realtime datasource"));
+        if (state.legacyRequested)
+            return state.lifecycle;
+        state.legacyRequested = true;
+        const legacyRevision = ++state.legacyRevision;
+        let connect: Promise<any>;
+        connect = queueSharedConnection(state, () => true).catch((error) => {
+            // Lease transitions also replace state.lifecycle. Only a newer
+            // legacy request should prevent this failed request from clearing
+            // its ownership flag.
+            if (!state.disposed && state.legacyRevision === legacyRevision)
+                state.legacyRequested = false;
+            throw error;
+        });
+        state.lifecycle = connect;
+        return connect;
     };
 
-    dataSource.disconnect = async () => {
-        if (!connection)
-            return;
-        try {
-            await connection;
-            await originalDisconnect();
-        } finally {
-            connection = null;
-        }
+    dataSource.disconnect = () => {
+        if (state.disposed)
+            return state.lifecycle;
+        if (!state.legacyRequested)
+            return state.lifecycle;
+        state.legacyRequested = false;
+        const legacyRevision = ++state.legacyRevision;
+        let disconnect: Promise<any>;
+        disconnect = queueSharedConnection(
+            state,
+            // A legacy disconnect must not consume another component's lease,
+            // even if that lease was acquired after disconnect() was called.
+            () => state.leases.size > 0,
+        ).catch((error) => {
+            if (!state.disposed && state.legacyRevision === legacyRevision)
+                state.legacyRequested = true;
+            throw error;
+        });
+        state.lifecycle = disconnect;
+        return disconnect;
     };
 
     return dataSource;
+}
+
+/**
+ * Acquires one independently releasable ownership token for a cached realtime
+ * datasource. release() is idempotent, so React cleanup can safely run more
+ * than once in development Strict Mode.
+ */
+export function acquireSharedConnection(dataSource: any): SharedConnectionLease {
+    manageSharedConnection(dataSource);
+    const state = sharedConnectionStates.get(dataSource)!;
+    const token = Symbol("realtime datasource lease");
+    let released = false;
+
+    if (state.disposed) {
+        return {
+            ready: Promise.reject(new Error("Cannot acquire a disposed realtime datasource")),
+            release: () => state.lifecycle,
+        };
+    }
+
+    state.leases.add(token);
+    const ready = queueSharedConnection(state, () => true);
+    return {
+        ready,
+        release: () => {
+            if (released)
+                return state.lifecycle;
+            released = true;
+            state.leases.delete(token);
+            const firstAttempt = queueSharedConnection(state, () => wantsSharedConnection(state));
+            return firstAttempt.catch(() =>
+                queueSharedConnection(state, () => wantsSharedConnection(state)));
+        },
+    };
+}
+
+/**
+ * Permanently disposes a cached datasource even if a stale component still
+ * holds a lease. Lane discovery uses this before replacing its cache; later
+ * releases from the old component become harmless no-ops.
+ */
+export function disposeSharedConnection(dataSource: any): Promise<any> {
+    const state = sharedConnectionStates.get(dataSource);
+    if (!state)
+        return Promise.resolve().then(() => dataSource.disconnect());
+    if (!state.disposed) {
+        state.disposed = true;
+        state.legacyRevision++;
+        state.legacyRequested = false;
+        state.leases.clear();
+    }
+
+    // A transport can reject disconnect transiently. Keep the object disposed
+    // but make one more serialized attempt so replacing a lane cache cannot
+    // leave its MQTT connection alive forever. Calling this function again is
+    // also safe and will reconcile the still-connected state.
+    const firstAttempt = queueSharedConnection(state, () => false);
+    return firstAttempt.catch(() => queueSharedConnection(state, () => false));
 }
 
 import {
@@ -147,10 +293,14 @@ export class LaneMapEntry {
 
     resetDatasources() {
         for (let ds of this.datasourcesRealtime) {
-            ds.disconnect();
+            void disposeSharedConnection(ds).catch((error) => {
+                console.warn("Unable to dispose realtime datasource", error);
+            });
         }
         for (let ds of this.datasourcesBatch) {
-            ds.disconnect();
+            void Promise.resolve().then(() => ds.disconnect()).catch((error) => {
+                console.warn("Unable to disconnect batch datasource", error);
+            });
         }
     }
 
@@ -378,6 +528,40 @@ export class LaneMapEntry {
     }
 }
 
+/**
+ * Returns the datastream ID encoded in an OSH datasource resource path.
+ * Keeping this lookup in one place avoids relying on datastream and
+ * datasource array order, which is not guaranteed by discovery responses.
+ */
+export function getRealtimeDataSourceStreamId(dataSource: any): string | undefined {
+    const resource = dataSource?.properties?.resource;
+    if (typeof resource !== "string")
+        return undefined;
+
+    const match = resource.match(/(?:^|\/)datastreams\/([^/?#]+)(?:\/|$)/);
+    if (!match)
+        return undefined;
+
+    try {
+        return decodeURIComponent(match[1]);
+    } catch {
+        return match[1];
+    }
+}
+
+export function findRealtimeDataSourceForStream(
+    lane: Pick<LaneMapEntry, "datasourcesRealtime"> | null | undefined,
+    datastream: typeof DataStream | null | undefined,
+): typeof ConSysApi | undefined {
+    const streamId = datastream?.properties?.id;
+    if (!streamId)
+        return undefined;
+
+    return lane?.datasourcesRealtime?.find(
+        (source: any) => getRealtimeDataSourceStreamId(source) === streamId,
+    );
+}
+
 export class LaneDSColl {
     occRT: typeof ConSysApi[];
     occBatch: typeof ConSysApi[];
@@ -587,4 +771,3 @@ export class LaneDSColl {
         await this.disconnectToDS(this.getBatchDSArrayNames());
     }
 }
-

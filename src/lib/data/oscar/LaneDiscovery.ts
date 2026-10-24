@@ -39,12 +39,17 @@ function mergeNodeLanes(
 export async function discoverLanesIncrementally(
     nodes: INode[],
     publish: (laneMap: Map<string, LaneMapEntry>) => void,
+    viewKey: string | null = null,
 ): Promise<LaneDiscoveryResult> {
     const allLanes = new Map<string, LaneMapEntry>();
 
     const settled = await Promise.allSettled(nodes.map(async (node) => {
-        const nodeLaneMap = await node.fetchLaneSystemsAndSubsystems();
+        const nodeLaneMap = await node.fetchLaneSystemsAndSubsystems(viewKey);
         if (!nodeLaneMap)
+            return;
+
+        // An empty scoped result must not turn into an unfiltered stream query.
+        if (nodeLaneMap.size === 0)
             return;
 
         // These API queries are independent and can safely run together.

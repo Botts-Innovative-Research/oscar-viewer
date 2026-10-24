@@ -10,9 +10,10 @@ import {elGR, enUS, esES, frFR} from '@mui/x-date-pickers/locales';
 import {useLanguage} from '@/app/contexts/LanguageContext';
 
 
-export default function NationalDatePicker({onCustomStartChange, onCustomEndChange }: {
+export default function NationalDatePicker({onCustomStartChange, onCustomEndChange, disabled }: {
     onCustomStartChange?: (value: string) => void,
     onCustomEndChange?: (value: string) => void,
+    disabled?: boolean,
 }){
     const {language, t} = useLanguage();
     const pickerLocales = {en: enUS, es: esES, fr: frFR, el: elGR};
@@ -52,12 +53,14 @@ export default function NationalDatePicker({onCustomStartChange, onCustomEndChan
                     label={t('startDate')}
                     value={startTime}
                     onChange={handleStartTimeChange}
+                    disabled={disabled}
                     sx={{ width: "100%" }}
                 />
                 <DateTimePicker
                     label={t('endDate')}
                     value={endTime}
                     onChange={handleEndTimeChange}
+                    disabled={disabled}
                     sx={{ width: "100%" }}
                 />
             </Stack>
