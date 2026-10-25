@@ -159,9 +159,12 @@ describe("National View asynchronous statistics", () => {
             .and("have.attr", "aria-busy", "true");
         cy.get('[role="combobox"]').should("have.attr", "aria-disabled", "true");
         cy.wait("@statisticsCommand");
-        cy.wait("@statisticsStatus").then(() => {
-            expect(node.getObservationById).to.have.been.calledOnceWith("observation-42");
-        });
+        cy.wait("@statisticsStatus");
+        // The intercepted response can finish before the application's awaiting
+        // continuation consumes it. Retry until that continuation requests the
+        // exact observation instead of sampling the stub at the network boundary.
+        cy.wrap(node.getObservationById)
+            .should("have.been.calledOnceWithExactly", "observation-42");
         cy.contains("button", "Refreshing statistics...").should("be.disabled");
 
         cy.then(() => exactObservation.resolve({properties: {result: timeRanges(42)}}));
