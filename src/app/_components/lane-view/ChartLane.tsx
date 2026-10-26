@@ -24,25 +24,25 @@ export class ChartInterceptProps {
 }
 type ChartMode = 'total' | 'gamma' | 'neutron';
 
+const neutronDetectorChartIds = [
+    "neutron-detector-1",
+    "neutron-detector-2",
+    "neutron-detector-3",
+    "neutron-detector-4",
+];
+
+const gammaDetectorChartIds = [
+    "gamma-detector-1",
+    "gamma-detector-2",
+    "gamma-detector-3",
+    "gamma-detector-4",
+];
+const gammaChartID = "chart-view-gamma";
+const neutronChartID = "chart-view-neutron";
+
 export default function ChartLane({laneName, datasources, setChartReady}: ChartInterceptProps) {
     const {t} = useLanguage();
 
-    const gammaChartID = "chart-view-gamma";
-    const neutronChartID = "chart-view-neutron";
-
-    const neutronDetectorChartIds = [
-        "neutron-detector-1",
-        "neutron-detector-2",
-        "neutron-detector-3",
-        "neutron-detector-4",
-    ];
-
-    const gammaDetectorChartIds = [
-        "gamma-detector-1",
-        "gamma-detector-2",
-        "gamma-detector-3",
-        "gamma-detector-4",
-    ];
     const [mode, setMode] = useState<ChartMode>('total');
     const chartViewsRef = useRef<any[]>([]);
 

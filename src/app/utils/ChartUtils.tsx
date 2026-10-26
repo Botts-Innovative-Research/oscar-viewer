@@ -56,7 +56,7 @@ function createDetectorViewCurves(
             lineColor: color,
             visible: true,
             hidden: false,
-            maxValues: 500,
+            maxValues: 1500,
         });
     });
 }
@@ -108,7 +108,7 @@ export  function createNeutronViewCurve(neutronDatasource: { id: string; }, labe
             return {x: rec.timestamp, y: getNeutronGrossCount(rec)}
         },
         name: labels.neutron ?? 'Neutron',
-        maxValues: 500,
+        maxValues: 1500,
         borderWidth: 1.5,
         lineColor: '#29b6f6',
         backgroundColor: '#29b6f6',
@@ -139,7 +139,7 @@ export function createThresholdViewCurve(thresholdDatasource: { id: string; }, l
         yLabel: 'CPS',
         order: 2,
         fill: 1,
-        maxValues: 500,
+        maxValues: 1500,
     });
 
     return thresholdCurve;
@@ -161,7 +161,7 @@ export  function createGammaViewCurve(gammaDatasource: { id: string; }, labels: 
         visible: true,
         order: 1,
         fill: 1,
-        maxValues: 500,
+        maxValues: 1500,
     });
 
     return gCurve;
@@ -195,7 +195,7 @@ export function createNSigmaCalcViewCurve(gammaDatasource:  typeof ConSysApi, la
         hidden: false,
         fill: 1,
         order: 0,
-        maxValues: 500,
+        maxValues: 1500,
     });
 
     return nCurve;
@@ -236,7 +236,7 @@ export  function createThreshSigmaViewCurve(thresholdDatasource: { id: string; }
         hidden: false,
         order: 1,
         fill: 1,
-        maxValues: 500,
+        maxValues: 1500,
     });
     return gCurve;
 }
