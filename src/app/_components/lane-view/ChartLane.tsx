@@ -22,18 +22,29 @@ export class ChartInterceptProps {
     };
     setChartReady: (ready: boolean) => void;
 }
-type ChartMode = 'sum' | 'individual';
+type ChartMode = 'total' | 'gamma' | 'neutron';
 
-export default function ChartLane({laneName, datasources, setChartReady}: ChartInterceptProps){
+export default function ChartLane({laneName, datasources, setChartReady}: ChartInterceptProps) {
     const {t} = useLanguage();
 
     const gammaChartID = "chart-view-gamma";
     const neutronChartID = "chart-view-neutron";
 
-    const gammaChartViewRef = useRef<typeof ChartJsView | null>(null);
-    const neutronChartViewRef = useRef<typeof ChartJsView | null>(null);
-    const [gammaMode, setGammaMode] = useState<ChartMode>('sum');
-    const [neutronMode, setNeutronMode] = useState<ChartMode>('sum');
+    const neutronDetectorChartIds = [
+        "neutron-detector-1",
+        "neutron-detector-2",
+        "neutron-detector-3",
+        "neutron-detector-4",
+    ];
+
+    const gammaDetectorChartIds = [
+        "gamma-detector-1",
+        "gamma-detector-2",
+        "gamma-detector-3",
+        "gamma-detector-4",
+    ];
+    const [mode, setMode] = useState<ChartMode>('total');
+    const chartViewsRef = useRef<any[]>([]);
 
     const createOptions = (title: string) => ({
         plugins: {
@@ -71,56 +82,51 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
     });
 
     useEffect(() => {
-        const labels = { time: t('time'), gamma: t('gamma'), threshold: t('threshold') };
-        const gammaLayers = gammaMode === 'sum'
-            ? [createGammaViewCurve(datasources.gamma, labels)]
-            : createGammaDetectorViewCurves(datasources.gamma, labels);
-        const thresholdCurve = createThresholdViewCurve(
-            datasources.threshold,
-            labels,
-        );
+        const labels = { time: t('time'), gamma: t('gamma'), neutron: t('neutron'), threshold: t('threshold') };
+        const views: any[] = [];
 
-        const validGammaLayers = gammaLayers.filter((layer) => layer !== null);
-        if (validGammaLayers.length > 0 && document.getElementById(gammaChartID)) {
-            gammaChartViewRef.current = new ChartJsView({
+        const addChart = (container: string, layers: any[], title: string) => {
+            if (layers.length === 0 || !document.getElementById(container)) return;
+
+            views.push(new ChartJsView({
                 type: 'line',
-                container: gammaChartID,
-                layers: thresholdCurve ? [...validGammaLayers, thresholdCurve] : validGammaLayers,
-                css: "chart-view",
-                options: createOptions(t('gammaChart')),
+                container,
+                layers,
+                css: 'chart-view',
+                options: createOptions(title),
+            }));
+        };
+
+        if (mode === 'total') {
+            const gammaLayers = [
+                createGammaViewCurve(datasources.gamma, labels),
+                createThresholdViewCurve(datasources.threshold, labels),
+            ].filter(Boolean);
+            const neutronLayers = [createNeutronViewCurve(datasources.neutron, labels)].filter(Boolean);
+
+            addChart(gammaChartID, gammaLayers, t('gammaChart'));
+            addChart(neutronChartID, neutronLayers, t('neutronChart'));
+        } else {
+            const curves = mode === 'gamma'
+                ? createGammaDetectorViewCurves(datasources.gamma, labels)
+                : createNeutronDetectorViewCurves(datasources.neutron, labels);
+            const chartLabel = t(' detector');
+
+            const chartIds = mode === 'gamma'
+                ? gammaDetectorChartIds
+                : neutronDetectorChartIds;
+
+            curves.forEach((curve, index) => {
+                addChart(chartIds[index], [curve], `${chartLabel} ${index + 1}`);
             });
         }
 
+        chartViewsRef.current = views;
         return () => {
-            gammaChartViewRef.current?.chart?.destroy();
-            gammaChartViewRef.current?.destroy();
-            gammaChartViewRef.current = null;
+            views.forEach(view => view.chart?.destroy());
+            chartViewsRef.current = [];
         };
-    }, [laneName, datasources.gamma, datasources.threshold, gammaMode, t]);
-
-    useEffect(() => {
-        const labels = {time: t('time'), neutron: t('neutron')};
-        const neutronLayers = neutronMode === 'sum'
-            ? [createNeutronViewCurve(datasources.neutron, labels)]
-            : createNeutronDetectorViewCurves(datasources.neutron, labels);
-
-        const validNeutronLayers = neutronLayers.filter((layer) => layer !== null);
-        if (validNeutronLayers.length > 0 && document.getElementById(neutronChartID)) {
-            neutronChartViewRef.current = new ChartJsView({
-                type: 'line',
-                container: neutronChartID,
-                layers: validNeutronLayers,
-                css: "chart-view",
-                options: createOptions( t('neutronChart')),
-            });
-        }
-
-        return () => {
-            neutronChartViewRef.current?.chart?.destroy();
-            neutronChartViewRef.current?.destroy();
-            neutronChartViewRef.current = null;
-        };
-    }, [laneName, datasources.neutron, neutronMode, t]);
+    }, [datasources.gamma, datasources.neutron, datasources.threshold, laneName, mode, t]);
 
     useEffect(() => {
         const ready = Boolean(datasources.gamma || datasources.neutron);
@@ -129,74 +135,111 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
         return () => setChartReady(false);
     }, [datasources.gamma, datasources.neutron, setChartReady]);
 
+    const handleToggle = (event: React.MouseEvent<HTMLElement>, newView: ChartMode | null) => {
+        if (newView) setMode(newView);
+    };
 
-    const renderModeToggle = (value: ChartMode, onChange: (mode: ChartMode) => void, label: string) => (
-        <ToggleButtonGroup
-            aria-label={`${label} chart mode`}
-            exclusive
-            onChange={(_, mode: ChartMode | null) => mode && onChange(mode)}
-            size="small"
-            value={value}
-        >
-            <ToggleButton
-                value="sum"
-                disabled={value === 'sum'}
+    const renderToggleButtons = () => (
+        <Grid item xs={12}>
+            <ToggleButtonGroup
+                aria-label={`chart mode`}
+                exclusive
+                onChange={handleToggle}
+                size="small"
+                value={mode}
             >
-                {t('chartModeSum')}
-            </ToggleButton>
-            <ToggleButton
-                value="individual"
-                disabled={value === 'individual'}
-            >
-                {t('chartModeIndividual')}
-            </ToggleButton>
-        </ToggleButtonGroup>
+                <ToggleButton
+                    value="total"
+                    disabled={mode === 'total'}
+                >
+                    {t('chartModeTotal')}
+                </ToggleButton>
+                <ToggleButton
+                    value="gamma"
+                    disabled={mode === 'gamma'}
+                >
+                    {t('chartModeGammaDetectors')}
+                </ToggleButton>
+                <ToggleButton
+                    value="neutron"
+                    disabled={mode === 'neutron'}
+                >
+                    {t('chartModeNeutronDetectors')}
+                </ToggleButton>
+            </ToggleButtonGroup>
+        </Grid>
     );
 
-    return (
-        <Box
-            display="flex"
-            alignItems="center"
-        >
-            <Grid
-                container
-                direction="row"
-                margin={2}
-                spacing={4}
-            >
-                <Grid item xs>
-                    <Box
-                        display="flex"
-                        justifyContent="center"
-                        marginBottom={1}
-                    >
-                        { renderModeToggle(gammaMode, setGammaMode, t('gamma')) }
-                    </Box>
-                    <div
-                        id={gammaChartID}
-                        style={{
-                            marginBottom: 25,
-                            height: '360px'
+    const renderTotalCharts = () => (
+        <Grid container xs={12}>
+            <Grid item xs={12} md={6}>
+                <div
+                    id={gammaChartID}
+                    style={{
+                        marginBottom: 25,
+                        height: '360px'
                     }}
-                    />
-                </Grid>
-                <Grid item xs>
-                    <Box
-                        display="flex"
-                        justifyContent="center"
-                        marginBottom={1}
-                    >
-                        { renderModeToggle(neutronMode, setNeutronMode, t('neutron')) }
-                    </Box>
-                    <div
-                        id={neutronChartID}
-                        style={{
-                            marginBottom: 25,
-                            height: '360px'
-                        }}
-                    />
-                </Grid>
+                />
             </Grid>
-        </Box>
+            <Grid item xs={12} md={6}>
+                <div
+                    id={neutronChartID}
+                    style={{
+                        marginBottom: 25,
+                        height: '360px'
+                    }}
+                />
+            </Grid>
+        </Grid>
+    );
+
+    const renderDetectorCharts = (mode: ChartMode) => {
+        const chartIds = mode === 'gamma'
+            ? gammaDetectorChartIds
+            : neutronDetectorChartIds;
+
+        return (
+            <Grid container spacing={2} xs={12}>
+                {chartIds.map(chartId => (
+                    <Grid item xs={12} md={6} key={chartId}>
+                        <div id={chartId} style={{height: '360px'}}/>
+                    </Grid>
+                ))}
+            </Grid>
+        )
+    };
+
+    const renderChartsByMode = () => {
+        switch (mode) {
+            case "total":
+                return (
+                    <>
+                        {renderToggleButtons()}
+                        {renderTotalCharts()}
+                    </>
+                );
+            case "gamma":
+                return (
+                    <>
+                        {renderToggleButtons()}
+                        {renderDetectorCharts("gamma")}
+                    </>
+                );
+
+            case "neutron":
+                return (
+                    <>
+                        {renderToggleButtons()}
+                        {renderDetectorCharts("neutron")}
+                    </>
+                );
+
+        }
+    }
+
+    return (
+        <Grid container spacing={2} alignItems="center">
+            {renderChartsByMode()}
+        </Grid>
     );
 }
