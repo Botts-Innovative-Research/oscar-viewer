@@ -9,7 +9,7 @@ import ConnectedSystemsApi from "osh-js/source/core/consysapi/ConnectedSystemsAp
 import {
     ADJ_DEF,
     ALARM_DEF, CONFIG_DEF,
-    CONNECTION_DEF, DAILY_FILE_DEF, DAILY_FILE_DEF2, DOSE_DEF, DURATION_DEF, END_DEF, GAMMA_COUNT_DEF, HLS_VIDEO_DEF,
+    CONNECTION_DEF, DAILY_FILE_DEF, DOSE_DEF, DURATION_DEF, END_DEF, GAMMA_COUNT_DEF, HLS_VIDEO_DEF,
     LINEARSPEC_DEF, LOCATION_VECTOR_DEF, NEUTRON_COUNT_DEF,
     OCCUPANCY_PILLAR_DEF, RASTER_IMAGE_DEF, REPORT_DEF, SENSOR_LOCATION_DEF,
     SITE_DIAGRAM_DEF, SPEED_DEF, START_DEF,
@@ -151,8 +151,7 @@ export function isHLSVideoControlStream(controlStream: typeof ControlStream): bo
 }
 
 export function isDailyFileDataStream(datastream: typeof DataStream): boolean {
-    return includesDefinition(getObservedDefinitions(datastream), DAILY_FILE_DEF)
-        || includesDefinition(getObservedDefinitions(datastream), DAILY_FILE_DEF2);
+    return includesDefinition(getObservedDefinitions(datastream), DAILY_FILE_DEF);
 }
 
 export function hasDefinitionProperties(stream: typeof ConnectedSystemsApi){
