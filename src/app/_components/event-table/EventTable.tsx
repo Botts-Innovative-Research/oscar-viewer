@@ -22,6 +22,7 @@ import {useRouter} from "next/dist/client/components/navigation";
 
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
+import {occupancyDetailsPath} from "@/lib/data/oscar/SharedOccupancy";
 import {isOccupancyDataStream, isThresholdDataStream} from "@/lib/data/oscar/Utilities";
 import {convertToMap, hashString} from "@/app/utils/Utils";
 import {OCCUPANCY_PILLAR_DEF} from "@/lib/data/Constants";
@@ -418,7 +419,11 @@ export default function EventTable({
         dispatch(setSelectedRowId(event.id));
         dispatch(setSelectedEvent(event));
         getLatestGB(event);
-        if (navigate) router.push("/event-details");
+        if (navigate) {
+            const lane = stableLaneMap.get(event.laneId);
+            router.push(event.occupancyObsId && lane
+                ? occupancyDetailsPath(event.occupancyObsId, lane.parentNode) : "/event-details");
+        }
     };
 
     const enumerateAllFiltered = useCallback(async (): Promise<EventTableData[]> => {
