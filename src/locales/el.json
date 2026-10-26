@@ -147,6 +147,8 @@
   "laneIdValue": "Αναγνωριστικό λωρίδας: {lane}",
   "laneStatusValue": "{lane} — Κατάσταση: {status}",
   "occupancyTable": "Πίνακας διελεύσεων",
+  "occupancyOverview": "Επισκόπηση διελεύσεων",
+  "dailyFileOccupancy": "Ημερήσια έξοδος αρχείου",
   "faultTable": "Πίνακας βλαβών",
   "statusValue": "Κατάσταση: {status}",
   "status.alarm": "Συναγερμός",

@@ -1,81 +1,48 @@
 "use client"
 
-import {DailyFileData, EventTableData} from "@/lib/data/oscar/TableHelpers";
+import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {Box} from "@mui/material";
-import {DataGrid, GridColDef} from "@mui/x-data-grid";
-import {useCallback, useContext, useEffect, useState} from "react";
+import {Box, Button, Stack, Typography} from "@mui/material";
+import React, {useCallback, useContext, useEffect, useState} from "react";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import {
     isDailyFileDataStream,
 } from "@/lib/data/oscar/Utilities";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream";
-import {useLanguage} from '@/app/contexts/LanguageContext';
-import {getDataGridLocaleText, getIntlLocale} from '@/app/utils/LocaleUtils';
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import {Download} from "@mui/icons-material";
+import IconButton from "@mui/material/IconButton";
+import {useLanguage} from "@/app/contexts/LanguageContext";
 
 
-export default function DailyFileTable({event}: { event: EventTableData}) {
-    const {language, t} = useLanguage();
-    const locale = getIntlLocale(language);
-    const [log, setLog] = useState<DailyFileData[]>([]);
+export default function DailyFileTable(props: { event: EventTableData }) {
+    const {t} = useLanguage();
+    const [logs, setLogs] = useState([]);
+
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
 
-    const columns: GridColDef<DailyFileData>[] = [
-        {
-            field: 'laneId',
-            headerName: t('laneId'),
-            type: 'string',
-            minWidth: 100,
-            flex: 1,
-        },
-        {
-            field: 'timestamp',
-            headerName: t('timestamp'),
-            valueFormatter: (value) => value
-                ? new Date(value).toLocaleString(locale, {
-                    year: 'numeric',
-                    month: 'numeric',
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: 'numeric',
-                    second: 'numeric'
-                })
-                : '',
-            minWidth: 200,
-            flex: 2,
-        },
-        {
-            field: 'message',
-            headerName: t('message'),
-            type: 'string',
-            minWidth: 150,
-            flex: 1,
-        },
-    ];
-
     const fetchMessages = useCallback(async () => {
-        const currentLane = event.laneId;
+        const currentLane = props.event.laneId;
         const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
         if (!currLaneEntry) {
             console.warn("Cannot load daily file: lane entry is unavailable:", currentLane);
-            setLog([]);
+            setLogs([]);
             return;
         }
 
         const datastream: typeof DataStream = currLaneEntry.datastreams.find((ds) => isDailyFileDataStream(ds));
         if (!datastream) {
             console.warn("No daily file datastream found for this lane");
-            setLog([]);
+            setLogs([]);
             return;
         }
 
         try {
             const observations = await datastream.searchObservations(new ObservationFilter({
-                resultTime: `${event.startTime}/${event.endTime}`,
+                resultTime: `${props.event.startTime}/${props.event.endTime}`,
                 order: 'asc',
             }), 1000);
-            const rows: DailyFileData[] = [];
+            const rows = [];
 
             while (observations.hasNext()) {
                 const page = await observations.nextPage();
@@ -89,41 +56,69 @@ export default function DailyFileTable({event}: { event: EventTableData}) {
                         ?? observation?.properties?.resultTime
                         ?? observation?.timestamp;
 
+
                     return message && timestamp
-                        ? [new DailyFileData(currentLane, message, timestamp)]
+                        ? [`${message},${timestamp}`]
                         : [];
                 }));
             }
 
-            setLog(rows);
+            setLogs(rows);
         } catch (error) {
             console.error("Failed to load daily-file messages:", error);
-            setLog([]);
+            setLogs([]);
         }
 
-    }, [event, laneMapRef]);
+    }, [props.event, laneMapRef]);
 
     useEffect(() => {
         void fetchMessages();
     }, [fetchMessages]);
 
+    function handleDownload(){
+        const csvContent = logs.join('\n');
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `exported_dailyfile_${props.event.startTime}_${props.event.endTime}.csv`);
+        document.body.appendChild(link);
+        link.click();
+
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
 
     return(
-        <Box sx={{height: 300, width: '100%'}}>
-            <DataGrid
-                localeText={getDataGridLocaleText(language)}
-                rows={log}
-                columns={columns}
-                initialState={{
-                    pagination: {
-                        paginationModel: {
-                            pageSize: 10
-                        }
-                    }
+        <Box sx={{height: 300, width: '100%', display: 'flex', flexDirection: 'column' }}>
+            <Stack direction="row" spacing={1} alignItems="center">
+                <Typography variant="h5">
+                    {t('dailyFileOccupancy')}
+                </Typography>
+                <IconButton
+                    aria-label="download"
+                    onClick={() => {
+                    handleDownload()
+                    }}
+                >
+                    <Download />
+                </IconButton>
+            </Stack>
+            <Box
+                component="pre"
+                sx={{
+                    flexGrow: 1,
+                    height: 'calc(100% - 40px)',
+                    overflowY: 'auto',
+                    padding: '10px',
+                    margin: 0,
+                    boxSizing: 'border-box',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-all',
                 }}
-                pageSizeOptions={[5, 10, 25, 50, 100]}
-                disableRowSelectionOnClick={true}
-            />
+            >
+                {logs.join('\n')}
+            </Box>
         </Box>
     )
 }

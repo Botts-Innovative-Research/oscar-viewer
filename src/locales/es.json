@@ -147,6 +147,8 @@
   "laneIdValue": "ID de carril: {lane}",
   "laneStatusValue": "{lane} — Estado: {status}",
   "occupancyTable": "Tabla de ocupaciones",
+  "occupancyOverview": "Resumen de ocupación",
+  "dailyFileOccupancy": "Salida diaria de archivos",
   "faultTable": "Tabla de fallos",
   "statusValue": "Estado: {status}",
   "status.alarm": "Alarma",

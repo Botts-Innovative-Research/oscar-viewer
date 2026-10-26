@@ -757,9 +757,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 <Grid container spacing={2} sx={{ width: '100%' }}>
 
                     <Grid item xs={12}>
-                        <Typography variant="h5">
+                        <><Typography variant="h5">
                             {t('evidenceCollection')}
-                        </Typography>
+                        </Typography></>
                     </Grid>
 
                     {uploadedFiles.length > 0 && (

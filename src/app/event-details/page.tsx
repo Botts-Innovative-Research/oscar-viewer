@@ -196,15 +196,20 @@ export default function EventDetailsPage() {
                         </Grid>
 
                         {/* MISC TABLE */}
-                        <Grid item xs={12}>
-                            <Paper variant='outlined'>
-                                <MiscTable key={eventData.id} eventData={eventData}/>
-                            </Paper>
+                        <Grid item container xs={12} spacing={2}>
+                            <Grid item xs={12} md={6}>
+                                <Paper variant='outlined' sx={{ height: '100%'}}>
+                                    <MiscTable key={eventData.id} eventData={eventData}/>
+                                </Paper>
+                            </Grid>
+
+                            <Grid item xs={12} md={6}>
+                                <Paper variant='outlined' sx={{ height: '100%'}}>
+                                    <DailyFileTable event={eventData}/>
+                                </Paper>
+                            </Grid>
                         </Grid>
 
-                        <Grid item xs={12}>
-                            <DailyFileTable event={eventData}/>
-                        </Grid>
 
                         {/* ADJUDICATION */}
                         <Grid item xs={12}>

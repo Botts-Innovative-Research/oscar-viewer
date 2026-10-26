@@ -147,6 +147,8 @@
   "laneIdValue": "Lane ID: {lane}",
   "laneStatusValue": "{lane} — Status: {status}",
   "occupancyTable": "Occupancy Table",
+  "occupancyOverview": "Occupancy Overview",
+  "dailyFileOccupancy": "Daily File Output",
   "faultTable": "Fault Table",
   "statusValue": "Status: {status}",
   "status.alarm": "Alarm",

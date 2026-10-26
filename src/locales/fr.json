@@ -147,6 +147,8 @@
   "laneIdValue": "ID de la voie : {lane}",
   "laneStatusValue": "{lane} — État : {status}",
   "occupancyTable": "Tableau des occupations",
+  "occupancyOverview": "Aperçu des occupations",
+  "dailyFileOccupancy": "Sortie quotidienne de fichier",
   "faultTable": "Tableau des défauts",
   "statusValue": "État : {status}",
   "status.alarm": "Alarme",
