@@ -82,7 +82,7 @@ export default function DailyFileMessage(props: MessageProps) {
         const initialMsg: DailyFileType = {
             id: -1,
             name: currentLane,
-            message: latestObservation.result.rpmMessage;
+            message: latestObservation.result.rpmMessage
         }
         setDailyFileMessage(initialMsg);
     }
