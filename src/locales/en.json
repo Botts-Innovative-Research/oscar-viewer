@@ -147,6 +147,8 @@
   "laneIdValue": "Lane ID: {lane}",
   "laneStatusValue": "{lane} — Status: {status}",
   "occupancyTable": "Occupancy Table",
+  "occupancyOverview": "Occupancy Overview",
+  "dailyFileOccupancy": "Daily File Output",
   "faultTable": "Fault Table",
   "statusValue": "Status: {status}",
   "status.alarm": "Alarm",
@@ -384,5 +386,6 @@
   "retryFailed": "Retry failed",
   "adjudicateCount": "Adjudicate {count}",
   "bulkAdjudicationFailed": "Bulk adjudication could not be completed. No failed items were hidden; review connectivity and try again.",
-  "bulkSelectionLoadFailed": "The complete filtered alarm list could not be loaded. Nothing was selected."
+  "bulkSelectionLoadFailed": "The complete filtered alarm list could not be loaded. Nothing was selected.",
+  "rpmMessage": "RPM Message: {message}"
 }

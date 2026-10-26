@@ -147,6 +147,8 @@
   "laneIdValue": "ID de carril: {lane}",
   "laneStatusValue": "{lane} — Estado: {status}",
   "occupancyTable": "Tabla de ocupaciones",
+  "occupancyOverview": "Resumen de ocupación",
+  "dailyFileOccupancy": "Salida diaria de archivos",
   "faultTable": "Tabla de fallos",
   "statusValue": "Estado: {status}",
   "status.alarm": "Alarma",
@@ -384,5 +386,6 @@
   "retryFailed": "Reintentar fallidos",
   "adjudicateCount": "Adjudicar {count}",
   "bulkAdjudicationFailed": "No se pudo completar la adjudicación masiva. No se ocultaron los elementos fallidos; compruebe la conectividad y vuelva a intentarlo.",
-  "bulkSelectionLoadFailed": "No se pudo cargar la lista completa de alarmas filtradas. No se seleccionó nada."
+  "bulkSelectionLoadFailed": "No se pudo cargar la lista completa de alarmas filtradas. No se seleccionó nada.",
+  "rpmMessage": "Mensaje RPM: {message}"
 }

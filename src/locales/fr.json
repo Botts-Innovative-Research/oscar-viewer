@@ -147,6 +147,8 @@
   "laneIdValue": "ID de la voie : {lane}",
   "laneStatusValue": "{lane} — État : {status}",
   "occupancyTable": "Tableau des occupations",
+  "occupancyOverview": "Aperçu des occupations",
+  "dailyFileOccupancy": "Sortie quotidienne de fichier",
   "faultTable": "Tableau des défauts",
   "statusValue": "État : {status}",
   "status.alarm": "Alarme",
@@ -384,5 +386,6 @@
   "retryFailed": "Réessayer les échecs",
   "adjudicateCount": "Adjuger {count}",
   "bulkAdjudicationFailed": "L’adjudication groupée n’a pas pu être terminée. Aucun élément en échec n’a été masqué ; vérifiez la connexion et réessayez.",
-  "bulkSelectionLoadFailed": "La liste complète des alarmes filtrées n’a pas pu être chargée. Aucun élément n’a été sélectionné."
+  "bulkSelectionLoadFailed": "La liste complète des alarmes filtrées n’a pas pu être chargée. Aucun élément n’a été sélectionné.",
+  "rpmMessage": "Message RPM : {message}"
 }

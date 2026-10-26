@@ -22,6 +22,7 @@ import ShareOccupancyButton from "@/app/_components/event-details/ShareOccupancy
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {isThresholdDataStream} from "@/lib/data/oscar/Utilities";
 import {getObservations} from "@/app/utils/ChartUtils";
+import DailyFileTable from "@/app/_components/event-preview/DailyFileTable";
 
 
 export default function EventDetailsPage() {
@@ -195,11 +196,20 @@ export default function EventDetailsPage() {
                         </Grid>
 
                         {/* MISC TABLE */}
-                        <Grid item xs={12}>
-                            <Paper variant='outlined'>
-                                <MiscTable key={eventData.id} eventData={eventData}/>
-                            </Paper>
+                        <Grid item container xs={12} spacing={2}>
+                            <Grid item xs={12} md={6}>
+                                <Paper variant='outlined' sx={{ height: '100%'}}>
+                                    <MiscTable key={eventData.id} eventData={eventData}/>
+                                </Paper>
+                            </Grid>
+
+                            <Grid item xs={12} md={6}>
+                                <Paper variant='outlined' sx={{ height: '100%'}}>
+                                    <DailyFileTable event={eventData}/>
+                                </Paper>
+                            </Grid>
                         </Grid>
+
 
                         {/* ADJUDICATION */}
                         <Grid item xs={12}>
