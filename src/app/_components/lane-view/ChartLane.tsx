@@ -110,7 +110,7 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
             const curves = mode === 'gamma'
                 ? createGammaDetectorViewCurves(datasources.gamma, labels)
                 : createNeutronDetectorViewCurves(datasources.neutron, labels);
-            const chartLabel = t(' detector');
+            const chartLabel = t('detector');
 
             const chartIds = mode === 'gamma'
                 ? gammaDetectorChartIds
