@@ -554,7 +554,16 @@ export default function EventTable({
         .map(column => column.field);
 
     return (
-        <Box sx={{height: 800, width: "100%"}}>
+        <Box sx={(theme) => (
+            {
+                height: {
+                    xs: theme.tokens.tableHeight.xs,
+                    sm: theme.tokens.tableHeight.sm,
+                    lg: theme.tokens.tableHeight.lg
+                },
+                width: "100%"
+            })}
+        >
             <DataGrid
                 localeText={getDataGridLocaleText(language)}
                 rows={rows}
@@ -607,13 +616,24 @@ export default function EventTable({
                     return "";
                 }}
                 getRowClassName={params => params.row.id === selectedRowId ? "preview-row" : ""}
-                sx={{
-                    [`.${gridClasses.row}.preview-row`]: {boxShadow: "inset 3px 0 0 #1976d2"},
-                    [`.${gridClasses.cell}.highlightGamma`]: {backgroundColor: "error.main", color: "error.contrastText"},
-                    [`.${gridClasses.cell}.highlightNeutron`]: {backgroundColor: "info.main", color: "info.contrastText"},
-                    [`.${gridClasses.cell}.highlightGammaNeutron`]: {backgroundColor: "secondary.main", color: "secondary.contrastText"},
+                sx={(theme) => ({
+                    [`.${gridClasses.row}.preview-row`]: {
+                        boxShadow: `inset 3px 0 0 ${theme.palette.primary.main}`,
+                    },
+                    [`.${gridClasses.cell}.highlightGamma`]: {
+                        backgroundColor: "error.main",
+                        color: "error.contrastText",
+                    },
+                    [`.${gridClasses.cell}.highlightNeutron`]: {
+                        backgroundColor: "info.main",
+                        color: "info.contrastText",
+                    },
+                    [`.${gridClasses.cell}.highlightGammaNeutron`]: {
+                        backgroundColor: "secondary.main",
+                        color: "secondary.contrastText",
+                    },
                     border: "none",
-                }}
+                })}
             />
             <NestedEventFilterDialog
                 open={filterDialogOpen}

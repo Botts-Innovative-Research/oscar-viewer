@@ -93,7 +93,17 @@ export default function StatTable({selectedTimeRangeCounts}: {selectedTimeRangeC
     ]
 
     return (
-        <Box sx={{height: 800, width: '100%', overflowX: 'auto'}}>
+        <Box
+            sx={(theme) => ({
+                height: {
+                    xs: theme.tokens.tableHeight.xs,
+                    sm: theme.tokens.tableHeight.sm,
+                    lg: theme.tokens.tableHeight.lg
+                },
+                width: '100%',
+                overflowX: 'auto'
+            })}
+        >
             <DataGrid
                 localeText={getDataGridLocaleText(language)}
                 rows={selectedTimeRangeCounts}

@@ -3,36 +3,73 @@
 import {
   Box,
   ThemeProvider,
-  createTheme,
   useTheme,
   useMediaQuery,
 } from "@mui/material";
-import { ReactNode, Suspense, useMemo } from "react";
+import {createContext, ReactNode, Suspense, useContext, useEffect, useMemo, useState} from "react";
 import CssBaseline from "@mui/material/CssBaseline";
 import { getTheme } from "@/app/style/theme";
 import "@/app/style/global.css";
 import SuspenseLoad from "./_components/SuspenseLoad";
 import {LanguageProvider} from "@/app/contexts/LanguageContext";
 
-export default function Providers({ children }: { children: ReactNode }) {
-  // Get system preference for dark/light mode
-  const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
+export type ThemePreference = "system" | "light" | "dark";
 
-  // Implement custom theme based on system preference
+interface ThemePreferenceContextValue {
+  themePreference: ThemePreference;
+  setThemePreference: (preference: ThemePreference) => void;
+}
+
+const ThemePreferenceContext = createContext<ThemePreferenceContextValue | undefined>(undefined);
+const THEME_PREFERENCE_STORAGE_KEY = "oscar-theme-preference";
+
+export const useThemePreference = () => {
+  const context = useContext(ThemePreferenceContext);
+
+  if (!context) {
+    throw new Error("useThemePreference must be used within Providers");
+  }
+
+  return context;
+};
+
+export default function Providers({ children }: { children: ReactNode }) {
+  const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
+  const [themePreference, setThemePreferenceState] = useState<ThemePreference>("system");
+
+  useEffect(() => {
+    const savedPreference = localStorage.getItem(THEME_PREFERENCE_STORAGE_KEY);
+
+    if (savedPreference === "system" || savedPreference === "light" || savedPreference === "dark") {
+      setThemePreferenceState(savedPreference);
+    }
+  }, []);
+
+  const setThemePreference = (preference: ThemePreference) => {
+    setThemePreferenceState(preference);
+    localStorage.setItem(THEME_PREFERENCE_STORAGE_KEY, preference);
+  };
+
+  const resolvedMode = themePreference === "system"
+    ? (prefersDarkMode ? "dark" : "light")
+    : themePreference;
+
   const theme = useMemo(
-    () => createTheme(getTheme(prefersDarkMode ? "dark" : "light")),
-    [prefersDarkMode]
+    () => getTheme(resolvedMode),
+    [resolvedMode]
   );
 
   return (
     <Suspense fallback={<SuspenseLoad fullPage={false} />}>
       <LanguageProvider>
-          <ThemeProvider theme={theme}>
+        <ThemeProvider theme={theme}>
+          <ThemePreferenceContext.Provider value={{themePreference, setThemePreference}}>
             <Box sx={{backgroundColor: "background.default"}}>
               <CssBaseline />
               {children}
             </Box>
-          </ThemeProvider>
+          </ThemePreferenceContext.Provider>
+        </ThemeProvider>
       </LanguageProvider>
     </Suspense>
   );

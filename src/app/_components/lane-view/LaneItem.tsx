@@ -14,45 +14,43 @@ export default function LaneItem(props: {
     const {t} = useLanguage();
     const statusKey = props.status.toLowerCase().replace(/[ -]/g, '');
 
-    const colors = (status: string) => {
-
-        if (status === 'Scan' || status === 'Background')
-            return ('#000');
-        else if( status === 'Alarm' || status === 'Tamper')
-            return ('#FFFFFF');
-
-    };
-
-
-    if (props.status == "none")
+    if (props.status.toLowerCase() === "none")
         return (<></>)
+
+    const status = props.status === 'Alarm' ? 'alarm'
+        : props.status === 'Tamper' || props.status === 'Tamper Off' ? 'tamper'
+            : props.status === 'Background' ? 'background'
+                : props.status === 'Scan' ? "scan"
+                    : props.status.startsWith('Fault') ? 'fault' 
+                        : props.status === 'Offline' ? 'offline' : 'online';
     return (
-        <Paper key={props.id} variant='outlined' color='#fff' sx={{ cursor: 'pointer', padding: 1,
-            backgroundColor: (
-                props.status == "Alarm" ? "errorHighlight"
-                    : props.status == 'Tamper' ? "secondaryHighlight"
-                        : props.status === ('Fault - Gamma Low') ? 'infoHighlight'
-                            : props.status === ('Fault - Neutron High') ? 'infoHighlight'
-                                : props.status === ('Fault - Gamma High') ? 'infoHighlight'
-                                    : props.status === 'Scan' || props.status === 'Background' || props.status==='Online' ? 'successHighlight'
-                                        : 'unknown'
-            )
-        }}
+        <Paper
+            key={props.id}
+            variant='outlined'
+            sx={(theme) => {
+                const statusColor = theme.palette.status[status];
+
+                return {
+                    cursor: 'pointer',
+                    p: 1,
+                    borderColor: statusColor.main,
+                    backgroundColor: statusColor.container,
+                    color: statusColor.onContainer,
+                };
+            }}
         >
             <Stack direction={"row"} justifyContent={"left"} alignItems={"center"}>
                 <CircleRoundedIcon fontSize="large"
-                    color={(
-                        props.status === "Alarm" ? "error"
-                            : props.status === 'Tamper' || props.status === 'Tamper Off' ? "secondary"
-                                : props.status ==='Fault - Gamma Low' ? 'info'
-                                    : props.status === 'Fault - Gamma High' ? 'info'
-                                        : props.status === 'Fault - Neutron High' ? 'info'
-                                            : props.status === 'Scan' || props.status === 'Background' || props.status==='Online' ? 'success'
-                                                : 'inherit'
-                    )
-                    }
-                    sx={{ marginRight: 2}} />
-                <Typography variant="h6" color={colors(props.status)}>{t('laneStatusValue', {lane: props.name, status: t(`status.${statusKey}`)})}</Typography>
+                    sx={(theme) => ({
+                        color: theme.palette.status[status].main,
+                        mr: 2,
+                    })} />
+                <Typography
+                    variant="h6"
+                    sx={(theme) => ({color: theme.palette.status[status].onContainer})}
+                >
+                    {t('laneStatusValue', {lane: props.name, status: t(`status.${statusKey}`)})}
+                </Typography>
             </Stack>
         </Paper>
     );
