@@ -51,7 +51,7 @@ export default function DailyFileTable(props: { event: EventTableData }) {
                     const result = observation?.result
                         ?? observation?.properties?.result
                         ?? observation?.results?.[0]?.data;
-                    const message = result?.rapiscanMessage ?? result?.aspectMessage;
+                    const message = result?.rpmMessage;
                     const timestamp = observation?.resultTime
                         ?? observation?.properties?.resultTime
                         ?? observation?.timestamp;
