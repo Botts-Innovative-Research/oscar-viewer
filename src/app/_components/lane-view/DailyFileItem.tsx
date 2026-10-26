@@ -26,7 +26,7 @@ export default function DailyFileItem(props: {
                 <Typography
                     variant="h6"
                 >
-                    RPM Message: {props.message}
+                    {t('rpmMessage', {message: props.message})}
                 </Typography>
             </Stack>
         </Paper>
