@@ -410,6 +410,7 @@ export function EventPreview() {
             {/* ADJUDICATION SELECT */}
             <Grid item xs={12}>
                 <AdjudicationSelect
+                    nodes={laneEntry ? [laneEntry.parentNode] : []}
                     adjCode={adjudicationCode}
                     onSelect={handleAdjudicationCode}
                 />

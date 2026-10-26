@@ -1,4 +1,6 @@
 {
+  "customDispositionCodes": "Custom disposition codes",
+  "customDispositionCodesLoadFailed": "Custom disposition codes could not be loaded. Reopen the list to retry.",
   "appTitle": "OSCAR",
   "dashboard": "Dashboard",
   "events": "Events",

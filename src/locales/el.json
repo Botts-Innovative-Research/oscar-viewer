@@ -1,4 +1,6 @@
 {
+  "customDispositionCodes": "Προσαρμοσμένοι κωδικοί διάθεσης",
+  "customDispositionCodesLoadFailed": "Δεν ήταν δυνατή η φόρτωση των προσαρμοσμένων κωδικών. Ανοίξτε ξανά τη λίστα για νέα προσπάθεια.",
   "appTitle": "OSCAR",
   "dashboard": "Πίνακας ελέγχου",
   "events": "Συμβάντα",

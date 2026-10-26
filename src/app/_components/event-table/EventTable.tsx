@@ -603,6 +603,12 @@ export default function EventTable({
                 onApply={applyFilter}
             />
             <BulkAdjudicationDialog
+                nodes={allFilteredSelected ? bulkQueryPlans.map(plan => plan.node) :
+                    Array.from(selectedKeys).flatMap(key => {
+                        const event = eventCacheRef.current.get(key);
+                        const lane = event && findLaneByDataStreamId(event.dataStreamId);
+                        return lane ? [lane.parentNode] : [];
+                    })}
                 open={bulkDialogOpen}
                 count={selectedCount}
                 allFiltered={allFilteredSelected}

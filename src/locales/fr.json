@@ -1,4 +1,6 @@
 {
+  "customDispositionCodes": "Codes de disposition personnalisés",
+  "customDispositionCodesLoadFailed": "Impossible de charger les codes personnalisés. Rouvrez la liste pour réessayer.",
   "appTitle": "OSCAR",
   "dashboard": "Tableau de bord",
   "events": "Événements",

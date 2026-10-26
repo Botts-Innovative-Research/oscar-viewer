@@ -18,12 +18,16 @@ import {EventType} from "osh-js/source/core/event/EventType";
 import {getDataGridLocaleText, getIntlLocale} from '@/app/utils/LocaleUtils';
 
 
+import {useCustomAdjudicationCodes} from "@/app/hooks/useCustomAdjudicationCodes";
+import {resolveAdjudicationCode} from "@/lib/data/oscar/adjudication/CustomAdjudicationCodes";
+
 export default function AdjudicationLog(props: {
     event: EventTableData;
     node: INode;
 }) {
     const { language, t } = useLanguage();
     const locale = getIntlLocale(language);
+    const {codes: customCodes} = useCustomAdjudicationCodes(props.node ? [props.node] : []);
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
     const [adjLog, setAdjLog] = useState<AdjudicationData[]>([]);
     const [filteredLog, setFilteredLog] = useState<AdjudicationData[]>([]);
@@ -69,7 +73,10 @@ export default function AdjudicationLog(props: {
             minWidth: 150,
             flex: 1.5,
             valueGetter: (value, row) => {
-                return t(`adjudicationCode.${row.adjudicationCode.code}`)
+                const code = row.adjudicationCode.code;
+                if (code <= 11) return t(`adjudicationCode.${code}`);
+                const custom = customCodes.find(entry => entry.code === code);
+                return custom ? `Code ${code}: ${custom.label}` : `Code ${code}`;
             }
         },
         {
@@ -198,7 +205,7 @@ export default function AdjudicationLog(props: {
                 data.setFeedback(results.feedback);
                 data.setIsotopes(results.isotopes ?? NaN);
                 data.setSecondaryInspectionStatus(results.secondaryInspectionStatus);
-                data.setAdjudicationCode(AdjudicationCodes.getCodeObjByIndex(results.adjudicationCode));
+                data.setAdjudicationCode(resolveAdjudicationCode(results.adjudicationCode, []));
                 data.setVehicleId(results.vehicleId ?? NaN);
                 data.setFilePaths(results.filePaths ?? NaN)
                 data.setTime(obs.reportTime)
@@ -254,7 +261,7 @@ export default function AdjudicationLog(props: {
                     adjData.setFeedback(results.feedback);
                     adjData.setIsotopes(results.isotopes ?? NaN);
                     adjData.setSecondaryInspectionStatus(results.secondaryInspectionStatus);
-                    adjData.setAdjudicationCode(AdjudicationCodes.getCodeObjByIndex(results.adjudicationCode));
+                    adjData.setAdjudicationCode(resolveAdjudicationCode(results.adjudicationCode, []));
                     adjData.setVehicleId(results.vehicleId ?? NaN);
                     adjData.setFilePaths(results.filePaths ?? NaN)
                     adjData.setTime(statusData.reportTime)
