@@ -24,38 +24,21 @@ export default function DailyFileMessage(props: MessageProps) {
 
     const currentLane = useSelector((state: RootState) => state.laneView.currentLane);
 
-    // const addSubscriptionCallbacks = useCallback(() => {
-    //     console.log('he', props.dataSourcesByLane.dailyFileRT)
-    //
-    //     props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName(
-    //         "dailyFileRT",
-    //         (message: any) => console.log("daily-file MQTT payload", message),
-    //     );
-    //
-    //     props.dataSourcesByLane.addConnectToALLDSMatchingName("dailyFileRT");
-    //
-    // }, [props.dataSourcesByLane]);
-
-    useEffect(() => {
-        const source = props.dataSourcesByLane?.dailyFileRT[0];
-        if (!source) return;
-
+    const addSubscriptionCallbacks = useCallback(() => {
         const handler = (msg: any) => {
-            console.log("daily-file MQTT payload", msg);
-            const state = msg?.values[0].data.result.rapiscanMessage ?? msg?.values[0].data.result.aspectMessage;
-
+            const state = msg?.values[0].data.result.rpmMessage;
             updateMessage(currentLane, state);
         };
+        props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName(
+            "dailyFileRT", handler
+        );
 
-        source.subscribe(handler, [EventType.DATA]);
-
-        void source.connect()
-            .then(() => console.log("daily-file MQTT connected", source.properties.resource))
-            .catch((error: any) => console.error("daily-file MQTT failed", error));
+        props.dataSourcesByLane.addConnectToALLDSMatchingName("dailyFileRT");
 
         return () => {
-            void source.disconnect();
-        };
+            props.dataSourcesByLane.addDisconnectToALLDSMatchingName("dailyFileRT")
+        }
+
     }, [props.dataSourcesByLane]);
 
     async function fetchLatestMessage() {
@@ -91,7 +74,7 @@ export default function DailyFileMessage(props: MessageProps) {
         if (props.dataSourcesByLane)
             fetchLatestMessage();
 
-        // addSubscriptionCallbacks();
+        addSubscriptionCallbacks();
     }, [props.dataSourcesByLane]);
 
     function updateMessage(laneName: string, newState: string) {
