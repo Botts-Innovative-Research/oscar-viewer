@@ -18,8 +18,13 @@ import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
 import {EventType} from "osh-js/source/core/event/EventType";
 import {useRouter} from "next/dist/client/components/navigation";
 
-import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {EventTableData} from "@/lib/data/oscar/TableHelpers";
+import {
+    acquireSharedConnection,
+    findRealtimeDataSourceForStream,
+    LaneMapEntry,
+    type SharedConnectionLease,
+} from "@/lib/data/oscar/LaneCollection";
+import {EventTableData, sortEventsByAlarmPriority} from "@/lib/data/oscar/TableHelpers";
 import {isOccupancyDataStream, isThresholdDataStream} from "@/lib/data/oscar/Utilities";
 import {convertToMap, hashString} from "@/app/utils/Utils";
 import {OCCUPANCY_PILLAR_DEF} from "@/lib/data/Constants";
@@ -82,6 +87,13 @@ interface QueryPlan {
 
 const PAGE_SIZE = 15;
 const BULK_FETCH_SIZE = 250;
+
+const EVENT_PRIORITY_FILTERS = [
+    "gammaAlarm=true AND neutronAlarm=true",
+    "gammaAlarm=false AND neutronAlarm=true",
+    "gammaAlarm=true AND neutronAlarm=false",
+    "gammaAlarm=false AND neutronAlarm=false",
+];
 
 const deduplicateEvents = (events: EventTableData[]): EventTableData[] => {
     const result = new Map<string, EventTableData>();
@@ -158,6 +170,17 @@ export default function EventTable({
             .map(plan => ({...plan, datastreamIds: Array.from(new Set(plan.datastreamIds))}))
             .filter(plan => plan.datastreamIds.length > 0);
     }, [stableLaneMap, tableMode, currentLane, filter, baseServerFilter]);
+
+    const pageQueryPlans = useMemo<QueryPlan[]>(() => {
+        const priorities = tableMode === "alarmtable"
+            ? EVENT_PRIORITY_FILTERS.slice(0, 3)
+            : EVENT_PRIORITY_FILTERS;
+        return queryPlans.flatMap(plan => priorities.map(priorityFilter => ({
+            ...plan,
+            key: `${plan.key}\u001f${priorityFilter}`,
+            filter: combineServerFilters(plan.filter, priorityFilter),
+        })));
+    }, [queryPlans, tableMode]);
 
     const bulkQueryPlans = useMemo<QueryPlan[]>(() => queryPlans.map(plan => ({
         ...plan,
@@ -255,25 +278,25 @@ export default function EventTable({
 
     const fetchPage = useCallback(async (page: number) => {
         const requestId = ++pageRequestRef.current;
-        if (queryPlans.length === 0) {
+        if (pageQueryPlans.length === 0) {
             setRows([]);
             setLoading(false);
             return;
         }
         setLoading(true);
         try {
-            if (queryPlans.length === 1) {
-                const pageRows = await fetchPlanRows(queryPlans[0], PAGE_SIZE, page * PAGE_SIZE);
+            if (pageQueryPlans.length === 1) {
+                const pageRows = await fetchPlanRows(pageQueryPlans[0], PAGE_SIZE, page * PAGE_SIZE);
                 if (requestId !== pageRequestRef.current) return;
                 setRows(deduplicateEvents(pageRows));
                 currentPageRef.current = page;
                 return;
             }
             const required = (page + 1) * PAGE_SIZE;
-            const results = await runWithConcurrency(queryPlans, 6, plan => fetchPlanRows(plan, required, 0));
+            const results = await runWithConcurrency(pageQueryPlans, 6, plan => fetchPlanRows(plan, required, 0));
             if (requestId !== pageRequestRef.current) return;
             const merged = deduplicateEvents(results.flat())
-                .sort((left, right) => new Date(right.startTime).getTime() - new Date(left.startTime).getTime());
+                .sort(sortEventsByAlarmPriority);
             setRows(merged.slice(page * PAGE_SIZE, required));
             currentPageRef.current = page;
         } catch (error) {
@@ -283,7 +306,7 @@ export default function EventTable({
         } finally {
             if (requestId === pageRequestRef.current) setLoading(false);
         }
-    }, [queryPlans, fetchPlanRows]);
+    }, [pageQueryPlans, fetchPlanRows]);
 
     useEffect(() => {
         refreshCounts();
@@ -323,7 +346,9 @@ export default function EventTable({
                         setPostSelectionKeys(previous => new Set(previous).add(eventSelectionKey(event)));
                     }
                     setRowCount(previous => previous + 1);
-                    setRows(previous => deduplicateEvents([event, ...previous]).slice(0, PAGE_SIZE));
+                    setRows(previous => deduplicateEvents([event, ...previous])
+                        .sort(sortEventsByAlarmPriority)
+                        .slice(0, PAGE_SIZE));
                 } catch (error) {
                     console.error("Error processing live occupancy event", error);
                 }
@@ -513,7 +538,14 @@ export default function EventTable({
         },
         {field: "maxGamma", headerName: t("maxGamma"), minWidth: 150, flex: 1.2},
         {field: "maxNeutron", headerName: t("maxNeutron"), minWidth: 150, flex: 1.2},
-        {field: "status", headerName: t("status"), minWidth: 135, flex: 1.2},
+        {
+            field: "status", headerName: t("status"), minWidth: 135, flex: 1.2,
+            sortComparator: (_left, _right, leftCellParams, rightCellParams) =>
+                sortEventsByAlarmPriority(
+                    leftCellParams.api.getRow(leftCellParams.id),
+                    rightCellParams.api.getRow(rightCellParams.id),
+                ),
+        },
         {
             field: "adjudicatedIds", headerName: t("adjudicated"), minWidth: 110, flex: 1,
             valueFormatter: (value: any) => value?.length > 0 ? t("yes") : t("no"),
@@ -573,7 +605,7 @@ export default function EventTable({
                     columnsManagement: {getTogglableColumns: getColumnList},
                 }}
                 initialState={{
-                    sorting: {sortModel: [{field: "startTime", sort: "desc"}]},
+                    sorting: {sortModel: [{field: "status", sort: "asc"}]},
                     columns: {columnVisibilityModel: {adjudicatedIds: viewAdjudicated}},
                 }}
                 getCellClassName={(params: GridCellParams<any, any, string>) => {
@@ -601,6 +633,12 @@ export default function EventTable({
                 onApply={applyFilter}
             />
             <BulkAdjudicationDialog
+                nodes={allFilteredSelected ? bulkQueryPlans.map(plan => plan.node) :
+                    Array.from(selectedKeys).flatMap(key => {
+                        const event = eventCacheRef.current.get(key);
+                        const lane = event && findLaneByDataStreamId(event.dataStreamId);
+                        return lane ? [lane.parentNode] : [];
+                    })}
                 open={bulkDialogOpen}
                 count={selectedCount}
                 allFiltered={allFilteredSelected}

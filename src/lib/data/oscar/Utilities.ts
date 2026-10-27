@@ -8,11 +8,11 @@ import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStr
 import ConnectedSystemsApi from "osh-js/source/core/consysapi/ConnectedSystemsApi";
 import {
     ADJ_DEF,
-    ALARM_DEF, CONFIG_DEF,
-    CONNECTION_DEF, DOSE_DEF, DURATION_DEF, END_DEF, GAMMA_COUNT_DEF, HLS_VIDEO_DEF,
+    ALARM_DEF, ASPECT_DAILY_FILE_DEF, CONFIG_DEF,
+    CONNECTION_DEF, DAILY_FILE_DEF, DOSE_DEF, DURATION_DEF, END_DEF, GAMMA_COUNT_DEF, HLS_VIDEO_DEF,
     LINEARSPEC_DEF, LOCATION_VECTOR_DEF, NATIONAL_DEF,
     NEUTRON_COUNT_DEF,
-    OCCUPANCY_PILLAR_DEF, RASTER_IMAGE_DEF, N42_DEF, REPORT_DEF, SENSOR_LOCATION_DEF,
+    OCCUPANCY_PILLAR_DEF, OCCUPANCY_STATUS_DEF, OGC_CONNECTION_DEF, RAPISCAN_DAILY_FILE_DEF, RASTER_IMAGE_DEF, N42_DEF, REPORT_DEF, SENSOR_LOCATION_DEF,
     SITE_DIAGRAM_DEF, SPEED_DEF, START_DEF,
     TAMPER_STATUS_DEF,
     THRESHOLD_DEF, VIDEO_FRAME_DEF, WEB_ID_DEF
@@ -149,6 +149,13 @@ export function isWebIdAnalysisDataStream(datastream: typeof DataStream): boolea
 
 export function isHLSVideoControlStream(controlStream: typeof ControlStream): boolean {
     return includesDefinition(getControlledDefinitions(controlStream), HLS_VIDEO_DEF);
+}
+
+export function isDailyFileDataStream(datastream: typeof DataStream): boolean {
+    const definitions = getObservedDefinitions(datastream);
+    return includesDefinition(definitions, DAILY_FILE_DEF)
+        || includesDefinition(definitions, RAPISCAN_DAILY_FILE_DEF)
+        || includesDefinition(definitions, ASPECT_DAILY_FILE_DEF);
 }
 
 
