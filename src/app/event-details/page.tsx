@@ -7,7 +7,7 @@ import DataRow from "../_components/event-details/DataRow";
 import MiscTable from "../_components/event-details/MiscTable";
 import {useSelector} from "react-redux";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
-import {selectEventPreview, setEventPreview, setSelectedRowId} from "@/lib/state/EventPreviewSlice";
+import {selectEventPreview, setEventPreview, setLatestGB, setSelectedRowId} from "@/lib/state/EventPreviewSlice";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {PictureAsPdfRounded} from "@mui/icons-material";
 import {useReactToPrint} from "react-to-print";
@@ -16,6 +16,12 @@ import {useLanguage} from "@/app/contexts/LanguageContext";
 import AdjudicationDetail from "../_components/adjudication/AdjudicationDetail";
 import SuspenseLoad from "@/app/_components/SuspenseLoad";
 import AlarmQrExportButton from "@/app/_components/alarm-transfer/AlarmQrExportButton";
+import ShareOccupancyButton from "@/app/_components/event-details/ShareOccupancyButton";
+import DailyFileTable from "@/app/_components/event-preview/DailyFileTable";
+import {useSharedOccupancy} from "@/app/hooks/useSharedOccupancy";
+import {RootState} from "@/lib/state/Store";
+import {isThresholdDataStream} from "@/lib/data/oscar/Utilities";
+import {getObservations} from "@/app/utils/ChartUtils";
 import {useRouter, useSearchParams} from "next/navigation";
 import {useAppDispatch} from "@/lib/state/Hooks";
 import {setSelectedEvent} from "@/lib/state/EventDataSlice";
@@ -57,9 +63,19 @@ export default function EventDetailsPage() {
     const dispatch = useAppDispatch();
     const router = useRouter();
     const searchParams = useSearchParams();
+    const nodes = useSelector((state: RootState) => state.oshSlice.nodes);
+    const {laneMapRef, laneMapReady, readyLaneNames, scopedHref} = useContext(DataSourceContext);
+    const sharedRequested = searchParams.has("id");
+    const shared = useSharedOccupancy(
+        searchParams.get("id"),
+        searchParams.get("node"),
+        nodes,
+        laneMapRef.current,
+        laneMapReady,
+    );
     const eventIdValues = searchParams.getAll("eventId");
     const nodeIdValues = searchParams.getAll("nodeId");
-    const lookupRequested = eventIdValues.length > 0;
+    const lookupRequested = !sharedRequested && eventIdValues.length > 0;
     const lookupQueryMalformed = eventIdValues.length !== 1 || nodeIdValues.length > 1;
     const requestedEventId = eventIdValues.length === 1 ? eventIdValues[0] : "";
     const requestedNodeId = nodeIdValues.length === 1 ? nodeIdValues[0] : null;
@@ -68,11 +84,15 @@ export default function EventDetailsPage() {
     const [liveIdentityState, setLiveIdentityState] = useState<LiveIdentityState>("idle");
     const [liveIdentityRetryKey, setLiveIdentityRetryKey] = useState(0);
     const resolvedIdentityRef = useRef<{eventId: string; nodeId: string} | null>(null);
-    const eventData = lookupRequested ? resolvedEvent : eventPreview.eventData;
-    const {laneMapRef, laneMapReady, readyLaneNames, scopedHref} = useContext(DataSourceContext);
+    const eventData = sharedRequested
+        ? shared.event
+        : lookupRequested
+            ? resolvedEvent
+            : eventPreview.eventData;
     const laneReady = Boolean(eventData?.laneId && readyLaneNames.has(eventData.laneId));
     const laneEntry = eventData?.laneId ? laneMapRef.current?.get(eventData.laneId) : undefined;
     const [datasourcesReady, setDatasourcesReady] = useState<boolean>(false);
+    const [loadedEvent, setLoadedEvent] = useState<typeof eventData>(null);
     const [dataSourceError, setDataSourceError] = useState(false);
 
     const [gammaDatasources, setGammaDatasources] = useState<typeof ConSysApi[]>([]);
@@ -261,41 +281,52 @@ export default function EventDetailsPage() {
         scopedHref,
     ]);
 
-    const collectDataSources = useCallback(async() => {
-        if(!eventData || !laneEntry) return;
-
-        setDatasourcesReady(false);
-        setDataSourceError(false);
-
-        try {
-            const datasources = await laneEntry.getDatastreamsForEventDetail(eventData.startTime, eventData.endTime);
-
-            const updatedGamma = datasources.get("gamma") || [];
-            const updatedNeutron = datasources.get("neutron") || [];
-            const updatedThreshold = datasources.get("gammaTrshld") || [];
-
-            setGammaDatasources(updatedGamma);
-            setNeutronDatasources(updatedNeutron);
-            setThresholdDatasources(updatedThreshold);
-
-            setDatasourcesReady(true);
-        } catch (error) {
-            console.error("Failed to load event detail data sources:", error);
-            setDataSourceError(true);
+    useEffect(() => {
+        if (!sharedRequested) return;
+        let active = true;
+        dispatch(setLatestGB(null));
+        const threshold = laneEntry?.datastreams.find((stream: any) => isThresholdDataStream(stream)
+            && stream.properties["system@id"] === eventData?.rpmSystemId);
+        if (threshold && eventData) {
+            getObservations(eventData.startTime, eventData.endTime, threshold).then(value => {
+                if (active) dispatch(setLatestGB(value ?? null));
+            }).catch(error => console.error("Failed to load shared occupancy background:", error));
         }
-
-    }, [eventData, laneEntry]);
-
+        return () => { active = false; };
+    }, [eventData, laneEntry, sharedRequested, dispatch]);
 
     useEffect(() => {
-        async function callCollectDatasources(){
-            await collectDataSources();
-        }
+        setDatasourcesReady(false);
+        setDataSourceError(false);
+        setGammaDatasources([]);
+        setNeutronDatasources([]);
+        setThresholdDatasources([]);
+        let cancelled = false;
+        if (!eventData || !laneEntry || !laneReady) return;
+        const collect = async () => {
+            try {
+                const datasources = await laneEntry.getDatastreamsForEventDetail(eventData.startTime, eventData.endTime);
+                if (cancelled) return;
 
-        if(laneReady && laneEntry && eventData) {
-            callCollectDatasources();
-        }
-    }, [collectDataSources, eventData, laneEntry, laneReady]);
+                const updatedGamma = datasources.get("gamma") || [];
+                const updatedNeutron = datasources.get("neutron") || [];
+                const updatedThreshold = datasources.get("gammaTrshld") || [];
+
+                setGammaDatasources(updatedGamma);
+                setNeutronDatasources(updatedNeutron);
+                setThresholdDatasources(updatedThreshold);
+                setLoadedEvent(eventData);
+
+                setDatasourcesReady(true);
+            } catch (error) {
+                if (cancelled) return;
+                console.error("Failed to load event detail data sources:", error);
+                setDataSourceError(true);
+            }
+        };
+        void collect();
+        return () => { cancelled = true; };
+    }, [eventData, laneEntry, laneReady]);
 
 
     useEffect(() => {
@@ -334,6 +365,7 @@ export default function EventDetailsPage() {
                     </Grid>
                     {eventData && <Grid item xs={12} sm={"auto"}>
                         <Stack direction={{xs: "column", sm: "row"}} spacing={1}>
+                            {laneEntry && <ShareOccupancyButton key={`${eventData.id}:share`} event={eventData} lane={laneEntry}/>}
                             {laneEntry && <AlarmQrExportButton event={eventData} lane={laneEntry}/>}
                             <Button
                                 variant="outlined"
@@ -350,7 +382,15 @@ export default function EventDetailsPage() {
                     </Grid>}
                 </Grid>
 
-                {lookupRequested && (lookupState === "idle" || lookupState === "loading") ? (
+                {sharedRequested && shared.loading ? (
+                    <Grid item xs={12}><SuspenseLoad /></Grid>
+                ) : sharedRequested && shared.error ? (
+                    <Grid item xs={12}>
+                        <Alert severity="error" action={<Button onClick={shared.retry}>{t("retry")}</Button>}>
+                            {t(shared.error)}
+                        </Alert>
+                    </Grid>
+                ) : lookupRequested && (lookupState === "idle" || lookupState === "loading") ? (
                     <Grid item xs={12}>
                         <Alert severity="info" data-testid="event-lookup-loading">
                             {t("eventLookupLoading", {
@@ -412,8 +452,9 @@ export default function EventDetailsPage() {
                         <Grid item xs={12}>
                             {dataSourceError ? (
                                 <Alert severity="error">{t('eventDataLoadFailed')}</Alert>
-                            ) : datasourcesReady ? (
+                            ) : datasourcesReady && loadedEvent === eventData ? (
                                 <EventMedia
+                                    key={eventData.id}
                                     selectedNode={laneEntry.parentNode}
                                     datasources={{
                                         gamma: gammaDatasources[0],
@@ -428,10 +469,18 @@ export default function EventDetailsPage() {
                         </Grid>
 
                         {/* MISC TABLE */}
-                        <Grid item xs={12}>
-                            <Paper variant='outlined'>
-                                <MiscTable currentTime={eventData.startTime}/>
-                            </Paper>
+                        <Grid item container xs={12} spacing={2}>
+                            <Grid item xs={12} md={6}>
+                                <Paper variant='outlined' sx={{ height: '100%'}}>
+                                    <MiscTable key={eventData.id} eventData={eventData} currentTime={eventData.startTime}/>
+                                </Paper>
+                            </Grid>
+
+                            <Grid item xs={12} md={6}>
+                                <Paper variant='outlined' sx={{ height: '100%'}}>
+                                    <DailyFileTable event={eventData}/>
+                                </Paper>
+                            </Grid>
                         </Grid>
 
                         {/* ADJUDICATION */}
