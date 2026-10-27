@@ -159,6 +159,29 @@ function frameEventTime(
     return start + fraction * (end - start);
 }
 
+/** Selects image #3 (MIDDLE, index 2) by default when published. */
+export function defaultSelectedFrameIndex(mediaSet: RetainedMediaSetResponse): number {
+    const middleIndex = mediaSet.assets.findIndex(
+        entry => entry.asset.position === "MIDDLE" && entry.asset.state === "PUBLISHED",
+    );
+    if (middleIndex >= 0)
+        return middleIndex;
+    const firstPublished = mediaSet.assets.findIndex(entry => entry.asset.state === "PUBLISHED");
+    return firstPublished >= 0 ? firstPublished : 0;
+}
+
+function findAdjacentPublishedIndex(
+    assets: RetainedMediaAssetResponse[],
+    fromIndex: number,
+    direction: -1 | 1,
+): number | null {
+    for (let index = fromIndex + direction; index >= 0 && index < assets.length; index += direction) {
+        if (assets[index].asset.state === "PUBLISHED")
+            return index;
+    }
+    return null;
+}
+
 function LegacyVideo(props: LegacyVideoProps) {
     return (
         <LaneVideoPlayback
@@ -191,7 +214,7 @@ function CameraGallery({
     onSelect: (frame: RetainedMediaAssetResponse) => void;
 }) {
     const {t} = useLanguage();
-    const [selectedIndex, setSelectedIndex] = useState(0);
+    const [selectedIndex, setSelectedIndex] = useState(() => defaultSelectedFrameIndex(mediaSet));
     const [retryGeneration, setRetryGeneration] = useState(0);
     const [frames, setFrames] = useState<FrameLoadState[]>(() =>
         mediaSet.assets.map(() => ({status: "idle"})));
@@ -201,7 +224,7 @@ function CameraGallery({
         const urls = objectUrls.current;
         urls.forEach(url => URL.revokeObjectURL(url));
         urls.clear();
-        setSelectedIndex(0);
+        setSelectedIndex(defaultSelectedFrameIndex(mediaSet));
         setFrames(mediaSet.assets.map(() => ({status: "idle"})));
         return () => {
             urls.forEach(url => URL.revokeObjectURL(url));
@@ -211,6 +234,8 @@ function CameraGallery({
 
     useEffect(() => {
         if (objectUrls.current.has(selectedIndex)) return;
+        const asset = mediaSet.assets[selectedIndex];
+        if (!asset || asset.asset.state !== "PUBLISHED") return;
         const controller = new AbortController();
         let cancelled = false;
         let timedOut = false;
@@ -218,7 +243,6 @@ function CameraGallery({
             timedOut = true;
             controller.abort();
         }, RETAINED_MEDIA_REQUEST_TIMEOUT_MS);
-        const asset = mediaSet.assets[selectedIndex];
         setFrames(previous => previous.map((frame, index) =>
             index === selectedIndex ? {status: "loading"} : frame));
 
@@ -265,9 +289,15 @@ function CameraGallery({
 
     const selectFrame = useCallback((index: number) => {
         const bounded = Math.max(0, Math.min(mediaSet.assets.length - 1, index));
+        const candidate = mediaSet.assets[bounded];
+        if (!candidate || candidate.asset.state !== "PUBLISHED")
+            return;
         setSelectedIndex(bounded);
-        onSelect(mediaSet.assets[bounded]);
+        onSelect(candidate);
     }, [mediaSet.assets, onSelect]);
+
+    const previousPublishedIndex = findAdjacentPublishedIndex(mediaSet.assets, selectedIndex, -1);
+    const nextPublishedIndex = findAdjacentPublishedIndex(mediaSet.assets, selectedIndex, 1);
 
     const selectedAsset = mediaSet.assets[selectedIndex];
     const selectedFrame = frames[selectedIndex] || {status: "idle"};
@@ -300,8 +330,8 @@ function CameraGallery({
                 <Box sx={{display: "flex", alignItems: "center", minHeight: 220}}>
                     <IconButton
                         aria-label={t("retainedMediaPreviousFrame")}
-                        disabled={selectedIndex === 0}
-                        onClick={() => selectFrame(selectedIndex - 1)}
+                        disabled={previousPublishedIndex === null}
+                        onClick={() => previousPublishedIndex !== null && selectFrame(previousPublishedIndex)}
                     >
                         <NavigateBeforeIcon/>
                     </IconButton>
@@ -357,8 +387,8 @@ function CameraGallery({
                     </Box>
                     <IconButton
                         aria-label={t("retainedMediaNextFrame")}
-                        disabled={selectedIndex >= mediaSet.assets.length - 1}
-                        onClick={() => selectFrame(selectedIndex + 1)}
+                        disabled={nextPublishedIndex === null}
+                        onClick={() => nextPublishedIndex !== null && selectFrame(nextPublishedIndex)}
                     >
                         <NavigateNextIcon/>
                     </IconButton>
@@ -385,6 +415,7 @@ function CameraGallery({
                 >
                     {mediaSet.assets.map((asset, index) => {
                         const frame = frames[index] || {status: "idle"};
+                        const isPublished = asset.asset.state === "PUBLISHED";
                         const framePosition = t(POSITION_KEYS[asset.asset.position]);
                         const frameTimestamp = formatRetainedVideoTimestamp(asset.asset.sourcePtsSeconds);
                         const label = t("retainedMediaSelectFrame", {
@@ -398,6 +429,7 @@ function CameraGallery({
                                     component="button"
                                     aria-label={label}
                                     aria-pressed={selectedIndex === index}
+                                    disabled={!isPublished}
                                     data-testid="retained-media-thumbnail"
                                     onClick={() => selectFrame(index)}
                                     sx={{
@@ -409,6 +441,7 @@ function CameraGallery({
                                         borderRadius: 1,
                                         overflow: "hidden",
                                         backgroundColor: "action.hover",
+                                        opacity: isPublished ? 1 : 0.45,
                                     }}
                                 >
                                     {frame.status === "ready" ? (

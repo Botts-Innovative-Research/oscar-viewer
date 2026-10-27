@@ -215,11 +215,11 @@ describe("retained event media", () => {
             .should("have.attr", "alt")
             .and("contain", CAMERA_UID);
         cy.then(() => expect(fetchImpl).to.have.callCount(2));
-        cy.get('[data-testid="retained-media-thumbnail"]').first()
+        cy.get('[data-testid="retained-media-thumbnail"]').eq(2)
             .should("have.attr", "aria-pressed", "true");
         cy.get('[data-testid="retained-media-frame-metadata"]')
-            .should("contain.text", "Source frame 0")
-            .and("contain.text", "00:00.000");
+            .should("contain.text", "Source frame 20")
+            .and("contain.text", "00:05.000");
         cy.get('[data-testid="retained-media-thumbnail"]').last()
             .focus()
             .should("have.focus")
@@ -228,6 +228,42 @@ describe("retained event media", () => {
         cy.get('[data-testid="retained-media-frame-metadata"]')
             .should("contain.text", "Source frame 40")
             .and("contain.text", "00:10.000");
+    });
+
+    it("loads only frame 3 when secondary frames 1, 2, 4, and 5 have been pruned", () => {
+        const payload = responseFixture();
+        payload.mediaSets[0].manifest.assets.forEach(asset => {
+            if (asset.position !== "MIDDLE")
+                (asset as any).state = "DELETED";
+        });
+        payload.mediaSets[0].assets.forEach(entry => {
+            if (entry.asset.position !== "MIDDLE")
+                (entry.asset as any).state = "DELETED";
+        });
+        const requestedUrls: string[] = [];
+        const fetchImpl = cy.stub().callsFake((input: RequestInfo | URL) => {
+            const url = String(input);
+            requestedUrls.push(url);
+            return Promise.resolve(url.endsWith(`/media/${EVENT_ID}`)
+                ? responseJson(payload)
+                : jpegResponse());
+        }) as unknown as RetainedMediaFetch;
+
+        mountMedia(fetchImpl);
+        cy.get('[data-testid="retained-media-main-image"]').should("be.visible");
+        cy.get('[data-testid="retained-media-thumbnail"]').eq(2)
+            .should("have.attr", "aria-pressed", "true")
+            .and("not.be.disabled");
+        cy.get('[data-testid="retained-media-thumbnail"]').eq(0).should("be.disabled");
+        cy.get('[data-testid="retained-media-thumbnail"]').eq(1).should("be.disabled");
+        cy.get('[data-testid="retained-media-thumbnail"]').eq(3).should("be.disabled");
+        cy.get('[data-testid="retained-media-thumbnail"]').eq(4).should("be.disabled");
+        cy.then(() => {
+            expect(requestedUrls).to.deep.equal([
+                `/sensorhub/buckets/videos/media/${EVENT_ID}`,
+                `/sensorhub/buckets/videos/media/${EVENT_ID}/camera-token/frame-03.jpg`,
+            ]);
+        });
     });
 
     it("rejects a retained frame that exceeds its decoded-pixel budget", () => {

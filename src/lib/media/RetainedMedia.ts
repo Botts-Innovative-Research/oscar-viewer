@@ -18,7 +18,14 @@ export const RETAINED_FRAME_POSITIONS = [
     "LAST",
 ] as const;
 
+export const RETAINED_ASSET_STATES = [
+    "PUBLISHED",
+    "ELIGIBLE_FOR_DELETION",
+    "DELETED",
+] as const;
+
 export type RetainedFramePosition = typeof RETAINED_FRAME_POSITIONS[number];
+export type RetainedAssetState = typeof RETAINED_ASSET_STATES[number];
 export type RetainedMediaFetch = (
     input: RequestInfo | URL,
     init?: RequestInit,
@@ -38,7 +45,7 @@ export interface RetainedMediaAsset {
     sourceFrameOrdinal: number;
     sourcePts: number;
     sourcePtsSeconds: number;
-    state: "PUBLISHED";
+    state: RetainedAssetState;
 }
 
 export interface RetainedMediaAssetResponse {
@@ -281,8 +288,12 @@ function parseAsset(value: unknown, field: string): RetainedMediaAsset {
     const height = integer(asset.height, `${field}.height`, 1, MAX_RETAINED_FRAME_DIMENSION);
     if (width * height > MAX_RETAINED_FRAME_PIXELS)
         throw invalid(`${field} exceeds the decoded-pixel budget`);
+    const position = enumeration(asset.position, `${field}.position`, RETAINED_FRAME_POSITIONS);
+    const state = enumeration(asset.state, `${field}.state`, RETAINED_ASSET_STATES);
+    if (position === "MIDDLE" && state !== "PUBLISHED")
+        throw invalid(`${field} primary MIDDLE frame must remain PUBLISHED`);
     return {
-        position: enumeration(asset.position, `${field}.position`, RETAINED_FRAME_POSITIONS),
+        position,
         contentType: enumeration(asset.contentType, `${field}.contentType`, ["image/jpeg"] as const),
         sha256: sha256(asset.sha256, `${field}.sha256`),
         bytes,
@@ -291,7 +302,7 @@ function parseAsset(value: unknown, field: string): RetainedMediaAsset {
         sourceFrameOrdinal: integer(asset.sourceFrameOrdinal, `${field}.sourceFrameOrdinal`),
         sourcePts: integer(asset.sourcePts, `${field}.sourcePts`, Number.MIN_SAFE_INTEGER),
         sourcePtsSeconds: finiteNumber(asset.sourcePtsSeconds, `${field}.sourcePtsSeconds`),
-        state: enumeration(asset.state, `${field}.state`, ["PUBLISHED"] as const),
+        state,
     };
 }
 
@@ -409,12 +420,13 @@ export function parseRetainedEventMedia(value: unknown, requestedEventId: string
     if (new Set(mediaSets.map(entry => entry.manifest.mediaSetId)).size !== mediaSets.length)
         throw invalid("response.mediaSets contains duplicate media-set IDs");
     const eventBytes = mediaSets.reduce((setTotal, mediaSet) =>
-        setTotal + mediaSet.manifest.assets.reduce((total, asset) => total + asset.bytes, 0), 0);
+        setTotal + mediaSet.manifest.assets.reduce(
+            (total, asset) => total + (asset.state === "PUBLISHED" ? asset.bytes : 0), 0), 0);
     if (eventBytes > MAX_RETAINED_EVENT_BYTES)
         throw invalid(`response.mediaSets exceeds the ${MAX_RETAINED_EVENT_BYTES}-byte event budget`);
     const eventPixels = mediaSets.reduce((setTotal, mediaSet) =>
         setTotal + mediaSet.manifest.assets.reduce(
-            (total, asset) => total + asset.width * asset.height, 0), 0);
+            (total, asset) => total + (asset.state === "PUBLISHED" ? asset.width * asset.height : 0), 0), 0);
     if (eventPixels > MAX_RETAINED_EVENT_PIXELS)
         throw invalid(`response.mediaSets exceeds the ${MAX_RETAINED_EVENT_PIXELS}-pixel event budget`);
 
@@ -479,6 +491,8 @@ export async function fetchRetainedMediaAsset(
     fetchImpl: RetainedMediaFetch = fetch,
     signal?: AbortSignal,
 ): Promise<Blob> {
+    if (asset.asset.state !== "PUBLISHED")
+        throw new RetainedMediaError("invalid-asset", "Retained frame has been pruned.");
     const response = await fetchImpl(buildRetainedMediaAssetUrl(asset.path, eventId, node), {
         credentials: "include",
         cache: "default",
