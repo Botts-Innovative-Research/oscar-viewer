@@ -1,9 +1,10 @@
 "use client";
 
-import {FormControl, InputLabel, ListSubheader, MenuItem, Select, SelectChangeEvent} from '@mui/material';
+import {FormControl, FormHelperText, InputLabel, ListSubheader, MenuItem, Select, SelectChangeEvent} from '@mui/material';
 import {useEffect, useState} from 'react';
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
-import {IAdjudicationData} from "@/lib/data/oscar/adjudication/Adjudication";
+import {INode} from "@/lib/data/osh/Node";
+import {useCustomAdjudicationCodes} from "@/app/hooks/useCustomAdjudicationCodes";
 import {useLanguage} from '@/app/contexts/LanguageContext';
 
 export const colorCodes = {
@@ -15,14 +16,22 @@ export const colorCodes = {
 
 export default function AdjudicationSelect(props: {
     onSelect: (value: AdjudicationCode) => void, // Return selected value
-    adjCode: AdjudicationCode
+    adjCode: AdjudicationCode,
+    nodes?: INode[]
 }) {
     const {t} = useLanguage();
-    // const [adjudicated, setAdjudicated] = useState<AdjudicationCode>(AdjudicationCodes.codes[0]); // Adjudication selected value
+    const {codes: customCodes, failed, loading, refresh} = useCustomAdjudicationCodes(props.nodes ?? []);
+    const choices = [...AdjudicationCodes.codes, ...customCodes];
     const [style, setStyle] = useState(colorCodes.other.color); // Adjudicated button style based on selected value
 
+    useEffect(() => {
+        if (!loading && props.adjCode.code > 11 && !customCodes.some(code => code.code === props.adjCode.code))
+            props.onSelect(AdjudicationCodes.codes[0]);
+    }, [loading, customCodes, props.adjCode.code, props.onSelect]);
+
     const handleChangeAdjCode = (event: SelectChangeEvent) => {
-        let value: AdjudicationCode = AdjudicationCodes.getCodeObjByLabel(event.target.value);
+        const value = choices.find(code => code.code === Number(event.target.value));
+        if (!value) return;
         // setAdjudicated(value); // Set local adjudicated state
         props.onSelect(value); // Return selected value to parent component
 
@@ -45,7 +54,8 @@ export default function AdjudicationSelect(props: {
                 variant="outlined"
                 id="label"
                 label={t('adjudicate')}
-                value={props.adjCode.label}
+                value={choices.some(code => code.code === props.adjCode.code) ? String(props.adjCode.code) : "0"}
+                onOpen={refresh}
                 onChange={handleChangeAdjCode}
                 MenuProps={{
                     MenuListProps: {
@@ -73,36 +83,44 @@ export default function AdjudicationSelect(props: {
                         },
                 }}
             >
+                <MenuItem value="0" disabled>{t("adjudicate")}</MenuItem>
                 <ListSubheader>{t('realAlarm')}</ListSubheader>
                 {AdjudicationCodes.getGroupCodes("Real Alarm").map((code) => (
-                    <MenuItem key={code.code} value={code.label} sx={colorCodes.real}>{t(`adjudicationCode.${code.code}`)}</MenuItem>
+                    <MenuItem key={code.code} value={String(code.code)} sx={colorCodes.real}>{t(`adjudicationCode.${code.code}`)}</MenuItem>
                 ))}
 
                 <ListSubheader>{t('innocentAlarm')}</ListSubheader>
                 {AdjudicationCodes.getGroupCodes("Innocent Alarm").map((code) => (
-                    <MenuItem key={code.code} value={code.label} sx={colorCodes.innocent}>{t(`adjudicationCode.${code.code}`)}</MenuItem>
+                    <MenuItem key={code.code} value={String(code.code)} sx={colorCodes.innocent}>{t(`adjudicationCode.${code.code}`)}</MenuItem>
                 ))}
 
                 <ListSubheader>{t('falseAlarm')}</ListSubheader>
                 {AdjudicationCodes.getGroupCodes("False Alarm").map((code) => (
-                    <MenuItem key={code.code} value={code.label} sx={colorCodes.false}>{t(`adjudicationCode.${code.code}`)}</MenuItem>
+                    <MenuItem key={code.code} value={String(code.code)} sx={colorCodes.false}>{t(`adjudicationCode.${code.code}`)}</MenuItem>
                 ))}
 
                 <ListSubheader>{t('alarmTamperFault')}</ListSubheader>
                 {AdjudicationCodes.getGroupCodes("Test/Maintenance").map((code) => (
-                    <MenuItem key={code.code} value={code.label} sx={colorCodes.other}>{t(`adjudicationCode.${code.code}`)}</MenuItem>
+                    <MenuItem key={code.code} value={String(code.code)} sx={colorCodes.other}>{t(`adjudicationCode.${code.code}`)}</MenuItem>
                 ))}
 
                 <ListSubheader>{t('tamperFault')}</ListSubheader>
                 {AdjudicationCodes.getGroupCodes("Tamper/Fault").map((code) => (
-                    <MenuItem key={code.code} value={code.label} sx={colorCodes.other}>{t(`adjudicationCode.${code.code}`)}</MenuItem>
+                    <MenuItem key={code.code} value={String(code.code)} sx={colorCodes.other}>{t(`adjudicationCode.${code.code}`)}</MenuItem>
                 ))}
 
                 <ListSubheader>{t('other')}</ListSubheader>
                 {AdjudicationCodes.getGroupCodes("Other").map((code) => (
-                    <MenuItem key={code.code} value={code.label} sx={colorCodes.other}>{t(`adjudicationCode.${code.code}`)}</MenuItem>
+                    <MenuItem key={code.code} value={String(code.code)} sx={colorCodes.other}>{t(`adjudicationCode.${code.code}`)}</MenuItem>
+                ))}
+                {customCodes.length > 0 && <ListSubheader>{t("customDispositionCodes")}</ListSubheader>}
+                {customCodes.map(code => (
+                    <MenuItem key={code.code} value={String(code.code)} sx={colorCodes.other}>
+                        {"Code " + code.code + ": " + code.label}
+                    </MenuItem>
                 ))}
             </Select>
+            {failed && <FormHelperText error>{t("customDispositionCodesLoadFailed")}</FormHelperText>}
         </FormControl>
     );
 }
