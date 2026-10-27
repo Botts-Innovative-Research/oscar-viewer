@@ -278,7 +278,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const handleAdjudicationSelect = (value: AdjudicationCode) => {
         let tAdjData: AdjudicationData = adjData;
-        tAdjData.adjudicationCode = AdjudicationCodes.getCodeObjByLabel(value.label);
+        tAdjData.adjudicationCode = value;
 
         setAdjData(tAdjData);
         setAdjudicationCode(value);
@@ -757,9 +757,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                 <Grid container spacing={2} sx={{ width: '100%' }}>
 
                     <Grid item xs={12}>
-                        <Typography variant="h5">
+                        <><Typography variant="h5">
                             {t('evidenceCollection')}
-                        </Typography>
+                        </Typography></>
                     </Grid>
 
                     {uploadedFiles.length > 0 && (
@@ -1130,6 +1130,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                         <Grid item xs={12} sm={9} lg={10} />
                         <Grid item xs={12} sm={6}>
                             <AdjudicationSelect
+                                nodes={[laneMapRef.current.get(props.event.laneId)?.parentNode].filter(Boolean)}
                                 adjCode={adjudicationCode}
                                 onSelect={handleAdjudicationSelect}
                             />

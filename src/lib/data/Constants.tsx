@@ -107,3 +107,4 @@ export const DOSE_DEF =  radUri + "Dose";
 export const REMARK_DEF =  radUri + "Remark";
 export const N42_DEF =  radUri + "Remark";
 export const N42_REPORT_DEF = radUri + "ForegroundReports"
+export const DAILY_FILE_DEF = radUri + "RPMMessage"

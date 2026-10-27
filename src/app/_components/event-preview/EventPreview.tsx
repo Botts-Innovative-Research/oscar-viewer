@@ -50,6 +50,8 @@ import { useBreakpoint } from "@/app/providers";
 import BackButton from "../BackButton";
 import SuspenseLoad from "@/app/_components/SuspenseLoad";
 import {useLanguage} from '@/app/contexts/LanguageContext';
+import ShareOccupancyButton from "@/app/_components/event-details/ShareOccupancyButton";
+import {occupancyDetailsPath} from "@/lib/data/oscar/SharedOccupancy";
 
 export function EventPreview() {
     const { isDesktop } = useBreakpoint();
@@ -259,7 +261,9 @@ export function EventPreview() {
         dispatch(setSelectedRowId(eventPreview.eventData.id))
         dispatch(setSelectedEvent(eventPreview.eventData));
 
-        router.push("/event-details");
+        router.push(eventPreview.eventData.occupancyObsId && laneEntry
+            ? occupancyDetailsPath(eventPreview.eventData.occupancyObsId, laneEntry.parentNode)
+            : "/event-details");
     }
 
     useEffect(() => {
@@ -361,6 +365,10 @@ export function EventPreview() {
                             />
                         </IconButton>
                     </Grid>
+                    <Grid item>
+                        <ShareOccupancyButton key={`${eventPreview.eventData.id}:share`}
+                            event={eventPreview.eventData} lane={laneEntry}/>
+                    </Grid>
                 </Grid>
                 {isDesktop && (
                   <Grid item>
@@ -410,6 +418,7 @@ export function EventPreview() {
             {/* ADJUDICATION SELECT */}
             <Grid item xs={12}>
                 <AdjudicationSelect
+                    nodes={laneEntry ? [laneEntry.parentNode] : []}
                     adjCode={adjudicationCode}
                     onSelect={handleAdjudicationCode}
                 />
