@@ -2,72 +2,76 @@
 
 import {DailyFileType} from '../../../../types/new-types';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-
 import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
-import {setLastLaneStatus} from "@/lib/state/LaneViewSlice";
-import {useAppDispatch} from "@/lib/state/Hooks";
 import DataStreams from "osh-js/source/core/consysapi/datastream/DataStreams.js";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter.js";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
-import DailyFileItem from "@/app/_components/lane-view/DailyFileItem";
-import {setAlarmTrigger} from "@/lib/state/EventDataSlice";
-import {EventType} from "osh-js/source/core/event/EventType";
+import {Stack, Typography} from "@mui/material";
+import {useLanguage} from "@/app/contexts/LanguageContext";
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
 
 interface MessageProps {
     dataSourcesByLane: LaneDSColl;
 }
 
 export default function DailyFileMessage(props: MessageProps) {
+    const {t} = useLanguage();
     const idVal = useRef(1);
-    const [dailyFileMessage, setDailyFileMessage] = useState<DailyFileType>();
-
+    const [dailyFileMessages, setDailyFileMessages] = useState<DailyFileType[]>([]);
     const currentLane = useSelector((state: RootState) => state.laneView.currentLane);
 
     const addSubscriptionCallbacks = useCallback(() => {
         const handler = (msg: any) => {
             const state = msg?.values[0].data.result.rpmMessage;
-            updateMessage(currentLane, state);
+            const timestamp = msg?.values[0].data.resultTime;
+            if (state)
+                updateMessage(currentLane, state, timestamp);
         };
-        props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName(
-            "dailyFileRT", handler
-        );
-
+        props.dataSourcesByLane.addSubscribeHandlerToALLDSMatchingName("dailyFileRT", handler);
         props.dataSourcesByLane.addConnectToALLDSMatchingName("dailyFileRT");
 
         return () => {
             props.dataSourcesByLane.addDisconnectToALLDSMatchingName("dailyFileRT")
         }
-
     }, [props.dataSourcesByLane]);
 
     async function fetchLatestMessage() {
         const currentLaneDatasources: LaneDSColl = props.dataSourcesByLane;
-
         const datasource = currentLaneDatasources.dailyFileRT[0];
         if (!datasource) return;
 
-        const dsId = datasource.properties.resource.split('/')[2];
+        try {
+            const dsId = datasource.properties.resource.split('/')[2];
 
-        const dsAPI = new DataStreams({
-            endpointUrl: `${datasource.properties.endpointUrl}`,
-            tls: datasource.properties.tls,
-            connectorOpts: datasource.properties.connectorOpts,
-            mqttOpts: datasource.properties.mqttOpts,
-            streamProtocol: 'mqtt'
-        });
+            const dsAPI = new DataStreams({
+                endpointUrl: `${datasource.properties.endpointUrl}`,
+                tls: datasource.properties.tls,
+                connectorOpts: datasource.properties.connectorOpts,
+                mqttOpts: datasource.properties.mqttOpts,
+                streamProtocol: 'mqtt'
+            });
 
-        const ds = await dsAPI.getDataStreamById(dsId);
-        const latestObservationQuery = await ds.searchObservations(new ObservationFilter({resultTime: 'latest'}), 1);
-        const latestObservationArray = await latestObservationQuery.nextPage();
-        const latestObservation = latestObservationArray[0];
+            const ds = await dsAPI.getDataStreamById(dsId);
+            const latestObservationQuery = await ds.searchObservations( new ObservationFilter({ order: 'desc' }), 15);
+            const latestObservationArray = await latestObservationQuery.nextPage();
 
-        const initialMsg: DailyFileType = {
-            id: -1,
-            name: currentLane,
-            message: latestObservation.result.rpmMessage
+            console.log('latest obs', latestObservationArray)
+            setDailyFileMessages(latestObservationArray
+                .filter((observation: any) => observation?.result?.rpmMessage)
+                .map((observation: any, index: number) => ({
+                    id: index++,
+                    name: currentLane,
+                    message: observation.result.rpmMessage,
+                    timestamp: observation.resultTime
+                })))
+
+        } catch (error) {
+            console.error("Failed to fetch initial daily file message", error)
         }
-        setDailyFileMessage(initialMsg);
     }
 
     useEffect(() => {
@@ -77,21 +81,41 @@ export default function DailyFileMessage(props: MessageProps) {
         addSubscriptionCallbacks();
     }, [props.dataSourcesByLane]);
 
-    function updateMessage(laneName: string, newState: string) {
+    function updateMessage(laneName: string, newState: string, timestamp: string) {
         const newStatus: DailyFileType = {
             id: idVal.current++,
             name: laneName,
             message: newState,
+            timestamp: timestamp
         }
-        setDailyFileMessage(newStatus);
+        setDailyFileMessages(previous => [newStatus, ...previous].slice(0, 15));
     }
 
     return (
-        <>
-            { dailyFileMessage && (
-                <DailyFileItem key={dailyFileMessage.id} id={dailyFileMessage.id} name={dailyFileMessage.name} message={dailyFileMessage.message}/>
-            )}
-        </>
+        <Accordion>
+            <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                aria-controls={`panel-content`}
+                >
+                <Typography variant="h6">
+                    {t('rpmMessage', { message: `${dailyFileMessages[0]?.message},${dailyFileMessages[0]?.timestamp}` })}
+                </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+                <Stack direction={"column"} alignItems={"flex-start"} spacing={0.5}>
+                    {dailyFileMessages.map(message => (
+                        <Stack direction={"row"} spacing={0.5}>
+                            <Typography
+                                variant="body2"
+                                key={message.id}
+                            >
+                                {`${message.message},${message.timestamp}`}
+                            </Typography>
+                        </Stack>
+                    ))}
+                </Stack>
 
-    );
+            </AccordionDetails>
+        </Accordion>
+    )
 }

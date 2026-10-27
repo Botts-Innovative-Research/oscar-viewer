@@ -391,5 +391,5 @@
   "adjudicateCount": "Adjudicate {count}",
   "bulkAdjudicationFailed": "Bulk adjudication could not be completed. No failed items were hidden; review connectivity and try again.",
   "bulkSelectionLoadFailed": "The complete filtered alarm list could not be loaded. Nothing was selected.",
-  "rpmMessage": "RPM Message"
+  "rpmMessage": "RPM Message: {message}"
 }
