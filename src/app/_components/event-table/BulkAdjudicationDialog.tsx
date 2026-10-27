@@ -17,6 +17,7 @@ import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelec
 import SecondaryInspectionSelect from "@/app/_components/adjudication/SecondaryInspectionSelect";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {BulkAdjudicationValues} from "@/lib/data/oscar/BulkAdjudication";
+import {INode} from "@/lib/data/osh/Node";
 
 export interface BulkAdjudicationSummary {
     success: number;
@@ -27,6 +28,7 @@ interface Props {
     open: boolean;
     count: number;
     allFiltered: boolean;
+    nodes?: INode[];
     t: (key: string, values?: Record<string, unknown>) => string;
     onClose: () => void;
     onSubmit: (
@@ -36,7 +38,7 @@ interface Props {
     ) => Promise<BulkAdjudicationSummary>;
 }
 
-export default function BulkAdjudicationDialog({open, count, allFiltered, t, onClose, onSubmit}: Props) {
+export default function BulkAdjudicationDialog({open, count, allFiltered, nodes = [], t, onClose, onSubmit}: Props) {
     const [code, setCode] = useState<AdjudicationCode>(AdjudicationCodes.codes[0]);
     const [feedback, setFeedback] = useState("");
     const [vehicleId, setVehicleId] = useState("");
@@ -87,7 +89,7 @@ export default function BulkAdjudicationDialog({open, count, allFiltered, t, onC
                             ? t("bulkAdjudicationAllFilteredWarning", {count})
                             : t("bulkAdjudicationSelectedWarning", {count})}
                     </Alert>
-                    <AdjudicationSelect onSelect={setCode} adjCode={code} />
+                    <AdjudicationSelect onSelect={setCode} adjCode={code} nodes={open ? nodes : []} />
                     <SecondaryInspectionSelect onSelect={setSecondaryInspection} secondarySelectVal={secondaryInspection} />
                     <TextField label={t("vehicleId")} value={vehicleId} onChange={event => setVehicleId(event.target.value)} helperText={t("bulkVehicleIdHelp")} />
                     <TextField label={t("notes")} value={feedback} onChange={event => setFeedback(event.target.value)} multiline minRows={3} />

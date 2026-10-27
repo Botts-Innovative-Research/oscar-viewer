@@ -45,6 +45,13 @@ export interface IAlarmTableData {
   status: string;
 }
 
+export interface IDailyFileData {
+    id: string; // Unique ID for event
+    laneId: string;
+    message: string;
+    timestamp: string;
+}
+
 
 /**
  * Event type to make request for more details
@@ -79,6 +86,12 @@ export type LaneStatusType = {
   id: number;
   name: string;
   status: string;
+}
+
+export type DailyFileType = {
+    id: number;
+    name: string;
+    message: string;
 }
 
 

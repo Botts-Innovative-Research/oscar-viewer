@@ -232,7 +232,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
 
     const handleAdjudicationSelect = (value: AdjudicationCode) => {
         let tAdjData: AdjudicationData = adjData;
-        tAdjData.adjudicationCode = AdjudicationCodes.getCodeObjByLabel(value.label);
+        tAdjData.adjudicationCode = value;
 
         setAdjData(tAdjData);
         setAdjudicationCode(value);
@@ -706,6 +706,8 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                         <AdjudicationLog
                             event={props.event}
                             node={laneMapRef.current.get(props.event.laneId)?.parentNode}
+                            shouldFetch={shouldFetchLogs}
+                            onFetchComplete={onFetchComplete}
                         />
                     </Grid>
                 </Grid>
@@ -1091,6 +1093,7 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                             <AdjudicationSelect
                                 adjCode={adjudicationCode}
                                 onSelect={handleAdjudicationSelect}
+                                nodes={[laneMapRef.current.get(props.event.laneId)?.parentNode].filter(Boolean)}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -1191,7 +1194,9 @@ export default function AdjudicationDetail(props: { event: EventTableData }) {
                                 <Box>
                                     <Typography variant="subtitle2" color="text.secondary">{t('adjudicationCode')}</Typography>
                                     <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>
-                                        {t(`adjudicationCode.${adjData.adjudicationCode?.code}`)} ({t(`adjudicationGroup.${adjData.adjudicationCode?.group}`)})
+                                        {adjData.adjudicationCode?.code > 11
+                                            ? `Code ${adjData.adjudicationCode.code}: ${adjData.adjudicationCode.label}`
+                                            : `${t(`adjudicationCode.${adjData.adjudicationCode?.code}`)} (${t(`adjudicationGroup.${adjData.adjudicationCode?.group}`)})`}
                                     </Typography>
                                 </Box>
                                 <Divider />

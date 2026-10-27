@@ -51,6 +51,7 @@ import BackButton from "../BackButton";
 import SuspenseLoad from "@/app/_components/SuspenseLoad";
 import {useLanguage} from '@/app/contexts/LanguageContext';
 import AlarmQrExportButton from "@/app/_components/alarm-transfer/AlarmQrExportButton";
+import ShareOccupancyButton from "@/app/_components/event-details/ShareOccupancyButton";
 import {buildEventDetailsHref} from "@/lib/data/oscar/EventLookup";
 
 export function EventPreview() {
@@ -392,6 +393,13 @@ export function EventPreview() {
                         </IconButton>
                     </Grid>
                     <Grid item>
+                        <ShareOccupancyButton
+                            key={`${eventPreview.eventData.id}:share`}
+                            event={eventPreview.eventData}
+                            lane={laneEntry}
+                        />
+                    </Grid>
+                    <Grid item>
                         <AlarmQrExportButton event={eventPreview.eventData} lane={laneEntry} iconOnly/>
                     </Grid>
                 </Grid>
@@ -443,6 +451,7 @@ export function EventPreview() {
             {/* ADJUDICATION SELECT */}
             <Grid item xs={12}>
                 <AdjudicationSelect
+                    nodes={laneEntry ? [laneEntry.parentNode] : []}
                     adjCode={adjudicationCode}
                     onSelect={handleAdjudicationCode}
                 />

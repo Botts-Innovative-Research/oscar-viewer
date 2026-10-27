@@ -1,7 +1,7 @@
 # OSCAR Viewer Change Log
 All notable changes to this project will be documented in this file. 
 
-## 3.9.2
+## 3.11.0
 
 ### Added
 
@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Event Details adjudication logs now refresh deterministically after adjudication submission and deduplicate historical and live MQTT entries by observation ID and timestamp.
 - National Statistics refresh now follows its durable command status through `PENDING` to terminal
   completion, keeps the controls busy for the complete operation, and fetches the exact observation
   ID returned by that command instead of accepting a stale latest row. Terminal failures remain
@@ -20,6 +21,13 @@ All notable changes to this project will be documented in this file.
 - During the retained-media rollback grace period, the original hot MP4 remains playable beneath the five-frame evidence gallery. Only each camera's selected JPEG is fetched initially, at most three frame requests run concurrently, loaded frames are reused in memory, and object URLs are revoked on navigation.
 - The reviewed MQTT MessagePort source is pinned directly to the immutable upstream `earocorn/osh-js` pull-request commit and lockfile integrity hash, removing the personal packaging-fork dependency from clean builds.
 - Status of Health and Dashboard snapshots now request at most 10 streams per batch, retain two global workers and a 10-second deadline, and recover independently when one batch stalls. This keeps browser and server work bounded against large accumulated observation histories.
+
+## 3.10.0
+
+### Added
+
+- Added configurable custom disposition codes in Event Details and bulk adjudication workflows.
+- Added alarm priority sorting (`Gamma-Neutron` > `Neutron` > `Gamma`), shareable occupancy observation-ID links, live and historical Daily File RPM message displays, and individual detector charting in Lane View.
 
 ## 3.9.1
 

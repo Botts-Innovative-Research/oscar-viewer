@@ -15,6 +15,7 @@ import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import {RootState} from "@/lib/state/Store";
 import React, {useCallback, useContext, useEffect, useState} from "react";
 import {
+    isDailyFileDataStream,
     isGammaDataStream,
     isNeutronDataStream,
     isTamperDataStream,
@@ -27,6 +28,7 @@ import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasou
 import StatusTable from "../_components/lane-view/StatusTable";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 import RS350BackpackView from "../_components/lane-view/RS350BackpackView";
+import DailyFileMessage from "@/app/_components/lane-view/DailyFileMessage";
 
 
 export default function LaneViewPage() {
@@ -118,6 +120,10 @@ export default function LaneViewPage() {
                 laneDsCollection?.addDS('gammaTrshldRT', rtDS);
                 nextThresholdDS = rtDS;
             }
+            if (isDailyFileDataStream(ds)) {
+                rtDS.properties.mqttOpts.shared = true
+                laneDsCollection?.addDS('dailyFileRT', rtDS);
+            }
         }
 
         setGammaDS(nextGammaDS);
@@ -158,6 +164,12 @@ export default function LaneViewPage() {
                     <Grid item xs={12}>
                         {dataSourcesByLane &&
                             <LaneStatus dataSourcesByLane={dataSourcesByLane}/>
+                        }
+                    </Grid>
+
+                    <Grid item xs={12}>
+                        {dataSourcesByLane &&
+                            <DailyFileMessage dataSourcesByLane={dataSourcesByLane}/>
                         }
                     </Grid>
 

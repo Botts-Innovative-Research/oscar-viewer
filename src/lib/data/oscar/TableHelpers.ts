@@ -3,8 +3,18 @@
  * All Rights Reserved
  */
 
-import {IAlarmTableData, IEventTableData, INationalTableData} from "../../../../types/new-types";
+import {IAlarmTableData, IDailyFileData, IEventTableData, INationalTableData} from "../../../../types/new-types";
 import AdjudicationData from "@/lib/data/oscar/adjudication/Adjudication";
+import {randomUUID} from "osh-js/source/core/utils/Utils";
+
+const priorityOrder = ["Gamma & Neutron", "Neutron", "Gamma"];
+
+export const sortEventsByAlarmPriority = (left: Pick<EventTableData, "status" | "startTime">, right: Pick<EventTableData, "status" | "startTime">): number => {
+    const prioritySort = priorityOrder.indexOf(left.status) - priorityOrder.indexOf(right.status);
+
+    if (prioritySort !== 0) return prioritySort;
+    return new Date(right.startTime).getTime() - new Date(left.startTime).getTime(); // same status sort by time
+};
 
 
 export class EventTableData implements IEventTableData {
@@ -225,6 +235,20 @@ export class NationalTableDataCollection {
 
     addData(data: NationalTableData) {
         this.data.push(data);
+    }
+}
+
+export class DailyFileData implements IDailyFileData {
+    id: string; // Unique ID for event
+    laneId: string;
+    message: string;
+    timestamp: string;
+
+    constructor(laneId: string, message: string, timestamp: string) {
+        this.id = randomUUID();
+        this.laneId = laneId;
+        this.message = message;
+        this.timestamp = timestamp;
     }
 }
 

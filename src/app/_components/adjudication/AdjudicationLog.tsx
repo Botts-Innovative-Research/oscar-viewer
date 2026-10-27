@@ -10,6 +10,8 @@ import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {isAdjudicationControlStream} from "@/lib/data/oscar/Utilities";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import {AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
+import {useCustomAdjudicationCodes} from "@/app/hooks/useCustomAdjudicationCodes";
+import {resolveAdjudicationCode} from "@/lib/data/oscar/adjudication/CustomAdjudicationCodes";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
 import { Dialog, DialogTitle, DialogContent } from "@mui/material";
 import {useLanguage} from "@/app/contexts/LanguageContext";
@@ -60,12 +62,75 @@ export async function waitForAdjudicationLogSource(
 }
 
 
+export function adjudicationLogKey(entry: AdjudicationData): string {
+    const isotopes = Array.isArray(entry.isotopes)
+        ? entry.isotopes.join(",")
+        : String(entry.isotopes ?? "");
+    const filePaths = Array.isArray(entry.filePaths)
+        ? entry.filePaths.join(",")
+        : String(entry.filePaths ?? "");
+    return [
+        entry.occupancyObsId ?? "",
+        entry.time ?? "",
+        entry.adjudicationCode?.code ?? "",
+        entry.username ?? "",
+        entry.feedback ?? "",
+        entry.secondaryInspectionStatus ?? "",
+        entry.vehicleId ?? "",
+        isotopes,
+        filePaths,
+    ].join("|");
+}
+
+export function mergeAdjudicationLogs(
+    existing: AdjudicationData[],
+    incoming: AdjudicationData[],
+): AdjudicationData[] {
+    const merged = new Map<string, AdjudicationData>();
+    for (const item of [...existing, ...incoming]) {
+        if (!item) continue;
+        const key = adjudicationLogKey(item);
+        const previous = merged.get(key);
+        if (previous) {
+            item.id = previous.id;
+        } else if (!item.id) {
+            item.id = key;
+        }
+        merged.set(key, item);
+    }
+    return Array.from(merged.values());
+}
+
+function buildAdjudicationData(
+    reportTime: string,
+    occupancyCount: string,
+    results: any,
+    preferredId?: string,
+): AdjudicationData {
+    const data = new AdjudicationData(reportTime, occupancyCount, results.occupancyObsId);
+    data.setFeedback(results.feedback);
+    data.setIsotopes(results.isotopes ?? NaN);
+    data.setSecondaryInspectionStatus(results.secondaryInspectionStatus);
+    data.setAdjudicationCode(resolveAdjudicationCode(results.adjudicationCode, []));
+    data.setVehicleId(results.vehicleId ?? NaN);
+    data.setFilePaths(results.filePaths ?? NaN);
+    data.setTime(reportTime);
+    data.setOccupancyCount(occupancyCount);
+    data.setOccupancyObsId(results.occupancyObsId);
+    data.setUser(results.username ?? NaN);
+    data.id = preferredId || adjudicationLogKey(data);
+    return data;
+}
+
 export default function AdjudicationLog(props: {
     event: EventTableData;
     node: INode;
+    shouldFetch?: boolean;
+    onFetchComplete?: () => void;
 }) {
     const { language, t } = useLanguage();
     const locale = getIntlLocale(language);
+    const {codes: customCodes} = useCustomAdjudicationCodes(props.node ? [props.node] : []);
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
     const [adjLog, setAdjLog] = useState<AdjudicationData[]>([]);
     const [filteredLog, setFilteredLog] = useState<AdjudicationData[]>([]);
@@ -111,7 +176,11 @@ export default function AdjudicationLog(props: {
             minWidth: 150,
             flex: 1.5,
             valueGetter: (value, row) => {
-                return t(`adjudicationCode.${row.adjudicationCode.code}`)
+                const code = row.adjudicationCode.code;
+                if (code <= 11)
+                    return t(`adjudicationCode.${code}`);
+                const custom = customCodes.find(item => item.code === code);
+                return custom ? `Code ${code}: ${custom.label}` : `Code ${code}`;
             }
         },
         {
@@ -235,26 +304,19 @@ export default function AdjudicationLog(props: {
             const cmdRes = await commandStatuses.nextPage();
 
             const pageAdjudications = cmdRes.map((obs: any) => {
-                if (!obs?.results)
+                if (!obs?.results?.[0]?.data)
                     return null;
 
-                let results = obs?.results[0].data;
-                let data = new AdjudicationData(obs.reportTime, props.event.occupancyCount, results.occupancyObsId);
-                data.setFeedback(results.feedback);
-                data.setIsotopes(results.isotopes ?? NaN);
-                data.setSecondaryInspectionStatus(results.secondaryInspectionStatus);
-                data.setAdjudicationCode(AdjudicationCodes.getCodeObjByIndex(results.adjudicationCode));
-                data.setVehicleId(results.vehicleId ?? NaN);
-                data.setFilePaths(results.filePaths ?? NaN)
-                data.setTime(obs.reportTime)
-                data.setOccupancyCount(props.event.occupancyCount);
-                data.setOccupancyObsId(results.occupancyObsId);
-                data.setUser(results.username ?? NaN)
-                return data
+                return buildAdjudicationData(
+                    obs.reportTime,
+                    props.event.occupancyCount,
+                    obs.results[0].data,
+                    obs.id ?? obs["command@id"],
+                );
             }).filter((value: AdjudicationData | null): value is AdjudicationData => value !== null);
             adjudications.push(...pageAdjudications);
         }
-        if (!cancelled()) setAdjLog(adjudications);
+        if (!cancelled()) setAdjLog((prev) => mergeAdjudicationLogs(prev, adjudications));
     }, [laneMapRef, props.event]);
 
     useEffect(() => {
@@ -264,6 +326,19 @@ export default function AdjudicationLog(props: {
         });
         return () => { cancelled = true; };
     }, [props.event, fetchStatuses]);
+
+    useEffect(() => {
+        if (!props.shouldFetch) return;
+        let cancelled = false;
+        void fetchStatuses(() => cancelled)
+            .catch((error) => {
+                if (!cancelled) console.error("Error refreshing adjudication statuses:", error);
+            })
+            .finally(() => {
+                if (!cancelled) props.onFetchComplete?.();
+            });
+        return () => { cancelled = true; };
+    }, [props.shouldFetch, props.onFetchComplete, fetchStatuses]);
 
     useEffect(() => {
         let cancelled = false;
@@ -281,21 +356,17 @@ export default function AdjudicationLog(props: {
                     const results = result?.data;
                     if (!results) continue;
 
-                    let adjData = new AdjudicationData(statusData.reportTime, props.event.occupancyCount, results.occupancyObsId);
-                    adjData.setFeedback(results.feedback);
-                    adjData.setIsotopes(results.isotopes ?? NaN);
-                    adjData.setSecondaryInspectionStatus(results.secondaryInspectionStatus);
-                    adjData.setAdjudicationCode(AdjudicationCodes.getCodeObjByIndex(results.adjudicationCode));
-                    adjData.setVehicleId(results.vehicleId ?? NaN);
-                    adjData.setFilePaths(results.filePaths ?? NaN)
-                    adjData.setTime(statusData.reportTime)
-                    adjData.setOccupancyCount(props.event.occupancyCount);
-                    adjData.setOccupancyObsId(results.occupancyObsId);
-                    adjData.setUser(results.username ?? NaN)
-                    newAdjData.push(adjData);
+                    newAdjData.push(
+                        buildAdjudicationData(
+                            statusData.reportTime,
+                            props.event.occupancyCount,
+                            results,
+                            statusData.id ?? statusData["command@id"],
+                        ),
+                    );
                 }
             }
-            setAdjLog(prev => [...prev, ...newAdjData]);
+            setAdjLog((prev) => mergeAdjudicationLogs(prev, newAdjData));
         }
 
         void (async () => {
