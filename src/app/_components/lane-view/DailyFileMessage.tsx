@@ -96,8 +96,8 @@ export default function DailyFileMessage(props: MessageProps) {
             <AccordionSummary
                 expandIcon={<ExpandMoreIcon />}
                 aria-controls={`panel-content`}
-                >
-                <Typography variant="h6">
+            >
+                <Typography variant="body1">
                     {t('rpmMessage', { message: `${dailyFileMessages[0]?.message},${dailyFileMessages[0]?.timestamp}` })}
                 </Typography>
             </AccordionSummary>
@@ -106,7 +106,7 @@ export default function DailyFileMessage(props: MessageProps) {
                     {dailyFileMessages.map(message => (
                         <Stack direction={"row"} spacing={0.5}>
                             <Typography
-                                variant="body2"
+                                variant="body1"
                                 key={message.id}
                             >
                                 {`${message.message},${message.timestamp}`}
@@ -114,7 +114,6 @@ export default function DailyFileMessage(props: MessageProps) {
                         </Stack>
                     ))}
                 </Stack>
-
             </AccordionDetails>
         </Accordion>
     )
