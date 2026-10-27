@@ -391,5 +391,5 @@
   "adjudicateCount": "Adjudicar {count}",
   "bulkAdjudicationFailed": "No se pudo completar la adjudicación masiva. No se ocultaron los elementos fallidos; compruebe la conectividad y vuelva a intentarlo.",
   "bulkSelectionLoadFailed": "No se pudo cargar la lista completa de alarmas filtradas. No se seleccionó nada.",
-  "rpmMessage": "Mensaje RPM: {message}"
+  "rpmMessage": "Mensaje RPM"
 }
