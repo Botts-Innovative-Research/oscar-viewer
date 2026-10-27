@@ -18,6 +18,8 @@ import {LatLngExpression} from "leaflet";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
+import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
+import {Mode} from "osh-js/source/core/datasource/Mode";
 import {
     buildOperationalViewCatalog,
     OperationalViewCatalog,
@@ -39,6 +41,12 @@ function getTerminalLaneId(laneUid: string): string | null {
     return lanePath.length > 0 ? lanePath[lanePath.length - 1] : null;
 }
 export type NodeAuthenticationMode = "session" | "basic";
+
+export interface RealtimeObservationSource {
+    subscribe(handler: (message: any) => void, eventTypes: string[]): void;
+    connect(): Promise<void>;
+    reset(): Promise<void>;
+}
 
 export interface INode {
     id: string,
@@ -77,6 +85,8 @@ export interface INode {
     fetchNodeDataStreams(): Promise<typeof DataStream[]>,
 
     fetchDataStreamWithObservedProperty(observedProperty: string): Promise<typeof DataStream>,
+
+    createRealtimeObservationSource(stream: typeof DataStream): RealtimeObservationSource,
 
     checkForEndpoint(): Promise<boolean>
 
@@ -217,6 +227,27 @@ export class Node implements INode {
 
     getDataStreamsApi(): typeof DataStreams {
         return this.dataStreamsApi;
+    }
+
+    createRealtimeObservationSource(stream: typeof DataStream): RealtimeObservationSource {
+        const mqttOpts: any = {
+            shared: true,
+            prefix: this.csAPIEndpoint,
+            endpointUrl: `${this.address}:${this.port}${this.oshPathRoot}`,
+        };
+        if (this.authenticationMode === "basic" && this.hasRuntimeCredentials()) {
+            mqttOpts.username = this.auth.username;
+            mqttOpts.password = this.auth.password;
+        }
+        return new ConSysApi(`disposition-codes-${this.id}-${stream.properties.id}`, {
+            endpointUrl: stream.networkProperties.endpointUrl,
+            resource: `/datastreams/${stream.properties.id}/observations`,
+            tls: this.isSecure,
+            protocol: "mqtt",
+            mode: Mode.REAL_TIME,
+            responseFormat: "application/swe+json",
+            mqttOpts,
+        });
     }
 
     getConnectedSystemsEndpoint(noProtocolPrefix: boolean = false) {
