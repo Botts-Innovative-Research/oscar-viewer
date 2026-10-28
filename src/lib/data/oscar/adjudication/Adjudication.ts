@@ -7,6 +7,7 @@ import ObservationFilter from "osh-js/source/core/consysapi/observation/Observat
 export interface IAdjudicationData {
     time: string,
     id: string;
+    commandId?: string;
     username: string
     feedback: string
     adjudicationCode: AdjudicationCode
@@ -21,6 +22,7 @@ export interface IAdjudicationData {
 export default class AdjudicationData implements IAdjudicationData {
     time: string;
     id: string;
+    commandId?: string;
     feedback: string
     adjudicationCode: AdjudicationCode
     isotopes: string[]

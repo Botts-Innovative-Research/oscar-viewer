@@ -62,6 +62,16 @@ export async function waitForAdjudicationLogSource(
 }
 
 
+function normalizeAdjudicationTimestamp(rawTime?: string): string {
+    if (!rawTime) return "";
+    const trimmed = String(rawTime).trim();
+    const parsedMs = Date.parse(trimmed);
+    if (!Number.isNaN(parsedMs)) {
+        return new Date(Math.floor(parsedMs / 1000) * 1000).toISOString();
+    }
+    return trimmed;
+}
+
 export function adjudicationLogKey(entry: AdjudicationData): string {
     const isotopes = Array.isArray(entry.isotopes)
         ? entry.isotopes.join(",")
@@ -71,7 +81,7 @@ export function adjudicationLogKey(entry: AdjudicationData): string {
         : String(entry.filePaths ?? "");
     return [
         entry.occupancyObsId ?? "",
-        entry.time ?? "",
+        normalizeAdjudicationTimestamp(entry.time),
         entry.adjudicationCode?.code ?? "",
         entry.username ?? "",
         entry.feedback ?? "",
@@ -87,14 +97,23 @@ export function mergeAdjudicationLogs(
     incoming: AdjudicationData[],
 ): AdjudicationData[] {
     const merged = new Map<string, AdjudicationData>();
+    const commandIdToKey = new Map<string, string>();
     for (const item of [...existing, ...incoming]) {
         if (!item) continue;
-        const key = adjudicationLogKey(item);
+        const cmdId = item.commandId ? String(item.commandId).trim() : "";
+        const contentKey = adjudicationLogKey(item);
+        const key = (cmdId && commandIdToKey.get(cmdId)) || contentKey;
         const previous = merged.get(key);
         if (previous) {
             item.id = previous.id;
+            if (!item.commandId && previous.commandId) {
+                item.commandId = previous.commandId;
+            }
         } else if (!item.id) {
-            item.id = key;
+            item.id = cmdId || key;
+        }
+        if (cmdId) {
+            commandIdToKey.set(cmdId, key);
         }
         merged.set(key, item);
     }
@@ -106,6 +125,7 @@ function buildAdjudicationData(
     occupancyCount: string,
     results: any,
     preferredId?: string,
+    commandId?: string,
 ): AdjudicationData {
     const data = new AdjudicationData(reportTime, occupancyCount, results.occupancyObsId);
     data.setFeedback(results.feedback);
@@ -118,7 +138,10 @@ function buildAdjudicationData(
     data.setOccupancyCount(occupancyCount);
     data.setOccupancyObsId(results.occupancyObsId);
     data.setUser(results.username ?? NaN);
-    data.id = preferredId || adjudicationLogKey(data);
+    if (commandId) {
+        data.commandId = String(commandId);
+    }
+    data.id = commandId || preferredId || adjudicationLogKey(data);
     return data;
 }
 
@@ -312,6 +335,7 @@ export default function AdjudicationLog(props: {
                     props.event.occupancyCount,
                     obs.results[0].data,
                     obs.id ?? obs["command@id"],
+                    obs["command@id"],
                 );
             }).filter((value: AdjudicationData | null): value is AdjudicationData => value !== null);
             adjudications.push(...pageAdjudications);
@@ -351,6 +375,7 @@ export default function AdjudicationLog(props: {
             for (const value of values) {
                 const statusData = value?.data;
                 if (!statusData?.results) continue;
+                if (statusData.statusCode && statusData.statusCode !== "COMPLETED") continue;
 
                 for (const result of statusData.results) {
                     const results = result?.data;
@@ -362,6 +387,7 @@ export default function AdjudicationLog(props: {
                             props.event.occupancyCount,
                             results,
                             statusData.id ?? statusData["command@id"],
+                            statusData["command@id"],
                         ),
                     );
                 }

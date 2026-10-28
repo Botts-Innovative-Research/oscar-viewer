@@ -87,4 +87,32 @@ describe("adjudication log source discovery", () => {
         expect(merged[1].id).to.equal("0hhi");
         expect(merged[1].feedback).to.equal("Follow-up note");
     });
+
+    it("deduplicates MQTT nanosecond reportTime and PostgreSQL microsecond reportTime for the same command", () => {
+        const mqttEntry = new AdjudicationData("2026-10-28T10:27:47.488129341Z", "44", "0jm85qgf");
+        mqttEntry.id = "02fc";
+        mqttEntry.commandId = "02fc";
+        mqttEntry.setAdjudicationCode(AdjudicationCodes.getCodeObjByIndex(11));
+        mqttEntry.setFeedback("Vvvhhh");
+        mqttEntry.setIsotopes(["Plutonium"]);
+        mqttEntry.setSecondaryInspectionStatus("COMPLETED");
+        mqttEntry.setVehicleId("Hvvcvb");
+        mqttEntry.setUser("admin");
+
+        const restEntry = new AdjudicationData("2026-10-28T10:27:47.488129Z", "44", "0jm85qgf");
+        restEntry.id = "02fd";
+        restEntry.commandId = "02fc";
+        restEntry.setAdjudicationCode(AdjudicationCodes.getCodeObjByIndex(11));
+        restEntry.setFeedback("Vvvhhh");
+        restEntry.setIsotopes(["Plutonium"]);
+        restEntry.setSecondaryInspectionStatus("COMPLETED");
+        restEntry.setVehicleId("Hvvcvb");
+        restEntry.setUser("admin");
+
+        const merged = mergeAdjudicationLogs([mqttEntry], [restEntry]);
+        expect(merged).to.have.length(1);
+        expect(merged[0].id).to.equal("02fc");
+        expect(merged[0].commandId).to.equal("02fc");
+        expect(merged[0].feedback).to.equal("Vvvhhh");
+    });
 });
