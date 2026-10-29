@@ -262,7 +262,7 @@ describe("nested event filters", () => {
         expect(secondPage.get("filter")).to.contain("gammaAlarm=true AND neutronAlarm=true");
         expect(secondPage.get("filter")).to.contain("adjudicatedIdsCount=0");
         expect(secondPage.get("filter")).to.contain("isotope LIKE '%Co60%'");
-        expect(firstCollection.filter.toQueryString()).to.contain("filter=%28");
+        expect(firstCollection.filter.toQueryString()).to.contain("'%25Co60%25'");
         expect(firstCollection.filter.toQueryString()).to.not.contain("%'");
     });
 });
