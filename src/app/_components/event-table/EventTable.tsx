@@ -15,6 +15,8 @@ import {
 } from "@mui/x-data-grid";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import DataStream from "osh-js/source/core/sweapi/datastream/DataStream.js";
+import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
+import Observations from "osh-js/source/core/consysapi/observation/Observations";
 import {EventType} from "osh-js/source/core/event/EventType";
 import {useRouter} from "next/dist/client/components/navigation";
 
@@ -57,10 +59,6 @@ import {
     BulkAdjudicationValues,
     runWithConcurrency,
 } from "@/lib/data/oscar/BulkAdjudication";
-import {
-    buildObservationCountParams,
-    buildObservationPageParams,
-} from "@/lib/data/oscar/EventQuery";
 
 interface TableProps {
     tableMode: "eventlog" | "alarmtable" | "lanelog";
@@ -220,23 +218,28 @@ export default function EventTable({
     }, [sendNotification]);
 
     const fetchPlanRows = useCallback(async (plan: QueryPlan, limit: number, offset: number, cutoff = pageLoadedTime) => {
-        const params = buildObservationPageParams(plan, cutoff, limit, offset);
-        const response = await fetch(`${plan.node.getConnectedSystemsEndpoint(false)}/observations?${params}`, {
-            headers: {...plan.node.getBasicAuthHeader(), Accept: "application/om+json"},
-            credentials: "include",
+        const observationFilter = new ObservationFilter({
+            dataStream: plan.datastreamIds,
+            resultTime: `../${cutoff}`,
+            filter: plan.filter ? encodeURIComponent(plan.filter) : undefined,
+            order: "desc",
         });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const payload = await response.json();
-        const observations = Array.isArray(payload?.items) ? payload.items : [];
-        return observations.flatMap((properties: any) => {
-            const lane = findLaneByDataStreamId(properties["datastream@id"]);
-            const observation = {id: properties.id, properties};
+        const api: typeof Observations = await plan.node.getObservationsApi();
+        const collection = await api.searchObservations(observationFilter, limit, offset);
+        const observations = await collection.fetchData();
+        return observations.flatMap((observation: any) => {
+            const lane = findLaneByDataStreamId(observation.properties["datastream@id"]);
             return lane ? [eventFromObservation(observation, lane, false)] : [];
         });
     }, [eventFromObservation, findLaneByDataStreamId, pageLoadedTime]);
 
     const fetchPlanCount = useCallback(async (plan: QueryPlan, cutoff = pageLoadedTime, strict = false): Promise<number> => {
-        const params = buildObservationCountParams(plan, cutoff);
+        const params = new URLSearchParams({
+            resultTime: `../${cutoff}`,
+            format: "application/om+json",
+            dataStream: plan.datastreamIds.join(","),
+        });
+        if (plan.filter) params.set("filter", plan.filter);
         try {
             const response = await fetch(`${plan.node.getConnectedSystemsEndpoint(false)}/observations/count?${params}`, {
                 headers: {...plan.node.getBasicAuthHeader(), "Content-Type": "sml+json"},
