@@ -92,6 +92,7 @@ export type DailyFileType = {
     id: number;
     name: string;
     message: string;
+    timestamp: string;
 }
 
 
