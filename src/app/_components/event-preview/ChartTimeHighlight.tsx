@@ -4,7 +4,7 @@
  */
 'use client';
 
-import React, {useCallback, useEffect, useRef, useState} from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import {Box, Grid, ToggleButton, ToggleButtonGroup} from "@mui/material";
 import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView.js";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
@@ -13,7 +13,9 @@ import {Chart, registerables} from 'chart.js';
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {
     createGammaViewCurve,
+    createGammaDetectorViewCurves,
     createNeutronViewCurve,
+    createNeutronDetectorViewCurves,
     createNSigmaCalcViewCurve,
     createThresholdViewCurve, createThreshSigmaViewCurve
 } from "@/app/utils/ChartUtils";
@@ -34,6 +36,22 @@ type ChartTypes ={
     nsigma?: any;
 }
 
+type ChartMode = "total" | "gamma" | "neutron";
+
+const gammaDetectorChartIds = [
+    "event-gamma-detector-1",
+    "event-gamma-detector-2",
+    "event-gamma-detector-3",
+    "event-gamma-detector-4",
+];
+
+const neutronDetectorChartIds = [
+    "event-neutron-detector-1",
+    "event-neutron-detector-2",
+    "event-neutron-detector-3",
+    "event-neutron-detector-4",
+];
+
 Chart.register(...registerables, annotationPlugin);
 
 export class ChartInterceptProps {
@@ -42,6 +60,7 @@ export class ChartInterceptProps {
     eventData: EventTableData;
     latestGB: number;
     currentTime: any;
+    showDetectorModes?: boolean;
 }
 
 export default function ChartTimeHighlight(props: ChartInterceptProps) {
@@ -66,6 +85,98 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     });
 
     const [toggleView, setToggleView] = useState("cps");
+    const detectorChartViewsRef = useRef<any[]>([]);
+    const [mode, setMode] = useState<ChartMode>("total");
+
+    const availableModes = useMemo<ChartMode[]>(() => {
+        if (props.eventData.status === "Gamma")
+            return ["total", "gamma"];
+        if (props.eventData.status === "Neutron")
+            return ["total", "neutron"];
+        return ["total", "gamma", "neutron"];
+    }, [props.eventData.status]);
+
+    const gammaChartIds = useMemo(() => gammaDetectorChartIds, []);
+    const neutronChartIds = useMemo(() => neutronDetectorChartIds, []);
+
+    useEffect(() => {
+        if (!availableModes.includes(mode))
+            setMode("total");
+    }, [availableModes, mode]);
+
+    useEffect(() => {
+        if (!props.showDetectorModes) return;
+
+        const labels = {time: t("time"), gamma: t("gamma"), neutron: t("neutron")};
+        const createCharts = (datasource: typeof ConSysApi | undefined, chartIds: string[], curves: any[]) => {
+            if (!datasource) return [];
+
+            return curves.flatMap((curve, index) => {
+                const container = chartIds[index];
+                if (!document.getElementById(container)) return [];
+
+                return [
+                    new ChartJsView({
+                        type: "line",
+                        container,
+                        layers: [curve],
+                        css: "chart-view",
+                        options: {
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: `${t("detector")} ${index + 1}`,
+                                    font: {size: 14, weight: "bold" as const},
+                                },
+                                legend: {display: true, position: "bottom" as const},
+                            },
+                            responsive: true,
+                            scales: {
+                                x: {type: "time", title: {display: true, text: t("time")}},
+                                y: {title: {display: true, text: "CPS"}, position: "left" as const},
+                            },
+                        },
+                    })
+                ];
+            });
+        };
+
+        const views = [
+            ...(availableModes.includes("gamma")
+                ? createCharts(props.datasources.gamma, gammaChartIds, createGammaDetectorViewCurves(props.datasources.gamma, labels))
+                : []),
+            ...(availableModes.includes("neutron")
+                ? createCharts(props.datasources.neutron, neutronChartIds, createNeutronDetectorViewCurves(props.datasources.neutron, labels))
+                : []),
+        ];
+
+        detectorChartViewsRef.current = views;
+        return () => {
+            views.forEach(view => view.chart?.destroy());
+            detectorChartViewsRef.current = [];
+        };
+    }, [availableModes, gammaChartIds, neutronChartIds, props.datasources.gamma, props.datasources.neutron, props.showDetectorModes, t]);
+
+    useEffect(() => {
+        if (!props.showDetectorModes || props.currentTime === null || props.currentTime === undefined) return;
+
+        const time = new Date(props.currentTime);
+        detectorChartViewsRef.current.forEach(view => {
+            view.chart.options.plugins.annotation = {
+                annotations: {
+                    currentTime: {
+                        type: "line",
+                        xMin: time,
+                        xMax: time,
+                        borderColor: "yellow",
+                        borderWidth: 4,
+                        label: {enabled: true, content: t("currentTime")},
+                    },
+                },
+            };
+            view.chart.update();
+        });
+    }, [props.currentTime, props.showDetectorModes, t]);
 
 
     useEffect(() => {
@@ -82,20 +193,14 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
 
 
     useEffect(() => {
-        if (!props.eventData || !props.datasources?.gamma || !props.datasources?.neutron) {
-            console.warn("no datasources or event data");
-            return;
-        }
+        if (!props.eventData || !props.datasources?.gamma || !props.datasources?.neutron) return;
 
-        if (props.datasources?.threshold && props?.latestGB)
-            setHasNsigma(true);
-
+        if (props.datasources?.threshold && props?.latestGB) setHasNsigma(true);
 
         const init = async () => {
             const layers = await createCurveLayers();
             setLayers(layers)
         };
-
         init();
     }, [props.eventData, props.latestGB, props.datasources]);
 
@@ -112,8 +217,7 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             return;
         }
 
-        if (chartsInitializedRef.current)
-            return;
+        if (chartsInitializedRef.current) return;
 
         const elementIds = updateChartElIds(props.eventData);
 
@@ -218,7 +322,6 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
     }
 
     async function createCurveLayers() {
-
         const labels = {
             time: t('time'),
             neutron: t('neutron'),
@@ -288,8 +391,8 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
             },
         },
     });
-    const renderCharts = (layers: CurveLayers, elementIds: string[]) => {
 
+    const renderCharts = (layers: CurveLayers, elementIds: string[]) => {
         if (layers?.gamma && gammaChartViewRef?.current) {
             const gammaLayers: any[] = [];
 
@@ -462,11 +565,54 @@ export default function ChartTimeHighlight(props: ChartInterceptProps) {
         }
     };
 
-    return (
+    const renderDetectorCharts = (chartIds: string[]) => (
+        <Grid container spacing={2}>
+            {chartIds.map(chartId => (
+                <Grid item xs={12} md={6} key={chartId}>
+                    <div id={chartId} style={{height: 360}}/>
+                </Grid>
+            ))}
+        </Grid>
+    );
+
+    const aggregateCharts = (
         <Box display='flex' alignItems="center">
             <Grid container direction="column" spacing={2}>
                 {renderChartsByStatus()}
             </Grid>
         </Box>
-    )
+    );
+
+    if (!props.showDetectorModes) return aggregateCharts;
+
+    return (
+        <Grid container spacing={2}>
+            <Grid item xs={12}>
+                <ToggleButtonGroup
+                    exclusive
+                    value={mode}
+                    onChange={(_, nextMode: ChartMode | null) => nextMode && setMode(nextMode)}
+                    size="small"
+                    aria-label="chart mode"
+                >
+                    <ToggleButton value="total">{t("chartModeTotal")}</ToggleButton>
+                    {availableModes.includes("gamma") && <ToggleButton value="gamma">{t("chartModeGammaDetectors")}</ToggleButton>}
+                    {availableModes.includes("neutron") && <ToggleButton value="neutron">{t("chartModeNeutronDetectors")}</ToggleButton>}
+                </ToggleButtonGroup>
+            </Grid>
+            <Grid item xs={12} sx={{position: "relative"}}>
+                <Box sx={{display: mode === "total" ? "block" : "none"}}>{aggregateCharts}</Box>
+                {availableModes.includes("gamma") && (
+                    <Box sx={{display: mode === "gamma" ? "block" : "none"}}>
+                        {renderDetectorCharts(gammaChartIds)}
+                    </Box>
+                )}
+                {availableModes.includes("neutron") && (
+                    <Box sx={{display: mode === "neutron" ? "block" : "none"}}>
+                        {renderDetectorCharts(neutronChartIds)}
+                    </Box>
+                )}
+            </Grid>
+        </Grid>
+    );
 }
