@@ -1,3 +1,5 @@
+import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
+import Observations from "osh-js/source/core/consysapi/observation/Observations";
 import {
     combineServerFilters,
     compileEventFilterForLane,
@@ -7,10 +9,6 @@ import {
     operatorsForEventFilterField,
 } from "../../src/lib/data/oscar/EventFilter";
 import {runWithConcurrency} from "../../src/lib/data/oscar/BulkAdjudication";
-import {
-    buildObservationCountParams,
-    buildObservationPageParams,
-} from "../../src/lib/data/oscar/EventQuery";
 
 describe("nested event filters", () => {
     it("uses inclusive comparisons as the primary controls for numeric event fields", () => {
@@ -75,7 +73,7 @@ describe("nested event filters", () => {
         } as any, metadata)).to.equal(true);
     });
 
-    it("preserves the dashboard alarm predicate alongside a date boundary", () => {
+    it("preserves the dashboard alarm predicate alongside a date boundary", async () => {
         const cutoff = "2026-10-23T15:10:00.000Z";
         const filter: EventFilterGroup = {
             kind: "group",
@@ -97,7 +95,15 @@ describe("nested event filters", () => {
                 compiled || "",
             ),
         };
-        const params = buildObservationPageParams(plan, "2026-10-24T12:00:00.000Z", 15, 0);
+        const observationFilter = new ObservationFilter({
+            dataStream: plan.datastreamIds,
+            resultTime: "../2026-10-24T12:00:00.000Z",
+            filter: plan.filter ? encodeURIComponent(plan.filter) : undefined,
+            order: "desc",
+        });
+        const api = new Observations({endpointUrl: "localhost:8181/sensorhub/api", tls: false});
+        const collection: any = await api.searchObservations(observationFilter, 15, 0);
+        const params = new URLSearchParams(`${collection.filter.toQueryString()}&offset=${collection.pageOffset}&limit=${collection.pageSize}`);
 
         expect(params.get("filter")).to.contain("gammaAlarm=true OR neutronAlarm=true");
         expect(params.get("filter")).to.contain("adjudicatedIdsCount=0");
@@ -205,13 +211,14 @@ describe("nested event filters", () => {
         expect(eventMatchesFilter(isEmpty, unadjudicatedEvent, metadata)).to.equal(true);
     });
 
-    it("sends the same complete database filter to counts and every result page", () => {
+    it("sends the same complete database filter through ObservationFilter and counts on every page", async () => {
         const gammaAndNeutron: EventFilterGroup = {
             kind: "group",
             id: "root",
             logic: "and",
             children: [
                 {kind: "rule", id: "status", field: "status", operator: "equals", value: "Gamma & Neutron"},
+                {kind: "rule", id: "isotope", field: "isotope", operator: "contains", value: "Co60"},
             ],
         };
         const compiled = compileEventFilterForLane(gammaAndNeutron, {
@@ -227,9 +234,23 @@ describe("nested event filters", () => {
             ),
         };
         const cutoff = "2026-09-24T12:00:00.000Z";
-        const firstPage = buildObservationPageParams(plan, cutoff, 15, 0);
-        const secondPage = buildObservationPageParams(plan, cutoff, 15, 15);
-        const count = buildObservationCountParams(plan, cutoff);
+        const observationFilter = new ObservationFilter({
+            dataStream: plan.datastreamIds,
+            resultTime: `../${cutoff}`,
+            filter: plan.filter ? encodeURIComponent(plan.filter) : undefined,
+            order: "desc",
+        });
+        const api = new Observations({endpointUrl: "localhost:8181/sensorhub/api", tls: false});
+        const firstCollection: any = await api.searchObservations(observationFilter, 15, 0);
+        const secondCollection: any = await api.searchObservations(observationFilter, 15, 15);
+        const firstPage = new URLSearchParams(`${firstCollection.filter.toQueryString()}&offset=${firstCollection.pageOffset}&limit=${firstCollection.pageSize}`);
+        const secondPage = new URLSearchParams(`${secondCollection.filter.toQueryString()}&offset=${secondCollection.pageOffset}&limit=${secondCollection.pageSize}`);
+        const count = new URLSearchParams({
+            resultTime: `../${cutoff}`,
+            format: "application/om+json",
+            dataStream: plan.datastreamIds.join(","),
+        });
+        if (plan.filter) count.set("filter", plan.filter);
 
         expect(firstPage.get("filter")).to.equal(plan.filter);
         expect(secondPage.get("filter")).to.equal(plan.filter);
@@ -240,7 +261,9 @@ describe("nested event filters", () => {
         expect(secondPage.get("dataStream")).to.equal("occupancy-1,occupancy-2");
         expect(secondPage.get("filter")).to.contain("gammaAlarm=true AND neutronAlarm=true");
         expect(secondPage.get("filter")).to.contain("adjudicatedIdsCount=0");
-        expect(secondPage.toString()).to.contain("filter=");
+        expect(secondPage.get("filter")).to.contain("isotope LIKE '%Co60%'");
+        expect(firstCollection.filter.toQueryString()).to.contain("filter=%28");
+        expect(firstCollection.filter.toQueryString()).to.not.contain("%'");
     });
 });
 

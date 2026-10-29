@@ -212,6 +212,7 @@ export default function EventMedia({selectedNode, datasources, eventData, mode, 
                                     eventData={eventData}
                                     latestGB={latestGB}
                                     currentTime={videoCurrentTime}
+                                    showDetectorModes
                                 />
                             )}
                         </Grid>
