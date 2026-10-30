@@ -24,7 +24,13 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install oscar-viewer dependencies
-        run: npm i
+        run: npm ci
+
+      - name: Audit production and development dependencies
+        run: npm run audit:dependencies
+
+      - name: Check TypeScript
+        run: npm run lint
 
       - name: Build oscar-viewer
         run: npm run build
@@ -32,8 +38,5 @@ jobs:
       - name: Install Cypress
         run: npx cypress install
 
-      - name: Test map configuration
-        run: npm run test:map
-
-      - name: Test refreshed video discovery
-        run: npm run test:video
+      - name: Run the complete component regression suite
+        run: npm run test:component

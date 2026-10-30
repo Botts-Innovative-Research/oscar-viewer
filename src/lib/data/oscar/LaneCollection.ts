@@ -12,30 +12,57 @@ import {INode} from "@/lib/data/osh/Node";
 import {Mode} from "osh-js/source/core/datasource/Mode";
 import {EventType} from "osh-js/source/core/event/EventType";
 
-function manageSharedConnection(dataSource: any) {
+export function manageSharedConnection(dataSource: any) {
     const originalConnect = dataSource.connect.bind(dataSource);
     const originalDisconnect = dataSource.disconnect.bind(dataSource);
-    let connection: Promise<any> | null = null;
+    let connected = false;
+    let requestedConnected = false;
+    let lifecycle: Promise<any> = Promise.resolve();
 
     dataSource.connect = () => {
-        if (!connection) {
-            connection = Promise.resolve(originalConnect()).catch((error) => {
-                connection = null;
+        if (requestedConnected)
+            return lifecycle;
+
+        requestedConnected = true;
+        let connect: Promise<any>;
+        connect = lifecycle.catch((): void => undefined).then(async () => {
+            if (connected)
+                return;
+            try {
+                const result = await originalConnect();
+                connected = true;
+                return result;
+            } catch (error) {
+                if (lifecycle === connect)
+                    requestedConnected = false;
                 throw error;
-            });
-        }
-        return connection;
+            }
+        });
+        lifecycle = connect;
+        return connect;
     };
 
-    dataSource.disconnect = async () => {
-        if (!connection)
-            return;
-        try {
-            await connection;
-            await originalDisconnect();
-        } finally {
-            connection = null;
-        }
+    dataSource.disconnect = () => {
+        if (!requestedConnected)
+            return lifecycle;
+
+        requestedConnected = false;
+        let disconnect: Promise<any>;
+        disconnect = lifecycle.catch((): void => undefined).then(async () => {
+            if (!connected)
+                return;
+            try {
+                const result = await originalDisconnect();
+                connected = false;
+                return result;
+            } catch (error) {
+                if (lifecycle === disconnect)
+                    requestedConnected = true;
+                throw error;
+            }
+        });
+        lifecycle = disconnect;
+        return disconnect;
     };
 
     return dataSource;
@@ -595,4 +622,3 @@ export class LaneDSColl {
         await this.disconnectToDS(this.getBatchDSArrayNames());
     }
 }
-

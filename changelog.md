@@ -1,6 +1,38 @@
 # OSCAR Viewer Change Log
 All notable changes to this project will be documented in this file. 
 
+## 3.9.1
+
+### Upgrade notes
+
+- This release adds operator-facing navigation and URL-scoped operational views. Validate workstation URLs and train operators before production rollout.
+
+### Added
+
+- Added exact Event UUID lookup, fresh-session Event Details deep links, copyable node-qualified URLs, and visible UUID metadata in printed/PDF and alarm-transfer workflows.
+- Added a localized Status of Health page for lane RPM and camera connectivity, radiation and tamper faults, and configurable extended-occupancy alerts.
+- Added URL-scoped operational views that consistently limit lane discovery, dashboards, maps, reports, notifications, and health monitoring to assigned lanes.
+- Added compact alarm QR export from the dashboard and Event Details, including adaptively downsampled gamma, neutron, and threshold series.
+- Added an offline Alarm Transfer page that scans a camera or saved QR image, imports portable alarm files, verifies transfer integrity, redraws charts, and downloads or shares the alarm package.
+- Added complete English, Spanish, French, and Greek interface translations for the transfer workflow.
+
+### Changed
+
+- Dashboard lane cards now show compact, independently labeled RPM and camera connection indicators plus gamma-high, gamma-low, neutron-high, tamper, and extended-occupancy fault indicators. They share the bounded Status of Health snapshot instead of adding per-lane health subscriptions.
+- Viewer installs no longer pull the unused HTML tag injector, legacy browser-polyfill stack, or deprecated patch and test tooling.
+- Alarm Transfer camera scanning now keeps a visible framed preview, reports camera and validation state, supports selecting among available cameras, preserves native scan pixels for dense alarm codes, and closes the camera immediately after stopping or importing.
+- Alarm QR images now use integer module-aligned raster and display sizes so saved images and on-screen codes do not acquire decoder-breaking fractional pixel boundaries.
+- Status of Health now refreshes latest observations in globally limited batches of at most 50 streams on entry and every 30 seconds instead of using per-stream real-time MQTT feeds, with a 10-second request deadline so stalled nodes cannot block later work, preventing oversized requests and bounding CPU and server load at large sites.
+- Event filtering, counts, pagination, and bulk selection now query the complete matching server-side result set rather than only the currently loaded page.
+- Lane Details now shows localized live-video preparation and terminal error states, retries transient playlist and media failures within fixed bounds, and offers a Retry action that safely starts one fresh server stream.
+- Live-video URLs now honor each node's configured bucket endpoint, normalize platform-specific path separators, and remain same-origin for the default node.
+
+### Security
+
+- Alarm QR payloads are compressed Base45 documents with a SHA-256 corruption check and strict import limits. They are not encrypted or digitally signed, so the interface warns operators to confirm the source independently.
+- Migrated the static Viewer to Next.js 16 and React 19, and migrated component tests to Cypress 16 with Vite 8. Removed the obsolete standalone Webpack toolchain, browser polyfills, and vulnerable patch tooling; the MQTT MessagePort fix is now pinned to its reviewed `osh-js` source commit.
+- Clean installs now contain no known npm audit advisories or deprecated locked packages, and CI rejects future advisories at every severity.
+
 ## 3.8.4
 
 ### Added
