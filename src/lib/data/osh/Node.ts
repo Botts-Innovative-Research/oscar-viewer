@@ -20,6 +20,11 @@ import DataStream from "osh-js/source/core/consysapi/datastream/DataStream.js";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import {Mode} from "osh-js/source/core/datasource/Mode";
+import {
+    buildOperationalViewCatalog,
+    OperationalViewCatalog,
+    systemMatchesOperationalView,
+} from "@/lib/data/oscar/OperationalView";
 
 const LANE_SYSTEM_UID_PREFIX = "urn:osh:system:lane:";
 
@@ -227,7 +232,7 @@ export class Node implements INode {
             prefix: this.csAPIEndpoint,
             endpointUrl: `${this.address}:${this.port}${this.oshPathRoot}`,
         };
-        if (this.authenticationMode === "basic") {
+        if (this.authenticationMode === "basic" && this.hasRuntimeCredentials()) {
             mqttOpts.username = this.auth.username;
             mqttOpts.password = this.auth.password;
         }

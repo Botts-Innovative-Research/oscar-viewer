@@ -50,8 +50,9 @@ import { useBreakpoint } from "@/app/providers";
 import BackButton from "../BackButton";
 import SuspenseLoad from "@/app/_components/SuspenseLoad";
 import {useLanguage} from '@/app/contexts/LanguageContext';
+import AlarmQrExportButton from "@/app/_components/alarm-transfer/AlarmQrExportButton";
 import ShareOccupancyButton from "@/app/_components/event-details/ShareOccupancyButton";
-import {occupancyDetailsPath} from "@/lib/data/oscar/SharedOccupancy";
+import {buildEventDetailsHref} from "@/lib/data/oscar/EventLookup";
 
 export function EventPreview() {
     const { isDesktop } = useBreakpoint();
@@ -261,9 +262,7 @@ export function EventPreview() {
         dispatch(setSelectedRowId(eventPreview.eventData.id))
         dispatch(setSelectedEvent(eventPreview.eventData));
 
-        router.push(eventPreview.eventData.occupancyObsId && laneEntry
-            ? occupancyDetailsPath(eventPreview.eventData.occupancyObsId, laneEntry.parentNode)
-            : "/event-details");
+        router.push("/event-details");
     }
 
     useEffect(() => {
@@ -366,8 +365,14 @@ export function EventPreview() {
                         </IconButton>
                     </Grid>
                     <Grid item>
-                        <ShareOccupancyButton key={`${eventPreview.eventData.id}:share`}
-                            event={eventPreview.eventData} lane={laneEntry}/>
+                        <ShareOccupancyButton
+                            key={`${eventPreview.eventData.id}:share`}
+                            event={eventPreview.eventData}
+                            lane={laneEntry}
+                        />
+                    </Grid>
+                    <Grid item>
+                        <AlarmQrExportButton event={eventPreview.eventData} lane={laneEntry} iconOnly/>
                     </Grid>
                 </Grid>
                 {isDesktop && (

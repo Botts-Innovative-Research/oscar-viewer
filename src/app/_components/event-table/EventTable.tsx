@@ -20,7 +20,12 @@ import Observations from "osh-js/source/core/consysapi/observation/Observations"
 import {EventType} from "osh-js/source/core/event/EventType";
 import {useRouter} from "next/dist/client/components/navigation";
 
-import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import {
+    acquireSharedConnection,
+    findRealtimeDataSourceForStream,
+    LaneMapEntry,
+    type SharedConnectionLease,
+} from "@/lib/data/oscar/LaneCollection";
 import {EventTableData, sortEventsByAlarmPriority} from "@/lib/data/oscar/TableHelpers";
 import {isOccupancyDataStream, isThresholdDataStream} from "@/lib/data/oscar/Utilities";
 import {convertToMap, hashString} from "@/app/utils/Utils";
@@ -148,23 +153,32 @@ export default function EventTable({
                 laneId: lane.laneName,
             });
             if (compiled === false) continue;
-            for (const priorityFilter of EVENT_PRIORITY_FILTERS) {
-                const serverFilter = combineServerFilters(baseServerFilter, compiled || "", priorityFilter);
-                const groupKey = `${lane.parentNode.id}\u001f${serverFilter}`;
-                let plan = grouped.get(groupKey);
-                if (!plan) {
-                    plan = {key: groupKey, node: lane.parentNode, datastreamIds: [], filter: serverFilter};
-                    grouped.set(groupKey, plan);
-                }
-                lane.datastreams
-                    .filter((stream: typeof DataStream) => isOccupancyDataStream(stream))
-                    .forEach((stream: typeof DataStream) => plan!.datastreamIds.push(stream.properties.id));
+            const serverFilter = combineServerFilters(baseServerFilter, compiled || "");
+            const groupKey = `${lane.parentNode.id}\u001f${serverFilter}`;
+            let plan = grouped.get(groupKey);
+            if (!plan) {
+                plan = {key: groupKey, node: lane.parentNode, datastreamIds: [], filter: serverFilter};
+                grouped.set(groupKey, plan);
             }
+            lane.datastreams
+                .filter((stream: typeof DataStream) => isOccupancyDataStream(stream))
+                .forEach((stream: typeof DataStream) => plan!.datastreamIds.push(stream.properties.id));
         }
         return Array.from(grouped.values())
             .map(plan => ({...plan, datastreamIds: Array.from(new Set(plan.datastreamIds))}))
             .filter(plan => plan.datastreamIds.length > 0);
     }, [stableLaneMap, tableMode, currentLane, filter, baseServerFilter]);
+
+    const pageQueryPlans = useMemo<QueryPlan[]>(() => {
+        const priorities = tableMode === "alarmtable"
+            ? EVENT_PRIORITY_FILTERS.slice(0, 3)
+            : EVENT_PRIORITY_FILTERS;
+        return queryPlans.flatMap(plan => priorities.map(priorityFilter => ({
+            ...plan,
+            key: `${plan.key}\u001f${priorityFilter}`,
+            filter: combineServerFilters(plan.filter, priorityFilter),
+        })));
+    }, [queryPlans, tableMode]);
 
     const bulkQueryPlans = useMemo<QueryPlan[]>(() => queryPlans.map(plan => ({
         ...plan,
@@ -221,7 +235,7 @@ export default function EventTable({
         const observationFilter = new ObservationFilter({
             dataStream: plan.datastreamIds,
             resultTime: `../${cutoff}`,
-            filter: plan.filter,
+            filter: plan.filter ? encodeURIComponent(plan.filter) : undefined,
             order: "desc",
         });
         const api: typeof Observations = await plan.node.getObservationsApi();
@@ -267,22 +281,22 @@ export default function EventTable({
 
     const fetchPage = useCallback(async (page: number) => {
         const requestId = ++pageRequestRef.current;
-        if (queryPlans.length === 0) {
+        if (pageQueryPlans.length === 0) {
             setRows([]);
             setLoading(false);
             return;
         }
         setLoading(true);
         try {
-            if (queryPlans.length === 1) {
-                const pageRows = await fetchPlanRows(queryPlans[0], PAGE_SIZE, page * PAGE_SIZE);
+            if (pageQueryPlans.length === 1) {
+                const pageRows = await fetchPlanRows(pageQueryPlans[0], PAGE_SIZE, page * PAGE_SIZE);
                 if (requestId !== pageRequestRef.current) return;
                 setRows(deduplicateEvents(pageRows));
                 currentPageRef.current = page;
                 return;
             }
             const required = (page + 1) * PAGE_SIZE;
-            const results = await runWithConcurrency(queryPlans, 6, plan => fetchPlanRows(plan, required, 0));
+            const results = await runWithConcurrency(pageQueryPlans, 6, plan => fetchPlanRows(plan, required, 0));
             if (requestId !== pageRequestRef.current) return;
             const merged = deduplicateEvents(results.flat())
                 .sort(sortEventsByAlarmPriority);
@@ -295,7 +309,7 @@ export default function EventTable({
         } finally {
             if (requestId === pageRequestRef.current) setLoading(false);
         }
-    }, [queryPlans, fetchPlanRows]);
+    }, [pageQueryPlans, fetchPlanRows]);
 
     useEffect(() => {
         refreshCounts();
@@ -429,11 +443,7 @@ export default function EventTable({
         dispatch(setSelectedRowId(event.id));
         dispatch(setSelectedEvent(event));
         getLatestGB(event);
-        if (navigate) {
-            const lane = stableLaneMap.get(event.laneId);
-            router.push(event.occupancyObsId && lane
-                ? occupancyDetailsPath(event.occupancyObsId, lane.parentNode) : "/event-details");
-        }
+        if (navigate) router.push("/event-details");
     };
 
     const enumerateAllFiltered = useCallback(async (): Promise<EventTableData[]> => {
@@ -562,6 +572,7 @@ export default function EventTable({
                 columns={columns}
                 loading={loading}
                 paginationMode="server"
+                filterMode="server"
                 paginationModel={paginationModel}
                 onPaginationModelChange={model => setPaginationModel(model)}
                 rowCount={rowCount}

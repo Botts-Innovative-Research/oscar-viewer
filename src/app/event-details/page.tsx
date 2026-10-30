@@ -1,13 +1,13 @@
 "use client";
 
-import {Alert, Button, Grid, Paper, Typography} from "@mui/material";
-import React, {useContext, useEffect, useRef, useState} from "react";
+import {Alert, Button, Grid, Paper, Stack, Typography} from "@mui/material";
+import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import BackButton from "../_components/BackButton";
 import DataRow from "../_components/event-details/DataRow";
 import MiscTable from "../_components/event-details/MiscTable";
 import {useSelector} from "react-redux";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
-import {selectEventPreview, setLatestGB} from "@/lib/state/EventPreviewSlice";
+import {selectEventPreview, setEventPreview, setLatestGB, setSelectedRowId} from "@/lib/state/EventPreviewSlice";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {PictureAsPdfRounded} from "@mui/icons-material";
 import {useReactToPrint} from "react-to-print";
@@ -15,26 +15,80 @@ import EventMedia from "../_components/event-preview/EventMedia";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 import AdjudicationDetail from "../_components/adjudication/AdjudicationDetail";
 import SuspenseLoad from "@/app/_components/SuspenseLoad";
-import {useSearchParams} from "next/navigation";
-import {RootState} from "@/lib/state/Store";
-import {useSharedOccupancy} from "@/app/hooks/useSharedOccupancy";
+import AlarmQrExportButton from "@/app/_components/alarm-transfer/AlarmQrExportButton";
 import ShareOccupancyButton from "@/app/_components/event-details/ShareOccupancyButton";
-import {useAppDispatch} from "@/lib/state/Hooks";
+import DailyFileTable from "@/app/_components/event-preview/DailyFileTable";
+import {useSharedOccupancy} from "@/app/hooks/useSharedOccupancy";
+import {RootState} from "@/lib/state/Store";
 import {isThresholdDataStream} from "@/lib/data/oscar/Utilities";
 import {getObservations} from "@/app/utils/ChartUtils";
-import DailyFileTable from "@/app/_components/event-preview/DailyFileTable";
+import {useRouter, useSearchParams} from "next/navigation";
+import {useAppDispatch} from "@/lib/state/Hooks";
+import {setSelectedEvent} from "@/lib/state/EventDataSlice";
+import {setEventData} from "@/lib/state/EventDetailsSlice";
+import {EventTableData} from "@/lib/data/oscar/TableHelpers";
+import {
+    buildEventDetailsHref,
+    EventLookupError,
+    lookupEventByObservationId,
+    normalizeEventObservationId,
+    resolveEventObservationId,
+} from "@/lib/data/oscar/EventLookup";
+
+type LookupState = "idle" | "loading" | "ready" | "not-found" | "ambiguous" | "unavailable";
+type LiveIdentityState = "idle" | "resolving" | "failed";
+
+const LIVE_IDENTITY_LOOKUP_ATTEMPTS = 5;
+const LIVE_IDENTITY_RETRY_DELAY_MS = 1000;
+const LIVE_IDENTITY_REQUEST_TIMEOUT_MS = 2500;
+
+function waitForLiveIdentityRetry(signal: AbortSignal): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const timeoutId = window.setTimeout(() => {
+            signal.removeEventListener("abort", handleAbort);
+            resolve();
+        }, LIVE_IDENTITY_RETRY_DELAY_MS);
+        const handleAbort = () => {
+            window.clearTimeout(timeoutId);
+            reject(new DOMException("The event identity lookup was cancelled.", "AbortError"));
+        };
+        signal.addEventListener("abort", handleAbort, {once: true});
+    });
+}
 
 
 export default function EventDetailsPage() {
 
     const eventPreview = useSelector(selectEventPreview);
     const dispatch = useAppDispatch();
-    const params = useSearchParams();
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const nodes = useSelector((state: RootState) => state.oshSlice.nodes);
-    const {laneMapRef, laneMapReady, readyLaneNames} = useContext(DataSourceContext);
-    const shared = useSharedOccupancy(params.get("id"), params.get("node"), nodes, laneMapRef.current, laneMapReady);
-    // A URL resource takes precedence over a previously selected/persisted occupancy.
-    const eventData = params.has("id") ? shared.event : eventPreview.eventData;
+    const {laneMapRef, laneMapReady, readyLaneNames, scopedHref} = useContext(DataSourceContext);
+    const sharedRequested = searchParams.has("id");
+    const shared = useSharedOccupancy(
+        searchParams.get("id"),
+        searchParams.get("node"),
+        nodes,
+        laneMapRef.current,
+        laneMapReady,
+    );
+    const eventIdValues = searchParams.getAll("eventId");
+    const nodeIdValues = searchParams.getAll("nodeId");
+    const lookupRequested = !sharedRequested && eventIdValues.length > 0;
+    const lookupQueryMalformed = eventIdValues.length !== 1 || nodeIdValues.length > 1;
+    const requestedEventId = eventIdValues.length === 1 ? eventIdValues[0] : "";
+    const requestedNodeId = nodeIdValues.length === 1 ? nodeIdValues[0] : null;
+    const [resolvedEvent, setResolvedEvent] = useState<EventTableData | null>(null);
+    const [lookupState, setLookupState] = useState<LookupState>(lookupRequested ? "loading" : "idle");
+    const [liveIdentityState, setLiveIdentityState] = useState<LiveIdentityState>("idle");
+    const [liveIdentityRetryKey, setLiveIdentityRetryKey] = useState(0);
+    const resolvedIdentityRef = useRef<{eventId: string; nodeId: string} | null>(null);
+    const eventData = sharedRequested
+        ? shared.event
+        : lookupRequested
+            ? resolvedEvent
+            : eventPreview.eventData;
     const laneReady = Boolean(eventData?.laneId && readyLaneNames.has(eventData.laneId));
     const laneEntry = eventData?.laneId ? laneMapRef.current?.get(eventData.laneId) : undefined;
     const [datasourcesReady, setDatasourcesReady] = useState<boolean>(false);
@@ -46,12 +100,12 @@ export default function EventDetailsPage() {
     const [thresholdDatasources, setThresholdDatasources] = useState<typeof ConSysApi[]>([]);
 
     const contentRef = useRef<HTMLDivElement>(null);
-    const docTitle = eventData ? `eventdetails-${eventData.laneId}-${eventData.occupancyObsId}-${eventData.startTime}-${eventData.endTime}` : 'eventdetails';
+    const docTitle = eventPreview.eventData ? `eventdetails-${eventPreview.eventData.laneId}-${eventPreview.eventData.occupancyObsId}-${eventPreview.eventData.startTime}-${eventPreview.eventData.endTime}` : 'eventdetails';
 
     const { t } = useLanguage();
 
     useEffect(() => {
-        if (!params.has("id")) return;
+        if (!sharedRequested) return;
         let active = true;
         dispatch(setLatestGB(null));
         const threshold = laneEntry?.datastreams.find((stream: any) => isThresholdDataStream(stream)
@@ -62,7 +116,7 @@ export default function EventDetailsPage() {
             }).catch(error => console.error("Failed to load shared occupancy background:", error));
         }
         return () => { active = false; };
-    }, [eventData, laneEntry, params, dispatch]);
+    }, [eventData, laneEntry, sharedRequested, dispatch]);
 
     useEffect(() => {
         setDatasourcesReady(false);
@@ -93,7 +147,7 @@ export default function EventDetailsPage() {
                 setDataSourceError(true);
             }
         };
-        collect();
+        void collect();
         return () => { cancelled = true; };
     }, [eventData, laneEntry, laneReady]);
 
@@ -108,7 +162,7 @@ export default function EventDetailsPage() {
             neutronDatasources.forEach(ds => ds.disconnect());
             thresholdDatasources.forEach(ds => ds.disconnect());
         }
-    }, [gammaDatasources, neutronDatasources, thresholdDatasources]);
+    }, [datasourcesReady]);
 
     const reactToPrintFn = useReactToPrint({
         contentRef: contentRef,
@@ -133,27 +187,60 @@ export default function EventDetailsPage() {
                         </Grid>
                     </Grid>
                     {eventData && <Grid item xs={12} sm={"auto"}>
-                        {laneEntry && <ShareOccupancyButton key={`${eventData.id}:share`} event={eventData} lane={laneEntry}/>}
-                    </Grid>}
-                    {eventData && <Grid item xs={12} sm={"auto"}>
-                        <Button
-                            variant="outlined"
-                            startIcon={<PictureAsPdfRounded/>}
-                            onClick={() => {
-                                reactToPrintFn()
-                            }}
-                        >
-                            {t('exportAsPdf')}
-                        </Button>
+                        <Stack direction={{xs: "column", sm: "row"}} spacing={1}>
+                            {laneEntry && <ShareOccupancyButton key={`${eventData.id}:share`} event={eventData} lane={laneEntry}/>}
+                            {laneEntry && <AlarmQrExportButton event={eventData} lane={laneEntry}/>}
+                            <Button
+                                variant="outlined"
+                                startIcon={<PictureAsPdfRounded/>}
+                                onClick={() => {
+                                    reactToPrintFn()
+                                }}
+                            >
+                                {t('exportAsPdf')}
+                            </Button>
+                        </Stack>
                     </Grid>}
                 </Grid>
 
-                {params.has("id") && shared.loading ? (
+                {sharedRequested && shared.loading ? (
                     <Grid item xs={12}><SuspenseLoad /></Grid>
-                ) : params.has("id") && shared.error ? (
+                ) : sharedRequested && shared.error ? (
                     <Grid item xs={12}>
                         <Alert severity="error" action={<Button onClick={shared.retry}>{t("retry")}</Button>}>
                             {t(shared.error)}
+                        </Alert>
+                    </Grid>
+                ) : lookupRequested && (lookupState === "idle" || lookupState === "loading") ? (
+                    <Grid item xs={12}>
+                        <Alert severity="info" data-testid="event-lookup-loading">
+                            {t("eventLookupLoading", {
+                                uuid: requestedEventId.trim().slice(0, 128) || t("unknown"),
+                            })}
+                        </Alert>
+                    </Grid>
+                ) : lookupRequested && lookupState === "not-found" ? (
+                    <Grid item xs={12}>
+                        <Alert severity="warning" data-testid="event-lookup-not-found">
+                            {t("eventLookupNotFound", {
+                                uuid: requestedEventId.trim().slice(0, 128) || t("unknown"),
+                            })}
+                        </Alert>
+                    </Grid>
+                ) : lookupRequested && lookupState === "ambiguous" ? (
+                    <Grid item xs={12}>
+                        <Alert severity="warning" data-testid="event-lookup-ambiguous">
+                            {t("eventLookupAmbiguous", {
+                                uuid: requestedEventId.trim().slice(0, 128) || t("unknown"),
+                            })}
+                        </Alert>
+                    </Grid>
+                ) : lookupRequested && lookupState === "unavailable" ? (
+                    <Grid item xs={12}>
+                        <Alert severity="error" data-testid="event-lookup-unavailable">
+                            {t("eventLookupUnavailable", {
+                                uuid: requestedEventId.trim().slice(0, 128) || t("unknown"),
+                            })}
                         </Alert>
                     </Grid>
                 ) : !eventData ? (
@@ -199,7 +286,7 @@ export default function EventDetailsPage() {
                         <Grid item container xs={12} spacing={2}>
                             <Grid item xs={12} md={6}>
                                 <Paper variant='outlined' sx={{ height: '100%'}}>
-                                    <MiscTable key={eventData.id} eventData={eventData}/>
+                                    <MiscTable key={eventData.id} eventData={eventData} currentTime={eventData.startTime}/>
                                 </Paper>
                             </Grid>
 
@@ -210,10 +297,9 @@ export default function EventDetailsPage() {
                             </Grid>
                         </Grid>
 
-
                         {/* ADJUDICATION */}
                         <Grid item xs={12}>
-                            <AdjudicationDetail key={eventData.id} event={eventData}/>
+                            <AdjudicationDetail event={eventData}/>
                         </Grid>
                     </>
                 )}
