@@ -1,27 +1,28 @@
 "use client";
 
-import {Checkbox, FormControl, InputLabel, MenuItem, OutlinedInput, Select, SelectChangeEvent} from '@mui/material';
+import {Checkbox, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent} from '@mui/material';
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
 import {selectLaneMap} from "@/lib/state/OSCARLaneSlice";
 import ListItemText from "@mui/material/ListItemText";
 import {INode} from "@/lib/data/osh/Node";
 import {useEffect, useState} from "react";
-import {selectNodes} from "@/lib/state/OSHSlice";
 import {useLanguage} from '@/app/contexts/LanguageContext';
+import {OperationalViewLane} from "@/lib/data/oscar/OperationalView";
 
 
 export default function LaneSelect(props: {
     onSelect: (value: string[]) => void, // Return selected value
     lane: string[],
-    selectedNode: INode
+    selectedNode: INode,
+    laneOptions?: OperationalViewLane[],
 }) {
     const {t} = useLanguage();
 
 
     const laneMap = useSelector((state: RootState) => selectLaneMap(state));
 
-    const [lanes, setLanes] = useState([]);
+    const [lanes, setLanes] = useState<OperationalViewLane[]>([]);
 
     const handleChange = (event: SelectChangeEvent<string[]>) => {
         const {target: {value},} = event;
@@ -29,7 +30,7 @@ export default function LaneSelect(props: {
         let laneVal = typeof value === 'string' ? value.split(', ') : value;
 
         if (laneVal.includes("all")) {
-            props.onSelect(props.lane.length === lanes.length ? [] : lanes.map(l => l.laneSystem.properties.properties.uid));
+            props.onSelect(props.lane.length === lanes.length ? [] : lanes.map((lane) => lane.uid));
         } else {
             props.onSelect(laneVal)
         }
@@ -37,12 +38,20 @@ export default function LaneSelect(props: {
     };
 
     useEffect(() => {
-        let tempLanes: any[] = [];
+        if (props.laneOptions) {
+            setLanes(props.laneOptions);
+            return;
+        }
+
+        const tempLanes: OperationalViewLane[] = [];
         if (props.selectedNode) {
 
             laneMap.forEach(lane => {
                 if(props.selectedNode.id == lane.parentNode.id){
-                    tempLanes.push(lane);
+                    tempLanes.push({
+                        name: lane.laneName,
+                        uid: lane.laneSystem.properties.properties.uid,
+                    });
                 }
             })
 
@@ -50,7 +59,7 @@ export default function LaneSelect(props: {
         } else {
             setLanes([]);
         }
-    }, [props.selectedNode, laneMap]);
+    }, [props.selectedNode, props.laneOptions, laneMap]);
 
     return (
         <FormControl size="small" fullWidth>
@@ -100,10 +109,10 @@ export default function LaneSelect(props: {
                     <ListItemText primary={t('selectAll')} />
                 </MenuItem>
 
-                {lanes.map((lane: any) => (
-                        <MenuItem key={lane.laneSystem.properties.properties.uid} value={lane.laneSystem.properties.properties.uid}>
-                            <Checkbox checked={props.lane?.includes(lane.laneSystem.properties.properties.uid)} />
-                            <ListItemText primary={lane.laneName} secondary={lane.laneSystem.properties.properties.uid} />
+                {lanes.map((lane) => (
+                        <MenuItem key={lane.uid} value={lane.uid}>
+                            <Checkbox checked={props.lane?.includes(lane.uid)} />
+                            <ListItemText primary={lane.name} secondary={lane.uid} />
                         </MenuItem>
 
 

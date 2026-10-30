@@ -8,13 +8,14 @@ import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStr
 import ConnectedSystemsApi from "osh-js/source/core/consysapi/ConnectedSystemsApi";
 import {
     ADJ_DEF,
-    ALARM_DEF, CONFIG_DEF,
+    ALARM_DEF, ASPECT_DAILY_FILE_DEF, CONFIG_DEF,
     CONNECTION_DEF, DAILY_FILE_DEF, DOSE_DEF, DURATION_DEF, END_DEF, GAMMA_COUNT_DEF, HLS_VIDEO_DEF,
-    LINEARSPEC_DEF, LOCATION_VECTOR_DEF, NEUTRON_COUNT_DEF,
-    OCCUPANCY_PILLAR_DEF, RASTER_IMAGE_DEF, REPORT_DEF, SENSOR_LOCATION_DEF,
+    LINEARSPEC_DEF, LOCATION_VECTOR_DEF, NATIONAL_DEF,
+    NEUTRON_COUNT_DEF,
+    OCCUPANCY_PILLAR_DEF, OCCUPANCY_STATUS_DEF, OGC_CONNECTION_DEF, RAPISCAN_DAILY_FILE_DEF, RASTER_IMAGE_DEF, N42_DEF, REPORT_DEF, SENSOR_LOCATION_DEF,
     SITE_DIAGRAM_DEF, SPEED_DEF, START_DEF,
     TAMPER_STATUS_DEF,
-    THRESHOLD_DEF, VIDEO_FRAME_DEF, WEB_ID_DEF,
+    THRESHOLD_DEF, VIDEO_FRAME_DEF, WEB_ID_DEF
 } from "@/lib/data/Constants";
 
 function getPropertyDefinitions(stream: typeof ConnectedSystemsApi, propertyName: "observedProperties" | "controlledProperties"): string[] {
@@ -131,7 +132,10 @@ export function isNationalControlStream(controlStream: typeof ControlStream): bo
     const definitions = getControlledDefinitions(controlStream);
     return includesDefinition(definitions, START_DEF)
         && includesDefinition(definitions, END_DEF)
-        && definitions.length === 2;
+        // Report generation also has start/end fields. Excluding its explicit
+        // discriminator keeps statistics discovery stable as optional
+        // statistics parameters are added over time.
+        && !includesDefinition(definitions, REPORT_DEF);
 }
 
 export function isAdjudicationControlStream(controlStream: typeof ControlStream): boolean {
@@ -151,8 +155,12 @@ export function isHLSVideoControlStream(controlStream: typeof ControlStream): bo
 }
 
 export function isDailyFileDataStream(datastream: typeof DataStream): boolean {
-    return includesDefinition(getObservedDefinitions(datastream), DAILY_FILE_DEF);
+    const definitions = getObservedDefinitions(datastream);
+    return includesDefinition(definitions, DAILY_FILE_DEF)
+        || includesDefinition(definitions, RAPISCAN_DAILY_FILE_DEF)
+        || includesDefinition(definitions, ASPECT_DAILY_FILE_DEF);
 }
+
 
 export function hasDefinitionProperties(stream: typeof ConnectedSystemsApi){
     return getObservedDefinitions(stream as typeof DataStream).length > 0

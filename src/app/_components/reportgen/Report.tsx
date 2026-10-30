@@ -8,7 +8,7 @@ import {
 } from "@mui/material";
 import ReportTypeSelect from "@/app/_components/reportgen/ReportTypeSelector";
 import {Download} from "@mui/icons-material";
-import React, {useState} from "react";
+import React, {useContext, useEffect, useState} from "react";
 import TimeRangeSelect from "@/app/_components/reportgen/TimeRangeSelector";
 import NationalDatePicker from "@/app/_components/national/NationalDatePicker";
 import {INode} from "@/lib/data/osh/Node";
@@ -25,10 +25,18 @@ import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/Cont
 import Command from "osh-js/source/core/consysapi/command/Command";
 import CommandFilter from "osh-js/source/core/consysapi/command/CommandFilter";
 import {useLanguage} from '@/app/contexts/LanguageContext';
+import {DataSourceContext} from "@/app/contexts/DataSourceContext";
+import {OperationalViewSelect, ReportScopeSelect} from "@/app/_components/reportgen/ReportScopeSelector";
+import {
+    emptyOperationalViewCatalog,
+    OperationalViewCatalog,
+} from "@/lib/data/oscar/OperationalView";
+import {ReportScope, resolveReportScope} from "@/lib/data/oscar/ReportScope";
 
 
 export default function ReportGeneratorView(){
     const {t} = useLanguage();
+    const {activeViewKey, laneMapReady, viewError} = useContext(DataSourceContext);
     const[isGenerating, setIsGenerating] = useState(false);
 
     const [selectedReportType, setSelectedReportType]= useState<string | null>("");
@@ -38,6 +46,11 @@ export default function ReportGeneratorView(){
     const [selectedNode, setSelectedNode] = useState<INode | null>(null);
     const [selectedLaneUID, setSelectedLaneUID] = useState<string[]>([]);
     const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+    const [selectedScope, setSelectedScope] = useState<ReportScope>(activeViewKey ? "OPERATIONAL_VIEW" : "NODE");
+    const [selectedOperationalView, setSelectedOperationalView] = useState(activeViewKey ?? "");
+    const [operationalViewCatalog, setOperationalViewCatalog] = useState<OperationalViewCatalog>(emptyOperationalViewCatalog());
+    const [isLoadingOperationalViews, setIsLoadingOperationalViews] = useState(false);
+    const [operationalViewLoadFailed, setOperationalViewLoadFailed] = useState(false);
     const nodes = useSelector((state: RootState) => selectNodes(state));
 
     const [openSnack, setOpenSnack] = useState(false);
@@ -46,17 +59,68 @@ export default function ReportGeneratorView(){
     const [generatedURL, setGeneratedURL] = useState<string | null>("");
     const [commandStatus, setCommandStatus] = useState<string | null>(null);
 
+    useEffect(() => {
+        let cancelled = false;
+        if (!selectedNode) {
+            setOperationalViewCatalog(emptyOperationalViewCatalog());
+            setOperationalViewLoadFailed(false);
+            return;
+        }
+
+        setIsLoadingOperationalViews(true);
+        setOperationalViewLoadFailed(false);
+        selectedNode.fetchOperationalViewCatalog()
+            .then((catalog) => {
+                if (!cancelled)
+                    setOperationalViewCatalog(catalog);
+            })
+            .catch((error) => {
+                console.error(`Unable to load operational views for ${selectedNode.name}`, error);
+                if (!cancelled) {
+                    setOperationalViewCatalog(emptyOperationalViewCatalog());
+                    setOperationalViewLoadFailed(true);
+                }
+            })
+            .finally(() => {
+                if (!cancelled)
+                    setIsLoadingOperationalViews(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedNode]);
+
     const handleGenerateReport = async() => {
+        if (viewError)
+            return;
+
         if (selectedTimeRange === "custom" && (!customStartTime || !customEndTime)){
             setSnackMessage(t('selectCustomDates'));
             setSeverity("error");
-            setOpenSnack(true)
+            setOpenSnack(true);
+            return;
         }
 
-        if (selectedReportType === "LANE" && !selectedLaneUID){
-            setSnackMessage(t('selectLaneForReport'));
+        const resolvedScope = resolveReportScope(
+            selectedScope,
+            selectedReportType,
+            selectedOperationalView,
+            selectedLaneUID,
+            operationalViewCatalog,
+        );
+        if (resolvedScope.error) {
+            if (resolvedScope.error === "view-required")
+                setSnackMessage(t('selectOperationalViewForReport'));
+            else if (resolvedScope.error === "empty-view")
+                setSnackMessage(t('operationalViewEmpty', {view: selectedOperationalView}));
+            else if (resolvedScope.error === "lanes-required")
+                setSnackMessage(t('selectLaneForReport'));
+            else
+                setSnackMessage(t('reportScopeUnavailable'));
             setSeverity("error");
-            setOpenSnack(true)
+            setOpenSnack(true);
+            return;
         }
 
         let startTime = getTimeRange(selectedTimeRange).startTime;
@@ -67,15 +131,16 @@ export default function ReportGeneratorView(){
 
         try {
             if(!selectedNode) return;
+            const effectiveLaneUIDs = resolvedScope.laneUIDs;
 
             setIsGenerating(true);
 
-            let streams: typeof ControlStream[];
+            let streams: typeof ControlStream[] = [];
             if (selectedNode.oscarServiceSystem != null) {
                 const query = await selectedNode.oscarServiceSystem.searchControlStreams(new ControlStreamFilter({ validTime: "latest" }), 100);
 
                 const results = await query.nextPage();
-                if (results || results.length > 0) {
+                if (results?.length > 0) {
                     streams = results;
                 }
             } else {
@@ -91,7 +156,13 @@ export default function ReportGeneratorView(){
             const response = await sendCommand(
                 selectedNode,
                 controlStream.properties.id,
-                generateReportCommandJSON(startTime, endTime, selectedReportType, selectedLaneUID.toString(), selectedEvent)
+                generateReportCommandJSON(
+                    startTime,
+                    endTime,
+                    selectedReportType,
+                    effectiveLaneUIDs.length > 0 ? effectiveLaneUIDs.join(",") : null,
+                    selectedEvent,
+                )
             );
 
             if (response.status == 200) {
@@ -197,7 +268,16 @@ export default function ReportGeneratorView(){
 
     const handleNodeSelect = (value: any) => {
         const node = nodes.find((node: INode) => node.id == value);
-        setSelectedNode(node)
+        setSelectedNode(node ?? null);
+        setSelectedScope(activeViewKey ? "OPERATIONAL_VIEW" : "NODE");
+        setSelectedOperationalView(activeViewKey ?? "");
+        setSelectedLaneUID([]);
+    }
+
+    const handleScopeSelect = (scope: ReportScope) => {
+        setSelectedScope(scope);
+        if (scope === "OPERATIONAL_VIEW" && !selectedOperationalView && activeViewKey)
+            setSelectedOperationalView(activeViewKey);
     }
 
     const handleTimeRange = (value: string) => {
@@ -221,6 +301,10 @@ export default function ReportGeneratorView(){
         setSelectedTimeRange("");
         setSelectedNode(null);
         setSelectedLaneUID([]);
+        setSelectedScope(activeViewKey ? "OPERATIONAL_VIEW" : "NODE");
+        setSelectedOperationalView(activeViewKey ?? "");
+        setOperationalViewCatalog(emptyOperationalViewCatalog());
+        setOperationalViewLoadFailed(false);
         setCustomEndTime("");
         setCustomStartTime("");
     }
@@ -275,11 +359,37 @@ export default function ReportGeneratorView(){
 
                         {selectedNode && (
                             <>
-                                <ReportTypeSelect onSelect={handleReportTypeSelect} report={selectedReportType} />
+                                <ReportScopeSelect scope={selectedScope} onSelect={handleScopeSelect}/>
 
-                                {["ADJUDICATION", "LANE"].includes(selectedReportType) && (
-                                    <LaneSelect onSelect={handleLaneSelect} lane={selectedLaneUID} selectedNode={selectedNode}/>
+                                {selectedScope === "OPERATIONAL_VIEW" && (
+                                    <OperationalViewSelect
+                                        catalog={operationalViewCatalog}
+                                        value={selectedOperationalView}
+                                        loading={isLoadingOperationalViews}
+                                        onSelect={setSelectedOperationalView}
+                                    />
                                 )}
+
+                                {selectedScope === "LANES" && (
+                                    <LaneSelect
+                                        onSelect={handleLaneSelect}
+                                        lane={selectedLaneUID}
+                                        selectedNode={selectedNode}
+                                        laneOptions={operationalViewCatalog.lanes}
+                                    />
+                                )}
+
+                                {isLoadingOperationalViews && (
+                                    <Typography variant="body2" color="text.secondary">
+                                        {t('loadingOperationalViews')}
+                                    </Typography>
+                                )}
+
+                                {operationalViewLoadFailed && (
+                                    <Alert severity="error">{t('operationalViewLoadFailed')}</Alert>
+                                )}
+
+                                <ReportTypeSelect onSelect={handleReportTypeSelect} report={selectedReportType} />
 
                                 {selectedReportType == "EVENT" && (
                                     <EventTypeSelect onSelect={handleEventTypeSelect} event={selectedEvent} />
@@ -300,7 +410,7 @@ export default function ReportGeneratorView(){
                             fullWidth
                             startIcon={<Download/>}
                             onClick={handleGenerateReport}
-                            disabled={isGenerating || !selectedReportType || !selectedTimeRange || !selectedNode}
+                            disabled={isGenerating || isLoadingOperationalViews || !selectedReportType || !selectedTimeRange || !selectedNode || Boolean(viewError) || (Boolean(activeViewKey) && !laneMapReady)}
                         >
                             {isGenerating ? t('generatingReport') : t('generateReport')}
                         </Button>
