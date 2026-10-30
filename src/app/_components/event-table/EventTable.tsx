@@ -221,7 +221,7 @@ export default function EventTable({
         const observationFilter = new ObservationFilter({
             dataStream: plan.datastreamIds,
             resultTime: `../${cutoff}`,
-            filter: plan.filter,
+            filter: plan.filter ? encodeURIComponent(plan.filter) : undefined,
             order: "desc",
         });
         const api: typeof Observations = await plan.node.getObservationsApi();
@@ -562,6 +562,7 @@ export default function EventTable({
                 columns={columns}
                 loading={loading}
                 paginationMode="server"
+                filterMode="server"
                 paginationModel={paginationModel}
                 onPaginationModelChange={model => setPaginationModel(model)}
                 rowCount={rowCount}
