@@ -1,7 +1,12 @@
 "use client"
 
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
-import {LaneDSColl} from "@/lib/data/oscar/LaneCollection";
+import {
+    acquireSharedConnection,
+    findRealtimeDataSourceForStream,
+    LaneDSColl,
+    type SharedConnectionLease,
+} from "@/lib/data/oscar/LaneCollection";
 import LeafletView from "osh-js/source/core/ui/view/map/LeafletView";
 import {useSelector} from "react-redux";
 import {RootState} from "@/lib/state/Store";
@@ -23,6 +28,8 @@ import {INode} from "@/lib/data/osh/Node";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import DataStreamFilter from "osh-js/source/core/consysapi/datastream/DataStreamFilter.js";
 import {useLanguage} from '@/app/contexts/LanguageContext';
+import {EventType} from "osh-js/source/core/event/EventType";
+import {removeRealtimeEventSubscription} from "@/lib/data/oscar/RealtimeEventNotification";
 import {
     buildSiteDiagramUrl,
     LANE_MARKER_PANE,
@@ -53,7 +60,7 @@ export default function MapComponent() {
     const siteDiagramLayersRef = useRef<Map<string, L.ImageOverlay>>(new Map());
     const laneMarkerLayersRef = useRef<Map<string, L.Marker>>(new Map());
     const previousLanguageRef = useRef(language);
-    const {laneMapReady} = useContext(DataSourceContext);
+    const {laneMapReady, scopedHref} = useContext(DataSourceContext);
     const dispatch = useAppDispatch();
 
     const nodes = useSelector((state: RootState) => selectNodes(state));
@@ -80,8 +87,8 @@ export default function MapComponent() {
             const laneSystemId = lane.laneSystem?.properties?.id;
             const locationStreams: any[] = [];
 
-            lane.datastreams.forEach((dataStream, index) => {
-                const realtimeSource = lane.datasourcesRealtime[index];
+            lane.datastreams.forEach((dataStream) => {
+                const realtimeSource = findRealtimeDataSourceForStream(lane, dataStream);
 
                 if (isLocationDataStream(dataStream))
                     locationStreams.push(dataStream);
@@ -150,45 +157,63 @@ export default function MapComponent() {
 
 
     const addSubscriptionCallbacks = useCallback(() => {
-        for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
+        let active = true;
+        const subscriptions: Array<{
+            source: any;
+            handler: (message: any) => void;
+            lease: SharedConnectionLease;
+        }> = [];
+
+        const subscribe = (
+            sources: any[],
+            handler: (message: any) => void,
+        ) => {
+            sources.forEach((source) => {
+                source.subscribe(handler, [EventType.DATA]);
+                const lease = acquireSharedConnection(source);
+                subscriptions.push({source, handler, lease});
+                void lease.ready.catch((error) => {
+                    if (active)
+                        console.warn("Unable to connect map status stream", error);
+                });
+            });
+        };
+
+        for (const [laneName, laneDSColl] of dataSourcesByLane.entries()) {
             const msgLaneName = laneName;
 
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('connectionRT', (message: any) => {
-                let connection = message.values[0].data.connection;
-                updateLocationList(msgLaneName, connection);
+            subscribe(laneDSColl.connectionRT, (message: any) => {
+                const connection = message.values?.[0]?.data?.connection;
+                if (active && connection !== undefined)
+                    updateLocationList(msgLaneName, connection);
             });
 
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('gammaRT', (message: any) => {
-                let alarmstate = message.values[0].data.alarmState;
-                updateLocationList(msgLaneName, alarmstate);
+            subscribe(laneDSColl.gammaRT, (message: any) => {
+                const alarmstate = message.values?.[0]?.data?.alarmState;
+                if (active && alarmstate !== undefined)
+                    updateLocationList(msgLaneName, alarmstate);
             });
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('neutronRT', (message: any) => {
-                let alarmstate = message.values[0].data.alarmState;
-                updateLocationList(msgLaneName, alarmstate);
+            subscribe(laneDSColl.neutronRT, (message: any) => {
+                const alarmstate = message.values?.[0]?.data?.alarmState;
+                if (active && alarmstate !== undefined)
+                    updateLocationList(msgLaneName, alarmstate);
             });
-            laneDSColl.addSubscribeHandlerToALLDSMatchingName('tamperRT', (message: any) => {
-                let tamperState = message.values[0].data.tamperStatus;
-                if (tamperState) {
+            subscribe(laneDSColl.tamperRT, (message: any) => {
+                const tamperState = message.values?.[0]?.data?.tamperStatus;
+                if (active && tamperState)
                     updateLocationList(msgLaneName, 'Tamper');
-                }
             });
-
-            laneDSColl.addConnectToALLDSMatchingName("gammaRT");
-            laneDSColl.addConnectToALLDSMatchingName("neutronRT");
-            laneDSColl.addConnectToALLDSMatchingName("tamperRT");
-            laneDSColl.addConnectToALLDSMatchingName("connectionRT");
-
         }
 
-        return ()=> {
-            for (let [laneName, laneDSColl] of dataSourcesByLane.entries()) {
-                laneDSColl.addDisconnectToALLDSMatchingName("gammaRT");
-                laneDSColl.addDisconnectToALLDSMatchingName("neutronRT");
-                laneDSColl.addDisconnectToALLDSMatchingName("tamperRT");
-                laneDSColl.addDisconnectToALLDSMatchingName("connectionRT");
-
-            }
-        }
+        return () => {
+            active = false;
+            subscriptions.forEach(({source, handler, lease}) => {
+                removeRealtimeEventSubscription(source, handler);
+                void lease.release().catch((error) => {
+                    console.warn("Unable to disconnect map status stream", error);
+                });
+            });
+        };
     }, [dataSourcesByLane]);
 
     useEffect(() => {
@@ -450,7 +475,7 @@ export default function MapComponent() {
         return (
             `<div id='popup-data-layer' class='point-popup'><hr/>
                 <h3 class='popup-text-status'>${t('statusValue', {status: t(`status.${statusKey}`)})}</h3>
-                <button onClick='location.href="/lane-view"' class="popup-button" type="button">${t('viewLane')}</button>
+                <button onClick='location.href="${scopedHref('/lane-view')}"' class="popup-button" type="button">${t('viewLane')}</button>
             </div>`
         );
     }

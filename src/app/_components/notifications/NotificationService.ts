@@ -84,17 +84,39 @@ export class NotificationService {
 export const NotificationTemplates = {
     newAlarm: (
         eventData: any,
-        labels: {title: string; body: string; viewAlarm: string; dismiss: string},
-    ): NotificationPayload => ({
-        title: labels.title,
-        body: labels.body,
-        icon: '/icons/icon-192x192.png',
-        actions: [
-            { action: 'view-alarm', title: labels.viewAlarm },
-            { action: 'dismiss', title: labels.dismiss },
-        ],
-        badge: '/icons/icon-128x128.png',
-        tag: 'alarm-notification',
-        data: eventData ? { eventId: eventData.id, eventData: JSON.parse(JSON.stringify(eventData)) } : undefined,
-    }),
+        labels: {title: string; body: string; viewAlarm: string; events: string; dismiss: string},
+        viewKey?: string | null,
+        nodeId?: string | null,
+    ): NotificationPayload => {
+        const eventId = typeof eventData?.occupancyObsId === 'string'
+            ? eventData.occupancyObsId.trim()
+            : '';
+        const notificationIdentity = eventData?.id !== undefined && eventData?.id !== null
+            ? `${nodeId ?? 'node'}-${eventData.id}`
+            : 'unknown';
+
+        return {
+            title: labels.title,
+            body: labels.body,
+            icon: '/icons/icon-192x192.png',
+            actions: [
+                eventId
+                    ? {action: 'view-alarm', title: labels.viewAlarm}
+                    : {action: 'view-events', title: labels.events},
+                {action: 'dismiss', title: labels.dismiss},
+            ],
+            badge: '/icons/icon-128x128.png',
+            // The immediate fallback and its durable-ID replacement share a
+            // tag, while simultaneous alarms retain independent notifications.
+            tag: `alarm-notification-${notificationIdentity}`,
+            data: eventData ? {
+                // EventTableData.id is only a transient UI hash. The occupancy
+                // observation ID is the durable Connected Systems resource ID.
+                ...(eventId ? {eventId} : {}),
+                ...(nodeId ? {nodeId} : {}),
+                eventData: JSON.parse(JSON.stringify(eventData)),
+                ...(viewKey ? {viewKey} : {}),
+            } : undefined,
+        };
+    },
 }

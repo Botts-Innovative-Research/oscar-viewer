@@ -10,20 +10,146 @@ import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
 import {isAdjudicationControlStream} from "@/lib/data/oscar/Utilities";
 import ControlStream from "osh-js/source/core/consysapi/controlstream/ControlStream";
 import {AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
+import {useCustomAdjudicationCodes} from "@/app/hooks/useCustomAdjudicationCodes";
+import {resolveAdjudicationCode} from "@/lib/data/oscar/adjudication/CustomAdjudicationCodes";
 import ControlStreamFilter from "osh-js/source/core/consysapi/controlstream/ControlStreamFilter";
 import { Dialog, DialogTitle, DialogContent } from "@mui/material";
 import {useLanguage} from "@/app/contexts/LanguageContext";
 import {INode} from "@/lib/data/osh/Node";
 import {EventType} from "osh-js/source/core/event/EventType";
 import {getDataGridLocaleText, getIntlLocale} from '@/app/utils/LocaleUtils';
+import {removeRealtimeEventSubscription} from "@/lib/data/oscar/RealtimeEventNotification";
+
+type LaneMapReference = {current: Map<string, LaneMapEntry>};
+type AdjudicationLogSource = {
+    lane: LaneMapEntry;
+    controlStream: typeof ControlStream;
+};
+
+export async function waitForAdjudicationLogSource(
+    laneMapRef: LaneMapReference,
+    laneId: string,
+    options: {attempts?: number; delayMs?: number; cancelled?: () => boolean} = {},
+): Promise<AdjudicationLogSource | null> {
+    const attempts = options.attempts ?? 120;
+    const delayMs = options.delayMs ?? 250;
+    const cancelled = options.cancelled ?? (() => false);
+
+    for (let attempt = 0; attempt < attempts && !cancelled(); attempt++) {
+        const lane = laneMapRef.current.get(laneId);
+        if (lane) {
+            let controlStream: typeof ControlStream | undefined = lane.controlStreams
+                .find((stream) => isAdjudicationControlStream(stream));
+            if (!controlStream) {
+                try {
+                    const laneSystemIds = new Set(lane.systems.map(
+                        (system: any) => system.properties.id));
+                    const nodeControlStreams = await lane.parentNode.fetchNodeControlStreams() ?? [];
+                    controlStream = nodeControlStreams.find((stream: typeof ControlStream) =>
+                        laneSystemIds.has(stream.properties["system@id"]) &&
+                        isAdjudicationControlStream(stream));
+                } catch {
+                    // Discovery may still be hydrating immediately after a reload. Retry below.
+                }
+            }
+            if (controlStream) return {lane, controlStream};
+        }
+        if (attempt + 1 < attempts && !cancelled()) {
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+    }
+    return null;
+}
 
 
-import {useCustomAdjudicationCodes} from "@/app/hooks/useCustomAdjudicationCodes";
-import {resolveAdjudicationCode} from "@/lib/data/oscar/adjudication/CustomAdjudicationCodes";
+function normalizeAdjudicationTimestamp(rawTime?: string): string {
+    if (!rawTime) return "";
+    const trimmed = String(rawTime).trim();
+    const parsedMs = Date.parse(trimmed);
+    if (!Number.isNaN(parsedMs)) {
+        return new Date(Math.floor(parsedMs / 1000) * 1000).toISOString();
+    }
+    return trimmed;
+}
+
+export function adjudicationLogKey(entry: AdjudicationData): string {
+    const isotopes = Array.isArray(entry.isotopes)
+        ? entry.isotopes.join(",")
+        : String(entry.isotopes ?? "");
+    const filePaths = Array.isArray(entry.filePaths)
+        ? entry.filePaths.join(",")
+        : String(entry.filePaths ?? "");
+    return [
+        entry.occupancyObsId ?? "",
+        normalizeAdjudicationTimestamp(entry.time),
+        entry.adjudicationCode?.code ?? "",
+        entry.username ?? "",
+        entry.feedback ?? "",
+        entry.secondaryInspectionStatus ?? "",
+        entry.vehicleId ?? "",
+        isotopes,
+        filePaths,
+    ].join("|");
+}
+
+export function mergeAdjudicationLogs(
+    existing: AdjudicationData[],
+    incoming: AdjudicationData[],
+): AdjudicationData[] {
+    const merged = new Map<string, AdjudicationData>();
+    const commandIdToKey = new Map<string, string>();
+    for (const item of [...existing, ...incoming]) {
+        if (!item) continue;
+        const cmdId = item.commandId ? String(item.commandId).trim() : "";
+        const contentKey = adjudicationLogKey(item);
+        const key = (cmdId && commandIdToKey.get(cmdId)) || contentKey;
+        const previous = merged.get(key);
+        if (previous) {
+            item.id = previous.id;
+            if (!item.commandId && previous.commandId) {
+                item.commandId = previous.commandId;
+            }
+        } else if (!item.id) {
+            item.id = cmdId || key;
+        }
+        if (cmdId) {
+            commandIdToKey.set(cmdId, key);
+        }
+        merged.set(key, item);
+    }
+    return Array.from(merged.values());
+}
+
+function buildAdjudicationData(
+    reportTime: string,
+    occupancyCount: string,
+    results: any,
+    preferredId?: string,
+    commandId?: string,
+): AdjudicationData {
+    const data = new AdjudicationData(reportTime, occupancyCount, results.occupancyObsId);
+    data.setFeedback(results.feedback);
+    data.setIsotopes(results.isotopes ?? NaN);
+    data.setSecondaryInspectionStatus(results.secondaryInspectionStatus);
+    data.setAdjudicationCode(resolveAdjudicationCode(results.adjudicationCode, []));
+    data.setVehicleId(results.vehicleId ?? NaN);
+    data.setFilePaths(results.filePaths ?? NaN);
+    data.setTime(reportTime);
+    data.setOccupancyCount(occupancyCount);
+    data.setOccupancyObsId(results.occupancyObsId);
+    data.setUser(results.username ?? NaN);
+    if (commandId) {
+        data.commandId = String(commandId);
+    }
+    data.id = commandId || preferredId || adjudicationLogKey(data);
+    return data;
+}
 
 export default function AdjudicationLog(props: {
     event: EventTableData;
     node: INode;
+    shouldFetch?: boolean;
+    onFetchComplete?: () => void;
 }) {
     const { language, t } = useLanguage();
     const locale = getIntlLocale(language);
@@ -74,8 +200,9 @@ export default function AdjudicationLog(props: {
             flex: 1.5,
             valueGetter: (value, row) => {
                 const code = row.adjudicationCode.code;
-                if (code <= 11) return t(`adjudicationCode.${code}`);
-                const custom = customCodes.find(entry => entry.code === code);
+                if (code <= 11)
+                    return t(`adjudicationCode.${code}`);
+                const custom = customCodes.find(item => item.code === code);
                 return custom ? `Code ${code}: ${custom.label}` : `Code ${code}`;
             }
         },
@@ -177,73 +304,69 @@ export default function AdjudicationLog(props: {
     }, [props.node]);
 
 
-    const fetchStatuses = useCallback(async() => {
-        const currentLane = props.event.laneId;
-        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-        if (!currLaneEntry) {
-            console.warn("Cannot load adjudication statuses: lane entry is unavailable:", currentLane);
+    const fetchStatuses = useCallback(async(cancelled: () => boolean) => {
+        const source = await waitForAdjudicationLogSource(
+            laneMapRef,
+            props.event.laneId,
+            {cancelled},
+        );
+        if (!source || cancelled()) {
+            if (!cancelled()) console.warn(
+                "Cannot load adjudication statuses: lane/control stream is unavailable:",
+                props.event.laneId,
+            );
             return;
         }
-
-        let controlStream: typeof ControlStream = currLaneEntry.controlStreams.find((cs) => isAdjudicationControlStream(cs));
-        if(!controlStream) {
-            console.warn("No Adjudication control stream found for this lane");
-            return;
-        }
-        // TODO: Paginate this
-        let commandStatuses = await controlStream.searchStatus(new ControlStreamFilter({ statusCode: "COMPLETED" }), 100);
+        const commandStatuses = await source.controlStream.searchStatus(
+            new ControlStreamFilter({statusCode: "COMPLETED"}),
+            100,
+        );
+        const adjudications: AdjudicationData[] = [];
 
         while (commandStatuses.hasNext()) {
-            let cmdRes = await commandStatuses.nextPage();
+            const cmdRes = await commandStatuses.nextPage();
 
-            let adjDataArr = cmdRes.map((obs: any) => {
-                if (!obs?.results)
+            const pageAdjudications = cmdRes.map((obs: any) => {
+                if (!obs?.results?.[0]?.data)
                     return null;
 
-                let results = obs?.results[0].data;
-                let data = new AdjudicationData(obs.reportTime, props.event.occupancyCount, results.occupancyObsId);
-                data.setFeedback(results.feedback);
-                data.setIsotopes(results.isotopes ?? NaN);
-                data.setSecondaryInspectionStatus(results.secondaryInspectionStatus);
-                data.setAdjudicationCode(resolveAdjudicationCode(results.adjudicationCode, []));
-                data.setVehicleId(results.vehicleId ?? NaN);
-                data.setFilePaths(results.filePaths ?? NaN)
-                data.setTime(obs.reportTime)
-                data.setOccupancyCount(props.event.occupancyCount);
-                data.setOccupancyObsId(results.occupancyObsId);
-                data.setUser(results.username ?? NaN)
-                return data
+                return buildAdjudicationData(
+                    obs.reportTime,
+                    props.event.occupancyCount,
+                    obs.results[0].data,
+                    obs.id ?? obs["command@id"],
+                    obs["command@id"],
+                );
+            }).filter((value: AdjudicationData | null): value is AdjudicationData => value !== null);
+            adjudications.push(...pageAdjudications);
+        }
+        if (!cancelled()) setAdjLog((prev) => mergeAdjudicationLogs(prev, adjudications));
+    }, [laneMapRef, props.event]);
+
+    useEffect(() => {
+        let cancelled = false;
+        if (props.event) void fetchStatuses(() => cancelled).catch((error) => {
+            if (!cancelled) console.error("Error loading adjudication statuses:", error);
+        });
+        return () => { cancelled = true; };
+    }, [props.event, fetchStatuses]);
+
+    useEffect(() => {
+        if (!props.shouldFetch) return;
+        let cancelled = false;
+        void fetchStatuses(() => cancelled)
+            .catch((error) => {
+                if (!cancelled) console.error("Error refreshing adjudication statuses:", error);
+            })
+            .finally(() => {
+                if (!cancelled) props.onFetchComplete?.();
             });
-            setAdjLog(adjDataArr);
-        }
-    }, []);
+        return () => { cancelled = true; };
+    }, [props.shouldFetch, props.onFetchComplete, fetchStatuses]);
 
     useEffect(() => {
-        if (props.event)
-            fetchStatuses();
-    }, [props.event]);
-
-    useEffect(() => {
-        const currentLane = props.event.laneId;
-        const currLaneEntry: LaneMapEntry = laneMapRef.current.get(currentLane);
-        if (!currLaneEntry) {
-            console.warn("Cannot subscribe to adjudication statuses: lane entry is unavailable:", currentLane);
-            return;
-        }
-
-
-        let controlStream: typeof ControlStream = currLaneEntry.controlStreams.find((cs) => isAdjudicationControlStream(cs));
-        if(!controlStream) {
-            console.warn("No Adjudication control stream found for this lane");
-            return;
-        }
-
-        let controlSource = currLaneEntry.createRealTimeConSysApi(controlStream);
-
-        if (!controlSource) {
-            console.warn("Cannot create rt datasource for this controlstream");
-            return;
-        }
+        let cancelled = false;
+        let controlSource: any = null;
 
         const handleStatuses = (data: any) => {
             const newAdjData: AdjudicationData[] = [];
@@ -252,40 +375,65 @@ export default function AdjudicationLog(props: {
             for (const value of values) {
                 const statusData = value?.data;
                 if (!statusData?.results) continue;
+                if (statusData.statusCode && statusData.statusCode !== "COMPLETED") continue;
 
                 for (const result of statusData.results) {
                     const results = result?.data;
                     if (!results) continue;
 
-                    let adjData = new AdjudicationData(statusData.reportTime, props.event.occupancyCount, results.occupancyObsId);
-                    adjData.setFeedback(results.feedback);
-                    adjData.setIsotopes(results.isotopes ?? NaN);
-                    adjData.setSecondaryInspectionStatus(results.secondaryInspectionStatus);
-                    adjData.setAdjudicationCode(resolveAdjudicationCode(results.adjudicationCode, []));
-                    adjData.setVehicleId(results.vehicleId ?? NaN);
-                    adjData.setFilePaths(results.filePaths ?? NaN)
-                    adjData.setTime(statusData.reportTime)
-                    adjData.setOccupancyCount(props.event.occupancyCount);
-                    adjData.setOccupancyObsId(results.occupancyObsId);
-                    adjData.setUser(results.username ?? NaN)
-                    newAdjData.push(adjData);
+                    newAdjData.push(
+                        buildAdjudicationData(
+                            statusData.reportTime,
+                            props.event.occupancyCount,
+                            results,
+                            statusData.id ?? statusData["command@id"],
+                            statusData["command@id"],
+                        ),
+                    );
                 }
             }
-            setAdjLog(prev => [...prev, ...newAdjData]);
+            setAdjLog((prev) => mergeAdjudicationLogs(prev, newAdjData));
         }
 
-        controlSource.subscribe(handleStatuses, [EventType.DATA])
-        try {
-            controlSource.connect();
-        }  catch (err) {
-            console.error("Error connecting webid source:", err);
-        }
-    }, [props.event]);
+        void (async () => {
+            const source = await waitForAdjudicationLogSource(
+                laneMapRef,
+                props.event.laneId,
+                {cancelled: () => cancelled},
+            );
+            if (!source || cancelled) {
+                if (!cancelled) console.warn(
+                    "Cannot subscribe to adjudication statuses: lane/control stream is unavailable:",
+                    props.event.laneId,
+                );
+                return;
+            }
+            controlSource = source.lane.createRealTimeConSysApi(source.controlStream);
+            if (!controlSource) {
+                console.warn("Cannot create rt datasource for adjudication control stream");
+                return;
+            }
+            controlSource.subscribe(handleStatuses, [EventType.DATA]);
+            await controlSource.connect();
+        })().catch((error) => {
+            if (!cancelled) console.error("Error connecting adjudication source:", error);
+        });
+
+        return () => {
+            cancelled = true;
+            if (controlSource) {
+                removeRealtimeEventSubscription(controlSource, handleStatuses);
+                void Promise.resolve().then(() => controlSource.disconnect()).catch((error) => {
+                    console.error("Error disconnecting adjudication source:", error);
+                });
+            }
+        };
+    }, [laneMapRef, props.event]);
 
     useEffect(() => {
         let filteredLog = adjLog.filter((adjData) => adjData?.occupancyObsId ==  props.event.occupancyObsId);
         setFilteredLog(filteredLog);
-    }, [adjLog]);
+    }, [adjLog, props.event.occupancyObsId]);
 
 
     return (

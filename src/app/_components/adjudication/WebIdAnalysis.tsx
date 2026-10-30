@@ -5,7 +5,11 @@ import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import {DataGrid, GridColDef} from "@mui/x-data-grid";
 import { Box, Dialog, DialogContent, DialogTitle, Stack, Typography } from "@mui/material";
-import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
+import {
+    acquireSharedConnection,
+    findRealtimeDataSourceForStream,
+    LaneMapEntry,
+} from "@/lib/data/oscar/LaneCollection";
 import DataStream from "osh-js/source/core/consysapi/datastream/DataStream";
 import {IWebIdIsotope} from "@/lib/data/oscar/adjudication/WebId";
 import WebIdAnalysisResult from "@/lib/data/oscar/adjudication/WebId";
@@ -13,6 +17,7 @@ import {WEB_ID_DEF} from "@/lib/data/Constants";
 import {EventType} from "osh-js/source/core/event/EventType";
 import {useLanguage} from '@/app/contexts/LanguageContext';
 import {getDataGridLocaleText, getIntlLocale} from '@/app/utils/LocaleUtils';
+import {removeRealtimeEventSubscription} from "@/lib/data/oscar/RealtimeEventNotification";
 
 
 export default function WebIdAnalysis(props: { event: EventTableData; onWebIdResults?: (results: WebIdAnalysisResult[]) => void; }) {
@@ -211,10 +216,7 @@ export default function WebIdAnalysis(props: { event: EventTableData; onWebIdRes
             return;
         }
 
-        const webIdSource = currLaneEntry.datasourcesRealtime?.find((ds: any) => {
-            const parts = ds.properties.resource?.split("/");
-            return parts && parts[2] === webIdStream.properties.id;
-        });
+        const webIdSource = findRealtimeDataSourceForStream(currLaneEntry, webIdStream);
         if (!webIdSource) {
             console.warn("No WebID Analysis data source found for this lane");
             return;
@@ -235,12 +237,17 @@ export default function WebIdAnalysis(props: { event: EventTableData; onWebIdRes
         };
 
         webIdSource.subscribe(handleObservations, [EventType.DATA]);
-
-        try {
-            webIdSource.connect();
-        } catch (err) {
+        const lease = acquireSharedConnection(webIdSource);
+        void lease.ready.catch((err) => {
             console.error("Error connecting webid source:", err);
-        }
+        });
+
+        return () => {
+            removeRealtimeEventSubscription(webIdSource, handleObservations);
+            void lease.release().catch((error) => {
+                console.error("Error disconnecting webid source:", error);
+            });
+        };
     }, [props.event]);
 
 

@@ -1,6 +1,66 @@
 # OSCAR Viewer Change Log
 All notable changes to this project will be documented in this file. 
 
+## 3.11.0
+
+### Added
+
+- Event Details now queries the authenticated event-scoped retained-media API by occupancy UUID and displays exactly five labeled JPEG evidence frames per camera with source ordinals and video timestamps.
+- Added keyboard-accessible per-camera galleries, isolated missing/corrupt-frame handling, localized loading and error feedback, and focused API/fallback/rendering regression tests.
+- Added strict catalog-transfer, per-frame, and event-wide byte, dimension, and decoded-pixel budgets. Response bodies are stopped at their streaming limits even when `Content-Length` is absent or incorrect.
+
+### Changed
+
+- Event Details adjudication logs now refresh deterministically after adjudication submission and deduplicate historical and live MQTT entries by observation ID and timestamp.
+- National Statistics refresh now follows its durable command status through `PENDING` to terminal
+  completion, keeps the controls busy for the complete operation, and fetches the exact observation
+  ID returned by that command instead of accepting a stale latest row. Terminal failures remain
+  visible, node or operational-view changes cancel stale UI work, and scoped range scans run
+  sequentially to avoid multiplying database load.
+- Events without a retained-media manifest continue to use their legacy MP4 paths after the API returns `404`. Unexpected API or schema failures are visible to the operator and still offer the MP4 when available.
+- During the retained-media rollback grace period, the original hot MP4 remains playable beneath the five-frame evidence gallery. Only each camera's selected JPEG is fetched initially, at most three frame requests run concurrently, loaded frames are reused in memory, and object URLs are revoked on navigation.
+- The reviewed MQTT MessagePort source is pinned directly to the immutable upstream `earocorn/osh-js` pull-request commit and lockfile integrity hash, removing the personal packaging-fork dependency from clean builds.
+- Status of Health and Dashboard snapshots now request at most 10 streams per batch, retain two global workers and a 10-second deadline, and recover independently when one batch stalls. This keeps browser and server work bounded against large accumulated observation histories.
+
+## 3.10.0
+
+### Added
+
+- Added configurable custom disposition codes in Event Details and bulk adjudication workflows.
+- Added alarm priority sorting (`Gamma-Neutron` > `Neutron` > `Gamma`), shareable occupancy observation-ID links, live and historical Daily File RPM message displays, and individual detector charting in Lane View.
+
+## 3.9.1
+
+### Upgrade notes
+
+- This release adds operator-facing navigation and URL-scoped operational views. Validate workstation URLs and train operators before production rollout.
+
+### Added
+
+- Added exact Event UUID lookup, fresh-session Event Details deep links, copyable node-qualified URLs, and visible UUID metadata in printed/PDF and alarm-transfer workflows.
+- Added a localized Status of Health page for lane RPM and camera connectivity, radiation and tamper faults, and configurable extended-occupancy alerts.
+- Added URL-scoped operational views that consistently limit lane discovery, dashboards, maps, reports, notifications, and health monitoring to assigned lanes.
+- Added compact alarm QR export from the dashboard and Event Details, including adaptively downsampled gamma, neutron, and threshold series.
+- Added an offline Alarm Transfer page that scans a camera or saved QR image, imports portable alarm files, verifies transfer integrity, redraws charts, and downloads or shares the alarm package.
+- Added complete English, Spanish, French, and Greek interface translations for the transfer workflow.
+
+### Changed
+
+- Dashboard lane cards now show compact, independently labeled RPM and camera connection indicators plus gamma-high, gamma-low, neutron-high, tamper, and extended-occupancy fault indicators. They share the bounded Status of Health snapshot instead of adding per-lane health subscriptions.
+- Viewer installs no longer pull the unused HTML tag injector, legacy browser-polyfill stack, or deprecated patch and test tooling.
+- Alarm Transfer camera scanning now keeps a visible framed preview, reports camera and validation state, supports selecting among available cameras, preserves native scan pixels for dense alarm codes, and closes the camera immediately after stopping or importing.
+- Alarm QR images now use integer module-aligned raster and display sizes so saved images and on-screen codes do not acquire decoder-breaking fractional pixel boundaries.
+- Status of Health now refreshes latest observations in globally limited batches of at most 50 streams on entry and every 30 seconds instead of using per-stream real-time MQTT feeds, with a 10-second request deadline so stalled nodes cannot block later work, preventing oversized requests and bounding CPU and server load at large sites.
+- Event filtering, counts, pagination, and bulk selection now query the complete matching server-side result set rather than only the currently loaded page.
+- Lane Details now shows localized live-video preparation and terminal error states, retries transient playlist and media failures within fixed bounds, and offers a Retry action that safely starts one fresh server stream.
+- Live-video URLs now honor each node's configured bucket endpoint, normalize platform-specific path separators, and remain same-origin for the default node.
+
+### Security
+
+- Alarm QR payloads are compressed Base45 documents with a SHA-256 corruption check and strict import limits. They are not encrypted or digitally signed, so the interface warns operators to confirm the source independently.
+- Migrated the static Viewer to Next.js 16 and React 19, and migrated component tests to Cypress 16 with Vite 8. Removed the obsolete standalone Webpack toolchain, browser polyfills, and vulnerable patch tooling; the MQTT MessagePort fix is now pinned to its reviewed `osh-js` source commit.
+- Clean installs now contain no known npm audit advisories or deprecated locked packages, and CI rejects future advisories at every severity.
+
 ## 3.8.4
 
 ### Added

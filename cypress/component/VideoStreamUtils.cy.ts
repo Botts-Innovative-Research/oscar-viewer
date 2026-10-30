@@ -1,4 +1,8 @@
-import {getUniqueVideoControlStreams} from "../../src/app/_components/lane-view/VideoStreamUtils";
+import {
+    getUniqueVideoControlStreams,
+    runAbortableWithTimeout,
+    stopStreamAfterStartSettles,
+} from "../../src/app/_components/lane-view/VideoStreamUtils";
 import {HLS_VIDEO_DEF} from "../../src/lib/data/Constants";
 import {attemptMediaPlayback} from "../../src/lib/media/MediaPlayback";
 
@@ -53,5 +57,108 @@ describe("media playback", () => {
 
         expect(result.status).to.equal("failed");
         expect(result.error).to.equal(error);
+    });
+});
+
+describe("video stream command sequencing", () => {
+    it("waits for an in-flight start, stops once, then permits the replacement start", async () => {
+        const events: string[] = [];
+        let resolveOldStart: () => void = () => undefined;
+        const oldStart = new Promise<void>((resolve) => {
+            resolveOldStart = resolve;
+        });
+        const stop = cy.stub().callsFake(async () => {
+            events.push("stop-old");
+        });
+
+        const cleanup = stopStreamAfterStartSettles(oldStart, () => true, stop);
+        const replacement = cleanup.then(() => {
+            events.push("start-new");
+        });
+
+        expect(events).to.deep.equal([]);
+        expect(stop).not.to.have.been.called;
+        resolveOldStart();
+        await replacement;
+
+        expect(events).to.deep.equal(["stop-old", "start-new"]);
+        expect(stop).to.have.been.calledOnce;
+    });
+
+    it("does not stop a generation that was cancelled before launching", async () => {
+        const stop = cy.stub().resolves();
+
+        await stopStreamAfterStartSettles(Promise.resolve(), () => false, stop);
+
+        expect(stop).not.to.have.been.called;
+    });
+
+    it("does not abort a dispatched start during cleanup and preserves server command order", async () => {
+        const events: string[] = [];
+        const controller = new AbortController();
+        let resolveStart: (response: Response) => void = () => undefined;
+        const pendingStart = runAbortableWithTimeout(
+            controller,
+            1_000,
+            () => new Promise<Response>((resolve) => {
+                resolveStart = resolve;
+            }),
+        );
+        const stop = cy.stub().callsFake(async () => {
+            events.push("stop-old");
+        });
+        const cleanup = stopStreamAfterStartSettles(pendingStart, () => true, stop);
+        const replacement = cleanup.then(() => events.push("start-new"));
+
+        await Promise.resolve();
+        expect(controller.signal.aborted).to.equal(false);
+        expect(events).to.deep.equal([]);
+        expect(stop).not.to.have.been.called;
+
+        resolveStart(new Response());
+        await replacement;
+
+        expect(controller.signal.aborted).to.equal(false);
+        expect(events).to.deep.equal(["stop-old", "start-new"]);
+        expect(stop).to.have.been.calledOnce;
+    });
+
+    it("times out a hung operation even when it ignores AbortSignal", async () => {
+        const controller = new AbortController();
+        let error: any = null;
+
+        try {
+            await runAbortableWithTimeout(
+                controller,
+                5,
+                () => new Promise<Response>(() => undefined),
+            );
+        } catch (caught) {
+            error = caught;
+        }
+
+        expect(controller.signal.aborted).to.equal(true);
+        expect(error?.name).to.equal("AbortError");
+    });
+
+    it("allows replacement after a bounded stop times out", async () => {
+        const events: string[] = [];
+        const stop = async () => {
+            const controller = new AbortController();
+            try {
+                await runAbortableWithTimeout(
+                    controller,
+                    5,
+                    () => new Promise<Response>(() => undefined),
+                );
+            } catch {
+                events.push("stop-timeout");
+            }
+        };
+
+        await stopStreamAfterStartSettles(Promise.resolve(), () => true, stop);
+        events.push("start-new");
+
+        expect(events).to.deep.equal(["stop-timeout", "start-new"]);
     });
 });

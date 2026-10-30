@@ -2,7 +2,7 @@
 
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {LaneMapEntry} from "@/lib/data/oscar/LaneCollection";
-import {Box, Button, Stack, Typography} from "@mui/material";
+import {Box, Stack, Typography} from "@mui/material";
 import React, {useCallback, useContext, useEffect, useState} from "react";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
 import {
@@ -17,7 +17,7 @@ import {useLanguage} from "@/app/contexts/LanguageContext";
 
 export default function DailyFileTable(props: { event: EventTableData }) {
     const {t} = useLanguage();
-    const [logs, setLogs] = useState([]);
+    const [logs, setLogs] = useState<string[]>([]);
 
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
 
@@ -42,7 +42,7 @@ export default function DailyFileTable(props: { event: EventTableData }) {
                 resultTime: `${props.event.startTime}/${props.event.endTime}`,
                 order: 'asc',
             }), 1000);
-            const rows = [];
+            const rows: string[] = [];
 
             while (observations.hasNext()) {
                 const page = await observations.nextPage();
@@ -51,7 +51,7 @@ export default function DailyFileTable(props: { event: EventTableData }) {
                     const result = observation?.result
                         ?? observation?.properties?.result
                         ?? observation?.results?.[0]?.data;
-                    const message = result?.rpmMessage;
+                    const message = result?.rpmMessage ?? result?.rapiscanMessage ?? result?.aspectMessage;
                     const timestamp = observation?.resultTime
                         ?? observation?.properties?.resultTime
                         ?? observation?.timestamp;
@@ -98,7 +98,7 @@ export default function DailyFileTable(props: { event: EventTableData }) {
                 <IconButton
                     aria-label="download"
                     onClick={() => {
-                    handleDownload()
+                        handleDownload()
                     }}
                 >
                     <Download />

@@ -9,12 +9,19 @@ import {randomUUID} from "osh-js/source/core/utils/Utils";
 
 const priorityOrder = ["Gamma & Neutron", "Neutron", "Gamma"];
 
-export const sortEventsByAlarmPriority = (left: Pick<EventTableData, "status" | "startTime">, right: Pick<EventTableData, "status" | "startTime">): number => {
-     const prioritySort = priorityOrder.indexOf(left.status) - priorityOrder.indexOf(right.status);
-
-     if (prioritySort !== 0) return prioritySort;
-     return new Date(right.startTime).getTime() - new Date(left.startTime).getTime(); // same status sort by time
+const alarmPriorityRank = (status: string): number => {
+    if (status === "None") return priorityOrder.length + 1;
+    const index = priorityOrder.indexOf(status);
+    return index === -1 ? priorityOrder.length : index;
 };
+
+export const sortEventsByAlarmPriority = (left: Pick<EventTableData, "status" | "startTime">, right: Pick<EventTableData, "status" | "startTime">): number => {
+    const prioritySort = alarmPriorityRank(left.status) - alarmPriorityRank(right.status);
+
+    if (prioritySort !== 0) return prioritySort;
+    return new Date(right.startTime).getTime() - new Date(left.startTime).getTime(); // same status sort by time
+};
+
 
 export class EventTableData implements IEventTableData {
     id: number;
@@ -250,6 +257,7 @@ export class DailyFileData implements IDailyFileData {
         this.timestamp = timestamp;
     }
 }
+
 
 
 export class AlarmTableData implements IAlarmTableData {

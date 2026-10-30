@@ -1,6 +1,6 @@
 "use client";
 
-import {Box, Grid, ToggleButton, ToggleButtonGroup} from "@mui/material";
+import {Grid, ToggleButton, ToggleButtonGroup} from "@mui/material";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
 import React, {useEffect, useRef, useState} from "react";
 import ChartJsView from "osh-js/source/core/ui/view/chart/ChartJsView";
@@ -123,7 +123,10 @@ export default function ChartLane({laneName, datasources, setChartReady}: ChartI
 
         chartViewsRef.current = views;
         return () => {
-            views.forEach(view => view.chart?.destroy());
+            views.forEach(view => {
+                view.destroy?.();
+                view.chart?.destroy?.();
+            });
             chartViewsRef.current = [];
         };
     }, [datasources.gamma, datasources.neutron, datasources.threshold, laneName, mode, t]);

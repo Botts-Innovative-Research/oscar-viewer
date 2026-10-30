@@ -1,4 +1,7 @@
+import ObservationFilter from "osh-js/source/core/sweapi/observation/ObservationFilter";
+import Observations from "osh-js/source/core/consysapi/observation/Observations";
 import {
+    combineServerFilters,
     compileEventFilterForLane,
     createEventFilterRule,
     EventFilterGroup,
@@ -6,6 +9,7 @@ import {
     operatorsForEventFilterField,
 } from "../../src/lib/data/oscar/EventFilter";
 import {runWithConcurrency} from "../../src/lib/data/oscar/BulkAdjudication";
+import {sortEventsByAlarmPriority} from "../../src/lib/data/oscar/TableHelpers";
 
 describe("nested event filters", () => {
     it("uses inclusive comparisons as the primary controls for numeric event fields", () => {
@@ -37,6 +41,74 @@ describe("nested event filters", () => {
 
         const event = {occupancyCount: "3400", maxGamma: 1800, maxNeutron: 12} as any;
         expect(eventMatchesFilter(filter, event, {nodeId: "node-1", nodeName: "Local", laneId: "lane1"})).to.equal(true);
+    });
+
+    it("compiles browser-local date boundaries as ISO CQL strings", () => {
+        const localDateTime = "2026-10-23T11:10";
+        const expectedIso = new Date(localDateTime).toISOString();
+        const metadata = {nodeId: "node-1", nodeName: "Local", laneId: "lane1"};
+        const before: EventFilterGroup = {
+            kind: "group",
+            id: "before-root",
+            logic: "and",
+            children: [
+                {kind: "rule", id: "before", field: "startTime", operator: "lessThan", value: localDateTime},
+            ],
+        };
+        const after: EventFilterGroup = {
+            kind: "group",
+            id: "after-root",
+            logic: "and",
+            children: [
+                {kind: "rule", id: "after", field: "endTime", operator: "greaterThan", value: localDateTime},
+            ],
+        };
+
+        expect(compileEventFilterForLane(before, metadata)).to.equal(`startTime<'${expectedIso}'`);
+        expect(compileEventFilterForLane(after, metadata)).to.equal(`endTime>'${expectedIso}'`);
+        expect(eventMatchesFilter(before, {
+            startTime: new Date(new Date(localDateTime).getTime() - 1).toISOString(),
+        } as any, metadata)).to.equal(true);
+        expect(eventMatchesFilter(after, {
+            endTime: new Date(new Date(localDateTime).getTime() + 1).toISOString(),
+        } as any, metadata)).to.equal(true);
+    });
+
+    it("preserves the dashboard alarm predicate alongside a date boundary", async () => {
+        const cutoff = "2026-10-23T15:10:00.000Z";
+        const filter: EventFilterGroup = {
+            kind: "group",
+            id: "root",
+            logic: "and",
+            children: [
+                {kind: "rule", id: "before", field: "startTime", operator: "lessThan", value: cutoff},
+            ],
+        };
+        const compiled = compileEventFilterForLane(filter, {
+            nodeId: "node-1",
+            nodeName: "Local",
+            laneId: "lane1",
+        });
+        const plan = {
+            datastreamIds: ["occupancy-1"],
+            filter: combineServerFilters(
+                "(gammaAlarm=true OR neutronAlarm=true) AND adjudicatedIdsCount=0",
+                compiled || "",
+            ),
+        };
+        const observationFilter = new ObservationFilter({
+            dataStream: plan.datastreamIds,
+            resultTime: "../2026-10-24T12:00:00.000Z",
+            filter: plan.filter ? encodeURIComponent(plan.filter) : undefined,
+            order: "desc",
+        });
+        const api = new Observations({endpointUrl: "localhost:8181/sensorhub/api", tls: false});
+        const collection: any = await api.searchObservations(observationFilter, 15, 0);
+        const params = new URLSearchParams(`${collection.filter.toQueryString()}&offset=${collection.pageOffset}&limit=${collection.pageSize}`);
+
+        expect(params.get("filter")).to.contain("gammaAlarm=true OR neutronAlarm=true");
+        expect(params.get("filter")).to.contain("adjudicatedIdsCount=0");
+        expect(params.get("filter")).to.contain("startTime<'2026-10-23T15:10:00.000Z'");
     });
 
     it("preserves nested AND/OR rules while collapsing lane metadata", () => {
@@ -93,6 +165,107 @@ describe("nested event filters", () => {
         expect(eventMatchesFilter(filter, event, {nodeId: "node-1", nodeName: "Local", laneId: "lane1"})).to.equal(true);
         expect(eventMatchesFilter(filter, event, {nodeId: "node-2", nodeName: "Remote", laneId: "lane1"})).to.equal(false);
     });
+
+    it("maps adjudicated label and presence operators to the backend count field", () => {
+        expect(operatorsForEventFilterField("adjudicatedIds")).to.include.members([
+            "contains",
+            "isEmpty",
+            "isNotEmpty",
+        ]);
+
+        const containsYes: EventFilterGroup = {
+            kind: "group",
+            id: "root",
+            logic: "and",
+            children: [
+                {kind: "rule", id: "adjudicated", field: "adjudicatedIds", operator: "contains", value: "yes"},
+            ],
+        };
+        const isNotEmpty: EventFilterGroup = {
+            kind: "group",
+            id: "root",
+            logic: "and",
+            children: [
+                {kind: "rule", id: "adjudicated", field: "adjudicatedIds", operator: "isNotEmpty", value: ""},
+            ],
+        };
+        const isEmpty: EventFilterGroup = {
+            kind: "group",
+            id: "root",
+            logic: "and",
+            children: [
+                {kind: "rule", id: "adjudicated", field: "adjudicatedIds", operator: "isEmpty", value: ""},
+            ],
+        };
+        const metadata = {nodeId: "node-1", nodeName: "Local", laneId: "lane1"};
+        const adjudicatedEvent = {adjudicatedIds: ["result-1"]} as any;
+        const unadjudicatedEvent = {adjudicatedIds: []} as any;
+
+        expect(compileEventFilterForLane(containsYes, metadata)).to.equal("adjudicatedIdsCount>0");
+        expect(compileEventFilterForLane(isNotEmpty, metadata)).to.equal("adjudicatedIdsCount>0");
+        expect(compileEventFilterForLane(isEmpty, metadata)).to.equal("adjudicatedIdsCount=0");
+        expect(eventMatchesFilter(containsYes, adjudicatedEvent, metadata)).to.equal(true);
+        expect(eventMatchesFilter(containsYes, unadjudicatedEvent, metadata)).to.equal(false);
+        expect(eventMatchesFilter(isNotEmpty, adjudicatedEvent, metadata)).to.equal(true);
+        expect(eventMatchesFilter(isNotEmpty, unadjudicatedEvent, metadata)).to.equal(false);
+        expect(eventMatchesFilter(isEmpty, adjudicatedEvent, metadata)).to.equal(false);
+        expect(eventMatchesFilter(isEmpty, unadjudicatedEvent, metadata)).to.equal(true);
+    });
+
+    it("sends the same complete database filter through ObservationFilter and counts on every page", async () => {
+        const gammaAndNeutron: EventFilterGroup = {
+            kind: "group",
+            id: "root",
+            logic: "and",
+            children: [
+                {kind: "rule", id: "status", field: "status", operator: "equals", value: "Gamma & Neutron"},
+                {kind: "rule", id: "isotope", field: "isotope", operator: "contains", value: "Co60"},
+            ],
+        };
+        const compiled = compileEventFilterForLane(gammaAndNeutron, {
+            nodeId: "node-1",
+            nodeName: "Local",
+            laneId: "lane1",
+        });
+        const plan = {
+            datastreamIds: ["occupancy-1", "occupancy-2"],
+            filter: combineServerFilters(
+                "(gammaAlarm=true OR neutronAlarm=true) AND adjudicatedIdsCount=0",
+                compiled || "",
+            ),
+        };
+        const cutoff = "2026-09-24T12:00:00.000Z";
+        const observationFilter = new ObservationFilter({
+            dataStream: plan.datastreamIds,
+            resultTime: `../${cutoff}`,
+            filter: plan.filter ? encodeURIComponent(plan.filter) : undefined,
+            order: "desc",
+        });
+        const api = new Observations({endpointUrl: "localhost:8181/sensorhub/api", tls: false});
+        const firstCollection: any = await api.searchObservations(observationFilter, 15, 0);
+        const secondCollection: any = await api.searchObservations(observationFilter, 15, 15);
+        const firstPage = new URLSearchParams(`${firstCollection.filter.toQueryString()}&offset=${firstCollection.pageOffset}&limit=${firstCollection.pageSize}`);
+        const secondPage = new URLSearchParams(`${secondCollection.filter.toQueryString()}&offset=${secondCollection.pageOffset}&limit=${secondCollection.pageSize}`);
+        const count = new URLSearchParams({
+            resultTime: `../${cutoff}`,
+            format: "application/om+json",
+            dataStream: plan.datastreamIds.join(","),
+        });
+        if (plan.filter) count.set("filter", plan.filter);
+
+        expect(firstPage.get("filter")).to.equal(plan.filter);
+        expect(secondPage.get("filter")).to.equal(plan.filter);
+        expect(count.get("filter")).to.equal(plan.filter);
+        expect(firstPage.get("offset")).to.equal("0");
+        expect(secondPage.get("offset")).to.equal("15");
+        expect(secondPage.get("limit")).to.equal("15");
+        expect(secondPage.get("dataStream")).to.equal("occupancy-1,occupancy-2");
+        expect(secondPage.get("filter")).to.contain("gammaAlarm=true AND neutronAlarm=true");
+        expect(secondPage.get("filter")).to.contain("adjudicatedIdsCount=0");
+        expect(secondPage.get("filter")).to.contain("isotope LIKE '%Co60%'");
+        expect(firstCollection.filter.toQueryString()).to.contain("'%25Co60%25'");
+        expect(firstCollection.filter.toQueryString()).to.not.contain("%'");
+    });
 });
 
 describe("bounded bulk work", () => {
@@ -109,5 +282,27 @@ describe("bounded bulk work", () => {
 
         expect(peak).to.equal(3);
         expect(results).to.deep.equal([0, 2, 4, 6, 8, 10, 12, 14]);
+    });
+});
+
+describe("alarm priority ordering", () => {
+    it("orders Gamma & Neutron, Neutron, Gamma, custom alarm categories, and None last", () => {
+        const rows = [
+            {status: "None", startTime: "2026-10-30T19:40:00.000Z"},
+            {status: "Gamma", startTime: "2026-10-30T19:35:00.000Z"},
+            {status: "Neutron", startTime: "2026-10-30T19:34:00.000Z"},
+            {status: "Gamma & Neutron", startTime: "2026-10-30T19:30:00.000Z"},
+            {status: "Gamma", startTime: "2026-10-30T19:36:00.000Z"},
+            {status: "CustomIsotopeAlarm", startTime: "2026-10-30T19:39:00.000Z"},
+        ];
+        rows.sort(sortEventsByAlarmPriority);
+        expect(rows.map(r => `${r.status}@${r.startTime}`)).to.deep.equal([
+            "Gamma & Neutron@2026-10-30T19:30:00.000Z",
+            "Neutron@2026-10-30T19:34:00.000Z",
+            "Gamma@2026-10-30T19:36:00.000Z",
+            "Gamma@2026-10-30T19:35:00.000Z",
+            "CustomIsotopeAlarm@2026-10-30T19:39:00.000Z",
+            "None@2026-10-30T19:40:00.000Z",
+        ]);
     });
 });

@@ -1,23 +1,35 @@
 "use client";
 
 import {Box, Table, TableBody, TableCell, TableContainer, TableRow, Typography} from "@mui/material";
-import React, {useCallback, useContext, useEffect, useState} from "react";
+import {useSelector} from "react-redux";
+import React, {useContext, useEffect, useState} from "react";
 import {DataSourceContext} from "@/app/contexts/DataSourceContext";
 import ObservationFilter from "osh-js/source/core/consysapi/observation/ObservationFilter";
+import {selectEventData, selectSpeed} from "@/lib/state/EventDetailsSlice";
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import {isSpeedDataStream} from "@/lib/data/oscar/Utilities";
 import {useLanguage} from '@/app/contexts/LanguageContext';
 
 
-export default function MiscTable({eventData}: {eventData: EventTableData}) {
+export default function MiscTable({
+    eventData: eventDataProp,
+    currentTime,
+}: {
+    eventData?: EventTableData;
+    currentTime?: string;
+}) {
     const {t} = useLanguage();
 
+    const savedSpeed = useSelector(selectSpeed);
+    const selectedEventData = useSelector(selectEventData);
+    const eventData = eventDataProp ?? selectedEventData;
     const laneMapRef = useContext(DataSourceContext).laneMapRef;
-    const [speedVal, setSpeedval] = useState<string>("N/A");
+    const [speedVal, setSpeedval] = useState<string>(savedSpeed || "N/A");
 
     useEffect(() => {
         let active = true;
         setSpeedval("N/A");
+        if (!eventData || !laneMapRef.current) return;
         const checkForSpeed = async () => {
             const lme = laneMapRef.current.get(eventData.laneId);
             if (!lme) {
@@ -39,40 +51,40 @@ export default function MiscTable({eventData}: {eventData: EventTableData}) {
                 console.error("Failed to load event speed:", error);
             }
         };
-        checkForSpeed();
+        void checkForSpeed();
         return () => { active = false; };
-    }, [eventData, laneMapRef]);
+    }, [eventData, currentTime, laneMapRef]);
 
-  return (
-      <Box sx={{height: 300, width: '100%', display: 'flex', flexDirection: 'column' }}>
-          <Typography variant="h5">
-              {t('occupancyOverview')}
-          </Typography>
-        <TableContainer>
-          <Table
-            aria-label={t('eventMeasurements')}
-            sx={{ minWidth: 500 }}
-          >
-            <TableBody>
-              <TableRow>
-                <TableCell>{t('maxGammaCountRate')}</TableCell>
-                <TableCell>{eventData?.maxGamma}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>{t('neutronBackgroundCountRate')}</TableCell>
-                  <TableCell>{eventData?.neutronBackground}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>{t('maxNeutronCountRate')}</TableCell>
-                <TableCell>{eventData?.maxNeutron}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>{t('speedKph')}</TableCell>
-                <TableCell>{speedVal}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
-  );
+    return (
+        <Box sx={{height: 300, width: '100%', display: 'flex', flexDirection: 'column' }}>
+            <Typography variant="h5">
+                {t('occupancyOverview')}
+            </Typography>
+            <TableContainer>
+                <Table
+                    aria-label={t('eventMeasurements')}
+                    sx={{ minWidth: 500 }}
+                >
+                    <TableBody>
+                        <TableRow>
+                            <TableCell>{t('maxGammaCountRate')}</TableCell>
+                            <TableCell>{eventData?.maxGamma}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                            <TableCell>{t('neutronBackgroundCountRate')}</TableCell>
+                            <TableCell>{eventData?.neutronBackground}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                            <TableCell>{t('maxNeutronCountRate')}</TableCell>
+                            <TableCell>{eventData?.maxNeutron}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                            <TableCell>{t('speedKph')}</TableCell>
+                            <TableCell>{speedVal}</TableCell>
+                        </TableRow>
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        </Box>
+    );
 }

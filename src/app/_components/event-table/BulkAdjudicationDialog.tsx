@@ -17,7 +17,6 @@ import AdjudicationSelect from "@/app/_components/adjudication/AdjudicationSelec
 import SecondaryInspectionSelect from "@/app/_components/adjudication/SecondaryInspectionSelect";
 import {AdjudicationCode, AdjudicationCodes} from "@/lib/data/oscar/adjudication/models/AdjudicationConstants";
 import {BulkAdjudicationValues} from "@/lib/data/oscar/BulkAdjudication";
-
 import {INode} from "@/lib/data/osh/Node";
 
 export interface BulkAdjudicationSummary {
@@ -27,9 +26,9 @@ export interface BulkAdjudicationSummary {
 
 interface Props {
     open: boolean;
-    nodes: INode[];
     count: number;
     allFiltered: boolean;
+    nodes?: INode[];
     t: (key: string, values?: Record<string, unknown>) => string;
     onClose: () => void;
     onSubmit: (
@@ -39,7 +38,7 @@ interface Props {
     ) => Promise<BulkAdjudicationSummary>;
 }
 
-export default function BulkAdjudicationDialog({open, nodes, count, allFiltered, t, onClose, onSubmit}: Props) {
+export default function BulkAdjudicationDialog({open, count, allFiltered, nodes = [], t, onClose, onSubmit}: Props) {
     const [code, setCode] = useState<AdjudicationCode>(AdjudicationCodes.codes[0]);
     const [feedback, setFeedback] = useState("");
     const [vehicleId, setVehicleId] = useState("");

@@ -28,9 +28,11 @@ function sumCountFields(record: any, fieldNames: string[]): number | undefined {
 
     return values.length > 0 ? values.reduce((sum, value) => sum + value, 0) : undefined;
 }
+
 function createDetectorViewCurves(
     datasource: { id: string },
     fieldPrefix: string,
+    grossFieldPrefix: string,
     label: string,
     labels: CurveLabels,
 ) {
@@ -45,7 +47,8 @@ function createDetectorViewCurves(
             getValues: (rec: any) => {
                 return {
                     x: rec.timestamp,
-                    y: rec?.[`${fieldPrefix}${detector}`]
+                    y: asFiniteNumber(rec?.[`${fieldPrefix}${detector}`])
+                        ?? asFiniteNumber(rec?.[`${grossFieldPrefix}${detector}`])
                 }
             },
             name: `${label} ${detector}`,
@@ -71,10 +74,12 @@ export function getGammaGrossCount(record: any): number | undefined {
             'gammaGrossCount4'
         ]);
 }
+
 export function createGammaDetectorViewCurves(gammaDatasource: { id: string; }, labels: CurveLabels = {}) {
     return createDetectorViewCurves(
         gammaDatasource,
         'gammaCount',
+        'gammaGrossCount',
         labels.gamma ?? 'Gamma',
         labels,
     );
@@ -90,10 +95,12 @@ export function getNeutronGrossCount(record: any): number | undefined {
             'neutronGrossCount4'
         ]);
 }
+
 export function createNeutronDetectorViewCurves(neutronDatasource: { id: string; }, labels: CurveLabels = {}) {
     return createDetectorViewCurves(
         neutronDatasource,
         'neutronCount',
+        'neutronGrossCount',
         labels.neutron ?? 'Neutron',
         labels,
     );
@@ -168,7 +175,7 @@ export  function createGammaViewCurve(gammaDatasource: { id: string; }, labels: 
 }
 
 // get latest gamma background from threshold datasource to calc nsigma for chart
-export function createNSigmaCalcViewCurve(gammaDatasource:  typeof ConSysApi, latestGB: number, labels: CurveLabels = {}) {
+export function createNSigmaCalcViewCurve(gammaDatasource: typeof ConSysApi, latestGB: number, labels: CurveLabels = {}) {
     if (!gammaDatasource) {
         return null;
     }
@@ -201,7 +208,7 @@ export function createNSigmaCalcViewCurve(gammaDatasource:  typeof ConSysApi, la
     return nCurve;
 }
 
-export async function getObservations(startTime: string, endTime: string, datastream: any){
+export async function getObservations(startTime: any, endTime: any, datastream: any){
 
     let lastestGammaBackground: number;
 

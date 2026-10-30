@@ -5,6 +5,7 @@ import {Box, Typography} from "@mui/material";
 import Chart from "chart.js/auto";
 import {EventType} from "osh-js/source/core/event/EventType";
 import {useLanguage} from '@/app/contexts/LanguageContext';
+import {removeRealtimeEventSubscription} from "@/lib/data/oscar/RealtimeEventNotification";
 
 interface ChartInterceptProps {
     laneName?: string;
@@ -104,6 +105,7 @@ export default function N42Chart({datasource, title, yValue = "linearSpectrum", 
         datasource.subscribe(handleData, [EventType.DATA]);
 
         return () => {
+            removeRealtimeEventSubscription(datasource, handleData);
             if (chartRef.current) {
                 chartRef.current.destroy();
                 chartRef.current = null;

@@ -1,6 +1,6 @@
 import {EventTableData} from "@/lib/data/oscar/TableHelpers";
 import ConSysApi from "osh-js/source/core/datasource/consysapi/ConSysApi.datasource";
-import LaneVideoPlayback from "@/app/_components/event-preview/LaneVideoPlayback";
+import RetainedEventMedia from "@/app/_components/event-preview/RetainedEventMedia";
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import ChartTimeHighlight from "@/app/_components/event-preview/ChartTimeHighlight";
 import {useSelector} from "react-redux";
@@ -127,7 +127,8 @@ export default function EventMedia({selectedNode, datasources, eventData, mode, 
                     </Grid>
                     <Grid item xs={12}>
                         <Box sx={{ width: "100%", height: "100%" }}>
-                            <LaneVideoPlayback
+                            <RetainedEventMedia
+                                eventId={eventData?.occupancyObsId}
                                 selectedNode={selectedNode}
                                 videos={eventData?.videoPaths}
                                 modeType={mode}
@@ -216,7 +217,8 @@ export default function EventMedia({selectedNode, datasources, eventData, mode, 
                             )}
                         </Grid>
                         <Grid item xs={12}  md={6}>
-                            <LaneVideoPlayback
+                            <RetainedEventMedia
+                                eventId={eventData?.occupancyObsId}
                                 selectedNode={selectedNode}
                                 videos={eventData?.videoPaths}
                                 modeType={mode}
