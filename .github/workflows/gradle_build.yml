@@ -37,3 +37,6 @@ jobs:
 
       - name: Test refreshed video discovery
         run: npm run test:video
+
+      - name: Test status of health
+        run: npm run test:health

@@ -50,8 +50,9 @@ import { useBreakpoint } from "@/app/providers";
 import BackButton from "../BackButton";
 import SuspenseLoad from "@/app/_components/SuspenseLoad";
 import {useLanguage} from '@/app/contexts/LanguageContext';
+import AlarmQrExportButton from "@/app/_components/alarm-transfer/AlarmQrExportButton";
 import ShareOccupancyButton from "@/app/_components/event-details/ShareOccupancyButton";
-import {occupancyDetailsPath} from "@/lib/data/oscar/SharedOccupancy";
+import {buildEventDetailsHref} from "@/lib/data/oscar/EventLookup";
 
 export function EventPreview() {
     const { isDesktop } = useBreakpoint();
@@ -63,7 +64,7 @@ export function EventPreview() {
 
     const prevEventIdRef = useRef<string | null>(null);
 
-    const {laneMapRef, laneMapReady, readyLaneNames} = useContext(DataSourceContext);
+    const {laneMapRef, laneMapReady, readyLaneNames, scopedHref} = useContext(DataSourceContext);
     const laneReady = Boolean(
         eventPreview.eventData?.laneId && readyLaneNames.has(eventPreview.eventData.laneId));
     const laneEntry = eventPreview.eventData?.laneId
@@ -160,7 +161,14 @@ export function EventPreview() {
     const submitAdjudication = async(currLaneEntry: any, comboData: any) => {
         try{
             let ds = currLaneEntry.datastreams.find((ds: any) => ds.properties.id == eventPreview.eventData.dataStreamId);
-            let streams = currLaneEntry.controlStreams.length > 0 ? currLaneEntry.controlStreams : await currLaneEntry.parentNode.fetchNodeControlStreams();
+            let streams = currLaneEntry.controlStreams;
+            if (streams.length === 0) {
+                const laneSystemIds = new Set(currLaneEntry.systems.map(
+                    (system: any) => system.properties.id));
+                const nodeControlStreams = await currLaneEntry.parentNode.fetchNodeControlStreams() ?? [];
+                streams = nodeControlStreams.filter((stream: typeof ControlStream) =>
+                    laneSystemIds.has(stream.properties["system@id"]));
+            }
             let adjControlStream = streams.find((stream: typeof ControlStream) => isAdjudicationControlStream(stream));
 
             if (!adjControlStream){
@@ -261,9 +269,7 @@ export function EventPreview() {
         dispatch(setSelectedRowId(eventPreview.eventData.id))
         dispatch(setSelectedEvent(eventPreview.eventData));
 
-        router.push(eventPreview.eventData.occupancyObsId && laneEntry
-            ? occupancyDetailsPath(eventPreview.eventData.occupancyObsId, laneEntry.parentNode)
-            : "/event-details");
+        router.push(scopedHref("/event-details"));
     }
 
     useEffect(() => {
@@ -366,8 +372,14 @@ export function EventPreview() {
                         </IconButton>
                     </Grid>
                     <Grid item>
-                        <ShareOccupancyButton key={`${eventPreview.eventData.id}:share`}
-                            event={eventPreview.eventData} lane={laneEntry}/>
+                        <ShareOccupancyButton
+                            key={`${eventPreview.eventData.id}:share`}
+                            event={eventPreview.eventData}
+                            lane={laneEntry}
+                        />
+                    </Grid>
+                    <Grid item>
+                        <AlarmQrExportButton event={eventPreview.eventData} lane={laneEntry} iconOnly/>
                     </Grid>
                 </Grid>
                 {isDesktop && (

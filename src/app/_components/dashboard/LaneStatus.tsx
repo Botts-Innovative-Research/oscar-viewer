@@ -41,7 +41,7 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
     const dispatch = useAppDispatch();
     const router = useRouter();
     const { t } = useLanguage();
-    const {laneMapRef} = useContext(DataSourceContext);
+    const {laneMapRef, scopedHref} = useContext(DataSourceContext);
 
     useEffect(() => {
         let sortedLanes = [...props.initialLanes].sort((a,b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
@@ -238,7 +238,7 @@ export default function LaneStatus(props: { dataSourcesByLane: any, initialLanes
 
     const handleLaneView = (laneName: string) => {
         dispatch(setCurrentLane(laneName));
-        router.push("/lane-view");
+        router.push(scopedHref("/lane-view"));
     }
 
     const handleOpenClearTamper = (event: React.MouseEvent<HTMLButtonElement>, laneName: string) => {
