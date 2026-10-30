@@ -9,6 +9,7 @@ import {
     operatorsForEventFilterField,
 } from "../../src/lib/data/oscar/EventFilter";
 import {runWithConcurrency} from "../../src/lib/data/oscar/BulkAdjudication";
+import {sortEventsByAlarmPriority} from "../../src/lib/data/oscar/TableHelpers";
 
 describe("nested event filters", () => {
     it("uses inclusive comparisons as the primary controls for numeric event fields", () => {
@@ -213,5 +214,27 @@ describe("bounded bulk work", () => {
 
         expect(peak).to.equal(3);
         expect(results).to.deep.equal([0, 2, 4, 6, 8, 10, 12, 14]);
+    });
+});
+
+describe("alarm priority ordering", () => {
+    it("orders Gamma & Neutron, Neutron, Gamma, custom alarm categories, and None last", () => {
+        const rows = [
+            {status: "None", startTime: "2026-10-30T19:40:00.000Z"},
+            {status: "Gamma", startTime: "2026-10-30T19:35:00.000Z"},
+            {status: "Neutron", startTime: "2026-10-30T19:34:00.000Z"},
+            {status: "Gamma & Neutron", startTime: "2026-10-30T19:30:00.000Z"},
+            {status: "Gamma", startTime: "2026-10-30T19:36:00.000Z"},
+            {status: "CustomIsotopeAlarm", startTime: "2026-10-30T19:39:00.000Z"},
+        ];
+        rows.sort(sortEventsByAlarmPriority);
+        expect(rows.map(r => `${r.status}@${r.startTime}`)).to.deep.equal([
+            "Gamma & Neutron@2026-10-30T19:30:00.000Z",
+            "Neutron@2026-10-30T19:34:00.000Z",
+            "Gamma@2026-10-30T19:36:00.000Z",
+            "Gamma@2026-10-30T19:35:00.000Z",
+            "CustomIsotopeAlarm@2026-10-30T19:39:00.000Z",
+            "None@2026-10-30T19:40:00.000Z",
+        ]);
     });
 });
