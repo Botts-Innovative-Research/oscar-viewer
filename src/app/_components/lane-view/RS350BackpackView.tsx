@@ -46,13 +46,11 @@ export default function RS350BackpackView({ entry, currentLane, laneMap }: RS350
             const rtDS = lane.datasourcesRealtime[i];
 
             if (isForegroundDataStream(ds)) {
-                rtDS.properties.mqttOpts.shared = true
                 laneDsCollection.addDS('foregroundRT', rtDS);
                 setForegroundDatasources(rtDS)
             }
 
             if (isBackgroundDataStream(ds)) {
-                rtDS.properties.mqttOpts.shared = true
                 laneDsCollection.addDS('backgroundRT', rtDS);
                 setBackgroundDatasources(rtDS)
             }

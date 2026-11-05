@@ -8,11 +8,17 @@ const workerChunks = [];
 function collectJavaScript(directory) {
     for (const entry of fs.readdirSync(directory, {withFileTypes: true})) {
         const entryPath = path.join(directory, entry.name);
+
         if (entry.isDirectory()) {
             collectJavaScript(entryPath);
         } else if (entry.name.endsWith('.js')) {
             const content = fs.readFileSync(entryPath, 'utf8');
-            if (entry.name.includes('.worker.js')) {
+
+            const isWorkerChunk =
+                entry.name.includes('.worker.js') ||
+                /\bself\.onmessage\s*=/.test(content);
+
+            if (isWorkerChunk) {
                 workerChunks.push(content);
             } else {
                 mainChunks.push(content);

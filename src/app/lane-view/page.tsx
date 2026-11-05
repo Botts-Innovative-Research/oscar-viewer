@@ -85,26 +85,21 @@ export default function LaneViewPage() {
             const rtDS = lane.datasourcesRealtime[i];
 
             if (isGammaDataStream(ds)) {
-                rtDS.properties.mqttOpts.shared = true
                 laneDsCollection.addDS('gammaRT', rtDS);
                 setGammaDS(rtDS)
             }
             if (isNeutronDataStream(ds)) {
-                rtDS.properties.mqttOpts.shared = true
                 laneDsCollection.addDS('neutronRT', rtDS);
                 setNeutronDS(rtDS);
             }
             if (isTamperDataStream(ds)) {
-                rtDS.properties.mqttOpts.shared = true
                 laneDsCollection.addDS('tamperRT', rtDS);
             }
             if (isThresholdDataStream(ds)) {
-                rtDS.properties.mqttOpts.shared = true
                 laneDsCollection?.addDS('gammaTrshldRT', rtDS);
                 setThresholdDS(rtDS);
             }
             if (isDailyFileDataStream(ds)) {
-                rtDS.properties.mqttOpts.shared = false
                 laneDsCollection?.addDS('dailyFileRT', rtDS);
             }
         }
